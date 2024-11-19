@@ -124,7 +124,7 @@ The following class contains the triangulation of the deforming region of a reso
    :nosignatures:
    :toctree: generated
 
-   pygplates.DeformingTriangulation
+   pygplates.NetworkTriangulation
 
 Velocity and strain
 -------------------

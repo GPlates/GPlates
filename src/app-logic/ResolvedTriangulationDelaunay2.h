@@ -390,7 +390,7 @@ namespace GPlatesAppLogic
 				return d_deformation_info.get();
 			}
 
-			//! Return Delaunay triangulation containg this vertex.
+			//! Return Delaunay triangulation containing this vertex.
 			const Delaunay_2 &
 			get_delaunay_2() const
 			{
@@ -506,19 +506,47 @@ namespace GPlatesAppLogic
 
 
 			//
-			// NOTE: We do not need to initialise faces (like we do vertices).
-			//
+			// When we insert new vertices into the Delaunay triangulation it automatically
+			// creates new faces. In other words, we don't explicitly create the faces.
+			// And so we don't explicitly initialise the faces either (like we do with the vertices).
 			// This makes it easier to incrementally modify the Delaunay triangulation
 			// (such as adaptive subdivision of its edges) without having to subsequently iterate
 			// over all the faces and initialise those that haven't already been initialised.
+			// We do, however, explicitly set the face *indices* of all the faces once the entire
+			// triangulation has been created (ie, once all vertices have been inserted).
 			//
-			// The Delaunay triangulation (required for face initialisation) is obtained from one
-			// of the vertices of a face. Also a face can detect when it has been modified due to a
-			// modification in the Delaunay triangulation (such as a vertex insertion splitting a
-			// face into 3 faces, two of which are new and the third being the existing face modified
-			// to reference the newly inserted vertex).
+			// Also, the Delaunay triangulation (required for calculating deformation on-demand) is
+			// obtained from one of the vertices of a face. Also a face can detect when it has been
+			// modified due to a modification in the Delaunay triangulation (such as a vertex insertion
+			// splitting a face into 3 faces, two of which are new and the third being the existing face
+			// modified to reference the newly inserted vertex).
 			//
 
+
+			/**
+			 * Set the index of this face within all faces in the delaunay triangulation.
+			 *
+			 * NOTE: This should only be done once the delaunay triangulation has been built.
+			 *       For example, no more vertices should be inserted after this.
+			 */
+			void
+			set_face_index(
+					unsigned int face_index)
+			{
+				d_face_index = face_index;
+			}
+
+			/**
+			 * Returns index of this face within all faces in the delaunay triangulation.
+			 */
+			unsigned int
+			get_face_index() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_face_index,
+						GPLATES_ASSERTION_SOURCE);
+				return d_face_index.get();
+			}
 
 			/**
 			 * Returns true if face is inside the deforming region.
@@ -565,7 +593,7 @@ namespace GPlatesAppLogic
 				return d_deformation_info.get();
 			}
 
-			//! Return Delaunay triangulation containg this face.
+			//! Return Delaunay triangulation containing this face.
 			const Delaunay_2 &
 			get_delaunay_2() const
 			{
@@ -640,6 +668,9 @@ namespace GPlatesAppLogic
 
 			// Derived values - these are mutable since they are calculated on first call.
 			mutable boost::optional<DeformationInfo> d_deformation_info;
+
+			//! index of this face within all faces in the delaunay triangulation.
+			boost::optional<unsigned int> d_face_index;
 
 
 			/**

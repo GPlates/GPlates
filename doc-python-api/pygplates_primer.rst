@@ -1282,7 +1282,7 @@ Topological network
 
 To model deformation, a topological network must first be created. This consists of a boundary polygon
 (resolved by intersecting boundary line segments, similar to topological closed plate polygons), optional interior rigid blocks,
-individual deforming points, and a deforming region (triangulation with vertices from boundary, rigid blocks and deforming points).
+individual deforming points, and a triangulation (with vertices from boundary, rigid blocks and deforming points).
 
 .. figure:: images/DeformingNetworkDiagram.png
 
@@ -1300,7 +1300,7 @@ More information on topological networks in GPlates/pyGPlates can be found in th
 Rigid blocks
 ^^^^^^^^^^^^
 
-A topological network can *optionally* have interior islands that are rigid (unlike the :ref:`deforming triangulation <pygplates_primer_deforming_triangulation>`).
+A topological network can *optionally* have interior islands that are rigid.
 
 .. note:: Any :meth:`interior geometry of a network <pygplates.GpmlTopologicalSection.create_network_interior>` that is a *polygon* is considered a rigid block.
 
@@ -1316,60 +1316,65 @@ For example, you can get the plate ID and boundary polygon of each interior rigi
       rigid_block_plate_id = rigid_block.get_feature().get_reconstruction_plate_id()
       rigid_block_boundary = rigid_block.get_reconstructed_geometry()
 
-.. _pygplates_primer_deforming_triangulation:
+.. _pygplates_primer_network_triangulation:
 
-Deforming triangulation
-^^^^^^^^^^^^^^^^^^^^^^^
+Network triangulation
+^^^^^^^^^^^^^^^^^^^^^
 
-A deforming triangulation represents the *deforming* region of a :class:`resolved topological network <pygplates.ResolvedTopologicalNetwork>`.
+The network triangulation of a :class:`resolved topological network <pygplates.ResolvedTopologicalNetwork>` is the Delaunay triangulation of vertices
+obtained from the network's boundary (polygon) and any interior rigid blocks (polygons) and any interior geometries (points or lines).
 
-It is created by first forming the Delaunay triangulation of vertices obtained from the network's boundary (polygon), and any interior rigid blocks (polygons) and
-any interior geometries (points or lines). The Delaunay triangulation is the convex hull around the network boundary, so it includes triangles outside the
-network boundary (and also triangles inside any non-deforming interior blocks). To limit the triangulation to only the deforming region, only those triangles
-whose centroid is *inside* the deforming region are retained (the rest are excluded from the deforming triangulation). Note that, for this purpose, the deforming
-region is defined to be *inside* the network's boundary polygon but *outside* any interior rigid block polygons.
+The Delaunay triangulation is a triangulation of the *convex hull* of its vertices. So it includes triangles *outside* the network boundary
+(and also includes triangles *inside* any interior rigid blocks). However, the deforming region of a network is defined to be *inside* the
+network's boundary polygon (but *outside* its interior rigid block polygons, if any). Hence the triangulation contains triangles that are *outside*
+the deforming region. Therefore each triangle has a :attr:`flag <pygplates.NetworkTriangulation.Triangle.is_in_deforming_region>` indicating whether
+it is inside the deforming region (if it's centroid is in the deforming region) or not. These triangles in the deforming region of a network triangulation
+are referred to as the *deforming triangulation*.
 
 .. note:: The Delaunay triangulation is not a *constrained* triangulation. This means the edges of some Delaunay triangles can cross over network boundary edges or
-   interior block edges, rather than be constrained to follow them. However the removal of Delaunay triangles, with centroids *outside* the deforming region, deals
-   with this quite effectively for current topological network datasets.
+   interior block edges, rather than be constrained to follow them. However the flagging of Delaunay triangles (as deforming or non-deforming) deals with this
+   quite effectively for current topological network datasets.
 
-The triangles in a deforming triangulation do not overlap any :ref:`interior rigid blocks <pygplates_primer_rigid_blocks>` (other than the above-mentioned
-note about *constrained* triangulations). In other words, the deforming triangulation represents the *deforming* region of a
+The :attr:`deforming <pygplates.NetworkTriangulation.Triangle.is_in_deforming_region>` triangles in a network triangulation do not overlap any
+:ref:`interior rigid blocks <pygplates_primer_rigid_blocks>` (other than the above-mentioned note about *constrained* triangulations).
+In other words, the *deforming* triangles (in the network triangulation) represent the *deforming* region of a
 :class:`resolved topological network <pygplates.ResolvedTopologicalNetwork>` and the rigid blocks (if any) represent the *rigid* regions.
 
-A deforming triangulation is represented by a :class:`pygplates.DeformingTriangulation`, and is obtained from a :class:`pygplates.ResolvedTopologicalNetwork` with:
+A network triangulation is represented by a :class:`pygplates.NetworkTriangulation`, and is obtained from a :class:`pygplates.ResolvedTopologicalNetwork` with:
 ::
 
-   deforming_triangulation = resolved_topological_network.get_deforming_triangulation()
+   network_triangulation = resolved_topological_network.get_network_triangulation()
 
-It consists of a sequence of vertices and a sequence of triangles. Each vertex is represented by a :class:`pygplates.DeformingTriangulation.Vertex` and contains a position,
-a velocity and a strain rate. Each triangle is represented by a :class:`pygplates.DeformingTriangulation.Triangle` and contains three vertex indices and a strain rate.
-A triangle's three vertex indices are indices into the sequence of vertices of the triangulation.
+It consists of a sequence of vertices and a sequence of triangles. Each vertex is represented by a :class:`pygplates.NetworkTriangulation.Vertex` and contains a position,
+a velocity, and a strain rate. Each triangle is represented by a :class:`pygplates.NetworkTriangulation.Triangle` and contains three vertex indices, a flag indicating whether
+it's deforming or not, and a strain rate. A triangle's three vertex indices are indices into the sequence of vertices of the triangulation.
 ::
 
-   triangles = deforming_triangulation.get_triangles()
-   vertices = deforming_triangulation.get_vertices()
+   triangles = network_triangulation.get_triangles()
+   vertices = network_triangulation.get_vertices()
 
    for triangle in triangles:
       triangle_vertex_0 = vertices[triangle.get_vertex_index(0)]
       triangle_vertex_1 = vertices[triangle.get_vertex_index(1)]
       triangle_vertex_2 = vertices[triangle.get_vertex_index(2)]
+      triangle_is_in_deforming_region = triangle.is_in_deforming_region
       triangle_strain_rate = triangle.strain_rate
 
    for vertex in vertices:
       vertex_position = vertex.position
-      vertex_velocity = vertex.velocity
       vertex_strain_rate = vertex.strain_rate
+      vertex_velocity = vertex.get_velocity()  # a function optionally accepting various velocity calculation parameters
 
 .. _pygplates_primer_strain_rates_in_triangulation:
 
 Strain rates in triangulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Each :class:`triangle <pygplates.DeformingTriangulation.Triangle>` in a :class:`deforming triangulation <pygplates.DeformingTriangulation>` is assigned a :class:`strain rate <pygplates.StrainRate>`
-that is *constant* across the triangle. Furthermore, the strain rate of each triangle can optionally be :ref:`clamped to a maximum strain rate <pygplates_primer_strain_rate_clamping>`.
-Then each :class:`vertex <pygplates.DeformingTriangulation.Vertex>` in the triangulation is assigned a strain rate that is an area-weighted average of the (potentially clamped) strain rates
-from triangles incident to the vertex.
+Each :class:`triangle <pygplates.NetworkTriangulation.Triangle>` in a :class:`network triangulation <pygplates.NetworkTriangulation>` is assigned a :class:`strain rate <pygplates.StrainRate>`
+that is *constant* across the triangle (and is zero if the triangle is *not* :attr:`deforming <pygplates.NetworkTriangulation.Triangle.is_in_deforming_region>`).
+Furthermore, the strain rate of each triangle can optionally be :ref:`clamped to a maximum strain rate <pygplates_primer_strain_rate_clamping>`.
+Then each :class:`vertex <pygplates.NetworkTriangulation.Vertex>` in the triangulation is assigned a strain rate that is an area-weighted average of the (potentially clamped) strain rates
+from :attr:`deforming <pygplates.NetworkTriangulation.Triangle.is_in_deforming_region>` triangles incident to the vertex.
 
 Finally, the strain rate that is queried at an *arbitrary* location (within the deforming triangulation) is either assigned the strain rate of the triangle containing that location,
 or calculated by interpolating the strain rates of nearby vertices if :ref:`strain rates are smoothed <pygplates_primer_strain_rate_smoothing>`.
@@ -1415,10 +1420,10 @@ Strain rates can optionally be smoothed to help reduce the faceted (piecewise co
 
 The strain rate at an arbitrary location within a deforming triangulation is affected by the smoothing value:
 
-* ``pygplates.StrainRateSmoothing.none`` - No smoothing. The strain rate is equal to the (constant) strain rate of the :class:`triangle <pygplates.DeformingTriangulation.Triangle>` containing the query location.
-* ``pygplates.StrainRateSmoothing.barycentric`` - Use linear interpolation of the strain rates of the 3 :class:`vertices <pygplates.DeformingTriangulation.Vertex>` of the
-  :class:`triangle <pygplates.DeformingTriangulation.Triangle>` containing the query location.
-* ``pygplates.StrainRateSmoothing.natural_neighbour`` - Use natural neighbour interpolation of the strain rates of triangulation :class:`vertices <pygplates.DeformingTriangulation.Vertex>` near the query location.
+* ``pygplates.StrainRateSmoothing.none`` - No smoothing. The strain rate is equal to the (constant) strain rate of the :class:`triangle <pygplates.NetworkTriangulation.Triangle>` containing the query location.
+* ``pygplates.StrainRateSmoothing.barycentric`` - Use linear interpolation of the strain rates of the 3 :class:`vertices <pygplates.NetworkTriangulation.Vertex>` of the
+  :class:`triangle <pygplates.NetworkTriangulation.Triangle>` containing the query location.
+* ``pygplates.StrainRateSmoothing.natural_neighbour`` - Use natural neighbour interpolation of the strain rates of triangulation :class:`vertices <pygplates.NetworkTriangulation.Vertex>` near the query location.
 
 Strain rate smoothing is determined by :attr:`pygplates.ResolveTopologyParameters.strain_rate_smoothing` when topological networks are resolved at a reconstruction time
 (using :class:`pygplates.TopologicalModel`, :class:`pygplates.TopologicalSnapshot` or :func:`pygplates.resolve_topologies`).

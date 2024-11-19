@@ -225,7 +225,7 @@ export_resolve_topology_parameters()
 					"ResolveTopologyParameters",
 					"Parameters used to resolve topologies.\n"
 					"\n"
-					"These parameters affect how topologies are resolved (when using :class:`TopologicalModel`, :class:`TopologicalSnapshot` and :func:`resolve_topologies`).\n"
+					"These parameters affect how topologies are resolved (when using :class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies`).\n"
 					"\n"
 					"Currently these parameters only affect :class:`resolved topological networks <ResolvedTopologicalNetwork>`. These parameters include:\n"
 					"\n"

@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <map>
 #include <vector>
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
@@ -603,7 +602,8 @@ export_reconstructed_feature_geometry()
 					"ReconstructedFeatureGeometry",
 					"The geometry of a feature reconstructed to a geological time.\n"
 					"\n"
-					"The :func:`reconstruct` function can be used to generate *ReconstructedFeatureGeometry* instances.\n"
+					":class:`ReconstructModel`, :class:`ReconstructSnapshot` or :func:`reconstruct` can be used to "
+					"generate *ReconstructedFeatureGeometry* instances.\n"
 					"\n"
 					".. note:: | A single feature can have multiple geometry properties, and hence multiple "
 					"reconstructed feature geometries, associated with it.\n"
@@ -722,7 +722,8 @@ export_reconstructed_motion_path()
 					"The reconstructed history of a plate's motion in the form of a path of points "
 					"over geological time.\n"
 					"\n"
-					"The :func:`reconstruct` function can be used to generate *ReconstructedMotionPath* instances.\n"
+					":class:`ReconstructModel`, :class:`ReconstructSnapshot` or :func:`reconstruct` can be used to "
+					"generate *ReconstructedMotionPath* instances.\n"
 					"\n"
 					".. note:: | Although a single motion path :class:`feature<Feature>` has only a single "
 					"seed geometry that seed geometry can be either a :class:`PointOnSphere` or a "
@@ -888,7 +889,8 @@ export_reconstructed_flowline()
 					"The reconstructed history of plate motion away from a spreading ridge in the form of "
 					"a path of points over geological time.\n"
 					"\n"
-					"The :func:`reconstruct` function can be used to generate *ReconstructedFlowline* instances.\n"
+					":class:`ReconstructModel`, :class:`ReconstructSnapshot` or :func:`reconstruct` can be used to "
+					"generate *ReconstructedFlowline* instances.\n"
 					"\n"
 					".. note:: | Although a single flowline :class:`feature<Feature>` has only a single "
 					"seed geometry that seed geometry can be either a :class:`PointOnSphere` or a "
@@ -1133,7 +1135,8 @@ export_resolved_topological_line()
 					"ResolvedTopologicalLine",
 					"The geometry of a topological *line* feature resolved to a geological time.\n"
 					"\n"
-					"The :func:`resolve_topologies` function can be used to generate *ResolvedTopologicalLine* instances.\n",
+					":class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies` can be used "
+					"to generate *ResolvedTopologicalLine* instances.\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -1145,7 +1148,7 @@ export_resolved_topological_line()
 				"  :rtype: :class:`Feature`\n"
 				"\n"
 				"  .. note:: The returned feature is what was used to generate this :class:`ResolvedTopologicalLine` "
-				"via :func:`resolve_topologies`.\n"
+				"via :class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies`.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_resolved_feature`\n")
 		.def("get_property",
@@ -1177,7 +1180,7 @@ export_resolved_topological_line()
 				"\n"
 				"  The returned feature contains the static :meth:`resolved geometry<get_resolved_geometry>`. "
 				"Unlike :meth:`get_feature` it cannot be used to generate a :class:`ResolvedTopologicalLine` "
-				"via :func:`resolve_topologies`.\n"
+				"via :class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies`.\n"
 				"\n"
 				"  .. note:: | The returned feature does **not** contain present-day geometry as is typical "
 				"of most GPlates features.\n"
@@ -1525,7 +1528,8 @@ export_resolved_topological_boundary()
 					"ResolvedTopologicalBoundary",
 					"The geometry of a topological *boundary* feature resolved to a geological time.\n"
 					"\n"
-					"The :func:`resolve_topologies` function can be used to generate *ResolvedTopologicalBoundary* instances.\n",
+					":class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies` can be used "
+					"to generate *ResolvedTopologicalBoundary* instances.\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -1537,7 +1541,7 @@ export_resolved_topological_boundary()
 				"  :rtype: :class:`Feature`\n"
 				"\n"
 				"  .. note:: The returned feature is what was used to generate this :class:`ResolvedTopologicalBoundary` "
-				"via :func:`resolve_topologies`.\n"
+				"via :class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies`.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_resolved_feature`\n")
 		.def("get_property",
@@ -1569,7 +1573,7 @@ export_resolved_topological_boundary()
 				"\n"
 				"  The returned feature contains the static :meth:`resolved geometry<get_resolved_geometry>`. "
 				"Unlike :meth:`get_feature` it cannot be used to generate a :class:`ResolvedTopologicalBoundary` "
-				"via :func:`resolve_topologies`.\n"
+				"via :class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies`.\n"
 				"\n"
 				"  .. note:: | The returned feature does **not** contain present-day geometry as is typical "
 				"of most GPlates features.\n"
@@ -1876,15 +1880,15 @@ namespace GPlatesApi
 
 
 	/**
-	 * Information contained in Delaunay triangulation of a deforming network.
+	 * Information contained in Delaunay triangulation of a topological network.
 	 */
-	class DeformingTriangulation :
-			public GPlatesUtils::ReferenceCount<DeformingTriangulation>
+	class NetworkTriangulation :
+			public GPlatesUtils::ReferenceCount<NetworkTriangulation>
 	{
 	public:
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<DeformingTriangulation> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const DeformingTriangulation> non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<NetworkTriangulation> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const NetworkTriangulation> non_null_ptr_to_const_type;
 
 
 		class Triangle :
@@ -1892,29 +1896,48 @@ namespace GPlatesApi
 		{
 		public:
 			Triangle(
-					unsigned int vertex_index_0,
-					unsigned int vertex_index_1,
-					unsigned int vertex_index_2,
-					const GPlatesAppLogic::DeformationStrainRate &strain_rate_) :
-				strain_rate(strain_rate_)
-			{
-				vertex_indices[0] = vertex_index_0;
-				vertex_indices[1] = vertex_index_1;
-				vertex_indices[2] = vertex_index_2;
-			}
+					NetworkTriangulation::non_null_ptr_to_const_type triangulation,
+					const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle &face_handle) :
+				d_triangulation(triangulation),
+				d_face_handle(face_handle)
+			{  }
 
 			bool
 			operator==(
 					const Triangle &other) const
 			{
-				return vertex_indices[0] == other.vertex_indices[0] &&
-						vertex_indices[1] == other.vertex_indices[1] &&
-						vertex_indices[2] == other.vertex_indices[2] &&
-						strain_rate == other.strain_rate;
+				return d_triangulation == other.d_triangulation &&
+						d_face_handle == other.d_face_handle;
 			}
 
-			unsigned int vertex_indices[3];
-			GPlatesAppLogic::DeformationStrainRate strain_rate;
+			unsigned int
+			get_vertex_index(
+					int index) const
+			{
+				if (index < 0 || index >= 3)
+				{
+					PyErr_SetString(PyExc_ValueError, "*index* should be in the range [0, 2]");
+					bp::throw_error_already_set();
+				}
+
+				return d_face_handle->vertex(index)->get_vertex_index();
+			}
+
+			bool
+			is_in_deforming_region() const
+			{
+				return d_face_handle->is_in_deforming_region();
+			}
+
+			GPlatesAppLogic::DeformationStrainRate
+			get_strain_rate() const
+			{
+				return d_face_handle->get_deformation_info().get_strain_rate();
+			}
+
+		private:
+			NetworkTriangulation::non_null_ptr_to_const_type d_triangulation;  // keep alive
+			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle d_face_handle;
 		};
 
 		class Vertex :
@@ -1922,24 +1945,56 @@ namespace GPlatesApi
 		{
 		public:
 			Vertex(
-					const GPlatesMaths::PointOnSphere &position_,
-					const GPlatesMaths::Vector3D &velocity_,
-					const GPlatesAppLogic::DeformationStrainRate &strain_rate_) :
-				position(position_),
-				velocity(velocity_),
-				strain_rate(strain_rate_)
+					NetworkTriangulation::non_null_ptr_to_const_type triangulation,
+					const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle &vertex_handle) :
+				d_triangulation(triangulation),
+				d_vertex_handle(vertex_handle)
 			{  }
 
 			bool
 			operator==(
 					const Vertex &other) const
 			{
-				return position == other.position && velocity == other.velocity && strain_rate == other.strain_rate;
+				return d_triangulation == other.d_triangulation &&
+						d_vertex_handle == other.d_vertex_handle;
 			}
 
-			GPlatesMaths::PointOnSphere position;
-			GPlatesMaths::Vector3D velocity;
-			GPlatesAppLogic::DeformationStrainRate strain_rate;
+			GPlatesMaths::PointOnSphere
+			get_position() const
+			{
+				return d_vertex_handle->get_point_on_sphere();
+			}
+
+			GPlatesMaths::Vector3D
+			get_velocity(
+					const double &velocity_delta_time,
+					GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+					GPlatesAppLogic::VelocityUnits::Value velocity_units,
+					const double &earth_radius_in_kms) const
+			{
+				// Velocity delta time must be positive.
+				if (velocity_delta_time <= 0)
+				{
+					PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+					bp::throw_error_already_set();
+				}
+
+				return d_vertex_handle->calc_velocity_vector(
+						velocity_delta_time,
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms);
+			}
+
+			GPlatesAppLogic::DeformationStrainRate
+			get_strain_rate() const
+			{
+				return d_vertex_handle->get_deformation_info().get_strain_rate();
+			}
+
+		private:
+			NetworkTriangulation::non_null_ptr_to_const_type d_triangulation;  // keep alive
+			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle d_vertex_handle;
 		};
 
 
@@ -1951,13 +2006,18 @@ namespace GPlatesApi
 		{
 		public:
 
-			typedef std::vector<ItemType> item_seq_type;
+			// Typedef for the item itself.
+			//
+			// Note: The item should not be none (unless something went wrong during initialisation of the triangulation).
+			typedef boost::optional<ItemType> item_type;
+			// Typedef for items sequence and iterator.
+			typedef std::vector<item_type> item_seq_type;
 			typedef typename item_seq_type::const_iterator const_iterator;
 
 			ItemsView(
-					DeformingTriangulation::non_null_ptr_type deforming_triangulation,
+					NetworkTriangulation::non_null_ptr_type network_triangulation,
 					const item_seq_type &items) :
-				d_deforming_triangulation(deforming_triangulation),
+				d_network_triangulation(network_triangulation),
 				d_items(items)
 			{  }
 
@@ -1982,7 +2042,10 @@ namespace GPlatesApi
 			//
 			// Support for "__getitem__".
 			//
-			ItemType
+			// Note: The returned item should not be none
+			//       (unless something went wrong during initialisation of the triangulation).
+			//
+			item_type
 			get_item(
 					long index) const
 			{
@@ -2002,7 +2065,7 @@ namespace GPlatesApi
 			}
 
 		private:
-			DeformingTriangulation::non_null_ptr_type d_deforming_triangulation;  // just to keep items reference valid
+			NetworkTriangulation::non_null_ptr_type d_network_triangulation;  // just to keep items reference valid
 			const item_seq_type &d_items;
 		};
 
@@ -2013,20 +2076,20 @@ namespace GPlatesApi
 		static
 		non_null_ptr_type
 		create(
-				const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network,
-				const double &velocity_delta_time = 1.0,
-				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
-				GPlatesAppLogic::VelocityUnits::Value velocity_units = GPlatesAppLogic::VelocityUnits::CMS_PER_YR,
-				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS)
+				GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_topological_network)
 		{
-			non_null_ptr_type deforming_triangulation(new DeformingTriangulation());
+			non_null_ptr_type network_triangulation(new NetworkTriangulation(resolved_topological_network));
 
 			const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation_2 =
-					resolved_topological_network.get_triangulation_network().get_delaunay_2();
+					resolved_topological_network->get_triangulation_network().get_delaunay_2();
 
-			// Track Delaunay vertices by their location.
-			// Each unique location maps to a unique vertex *index*.
-			point_to_vertex_index_map_type point_to_vertex_index_map;
+			// Get the number of finite faces and vertices in the Delaunay triangulation.
+			const unsigned int num_faces = delaunay_triangulation_2.number_of_faces();
+			const unsigned int num_vertices = delaunay_triangulation_2.number_of_vertices();
+
+			// Resize triangle and vertex arrays to fit.
+			network_triangulation->d_triangles.resize(num_faces);
+			network_triangulation->d_vertices.resize(num_vertices);
 
 			// Iterate over the individual faces of the delaunay triangulation.
 			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
@@ -2035,34 +2098,61 @@ namespace GPlatesApi
 					finite_faces_2_end = delaunay_triangulation_2.finite_faces_end();
 			for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter)
 			{
-				if (!finite_faces_2_iter->is_in_deforming_region())
-				{
-					// Face centroid is outside deforming region.
-					continue;
-				}
+				// Create the triangle.
+				const Triangle triangle(network_triangulation, finite_faces_2_iter);
+
+				// Index of triangle in the triangulation.
+				const unsigned int face_index = finite_faces_2_iter->get_face_index();
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						face_index < network_triangulation->d_triangles.size(),
+						GPLATES_ASSERTION_SOURCE);
 
 				// Add the triangle.
-				const Triangle triangle(
-						deforming_triangulation->add_vertex(finite_faces_2_iter->vertex(0), point_to_vertex_index_map,
-								velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms),
-						deforming_triangulation->add_vertex(finite_faces_2_iter->vertex(1), point_to_vertex_index_map,
-								velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms),
-						deforming_triangulation->add_vertex(finite_faces_2_iter->vertex(2), point_to_vertex_index_map,
-								velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms),
-						finite_faces_2_iter->get_deformation_info().get_strain_rate());
-				deforming_triangulation->d_triangles.push_back(triangle);
+				network_triangulation->d_triangles[face_index] = triangle;
 			}
 
-			return deforming_triangulation;
+			// Iterate over the vertices of the delaunay triangulation.
+			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_vertices_iterator
+					finite_vertices_2_iter = delaunay_triangulation_2.finite_vertices_begin();
+			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_vertices_iterator
+					finite_vertices_2_end = delaunay_triangulation_2.finite_vertices_end();
+			for ( ; finite_vertices_2_iter != finite_vertices_2_end; ++finite_vertices_2_iter)
+			{
+				// Create the vertex.
+				const Vertex vertex(network_triangulation, finite_vertices_2_iter);
+
+				// Index of vertex in the triangulation.
+				const unsigned int vertex_index = finite_vertices_2_iter->get_vertex_index();
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						vertex_index < network_triangulation->d_vertices.size(),
+						GPLATES_ASSERTION_SOURCE);
+
+				// Add the vertex.
+				network_triangulation->d_vertices[vertex_index] = vertex;
+			}
+
+			return network_triangulation;
 		}
 
-		const std::vector<Triangle> &
+		/**
+		 * Return the triangles in the Delaunay triangulation.
+		 *
+		 * Note: None of the returned triangles should not be none
+		 *       (unless something went wrong during initialisation of the triangulation).
+		 */
+		const std::vector<boost::optional<Triangle>> &
 		get_triangles() const
 		{
 			return d_triangles;
 		}
 
-		const std::vector<Vertex> &
+		/**
+		 * Return the vertices in the Delaunay triangulation.
+		 *
+		 * Note: None of the returned vertices should not be none
+		 *       (unless something went wrong during initialisation of the triangulation).
+		 */
+		const std::vector<boost::optional<Vertex>> &
 		get_vertices() const
 		{
 			return d_vertices;
@@ -2070,111 +2160,51 @@ namespace GPlatesApi
 
 	private:
 
-		typedef std::map<GPlatesMaths::PointOnSphere, unsigned int, GPlatesMaths::PointOnSphereMapPredicate> point_to_vertex_index_map_type;
-
-		DeformingTriangulation()
+		explicit
+		NetworkTriangulation(
+				GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_topological_network) :
+			d_resolved_topological_network(resolved_topological_network)
 		{  }
 
-		/**
-		 * Adds a new @a Vertex if position of @a delaunay_vertex has not yet been encountered (and returns index),
-		 * otherwise returns index of existing @a Vertex.
-		 */
-		template <typename DelaunayVertexType>
-		unsigned int
-		add_vertex(
-				const DelaunayVertexType &delaunay_vertex,
-				point_to_vertex_index_map_type &point_to_vertex_index_map,
-				const double &velocity_delta_time,
-				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-				GPlatesAppLogic::VelocityUnits::Value velocity_units,
-				const double &earth_radius_in_kms)
-		{
-			// Attempt to insert the vertex position into the map.
-			std::pair<typename point_to_vertex_index_map_type::iterator, bool> vertex_insert_result =
-					point_to_vertex_index_map.insert(
-							typename point_to_vertex_index_map_type::value_type(
-									delaunay_vertex->get_point_on_sphere(),
-									boost::numeric_cast<unsigned int>(d_vertices.size()/*index*/)));
-			if (vertex_insert_result.second)
-			{
-				// Insertion successful - first time seen vertex - add a new Vertex to the sequence.
-				d_vertices.push_back(
-						Vertex(
-							delaunay_vertex->get_point_on_sphere(),
-							delaunay_vertex->calc_velocity_vector(velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms),
-							delaunay_vertex->get_deformation_info().get_strain_rate()
-						));
-			}
+		// Keep the ResolvedTopologicalNetwork alive since we reference its internal Delaunay triangulation.
+		GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type d_resolved_topological_network;
 
-			return vertex_insert_result.first->second;
-		}
-
-		std::vector<Triangle> d_triangles;
-		std::vector<Vertex> d_vertices;
+		std::vector<boost::optional<Triangle>> d_triangles;
+		std::vector<boost::optional<Vertex>> d_vertices;
 	};
-
-	unsigned int
-	resolved_topological_network_deforming_triangulation_triangle_get_vertex_index(
-			const DeformingTriangulation::Triangle &triangle,
-			int index)
-	{
-		if (index < 0 || index >= 3)
-		{
-			PyErr_SetString(PyExc_ValueError, "*index* should be in the range [0, 2]");
-			bp::throw_error_already_set();
-		}
-
-		return triangle.vertex_indices[index];
-	}
 
 	// Need this since ".def_readonly(..., Vertex::position, ...)" does not work
 	// (because GPlatesMaths::PointGeometryOnSphere wrapped in bp::class_ instead of GPlatesMaths::PointOnSphere).
 	GPlatesMaths::PointOnSphere
-	resolved_topological_network_deforming_triangulation_vertex_get_position(
-			const DeformingTriangulation::Vertex &vertex)
+	resolved_topological_network_network_triangulation_vertex_get_position(
+			const NetworkTriangulation::Vertex &vertex)
 	{
-		return vertex.position;
+		return vertex.get_position();
 	}
 
-	DeformingTriangulation::triangles_view_type
-	resolved_topological_network_deforming_triangulation_get_triangles(
-			DeformingTriangulation::non_null_ptr_type deforming_triangulation)
+	NetworkTriangulation::triangles_view_type
+	resolved_topological_network_network_triangulation_get_triangles(
+			NetworkTriangulation::non_null_ptr_type network_triangulation)
 	{
-		return DeformingTriangulation::triangles_view_type(
-				deforming_triangulation,
-				deforming_triangulation->get_triangles());
+		return NetworkTriangulation::triangles_view_type(
+				network_triangulation,
+				network_triangulation->get_triangles());
 	}
 
-	DeformingTriangulation::vertices_view_type
-	resolved_topological_network_deforming_triangulation_get_vertices(
-			DeformingTriangulation::non_null_ptr_type deforming_triangulation)
+	NetworkTriangulation::vertices_view_type
+	resolved_topological_network_network_triangulation_get_vertices(
+			NetworkTriangulation::non_null_ptr_type network_triangulation)
 	{
-		return DeformingTriangulation::vertices_view_type(
-				deforming_triangulation,
-				deforming_triangulation->get_vertices());
+		return NetworkTriangulation::vertices_view_type(
+				network_triangulation,
+				network_triangulation->get_vertices());
 	}
 
-	DeformingTriangulation::non_null_ptr_type
-	resolved_topological_network_get_deforming_triangulation(
-			const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network,
-			const double &velocity_delta_time,
-			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-			GPlatesAppLogic::VelocityUnits::Value velocity_units,
-			const double &earth_radius_in_kms)
+	NetworkTriangulation::non_null_ptr_type
+	resolved_topological_network_get_network_triangulation(
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_topological_network)
 	{
-		// Velocity delta time must be positive.
-		if (velocity_delta_time <= 0)
-		{
-			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
-			bp::throw_error_already_set();
-		}
-
-		return DeformingTriangulation::create(
-				resolved_topological_network,
-				velocity_delta_time,
-				velocity_delta_time_type,
-				velocity_units,
-				earth_radius_in_kms);
+		return NetworkTriangulation::create(resolved_topological_network);
 	}
 
 	GPlatesAppLogic::TopologyPointLocation
@@ -2377,25 +2407,28 @@ export_resolved_topological_network()
 {
 	{
 		//
-		// DeformingTriangulation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+		// NetworkTriangulation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 		//
-		bp::scope deforming_triangulation_wrapper_class = bp::class_<
-				GPlatesApi::DeformingTriangulation,
-				GPlatesApi::DeformingTriangulation::non_null_ptr_type,
+		bp::scope network_triangulation_wrapper_class = bp::class_<
+				GPlatesApi::NetworkTriangulation,
+				GPlatesApi::NetworkTriangulation::non_null_ptr_type,
 				boost::noncopyable>(
-						"DeformingTriangulation",
-						"Triangulation of the deforming region within a :class:`resolved topological network <ResolvedTopologicalNetwork>`.\n"
+						"NetworkTriangulation",
+						"The Delaunay triangulation of a :class:`resolved topological network <ResolvedTopologicalNetwork>`.\n"
 						"\n"
-						".. seealso:: :ref:`pygplates_primer_deforming_triangulation` in the *Primer* documentation."
+						"This is the triangulation of the convex hull of the vertices obtained from the network's resolved boundary (polygon), "
+						"and any interior rigid blocks (polygons) and any interior geometries (points or lines).\n"
 						"\n"
-						".. versionadded:: 0.49\n",
+						".. seealso:: :ref:`pygplates_primer_network_triangulation` in the *Primer* documentation."
+						"\n"
+						".. versionadded:: 0.50\n",
 						bp::no_init)
 			.def("get_triangles",
-					&GPlatesApi::resolved_topological_network_deforming_triangulation_get_triangles,
+					&GPlatesApi::resolved_topological_network_network_triangulation_get_triangles,
 					"get_triangles\n"
 					"  Returns a read-only sequence of the triangles in this triangulation.\n"
 					"\n"
-					"  :rtype: a read-only sequence of :class:`DeformingTriangulation.Triangle`\n"
+					"  :rtype: a read-only sequence of :class:`NetworkTriangulation.Triangle`\n"
 					"\n"
 					"  The following operations for accessing the triangles in the returned read-only sequence are supported:\n"
 					"\n"
@@ -2410,9 +2443,9 @@ export_resolved_topological_network()
 					"  The following example demonstrates some uses of the above operations:\n"
 					"  ::\n"
 					"\n"
-					"    deforming_triangulation = resolved_topological_network.get_deforming_triangulation()\n"
-					"    triangles = deforming_triangulation.get_triangles()\n"
-					"    vertices = deforming_triangulation.get_vertices()\n"
+					"    network_triangulation = resolved_topological_network.get_network_triangulation()\n"
+					"    triangles = network_triangulation.get_triangles()\n"
+					"    vertices = network_triangulation.get_vertices()\n"
 					"    for triangle in triangles:\n"
 					"        triangle_vertex_0 = vertices[triangle.get_vertex_index(0)]\n"
 					"        triangle_vertex_1 = vertices[triangle.get_vertex_index(1)]\n"
@@ -2421,11 +2454,11 @@ export_resolved_topological_network()
 					"\n"
 					"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
 			.def("get_vertices",
-					&GPlatesApi::resolved_topological_network_deforming_triangulation_get_vertices,
+					&GPlatesApi::resolved_topological_network_network_triangulation_get_vertices,
 					"get_vertices\n"
 					"  Returns a read-only sequence of the vertices in this triangulation.\n"
 					"\n"
-					"  :rtype: a read-only sequence of :class:`DeformingTriangulation.Vertex`\n"
+					"  :rtype: a read-only sequence of :class:`NetworkTriangulation.Vertex`\n"
 					"\n"
 					"  The following operations for accessing the vertices in the returned read-only sequence are supported:\n"
 					"\n"
@@ -2440,57 +2473,67 @@ export_resolved_topological_network()
 					"  The following example demonstrates some uses of the above operations:\n"
 					"  ::\n"
 					"\n"
-					"    deforming_triangulation = resolved_topological_network.get_deforming_triangulation()\n"
-					"    vertices = deforming_triangulation.get_vertices()\n"
+					"    network_triangulation = resolved_topological_network.get_network_triangulation()\n"
+					"    vertices = network_triangulation.get_vertices()\n"
 					"    for vertex in vertices:\n"
 					"        vertex_position = vertex.position\n"
-					"        vertex_velocity = vertex.velocity\n"
 					"        vertex_strain_rate = vertex.strain_rate\n"
+					"        vertex_velocity = vertex.get_velocity()\n"
 					"\n"
 					"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
 		;
 
 		//
-		// DeformingTriangulation.Triangle - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+		// NetworkTriangulation.Triangle - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 		//
-		// A class nested within python class DeformingTriangulation (due to above 'bp::scope').
-		bp::class_<GPlatesApi::DeformingTriangulation::Triangle>(
+		// A class nested within python class NetworkTriangulation (due to above 'bp::scope').
+		bp::class_<GPlatesApi::NetworkTriangulation::Triangle>(
 						"Triangle",
-						"A triangle in a :class:`deforming triangulation <DeformingTriangulation>`.\n"
+						"A triangle in a :class:`network triangulation <NetworkTriangulation>`.\n"
 						"\n"
 						"Triangles are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 						"\n"
-						".. seealso:: :ref:`pygplates_primer_deforming_triangulation` in the *Primer* documentation."
+						".. seealso:: :ref:`pygplates_primer_network_triangulation` in the *Primer* documentation."
 						"\n"
-						".. versionadded:: 0.49\n",
+						".. versionadded:: 0.50\n",
 						bp::no_init)
 			.def("get_vertex_index",
-					&GPlatesApi::resolved_topological_network_deforming_triangulation_triangle_get_vertex_index,
+					&GPlatesApi::NetworkTriangulation::Triangle::get_vertex_index,
 					(bp::arg("index")),
 					"get_vertex_index(index)\n"
-					"  Returns the vertex index into :meth:`DeformingTriangulation.get_vertices` of one of this triangle's three vertices.\n"
+					"  Returns the vertex index into :meth:`NetworkTriangulation.get_vertices` of one of this triangle's three vertices.\n"
 					"\n"
 					"  :param index: the index of this triangle's vertex (in the range [0, 2])\n"
 					"  :type index: int\n"
 					"  :rtype: int\n"
 					"  :raises: ValueError if *index* is not in the range [0, 2]\n"
 					"\n"
-					"  The following example demonstrates how to access the :meth:`triangulation vertices <DeformingTriangulation.get_vertices>` "
+					"  The following example demonstrates how to access the :meth:`triangulation vertices <NetworkTriangulation.get_vertices>` "
 					"from a triangle's vertex indices:\n"
 					"  ::\n"
 					"\n"
-					"    deforming_triangulation = resolved_topological_network.get_deforming_triangulation()\n"
-					"    triangles = deforming_triangulation.get_triangles()\n"
-					"    vertices = deforming_triangulation.get_vertices()\n"
+					"    network_triangulation = resolved_topological_network.get_network_triangulation()\n"
+					"    triangles = network_triangulation.get_triangles()\n"
+					"    vertices = network_triangulation.get_vertices()\n"
 					"    for triangle in triangles:\n"
 					"        triangle_vertex_0 = vertices[triangle.get_vertex_index(0)]\n"
 					"        triangle_vertex_1 = vertices[triangle.get_vertex_index(1)]\n"
 					"        triangle_vertex_2 = vertices[triangle.get_vertex_index(2)]\n")
-			.def_readonly("strain_rate",
-					&GPlatesApi::DeformingTriangulation::Triangle::strain_rate,
+			.add_property("is_in_deforming_region",
+					&GPlatesApi::NetworkTriangulation::Triangle::is_in_deforming_region,
+					"Whether this triangle is *in* the deforming region of the network.\n"
+					"\n"
+					"  :type: bool\n"
+					"\n"
+					"  .. note:: A triangle is *in* the deforming region if its centroid is in the deforming region (where the deforming region "
+					"is defined to be *inside* the network's boundary polygon but *outside* any interior rigid block polygons).\n")
+			.add_property("strain_rate",
+					&GPlatesApi::NetworkTriangulation::Triangle::get_strain_rate,
 					"Return the constant strain rate across this triangle.\n"
 					"\n"
-					"  :type: :class:`StrainRate`\n")
+					"  :type: :class:`StrainRate`\n"
+					"\n"
+					"  .. note:: This will be ``pygplates.StrainRate.zero`` if this triangle is *not* :attr:`deforming <is_in_deforming_region>`.\n")
 			// Due to the numerical tolerance in comparisons we cannot make hashable.
 			// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 			.def(GPlatesApi::NoHashDefVisitor(false, true))
@@ -2499,54 +2542,71 @@ export_resolved_topological_network()
 		;
 
 		//
-		// A wrapper around view access to the *triangles* of a deforming triangulation.
+		// A wrapper around view access to the *triangles* of a network triangulation.
 		//
-		// We don't document this wrapper (using docstrings) since it's documented in "DeformingTriangulation".
-		bp::class_<GPlatesApi::DeformingTriangulation::triangles_view_type>(
+		// We don't document this wrapper (using docstrings) since it's documented in "NetworkTriangulation".
+		bp::class_<GPlatesApi::NetworkTriangulation::triangles_view_type>(
 				// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 				"_TrianglesView",
 				bp::no_init)
 			.def("__iter__",
-					bp::iterator<const GPlatesApi::DeformingTriangulation::triangles_view_type>())
+					bp::iterator<const GPlatesApi::NetworkTriangulation::triangles_view_type>())
 			.def("__len__",
-					&GPlatesApi::DeformingTriangulation::triangles_view_type::get_number_of_items)
+					&GPlatesApi::NetworkTriangulation::triangles_view_type::get_number_of_items)
 			.def("__getitem__",
-					&GPlatesApi::DeformingTriangulation::triangles_view_type::get_item)
+					&GPlatesApi::NetworkTriangulation::triangles_view_type::get_item)
 		;
 
 		//
-		// DeformingTriangulation.Vertex - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+		// NetworkTriangulation.Vertex - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 		//
-		// A class nested within python class DeformingTriangulation (due to above 'bp::scope').
-		bp::class_<GPlatesApi::DeformingTriangulation::Vertex>(
+		// A class nested within python class NetworkTriangulation (due to above 'bp::scope').
+		bp::class_<GPlatesApi::NetworkTriangulation::Vertex>(
 						"Vertex",
-						"A vertex in a :class:`deforming triangulation <DeformingTriangulation>`.\n"
+						"A vertex in a :class:`network triangulation <NetworkTriangulation>`.\n"
 						"\n"
 						"Vertices are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 						"\n"
-						".. seealso:: :ref:`pygplates_primer_deforming_triangulation` in the *Primer* documentation."
+						".. seealso:: :ref:`pygplates_primer_network_triangulation` in the *Primer* documentation."
 						"\n"
-						".. versionadded:: 0.49\n",
+						".. versionadded:: 0.50\n",
 						bp::no_init)
 			.add_property("position",
-					&GPlatesApi::resolved_topological_network_deforming_triangulation_vertex_get_position,
+					&GPlatesApi::resolved_topological_network_network_triangulation_vertex_get_position,
 					"Return the position of this vertex.\n"
 					"\n"
 					"  :type: :class:`PointOnSphere`\n")
-			.def_readonly("velocity",
-					&GPlatesApi::DeformingTriangulation::Vertex::velocity,
-					"Return the velocity at this vertex.\n"
+			.def("get_velocity",
+					&GPlatesApi::NetworkTriangulation::Vertex::get_velocity,
+					(bp::arg("velocity_delta_time") = 1.0,
+							bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+							bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+							bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS),
+					"get_velocity([velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+					"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms])\n"
+					"Returns the velocity of this vertex.\n"
 					"\n"
-					"  :type: :class:`Vector3D`\n"
-					"\n"
-					"  .. note:: The velocity units are determined by the call to :meth:`ResolvedTopologicalNetwork.get_deforming_triangulation`.\n")
-			.def_readonly("strain_rate",
-					&GPlatesApi::DeformingTriangulation::Vertex::strain_rate,
+					"  :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).\n"
+					"  :type velocity_delta_time: float\n"
+					"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+					"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+					"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+					"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+					"  :param velocity_units: whether to return velocity as *kilometres per million years* or "
+					"*centimetres per year* (defaults to *kilometres per million years*)\n"
+					"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+					"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+					"  :type earth_radius_in_kms: float\n"
+					"  :rtype: :class:`Vector3D`\n"
+					"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n")
+			.add_property("strain_rate",
+					&GPlatesApi::NetworkTriangulation::Vertex::get_strain_rate,
 					"Return the strain rate at this vertex.\n"
 					"\n"
 					"  :type: :class:`StrainRate`\n"
 					"\n"
-					"  .. note:: This is the area-averaged strain rate of triangles incident to this vertex.\n")
+					"  .. note:: This is the area-averaged strain rate of :attr:`deforming <NetworkTriangulation.Triangle.is_in_deforming_region>` "
+					"triangles incident to this vertex.\n")
 			// Due to the numerical tolerance in comparisons we cannot make hashable.
 			// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 			.def(GPlatesApi::NoHashDefVisitor(false, true))
@@ -2555,30 +2615,30 @@ export_resolved_topological_network()
 		;
 
 		//
-		// A wrapper around view access to the *vertices* of a deforming triangulation.
+		// A wrapper around view access to the *vertices* of a network triangulation.
 		//
-		// We don't document this wrapper (using docstrings) since it's documented in "DeformingTriangulation".
-		bp::class_<GPlatesApi::DeformingTriangulation::vertices_view_type>(
+		// We don't document this wrapper (using docstrings) since it's documented in "NetworkTriangulation".
+		bp::class_<GPlatesApi::NetworkTriangulation::vertices_view_type>(
 				// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 				"_VerticesView",
 				bp::no_init)
 			.def("__iter__",
-					bp::iterator<const GPlatesApi::DeformingTriangulation::vertices_view_type>())
+					bp::iterator<const GPlatesApi::NetworkTriangulation::vertices_view_type>())
 			.def("__len__",
-					&GPlatesApi::DeformingTriangulation::vertices_view_type::get_number_of_items)
+					&GPlatesApi::NetworkTriangulation::vertices_view_type::get_number_of_items)
 			.def("__getitem__",
-					&GPlatesApi::DeformingTriangulation::vertices_view_type::get_item)
+					&GPlatesApi::NetworkTriangulation::vertices_view_type::get_item)
 		;
 	}
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
-	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesApi::DeformingTriangulation>();
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesApi::NetworkTriangulation>();
 
-	// Enable boost::optional<DeformingTriangulation::Triangle> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::DeformingTriangulation::Triangle>();
+	// Enable boost::optional<NetworkTriangulation::Triangle> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::NetworkTriangulation::Triangle>();
 
-	// Enable boost::optional<DeformingTriangulation::Vertex> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::DeformingTriangulation::Vertex>();
+	// Enable boost::optional<NetworkTriangulation::Vertex> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::NetworkTriangulation::Vertex>();
 
 
 	//
@@ -2592,7 +2652,8 @@ export_resolved_topological_network()
 					"ResolvedTopologicalNetwork",
 					"The geometry of a topological *network* feature resolved to a geological time.\n"
 					"\n"
-					"The :func:`resolve_topologies` function can be used to generate *ResolvedTopologicalNetwork* instances.\n",
+					":class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies` can be used "
+					"to generate *ResolvedTopologicalNetwork* instances.\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -2604,7 +2665,7 @@ export_resolved_topological_network()
 				"  :rtype: :class:`Feature`\n"
 				"\n"
 				"  .. note:: The returned feature is what was used to generate this :class:`ResolvedTopologicalNetwork` "
-				"via :func:`resolve_topologies`.\n"
+				"via :class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies`.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_resolved_feature`\n")
 		.def("get_property",
@@ -2648,7 +2709,7 @@ export_resolved_topological_network()
 				"\n"
 				"  The returned feature contains the static :meth:`resolved geometry<get_resolved_geometry>`. "
 				"Unlike :meth:`get_feature` it cannot be used to generate a :class:`ResolvedTopologicalNetwork` "
-				"via :func:`resolve_topologies`.\n"
+				"via :class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies`.\n"
 				"\n"
 				"  .. note:: | The returned feature does **not** contain present-day geometry as is typical "
 				"of most GPlates features.\n"
@@ -2712,33 +2773,16 @@ export_resolved_topological_network()
 				"  .. seealso:: :ref:`pygplates_primer_rigid_blocks` in the *Primer* documentation."
 				"\n"
 				"  .. versionadded:: 0.49\n")
-		.def("get_deforming_triangulation",
-				&GPlatesApi::resolved_topological_network_get_deforming_triangulation,
-				(bp::arg("velocity_delta_time") = 1.0,
-						bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
-						bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
-						bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS),
-				"get_deforming_triangulation([velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
-				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms])\n"
-				"Returns the triangulation of the deforming region within this resolved topological network.\n"
+		.def("get_network_triangulation",
+				&GPlatesApi::resolved_topological_network_get_network_triangulation,
+				"get_network_triangulation()\n"
+				"Returns the triangulation of this resolved topological network.\n"
 				"\n"
-				"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
-				"  :type velocity_delta_time: float\n"
-				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
-				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
-				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
-				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
-				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
-				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: :class:`DeformingTriangulation`\n"
-				"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
+				"  :rtype: :class:`NetworkTriangulation`\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_primer_deforming_triangulation` in the *Primer* documentation."
+				"  .. seealso:: :ref:`pygplates_primer_network_triangulation` in the *Primer* documentation."
 				"\n"
-				"  .. versionadded:: 0.49\n")
+				"  .. versionadded:: 0.50\n")
 		.def("get_point_location",
 				&GPlatesApi::resolved_topological_network_get_point_location,
 				(bp::arg("point")),
@@ -3139,10 +3183,9 @@ export_resolved_topological_sub_segment()
 					"The subset of vertices of a reconstructed topological section that contribute to the "
 					"geometry of a resolved topology.\n"
 					"\n"
-					"The :func:`resolve_topologies` function can be used to generate resolved topologies "
-					"(such as :class:`ResolvedTopologicalLine`, :class:`ResolvedTopologicalBoundary` and "
-					":class:`ResolvedTopologicalNetwork`) which, in turn, reference these "
-					"*ResolvedTopologicalSubSegment* instances.\n"
+					":class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies` can be used to "
+					"generate resolved topologies  (such as :class:`ResolvedTopologicalLine`, :class:`ResolvedTopologicalBoundary` and "
+					":class:`ResolvedTopologicalNetwork`) which, in turn, reference these *ResolvedTopologicalSubSegment* instances.\n"
 					"\n"
 					".. note:: | Each *ResolvedTopologicalSubSegment* instance belongs to a *single* resolved topology.\n"
 					"          | In contrast, a :class:`ResolvedTopologicalSharedSubSegment` instance can be shared "
@@ -3539,9 +3582,9 @@ export_resolved_topological_shared_sub_segment()
 					"have *boundaries* and hence will share *ResolvedTopologicalSharedSubSegment* instances.\n"
 					"          | :class:`ResolvedTopologicalLine` is excluded since it does not have a *boundary*.\n"
 					"\n"
-					"The :func:`resolve_topologies` function can be used to generate resolved topology *boundaries* "
-					"(:class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`) and "
-					"the shared *ResolvedTopologicalSharedSubSegment* instances.\n"
+					":class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies` can be used to "
+					"generate resolved topology *boundaries* (:class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`) "
+					"and the shared *ResolvedTopologicalSharedSubSegment* instances.\n"
 					"\n"
 					".. note:: | Each *ResolvedTopologicalSharedSubSegment* instance can be shared "
 					"by one or more resolved topologies.\n"
@@ -3872,9 +3915,9 @@ export_resolved_topological_section()
 					"have *boundaries* and hence will share sub-segments.\n"
 					"          | :class:`ResolvedTopologicalLine` is excluded since it does not have a *boundary*.\n"
 					"\n"
-					"The :func:`resolve_topologies` function can be used to generate resolved topology *boundaries* "
-					"(:class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`) and "
-					"*ResolvedTopologicalSection* instances.\n",
+					":class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies` can be used to "
+					"generate resolved topology *boundaries* (:class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`) "
+					"and *ResolvedTopologicalSection* instances.\n",
 					// Don't allow creation from python side...
 					bp::no_init)
 		.def("get_topological_section_feature",

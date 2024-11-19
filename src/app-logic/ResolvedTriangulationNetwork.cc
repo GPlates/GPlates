@@ -1090,12 +1090,6 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 		insert_start_face = vertex_handle->face();
 	}
 
-	//
-	// Note that we don't need to initialise the faces.
-	//
-	// They get initialised when/if they are first accessed.
-	//
-
 	// If this deforming network represents a rift then adaptively refine the
 	// Delaunay triangulation by inserting new vertices along subdivided edges with
 	// velocities that result in a non-uniform strain rate profile across the rift
@@ -1104,6 +1098,23 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 	if (d_build_info.rift_params)
 	{
 		refine_rift_delaunay_2(d_build_info.rift_params.get(), vertex_index);
+	}
+
+	//
+	// Assign face indices to all faces in the Delaunay triangulation.
+	//
+	// NOTE: This should only be done once the delaunay triangulation has been completely built.
+	//       For example, no more vertices should be inserted after this.
+	//
+	unsigned int face_index = 0;
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
+			finite_faces_2_iter = d_delaunay_2->finite_faces_begin();
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
+			finite_faces_2_end = d_delaunay_2->finite_faces_end();
+	for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter)
+	{
+		finite_faces_2_iter->set_face_index(face_index);
+		++face_index;
 	}
 }
 

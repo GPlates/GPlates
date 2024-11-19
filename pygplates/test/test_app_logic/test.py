@@ -3001,11 +3001,13 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         interior_rigid_blocks = resolved_topological_network.get_rigid_blocks()
         self.assertTrue(len(interior_rigid_blocks) == 0)
 
-        # Test deforming triangulation.
-        deforming_triangulation = resolved_topological_network.get_deforming_triangulation()
-        triangles = deforming_triangulation.get_triangles()
-        self.assertTrue(len(triangles) == 13)
-        vertices = deforming_triangulation.get_vertices()
+        # Test network triangulation.
+        network_triangulation = resolved_topological_network.get_network_triangulation()
+        triangles = network_triangulation.get_triangles()
+        # There are 22 triangles in the Delaunay triangulation but only 13 in the deforming region.
+        self.assertTrue(len(triangles) == 22)
+        self.assertTrue(len([tri for tri in triangles if tri.is_in_deforming_region]) == 13)
+        vertices = network_triangulation.get_vertices()
         self.assertTrue(len(vertices) == 15)
         for triangle_index, triangle in enumerate(triangles):
             self.assertTrue(triangle == triangles[triangle_index])
@@ -3015,12 +3017,13 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         for vertex_index, vertex in enumerate(vertices):
             self.assertTrue(vertex == vertices[vertex_index])
             vertex.position  # just access
-            self.assertTrue(vertex.velocity == pygplates.Vector3D.zero)
             self.assertTrue(vertex.strain_rate == pygplates.StrainRate.zero)
-        # Test with parameters.
-        deforming_triangulation = resolved_topological_network.get_deforming_triangulation(
-            velocity_delta_time=1.0, velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
-            velocity_units=pygplates.VelocityUnits.kms_per_my, earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms)
+            self.assertTrue(vertex.get_velocity() == pygplates.Vector3D.zero)
+            # Test velocity with parameters.
+            self.assertTrue(vertex.get_velocity(
+                velocity_delta_time=1.0, velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
+                velocity_units=pygplates.VelocityUnits.kms_per_my, earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms
+            ) == pygplates.Vector3D.zero)
 
         # Test point location/velocity/strain-rate and reconstructed point.
         point_inside_network = pygplates.PointOnSphere(0, -60)  # point is inside network
