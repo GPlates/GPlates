@@ -20,6 +20,7 @@
 #ifndef GPLATES_API_PY_NETWORK_TRIANGULATION_H
 #define GPLATES_API_PY_NETWORK_TRIANGULATION_H
 
+#include <cstdlib> // For std::size_t
 #include <vector>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
@@ -68,6 +69,14 @@ namespace GPlatesApi
 						d_face_handle == other.d_face_handle;
 			}
 
+			std::size_t
+			hash() const
+			{
+				// Use the hash of the face handle.
+				return std::hash<GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle>{}(d_face_handle);
+			}
+
+
 			Vertex
 			get_vertex(
 					int index) const;
@@ -107,6 +116,13 @@ namespace GPlatesApi
 			{
 				return d_resolved_topological_network == other.d_resolved_topological_network &&
 					d_vertex_handle == other.d_vertex_handle;
+			}
+
+			std::size_t
+			hash() const
+			{
+				// Use the hash of the vertex handle.
+				return std::hash<GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle>{}(d_vertex_handle);
 			}
 
 			GPlatesMaths::PointOnSphere

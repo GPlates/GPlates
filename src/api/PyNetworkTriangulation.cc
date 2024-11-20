@@ -231,7 +231,7 @@ export_network_triangulation()
 						"Triangle",
 						"A triangle in a :class:`network triangulation <NetworkTriangulation>`.\n"
 						"\n"
-						"Triangles are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
+						"Triangles are equality (``==``, ``!=``) comparable and hashable (can be used as a key in a ``dict``).\n"
 						"\n"
 						".. seealso:: :ref:`pygplates_primer_network_triangulation` in the *Primer* documentation."
 						"\n"
@@ -271,9 +271,8 @@ export_network_triangulation()
 					"  :type: :class:`StrainRate`\n"
 					"\n"
 					"  .. note:: This will be ``pygplates.StrainRate.zero`` if this triangle is *not* :attr:`deforming <is_in_deforming_region>`.\n")
-			// Due to the numerical tolerance in comparisons we cannot make hashable.
-			// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
-			.def(GPlatesApi::NoHashDefVisitor(false, true))
+			// Make hashable based on the Delaunay face handle.
+			.def("__hash__", &GPlatesApi::NetworkTriangulation::Triangle::hash)
 			.def(bp::self == bp::self)
 			.def(bp::self != bp::self)
 		;
@@ -302,7 +301,7 @@ export_network_triangulation()
 						"Vertex",
 						"A vertex in a :class:`network triangulation <NetworkTriangulation>`.\n"
 						"\n"
-						"Vertices are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
+						"Vertices are equality (``==``, ``!=``) comparable and hashable (can be used as a key in a ``dict``).\n"
 						"\n"
 						".. seealso:: :ref:`pygplates_primer_network_triangulation` in the *Primer* documentation."
 						"\n"
@@ -344,9 +343,8 @@ export_network_triangulation()
 					"\n"
 					"  .. note:: This is the area-averaged strain rate of :attr:`deforming <NetworkTriangulation.Triangle.is_in_deforming_region>` "
 					"triangles incident to this vertex.\n")
-			// Due to the numerical tolerance in comparisons we cannot make hashable.
-			// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
-			.def(GPlatesApi::NoHashDefVisitor(false, true))
+			// Make hashable based on the Delaunay vertex handle.
+			.def("__hash__", &GPlatesApi::NetworkTriangulation::Vertex::hash)
 			.def(bp::self == bp::self)
 			.def(bp::self != bp::self)
 		;

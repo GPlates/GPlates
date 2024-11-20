@@ -3009,11 +3009,22 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         self.assertTrue(len([tri for tri in triangles if tri.is_in_deforming_region]) == 13)
         vertices = network_triangulation.get_vertices()
         self.assertTrue(len(vertices) == 15)
+        # Can use vertices and triangles as keys in a dict.
+        vertex_to_triangles_dict = {}  # mapping of each vertex to all triangles referencing it
+        triangle_to_vertices_dict = {}  # mapping of each triangles to its three vertices
         for triangle_index, triangle in enumerate(triangles):
             self.assertTrue(triangle == triangles[triangle_index])
+            triangle_to_vertices_dict[triangle] = []
             for index in range(3):
-                self.assertTrue(triangle.get_vertex(index) in vertices)
+                triangle_vertex = triangle.get_vertex(index)
+                self.assertTrue(triangle_vertex in vertices)
+                triangle_to_vertices_dict[triangle].append(triangle_vertex)
+                vertex_to_triangles_dict.setdefault(triangle_vertex, []).append(triangle)
             self.assertTrue(triangle.strain_rate == pygplates.StrainRate.zero)
+        self.assertTrue(len(triangle_to_vertices_dict) == len(triangles))
+        self.assertTrue(len(vertex_to_triangles_dict) == len(vertices))
+        self.assertTrue(sum(len(triangle_to_vertices_dict[t]) for t in triangles) == 3 * len(triangles))
+        self.assertTrue(sum(len(vertex_to_triangles_dict[v]) for v in vertices) == 3 * len(triangles))
         for vertex_index, vertex in enumerate(vertices):
             self.assertTrue(vertex == vertices[vertex_index])
             vertex.position  # just access
