@@ -85,6 +85,7 @@ void export_top_level_property();
 void export_calculate_velocities();
 void export_strain();
 void export_net_rotation();
+void export_network_triangulation();
 void export_plate_partitioner();
 void export_reconstruct();
 void export_reconstruct_model();
@@ -207,6 +208,7 @@ export_cpp_python_api()
 	export_reconstruct();
 	export_reconstruct_model();
 	export_reconstruct_snapshot();
+	export_network_triangulation();  // Must be called for 'export_reconstruction_geometries'.
 	export_reconstruction_geometries();
 	export_reconstruction_tree();
 	export_resolve_topologies();
