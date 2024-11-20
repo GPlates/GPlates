@@ -24,8 +24,6 @@
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
-#include "global/AssertionFailureException.h"
-#include "global/GPlatesAssert.h"
 #include "global/python.h"
 
 #include "utils/Earth.h"
@@ -34,8 +32,8 @@
 namespace bp = boost::python;
 
 
-unsigned int
-GPlatesApi::NetworkTriangulation::Triangle::get_vertex_index(
+GPlatesApi::NetworkTriangulation::Vertex
+GPlatesApi::NetworkTriangulation::Triangle::get_vertex(
 		int index) const
 {
 	if (index < 0 || index >= 3)
@@ -44,7 +42,7 @@ GPlatesApi::NetworkTriangulation::Triangle::get_vertex_index(
 		bp::throw_error_already_set();
 	}
 
-	return d_face_handle->vertex(index)->get_vertex_index();
+	return Vertex(d_resolved_topological_network, d_face_handle->vertex(index));
 }
 
 
@@ -99,9 +97,9 @@ template GPlatesApi::NetworkTriangulation::ItemsView<GPlatesApi::NetworkTriangul
 
 GPlatesApi::NetworkTriangulation::non_null_ptr_type
 GPlatesApi::NetworkTriangulation::create(
-		GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_topological_network)
+		GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network)
 {
-	non_null_ptr_type network_triangulation(new NetworkTriangulation(resolved_topological_network));
+	non_null_ptr_type network_triangulation(new NetworkTriangulation());
 
 	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation_2 =
 			resolved_topological_network->get_triangulation_network().get_delaunay_2();
@@ -110,9 +108,9 @@ GPlatesApi::NetworkTriangulation::create(
 	const unsigned int num_faces = delaunay_triangulation_2.number_of_faces();
 	const unsigned int num_vertices = delaunay_triangulation_2.number_of_vertices();
 
-	// Resize triangle and vertex arrays to fit.
-	network_triangulation->d_triangles.resize(num_faces);
-	network_triangulation->d_vertices.resize(num_vertices);
+	// Reserve triangle and vertex arrays.
+	network_triangulation->d_triangles.reserve(num_faces);
+	network_triangulation->d_vertices.reserve(num_vertices);
 
 	// Iterate over the individual faces of the delaunay triangulation.
 	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
@@ -122,16 +120,10 @@ GPlatesApi::NetworkTriangulation::create(
 	for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter)
 	{
 		// Create the triangle.
-		const Triangle triangle(network_triangulation, finite_faces_2_iter);
-
-		// Index of triangle in the triangulation.
-		const unsigned int face_index = finite_faces_2_iter->get_face_index();
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				face_index < network_triangulation->d_triangles.size(),
-				GPLATES_ASSERTION_SOURCE);
+		const Triangle triangle(resolved_topological_network, finite_faces_2_iter);
 
 		// Add the triangle.
-		network_triangulation->d_triangles[face_index] = triangle;
+		network_triangulation->d_triangles.push_back(triangle);
 	}
 
 	// Iterate over the vertices of the delaunay triangulation.
@@ -142,16 +134,10 @@ GPlatesApi::NetworkTriangulation::create(
 	for ( ; finite_vertices_2_iter != finite_vertices_2_end; ++finite_vertices_2_iter)
 	{
 		// Create the vertex.
-		const Vertex vertex(network_triangulation, finite_vertices_2_iter);
-
-		// Index of vertex in the triangulation.
-		const unsigned int vertex_index = finite_vertices_2_iter->get_vertex_index();
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				vertex_index < network_triangulation->d_vertices.size(),
-				GPLATES_ASSERTION_SOURCE);
+		const Vertex vertex(resolved_topological_network, finite_vertices_2_iter);
 
 		// Add the vertex.
-		network_triangulation->d_vertices[vertex_index] = vertex;
+		network_triangulation->d_vertices.push_back(vertex);
 	}
 
 	return network_triangulation;
@@ -200,12 +186,11 @@ export_network_triangulation()
 					"  ::\n"
 					"\n"
 					"    network_triangulation = resolved_topological_network.get_network_triangulation()\n"
-					"    triangles = network_triangulation.get_triangles()\n"
-					"    vertices = network_triangulation.get_vertices()\n"
-					"    for triangle in triangles:\n"
-					"        triangle_vertex_0 = vertices[triangle.get_vertex_index(0)]\n"
-					"        triangle_vertex_1 = vertices[triangle.get_vertex_index(1)]\n"
-					"        triangle_vertex_2 = vertices[triangle.get_vertex_index(2)]\n"
+					"    for triangle in network_triangulation.get_triangles():\n"
+					"        triangle_vertex_0 = triangle.get_vertex(0)\n"
+					"        triangle_vertex_1 = triangle.get_vertex(1)\n"
+					"        triangle_vertex_2 = triangle.get_vertex(2)\n"
+					"        triangle_is_in_deforming_region = triangle.is_in_deforming_region\n"
 					"        triangle_strain_rate = triangle.strain_rate\n"
 					"\n"
 					"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
@@ -230,8 +215,7 @@ export_network_triangulation()
 					"  ::\n"
 					"\n"
 					"    network_triangulation = resolved_topological_network.get_network_triangulation()\n"
-					"    vertices = network_triangulation.get_vertices()\n"
-					"    for vertex in vertices:\n"
+					"    for vertex in network_triangulation.get_vertices():\n"
 					"        vertex_position = vertex.position\n"
 					"        vertex_strain_rate = vertex.strain_rate\n"
 					"        vertex_velocity = vertex.get_velocity()\n"
@@ -253,28 +237,25 @@ export_network_triangulation()
 						"\n"
 						".. versionadded:: 0.50\n",
 						bp::no_init)
-			.def("get_vertex_index",
-					&GPlatesApi::NetworkTriangulation::Triangle::get_vertex_index,
+			.def("get_vertex",
+					&GPlatesApi::NetworkTriangulation::Triangle::get_vertex,
 					(bp::arg("index")),
-					"get_vertex_index(index)\n"
-					"  Returns the vertex index into :meth:`NetworkTriangulation.get_vertices` of one of this triangle's three vertices.\n"
+					"get_vertex(index)\n"
+					"  Returns one of this triangle's three vertices.\n"
 					"\n"
 					"  :param index: the index of this triangle's vertex (in the range [0, 2])\n"
 					"  :type index: int\n"
-					"  :rtype: int\n"
+					"  :rtype: :class:`NetworkTriangulation.Vertex`\n"
 					"  :raises: ValueError if *index* is not in the range [0, 2]\n"
 					"\n"
-					"  The following example demonstrates how to access the :meth:`triangulation vertices <NetworkTriangulation.get_vertices>` "
-					"from a triangle's vertex indices:\n"
+					"  To access the three vertices of each triangle in a network triangulation:\n"
 					"  ::\n"
 					"\n"
 					"    network_triangulation = resolved_topological_network.get_network_triangulation()\n"
-					"    triangles = network_triangulation.get_triangles()\n"
-					"    vertices = network_triangulation.get_vertices()\n"
-					"    for triangle in triangles:\n"
-					"        triangle_vertex_0 = vertices[triangle.get_vertex_index(0)]\n"
-					"        triangle_vertex_1 = vertices[triangle.get_vertex_index(1)]\n"
-					"        triangle_vertex_2 = vertices[triangle.get_vertex_index(2)]\n")
+					"    for triangle in network_triangulation.get_triangles():\n"
+					"        triangle_vertex_0 = triangle.get_vertex(0)\n"
+					"        triangle_vertex_1 = triangle.get_vertex(1)\n"
+					"        triangle_vertex_2 = triangle.get_vertex(2)\n")
 			.add_property("is_in_deforming_region",
 					&GPlatesApi::NetworkTriangulation::Triangle::is_in_deforming_region,
 					"Whether this triangle is *in* the deforming region of the network.\n"

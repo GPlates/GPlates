@@ -47,14 +47,16 @@ namespace GPlatesApi
 		typedef GPlatesUtils::non_null_intrusive_ptr<const NetworkTriangulation> non_null_ptr_to_const_type;
 
 
+		class Vertex;  // forward declaration
+
 		class Triangle :
 				public boost::equality_comparable<Triangle>
 		{
 		public:
 			Triangle(
-					NetworkTriangulation::non_null_ptr_to_const_type triangulation,
+					GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network,
 					const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle &face_handle) :
-				d_triangulation(triangulation),
+				d_resolved_topological_network(resolved_topological_network),
 				d_face_handle(face_handle)
 			{  }
 
@@ -62,12 +64,12 @@ namespace GPlatesApi
 			operator==(
 					const Triangle &other) const
 			{
-				return d_triangulation == other.d_triangulation &&
+				return d_resolved_topological_network == other.d_resolved_topological_network &&
 						d_face_handle == other.d_face_handle;
 			}
 
-			unsigned int
-			get_vertex_index(
+			Vertex
+			get_vertex(
 					int index) const;
 
 			bool
@@ -83,7 +85,8 @@ namespace GPlatesApi
 			}
 
 		private:
-			NetworkTriangulation::non_null_ptr_to_const_type d_triangulation;  // keep alive
+			// Keep resolved topological network alive since we're referencing an internal handle that it owns.
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type d_resolved_topological_network;
 			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle d_face_handle;
 		};
 
@@ -92,9 +95,9 @@ namespace GPlatesApi
 		{
 		public:
 			Vertex(
-					NetworkTriangulation::non_null_ptr_to_const_type triangulation,
+					GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network,
 					const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle &vertex_handle) :
-				d_triangulation(triangulation),
+				d_resolved_topological_network(resolved_topological_network),
 				d_vertex_handle(vertex_handle)
 			{  }
 
@@ -102,8 +105,8 @@ namespace GPlatesApi
 			operator==(
 					const Vertex &other) const
 			{
-				return d_triangulation == other.d_triangulation &&
-						d_vertex_handle == other.d_vertex_handle;
+				return d_resolved_topological_network == other.d_resolved_topological_network &&
+					d_vertex_handle == other.d_vertex_handle;
 			}
 
 			GPlatesMaths::PointOnSphere
@@ -126,7 +129,8 @@ namespace GPlatesApi
 			}
 
 		private:
-			NetworkTriangulation::non_null_ptr_to_const_type d_triangulation;  // keep alive
+			// Keep resolved topological network alive since we're referencing an internal handle that it owns.
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type d_resolved_topological_network;
 			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle d_vertex_handle;
 		};
 
@@ -194,7 +198,7 @@ namespace GPlatesApi
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_topological_network);
+				GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network);
 
 
 		/**
@@ -241,15 +245,6 @@ namespace GPlatesApi
 		}
 
 	private:
-
-		explicit
-		NetworkTriangulation(
-				GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_topological_network) :
-			d_resolved_topological_network(resolved_topological_network)
-		{  }
-
-		// Keep the ResolvedTopologicalNetwork alive since we reference its internal Delaunay triangulation.
-		GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type d_resolved_topological_network;
 
 		std::vector<boost::optional<Triangle>> d_triangles;
 		std::vector<boost::optional<Vertex>> d_vertices;
