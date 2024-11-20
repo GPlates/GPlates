@@ -46,6 +46,30 @@ GPlatesApi::NetworkTriangulation::Triangle::get_vertex(
 }
 
 
+boost::optional<GPlatesApi::NetworkTriangulation::Triangle>
+GPlatesApi::NetworkTriangulation::Triangle::get_adjacent_triangle(
+		int index) const
+{
+	if (index < 0 || index >= 3)
+	{
+		PyErr_SetString(PyExc_ValueError, "*index* should be in the range [0, 2]");
+		bp::throw_error_already_set();
+	}
+
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle
+			adjacent_face_handle = d_face_handle->neighbor(index);
+
+	// Return none if the triangle edge (opposite vertex at 'index') is a boundary edge
+	// of the network triangulation (convex hull edge).
+	if (d_face_handle->get_delaunay_2().is_infinite(adjacent_face_handle))
+	{
+		return boost::none;
+	}
+
+	return Triangle(d_resolved_topological_network, adjacent_face_handle);
+}
+
+
 GPlatesMaths::Vector3D
 GPlatesApi::NetworkTriangulation::Vertex::get_velocity(
 		const double &velocity_delta_time,
@@ -186,12 +210,14 @@ export_network_triangulation()
 					"  ::\n"
 					"\n"
 					"    network_triangulation = resolved_topological_network.get_network_triangulation()\n"
-					"    for triangle in network_triangulation.get_triangles():\n"
-					"        triangle_vertex_0 = triangle.get_vertex(0)\n"
-					"        triangle_vertex_1 = triangle.get_vertex(1)\n"
-					"        triangle_vertex_2 = triangle.get_vertex(2)\n"
-					"        triangle_is_in_deforming_region = triangle.is_in_deforming_region\n"
-					"        triangle_strain_rate = triangle.strain_rate\n"
+					"    triangles = network_triangulation.get_triangles()\n"
+					"\n"
+					"    for triangle in triangles:\n"
+					"        ...\n"
+					"\n"
+					"    num_triangles = len(triangles)\n"
+					"    for triangle_index in range(num_triangles):\n"
+					"       triangle = triangles[triangle_index]\n"
 					"\n"
 					"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
 			.def("get_vertices",
@@ -215,10 +241,14 @@ export_network_triangulation()
 					"  ::\n"
 					"\n"
 					"    network_triangulation = resolved_topological_network.get_network_triangulation()\n"
-					"    for vertex in network_triangulation.get_vertices():\n"
-					"        vertex_position = vertex.position\n"
-					"        vertex_strain_rate = vertex.strain_rate\n"
-					"        vertex_velocity = vertex.get_velocity()\n"
+					"    vertices = network_triangulation.get_vertices()\n"
+					"\n"
+					"    for vertex in vertices:\n"
+					"        ...\n"
+					"\n"
+					"    num_vertices = len(vertices)\n"
+					"    for vertex_index in range(num_vertices):\n"
+					"       vertex = vertices[vertex_index]\n"
 					"\n"
 					"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
 		;
@@ -248,14 +278,31 @@ export_network_triangulation()
 					"  :rtype: :class:`NetworkTriangulation.Vertex`\n"
 					"  :raises: ValueError if *index* is not in the range [0, 2]\n"
 					"\n"
-					"  To access the three vertices of each triangle in a network triangulation:\n"
+					"  To access the three vertices of a triangle in a network triangulation:\n"
 					"  ::\n"
 					"\n"
-					"    network_triangulation = resolved_topological_network.get_network_triangulation()\n"
-					"    for triangle in network_triangulation.get_triangles():\n"
-					"        triangle_vertex_0 = triangle.get_vertex(0)\n"
-					"        triangle_vertex_1 = triangle.get_vertex(1)\n"
-					"        triangle_vertex_2 = triangle.get_vertex(2)\n")
+					"     for index in range(3):\n"
+					"        triangle_vertex = triangle.get_vertex(index)\n")
+			.def("get_adjacent_triangle",
+					&GPlatesApi::NetworkTriangulation::Triangle::get_adjacent_triangle,
+					(bp::arg("index")),
+					"get_adjacent_triangle(index)\n"
+					"  Returns the triangle adjacent to this triangle that is opposite the vertex at the specified index.\n"
+					"\n"
+					"  :param index: the index of this triangle's vertex (in the range [0, 2])\n"
+					"  :type index: int\n"
+					"  :returns: the adjacent network triangle, or ``None`` if the triangle edge that is opposite the vertex "
+					"at *index* is a boundary edge of the network triangulation (ie, a convex hull edge)\n"
+					"  :rtype: :class:`NetworkTriangulation.Triangle` or ``None``\n"
+					"  :raises: ValueError if *index* is not in the range [0, 2]\n"
+					"\n"
+					"  To access the three adjacent triangles of a triangle in a network triangulation:\n"
+					"  ::\n"
+					"\n"
+					"     for index in range(3):\n"
+					"        triangle_opposite_vertex_at_index = triangle.get_adjacent_triangle(index)\n"
+					"        if triangle_opposite_vertex_at_index:  # if not at a triangulation boundary\n"
+					"            ...\n")
 			.add_property("is_in_deforming_region",
 					&GPlatesApi::NetworkTriangulation::Triangle::is_in_deforming_region,
 					"Whether this triangle is *in* the deforming region of the network.\n"

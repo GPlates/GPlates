@@ -3005,26 +3005,37 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         network_triangulation = resolved_topological_network.get_network_triangulation()
         triangles = network_triangulation.get_triangles()
         # There are 22 triangles in the Delaunay triangulation but only 13 in the deforming region.
-        self.assertTrue(len(triangles) == 22)
-        self.assertTrue(len([tri for tri in triangles if tri.is_in_deforming_region]) == 13)
+        num_triangles = 22
+        num_deforming_triangles = 13
+        num_deforming_triangulation_boundary_edges = 15  # triangle edges bounding the *deforming* triangulation
+        self.assertTrue(len(triangles) == num_triangles)
+        deforming_triangles = [tri for tri in triangles if tri.is_in_deforming_region]
+        self.assertTrue(len(deforming_triangles) == num_deforming_triangles)
         vertices = network_triangulation.get_vertices()
         self.assertTrue(len(vertices) == 15)
-        # Can use vertices and triangles as keys in a dict.
+        # Can use vertices as keys in a dict.
         vertex_to_triangles_dict = {}  # mapping of each vertex to all triangles referencing it
-        triangle_to_vertices_dict = {}  # mapping of each triangles to its three vertices
         for triangle_index, triangle in enumerate(triangles):
             self.assertTrue(triangle == triangles[triangle_index])
-            triangle_to_vertices_dict[triangle] = []
             for index in range(3):
                 triangle_vertex = triangle.get_vertex(index)
                 self.assertTrue(triangle_vertex in vertices)
-                triangle_to_vertices_dict[triangle].append(triangle_vertex)
                 vertex_to_triangles_dict.setdefault(triangle_vertex, []).append(triangle)
             self.assertTrue(triangle.strain_rate == pygplates.StrainRate.zero)
-        self.assertTrue(len(triangle_to_vertices_dict) == len(triangles))
         self.assertTrue(len(vertex_to_triangles_dict) == len(vertices))
-        self.assertTrue(sum(len(triangle_to_vertices_dict[t]) for t in triangles) == 3 * len(triangles))
-        self.assertTrue(sum(len(vertex_to_triangles_dict[v]) for v in vertices) == 3 * len(triangles))
+        self.assertTrue(sum(len(vertex_to_triangles_dict[v]) for v in vertices) == 3 * num_triangles)
+        # Can use triangles as keys in a dict.
+        deforming_triangle_to_adjacent_deforming_triangles_dict = {}  # mapping of each *deforming* triangle to its adjacent *deforming* triangles
+        for deforming_triangle in deforming_triangles:
+            deforming_triangle_to_adjacent_deforming_triangles_dict[deforming_triangle] = []
+            for index in range(3):
+                adjacent_triangle = deforming_triangle.get_adjacent_triangle(index)
+                if (adjacent_triangle and                       # if adjacent triangle is not at a triangulation boundary
+                    adjacent_triangle.is_in_deforming_region):  # if adjacent triangle is deforming
+                    deforming_triangle_to_adjacent_deforming_triangles_dict[deforming_triangle].append(adjacent_triangle)
+        self.assertTrue(len(deforming_triangle_to_adjacent_deforming_triangles_dict) == num_deforming_triangles)
+        self.assertTrue(sum(len(deforming_triangle_to_adjacent_deforming_triangles_dict[t]) for t in deforming_triangles) ==
+                        3 * num_deforming_triangles - num_deforming_triangulation_boundary_edges)  # no adjacent triangles at the boundary
         for vertex_index, vertex in enumerate(vertices):
             self.assertTrue(vertex == vertices[vertex_index])
             vertex.position  # just access

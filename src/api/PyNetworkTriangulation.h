@@ -30,6 +30,8 @@
 #include "app-logic/VelocityDeltaTime.h"
 #include "app-logic/VelocityUnits.h"
 
+#include "global/python.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -77,8 +79,21 @@ namespace GPlatesApi
 			}
 
 
+			/**
+			 * Get triangle vertex at 'index' (in range[0, 2]).
+			 */
 			Vertex
 			get_vertex(
+					int index) const;
+
+			/**
+			 * Get adjacent triangle opposite triangle vertex at 'index' (in range[0, 2]).
+			 *
+			 * Returns none if the triangle edge (opposite vertex at 'index') is a boundary edge
+			 * of the network triangulation (convex hull edge).
+			 */
+			boost::optional<Triangle>
+			get_adjacent_triangle(
 					int index) const;
 
 			bool

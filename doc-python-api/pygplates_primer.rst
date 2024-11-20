@@ -1346,19 +1346,21 @@ A network triangulation is represented by a :class:`pygplates.NetworkTriangulati
    network_triangulation = resolved_topological_network.get_network_triangulation()
 
 It consists of a sequence of vertices and a sequence of triangles. Each vertex is represented by a :class:`pygplates.NetworkTriangulation.Vertex` and contains a position,
-a velocity, and a strain rate. Each triangle is represented by a :class:`pygplates.NetworkTriangulation.Triangle` and contains three vertices, a flag indicating whether
-it's deforming or not, and a strain rate.
+a velocity, and a strain rate. Each triangle is represented by a :class:`pygplates.NetworkTriangulation.Triangle` and contains a flag indicating whether it's deforming or not,
+and contains a strain rate, and references three vertices and three adjacent triangles.
 ::
 
    triangles = network_triangulation.get_triangles()
    vertices = network_triangulation.get_vertices()
 
    for triangle in triangles:
-      triangle_vertex_0 = triangle.get_vertex(0)
-      triangle_vertex_1 = triangle.get_vertex(1)
-      triangle_vertex_2 = triangle.get_vertex(2)
       triangle_is_in_deforming_region = triangle.is_in_deforming_region
       triangle_strain_rate = triangle.strain_rate
+      for index in range(3):
+         triangle_vertex = triangle.get_vertex(index))
+         adjacent_triangle = triangle.get_adjacent_triangle(index)
+         if adjacent_triangle:  # if not at a triangulation boundary
+            ...
 
    for vertex in vertices:
       vertex_position = vertex.position
