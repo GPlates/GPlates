@@ -96,6 +96,7 @@ namespace GPlatesApi
 			get_adjacent_triangle(
 					int index) const;
 
+
 			bool
 			is_in_deforming_region() const
 			{
@@ -139,6 +140,21 @@ namespace GPlatesApi
 				// Use the hash of the vertex handle.
 				return std::hash<GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle>{}(d_vertex_handle);
 			}
+
+
+
+			/**
+			 * Return list of vertices incident to this vertex.
+			 */
+			boost::python::list
+			get_incident_vertices() const;
+
+			/**
+			 * Return list of triangles incident to this vertex.
+			 */
+			boost::python::list
+			get_incident_triangles() const;
+
 
 			GPlatesMaths::PointOnSphere
 			get_position() const

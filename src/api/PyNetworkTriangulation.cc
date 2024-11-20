@@ -59,9 +59,12 @@ GPlatesApi::NetworkTriangulation::Triangle::get_adjacent_triangle(
 	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle
 			adjacent_face_handle = d_face_handle->neighbor(index);
 
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation =
+			d_face_handle->get_delaunay_2();
+
 	// Return none if the triangle edge (opposite vertex at 'index') is a boundary edge
 	// of the network triangulation (convex hull edge).
-	if (d_face_handle->get_delaunay_2().is_infinite(adjacent_face_handle))
+	if (delaunay_triangulation.is_infinite(adjacent_face_handle))
 	{
 		return boost::none;
 	}
@@ -89,6 +92,68 @@ GPlatesApi::NetworkTriangulation::Vertex::get_velocity(
 			velocity_delta_time_type,
 			velocity_units,
 			earth_radius_in_kms);
+}
+
+
+bp::list
+GPlatesApi::NetworkTriangulation::Vertex::get_incident_vertices() const
+{
+	bp::list incident_vertices_list;
+
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation = d_vertex_handle->get_delaunay_2();
+
+	// Iterate over the incident vertices.
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_circulator incident_vertex_circulator_start =
+			delaunay_triangulation.incident_vertices(d_vertex_handle);
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_circulator incident_vertex_circulator = incident_vertex_circulator_start;
+	do
+	{
+		const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Vertex_handle incident_vertex_handle = incident_vertex_circulator;
+
+		if (delaunay_triangulation.is_infinite(incident_vertex_handle))
+		{
+			// Ignore the infinite vertex - we're at the edge of the convex hull so one of the incident
+			// vertices will be the infinite vertex.
+			continue;
+		}
+
+		incident_vertices_list.append(
+				Vertex(d_resolved_topological_network, incident_vertex_handle));
+	}
+	while (++incident_vertex_circulator != incident_vertex_circulator_start);
+
+	return incident_vertices_list;
+}
+
+
+bp::list
+GPlatesApi::NetworkTriangulation::Vertex::get_incident_triangles() const
+{
+	bp::list incident_triangles_list;
+
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation = d_vertex_handle->get_delaunay_2();
+
+	// Iterate over the incident faces.
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_circulator incident_face_circulator_start =
+			delaunay_triangulation.incident_faces(d_vertex_handle);
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_circulator incident_face_circulator = incident_face_circulator_start;
+	do
+	{
+		const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle incident_face_handle = incident_face_circulator;
+
+		if (delaunay_triangulation.is_infinite(incident_face_handle))
+		{
+			// Ignore the infinite face - we're at the edge of the convex hull so one or two of the incident
+			// faces will be the infinite face.
+			continue;
+		}
+
+		incident_triangles_list.append(
+				Triangle(d_resolved_topological_network, incident_face_handle));
+	}
+	while (++incident_face_circulator != incident_face_circulator_start);
+
+	return incident_triangles_list;
 }
 
 
@@ -354,6 +419,18 @@ export_network_triangulation()
 						"\n"
 						".. versionadded:: 0.50\n",
 						bp::no_init)
+			.def("get_incident_vertices",
+					&GPlatesApi::NetworkTriangulation::Vertex::get_incident_vertices,
+					"get_incident_vertices()\n"
+					"  Returns the vertices incident to this vertex.\n"
+					"\n"
+					"  :rtype: list of :class:`NetworkTriangulation.Vertex`\n")
+			.def("get_incident_triangles",
+					&GPlatesApi::NetworkTriangulation::Vertex::get_incident_triangles,
+					"get_incident_triangles()\n"
+					"  Returns the triangles incident to this vertex.\n"
+					"\n"
+					"  :rtype: list of :class:`NetworkTriangulation.Triangle`\n")
 			.add_property("position",
 					&GPlatesApi::NetworkTriangulation::Vertex::get_position,
 					"Return the position of this vertex.\n"
@@ -367,7 +444,7 @@ export_network_triangulation()
 							bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS),
 					"get_velocity([velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
 					"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms])\n"
-					"Returns the velocity of this vertex.\n"
+					"  Returns the velocity of this vertex.\n"
 					"\n"
 					"  :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).\n"
 					"  :type velocity_delta_time: float\n"

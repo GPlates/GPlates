@@ -3046,6 +3046,23 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 velocity_delta_time=1.0, velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
                 velocity_units=pygplates.VelocityUnits.kms_per_my, earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms
             ) == pygplates.Vector3D.zero)
+        # Each incident vertex has itself a list of incident vertices which should contain the original vertex.
+        for vertex in vertices:
+            incident_vertices = vertex.get_incident_vertices()
+            self.assertTrue(incident_vertices)
+            for incident_vertex in incident_vertices:
+                self.assertTrue(vertex in incident_vertex.get_incident_vertices())
+        # Each incident vertex has a list of incident triangles of which each triangle should contain the original vertex.
+        for vertex in vertices:
+            incident_triangles = vertex.get_incident_triangles()
+            self.assertTrue(incident_triangles)
+            for incident_triangle in incident_triangles:
+                triangle_vertices_matching_original_vertex = 0
+                # Exactly one vertex of the incident triangle should match the original vertex.
+                for index in range(3):
+                    if incident_triangle.get_vertex(index) == vertex:
+                        triangle_vertices_matching_original_vertex += 1
+                self.assertTrue(triangle_vertices_matching_original_vertex == 1)
 
         # Test point location/velocity/strain-rate and reconstructed point.
         point_inside_network = pygplates.PointOnSphere(0, -60)  # point is inside network

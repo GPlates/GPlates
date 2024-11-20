@@ -1346,8 +1346,8 @@ A network triangulation is represented by a :class:`pygplates.NetworkTriangulati
    network_triangulation = resolved_topological_network.get_network_triangulation()
 
 It consists of a sequence of vertices and a sequence of triangles. Each vertex is represented by a :class:`pygplates.NetworkTriangulation.Vertex` and contains a position,
-a velocity, and a strain rate. Each triangle is represented by a :class:`pygplates.NetworkTriangulation.Triangle` and contains a flag indicating whether it's deforming or not,
-and contains a strain rate, and references three vertices and three adjacent triangles.
+a velocity, and a strain rate, and a list of incident vertices and incident triangles. Each triangle is represented by a :class:`pygplates.NetworkTriangulation.Triangle`
+and contains a flag indicating whether it's deforming or not, and contains a strain rate, and references three vertices and three adjacent triangles.
 ::
 
    triangles = network_triangulation.get_triangles()
@@ -1356,8 +1356,9 @@ and contains a strain rate, and references three vertices and three adjacent tri
    for triangle in triangles:
       triangle_is_in_deforming_region = triangle.is_in_deforming_region
       triangle_strain_rate = triangle.strain_rate
+
       for index in range(3):
-         triangle_vertex = triangle.get_vertex(index))
+         triangle_vertex = triangle.get_vertex(index)
          adjacent_triangle = triangle.get_adjacent_triangle(index)
          if adjacent_triangle:  # if not at a triangulation boundary
             ...
@@ -1366,6 +1367,11 @@ and contains a strain rate, and references three vertices and three adjacent tri
       vertex_position = vertex.position
       vertex_strain_rate = vertex.strain_rate
       vertex_velocity = vertex.get_velocity()  # a function optionally accepting various velocity calculation parameters
+
+      for incident_vertex in vertex.get_incident_vertices():
+         ...
+      for incident_triangle in vertex.get_incident_triangles():
+         ...
 
 .. _pygplates_primer_strain_rates_in_triangulation:
 
