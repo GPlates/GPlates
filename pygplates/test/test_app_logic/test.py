@@ -476,17 +476,34 @@ class ReconstructTestCase(unittest.TestCase):
     def test_reconstruct_feature_geometry(self):
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
         reconstruction_time = 15
+        reconstruction_plate_id = 801
         geometry = pygplates.PolylineOnSphere([(0,0), (10, 10)])
         feature = pygplates.Feature.create_reconstructable_feature(
                 pygplates.FeatureType.create_gpml('Coastline'),
                 geometry,
                 valid_time=(30, 0),
-                reconstruction_plate_id=801)
+                reconstruction_plate_id=reconstruction_plate_id)
         reconstructed_feature_geometries = []
         pygplates.reconstruct(feature, rotation_model, reconstructed_feature_geometries, reconstruction_time)
         self.assertEqual(len(reconstructed_feature_geometries), 1)
-        self.assertTrue(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())
-        self.assertTrue(geometry == reconstructed_feature_geometries[0].get_present_day_geometry())
+        reconstructed_feature_geometry = reconstructed_feature_geometries[0]
+        self.assertTrue(reconstructed_feature_geometry.get_feature().get_feature_id() == feature.get_feature_id())
+        self.assertTrue(geometry == reconstructed_feature_geometry.get_present_day_geometry())
+        reconstructed_geometry = rotation_model.get_rotation(
+            reconstructed_feature_geometry.get_reconstruction_time(),
+            reconstructed_feature_geometry.get_feature().get_reconstruction_plate_id()) * geometry
+        self.assertTrue(reconstructed_geometry == reconstructed_feature_geometry.get_reconstructed_geometry())
+        # Test reconstructed points and their velocities.
+        self.assertTrue(reconstructed_geometry == pygplates.PolylineOnSphere(reconstructed_feature_geometry.get_reconstructed_geometry_points()))
+        velocity_stage_rotation = rotation_model.get_rotation(
+            reconstructed_feature_geometry.get_reconstruction_time(),
+            reconstructed_feature_geometry.get_feature().get_reconstruction_plate_id(),
+            reconstructed_feature_geometry.get_reconstruction_time() + 1)
+        velocities = pygplates.calculate_velocities(
+            reconstructed_feature_geometry.get_reconstructed_geometry_points(),
+            velocity_stage_rotation,
+            1.0)
+        self.assertTrue(velocities == reconstructed_feature_geometry.get_reconstructed_geometry_point_velocities())
         # Test grouping with feature.
         grouped_reconstructed_feature_geometries = []
         pygplates.reconstruct(feature, rotation_model, grouped_reconstructed_feature_geometries, reconstruction_time, group_with_feature=True)
@@ -502,7 +519,7 @@ class ReconstructTestCase(unittest.TestCase):
                 pygplates.FeatureType.create_gpml('Coastline'),
                 geometry,
                 valid_time=(30, 0),
-                reconstruction_plate_id=801,
+                reconstruction_plate_id=reconstruction_plate_id,
                 reverse_reconstruct=(rotation_model, reconstruction_time))
         geometry_at_present_day = feature.get_geometry()
         reconstructed_feature_geometries = []
@@ -544,6 +561,11 @@ class ReconstructTestCase(unittest.TestCase):
         for index, reconstructed_flowline in enumerate(reconstructed_flowlines):
             self.assertTrue(reconstructed_flowline.get_feature().get_feature_id() == flowline_feature.get_feature_id())
             self.assertTrue(seed_points[index] == reconstructed_flowline.get_present_day_seed_point())
+            # First point in left/right flowline is reconstructed seed point.
+            self.assertTrue(reconstructed_flowline.get_left_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
+            self.assertTrue(reconstructed_flowline.get_right_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
+            # Should have non-zero velocity at reconstructed seed point
+            self.assertTrue(reconstructed_flowline.get_reconstructed_seed_point_velocity() != pygplates.Vector3D.zero)
         
         # Test reverse reconstruction.
         seed_points_at_reconstruction_time = pygplates.MultiPointOnSphere([(0,0), (0,90)])
@@ -594,6 +616,10 @@ class ReconstructTestCase(unittest.TestCase):
         for index, reconstructed_motion_path in enumerate(reconstructed_motion_paths):
             self.assertTrue(reconstructed_motion_path.get_feature().get_feature_id() == motion_path_feature.get_feature_id())
             self.assertTrue(seed_points[index] == reconstructed_motion_path.get_present_day_seed_point())
+            # Last point in motion path is reconstructed seed point.
+            self.assertTrue(reconstructed_motion_path.get_motion_path()[-1] == reconstructed_motion_path.get_reconstructed_seed_point())
+            # Should have non-zero velocity at reconstructed seed point
+            self.assertTrue(reconstructed_motion_path.get_reconstructed_seed_point_velocity() != pygplates.Vector3D.zero)
         
         # Test reverse reconstruction.
         seed_points_at_reconstruction_time = pygplates.MultiPointOnSphere([(0,0), (0,90)])

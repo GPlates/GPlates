@@ -104,11 +104,11 @@ GPlatesAppLogic::ResolvedVertexSourceInfo::create_source_from_reconstruction_pro
 			reconstruction_properties->get_reconstruction_tree_creator();
 
 	// Everything reconstructs either by plate ID or using half stage rotations.
-	// If it's not reconstructed by half stage rotations then it defaults to by-plate-ID.
+	// If it's not reconstructed by half stage rotations (which includes flowlines) then it defaults to by-plate-ID.
 	//
-	// Note that the topology builder tools now only allow RFGs by-plate-id and by-half-stage-rotation,
-	// so these shouldn't occur in practice (but could if constructed outside GPlates somehow).
-	if (reconstruction_properties->get_reconstruct_method_type() == ReconstructMethod::HALF_STAGE_ROTATION)
+	// Note that the topology builder tools now only allow RFGs by-plate-id and by-half-stage-rotation.
+	if (reconstruction_properties->get_reconstruct_method_type() == ReconstructMethod::HALF_STAGE_ROTATION ||
+		reconstruction_properties->get_reconstruct_method_type() == ReconstructMethod::FLOWLINE)
 	{
 		// Reconstruct using half-stage rotations.
 		return source_type(HalfStageRotationProperties(reconstruction_tree_creator, reconstruction_properties));

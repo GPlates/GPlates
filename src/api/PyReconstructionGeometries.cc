@@ -584,6 +584,49 @@ namespace GPlatesApi
 	{
 		return reconstructed_feature_geometry.reconstructed_geometry();
 	}
+
+	bp::list
+	reconstructed_feature_geometry_get_reconstructed_geometry_points(
+			const GPlatesAppLogic::ReconstructedFeatureGeometry &reconstructed_feature_geometry)
+	{
+		bp::list reconstructed_geometry_points_list;
+
+		GPlatesAppLogic::ReconstructedFeatureGeometry::point_seq_type reconstructed_geometry_points_;
+		reconstructed_feature_geometry.reconstructed_geometry_points(reconstructed_geometry_points_);
+
+		for (const auto &point : reconstructed_geometry_points_)
+		{
+			reconstructed_geometry_points_list.append(point);
+		}
+
+		return reconstructed_geometry_points_list;
+	}
+
+	bp::list
+	reconstructed_feature_geometry_get_reconstructed_geometry_point_velocities(
+			const GPlatesAppLogic::ReconstructedFeatureGeometry &reconstructed_feature_geometry,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms)
+	{
+		bp::list reconstructed_geometry_point_velocities_list;
+
+		GPlatesAppLogic::ReconstructedFeatureGeometry::velocity_seq_type reconstructed_geometry_point_velocities_;
+		reconstructed_feature_geometry.reconstructed_geometry_point_velocities(
+				reconstructed_geometry_point_velocities_,
+				velocity_delta_time,
+				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms);
+
+		for (const auto &velocity : reconstructed_geometry_point_velocities_)
+		{
+			reconstructed_geometry_point_velocities_list.append(velocity);
+		}
+
+		return reconstructed_geometry_point_velocities_list;
+	}
 }
 
 
@@ -642,6 +685,79 @@ export_reconstructed_feature_geometry()
 				"  Returns the reconstructed geometry.\n"
 				"\n"
 				"  :rtype: :class:`GeometryOnSphere`\n")
+		.def("get_reconstructed_geometry_points",
+				&GPlatesApi::reconstructed_feature_geometry_get_reconstructed_geometry_points,
+				"get_reconstructed_geometry_points()\n"
+				"  Returns the points of the :meth:`reconstructed geometry <get_reconstructed_geometry>`.\n"
+				"\n"
+				"  :rtype: list :class:`PointOnSphere`\n"
+				"\n"
+				"  This method is *essentially* equivalent to:\n"
+				"  ::\n"
+				"\n"
+				"     def get_reconstructed_geometry_points(reconstructed_feature_geometry):\n"
+				"         return reconstructed_feature_geometry.get_reconstructed_geometry().get_points()\n"
+				"\n"
+				"  .. seealso:: :meth:`GeometryOnSphere.get_points`\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
+		.def("get_reconstructed_geometry_point_velocities",
+				&GPlatesApi::reconstructed_feature_geometry_get_reconstructed_geometry_point_velocities,
+				(bp::arg("velocity_delta_time") = 1.0,
+					bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS),
+				"get_reconstructed_geometry_point_velocities("
+				"[velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms])\n"
+				"  Returns the velocities of the :meth:`reconstructed geometry points <get_reconstructed_geometry_points>`.\n"
+				"\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :rtype: list of :class:`Vector3D`\n"
+				"\n"
+				"  To associate each velocity with its point (in a reconstructed feature geometry):\n"
+				"  ::\n"
+				"\n"
+				"    points = reconstructed_feature_geometry.get_reconstructed_geometry_points()\n"
+				"    velocities = reconstructed_feature_geometry.get_reconstructed_geometry_point_velocities()\n"
+				"\n"
+				"    points_and_velocities = zip(points, point_velocities)\n"
+				"\n"
+				"    for point, velocity in points_and_velocities:\n"
+				"      ...\n"
+				"\n"
+				"  .. note:: The following:\n"
+				"     ::\n"
+				"\n"
+				"        velocities = reconstructed_feature_geometry.get_reconstructed_geometry_point_velocities(\n"
+				"            velocity_delta_time=1.0,\n"
+				"            velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)\n"
+				"\n"
+				"     ..is equivalent to:\n"
+				"     ::\n"
+				"\n"
+				"        velocity_stage_rotation = rotation_model.get_rotation(\n"
+				"            reconstructed_feature_geometry.get_reconstruction_time(),\n"
+				"            reconstructed_feature_geometry.get_feature().get_reconstruction_plate_id(),\n"
+				"            reconstructed_feature_geometry.get_reconstruction_time() + 1.0)\n"
+				"        velocities = pygplates.calculate_velocities(\n"
+				"            reconstructed_feature_geometry.get_reconstructed_geometry_points(),\n"
+				"            velocity_stage_rotation,\n"
+				"            1.0)\n"
+				"\n"
+				"  .. seealso:: :func:`calculate_velocities`\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -692,6 +808,24 @@ namespace GPlatesApi
 			const GPlatesAppLogic::ReconstructedMotionPath &reconstructed_motion_path)
 	{
 		return reconstructed_motion_path.reconstructed_seed_point();
+	}
+
+	/**
+	 * Returns the velocity of the reconstructed seed point.
+	 */
+	GPlatesMaths::Vector3D
+	reconstructed_motion_path_get_reconstructed_seed_point_velocity(
+			const GPlatesAppLogic::ReconstructedMotionPath &reconstructed_motion_path,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms)
+	{
+		return reconstructed_motion_path.reconstructed_seed_point_velocity(
+				velocity_delta_time,
+				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms);
 	}
 
 	/**
@@ -774,6 +908,32 @@ export_reconstructed_motion_path()
 				"  .. note:: This is just one of the seed points in this :meth:`feature's<get_feature>` "
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
 				"seed points are associated with other :class:`ReconstructedMotionPath` instances.\n")
+		.def("get_reconstructed_seed_point_velocity",
+				&GPlatesApi::reconstructed_motion_path_get_reconstructed_seed_point_velocity,
+				(bp::arg("velocity_delta_time") = 1.0,
+					bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS),
+				"get_reconstructed_seed_point_velocity("
+				"[velocity_delta_time=1.0], "
+				"[velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms])\n"
+				"  Returns the velocity of the :meth:`reconstructed seed point <get_reconstructed_seed_point>`.\n"
+				"\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocity as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
 		.def("get_motion_path",
 				&GPlatesApi::reconstructed_motion_path_get_motion_path,
 				"get_motion_path()\n"
@@ -862,6 +1022,24 @@ namespace GPlatesApi
 	}
 
 	/**
+	 * Returns the velocity of the reconstructed seed point.
+	 */
+	GPlatesMaths::Vector3D
+	reconstructed_flowline_get_reconstructed_seed_point_velocity(
+			const GPlatesAppLogic::ReconstructedFlowline &reconstructed_flowline,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms)
+	{
+		return reconstructed_flowline.reconstructed_seed_point_velocity(
+				velocity_delta_time,
+				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms);
+	}
+
+	/**
 	 * Returns the present day seed point.
 	 */
 	GPlatesMaths::PointOnSphere
@@ -941,6 +1119,32 @@ export_reconstructed_flowline()
 				"  .. note:: This is just one of the seed points in this :meth:`feature's<get_feature>` "
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
 				"seed points are associated with other :class:`ReconstructedFlowline` instances.\n")
+		.def("get_reconstructed_seed_point_velocity",
+				&GPlatesApi::reconstructed_flowline_get_reconstructed_seed_point_velocity,
+				(bp::arg("velocity_delta_time") = 1.0,
+					bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS),
+				"get_reconstructed_seed_point_velocity("
+				"[velocity_delta_time=1.0], "
+				"[velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms])\n"
+				"  Returns the velocity of the :meth:`reconstructed seed point <get_reconstructed_seed_point>`.\n"
+				"\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocity as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
 		.def("get_left_flowline",
 				&GPlatesApi::reconstructed_flowline_get_left_flowline,
 				"get_left_flowline()\n"
