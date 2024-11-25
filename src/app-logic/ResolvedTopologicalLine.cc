@@ -25,6 +25,62 @@
 
 #include "ResolvedTopologicalLine.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalLine::resolved_topology_geometry_points(
+		std::vector<GPlatesMaths::PointOnSphere> &resolved_topology_geometry_points_) const
+{
+	const resolved_topology_line_ptr_type resolved_topology_line_ = resolved_topology_line();
+
+	// Add the vertices of the resolved topological line to the end of the caller's array.
+	resolved_topology_geometry_points_.insert(
+			resolved_topology_geometry_points_.end(),
+			resolved_topology_line_->vertex_begin(),
+			resolved_topology_line_->vertex_end());
+}
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalLine::resolved_topology_geometry_point_velocities(
+		std::vector<GPlatesMaths::Vector3D> &resolved_topology_geometry_point_velocities_,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
+{
+	const resolved_topology_line_ptr_type resolved_topology_line_ = resolved_topology_line();
+
+	// Get the resolved source infos (one per point in the resolved line).
+	const resolved_vertex_source_info_seq_type &resolved_source_infos = get_vertex_source_infos();
+
+	// Number of resolved source infos should match number of points in the resolved line.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			resolved_source_infos.size() == resolved_topology_line_->number_of_vertices(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Iterate over the vertex positions and source infos and calculate velocities.
+	auto line_points_iter = resolved_topology_line_->vertex_begin();
+	auto line_points_end = resolved_topology_line_->vertex_end();
+	auto resolved_source_infos_iter = resolved_source_infos.begin();
+	for ( ; line_points_iter != line_points_end; ++line_points_iter, ++resolved_source_infos_iter)
+	{
+		const GPlatesMaths::PointOnSphere &point = *line_points_iter;
+		const auto resolved_source_info = *resolved_source_infos_iter;
+
+		resolved_topology_geometry_point_velocities_.push_back(
+				resolved_source_info->get_velocity_vector(
+						point,
+						get_reconstruction_time(),
+						velocity_delta_time,
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms));
+	}
+}
+
 
 const GPlatesAppLogic::resolved_vertex_source_info_seq_type &
 GPlatesAppLogic::ResolvedTopologicalLine::get_vertex_source_infos() const

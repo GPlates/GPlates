@@ -2982,6 +2982,22 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             self.assertTrue(snapshot.get_anchor_plate_id() == 0)
             self.assertTrue(snapshot.get_rotation_model())
 
+    def test_resolved_topological_lines(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        resolved_topological_lines = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.line)
+        self.assertTrue(len(resolved_topological_lines) == 1)
+
+        # Test geometry points and velocities.
+        resolved_topological_line = resolved_topological_lines[0]
+        resolved_geometry_points = resolved_topological_line.get_resolved_geometry_points()
+        resolved_geometry_point_velocities = resolved_topological_line.get_resolved_geometry_point_velocities()
+        self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+        self.assertTrue(resolved_topological_line.get_resolved_geometry() == pygplates.PolylineOnSphere(resolved_geometry_points))
+        self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+
     def test_resolved_topological_boundaries(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),
@@ -2989,6 +3005,14 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             pygplates.GeoTimeInstant(10))
         resolved_topological_boundaries = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.boundary)
         self.assertTrue(len(resolved_topological_boundaries) >= 1)
+
+        # Test geometry points and velocities.
+        for resolved_topological_boundary in resolved_topological_boundaries:
+            resolved_geometry_points = resolved_topological_boundary.get_resolved_geometry_points()
+            resolved_geometry_point_velocities = resolved_topological_boundary.get_resolved_geometry_point_velocities()
+            self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+            self.assertTrue(resolved_topological_boundary.get_resolved_geometry() == pygplates.PolygonOnSphere(resolved_geometry_points))
+            self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
 
         # Test point location/velocity/strain-rate and reconstructed point.
         for resolved_topological_boundary in resolved_topological_boundaries:
@@ -3020,6 +3044,15 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         resolved_topological_networks = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.network)
         self.assertTrue(len(resolved_topological_networks) == 1)
         resolved_topological_network = resolved_topological_networks[0]
+
+        # Test geometry points and velocities.
+        for include_rigid_blocks_as_interior_holes in (True, False):
+            resolved_geometry_points = resolved_topological_network.get_resolved_geometry_points(include_rigid_blocks_as_interior_holes)
+            resolved_geometry_point_velocities = resolved_topological_network.get_resolved_geometry_point_velocities(include_rigid_blocks_as_interior_holes)
+            self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+            self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+            # Note: The network has NO interior holes. If it did then this would fail.
+            self.assertTrue(resolved_topological_network.get_resolved_geometry() == pygplates.PolygonOnSphere(resolved_geometry_points))
 
         # Test interior rigid blocks.
         boundary_with_holes = resolved_topological_network.get_resolved_boundary(True)

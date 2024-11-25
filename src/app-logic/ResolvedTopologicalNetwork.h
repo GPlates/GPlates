@@ -37,14 +37,20 @@
 #include "ResolvedTopologicalGeometrySubSegment.h"
 #include "ResolvedTriangulationNetwork.h"
 #include "ResolvedVertexSourceInfo.h"
+#include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
+#include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
+#include "maths/Vector3D.h"
 
 #include "model/FeatureHandle.h"
 #include "model/types.h"
 #include "model/WeakObserver.h"
 
 #include "property-values/GeoTimeInstant.h"
+
+#include "utils/Earth.h"
 
 
 namespace GPlatesAppLogic
@@ -134,11 +140,36 @@ namespace GPlatesAppLogic
 		}
 
 		/**
+		 * Returns the boundary points in @a boundary_polygon.
+		 */
+		void
+		boundary_polygon_points(
+				std::vector<GPlatesMaths::PointOnSphere> &resolved_topology_geometry_points_,
+				bool include_rigid_blocks_as_interior_holes = false) const;
+
+		/**
+		 * Returns the velocities at points in @a boundary_polygon_points.
+		 *
+		 * Note: Each velocity maps to a point in @a boundary_polygon_points.
+		 *
+		 * Note: The number of velocities is guaranteed to match points in @a boundary_polygon_points
+		 *       (with the same value of @a include_rigid_blocks_as_interior_holes).
+		 */
+		void
+		boundary_polygon_point_velocities(
+				std::vector<GPlatesMaths::Vector3D> &resolved_topology_geometry_point_velocities_,
+				bool include_rigid_blocks_as_interior_holes = false,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
+
+		/**
 		 * Returns the boundary per-vertex source reconstructed feature geometries.
 		 *
 		 * Each vertex returned by @a boundary_polygon references a source reconstructed feature geometry.
 		 * This method returns the same number of vertex sources as vertices returned by @a boundary_polygon
-		 * with the same value of @a include_rigid_blocks_as_interior_holes.
+		 * (with the same value of @a include_rigid_blocks_as_interior_holes).
 		 */
 		const resolved_vertex_source_info_seq_type &
 		get_boundary_vertex_source_infos(

@@ -25,6 +25,65 @@
 
 #include "ResolvedTopologicalBoundary.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalBoundary::resolved_topology_geometry_points(
+		std::vector<GPlatesMaths::PointOnSphere> &resolved_topology_geometry_points_) const
+{
+	const resolved_topology_boundary_ptr_type resolved_topology_boundary_ = resolved_topology_boundary();
+
+	// Add the vertices of the resolved topological boundary to the end of the caller's array.
+	//
+	// Note: The boundary polygon will not have any interior holes unlike a resolved topological *network*
+	//       which can have interior rigid blocks.
+	resolved_topology_geometry_points_.insert(
+			resolved_topology_geometry_points_.end(),
+			resolved_topology_boundary_->vertex_begin(),
+			resolved_topology_boundary_->vertex_end());
+}
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalBoundary::resolved_topology_geometry_point_velocities(
+		std::vector<GPlatesMaths::Vector3D> &resolved_topology_geometry_point_velocities_,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
+{
+	const resolved_topology_boundary_ptr_type resolved_topology_boundary_ = resolved_topology_boundary();
+
+	// Get the resolved source infos (one per point in the resolved boundary).
+	const resolved_vertex_source_info_seq_type &resolved_source_infos = get_vertex_source_infos();
+
+	// Number of resolved source infos should match number of points in the resolved boundary.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			resolved_source_infos.size() == resolved_topology_boundary_->number_of_vertices(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Iterate over the vertex positions and source infos and calculate velocities.
+	auto boundary_points_iter = resolved_topology_boundary_->vertex_begin();
+	auto boundary_points_end = resolved_topology_boundary_->vertex_end();
+	auto resolved_source_infos_iter = resolved_source_infos.begin();
+	for ( ; boundary_points_iter != boundary_points_end; ++boundary_points_iter, ++resolved_source_infos_iter)
+	{
+		const GPlatesMaths::PointOnSphere &point = *boundary_points_iter;
+		const auto resolved_source_info = *resolved_source_infos_iter;
+
+		resolved_topology_geometry_point_velocities_.push_back(
+				resolved_source_info->get_velocity_vector(
+						point,
+						get_reconstruction_time(),
+						velocity_delta_time,
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms));
+	}
+}
+
 
 const GPlatesAppLogic::resolved_vertex_source_info_seq_type &
 GPlatesAppLogic::ResolvedTopologicalBoundary::get_vertex_source_infos() const
