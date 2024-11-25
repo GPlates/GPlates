@@ -2039,14 +2039,18 @@ namespace GPlatesApi
 			const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network,
 			bool include_rigid_blocks_as_interior_holes)
 	{
-		if (include_rigid_blocks_as_interior_holes)
-		{
-			return resolved_topological_network.boundary_polygon_with_rigid_block_holes();
-		}
-		else
-		{
-			return resolved_topological_network.boundary_polygon();
-		}
+		return resolved_topological_network.boundary_polygon(include_rigid_blocks_as_interior_holes);
+	}
+
+	/**
+	 * Same as 'get_resolved_boundary()'.
+	 */
+	GPlatesAppLogic::ResolvedTopologicalNetwork::boundary_polygon_ptr_type
+	resolved_topological_network_get_resolved_geometry(
+			const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network,
+			bool include_rigid_blocks_as_interior_holes)
+	{
+		return resolved_topological_network.boundary_polygon(include_rigid_blocks_as_interior_holes);
 	}
 
 	bp::list
@@ -2338,7 +2342,7 @@ export_resolved_topological_network()
 				"  .. versionchanged:: 0.49\n"
 				"     Added *include_rigid_blocks_as_interior_holes* argument.\n")
 		.def("get_resolved_geometry",
-				&GPlatesApi::resolved_topological_network_get_resolved_boundary,
+				&GPlatesApi::resolved_topological_network_get_resolved_geometry,
 				(bp::arg("include_rigid_blocks_as_interior_holes") = false),
 				"get_resolved_geometry([include_rigid_blocks_as_interior_holes=False])\n"
 				"  Same as :meth:`get_resolved_boundary`.\n"
@@ -2414,6 +2418,8 @@ export_resolved_topological_network()
 				"\n"
 				"  Each rigid block represents a rigid interior island within the deforming region. And as such, each rigid block will have a "
 				":meth:`reconstructed geometry <ReconstructedFeatureGeometry.get_reconstructed_geometry>` that is a :class:`polygon <PolygonOnSphere>`.\n"
+				"\n"
+				"  .. note:: The *interior* rings (if any) of a rigid block polygon are ignored (ie, only the exterior ring applies).\n"
 				"\n"
 				"  .. seealso:: :ref:`pygplates_primer_rigid_blocks` in the *Primer* documentation."
 				"\n"

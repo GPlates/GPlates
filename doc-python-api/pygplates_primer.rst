@@ -1303,6 +1303,7 @@ Rigid blocks
 A topological network can *optionally* have interior islands that are rigid.
 
 .. note:: Any :meth:`interior geometry of a network <pygplates.GpmlTopologicalSection.create_network_interior>` that is a *polygon* is considered a rigid block.
+   And the *interior* rings (if any) of a rigid block polygon are ignored (ie, only the exterior ring applies).
 
 Each rigid block is represented by a :class:`pygplates.ReconstructedFeatureGeometry`, and is obtained from a :class:`pygplates.ResolvedTopologicalNetwork` with:
 ::

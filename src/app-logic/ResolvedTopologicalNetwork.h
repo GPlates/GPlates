@@ -122,34 +122,27 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Access the boundary polygon of this resolved topology network.
-		 */
-		const boundary_polygon_ptr_type
-		boundary_polygon() const
-		{
-			return get_triangulation_network().get_boundary_polygon();
-		}
-
-		/**
-		 * Access the boundary polygon (including rigid block holes) of this resolved topology network.
 		 *
-		 * The outlines of interior rigid block holes (if any) in the network form interiors of the returned polygon.
+		 * If @a include_rigid_blocks_as_interior_holes is true then include rigid blocks (if any) as
+		 * interior rings in the returned boundary polygon. Defaults to false.
 		 */
 		const boundary_polygon_ptr_type
-		boundary_polygon_with_rigid_block_holes() const
+		boundary_polygon(
+				bool include_rigid_blocks_as_interior_holes = false) const
 		{
-			return get_triangulation_network().get_boundary_polygon_with_rigid_block_holes();
+			return get_triangulation_network().get_boundary_polygon(include_rigid_blocks_as_interior_holes);
 		}
-
-
 
 		/**
 		 * Returns the boundary per-vertex source reconstructed feature geometries.
 		 *
 		 * Each vertex returned by @a boundary_polygon references a source reconstructed feature geometry.
-		 * This method returns the same number of vertex sources as vertices returned by @a boundary_polygon.
+		 * This method returns the same number of vertex sources as vertices returned by @a boundary_polygon
+		 * with the same value of @a include_rigid_blocks_as_interior_holes.
 		 */
 		const resolved_vertex_source_info_seq_type &
-		get_boundary_vertex_source_infos() const;
+		get_boundary_vertex_source_infos(
+				bool include_rigid_blocks_as_interior_holes = false) const;
 
 
 		/**
@@ -353,6 +346,10 @@ namespace GPlatesAppLogic
 		 * As an optimisation, this is only created when first requested.
 		 */
 		mutable boost::optional<resolved_vertex_source_info_seq_type> d_boundary_vertex_source_infos;
+		/**
+		 * Same as @a d_boundary_vertex_source_infos except includes vertices of interior rigid blocks.
+		 */
+		mutable boost::optional<resolved_vertex_source_info_seq_type> d_boundary_with_rigid_blocks_vertex_source_infos;
 
 
 		/**
@@ -383,7 +380,8 @@ namespace GPlatesAppLogic
 		{  }
 
 		void
-		calc_boundary_vertex_source_infos() const;
+		calc_boundary_vertex_source_infos(
+				bool include_rigid_blocks_as_interior_holes) const;
 	};
 }
 

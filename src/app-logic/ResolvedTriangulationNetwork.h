@@ -330,19 +330,13 @@ namespace GPlatesAppLogic
 
 			/**
 			 * Returns the polygon that bounds the network.
+			 *
+			 * If @a include_rigid_blocks_as_interior_holes is true then include rigid blocks (if any) as
+			 * interior rings in the returned boundary polygon. Defaults to false.
 			 */
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-			get_boundary_polygon() const
-			{
-				return d_network_boundary_polygon;
-			}
-
-
-			/**
-			 * Returns the polygon that bounds the network with the rigid blocks (if any) as interior holes.
-			 */
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-			get_boundary_polygon_with_rigid_block_holes() const;
+			get_boundary_polygon(
+					bool include_rigid_blocks_as_interior_holes = false) const;
 
 
 			/**
@@ -1183,6 +1177,13 @@ namespace GPlatesAppLogic
 			get_delaunay_face_in_deforming_region(
 					const delaunay_point_2_type &point_2,
 					Delaunay_2::Face_handle start_face_hint = Delaunay_2::Face_handle()) const;
+
+
+			/**
+			 * Creates the polygon that bounds the network with the rigid blocks (if any) as interior holes.
+			 */
+			void
+			create_boundary_polygon_with_rigid_block_holes() const;
 
 			/**
 			 * Find the delaunay convex hull edge that is closest to the specified point

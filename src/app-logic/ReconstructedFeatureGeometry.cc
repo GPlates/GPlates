@@ -147,9 +147,9 @@ void
 GPlatesAppLogic::ReconstructedFeatureGeometry::reconstructed_geometry_points(
 		point_seq_type &reconstructed_geometry_points_) const
 {
-	const geometry_ptr_type geometry = reconstructed_geometry();
+	const geometry_ptr_type reconstructed_geometry_ = reconstructed_geometry();
 
-	GeometryUtils::get_geometry_points(*geometry, reconstructed_geometry_points_);
+	GeometryUtils::get_geometry_points(*reconstructed_geometry_, reconstructed_geometry_points_);
 }
 
 

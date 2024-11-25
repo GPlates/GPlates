@@ -348,8 +348,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the velocities at points in @a reconstructed_geometry_points.
 		 *
-		 * Note: Number of velocities added to @a reconstructed_geometry_point_velocities_ will equal
-		 *       the number of points added in @a reconstructed_geometry_points.
+		 * Note: Each velocity maps to a point in @a reconstructed_geometry_points.
+		 *
+		 * Note: The number of velocities is guaranteed to match points in @a reconstructed_geometry_points.
 		 */
 		virtual
 		void

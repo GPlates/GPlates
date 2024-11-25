@@ -214,56 +214,75 @@ namespace GPlatesAppLogic
 
 
 GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::ResolvedTriangulation::Network::get_boundary_polygon_with_rigid_block_holes() const
+GPlatesAppLogic::ResolvedTriangulation::Network::get_boundary_polygon(
+	bool include_rigid_blocks_as_interior_holes) const
 {
-	// Create polygon if not already done so.
-	if (!d_network_boundary_polygon_with_rigid_block_holes)
+	if (include_rigid_blocks_as_interior_holes)
 	{
-		// Create a donut polygon version of the network boundary that includes rigid blocks as
-		// interior holes if there are any.
-		if (d_rigid_blocks.empty())
+		// Create polygon (with interior rigid holes) if not already done so.
+		if (!d_network_boundary_polygon_with_rigid_block_holes)
 		{
-			// No interior holes - so is the same as the boundary polygon without holes.
-			d_network_boundary_polygon_with_rigid_block_holes = d_network_boundary_polygon;
+			create_boundary_polygon_with_rigid_block_holes();
 		}
-		else
+
+		return d_network_boundary_polygon_with_rigid_block_holes.get();
+	}
+	else
+	{
+		return d_network_boundary_polygon;
+	}
+}
+
+
+void
+GPlatesAppLogic::ResolvedTriangulation::Network::create_boundary_polygon_with_rigid_block_holes() const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_network_boundary_polygon_with_rigid_block_holes,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Create a donut polygon version of the network boundary that includes rigid blocks as
+	// interior holes if there are any.
+	if (d_rigid_blocks.empty())
+	{
+		// No interior holes - so is the same as the boundary polygon without holes.
+		d_network_boundary_polygon_with_rigid_block_holes = d_network_boundary_polygon;
+	}
+	else
+	{
+		std::vector< std::vector<GPlatesMaths::PointOnSphere> > rigid_block_interior_rings;
+		rigid_block_interior_rings.reserve(d_rigid_blocks.size());
+
+		// Iterate over the interior rigid blocks.
+		rigid_block_seq_type::const_iterator rigid_blocks_iter = d_rigid_blocks.begin();
+		rigid_block_seq_type::const_iterator rigid_blocks_end = d_rigid_blocks.end();
+		for ( ; rigid_blocks_iter != rigid_blocks_end; ++rigid_blocks_iter)
 		{
-			std::vector< std::vector<GPlatesMaths::PointOnSphere> > rigid_block_interior_rings;
-			rigid_block_interior_rings.reserve(d_rigid_blocks.size());
+			const RigidBlock &rigid_block = *rigid_blocks_iter;
 
-			// Iterate over the interior rigid blocks.
-			rigid_block_seq_type::const_iterator rigid_blocks_iter = d_rigid_blocks.begin();
-			rigid_block_seq_type::const_iterator rigid_blocks_end = d_rigid_blocks.end();
-			for ( ; rigid_blocks_iter != rigid_blocks_end; ++rigid_blocks_iter)
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> rigid_block_interior_polygon =
+					GeometryUtils::get_polygon_on_sphere(
+							*rigid_block.get_reconstructed_feature_geometry()->reconstructed_geometry());
+			if (!rigid_block_interior_polygon)
 			{
-				const RigidBlock &rigid_block = *rigid_blocks_iter;
-
-				boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> rigid_block_interior_polygon =
-						GeometryUtils::get_polygon_on_sphere(
-								*rigid_block.get_reconstructed_feature_geometry()->reconstructed_geometry());
-				if (!rigid_block_interior_polygon)
-				{
-					continue;
-				}
-
-				rigid_block_interior_rings.push_back(std::vector<GPlatesMaths::PointOnSphere>());
-				std::vector<GPlatesMaths::PointOnSphere> &rigid_block_interior_ring = rigid_block_interior_rings.back();
-				rigid_block_interior_ring.insert(
-						rigid_block_interior_ring.end(),
-						rigid_block_interior_polygon.get()->exterior_ring_vertex_begin(),
-						rigid_block_interior_polygon.get()->exterior_ring_vertex_end());
+				continue;
 			}
 
-			d_network_boundary_polygon_with_rigid_block_holes =
-					GPlatesMaths::PolygonOnSphere::create(
-							d_network_boundary_polygon->exterior_ring_vertex_begin(),
-							d_network_boundary_polygon->exterior_ring_vertex_end(),
-							rigid_block_interior_rings.begin(),
-							rigid_block_interior_rings.end());
+			rigid_block_interior_rings.push_back(std::vector<GPlatesMaths::PointOnSphere>());
+			std::vector<GPlatesMaths::PointOnSphere> &rigid_block_interior_ring = rigid_block_interior_rings.back();
+			rigid_block_interior_ring.insert(
+					rigid_block_interior_ring.end(),
+					rigid_block_interior_polygon.get()->exterior_ring_vertex_begin(),
+					rigid_block_interior_polygon.get()->exterior_ring_vertex_end());
 		}
-	}
 
-	return d_network_boundary_polygon_with_rigid_block_holes.get();
+		d_network_boundary_polygon_with_rigid_block_holes =
+				GPlatesMaths::PolygonOnSphere::create(
+						d_network_boundary_polygon->exterior_ring_vertex_begin(),
+						d_network_boundary_polygon->exterior_ring_vertex_end(),
+						rigid_block_interior_rings.begin(),
+						rigid_block_interior_rings.end());
+	}
 }
 
 
