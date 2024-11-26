@@ -32,13 +32,17 @@
 #include "ReconstructionGeometry.h"
 #include "ResolvedSubSegmentRangeInSection.h"
 #include "ResolvedVertexSourceInfo.h"
+#include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
+#include "maths/Vector3D.h"
 
 #include "model/FeatureHandle.h"
 
+#include "utils/Earth.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -147,19 +151,67 @@ namespace GPlatesAppLogic
 			return d_use_reverse;
 		}
 
+
 		/**
 		 * The subset of vertices of topological section used in resolved topology geometry.
 		 *
+		 * Note that this includes rubber band points (if any) in the returned polyline, otherwise
+		 * it would be possible to have no geometry points (and hence no returned polyline).
+		 *
 		 * NOTE: These are the un-reversed vertices of the original geometry that contributed this
-		 * sub-segment - the actual order of vertices (as contributed to the final resolved
-		 * topological geometry along with other sub-segments) depends on this un-reversed geometry
-		 * and the reversal flag returned by @a get_use_reverse.
+		 *       sub-segment - the actual order of vertices (as contributed to the final resolved
+		 *       topological geometry along with other sub-segments) depends on this un-reversed geometry
+		 *       and the reversal flag returned by @a get_use_reverse.
 		 */
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 		get_sub_segment_geometry() const
 		{
 			return d_sub_segment.get_geometry();
 		}
+
+		/**
+		 * Return the number of points in the sub-segment geometry returned by @a get_sub_segment_geometry.
+		 */
+		unsigned int
+		get_num_points_in_sub_segment_geometry() const
+		{
+			return get_num_points_in_sub_segment(true/*include_rubber_band_points*/);
+		}
+
+		/**
+		 * Returns the points in the sub-segment geometry returned by @a get_sub_segment_geometry.
+		 */
+		void
+		get_sub_segment_geometry_points(
+				std::vector<GPlatesMaths::PointOnSphere> &geometry_points) const
+		{
+			get_sub_segment_points(geometry_points, true/*include_rubber_band_points*/);
+		}
+
+		/**
+		 * Returns the velocities at the points returned by @a get_sub_segment_geometry_points.
+		 *
+		 * Note: Each velocity maps to a point in @a get_sub_segment_geometry_points.
+		 *
+		 * Note: The number of velocities is guaranteed to match points in @a get_sub_segment_geometry_points.
+		 */
+		void
+		get_sub_segment_geometry_point_velocities(
+				std::vector<GPlatesMaths::Vector3D> &geometry_point_velocities,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const
+		{
+			get_sub_segment_point_velocities(
+					geometry_point_velocities,
+					true/*include_rubber_band_points*/,
+					velocity_delta_time,
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms);
+		}
+
 
 		/**
 		 * Return the number of points in the sub-segment geometry.
@@ -177,9 +229,9 @@ namespace GPlatesAppLogic
 		 * Does not clear @a geometry_points - just appends points.
 		 *
 		 * NOTE: These are the un-reversed vertices of the original geometry that contributed this
-		 * sub-segment - the actual order of vertices (as contributed to the final resolved
-		 * topological geometry along with other sub-segments) depends on this un-reversed geometry
-		 * and the reversal flag returned by @a get_use_reverse.
+		 *       sub-segment - the actual order of vertices (as contributed to the final resolved
+		 *       topological geometry along with other sub-segments) depends on this un-reversed geometry
+		 *       and the reversal flag returned by @a get_use_reverse.
 		 */
 		void
 		get_sub_segment_points(
@@ -204,6 +256,41 @@ namespace GPlatesAppLogic
 		{
 			d_sub_segment.get_reversed_geometry_points(geometry_points, d_use_reverse, include_rubber_band_points);
 		}
+
+
+		/**
+		 * Returns the velocities at the (unreversed) sub-segment points.
+		 *
+		 * Note: Each velocity maps to a point in @a get_sub_segment_points.
+		 *
+		 * Note: The number of velocities is guaranteed to match points in @a get_sub_segment_points
+		 *       (with the same value of @a include_rubber_band_points).
+		 */
+		void
+		get_sub_segment_point_velocities(
+				std::vector<GPlatesMaths::Vector3D> &geometry_point_velocities,
+				bool include_rubber_band_points = true,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
+
+		/**
+		 * Returns the velocities at the sub-segment points as they contribute to the resolved topology.
+		 *
+		 * Note: Each velocity maps to a point in @a get_reversed_sub_segment_points.
+		 *
+		 * Note: The number of velocities is guaranteed to match points in @a get_reversed_sub_segment_points
+		 *       (with the same value of @a include_rubber_band_points).
+		 */
+		void
+		get_reversed_sub_segment_point_velocities(
+				std::vector<GPlatesMaths::Vector3D> &geometry_point_velocities,
+				bool include_rubber_band_points = true,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
 
 
 		/**

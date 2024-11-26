@@ -2196,13 +2196,15 @@ export_resolved_topological_boundary()
 				"  This method is *essentially* equivalent to:\n"
 				"  ::\n"
 				"\n"
-				"    def reconstruct_point(resolved_topological_boundary, point, reconstruction_time, use_natural_neighbour_interpolation):\n"
+				"    def reconstruct_point(resolved_topological_boundary, point, reconstruction_time):\n"
 				"        # See if point is located within the resolved topological boundary polygon.\n"
 				"        if resolved_topological_boundary.get_resolved_boundary().is_point_in_polygon(point):\n"
 				"            # Get the reconstruction plate ID of this resolved topological boundary.\n"
 				"            # If it doesn't have one then zero will be used instead.\n"
 				"            plate_id = resolved_topological_boundary.get_feature().get_reconstruction_plate_id()\n"
-				"            reconstructed_point = ...  # rigidly rotate 'point' using 'plate_id'\n"
+				"            # Rigidly rotate 'point' using 'plate_id' and stage rotation\n"
+				"            # from resolved time to 'reconstruction_time'.\n"
+				"            reconstructed_point = ...\n"
 				"            return reconstructed_point\n"
 				"\n"
 				"        # Point is *not* located in the resolved topological boundary.\n"
@@ -2967,10 +2969,14 @@ export_resolved_topological_network()
 				"                    # Get the reconstruction plate ID of the rigid block.\n"
 				"                    # If it doesn't have one then zero will be used instead.\n"
 				"                    rigid_block_plate_id = rigid_block.get_feature().get_reconstruction_plate_id()\n"
-				"                    reconstructed_point = ...  # rigidly rotate 'point' using 'rigid_block_plate_id'\n"
+				"                    # Rigidly rotate 'point' using 'rigid_block_plate_id' and stage rotation\n"
+				"                    # from resolved time to 'reconstruction_time'.\n"
+				"                    reconstructed_point = ...\n"
 				"                    return reconstructed_point\n"
 				"            # Point must therefore be located in the deforming region of the resolved topological network.\n"
-				"            deformed_point = ...  # deform 'point' using the deforming triangulation and 'use_natural_neighbour_interpolation'\n"
+				"            # Deform 'point' using the deforming triangulation and 'use_natural_neighbour_interpolation'\n"
+				"            # from resolved time to 'reconstruction_time'.\n"
+				"            deformed_point = ...\n"
 				"            return deformed_point\n"
 				"\n"
 				"        # Point is *not* located in the resolved topological network.\n"
@@ -3034,6 +3040,49 @@ namespace GPlatesApi
 			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &resolved_topological_geometry_sub_segment)
 	{
 		return resolved_topological_geometry_sub_segment->get_sub_segment_geometry();
+	}
+
+	bp::list
+	resolved_topological_geometry_sub_segment_get_resolved_geometry_points(
+			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment)
+	{
+		bp::list resolved_geometry_points_list;
+
+		std::vector<GPlatesMaths::PointOnSphere> resolved_geometry_points_;
+		resolved_topological_geometry_sub_segment.get_sub_segment_geometry_points(resolved_geometry_points_);
+
+		for (const auto &point : resolved_geometry_points_)
+		{
+			resolved_geometry_points_list.append(point);
+		}
+
+		return resolved_geometry_points_list;
+	}
+
+	bp::list
+	resolved_topological_geometry_sub_segment_get_resolved_geometry_point_velocities(
+			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms)
+	{
+		bp::list resolved_geometry_point_velocities_list;
+
+		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
+		resolved_topological_geometry_sub_segment.get_sub_segment_geometry_point_velocities(
+				resolved_geometry_point_velocities_,
+				velocity_delta_time,
+				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms);
+
+		for (const auto &velocity : resolved_geometry_point_velocities_)
+		{
+			resolved_geometry_point_velocities_list.append(velocity);
+		}
+
+		return resolved_geometry_point_velocities_list;
 	}
 
 	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
@@ -3145,7 +3194,7 @@ namespace GPlatesApi
 
 
 void
-export_resolved_topological_sub_segment()
+export_resolved_topological_geometry_sub_segment()
 {
 	//
 	// ResolvedTopologicalSubSegment - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -3206,6 +3255,58 @@ export_resolved_topological_sub_segment()
 				"then you can use ``pygplates.PolylineOnSphere(sub_segment.get_resolved_geometry()[::-1])``.\n"
 				"\n"
 				"  .. seealso:: :meth:`was_geometry_reversed_in_topology`\n")
+		.def("get_resolved_geometry_points",
+				&GPlatesApi::resolved_topological_geometry_sub_segment_get_resolved_geometry_points,
+				"get_resolved_geometry_points()\n"
+				"  Returns the points of the :meth:`resolved geometry <get_resolved_geometry>`.\n"
+				"\n"
+				"  :rtype: list of :class:`PointOnSphere`\n"
+				"\n"
+				"  This method is *essentially* equivalent to:\n"
+				"  ::\n"
+				"\n"
+				"     def get_resolved_geometry_points(resolved_topological_sub_segment):\n"
+				"         return resolved_topological_sub_segment.get_resolved_geometry().get_points()\n"
+				"\n"
+				"  .. seealso:: :meth:`GeometryOnSphere.get_points`\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
+		.def("get_resolved_geometry_point_velocities",
+				&GPlatesApi::resolved_topological_geometry_sub_segment_get_resolved_geometry_point_velocities,
+				(bp::arg("velocity_delta_time") = 1.0,
+					bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS),
+				"get_resolved_geometry_point_velocities("
+				"[velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms])\n"
+				"  Returns the velocities of the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
+				"\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :rtype: list of :class:`Vector3D`\n"
+				"\n"
+				"  To associate each velocity with its point (in a sub-segment):\n"
+				"  ::\n"
+				"\n"
+				"    points = sub_segment.get_resolved_geometry_points()\n"
+				"    velocities = sub_segment.get_resolved_geometry_point_velocities()\n"
+				"\n"
+				"    points_and_velocities = zip(points, point_velocities)\n"
+				"\n"
+				"    for point, velocity in points_and_velocities:\n"
+				"      ...\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
 		.def("get_geometry",
 				&GPlatesApi::resolved_topological_geometry_sub_segment_get_resolved_geometry,
 				"get_geometry()\n"
@@ -3344,6 +3445,49 @@ namespace GPlatesApi
 			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &resolved_topological_shared_sub_segment)
 	{
 		return resolved_topological_shared_sub_segment->get_shared_sub_segment_geometry();
+	}
+
+	bp::list
+	resolved_topological_shared_sub_segment_get_resolved_geometry_points(
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment)
+	{
+		bp::list resolved_geometry_points_list;
+
+		std::vector<GPlatesMaths::PointOnSphere> resolved_geometry_points_;
+		resolved_topological_shared_sub_segment.get_shared_sub_segment_geometry_points(resolved_geometry_points_);
+
+		for (const auto &point : resolved_geometry_points_)
+		{
+			resolved_geometry_points_list.append(point);
+		}
+
+		return resolved_geometry_points_list;
+	}
+
+	bp::list
+	resolved_topological_shared_sub_segment_get_resolved_geometry_point_velocities(
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms)
+	{
+		bp::list resolved_geometry_point_velocities_list;
+
+		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
+		resolved_topological_shared_sub_segment.get_shared_sub_segment_geometry_point_velocities(
+				resolved_geometry_point_velocities_,
+				velocity_delta_time,
+				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms);
+
+		for (const auto &velocity : resolved_geometry_point_velocities_)
+		{
+			resolved_geometry_point_velocities_list.append(velocity);
+		}
+
+		return resolved_geometry_point_velocities_list;
 	}
 
 	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
@@ -3599,6 +3743,58 @@ export_resolved_topological_shared_sub_segment()
 				"``pygplates.PolylineOnSphere(sub_segment.get_resolved_geometry()[::-1])``.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_sharing_resolved_topology_geometry_reversal_flags`\n")
+		.def("get_resolved_geometry_points",
+				&GPlatesApi::resolved_topological_shared_sub_segment_get_resolved_geometry_points,
+				"get_resolved_geometry_points()\n"
+				"  Returns the points of the :meth:`resolved geometry <get_resolved_geometry>`.\n"
+				"\n"
+				"  :rtype: list of :class:`PointOnSphere`\n"
+				"\n"
+				"  This method is *essentially* equivalent to:\n"
+				"  ::\n"
+				"\n"
+				"     def get_resolved_geometry_points(resolved_topological_shared_sub_segment):\n"
+				"         return resolved_topological_shared_sub_segment.get_resolved_geometry().get_points()\n"
+				"\n"
+				"  .. seealso:: :meth:`GeometryOnSphere.get_points`\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
+		.def("get_resolved_geometry_point_velocities",
+				&GPlatesApi::resolved_topological_shared_sub_segment_get_resolved_geometry_point_velocities,
+				(bp::arg("velocity_delta_time") = 1.0,
+					bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS),
+				"get_resolved_geometry_point_velocities("
+				"[velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms])\n"
+				"  Returns the velocities of the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
+				"\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :rtype: list of :class:`Vector3D`\n"
+				"\n"
+				"  To associate each velocity with its point (in a sub-segment):\n"
+				"  ::\n"
+				"\n"
+				"    points = sub_segment.get_resolved_geometry_points()\n"
+				"    velocities = sub_segment.get_resolved_geometry_point_velocities()\n"
+				"\n"
+				"    points_and_velocities = zip(points, point_velocities)\n"
+				"\n"
+				"    for point, velocity in points_and_velocities:\n"
+				"      ...\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
 		.def("get_geometry",
 				&GPlatesApi::resolved_topological_shared_sub_segment_get_resolved_geometry,
 				"get_geometry()\n"
@@ -4004,7 +4200,7 @@ export_reconstruction_geometries()
 	export_reconstructed_motion_path();
 	export_reconstructed_flowline();
 
-	export_resolved_topological_sub_segment();
+	export_resolved_topological_geometry_sub_segment();
 	export_resolved_topological_shared_sub_segment();
 	export_resolved_topological_section();
 

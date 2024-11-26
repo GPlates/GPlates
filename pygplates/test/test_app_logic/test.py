@@ -3155,6 +3155,40 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 point_in_boundary,
                 resolved_topological_network.get_reconstruction_time() + 1.0)
                         is None)
+
+    def test_resolved_topological_sub_segments(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        resolved_topological_boundaries = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.boundary)
+        self.assertTrue(len(resolved_topological_boundaries) >= 1)
+
+        # Test geometry points and velocities.
+        for resolved_topological_boundary in resolved_topological_boundaries:
+            for boundary_sub_segment in resolved_topological_boundary.get_boundary_sub_segments():
+                resolved_geometry_points = boundary_sub_segment.get_resolved_geometry_points()
+                resolved_geometry_point_velocities = boundary_sub_segment.get_resolved_geometry_point_velocities()
+                self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+                self.assertTrue(boundary_sub_segment.get_resolved_geometry() == pygplates.PolylineOnSphere(resolved_geometry_points))
+                self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+
+    def test_resolved_topological_shared_sub_segments(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        resolved_topological_sections = snapshot.get_resolved_topological_sections()
+        self.assertTrue(len(resolved_topological_sections) >= 1)
+
+        # Test geometry points and velocities.
+        for resolved_topological_section in resolved_topological_sections:
+            for shared_sub_segment in resolved_topological_section.get_shared_sub_segments():
+                resolved_geometry_points = shared_sub_segment.get_resolved_geometry_points()
+                resolved_geometry_point_velocities = shared_sub_segment.get_resolved_geometry_point_velocities()
+                self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+                self.assertTrue(shared_sub_segment.get_resolved_geometry() == pygplates.PolylineOnSphere(resolved_geometry_points))
+                self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
     
     def test_resolve_topology_parameters(self):
         default_resolve_topology_parameters=pygplates.ResolveTopologyParameters()
