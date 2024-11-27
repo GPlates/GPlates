@@ -33,6 +33,7 @@
 #include "PyTopologicalSnapshot.h"
 
 #include "PyFeatureCollectionFunctionArgument.h"
+#include "PyGeometriesOnSphere.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
@@ -42,6 +43,7 @@
 #include "PythonVariableFunctionArguments.h"
 
 #include "app-logic/PlateBoundaryStats.h"
+#include "app-logic/PlateVelocityUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructContext.h"
 #include "app-logic/ReconstructHandle.h"
@@ -390,6 +392,383 @@ namespace GPlatesApi
 		}
 
 		return plate_boundary_stats_list;
+	}
+
+	namespace
+	{
+		/**
+		 * Find location of point in resolved topological networks and boundaries.
+		 */
+		GPlatesAppLogic::TopologyPointLocation
+		get_point_location_in_resolved_topologies(
+				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries)
+		{
+			// See if point is inside any topological networks.
+			if (resolved_topological_networks)
+			{
+				for (const auto &resolved_topological_network : resolved_topological_networks.get())
+				{
+					if (boost::optional<GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> point_location =
+						resolved_topological_network->get_triangulation_network().get_point_location(point))
+					{
+						return GPlatesAppLogic::TopologyPointLocation(resolved_topological_network, point_location.get());
+					}
+				}
+			}
+
+			// See if point is inside any topological boundaries.
+			if (resolved_topological_boundaries)
+			{
+				for (const auto &resolved_topological_boundary : resolved_topological_boundaries.get())
+				{
+					if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
+					{
+						return GPlatesAppLogic::TopologyPointLocation(resolved_topological_boundary);
+					}
+				}
+			}
+
+			// Point is not located inside any resolved boundaries/networks.
+			return GPlatesAppLogic::TopologyPointLocation();
+		}
+	}
+
+	bp::list
+	topological_snapshot_get_point_locations(
+			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+			PointSequenceFunctionArgument point_seq,
+			ResolveTopologyType::flags_type resolve_topology_types)
+	{
+		bp::list point_locations_list;
+
+		// Resolved topology type flags must correspond to BOUNDARY and/or NETWORK.
+		if ((resolve_topology_types & ~ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) != 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Bit flags specified in resolve topology types must be "
+					"ResolveTopologyType.BOUNDARY and/or ResolveTopologyType.NETWORK.");
+			bp::throw_error_already_set();
+		}
+
+		// Get the resolved topological networks (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks;
+		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
+		{
+			resolved_topological_networks = topological_snapshot->get_resolved_topological_networks();
+		}
+		// Get the resolved topological boundaries (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries;
+		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
+		{
+			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
+		}
+
+		// Iterate over the sequence of points.
+		for (const auto &point : point_seq.get_points())
+		{
+			// Find which resolved topological network or boundary (if any) contains the point.
+			const GPlatesAppLogic::TopologyPointLocation point_location =
+					get_point_location_in_resolved_topologies(
+							point,
+							resolved_topological_networks,
+							resolved_topological_boundaries);
+
+			point_locations_list.append(point_location);
+		}
+
+		return point_locations_list;
+	}
+
+	namespace
+	{
+		/**
+		 * Find location, and calculate velocity, of point in resolved topological networks and boundaries.
+		 *
+		 * Returns none if point is not in any resolved topological networks or boundaries.
+		 */
+		boost::optional<std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::TopologyPointLocation>>
+		get_point_velocity_in_resolved_topologies(
+				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries,
+				const double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+				GPlatesAppLogic::VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms)
+		{
+			// See if point is inside any topological networks.
+			if (resolved_topological_networks)
+			{
+				for (const auto &resolved_topological_network : resolved_topological_networks.get())
+				{
+					boost::optional< std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
+							velocity = resolved_topological_network->get_triangulation_network().calculate_velocity(
+									point,
+									velocity_delta_time,
+									velocity_delta_time_type,
+									velocity_units,
+									earth_radius_in_kms);
+					if (velocity)
+					{
+						return std::make_pair(
+								velocity->first,
+								GPlatesAppLogic::TopologyPointLocation(resolved_topological_network, velocity->second));
+					}
+				}
+			}
+
+			// See if point is inside any topological boundaries.
+			if (resolved_topological_boundaries)
+			{
+				for (const auto &resolved_topological_boundary : resolved_topological_boundaries.get())
+				{
+					if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
+					{
+						// Get the plate ID from resolved boundary.
+						//
+						// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+						// which can still give a non-identity rotation if the anchor plate id is non-zero.
+						boost::optional<GPlatesModel::integer_plate_id_type> resolved_boundary_plate_id =
+								resolved_topological_boundary->plate_id();
+						if (!resolved_boundary_plate_id)
+						{
+							resolved_boundary_plate_id = 0;
+						}
+
+						const GPlatesMaths::Vector3D velocity = GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+								point,
+								resolved_boundary_plate_id.get(),
+								resolved_topological_boundary->get_reconstruction_tree_creator(),
+								resolved_topological_boundary->get_reconstruction_time(),
+								velocity_delta_time,
+								velocity_delta_time_type,
+								velocity_units,
+								earth_radius_in_kms);
+
+						return std::make_pair(
+								velocity,
+								GPlatesAppLogic::TopologyPointLocation(resolved_topological_boundary));
+					}
+				}
+			}
+
+			// Point is not located inside any resolved boundaries/networks.
+			return boost::none;
+		}
+	}
+
+	bp::object
+	topological_snapshot_get_point_velocities(
+			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+			PointSequenceFunctionArgument point_seq,
+			ResolveTopologyType::flags_type resolve_topology_types,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms,
+			bool return_point_locations)
+	{
+		bp::list point_velocities_list;
+
+		boost::optional<bp::list> point_locations_list;
+		if (return_point_locations)
+		{
+			point_locations_list = bp::list();
+		}
+
+		// Resolved topology type flags must correspond to BOUNDARY and/or NETWORK.
+		if ((resolve_topology_types & ~ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) != 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Bit flags specified in resolve topology types must be "
+					"ResolveTopologyType.BOUNDARY and/or ResolveTopologyType.NETWORK.");
+			bp::throw_error_already_set();
+		}
+
+		// Get the resolved topological networks (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks;
+		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
+		{
+			resolved_topological_networks = topological_snapshot->get_resolved_topological_networks();
+		}
+		// Get the resolved topological boundaries (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries;
+		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
+		{
+			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
+		}
+
+		// Iterate over the sequence of points.
+		for (const auto &point : point_seq.get_points())
+		{
+			// Find which resolved topological network or boundary (if any) contains the point.
+			//
+			// Note: This is none if the point is not inside any resolved boundaries/networks. 
+			const boost::optional<std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::TopologyPointLocation>> point_velocity_and_location =
+					get_point_velocity_in_resolved_topologies(
+							point,
+							resolved_topological_networks,
+							resolved_topological_boundaries,
+							velocity_delta_time,
+							velocity_delta_time_type,
+							velocity_units,
+							earth_radius_in_kms);
+
+			if (point_velocity_and_location)
+			{
+				point_velocities_list.append(point_velocity_and_location->first);
+				if (return_point_locations)
+				{
+					point_locations_list->append(point_velocity_and_location->second);
+				}
+			}
+			else
+			{
+				// Point is not located inside any resolved boundaries/networks.
+				point_velocities_list.append(bp::object()/*Py_None*/);
+				if (return_point_locations)
+				{
+					point_locations_list->append(GPlatesAppLogic::TopologyPointLocation());
+				}
+			}
+		}
+
+		if (return_point_locations)
+		{
+			return bp::make_tuple(point_velocities_list, point_locations_list.get());
+		}
+		else
+		{
+			return point_velocities_list;
+		}
+	}
+
+	namespace
+	{
+		/**
+		 * Find location, and calculate strain rate, of point in resolved topological networks and boundaries.
+		 *
+		 * Returns none if point is not in any resolved topological networks or boundaries.
+		 */
+		boost::optional<std::pair<GPlatesAppLogic::DeformationStrainRate, GPlatesAppLogic::TopologyPointLocation>>
+		get_point_strain_rate_in_resolved_topologies(
+				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries)
+		{
+			// See if point is inside any topological networks.
+			if (resolved_topological_networks)
+			{
+				for (const auto &resolved_topological_network : resolved_topological_networks.get())
+				{
+					boost::optional<std::pair<
+							GPlatesAppLogic::ResolvedTriangulation::DeformationInfo,
+							GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
+									deformation_info = resolved_topological_network->get_triangulation_network().calculate_deformation(point);
+					if (deformation_info)
+					{
+						return std::make_pair(
+								deformation_info->first.get_strain_rate(),
+								GPlatesAppLogic::TopologyPointLocation(resolved_topological_network, deformation_info->second));
+					}
+				}
+			}
+
+			// See if point is inside any topological boundaries.
+			if (resolved_topological_boundaries)
+			{
+				for (const auto &resolved_topological_boundary : resolved_topological_boundaries.get())
+				{
+					if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
+					{
+						// Return zero deformation (since inside a rigid plate).
+						return std::make_pair(
+								GPlatesAppLogic::DeformationStrainRate(),
+								GPlatesAppLogic::TopologyPointLocation(resolved_topological_boundary));
+					}
+				}
+			}
+
+			// Point is not located inside any resolved boundaries/networks.
+			return boost::none;
+		}
+	}
+
+	bp::object
+	topological_snapshot_get_point_strain_rates(
+			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+			PointSequenceFunctionArgument point_seq,
+			ResolveTopologyType::flags_type resolve_topology_types,
+			bool return_point_locations)
+	{
+		bp::list point_strain_rates_list;
+
+		boost::optional<bp::list> point_locations_list;
+		if (return_point_locations)
+		{
+			point_locations_list = bp::list();
+		}
+
+		// Resolved topology type flags must correspond to BOUNDARY and/or NETWORK.
+		if ((resolve_topology_types & ~ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) != 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Bit flags specified in resolve topology types must be "
+					"ResolveTopologyType.BOUNDARY and/or ResolveTopologyType.NETWORK.");
+			bp::throw_error_already_set();
+		}
+
+		// Get the resolved topological networks (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks;
+		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
+		{
+			resolved_topological_networks = topological_snapshot->get_resolved_topological_networks();
+		}
+		// Get the resolved topological boundaries (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries;
+		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
+		{
+			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
+		}
+
+		// Iterate over the sequence of points.
+		for (const auto &point : point_seq.get_points())
+		{
+			// Find which resolved topological network or boundary (if any) contains the point.
+			//
+			// Note: This is none if the point is not inside any resolved boundaries/networks. 
+			const boost::optional<std::pair<GPlatesAppLogic::DeformationStrainRate, GPlatesAppLogic::TopologyPointLocation>> point_strain_rate_and_location =
+					get_point_strain_rate_in_resolved_topologies(
+							point,
+							resolved_topological_networks,
+							resolved_topological_boundaries);
+
+			if (point_strain_rate_and_location)
+			{
+				point_strain_rates_list.append(point_strain_rate_and_location->first);
+				if (return_point_locations)
+				{
+					point_locations_list->append(point_strain_rate_and_location->second);
+				}
+			}
+			else
+			{
+				// Point is not located inside any resolved boundaries/networks.
+				point_strain_rates_list.append(bp::object()/*Py_None*/);
+				if (return_point_locations)
+				{
+					point_locations_list->append(GPlatesAppLogic::TopologyPointLocation());
+				}
+			}
+		}
+
+		if (return_point_locations)
+		{
+			return bp::make_tuple(point_strain_rates_list, point_locations_list.get());
+		}
+		else
+		{
+			return point_strain_rates_list;
+		}
 	}
 
 	// Convert UnitVector3D to Vector3D.
@@ -2216,6 +2595,140 @@ export_topological_snapshot()
 				"  .. note:: The plate boundaries, *along* which uniform points are generated, can be further restricted using *boundary_section_filter*.\n"
 				"\n"
 				"  .. versionadded:: 0.47\n")
+		.def("get_point_locations",
+				&GPlatesApi::topological_snapshot_get_point_locations,
+				(bp::arg("points"),
+					bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES),
+				"get_point_locations(points, [resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)])\n"
+				"  Returns the resolved topological boundaries/networks that contain the specified points.\n"
+				"\n"
+				"  :param points: sequence of points at which to find containing topologies\n"
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param resolve_topology_types: specifies the resolved topology types to search - defaults "
+				"to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
+				":class:`resolved topological networks<ResolvedTopologicalNetwork>` "
+				"(excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)\n"
+				"  :type resolve_topology_types: a bitwise combination of any of ``pygplates.ResolveTopologyType.boundary`` or "
+				"``pygplates.ResolveTopologyType.network``\n"
+				"  :rtype: list of :class:`TopologyPointLocation`\n"
+				"  :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that "
+				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than "
+				":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. "
+				"So if a point is inside both a boundary and a network then the network location is returned.\n"
+				"\n"
+				"  .. note:: Each point that is *outside* all resolved topologies searched will have "
+				":meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``.\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
+		.def("get_point_velocities",
+				&GPlatesApi::topological_snapshot_get_point_velocities,
+				(bp::arg("points"),
+					bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES,
+					bp::arg("velocity_delta_time") = 1.0,
+					bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS,
+					bp::arg("return_point_locations") = false),
+				"get_point_velocities(points, [resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
+				"[velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms], "
+				"[return_point_locations=False])\n"
+				"  Returns the velocities of the specified points (as determined by the resolved topological boundaries/networks that contain them).\n"
+				"\n"
+				"  :param points: sequence of points at which to calculate velocities\n"
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param resolve_topology_types: specifies the resolved topology types to use for calculating velocities - defaults "
+				"to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
+				":class:`resolved topological networks<ResolvedTopologicalNetwork>` "
+				"(excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)\n"
+				"  :type resolve_topology_types: a bitwise combination of any of ``pygplates.ResolveTopologyType.boundary`` or "
+				"``pygplates.ResolveTopologyType.network``\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :param return_point_locations: whether to also return the resolved topological boundary/network that contains each point - defaults to ``False``\n"
+				"  :rtype: list of :class:`Vector3D`, or 2-tuple (list of :class:`Vector3D`, list of :class:`TopologyPointLocation`) if "
+				"*return_point_locations* is ``True``\n"
+				"  :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that "
+				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than "
+				":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. "
+				"So if a point is inside both a boundary and a network then the velocity of the network is returned.\n"
+				"\n"
+				"  .. note:: Each point that is *outside* all resolved topologies searched will have a velocity of ``None``, and optionally "
+				"(if *return_point_locations* is ``True``) have a :meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``.\n"
+				"\n"
+				"  To associate each point with its velocity and the resolved topological boundary/network containing it:\n"
+				"  ::\n"
+				"\n"
+				"    velocities, topology_point_locations = topological_snapshot.get_point_velocities(\n"
+				"            points,\n"
+				"            return_point_locations=True)\n"
+				"\n"
+				"    for point_index in range(len(points)):\n"
+				"        point = points[point_index]\n"
+				"        velocity = velocities[point_index]\n"
+				"        if velocity:  # if point is inside a resolved boundary or network\n"
+				"            topology_point_location = topology_point_locations[point_index]\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
+		.def("get_point_strain_rates",
+				&GPlatesApi::topological_snapshot_get_point_strain_rates,
+				(bp::arg("points"),
+					bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES,
+					bp::arg("return_point_locations") = false),
+				"get_point_strain_rates(points, "
+				"[resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], [return_point_locations=False])\n"
+				"  Returns the strain rates of the specified points (as determined by the resolved topological boundaries/networks that contain them).\n"
+				"\n"
+				"  :param points: sequence of points at which to calculate strain rates\n"
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param resolve_topology_types: specifies the resolved topology types to use for strain rates - defaults "
+				"to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
+				":class:`resolved topological networks<ResolvedTopologicalNetwork>` "
+				"(excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)\n"
+				"  :type resolve_topology_types: a bitwise combination of any of ``pygplates.ResolveTopologyType.boundary`` or "
+				"``pygplates.ResolveTopologyType.network``\n"
+				"  :param return_point_locations: whether to also return the resolved topological boundary/network that contains each point - defaults to ``False``\n"
+				"  :rtype: list of :class:`StrainRate`, or 2-tuple (list of :class:`StrainRate`, list of :class:`TopologyPointLocation`) if "
+				"*return_point_locations* is ``True``\n"
+				"  :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that "
+				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than "
+				":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. "
+				"So a point that is inside a resolved topological network can generate a *non-zero* :class:`strain rate <StrainRate>`. "
+				"However, a point that is inside a resolved topological boundary (but is outside all resolved topological networks searched) "
+				"will generate a *zero* strain rate (``pygplates.StrainRate.zero``) since it is inside a *non-deforming* plate.\n"
+				"\n"
+				"  .. note:: Each point that is *outside* all resolved topologies searched (boundaries and networks) will have a strain rate of ``None``, and "
+				"optionally (if *return_point_locations* is ``True``) have a :meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``.\n"
+				"\n"
+				"  To associate each point with its strain rate and the resolved topological boundary/network containing it:\n"
+				"  ::\n"
+				"\n"
+				"    strain_rates, topology_point_locations = topological_snapshot.get_point_strain_rates(\n"
+				"            points,\n"
+				"            return_point_locations=True)\n"
+				"\n"
+				"    for point_index in range(len(points)):\n"
+				"        point = points[point_index]\n"
+				"        strain_rate = strain_rates[point_index]\n"
+				"        if strain_rate:  # if point is inside a resolved boundary or network\n"
+				"            topology_point_location = topology_point_locations[point_index]\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalSnapshot::get_rotation_model,
 				"get_rotation_model()\n"

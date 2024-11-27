@@ -3190,6 +3190,58 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 self.assertTrue(shared_sub_segment.get_resolved_geometry() == pygplates.PolylineOnSphere(resolved_geometry_points))
                 self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
     
+    def test_point_locations_velocities_strain_rates(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        points = [
+                pygplates.PointOnSphere(0, -30),  # only 'topology2' contains this point
+                pygplates.PointOnSphere(0, -60),  # only the sole network 'topology3' contains this point
+        ]
+
+        # Search only resolved boundaries (not resolved networks).
+        point_locations = snapshot.get_point_locations(points,
+                                                       resolve_topology_types=pygplates.ResolveTopologyType.boundary)
+        point_velocities, point_locations_2 = snapshot.get_point_velocities(points,
+                                                                            resolve_topology_types=pygplates.ResolveTopologyType.boundary,
+                                                                            # Also test velocity arguments get accepted...
+                                                                            velocity_delta_time=1.0,
+                                                                            velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
+                                                                            velocity_units=pygplates.VelocityUnits.kms_per_my,
+                                                                            earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms,
+                                                                            return_point_locations=True)
+        self.assertTrue(len(point_velocities) == len(point_locations_2) == 2)
+        point_strain_rates, point_locations_3 = snapshot.get_point_strain_rates(points,
+                                                                                resolve_topology_types=pygplates.ResolveTopologyType.boundary,
+                                                                                return_point_locations=True)
+        self.assertTrue(len(point_strain_rates) == len(point_locations_3) == 2)
+        # First point is in resolved boundary 'topology2'.
+        self.assertTrue(point_locations == point_locations_2 == point_locations_3)
+        resolved_topology2 = point_locations[0].located_in_resolved_boundary()
+        self.assertTrue(resolved_topology2 and resolved_topology2.get_feature().get_name() == 'topology2')
+        self.assertTrue(point_velocities[0] == pygplates.Vector3D.zero)
+        self.assertTrue(point_strain_rates[0] == pygplates.StrainRate.zero)
+        # Second point is in resolved network 'topology3', but we only searched resolved boundaries.
+        self.assertTrue(point_locations[1].not_located_in_resolved_topology())
+        self.assertTrue(point_velocities[1] is None)
+        self.assertTrue(point_strain_rates[1] is None)
+
+        # Search again, but include networks this time.
+        point_locations = snapshot.get_point_locations(points)
+        point_velocities = snapshot.get_point_velocities(points)
+        point_strain_rates = snapshot.get_point_strain_rates(points)
+        self.assertTrue(len(points) == len(point_locations) == len(point_velocities) == len(point_strain_rates) == 2)
+        # First point is in resolved boundary 'topology2'.
+        resolved_topology2 = point_locations[0].located_in_resolved_boundary()
+        self.assertTrue(resolved_topology2 and resolved_topology2.get_feature().get_name() == 'topology2')
+        # Second point is in resolved network 'topology3'.
+        resolved_topology3 = point_locations[1].located_in_resolved_network_deforming_region()
+        self.assertTrue(resolved_topology3 and resolved_topology3.get_feature().get_name() == 'topology3')
+        # Both velocities and strain rates are zero.
+        self.assertTrue(point_velocities == [pygplates.Vector3D.zero] * len(points))
+        self.assertTrue(point_strain_rates == [pygplates.StrainRate.zero] * len(points))
+    
     def test_resolve_topology_parameters(self):
         default_resolve_topology_parameters=pygplates.ResolveTopologyParameters()
         self.assertFalse(default_resolve_topology_parameters.enable_strain_rate_clamping)
