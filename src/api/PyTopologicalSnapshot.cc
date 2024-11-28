@@ -56,6 +56,8 @@
 #include "app-logic/ResolvedTopologicalSharedSubSegment.h"
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
+#include "app-logic/VelocityDeltaTime.h"
+#include "app-logic/VelocityUnits.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
@@ -74,6 +76,8 @@
 #include "property-values/GeoTimeInstant.h"
 
 #include "scribe/Scribe.h"
+
+#include "utils/Earth.h"
 
 
 namespace bp = boost::python;
@@ -2453,7 +2457,7 @@ export_topological_snapshot()
 				"\n"
 				"  :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or "
 				":class:`ResolvedTopologicalNetwork` (or both types) are listed in the returned resolved topological sections. "
-				"Note that ``ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. "
+				"Note that ``pygplates.ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. "
 				"Defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
 				":class:`resolved topological networks<ResolvedTopologicalNetwork>`.\n"
 				"  :type resolve_topological_section_types: a bitwise combination of any of "
@@ -2480,7 +2484,7 @@ export_topological_snapshot()
 				"  :type export_filename: string/``os.PathLike``\n"
 				"  :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or "
 				":class:`ResolvedTopologicalNetwork` (or both types) are listed in the exported resolved topological sections. "
-				"Note that ``ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. "
+				"Note that ``pygplates.ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. "
 				"Defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
 				":class:`resolved topological networks<ResolvedTopologicalNetwork>`.\n"
 				"  :type resolve_topological_section_types: a bitwise combination of any of "
@@ -2621,6 +2625,22 @@ export_topological_snapshot()
 				"  .. note:: Each point that is *outside* all resolved topologies searched will have "
 				":meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``.\n"
 				"\n"
+				"  To associate each point with the resolved topological boundary/network containing it:\n"
+				"  ::\n"
+				"\n"
+				"    topology_point_locations = reconstruct_snapshot.get_point_locations(points)\n"
+				"\n"
+				"    for point_index in range(len(points)):\n"
+				"        point = points[point_index]\n"
+				"        topology_point_location = topology_point_locations[point_index]\n"
+				"\n"
+				"        if topology_point_location.located_in_resolved_boundary():  # if point is inside a resolved boundary\n"
+				"            resolved_topological_boundary = topology_point_location.located_in_resolved_boundary()\n"
+				"        elif topology_point_location.located_in_resolved_network():  # if point is inside a resolved network\n"
+				"            resolved_topological_network = topology_point_location.located_in_resolved_network()\n"
+				"        else:  # point is not in any resolved topologies\n"
+				"            ...\n"
+				"\n"
 				"  .. versionadded:: 0.50\n")
 		.def("get_point_velocities",
 				&GPlatesApi::topological_snapshot_get_point_velocities,
@@ -2679,8 +2699,13 @@ export_topological_snapshot()
 				"    for point_index in range(len(points)):\n"
 				"        point = points[point_index]\n"
 				"        velocity = velocities[point_index]\n"
+				"        topology_point_location = topology_point_locations[point_index]\n"
+				"\n"
 				"        if velocity:  # if point is inside a resolved boundary or network\n"
-				"            topology_point_location = topology_point_locations[point_index]\n"
+				"            ...\n"
+				"\n"
+				"  .. note:: It is more efficient to call ``topological_snapshot.get_point_velocities(points, return_point_locations=True)`` to get both velocities and "
+				"point locations than it is to call both ``topological_snapshot.get_point_velocities(points)`` and ``topological_snapshot.get_point_locations(points)``.\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
 		.def("get_point_strain_rates",
@@ -2725,8 +2750,13 @@ export_topological_snapshot()
 				"    for point_index in range(len(points)):\n"
 				"        point = points[point_index]\n"
 				"        strain_rate = strain_rates[point_index]\n"
+				"        topology_point_location = topology_point_locations[point_index]\n"
+				"\n"
 				"        if strain_rate:  # if point is inside a resolved boundary or network\n"
-				"            topology_point_location = topology_point_locations[point_index]\n"
+				"            ...\n"
+				"\n"
+				"  .. note:: It is more efficient to call ``topological_snapshot.get_point_strain_rates(points, return_point_locations=True)`` to get both strain rates and "
+				"point locations than it is to call both ``topological_snapshot.get_point_strain_rates(points)`` and ``topological_snapshot.get_point_locations(points)``.\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
 		.def("get_rotation_model",

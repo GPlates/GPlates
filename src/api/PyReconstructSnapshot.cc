@@ -27,6 +27,7 @@
 #include "PyReconstructSnapshot.h"
 
 #include "PyFeatureCollectionFunctionArgument.h"
+#include "PyGeometriesOnSphere.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
@@ -34,11 +35,15 @@
 #include "PythonUtils.h"
 #include "PythonVariableFunctionArguments.h"
 
+#include "app-logic/GeometryCookieCutter.h"
+#include "app-logic/PlateVelocityUtils.h"
 #include "app-logic/ReconstructContext.h"
 #include "app-logic/ReconstructHandle.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructMethodInterface.h"
 #include "app-logic/ReconstructMethodRegistry.h"
+#include "app-logic/VelocityDeltaTime.h"
+#include "app-logic/VelocityUnits.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
@@ -46,6 +51,7 @@
 #include "file-io/ReconstructedFlowlineExport.h"
 #include "file-io/ReconstructedMotionPathExport.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
@@ -58,12 +64,68 @@
 
 #include "scribe/Scribe.h"
 
+#include "utils/Earth.h"
+
 
 namespace bp = boost::python;
 
 
 namespace GPlatesApi
 {
+	/**
+	 * Enumeration to determine how to sort reconstructed static polygons.
+	 */
+	namespace SortReconstructedStaticPolygons
+	{
+		enum Value
+		{
+			BY_PLATE_ID,
+			BY_PLATE_AREA
+		};
+
+		//! Convert from the GeometryCookieCutter::SortPlates equivalent enumeration.
+		boost::optional<Value>
+		convert(
+				boost::optional<GPlatesAppLogic::GeometryCookieCutter::SortPlates> sort_plates)
+		{
+			if (!sort_plates)
+			{
+				return boost::none;
+			}
+
+			switch (sort_plates.get())
+			{
+			case GPlatesAppLogic::GeometryCookieCutter::SORT_BY_PLATE_ID:
+				return BY_PLATE_ID;
+			case GPlatesAppLogic::GeometryCookieCutter::SORT_BY_PLATE_AREA:
+				return BY_PLATE_AREA;
+			}
+
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		}
+
+		//! Convert to the GeometryCookieCutter::SortPlates equivalent enumeration.
+		boost::optional<GPlatesAppLogic::GeometryCookieCutter::SortPlates>
+		convert(
+				boost::optional<Value> sort_reconstructed_static_polygons)
+		{
+			if (!sort_reconstructed_static_polygons)
+			{
+				return boost::none;
+			}
+
+			switch (sort_reconstructed_static_polygons.get())
+			{
+			case BY_PLATE_ID:
+				return GPlatesAppLogic::GeometryCookieCutter::SORT_BY_PLATE_ID;
+			case BY_PLATE_AREA:
+				return GPlatesAppLogic::GeometryCookieCutter::SORT_BY_PLATE_AREA;
+			}
+
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		}
+	}
+
 	/**
 	 * This is called directly from Python via 'ReconstructSnapshot.__init__()'.
 	 */
@@ -217,6 +279,136 @@ namespace GPlatesApi
 				reconstruct_type,
 				wrap_to_dateline,
 				force_polygon_orientation);
+	}
+
+	bp::list
+	reconstruct_snapshot_get_point_locations(
+			ReconstructSnapshot::non_null_ptr_type reconstruct_snapshot,
+			PointSequenceFunctionArgument point_seq,
+			boost::optional<SortReconstructedStaticPolygons::Value> sort_reconstructed_static_polygons)
+	{
+		bp::list point_locations_list;
+
+		const GPlatesAppLogic::GeometryCookieCutter partitioner(
+				reconstruct_snapshot->get_reconstruction_time(),
+				reconstruct_snapshot->get_reconstructed_feature_geometries(),
+				boost::none/*resolved_topological_boundaries*/,
+				boost::none/*resolved_topological_networks*/,
+				SortReconstructedStaticPolygons::convert(sort_reconstructed_static_polygons));
+
+		// Iterate over the sequence of points.
+		for (const auto &point : point_seq.get_points())
+		{
+			// Find which reconstructed static polygons (if any) contains the point.
+			//
+			// Note: This is none if the point is not inside any reconstructed static polygons. 
+			boost::optional<const GPlatesAppLogic::ReconstructionGeometry *> reconstructed_static_polygon =
+					partitioner.partition_point(point);
+
+			if (reconstructed_static_polygon)
+			{
+				point_locations_list.append(GPlatesUtils::get_non_null_pointer(reconstructed_static_polygon.get()));
+			}
+			else
+			{
+				point_locations_list.append(bp::object()/*Py_None*/);
+			}
+		}
+
+		return point_locations_list;
+	}
+
+	bp::object
+	reconstruct_snapshot_get_point_velocities(
+			ReconstructSnapshot::non_null_ptr_type reconstruct_snapshot,
+			PointSequenceFunctionArgument point_seq,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms,
+			boost::optional<SortReconstructedStaticPolygons::Value> sort_reconstructed_static_polygons,
+			bool return_point_locations)
+	{
+		bp::list point_velocities_list;
+
+		boost::optional<bp::list> point_locations_list;
+		if (return_point_locations)
+		{
+			point_locations_list = bp::list();
+		}
+
+		const GPlatesAppLogic::GeometryCookieCutter partitioner(
+				reconstruct_snapshot->get_reconstruction_time(),
+				reconstruct_snapshot->get_reconstructed_feature_geometries(),
+				boost::none/*resolved_topological_boundaries*/,
+				boost::none/*resolved_topological_networks*/,
+				SortReconstructedStaticPolygons::convert(sort_reconstructed_static_polygons));
+
+		// Iterate over the sequence of points.
+		for (const auto &point : point_seq.get_points())
+		{
+			// Find which reconstructed static polygons (if any) contains the point.
+			//
+			// Note: This is none if the point is not inside any reconstructed static polygons. 
+			boost::optional<const GPlatesAppLogic::ReconstructionGeometry *> reconstruction_geometry =
+					partitioner.partition_point(point);
+			if (reconstruction_geometry)
+			{
+				// We only input ReconstructedFeatureGeometry's to the partitioner, so we should only get them as output.
+				const GPlatesAppLogic::ReconstructedFeatureGeometry *reconstructed_static_polygon =
+						dynamic_cast<const GPlatesAppLogic::ReconstructedFeatureGeometry *>(reconstruction_geometry.get());
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						reconstructed_static_polygon,
+						GPLATES_ASSERTION_SOURCE);
+
+				// Get the plate ID from reconstructed static polygon.
+				//
+				// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+				// which can still give a non-identity rotation if the anchor plate id is non-zero.
+				boost::optional<GPlatesModel::integer_plate_id_type> reconstructed_static_polygon_plate_id =
+						reconstructed_static_polygon->reconstruction_plate_id();
+				if (!reconstructed_static_polygon_plate_id)
+				{
+					reconstructed_static_polygon_plate_id = 0;
+				}
+
+				const GPlatesMaths::Vector3D velocity = GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+						point,
+						reconstructed_static_polygon_plate_id.get(),
+						reconstructed_static_polygon->get_reconstruction_tree_creator(),
+						reconstructed_static_polygon->get_reconstruction_time(),
+						velocity_delta_time,
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms);
+
+				point_velocities_list.append(velocity);
+
+				if (return_point_locations)
+				{
+					point_locations_list->append(reconstructed_static_polygon->get_non_null_pointer_to_const());
+				}
+			}
+			else
+			{
+				// Point is not located inside any reconstructed static polygons.
+				point_velocities_list.append(bp::object()/*Py_None*/);
+
+				if (return_point_locations)
+				{
+					point_locations_list->append(bp::object()/*Py_None*/);
+				}
+			}
+		}
+
+		if (return_point_locations)
+		{
+			return bp::make_tuple(point_velocities_list, point_locations_list.get());
+		}
+		else
+		{
+			return point_velocities_list;
+		}
 	}
 
 
@@ -841,6 +1033,15 @@ export_reconstruct_snapshot()
 			.value("flowline", GPlatesApi::ReconstructType::FLOWLINE);
 
 
+	// An enumeration nested within 'pygplates' (ie, current) module.
+	bp::enum_<GPlatesApi::SortReconstructedStaticPolygons::Value>("SortReconstructedStaticPolygons")
+			.value("by_plate_id", GPlatesApi::SortReconstructedStaticPolygons::BY_PLATE_ID)
+			.value("by_plate_area", GPlatesApi::SortReconstructedStaticPolygons::BY_PLATE_AREA);
+
+	// Enable boost::optional<GPlatesApi::SortReconstructedStaticPolygons::Value> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::SortReconstructedStaticPolygons::Value>();
+
+
 	//
 	// ReconstructSnapshot - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -918,8 +1119,8 @@ export_reconstruct_snapshot()
 				"  This can be useful (compared to :meth:`get_reconstructed_geometries`) when a :class:`feature <Feature>` has "
 				"more than one (present day) geometry and hence more than one reconstructed geometry.\n"
 				"\n"
-				"  .. note:: The returned features (and associated reconstructed geometries) are sorted in the order of the reconstructable features "
-				"(including order across reconstructable files, if there were any).\n"
+				"  .. note:: The returned features (and associated reconstructed geometries) are sorted in the order of their respective reconstructable "
+				"features (see :meth:`constructor<__init__>`). This includes the order across any reconstructable feature collections/files.\n"
 				"\n"
 				"  To get the :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>` grouped by their :class:`Feature`:\n"
 				"  ::\n"
@@ -954,6 +1155,9 @@ export_reconstruct_snapshot()
 				"  :raises: ValueError if *reconstruct_types* (if specified) contains a flag that "
 				"is not one of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or "
 				"``pygplates.ReconstructType.flowline``\n"
+				"\n"
+				"  .. note:: The returned reconstructed geometries are sorted in the order of their respective reconstructable features "
+				"(see :meth:`constructor<__init__>`). This includes the order across any reconstructable feature collections/files.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_reconstructed_features`\n")
 		.def("export_reconstructed_geometries",
@@ -998,9 +1202,130 @@ export_reconstruct_snapshot()
 				"  GMT xy                          '.xy'                  \n"
 				"  =============================== =======================\n"
 				"\n"
-				"  .. note:: Reconstructed geometries are exported in the same order as that of their "
-				"respective reconstructable features (see :meth:`constructor<__init__>`) and the order across "
-				"reconstructable feature collections (if any) is also retained.\n")
+				"  .. note:: Reconstructed geometries are exported in the order of their respective reconstructable features "
+				"(see :meth:`constructor<__init__>`). This includes the order across any reconstructable feature collections/files.\n")
+		.def("get_point_locations",
+				&GPlatesApi::reconstruct_snapshot_get_point_locations,
+				(bp::arg("points"),
+					bp::arg("sort_reconstructed_static_polygons") = GPlatesApi::SortReconstructedStaticPolygons::BY_PLATE_ID),
+				"get_point_locations(points, [sort_reconstructed_static_polygons=pygplates.SortReconstructedStaticPolygons.by_plate_id])\n"
+				"  Returns the reconstructed static polygons that contain the specified points.\n"
+				"\n"
+				"  :param points: sequence of points at which to find containing reconstructed static polygons\n"
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param sort_reconstructed_static_polygons: optional sort order of reconstructed static polygons "
+				"(defaults to ``pygplates.SortReconstructedStaticPolygons.by_plate_id``)\n"
+				"  :type sort_reconstructed_static_polygons: ``pygplates.SortReconstructedStaticPolygons.by_plate_id`` or "
+				"``pygplates.SortReconstructedStaticPolygons.by_plate_area`` or None\n"
+				"  :rtype: list of :class:`ReconstructedFeatureGeometry`\n"
+				"\n"
+				"  Reconstructed static polygons are :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>` that have "
+				":class:`polygon <PolygonOnSphere>` geometries (other geometry types are ignored since only polygons can contain points). "
+				"The reconstructed feature geometries are obtained from :meth:`get_reconstructed_geometries` with "
+				"``reconstruct_types=pygplates.ReconstructType.feature_geometry``).\n"
+				"\n"
+				"  .. note:: Each point that is *outside* all reconstructed static polygons will have a point location (reconstructed static polygon) of ``None``.\n"
+				"\n"
+				"  Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike :class:`resolved topological plates <TopologicalSnapshot>` "
+				"which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be "
+				"returned for that point. However, you can change the search order of reconstructed static polygons using *sort_reconstructed_static_polygons*:\n"
+				"\n"
+				"  - ``pygplates.SortReconstructedStaticPolygons.by_plate_id``: Search by *plate ID* (from highest to lowest).\n"
+				"  - ``pygplates.SortReconstructedStaticPolygons.by_plate_area``: Search by *plate area* (from highest to lowest).\n"
+				"  - ``None``: Search using the original order. This is the order of reconstructable features (see :meth:`constructor<__init__>`), "
+				"and includes the order across any reconstructable feature collections/files.\n"
+				"\n"
+				"  .. note:: The default search order is ``pygplates.SortReconstructedStaticPolygons.by_plate_id`` to ensure the results are the same regardless "
+				"of the order of reconstructable features (specified in the :meth:`constructor<__init__>`).\n"
+				"\n"
+				"  To associate each point with the reconstructed static polygon containing it:\n"
+				"  ::\n"
+				"\n"
+				"    reconstructed_static_polygons = reconstruct_snapshot.get_point_locations(points)\n"
+				"\n"
+				"    for point_index in range(len(points)):\n"
+				"        point = points[point_index]\n"
+				"        reconstructed_static_polygon = reconstructed_static_polygons[point_index]\n"
+				"\n"
+				"        if reconstructed_static_polygon:  # if point is inside a reconstructed static polygon\n"
+				"            ...\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
+		.def("get_point_velocities",
+				&GPlatesApi::reconstruct_snapshot_get_point_velocities,
+				(bp::arg("points"),
+					bp::arg("velocity_delta_time") = 1.0,
+					bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS,
+					bp::arg("sort_reconstructed_static_polygons") = GPlatesApi::SortReconstructedStaticPolygons::BY_PLATE_ID,
+					bp::arg("return_point_locations") = false),
+				"get_point_velocities(points, "
+				"[velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms], "
+				"[sort_reconstructed_static_polygons=pygplates.SortReconstructedStaticPolygons.by_plate_id], [return_point_locations=False])\n"
+				"  Returns the velocities of the specified points (as determined by the reconstructed static polygons that contain them).\n"
+				"\n"
+				"  :param points: sequence of points at which to calculate velocities\n"
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :param sort_reconstructed_static_polygons: optional sort order of reconstructed static polygons "
+				"(defaults to ``pygplates.SortReconstructedStaticPolygons.by_plate_id``)\n"
+				"  :type sort_reconstructed_static_polygons: ``pygplates.SortReconstructedStaticPolygons.by_plate_id`` or "
+				"``pygplates.SortReconstructedStaticPolygons.by_plate_area`` or None\n"
+				"  :param return_point_locations: whether to also return the reconstructed static polygon that contains each point - defaults to ``False``\n"
+				"  :rtype: list of :class:`Vector3D`, or 2-tuple (list of :class:`Vector3D`, list of :class:`ReconstructedFeatureGeometry`) if "
+				"*return_point_locations* is ``True``\n"
+				"\n"
+				"  Reconstructed static polygons are :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>` that have "
+				":class:`polygon <PolygonOnSphere>` geometries (other geometry types are ignored since only polygons can contain points). "
+				"The reconstructed feature geometries are obtained from :meth:`get_reconstructed_geometries` with "
+				"``reconstruct_types=pygplates.ReconstructType.feature_geometry``).\n"
+				"\n"
+				"  .. note:: Each point that is *outside* all reconstructed static polygons will have a velocity of ``None``, and optionally "
+				"(if *return_point_locations* is ``True``) have a point location (reconstructed static polygon) of ``None``.\n"
+				"\n"
+				"  Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike :class:`resolved topological plates <TopologicalSnapshot>` "
+				"which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be "
+				"returned for that point. However, you can change the search order of reconstructed static polygons using *sort_reconstructed_static_polygons*:\n"
+				"\n"
+				"  - ``pygplates.SortReconstructedStaticPolygons.by_plate_id``: Search by *plate ID* (from highest to lowest).\n"
+				"  - ``pygplates.SortReconstructedStaticPolygons.by_plate_area``: Search by *plate area* (from highest to lowest).\n"
+				"  - ``None``: Search using the original order. This is the order of reconstructable features (see :meth:`constructor<__init__>`), "
+				"and includes the order across any reconstructable feature collections/files.\n"
+				"\n"
+				"  .. note:: The default search order is ``pygplates.SortReconstructedStaticPolygons.by_plate_id`` to ensure the results are the same regardless "
+				"of the order of reconstructable features (specified in the :meth:`constructor<__init__>`).\n"
+				"\n"
+				"  To associate each point with its velocity and the reconstructed static polygon containing it:\n"
+				"  ::\n"
+				"\n"
+				"    velocities, reconstructed_static_polygons = reconstruct_snapshot.get_point_velocities(\n"
+				"            points,\n"
+				"            return_point_locations=True)\n"
+				"\n"
+				"    for point_index in range(len(points)):\n"
+				"        point = points[point_index]\n"
+				"        velocity = velocities[point_index]\n"
+				"        reconstructed_static_polygon = reconstructed_static_polygons[point_index]\n"
+				"\n"
+				"        if velocity:  # if point is inside a reconstructed static polygon\n"
+				"            ...\n"
+				"\n"
+				"  .. note:: It is more efficient to call ``reconstruct_snapshot.get_point_velocities(points, return_point_locations=True)`` to get both velocities and "
+				"point locations than it is to call both ``reconstruct_snapshot.get_point_velocities(points)`` and ``reconstruct_snapshot.get_point_locations(points)``.\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
 		.def("get_rotation_model",
 				&GPlatesApi::ReconstructSnapshot::get_rotation_model,
 				"get_rotation_model()\n"

@@ -811,8 +811,7 @@ def partition_into_plates(
     to overlap you don't need to sort them by plate *ID* to get deterministic partitioning results.
     So we are free to sort by plate *area* (well, plate area is also deterministic but not as deterministic
     as sorting by plate *ID* since modifications to the plate geometries change their areas but not their plate IDs).
-    Note that we also group by partition type in case the topological networks happen
-    to overlay the topological plate boundaries (usually this isn't the case though):
+    Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:
     ::
     
         features = pygplates.partition_into_plates(...,

@@ -280,6 +280,187 @@ class ReconstructSnapshotTestCase(unittest.TestCase):
         self.assertTrue(grouped_feature.get_feature_id() == feature.get_feature_id())
         self.assertTrue(len(reconstructed_feature_geometries) == 1)
         self.assertTrue(geometry == reconstructed_feature_geometries[0].get_present_day_geometry())
+    
+    def test_point_locations_velocities(self):
+        # We'll reconstruct a polyline and two polygons.
+        # The polyline will get ignored (since it cannot contain points).
+        polyline_1 = pygplates.PolylineOnSphere([(0,0), (10, 10)])
+        polyline_1_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.create_gpml('Coastline'),
+                polyline_1, name='polyline_1', reconstruction_plate_id=1)
+        polygon_1 = pygplates.PolygonOnSphere([(1,-32), (1,-28), (-1,-28), (-1,-32)])
+        polygon_1_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature,
+                polygon_1, name='polygon_1', reconstruction_plate_id=1)
+        polygon_2 = pygplates.PolygonOnSphere([(1,31), (1,29), (-1,29), (-1,31)])  # smaller area than polygon_1
+        polygon_2_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature,
+                polygon_2, name='polygon_2', reconstruction_plate_id=2)
+        reconstructable_features = [polyline_1_feature, polygon_1_feature, polygon_2_feature]
+
+        # Create our own rotation model (for plate IDs 1 and 2 relative to 0).
+        #
+        # Both rotations have same velocity *magnitude* of 1 degree per Myr (just in different directions).
+        velocity_magnitude_kms_per_my = math.radians(1) * pygplates.Earth.mean_radius_in_kms
+        #
+        # Plate ID 1 rotates *anti-clockwise* around North pole at 1 degree per Myr (going backward in time).
+        # Note: This is *clockwise* going *forward* in time (used for velocities).
+        rotation_time_samples_1 = [
+                pygplates.GpmlTimeSample(
+                    pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((lat, lon), math.radians(angle))),
+                    time)
+                for time, lat, lon, angle in [(0, 90, 0, 0), (100, 90, 0, 100)]]
+        rotation_feature_1 = pygplates.Feature.create_total_reconstruction_sequence(
+            0, 1, pygplates.GpmlIrregularSampling(rotation_time_samples_1))
+        # Plate ID 2 rotates *clockwise* around North pole at 1 degree per Myr (going backward in time).
+        # Note: This is *anti-clockwise* going *forward* in time.
+        rotation_time_samples_2 = [
+                pygplates.GpmlTimeSample(
+                    pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((lat, lon), math.radians(angle))),
+                    time)
+                for time, lat, lon, angle in [(0, 90, 0, 0), (100, 90, 0, -100)]]
+        rotation_feature_2 = pygplates.Feature.create_total_reconstruction_sequence(
+            0, 2, pygplates.GpmlIrregularSampling(rotation_time_samples_2))
+        rotation_model = pygplates.RotationModel([rotation_feature_1, rotation_feature_2])
+        
+        # Points to test.
+        points = [
+                pygplates.PointOnSphere(0, -30),
+                (0, 0),
+                pygplates.LatLonPoint(0, 30).to_xyz(),
+        ]
+
+        #
+        # Reconstruct to 0 Ma.
+        # Polygon 1 should contain 1st point.
+        # Polygon 2 should contain 2nd point.
+        #
+        snapshot = pygplates.ReconstructSnapshot(
+                reconstructable_features,
+                rotation_model,
+                reconstruction_time=0)
+        point_locations = snapshot.get_point_locations(points)
+        point_velocities, point_locations_from_vel = snapshot.get_point_velocities(points,
+                                                                            # Also test velocity arguments get accepted...
+                                                                            velocity_delta_time=1.0,
+                                                                            velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
+                                                                            velocity_units=pygplates.VelocityUnits.kms_per_my,
+                                                                            earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms,
+                                                                            return_point_locations=True)
+        self.assertTrue(len(point_velocities) == len(point_locations_from_vel) == len(points))
+        self.assertTrue(point_locations == point_locations_from_vel)
+        # Polygon 1 contains 1st point.
+        self.assertTrue(point_locations[0].get_feature().get_name() == 'polygon_1')
+        self.assertTrue(point_locations[0].get_reconstructed_geometry() == polygon_1)
+        # Compare velocities to only 4 decimal places.
+        for vel_comp_calc, vel_comp_actual in zip(
+                point_velocities[0].to_xyz(),
+                # Velocity is *clockwise* (going forward in time)...
+                (pygplates.FiniteRotation((90, 0), math.radians(-30)) * pygplates.Vector3D(0, -velocity_magnitude_kms_per_my, 0)).to_xyz()):
+            self.assertAlmostEqual(vel_comp_calc, vel_comp_actual, places=4)
+        # No polygon contains 2nd point.
+        self.assertTrue(point_locations[1] is None)
+        self.assertTrue(point_velocities[1] is None)
+        # Polygon 2 contains 3rd point.
+        self.assertTrue(point_locations[2].get_feature().get_name() == 'polygon_2')
+        self.assertTrue(point_locations[2].get_reconstructed_geometry() == polygon_2)
+        # Compare velocities to only 4 decimal places.
+        for vel_comp_calc, vel_comp_actual in zip(
+                point_velocities[2].to_xyz(),
+                # Velocity is *anti-clockwise* (going forward in time)...
+                (pygplates.FiniteRotation((90, 0), math.radians(30)) * pygplates.Vector3D(0, velocity_magnitude_kms_per_my, 0)).to_xyz()):
+            self.assertAlmostEqual(vel_comp_calc, vel_comp_actual, places=4)
+
+        #
+        # Reconstruct to 30 Ma.
+        # Polygon 1 should contain 3rd point.
+        # Polygon 2 should contain 3rd point.
+        #
+        snapshot = pygplates.ReconstructSnapshot(
+                reconstructable_features,
+                rotation_model,
+                reconstruction_time=30)
+        
+        #
+        # Use original order of polygon features (polygon_1 then polygon_2).
+        #
+        sort_reconstructed_static_polygons = None
+        point_locations = snapshot.get_point_locations(points,
+                                                       sort_reconstructed_static_polygons=sort_reconstructed_static_polygons)
+        point_velocities, point_locations_from_vel = snapshot.get_point_velocities(points,
+                                                                                   sort_reconstructed_static_polygons=sort_reconstructed_static_polygons,
+                                                                                   return_point_locations=True)
+        self.assertTrue(len(point_velocities) == len(point_locations_from_vel) == len(points))
+        self.assertTrue(point_locations == point_locations_from_vel)
+        # No polygon contains 1st point.
+        self.assertTrue(point_locations[0] is None)
+        self.assertTrue(point_velocities[0] is None)
+        # Both polygon 1 and 2 contain 2nd point (but polygon 1 wins since it's the first reconstructable polygon when snapshot created).
+        self.assertTrue(point_locations[1].get_feature().get_name() == 'polygon_1')
+        self.assertTrue(point_locations[1].get_reconstructed_geometry() == pygplates.FiniteRotation((90, 0), math.radians(30)) * polygon_1)
+        # Compare velocities to only 4 decimal places.
+        for vel_comp_calc, vel_comp_actual in zip(
+                point_velocities[1].to_xyz(),
+                # Velocity is *clockwise* (going forward in time)...
+                pygplates.Vector3D(0, -velocity_magnitude_kms_per_my, 0).to_xyz()):
+            self.assertAlmostEqual(vel_comp_calc, vel_comp_actual, places=4)
+        # No polygon contains 3rd point.
+        self.assertTrue(point_locations[2] is None)
+        self.assertTrue(point_velocities[2] is None)
+        
+        #
+        # Sort polygon features by plate ID (polygon_2 then polygon_1).
+        #
+        sort_reconstructed_static_polygons = pygplates.SortReconstructedStaticPolygons.by_plate_id
+        point_locations = snapshot.get_point_locations(points,
+                                                       sort_reconstructed_static_polygons=sort_reconstructed_static_polygons)
+        point_velocities, point_locations_from_vel = snapshot.get_point_velocities(points,
+                                                                                   sort_reconstructed_static_polygons=sort_reconstructed_static_polygons,
+                                                                                   return_point_locations=True)
+        self.assertTrue(len(point_velocities) == len(point_locations_from_vel) == len(points))
+        self.assertTrue(point_locations == point_locations_from_vel)
+        # No polygon contains 1st point.
+        self.assertTrue(point_locations[0] is None)
+        self.assertTrue(point_velocities[0] is None)
+        # Both polygon 1 and 2 contain 2nd point (but polygon 2 wins since it has a higher plate ID).
+        self.assertTrue(point_locations[1].get_feature().get_name() == 'polygon_2')
+        self.assertTrue(point_locations[1].get_reconstructed_geometry() == pygplates.FiniteRotation((90, 0), math.radians(-30)) * polygon_2)
+        # Compare velocities to only 4 decimal places.
+        for vel_comp_calc, vel_comp_actual in zip(
+                point_velocities[1].to_xyz(),
+                # Velocity is *anti-clockwise* (going forward in time)...
+                pygplates.Vector3D(0, velocity_magnitude_kms_per_my, 0).to_xyz()):
+            self.assertAlmostEqual(vel_comp_calc, vel_comp_actual, places=4)
+        # No polygon contains 3rd point.
+        self.assertTrue(point_locations[2] is None)
+        self.assertTrue(point_velocities[2] is None)
+        
+        #
+        # Sort polygon features by plate area (polygon_1 then polygon_2).
+        #
+        sort_reconstructed_static_polygons = pygplates.SortReconstructedStaticPolygons.by_plate_area
+        point_locations = snapshot.get_point_locations(points,
+                                                       sort_reconstructed_static_polygons=sort_reconstructed_static_polygons)
+        point_velocities, point_locations_from_vel = snapshot.get_point_velocities(points,
+                                                                                   sort_reconstructed_static_polygons=sort_reconstructed_static_polygons,
+                                                                                   return_point_locations=True)
+        self.assertTrue(len(point_velocities) == len(point_locations_from_vel) == len(points))
+        self.assertTrue(point_locations == point_locations_from_vel)
+        # No polygon contains 1st point.
+        self.assertTrue(point_locations[0] is None)
+        self.assertTrue(point_velocities[0] is None)
+        # Both polygon 1 and 2 contain 2nd point (but polygon 1 wins since it has a larger plate area).
+        self.assertTrue(point_locations[1].get_feature().get_name() == 'polygon_1')
+        self.assertTrue(point_locations[1].get_reconstructed_geometry() == pygplates.FiniteRotation((90, 0), math.radians(30)) * polygon_1)
+        # Compare velocities to only 4 decimal places.
+        for vel_comp_calc, vel_comp_actual in zip(
+                point_velocities[1].to_xyz(),
+                # Velocity is *clockwise* (going forward in time)...
+                pygplates.Vector3D(0, -velocity_magnitude_kms_per_my, 0).to_xyz()):
+            self.assertAlmostEqual(vel_comp_calc, vel_comp_actual, places=4)
+        # No polygon contains 3rd point.
+        self.assertTrue(point_locations[2] is None)
+        self.assertTrue(point_velocities[2] is None)
 
     def test_reconstructed_export_files(self):
         reconstructable_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'volcanoes.gpml')) 
@@ -3197,7 +3378,7 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             pygplates.GeoTimeInstant(10))
         points = [
                 pygplates.PointOnSphere(0, -30),  # only 'topology2' contains this point
-                pygplates.PointOnSphere(0, -60),  # only the sole network 'topology3' contains this point
+                (0, -60),  # only the sole network 'topology3' contains this point
         ]
 
         # Search only resolved boundaries (not resolved networks).
