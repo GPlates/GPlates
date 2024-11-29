@@ -2397,7 +2397,10 @@ export_topological_snapshot()
 				"  :rtype: ``list``\n"
 				"  :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that "
 				"is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or "
-				"``pygplates.ResolveTopologyType.network``\n")
+				"``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topologies are sorted in the order of their "
+				"respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.\n")
 		.def("export_resolved_topologies",
 				&GPlatesApi::topological_snapshot_export_resolved_topologies,
 				(bp::arg("export_filename"),
@@ -2468,7 +2471,10 @@ export_topological_snapshot()
 				"  :type same_order_as_topological_features: bool\n"
 				"  :rtype: ``list`` of :class:`ResolvedTopologicalSection`\n"
 				"  :raises: ValueError if *resolve_topological_section_types* (if specified) contains a flag that "
-				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n")
+				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topological sections are sorted in the order of their "
+				"respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.\n")
 		.def("export_resolved_topological_sections",
 				&GPlatesApi::topological_snapshot_export_resolved_topological_sections,
 				(bp::arg("export_filename"),

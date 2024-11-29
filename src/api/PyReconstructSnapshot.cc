@@ -214,34 +214,16 @@ namespace GPlatesApi
 
 		bp::list reconstructed_geometries_list;
 
-		if (same_order_as_reconstructable_features)
-		{
-			// Group the reconstructed geometries by their feature.
-			//
-			// Note: The features are sorted in the order of the features in the reconstructable files (and the order across files).
-			const std::list<ReconstructSnapshot::feature_geometry_group_type> reconstructed_features =
-					reconstruct_snapshot->get_reconstructed_features(reconstruct_types);
+		// Get all reconstructed geometries.
+		const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+				reconstructed_geometries = reconstruct_snapshot->get_reconstructed_geometries(
+						reconstruct_types,
+						same_order_as_reconstructable_features);
 
-			// Output the reconstructed geometries of each feature.
-			for (const auto &reconstructed_feature : reconstructed_features)
-			{
-				for (auto reconstructed_geometry : reconstructed_feature.recon_geoms)
-				{
-					reconstructed_geometries_list.append(reconstructed_geometry->get_non_null_pointer_to_const());
-				}
-			}
-		}
-		else
+		// Output the reconstructed geometries.
+		for (auto reconstructed_geometry : reconstructed_geometries)
 		{
-			// Get all reconstructed geometries (not sorted by feature).
-			const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_geometries =
-					reconstruct_snapshot->get_reconstructed_geometries(reconstruct_types);
-
-			// Output the reconstructed geometries.
-			for (auto reconstructed_geometry : reconstructed_geometries)
-			{
-				reconstructed_geometries_list.append(reconstructed_geometry->get_non_null_pointer_to_const());
-			}
+			reconstructed_geometries_list.append(reconstructed_geometry);
 		}
 
 		return reconstructed_geometries_list;
@@ -291,6 +273,9 @@ namespace GPlatesApi
 
 		const GPlatesAppLogic::GeometryCookieCutter partitioner(
 				reconstruct_snapshot->get_reconstruction_time(),
+				// Note: Since this is a *single* reconstruct type, the reconstructed geometries will already be
+				//       in the order of the features in the reconstructable files (and the order across files).
+				//       This will be the default search order if 'sort_reconstructed_static_polygons' is none...
 				reconstruct_snapshot->get_reconstructed_feature_geometries(),
 				boost::none/*resolved_topological_boundaries*/,
 				boost::none/*resolved_topological_networks*/,
@@ -339,6 +324,9 @@ namespace GPlatesApi
 
 		const GPlatesAppLogic::GeometryCookieCutter partitioner(
 				reconstruct_snapshot->get_reconstruction_time(),
+				// Note: Since this is a *single* reconstruct type, the reconstructed geometries will already be
+				//       in the order of the features in the reconstructable files (and the order across files).
+				//       This will be the default search order if 'sort_reconstructed_static_polygons' is none...
 				reconstruct_snapshot->get_reconstructed_feature_geometries(),
 				boost::none/*resolved_topological_boundaries*/,
 				boost::none/*resolved_topological_networks*/,
@@ -482,6 +470,9 @@ namespace GPlatesApi
 		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_flowlines;
 
 		// Iterate over the files and reconstruct their features.
+		//
+		// NOTE: Each reconstruct type (ie, FEATURE_GEOMETRY, MOTION_PATH and FLOWLINE) is naturally sorted
+		//       in the order of the features in the reconstructable files (and the order across files).
 		for (const auto &reconstruct_file : d_reconstructable_files)
 		{
 			const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
@@ -564,8 +555,11 @@ namespace GPlatesApi
 			ReconstructType::flags_type reconstruct_types) const
 	{
 		// Gather all the reconstructed geometries to output.
-		const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
-				reconstructed_geometries = get_reconstructed_geometries(reconstruct_types);
+		const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+				reconstructed_geometries = get_reconstructed_geometries(
+						reconstruct_types,
+						// Don't sort since we'll be doing that ourselves...
+						false/*same_order_as_reconstructable_features*/);
 
 		// Group features with their reconstructed geometries.
 		//
@@ -579,7 +573,7 @@ namespace GPlatesApi
 	void
 	ReconstructSnapshot::find_feature_geometry_groups(
 			std::list<ReconstructSnapshot::feature_geometry_group_type> &grouped_reconstructed_geometries,
-			const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_geometries) const
+			const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type> &reconstructed_geometries) const
 	{
 		// Get the sequence of reconstructable files as File pointers.
 		std::vector<const GPlatesFileIO::File::Reference *> reconstructable_file_ptrs;
@@ -614,35 +608,58 @@ namespace GPlatesApi
 				feature_to_collection_map);
 	}
 
-	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
+	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
 	ReconstructSnapshot::get_reconstructed_geometries(
-			ReconstructType::flags_type reconstruct_types) const
+			ReconstructType::flags_type reconstruct_types,
+			bool same_order_as_reconstructable_features) const
 	{
 		// Gather all the reconstructed geometries to output.
-		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_geometries;
+		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type> reconstructed_geometries;
 
-		if ((reconstruct_types & ReconstructType::FEATURE_GEOMETRY) != 0)
+		if (same_order_as_reconstructable_features &&
+			// If there's only one reconstruct type specified then it's already sorted (by reconstructable features)...
+			!ReconstructType::only_one_reconstruct_type(reconstruct_types))
 		{
-			reconstructed_geometries.insert(
-					reconstructed_geometries.end(),
-					d_reconstructed_feature_geometries.begin(),
-					d_reconstructed_feature_geometries.end());
+			// Group the reconstructed geometries by their feature.
+			//
+			// Note: The features are sorted in the order of the features in the reconstructable files (and the order across files).
+			const std::list<ReconstructSnapshot::feature_geometry_group_type> reconstructed_features =
+					get_reconstructed_features(reconstruct_types);
+
+			// Output the reconstructed geometries of each feature.
+			for (const auto &reconstructed_feature : reconstructed_features)
+			{
+				for (auto reconstructed_geometry : reconstructed_feature.recon_geoms)
+				{
+					reconstructed_geometries.push_back(reconstructed_geometry->get_non_null_pointer_to_const());
+				}
+			}
 		}
-
-		if ((reconstruct_types & ReconstructType::MOTION_PATH) != 0)
+		else
 		{
-			reconstructed_geometries.insert(
-					reconstructed_geometries.end(),
-					d_reconstructed_motion_paths.begin(),
-					d_reconstructed_motion_paths.end());
-		}
+			if ((reconstruct_types & ReconstructType::FEATURE_GEOMETRY) != 0)
+			{
+				reconstructed_geometries.insert(
+						reconstructed_geometries.end(),
+						d_reconstructed_feature_geometries.begin(),
+						d_reconstructed_feature_geometries.end());
+			}
 
-		if ((reconstruct_types & ReconstructType::FLOWLINE) != 0)
-		{
-			reconstructed_geometries.insert(
-					reconstructed_geometries.end(),
-					d_reconstructed_flowlines.begin(),
-					d_reconstructed_flowlines.end());
+			if ((reconstruct_types & ReconstructType::MOTION_PATH) != 0)
+			{
+				reconstructed_geometries.insert(
+						reconstructed_geometries.end(),
+						d_reconstructed_motion_paths.begin(),
+						d_reconstructed_motion_paths.end());
+			}
+
+			if ((reconstruct_types & ReconstructType::FLOWLINE) != 0)
+			{
+				reconstructed_geometries.insert(
+						reconstructed_geometries.end(),
+						d_reconstructed_flowlines.begin(),
+						d_reconstructed_flowlines.end());
+			}
 		}
 
 		return reconstructed_geometries;
@@ -1122,6 +1139,8 @@ export_reconstruct_snapshot()
 				"  .. note:: The returned features (and associated reconstructed geometries) are sorted in the order of their respective reconstructable "
 				"features (see :meth:`constructor<__init__>`). This includes the order across any reconstructable feature collections/files.\n"
 				"\n"
+				"  .. note:: The *reconstruct_types* argument accepts more than one reconstruct type, unlike :meth:`export_reconstructed_geometries` and :func:`reconstruct`.\n"
+				"\n"
 				"  To get the :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>` grouped by their :class:`Feature`:\n"
 				"  ::\n"
 				"\n"
@@ -1156,8 +1175,10 @@ export_reconstruct_snapshot()
 				"is not one of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or "
 				"``pygplates.ReconstructType.flowline``\n"
 				"\n"
-				"  .. note:: The returned reconstructed geometries are sorted in the order of their respective reconstructable features "
-				"(see :meth:`constructor<__init__>`). This includes the order across any reconstructable feature collections/files.\n"
+				"  .. note:: If *same_order_as_reconstructable_features* is ``True`` then the returned reconstructed geometries are sorted in the order of their "
+				"respective reconstructable features (see :meth:`constructor<__init__>`). This includes the order across any reconstructable feature collections/files.\n"
+				"\n"
+				"  .. note:: The *reconstruct_types* argument accepts more than one reconstruct type, unlike :meth:`export_reconstructed_geometries` and :func:`reconstruct`.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_reconstructed_features`\n")
 		.def("export_reconstructed_geometries",
@@ -1222,7 +1243,7 @@ export_reconstruct_snapshot()
 				"  Reconstructed static polygons are :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>` that have "
 				":class:`polygon <PolygonOnSphere>` geometries (other geometry types are ignored since only polygons can contain points). "
 				"The reconstructed feature geometries are obtained from :meth:`get_reconstructed_geometries` with "
-				"``reconstruct_types=pygplates.ReconstructType.feature_geometry``).\n"
+				"``reconstruct_types=pygplates.ReconstructType.feature_geometry`` and ``same_order_as_reconstructable_features=True``.\n"
 				"\n"
 				"  .. note:: Each point that is *outside* all reconstructed static polygons will have a point location (reconstructed static polygon) of ``None``.\n"
 				"\n"
@@ -1290,7 +1311,7 @@ export_reconstruct_snapshot()
 				"  Reconstructed static polygons are :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>` that have "
 				":class:`polygon <PolygonOnSphere>` geometries (other geometry types are ignored since only polygons can contain points). "
 				"The reconstructed feature geometries are obtained from :meth:`get_reconstructed_geometries` with "
-				"``reconstruct_types=pygplates.ReconstructType.feature_geometry``).\n"
+				"``reconstruct_types=pygplates.ReconstructType.feature_geometry`` and ``same_order_as_reconstructable_features=True``.\n"
 				"\n"
 				"  .. note:: Each point that is *outside* all reconstructed static polygons will have a velocity of ``None``, and optionally "
 				"(if *return_point_locations* is ``True``) have a point location (reconstructed static polygon) of ``None``.\n"
