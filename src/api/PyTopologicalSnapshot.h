@@ -258,6 +258,15 @@ namespace GPlatesApi
 		}
 
 		/**
+		 * Returns the reconstruction time of this snapshot.
+		 */
+		double
+		get_reconstruction_time() const
+		{
+			return d_reconstruction_time;
+		}
+
+		/**
 		 * Returns the anchor plate ID.
 		 */
 		GPlatesModel::integer_plate_id_type

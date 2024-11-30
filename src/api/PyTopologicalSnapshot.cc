@@ -23,16 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-// Workaround for compile error in <pyport.h> for Python versions less than 2.7.13 and 3.5.3.
-// See https://bugs.python.org/issue10910
-// Workaround involves including "global/python.h" at the top of some source files
-// to ensure <Python.h> is included before <ctype.h>.
-#include "global/python.h"
-
-// This is not included by <boost/python.hpp>.
-// Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/raw_function.hpp>
-
 #include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
@@ -1102,7 +1092,7 @@ export_topological_snapshot()
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 			"  :param anchor_plate_id: The anchored plate id used for all reconstructions "
 			"(resolving topologies, and reconstructing regular features). "
-			"Defaults to the default anchor plate of *rotation_model*.\n"
+			"Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).\n"
 			"  :type anchor_plate_id: int\n"
 			"  :param default_resolve_topology_parameters: Default parameters used to resolve topologies. "
 			"Note that these can optionally be overridden in *topological_features*. "
@@ -1277,6 +1267,14 @@ export_topological_snapshot()
 				"  .. note:: The :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of the returned rotation model "
 				"may be different to that of the rotation model passed into the :meth:`constructor<__init__>` if an anchor plate ID was specified "
 				"in the :meth:`constructor<__init__>`.\n")
+		.def("get_reconstruction_time",
+				&GPlatesApi::TopologicalSnapshot::get_reconstruction_time,
+				"get_reconstruction_time()\n"
+				"  Return the reconstruction time of this snapshot.\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  .. versionadded:: 0.43\n")
 		.def("get_anchor_plate_id",
 				&GPlatesApi::TopologicalSnapshot::get_anchor_plate_id,
 				"get_anchor_plate_id()\n"

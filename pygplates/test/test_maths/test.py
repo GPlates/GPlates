@@ -632,6 +632,7 @@ class Vector3DCase(unittest.TestCase):
     
     def test_constants(self):
         self.assertTrue(pygplates.Vector3D.zero == pygplates.Vector3D(0,0,0))
+        self.assertTrue(pygplates.Vector3D.zero == pygplates.Vector3D())
         self.assertTrue(pygplates.Vector3D.x_axis == pygplates.Vector3D(1,0,0))
         self.assertTrue(pygplates.Vector3D.y_axis == pygplates.Vector3D(0,1,0))
         self.assertTrue(pygplates.Vector3D.z_axis == pygplates.Vector3D(0,0,1))

@@ -309,6 +309,18 @@ export_vector_3d()
 				"    vector = pygplates.Vector3D([x,y,z])\n"
 				"    vector = pygplates.Vector3D(numpy.array([x,y,z]))\n"
 				"    vector = pygplates.Vector3D(pygplates.Vector3D(x,y,z))\n")
+		.def(bp::init<>(
+				// Specific overload signature...
+				"__init__()\n"
+				"  Construct a zero *Vector3D*.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    vector = pygplates.Vector3D()\n"
+				"\n"
+				"  .. note:: Alternatively you can use ``vector = pygplates.Vector3D.zero``.\n"
+				"\n"
+				"  .. versionadded:: 0.43\n"))
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.

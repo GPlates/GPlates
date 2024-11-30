@@ -484,6 +484,121 @@ class ReconstructTestCase(unittest.TestCase):
         os.remove(os.path.join(FIXTURES, 'volcanoes_tmp.gpml'))
 
 
+class NetRotationTestCase(unittest.TestCase):
+    def setUp(self):
+        rotation_model = pygplates.RotationModel(pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot')))
+        topologies = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
+        self.topological_model = pygplates.TopologicalModel(topologies, rotation_model)
+        self.net_rotation_model = pygplates.NetRotationModel(self.topological_model, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)
+    
+    def test_pickle(self):
+        # Pickle a NetRotationModel.
+        pickled_net_rotation_model = pickle.loads(pickle.dumps(self.net_rotation_model))
+        self.assertTrue(pickled_net_rotation_model.get_topological_model().get_rotation_model().get_rotation(100, 802) ==
+                        self.net_rotation_model.get_topological_model().get_rotation_model().get_rotation(100, 802))
+        self.assertTrue(pickled_net_rotation_model.net_rotation_snapshot(10).get_total_net_rotation().get_finite_rotation() ==
+                        self.net_rotation_model.net_rotation_snapshot(10).get_total_net_rotation().get_finite_rotation())
+        # Pickle a NetRotationSnapshot.
+        net_rotation_snapshot = self.net_rotation_model.net_rotation_snapshot(10)
+        pickled_net_rotation_snapshot = pickle.loads(pickle.dumps(net_rotation_snapshot))
+        self.assertTrue(pickled_net_rotation_snapshot.get_topological_snapshot().get_reconstruction_time() ==
+                        net_rotation_snapshot.get_topological_snapshot().get_reconstruction_time())
+        self.assertTrue(pickled_net_rotation_snapshot.get_total_net_rotation().get_finite_rotation() == net_rotation_snapshot.get_total_net_rotation().get_finite_rotation())
+        # Pickle a NetRotation.
+        total_net_rotation = net_rotation_snapshot.get_total_net_rotation()
+        pickled_total_net_rotation = pickle.loads(pickle.dumps(total_net_rotation))
+        self.assertTrue(pickled_total_net_rotation.get_finite_rotation() == total_net_rotation.get_finite_rotation())
+        self.assertTrue(pickled_total_net_rotation.get_rotation_rate_vector() == total_net_rotation.get_rotation_rate_vector())
+    
+    def test_net_rotation(self):
+        # Use the default 'num_samples_along_meridian' (180).
+        net_rotation_snapshot = self.net_rotation_model.net_rotation_snapshot(0)
+        total_net_rotation = net_rotation_snapshot.get_total_net_rotation()
+        total_pole_latitude, total_pole_longitude, total_angle_degrees  = total_net_rotation.get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
+        # These values were obtained from the GPlates net rotation export.
+        self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)
+        self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
+        self.assertAlmostEqual(total_angle_degrees, 0.014637, places=6)
+        # Test the individual net rotations of resolved topological boundaries and networks.
+        total_net_rotation_accumulator = pygplates.NetRotation()  # zero net rotation
+        for resolved_topology_net_rotation in net_rotation_snapshot.get_net_rotation().values():
+            total_net_rotation_accumulator += resolved_topology_net_rotation
+        self.assertTrue(total_net_rotation.get_finite_rotation() == total_net_rotation_accumulator.get_finite_rotation())
+        # Test again but extracting each resolved topology's net rotation individually.
+        total_net_rotation_accumulator = pygplates.NetRotation()  # zero net rotation
+        for resolved_topology in net_rotation_snapshot.get_topological_snapshot().get_resolved_topologies():
+            resolved_topology_net_rotation = net_rotation_snapshot.get_net_rotation(resolved_topology)
+            # Not all resolved topologies in our topological snapshot will necessarily contribute net rotation.
+            if resolved_topology_net_rotation:
+                total_net_rotation_accumulator += resolved_topology_net_rotation
+        self.assertTrue(total_net_rotation.get_finite_rotation() == total_net_rotation_accumulator.get_finite_rotation())
+    
+    def test_net_rotation_samples(self):
+        # Create equal net rotation samples from a finite rotation (over 1Myr) and from an equivalent rotation rate vector.
+        net_rotation_sample_from_finite_rotation = pygplates.NetRotation.create_sample_from_finite_rotation((10, 10), 0.01, pygplates.FiniteRotation((15, 15), 0.01))
+        net_rotation_sample_from_rotation_rate = pygplates.NetRotation.create_sample_from_rotation_rate((10, 10), 0.01, 0.01 * pygplates.Vector3D(pygplates.LatLonPoint(15, 15).to_xyz()))
+        self.assertTrue(net_rotation_sample_from_finite_rotation.get_finite_rotation() == net_rotation_sample_from_rotation_rate.get_finite_rotation())
+        # Test addition of net rotation samples - both samples have the same net rotation so adding them results in an unchanged final net rotation.
+        self.assertTrue(net_rotation_sample_from_finite_rotation.get_finite_rotation() ==
+                        (net_rotation_sample_from_finite_rotation + net_rotation_sample_from_rotation_rate).get_finite_rotation())
+        net_rotation_accumulator = pygplates.NetRotation()  # zero net rotation
+        net_rotation_accumulator += net_rotation_sample_from_finite_rotation
+        net_rotation_accumulator += net_rotation_sample_from_rotation_rate
+        self.assertTrue(net_rotation_accumulator.get_finite_rotation() == net_rotation_sample_from_finite_rotation.get_finite_rotation())
+        self.assertTrue(net_rotation_accumulator.get_finite_rotation() == net_rotation_sample_from_rotation_rate.get_finite_rotation())
+        # While the net rotation is unchanged the area is doubled.
+        self.assertTrue(net_rotation_accumulator.get_area() == 2 * net_rotation_sample_from_finite_rotation.get_area())
+        self.assertTrue(net_rotation_accumulator.get_area() == 2 * net_rotation_sample_from_rotation_rate.get_area())
+        # Use the default 'num_samples_along_meridian' (180).
+        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0).get_total_net_rotation()
+        total_net_rotation_clone = self.net_rotation_model.net_rotation_snapshot(0).get_total_net_rotation()
+        # Ensure modifying a net rotation changes the original object (ie, doesn't create a new one via addition).
+        total_net_rotation_before_modification = total_net_rotation
+        total_net_rotation += net_rotation_sample_from_finite_rotation
+        self.assertTrue(total_net_rotation_before_modification.get_finite_rotation() == total_net_rotation.get_finite_rotation())
+        self.assertTrue(total_net_rotation.get_finite_rotation() != total_net_rotation_clone.get_finite_rotation())  # make sure net rotation actually changed
+    
+    def test_net_rotation_conversion(self):
+        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0).get_total_net_rotation()
+        total_net_finite_rotation = total_net_rotation.get_finite_rotation()
+        total_net_rotation_rate_vector = total_net_rotation.get_rotation_rate_vector()
+        # Compare the pole and angle from rotation rate vector with the finite rotation.
+        total_net_finite_rotation_pole, total_net_finite_rotation_angle = total_net_finite_rotation.get_euler_pole_and_angle()
+        total_net_rotation_rate_vector_pole = pygplates.PointOnSphere(total_net_rotation_rate_vector.to_normalized().to_xyz())
+        total_net_rotation_rate_vector_angle = total_net_rotation_rate_vector.get_magnitude()
+        self.assertTrue(total_net_finite_rotation_pole == total_net_rotation_rate_vector_pole)
+        self.assertAlmostEqual(total_net_finite_rotation_angle, total_net_rotation_rate_vector_angle)
+        # Test conversion between rotation rate vector and finite rotation.
+        self.assertTrue(total_net_finite_rotation == pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation(total_net_rotation_rate_vector))
+        self.assertTrue(total_net_rotation_rate_vector == pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector(total_net_finite_rotation))
+        total_net_finite_rotation_over_10myr = pygplates.FiniteRotation(total_net_finite_rotation_pole, 10 * total_net_finite_rotation_angle)
+        self.assertTrue(total_net_finite_rotation_over_10myr == pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation(total_net_rotation_rate_vector, 10))
+        self.assertTrue(total_net_rotation_rate_vector == pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector(total_net_finite_rotation_over_10myr, 10))
+    
+    def test_arbitrary_point_distribution(self):
+        # Test an arbitrary point distribution.
+        # We actually use the same uniform lat-lon distribution used internally when explicitly specifying 'num_samples_along_meridian'.
+        # In which case we should get the same total net rotation result.
+        point_distribution = []
+        num_samples_along_meridian = 180  # same as the default 'num_samples_along_meridian' (if 'point_distribution' were not to be specified below)
+        delta_in_degrees = 180.0 / num_samples_along_meridian
+        delta_in_radians = math.radians(delta_in_degrees)
+        for lat_index in range(num_samples_along_meridian):
+            lat = -90.0 + (lat_index + 0.5) * delta_in_degrees
+            sample_area_radians = math.cos(math.radians(lat)) * delta_in_radians * delta_in_radians
+            for lon_index in range(2*num_samples_along_meridian):
+                lon = -180.0 + (lon_index + 0.5) * delta_in_degrees
+                point_distribution.append(((lat, lon), sample_area_radians))
+        
+        net_rotation_model = pygplates.NetRotationModel(self.topological_model, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution=point_distribution)
+        total_net_rotation = net_rotation_model.net_rotation_snapshot(0).get_total_net_rotation()
+        total_pole_latitude, total_pole_longitude, total_angle_degrees  = total_net_rotation.get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
+        # These values were obtained from the GPlates net rotation export.
+        self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)
+        self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
+        self.assertAlmostEqual(total_angle_degrees, 0.014637, places=6)
+
+
 class PlatePartitionerTestCase(unittest.TestCase):
     def setUp(self):
         self.topological_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
@@ -1927,9 +2042,11 @@ class TopologicalModelCase(unittest.TestCase):
                     topologies_list[4:],  # multiple features without ResolveTopologyParameters
                 ],
                 self.rotation_model)
+        # Make sure can specify a topological snapshot cache size.
+        topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, topological_snapshot_cache_size=2)
 
     def test_get_topological_snapshot(self):
-        topological_snapshot = self.topological_model.topological_snapshot(10.0)
+        topological_snapshot = self.topological_model.topological_snapshot(10.5)  # note: it should allow a non-integral time
         self.assertTrue(topological_snapshot.get_anchor_plate_id() == self.topological_model.get_anchor_plate_id())
         self.assertTrue(topological_snapshot.get_rotation_model() == self.topological_model.get_rotation_model())
 
@@ -1969,6 +2086,15 @@ class TopologicalModelCase(unittest.TestCase):
                 youngest_time=10.0,
                 reconstruction_plate_id=802,
                 initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+        # Create using non-integral initial, oldest, youngest times, and a non-integral time increment.
+        reconstructed_points_time_span = self.topological_model.reconstruct_geometry(
+                [(0, 0), (5, 5)],
+                initial_time=20.5,
+                oldest_time=30.5,
+                youngest_time=10.5,
+                time_increment=0.5,
+                reconstruction_plate_id=802,
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
 
         # Number of scalars must match number of points.
         self.assertRaises(
@@ -1988,6 +2114,27 @@ class TopologicalModelCase(unittest.TestCase):
                 100.0,
                 oldest_time=5,
                 time_increment=2)
+        self.assertRaises(
+                ValueError,
+                self.topological_model.reconstruct_geometry,
+                multipoint,
+                100.0,
+                oldest_time=4.01)
+        self.assertRaises(
+                ValueError,
+                self.topological_model.reconstruct_geometry,
+                multipoint,
+                100.0,
+                oldest_time=4,
+                youngest_time=1.99)
+        self.assertRaises(
+                ValueError,
+                self.topological_model.reconstruct_geometry,
+                multipoint,
+                100.0,
+                oldest_time=4,
+                youngest_time=1,
+                time_increment=0.99)
         # oldest_time later (or same as) youngest_time
         self.assertRaises(
                 ValueError,
@@ -2016,28 +2163,6 @@ class TopologicalModelCase(unittest.TestCase):
                 multipoint,
                 100.0,
                 oldest_time=pygplates.GeoTimeInstant.create_distant_past())
-        # Oldest/youngest times and time increment must have integral values.
-        self.assertRaises(
-                ValueError,
-                self.topological_model.reconstruct_geometry,
-                multipoint,
-                100.0,
-                oldest_time=4.01)
-        self.assertRaises(
-                ValueError,
-                self.topological_model.reconstruct_geometry,
-                multipoint,
-                100.0,
-                oldest_time=4,
-                youngest_time=1.99)
-        self.assertRaises(
-                ValueError,
-                self.topological_model.reconstruct_geometry,
-                multipoint,
-                100.0,
-                oldest_time=4,
-                youngest_time=1,
-                time_increment=0.99)
         # Time increment must be positive.
         self.assertRaises(
                 ValueError,
@@ -2339,6 +2464,7 @@ def suite():
             CalculateVelocitiesTestCase,
             CrossoverTestCase,
             InterpolateTotalReconstructionSequenceTestCase,
+            NetRotationTestCase,
             PlatePartitionerTestCase,
             ReconstructTestCase,
             ReconstructionTreeCase,

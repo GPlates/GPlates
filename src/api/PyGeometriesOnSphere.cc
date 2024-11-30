@@ -4063,14 +4063,16 @@ export_polygon_on_sphere()
 		.def("get_area",
 				&GPlatesMaths::PolygonOnSphere::get_area,
 				"get_area()\n"
-				"  Returns the area of this polygon (on a sphere of unit radius).\n"
+				"  Returns the area of this polygon on a sphere of unit radius (steradians, or square radians).\n"
 				"\n"
 				"  :rtype: float\n"
 				"\n"
 				"  The area is essentially the absolute value of the :meth:`signed area<get_signed_area>`.\n"
 				"\n"
-				"  To convert to area on the Earth's surface, multiply the result by the Earth radius squared "
-				"(see :class:`Earth`).\n"
+				"  To convert the area from steradians (square radians) to square kms, multiply by the square of the :class:`Earth's radius<Earth>`:\n"
+				"  ::\n"
+				"\n"
+				"    area_in_square_kms = polygon.get_area() * pygplates.Earth.mean_radius_in_kms**2\n"
 				"\n"
 				"  .. note:: The interior rings reduce the absolute area of the exterior ring "
 				"(regardless of their orientation) because they are holes in the polygon.\n")
