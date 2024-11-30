@@ -1521,12 +1521,12 @@ export_topological_model()
 			"or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) "
 			"of any combination of those four types. Note: Each sequence entry can optionally be a 2-tuple "
 			"(entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.\n"
-			"  :type topological_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"  :type topological_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
 			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
-			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string/``os.PathLike`` "
+			"or sequence of :class:`FeatureCollection` instances and/or string/``os.PathLike`` instances\n"
 			"  :param anchor_plate_id: The anchored plate id used for all reconstructions "
 			"(resolving topologies, and reconstructing regular features and :meth:`geometries<reconstruct_geometry>`). "
 			"Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).\n"
@@ -1568,7 +1568,11 @@ export_topological_model()
 			"     Added *default_resolve_topology_parameters* argument.\n"
 			"\n"
 			"  .. versionchanged:: 0.43\n"
-			"     Added *topological_snapshot_cache_size* argument.\n")
+			"     Added *topological_snapshot_cache_size* argument.\n"
+			"\n"
+			"  .. versionchanged:: 0.44\n"
+			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.

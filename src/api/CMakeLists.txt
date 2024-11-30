@@ -36,6 +36,8 @@ set(srcs
     PyFeatureCollectionFileFormatRegistry.h
     PyFeatureCollectionFunctionArgument.cc
     PyFeatureCollectionFunctionArgument.h
+    PyFilePathFunctionArgument.cc
+    PyFilePathFunctionArgument.h
     PyFiniteRotation.cc
     PyGeometriesOnSphere.cc
     PyGeometriesOnSphere.h

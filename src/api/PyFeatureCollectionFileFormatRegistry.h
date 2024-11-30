@@ -27,7 +27,8 @@
 #define GPLATES_API_PYFEATURECOLLECTIONFILEFORMATREGISTRY_H
 
 #include <vector>
-#include <QString>
+
+#include "PyFilePathFunctionArgument.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 
@@ -46,7 +47,7 @@ namespace GPlatesApi
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 	read_feature_collection(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
-			const QString &filename);
+			const FilePathFunctionArgument &filename);
 
 	/**
 	 * Read a sequence of feature collections from the specified files.
@@ -57,7 +58,7 @@ namespace GPlatesApi
 	read_feature_collections(
 			std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
-			const std::vector<QString> &filenames);
+			const std::vector<FilePathFunctionArgument> &filenames);
 
 	/**
 	 * Read a single filename (or a sequence of filenames) from @a filename_object and return a
@@ -77,7 +78,7 @@ namespace GPlatesApi
 	write_feature_collection(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
 			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
-			const QString &filename);
+			const FilePathFunctionArgument &filename);
 }
 
 #endif // GPLATES_API_PYFEATURECOLLECTIONFILEFORMATREGISTRY_H

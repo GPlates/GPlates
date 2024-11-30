@@ -30,8 +30,8 @@
 #include <vector>
 #include <map>
 #include <boost/optional.hpp>
-#include <QString>
 
+#include "PyFilePathFunctionArgument.h"
 #include "PyResolveTopologyParameters.h"
 #include "PyRotationModel.h"
 #include "PyTopologicalFeatureCollectionFunctionArgument.h"
@@ -196,7 +196,7 @@ namespace GPlatesApi
 		 */
 		void
 		export_resolved_topologies(
-				const QString &export_file_name,
+				const FilePathFunctionArgument &export_file_name,
 				ResolveTopologyType::flags_type resolve_topology_types = ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
 				bool wrap_to_dateline = true,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation = boost::none) const;
@@ -233,7 +233,7 @@ namespace GPlatesApi
 		 */
 		void
 		export_resolved_topological_sections(
-				const QString &export_file_name,
+				const FilePathFunctionArgument &export_file_name,
 				ResolveTopologyType::flags_type resolve_topological_section_types = ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGICAL_SECTION_TYPES,
 				bool export_topological_line_sub_segments = true,
 				bool wrap_to_dateline = true) const;

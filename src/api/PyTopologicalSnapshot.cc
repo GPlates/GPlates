@@ -140,7 +140,7 @@ namespace GPlatesApi
 	void
 	topological_snapshot_export_resolved_topologies(
 			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
-			const QString &export_file_name,
+			const FilePathFunctionArgument &export_file_name,
 			ResolveTopologyType::flags_type resolve_topology_types,
 			bool wrap_to_dateline,
 			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation)
@@ -196,7 +196,7 @@ namespace GPlatesApi
 	void
 	topological_snapshot_export_resolved_topological_sections(
 			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
-			const QString &export_file_name,
+			const FilePathFunctionArgument &export_file_name,
 			ResolveTopologyType::flags_type resolve_topological_section_types,
 			bool export_topological_line_sub_segments,
 			bool wrap_to_dateline)
@@ -455,11 +455,13 @@ namespace GPlatesApi
 
 	void
 	TopologicalSnapshot::export_resolved_topologies(
-			const QString &export_file_name,
+			const FilePathFunctionArgument &export_file_path,
 			ResolveTopologyType::flags_type resolve_topology_types,
 			bool wrap_to_dateline,
 			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const
 	{
+		const QString export_file_name = export_file_path.get_file_path();
+
 		// Get the resolved topologies.
 		const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> resolved_topologies =
 				get_resolved_topologies(
@@ -576,11 +578,13 @@ namespace GPlatesApi
 
 	void
 	TopologicalSnapshot::export_resolved_topological_sections(
-			const QString &export_file_name,
+			const FilePathFunctionArgument &export_file_path,
 			ResolveTopologyType::flags_type resolve_topological_section_types,
 			bool export_topological_line_sub_segments,
 			bool wrap_to_dateline) const
 	{
+		const QString export_file_name = export_file_path.get_file_path();
+
 		// Get the resolved topological sections.
 		const std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections =
 				get_resolved_topological_sections(
@@ -1082,12 +1086,12 @@ export_topological_snapshot()
 			"or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) "
 			"of any combination of those four types. Note: Each sequence entry can optionally be a 2-tuple "
 			"(entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.\n"
-			"  :type topological_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"  :type topological_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
 			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
-			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string/``os.PathLike`` "
+			"or sequence of :class:`FeatureCollection` instances and/or string/``os.PathLike`` instances\n"
 			"  :param reconstruction_time: the specific geological time to resolve to\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 			"  :param anchor_plate_id: The anchored plate id used for all reconstructions "
@@ -1108,7 +1112,11 @@ export_topological_snapshot()
 			"    topological_snapshot = pygplates.TopologicalSnapshot(topology_features, rotation_model, reconstruction_time)\n"
 			"\n"
 			"  .. versionchanged:: 0.31\n"
-			"     Added *default_resolve_topology_parameters* argument.\n")
+			"     Added *default_resolve_topology_parameters* argument.\n"
+			"\n"
+			"  .. versionchanged:: 0.44\n"
+			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -1150,7 +1158,7 @@ export_topological_snapshot()
 				"  Exports the resolved topologies to a file.\n"
 				"\n"
 				"  :param export_filename: the name of the export file\n"
-				"  :type export_filename: string\n"
+				"  :type export_filename: string/``os.PathLike``\n"
 				"  :param resolve_topology_types: specifies the resolved topology types to export - defaults "
 				"to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
 				":class:`resolved topological networks<ResolvedTopologicalNetwork>` "
@@ -1183,7 +1191,11 @@ export_topological_snapshot()
 				"\n"
 				"  .. note:: Resolved topologies are exported in the same order as that of their "
 				"respective topological features (see :meth:`constructor<__init__>`) and the order across "
-				"topological feature collections (if any) is also retained.\n")
+				"topological feature collections (if any) is also retained.\n"
+				"\n"
+				"  .. versionchanged:: 0.44\n"
+				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		.def("get_resolved_topological_sections",
 				&GPlatesApi::topological_snapshot_get_resolved_topological_sections,
 				(bp::arg("resolve_topological_section_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGICAL_SECTION_TYPES,
@@ -1216,7 +1228,7 @@ export_topological_snapshot()
 				"  Exports the resolved topological sections to a file.\n"
 				"\n"
 				"  :param export_filename: the name of the export file\n"
-				"  :type export_filename: string\n"
+				"  :type export_filename: string/``os.PathLike``\n"
 				"  :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or "
 				":class:`ResolvedTopologicalNetwork` (or both types) are listed in the exported resolved topological sections. "
 				"Note that ``ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. "
@@ -1256,7 +1268,11 @@ export_topological_snapshot()
 				"topological feature collections (if any) is also retained.\n"
 				"\n"
 				"  .. versionchanged:: 0.33\n"
-				"     Added *export_topological_line_sub_segments* argument.\n")
+				"     Added *export_topological_line_sub_segments* argument.\n"
+				"\n"
+				"  .. versionchanged:: 0.44\n"
+				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalSnapshot::get_rotation_model,
 				"get_rotation_model()\n"

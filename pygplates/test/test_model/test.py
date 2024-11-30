@@ -3,6 +3,7 @@ Unit tests for the pygplates model API.
 """
 
 import os
+import sys
 import pickle
 import unittest
 import pygplates
@@ -606,6 +607,33 @@ class FeatureCollectionCase(unittest.TestCase):
         _internal_test_read_write(self, feature_collection, 'tmp.json')  # GeoJSON
         _internal_test_read_write(self, feature_collection, 'tmp.gpkg')  # GeoPackage
 
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            # Test anything that is PathLike.
+            class PathLike(object):
+                def __init__(self, path):
+                    self.path = path
+                def __fspath__(self):
+                    return str(self.path)
+            
+            feature_collection = pygplates.FeatureCollection(self.volcanoes_filename)
+            tmp_filename = 'tmp.gpml'
+
+            # Test write and then read of PathLike.
+            feature_collection.write(PathLike(tmp_filename))
+            self.assertTrue(os.path.isfile(tmp_filename))
+            feature_collection_from_pathlike = pygplates.FeatureCollection.read(PathLike(tmp_filename))
+            self.assertTrue(len(feature_collection_from_pathlike) == self.feature_count)
+            os.remove(tmp_filename)
+            # Test write and then read of pathlib.Path.
+            from pathlib import Path  # pathlib new in Python 3.4
+            feature_collection.write(Path(tmp_filename))
+            self.assertTrue(os.path.isfile(tmp_filename))
+            feature_collection_from_path = pygplates.FeatureCollection.read(Path(tmp_filename))
+            self.assertTrue(len(feature_collection_from_path) == self.feature_count)
+            os.remove(tmp_filename)
+
     def test_construct(self):
         # Create new empty feature collection.
         new_feature_collection = pygplates.FeatureCollection()
@@ -623,6 +651,23 @@ class FeatureCollectionCase(unittest.TestCase):
 
         feature_collection_from_file = pygplates.FeatureCollection(self.volcanoes_filename)
         self.assertTrue(len(feature_collection_from_file) == self.feature_count)
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            # Test anything that is PathLike.
+            class PathLike(object):
+                def __init__(self, path):
+                    self.path = path
+                def __fspath__(self):
+                    return str(self.path)
+            
+            feature_collection_from_pathlike = pygplates.FeatureCollection(PathLike(self.volcanoes_filename))
+            self.assertTrue(len(feature_collection_from_pathlike) == self.feature_count)
+            # Test pathlib.Path.
+            from pathlib import Path  # pathlib new in Python 3.4
+            feature_collection_from_path = pygplates.FeatureCollection(Path(self.volcanoes_filename))
+            self.assertTrue(len(feature_collection_from_path) == self.feature_count)
 
     def test_clone(self):
         # Modify original and make sure clone is not affected.
