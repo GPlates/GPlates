@@ -1052,8 +1052,8 @@ export_net_rotation()
 				"    for resolved_topology_net_rotation in net_rotation_snapshot.get_net_rotation().values():\n"
 				"        total_net_rotation += resolved_topology_net_rotation\n"
 				"\n"
-				"  .. note:: Any :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` that don't have a :meth:`reconstruction plate ID<Feature.get_reconstruction_plate_id>` "
-				"will not contribute to the total net rotation.\n"
+				"  .. note:: If a :class:`resolved topological boundary<ResolvedTopologicalBoundary>` does not have a :meth:`reconstruction plate ID<Feature.get_reconstruction_plate_id>` "
+				"then ``0`` will be used.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_net_rotation`\n")
 		.def("get_net_rotation",
@@ -1072,7 +1072,8 @@ export_net_rotation()
 				"  :raises: ValueError if *resolved_topology* is specified but is neither a :class:`ResolvedTopologicalBoundary` nor a :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
 				"  .. note:: Any resolved boundary or network that did not intersect any sample points (see *point_distribution* in :meth:`__init__`) will **not contribute net rotation**. "
-				"And any :class:`resolved boundary<ResolvedTopologicalBoundary>` that doesn't have a :meth:`reconstruction plate ID<Feature.get_reconstruction_plate_id>` will **not contribute net rotation**.\n"
+				"And if a contributing :class:`resolved boundary<ResolvedTopologicalBoundary>` does not have a :meth:`reconstruction plate ID<Feature.get_reconstruction_plate_id>` "
+				"then ``0`` will be used.\n"
 				"\n"
 				"  The net rotation of resolved topology :math:`i` (rigid plate or deforming network) is:\n"
 				"\n"
