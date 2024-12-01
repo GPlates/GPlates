@@ -3312,12 +3312,13 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         self.assertTrue(resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network_deforming_region() == resolved_topological_network)
         _, network_triangle = resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network_deforming_region(return_network_triangle=True)
         # Point should be in the triangle with these vertices - so check they match the network triangle.
-        network_triangle_vertex_lat_lons = set((
+        network_triangle_vertex_lat_lons = [
             (1.9190404608408473, -46.33105360687644),
             (0.1281258847639748, -89.46803133550394),
-            (-25.92674267168927, -67.49384878759929)))
+            (-25.92674267168927, -67.49384878759929)]
+        network_triangle_vertices = [pygplates.PointOnSphere(lat, lon) for lat, lon in network_triangle_vertex_lat_lons]
         for index in range(3):
-            self.assertTrue(network_triangle.get_vertex(index).position.to_lat_lon() in network_triangle_vertex_lat_lons)
+            self.assertTrue(network_triangle.get_vertex(index).position in network_triangle_vertices)
         self.assertTrue(network_triangle.is_in_deforming_region)
         
         self.assertTrue(resolved_topological_network.get_point_velocity(point_inside_network) == pygplates.Vector3D.zero)
