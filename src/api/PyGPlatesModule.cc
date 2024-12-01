@@ -83,6 +83,7 @@ void export_top_level_property();
 
 // app-logic namespace
 void export_calculate_velocities();
+void export_strain();
 void export_net_rotation();
 void export_plate_partitioner();
 void export_reconstruct();
@@ -198,7 +199,8 @@ export_cpp_python_api()
 	export_top_level_property();
 
 	// app-logic namespace
-	export_calculate_velocities();
+	export_calculate_velocities();  // Must be called before 'export_strain' and 'export_net_rotation'.
+	export_strain();
 	export_plate_partitioner();
 	export_reconstruct();
 	export_reconstruction_geometries();

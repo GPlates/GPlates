@@ -39,6 +39,7 @@
 
 #include "PyTopologicalModel.h"
 
+#include "PyCalculateVelocities.h"
 #include "PyFeature.h"
 #include "PyFeatureCollectionFunctionArgument.h"
 #include "PyPropertyValues.h"
@@ -53,6 +54,7 @@
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyPointLocation.h"
 #include "app-logic/TopologyUtils.h"
+#include "app-logic/VelocityDeltaTime.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -253,6 +255,167 @@ namespace GPlatesApi
 		}
 
 		/**
+		 * Extract the strains of reconstructed geometry points (at @a reconstruction_time)
+		 * from geometry time span and return as a Python list.
+		 */
+		bp::list
+		add_strains_to_list(
+				GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span,
+				const double &reconstruction_time,
+				bool return_inactive_points)
+		{
+			// Put the strains in a Python list object.
+			boost::python::list strains_list_object;
+
+			// Get the strains at the reconstruction time.
+			if (return_inactive_points)
+			{
+				std::vector<boost::optional<GPlatesAppLogic::DeformationStrain>> all_strains;
+				geometry_time_span->get_all_geometry_data(
+						reconstruction_time,
+						boost::none/*points*/,
+						boost::none/*point_locations*/,
+						boost::none/*strain_rates*/,
+						all_strains);
+
+				for (auto strain : all_strains)
+				{
+					// Note that boost::none gets translated to Python 'None'.
+					strains_list_object.append(strain);
+				}
+			}
+			else // only active points...
+			{
+				std::vector<GPlatesAppLogic::DeformationStrain> strains;
+				geometry_time_span->get_geometry_data(
+						reconstruction_time,
+						boost::none/*points*/,
+						boost::none/*point_locations*/,
+						boost::none/*strain_rates*/,
+						strains);
+
+				for (auto strain : strains)
+				{
+					strains_list_object.append(strain);
+				}
+			}
+
+			return strains_list_object;
+		}
+
+		/**
+		 * Extract the strain rates of reconstructed geometry points (at @a reconstruction_time)
+		 * from geometry time span and return as a Python list.
+		 */
+		bp::list
+		add_strain_rates_to_list(
+				GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span,
+				const double &reconstruction_time,
+				bool return_inactive_points)
+		{
+			// Put the strain rates in a Python list object.
+			boost::python::list strain_rates_list_object;
+
+			// Get the strain rates at the reconstruction time.
+			if (return_inactive_points)
+			{
+				std::vector<boost::optional<GPlatesAppLogic::DeformationStrainRate>> all_strain_rates;
+				geometry_time_span->get_all_geometry_data(
+						reconstruction_time,
+						boost::none/*points*/,
+						boost::none/*point_locations*/,
+						all_strain_rates);
+
+				for (auto strain_rate : all_strain_rates)
+				{
+					// Note that boost::none gets translated to Python 'None'.
+					strain_rates_list_object.append(strain_rate);
+				}
+			}
+			else // only active points...
+			{
+				std::vector<GPlatesAppLogic::DeformationStrainRate> strain_rates;
+				geometry_time_span->get_geometry_data(
+						reconstruction_time,
+						boost::none/*points*/,
+						boost::none/*point_locations*/,
+						strain_rates);
+
+				for (auto strain_rate : strain_rates)
+				{
+					strain_rates_list_object.append(strain_rate);
+				}
+			}
+
+			return strain_rates_list_object;
+		}
+
+		/**
+		 * Extract the velocities of reconstructed geometry points (at @a reconstruction_time)
+		 * from geometry time span and return as a Python list.
+		 */
+		bp::list
+		add_velocities_to_list(
+				GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span,
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units,
+				bool return_inactive_points)
+		{
+			// Put the velocities in a Python list object.
+			boost::python::list velocities_list_object;
+
+			// Get the velocities at the reconstruction time.
+			if (return_inactive_points)
+			{
+				std::vector<boost::optional<GPlatesMaths::Vector3D>> all_velocities;
+				geometry_time_span->get_all_velocities(
+						all_velocities,
+						reconstruction_time,
+						velocity_delta_time,
+						velocity_delta_time_type);
+
+				for (auto velocity : all_velocities)
+				{
+					// Units are currently in cms/yr so change if need kms/my.
+					if (velocity &&
+						velocity_units == VelocityUnits::KMS_PER_MY)
+					{
+						// cm/yr -> kms/my...
+						velocity.get() = 1e+1 * velocity.get();
+					}
+
+					// Note that boost::none gets translated to Python 'None'.
+					velocities_list_object.append(velocity);
+				}
+			}
+			else // only active points...
+			{
+				std::vector<GPlatesMaths::Vector3D> velocities;
+				geometry_time_span->get_velocities(
+						velocities,
+						reconstruction_time,
+						velocity_delta_time,
+						velocity_delta_time_type);
+
+				for (auto velocity : velocities)
+				{
+					// Units are currently in cms/yr so change if need kms/my.
+					if (velocity_units == VelocityUnits::KMS_PER_MY)
+					{
+						// cm/yr -> kms/my...
+						velocity = 1e+1 * velocity;
+					}
+
+					velocities_list_object.append(velocity);
+				}
+			}
+
+			return velocities_list_object;
+		}
+
+		/**
 		 * Extract reconstructed scalar values (at @a reconstruction_time and associated with @a scalar_type)
 		 * from a scalar coverage time span and return as a Python list.
 		 */
@@ -334,7 +497,7 @@ namespace GPlatesApi
 	}
 
 	/**
-	 * Returns the list of reconstructed geometry points (at reconstruction time).
+	 * Returns the list of locations of geometry points in resolved topologies (at reconstruction time).
 	 */
 	bp::object
 	reconstructed_geometry_time_span_get_topology_point_locations(
@@ -360,6 +523,103 @@ namespace GPlatesApi
 				reconstructed_geometry_time_span->get_geometry_time_span();
 
 		return add_topology_point_locations_to_list(geometry_time_span, reconstruction_time.value(), return_inactive_points);
+	}
+
+	/**
+	 * Returns the list of strains at geometry points in resolved topologies (at reconstruction time).
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_strains(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		// Reconstruction time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Reconstruction time cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		// Return None if there are no active points at the reconstruction time.
+		if (!reconstructed_geometry_time_span->get_geometry_time_span()->is_valid(reconstruction_time.value()))
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
+				reconstructed_geometry_time_span->get_geometry_time_span();
+
+		return add_strains_to_list(geometry_time_span, reconstruction_time.value(), return_inactive_points);
+	}
+
+	/**
+	 * Returns the list of strain rates at geometry points in resolved topologies (at reconstruction time).
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_strain_rates(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		// Reconstruction time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Reconstruction time cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		// Return None if there are no active points at the reconstruction time.
+		if (!reconstructed_geometry_time_span->get_geometry_time_span()->is_valid(reconstruction_time.value()))
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
+				reconstructed_geometry_time_span->get_geometry_time_span();
+
+		return add_strain_rates_to_list(geometry_time_span, reconstruction_time.value(), return_inactive_points);
+	}
+
+	/**
+	 * Returns the list of strain rates at geometry points in resolved topologies (at reconstruction time).
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_velocities(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			VelocityUnits::Value velocity_units,
+			bool return_inactive_points)
+	{
+		// Reconstruction time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Reconstruction time cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		// Velocity delta time must be positive.
+		if (velocity_delta_time <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
+		// Return None if there are no active points at the reconstruction time.
+		if (!reconstructed_geometry_time_span->get_geometry_time_span()->is_valid(reconstruction_time.value()))
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
+				reconstructed_geometry_time_span->get_geometry_time_span();
+
+		return add_velocities_to_list(geometry_time_span, reconstruction_time.value(), velocity_delta_time, velocity_delta_time_type, velocity_units, return_inactive_points);
 	}
 
 	/**
@@ -1222,7 +1482,7 @@ export_topological_model()
 					"  Returns geometry points at a specific reconstruction time.\n"
 					"\n"
 					"  :param reconstruction_time: Time to extract reconstructed geometry points. Can be any non-negative time "
-					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`.\n"
+					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param return_inactive_points: Whether to return inactive geometry points. "
 					"If ``True`` then each inactive point stores ``None`` instead of a point and hence the size of each ``list`` "
@@ -1241,7 +1501,7 @@ export_topological_model()
 					"  Returns the locations of geometry points in resolved topologies at a specific reconstruction time.\n"
 					"\n"
 					"  :param reconstruction_time: Time to extract topology point locations. Can be any non-negative time "
-					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`.\n"
+					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param return_inactive_points: Whether to return topology locations associated with inactive points. "
 					"If ``True`` then each topology location corresponding to an inactive point stores ``None`` instead of a "
@@ -1253,6 +1513,85 @@ export_topological_model()
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
+			.def("get_strains",
+					&GPlatesApi::reconstructed_geometry_time_span_get_strains,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_strains(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns the strains accumulated at geometry points in resolved topologies at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract accumulated strains. Can be any non-negative time "
+					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return strains associated with inactive points. "
+					"If ``True`` then each strain corresponding to an inactive point stores ``None`` instead of a "
+					"strain and hence the size of each ``list`` of strains is equal to the number of points "
+					"in the initial geometry (which are all initially active). "
+					"By default only strains for active points are returned.\n"
+					"  :returns: list of :class:`Strain`, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. versionadded:: 0.46\n")
+			.def("get_strain_rates",
+					&GPlatesApi::reconstructed_geometry_time_span_get_strain_rates,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_strain_rates(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns the strain rates at geometry points in resolved topologies at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract strain rates. Can be any non-negative time "
+					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return strain rates associated with inactive points. "
+					"If ``True`` then each strain rate corresponding to an inactive point stores ``None`` instead of a "
+					"strain rate and hence the size of each ``list`` of strain rates is equal to the number of points "
+					"in the initial geometry (which are all initially active). "
+					"By default only strain rates for active points are returned.\n"
+					"  :returns: list of :class:`StrainRate`, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. versionadded:: 0.46\n")
+			.def("get_velocities",
+					&GPlatesApi::reconstructed_geometry_time_span_get_velocities,
+					(bp::arg("reconstruction_time"),
+						bp::arg("velocity_delta_time"),
+						bp::arg("velocity_delta_time_type"),
+						bp::arg("velocity_units") = GPlatesApi::VelocityUnits::KMS_PER_MY,
+						bp::arg("return_inactive_points") = false),
+					"get_velocities(reconstruction_time, velocity_delta_time, velocity_delta_time_type, [velocity_units=pygplates.VelocityUnits.kms_per_my], [return_inactive_points=False])\n"
+					"  Returns the velocities at geometry points in resolved topologies at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract velocities. Can be any non-negative time "
+					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param velocity_delta_time: The time delta used to calculate velocities (in Myr).\n"
+					"  :type velocity_delta_time: float\n"
+					"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+					"This includes [t+dt, t, [t, t-dt] and [t+dt/2, t-dt/2].\n"
+					"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+					"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+					"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
+					"*centimetres per year* (defaults to *kilometres per million years*)\n"
+					"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+					"  :param return_inactive_points: Whether to return velocities associated with inactive points. "
+					"If ``True`` then each velocity corresponding to an inactive point stores ``None`` instead of a "
+					"velocity and hence the size of each ``list`` of velocities is equal to the number of points "
+					"in the initial geometry (which are all initially active). "
+					"By default only velocities for active points are returned.\n"
+					"  :returns: list of :class:`Vector3D`, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
+					"\n"
+					"  .. versionadded:: 0.46\n")
 			.def("get_scalar_values",
 					&GPlatesApi::reconstructed_geometry_time_span_get_scalar_values,
 					(bp::arg("reconstruction_time"),
@@ -1263,7 +1602,7 @@ export_topological_model()
 					"for all scalar types (as a ``dict``).\n"
 					"\n"
 					"  :param reconstruction_time: Time to extract reconstructed scalar values. Can be any non-negative time "
-					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`.\n"
+					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param scalar_type: Optional scalar type to retrieve scalar values for (returned as a ``list``). "
 					"If not specified then all scalar values for all scalar types are returned (returned as a ``dict``).\n"

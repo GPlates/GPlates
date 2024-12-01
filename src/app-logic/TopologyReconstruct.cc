@@ -2064,6 +2064,109 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
 		boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points,
 		boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations) const
 {
+	std::vector< boost::optional<GPlatesMaths::Vector3D> > all_velocities;
+
+	std::vector< boost::optional<GPlatesMaths::PointOnSphere> > all_domain_points;
+	boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> all_domain_points_reference;
+	if (domain_points)
+	{
+		all_domain_points_reference = all_domain_points;
+	}
+
+	std::vector< boost::optional<TopologyPointLocation> > all_domain_point_locations;
+	boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> all_domain_point_locations_reference;
+	if (domain_point_locations)
+	{
+		all_domain_point_locations_reference = all_domain_point_locations;
+	}
+
+	// Get all velocities (at active and inactive points).
+	if (!get_all_velocities(
+			all_velocities,
+			reconstruction_time,
+			velocity_delta_time,
+			velocity_delta_time_type,
+			all_domain_points_reference,
+			all_domain_point_locations_reference))
+	{
+		return false;
+	}
+
+	//
+	// Return only the active (non-null) points, and discard the inactive (null) points.
+	//
+
+	const unsigned int num_domain_geometry_points = all_velocities.size();
+	velocities.reserve(num_domain_geometry_points);
+
+	if (domain_points)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				all_domain_points.size() == num_domain_geometry_points,
+				GPLATES_ASSERTION_SOURCE);
+		domain_points->reserve(num_domain_geometry_points);
+	}
+	if (domain_point_locations)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				all_domain_point_locations.size() == num_domain_geometry_points,
+				GPLATES_ASSERTION_SOURCE);
+		domain_point_locations->reserve(num_domain_geometry_points);
+	}
+
+	// Iterate over the domain points and copy only active points (their velocities and optional points/locations).
+	for (unsigned int domain_geometry_point_index = 0;
+		domain_geometry_point_index < num_domain_geometry_points;
+		++domain_geometry_point_index)
+	{
+		const boost::optional<GPlatesMaths::Vector3D> &velocity = all_velocities[domain_geometry_point_index];
+		if (velocity)
+		{
+			velocities.push_back(velocity.get());
+		}
+
+		if (domain_points)
+		{
+			const boost::optional<GPlatesMaths::PointOnSphere> &domain_point = all_domain_points[domain_geometry_point_index];
+
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					bool(domain_point) == bool(velocity),
+					GPLATES_ASSERTION_SOURCE);
+
+			if (domain_point)
+			{
+				domain_points->push_back(domain_point.get());
+			}
+		}
+
+		if (domain_point_locations)
+		{
+			const boost::optional<TopologyPointLocation> &domain_point_location = all_domain_point_locations[domain_geometry_point_index];
+
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					bool(domain_point_location) == bool(velocity),
+					GPLATES_ASSERTION_SOURCE);
+
+			if (domain_point_location)
+			{
+				domain_point_locations->push_back(domain_point_location.get());
+			}
+		}
+	}
+
+	return true;
+}
+
+
+bool
+GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_velocities(
+		std::vector< boost::optional<GPlatesMaths::Vector3D> > &velocities,
+		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points,
+		boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations) const
+{
 	// Determine the two nearest time slots bounding the reconstruction time.
 	double interpolate_time_slots;
 	const boost::optional< std::pair<unsigned int/*first_time_slot*/, unsigned int/*second_time_slot*/> >
@@ -2157,23 +2260,28 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
 		{
 			GeometryPoint *domain_geometry_point = domain_geometry_points[domain_geometry_point_index];
 
-			// Ignore domain geometry point if it's not active.
-			if (domain_geometry_point == NULL)
+			// active point...
+			if (domain_geometry_point)
 			{
-				continue;
+				const GPlatesMaths::PointOnSphere domain_point(domain_geometry_point->position);
+				domain_points->push_back(domain_point);
+
+			}
+			else // inactive point...
+			{
+				domain_points->push_back(boost::none);
 			}
 
-			const GPlatesMaths::PointOnSphere domain_point(domain_geometry_point->position);
-			domain_points->push_back(domain_point);
+			// Check that either both the current point and velocity are active or both are inactive.
+			//
+			// Both the reconstruction time geometry sample and the initial time sample should have
+			// the same number of active points. This is due to 'interpolate_geometry_sample()' using
+			// the nearest time slot that is closer to the geometry import time and hence both samples are
+			// essentially the same (same active geometry points, just with different positions).
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					bool(domain_geometry_point) == bool(velocities[domain_geometry_point_index]),
+					GPLATES_ASSERTION_SOURCE);
 		}
-
-		// Both the reconstruction time geometry sample and the initial time sample should have
-		// the same number of active points. This is due to 'interpolate_geometry_sample()' using
-		// the nearest time slot that is closer to the geometry import time and hence both samples are
-		// essentially the same (same active geometry points, just with different positions).
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				domain_points->size() == velocities.size(),
-				GPLATES_ASSERTION_SOURCE);
 	}
 
 	return true;
@@ -2183,12 +2291,12 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
 void
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 		const GeometrySample::non_null_ptr_type &domain_geometry_sample,
-		std::vector<GPlatesMaths::Vector3D> &velocities,
+		std::vector< boost::optional<GPlatesMaths::Vector3D> > &velocities,
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
-		boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points,
-		boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations) const
+		boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points,
+		boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations) const
 {
 	//
 	// Calculate the velocities at the geometry (domain) points.
@@ -2223,9 +2331,19 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 	{
 		GeometryPoint *domain_geometry_point = domain_geometry_points[domain_geometry_point_index];
 
-		// Ignore domain geometry point if it's not active.
+		// If domain geometry point is not active.
 		if (domain_geometry_point == NULL)
 		{
+			velocities.push_back(boost::none);
+			if (domain_points)
+			{
+				domain_points->push_back(boost::none);
+			}
+			if (domain_point_locations)
+			{
+				domain_point_locations->push_back(boost::none);
+			}
+
 			continue;
 		}
 

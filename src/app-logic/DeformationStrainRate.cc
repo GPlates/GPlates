@@ -25,8 +25,11 @@
 
 #include <cfloat>
 #include <cmath>
+#include <ostream>
 
 #include "DeformationStrainRate.h"
+
+#include "scribe/Scribe.h"
 
 
 double
@@ -84,4 +87,78 @@ GPlatesAppLogic::DeformationStrainRate::get_strain_rate_style() const
 	// NOTE: If all principal components are zero (because the strain rate is zero) then
 	// we'll get NaN (zero divided by zero).
 	return (principal_D_11 + principal_D_22) / max_abs_principal_D;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::DeformationStrainRate::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<DeformationStrainRate> &deformation_strain_rate)
+{
+	const GPlatesScribe::ObjectTag velocity_spatial_gradient_tag("velocity_spatial_gradient");
+
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, deformation_strain_rate->d_velocity_spatial_gradient.theta_theta, velocity_spatial_gradient_tag("theta_theta"));
+		scribe.save(TRANSCRIBE_SOURCE, deformation_strain_rate->d_velocity_spatial_gradient.theta_phi, velocity_spatial_gradient_tag("theta_phi"));
+		scribe.save(TRANSCRIBE_SOURCE, deformation_strain_rate->d_velocity_spatial_gradient.phi_theta, velocity_spatial_gradient_tag("phi_theta"));
+		scribe.save(TRANSCRIBE_SOURCE, deformation_strain_rate->d_velocity_spatial_gradient.phi_phi, velocity_spatial_gradient_tag("phi_phi"));
+	}
+	else // loading
+	{
+		double velocity_spatial_gradient_theta_theta;
+		double velocity_spatial_gradient_theta_phi;
+		double velocity_spatial_gradient_phi_theta;
+		double velocity_spatial_gradient_phi_phi;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, velocity_spatial_gradient_theta_theta, velocity_spatial_gradient_tag("theta_theta")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, velocity_spatial_gradient_theta_phi, velocity_spatial_gradient_tag("theta_phi")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, velocity_spatial_gradient_phi_theta, velocity_spatial_gradient_tag("phi_theta")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, velocity_spatial_gradient_phi_phi, velocity_spatial_gradient_tag("phi_phi")))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		deformation_strain_rate.construct_object(
+				velocity_spatial_gradient_theta_theta,
+				velocity_spatial_gradient_theta_phi,
+				velocity_spatial_gradient_phi_theta,
+				velocity_spatial_gradient_phi_phi);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::DeformationStrainRate::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	const GPlatesScribe::ObjectTag velocity_spatial_gradient_tag("velocity_spatial_gradient");
+
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_velocity_spatial_gradient.theta_theta, velocity_spatial_gradient_tag("theta_theta")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_velocity_spatial_gradient.theta_phi, velocity_spatial_gradient_tag("theta_phi")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_velocity_spatial_gradient.phi_theta, velocity_spatial_gradient_tag("phi_theta")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_velocity_spatial_gradient.phi_phi, velocity_spatial_gradient_tag("phi_phi")))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+std::ostream &
+GPlatesAppLogic::operator<<(
+		std::ostream &os,
+		const DeformationStrainRate &strain_rate)
+{
+	const DeformationStrainRate::VelocitySpatialGradient &vsg = strain_rate.get_velocity_spatial_gradient();
+
+	os << "(" << vsg.theta_theta << ", " << vsg.theta_phi << ", " << vsg.phi_theta << ", " << vsg.phi_phi << ")";
+
+	return os;
 }

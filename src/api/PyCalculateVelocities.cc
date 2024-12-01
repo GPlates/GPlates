@@ -29,9 +29,13 @@
 #include <vector>
 #include <boost/optional.hpp>
 
+#include "PyCalculateVelocities.h"
+
 #include "PyGeometriesOnSphere.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+
+#include "app-logic/VelocityDeltaTime.h"
 
 #include "global/python.h"
 
@@ -46,19 +50,6 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-	/**
-	 * Enumeration to determine what velocity units to use.
-	 */
-	namespace VelocityUnits
-	{
-		enum Value
-		{
-			KMS_PER_MY,   // kilometres per million years
-			CMS_PER_YR    // centimetres per year
-		};
-	};
-
-
 	bp::list
 	calculate_velocities_using_finite_rotation(
 			PointSequenceFunctionArgument domain_points_function_argument,
@@ -119,6 +110,13 @@ export_calculate_velocities()
 	bp::enum_<GPlatesApi::VelocityUnits::Value>("VelocityUnits")
 			.value("kms_per_my", GPlatesApi::VelocityUnits::KMS_PER_MY)
 			.value("cms_per_yr", GPlatesApi::VelocityUnits::CMS_PER_YR);
+
+	// An enumeration nested within 'pygplates' (ie, current) module.
+	bp::enum_<GPlatesAppLogic::VelocityDeltaTime::Type>("VelocityDeltaTimeType")
+			.value("t_plus_delta_t_to_t", GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T)
+			.value("t_to_t_minus_delta_t", GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T)
+			.value("t_plus_minus_half_delta_t", GPlatesAppLogic::VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T);
+
 
 	bp::def("calculate_velocities",
 			&GPlatesApi::calculate_velocities_using_finite_rotation,

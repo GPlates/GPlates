@@ -109,8 +109,8 @@ The following classes represent sub-segments *shared* by one or more resolved to
    pygplates.ResolvedTopologicalSection
    pygplates.ResolvedTopologicalSharedSubSegment
 
-Velocity
---------
+Velocity and strain
+-------------------
 
 Functions to calculate velocities:
 
@@ -118,6 +118,15 @@ Functions to calculate velocities:
    :toctree: generated
 
    pygplates.calculate_velocities
+
+The following classes represent strain rate and strain (at a particular surface location).
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.Strain
+   pygplates.StrainRate
 
 Rotation
 --------

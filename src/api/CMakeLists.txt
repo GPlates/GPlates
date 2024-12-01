@@ -22,6 +22,7 @@ set(srcs
     DeferredApiCallImpl.h
     PyApplication.cc
     PyCalculateVelocities.cc
+    PyCalculateVelocities.h
     PyColour.cc
     PyCoregistrationLayerProxy.cc
     PyCoregistrationLayerProxy.h
@@ -80,6 +81,7 @@ set(srcs
     PyRevisionedVector.h
     PyRotationModel.cc
     PyRotationModel.h
+    PyStrain.cc
     PyStrings.cc
     PythonConverterUtils.h
     PythonExecutionMonitor.cc
