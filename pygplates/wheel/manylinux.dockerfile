@@ -54,7 +54,7 @@ ENV CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/usr/local/qwt-${QWT_VERSION}
 
 # Python 3.8
 WORKDIR ${DEPS_BASE_BUILD_DIR}
-ARG PYTHON_38_VERSION=3.8.19
+ARG PYTHON_38_VERSION=3.8.20
 RUN curl -sSL -o Python-${PYTHON_38_VERSION}.tar.xz https://www.python.org/ftp/python/${PYTHON_38_VERSION}/Python-${PYTHON_38_VERSION}.tar.xz
 #COPY ${DEPS_HOST_DIR}/Python-${PYTHON_38_VERSION}.tar.xz .
 RUN tar xf Python-${PYTHON_38_VERSION}.tar.xz
@@ -66,7 +66,7 @@ RUN make install
 
 # Python 3.9
 WORKDIR ${DEPS_BASE_BUILD_DIR}
-ARG PYTHON_39_VERSION=3.9.19
+ARG PYTHON_39_VERSION=3.9.20
 RUN curl -sSL -o Python-${PYTHON_39_VERSION}.tar.xz https://www.python.org/ftp/python/${PYTHON_39_VERSION}/Python-${PYTHON_39_VERSION}.tar.xz
 #COPY ${DEPS_HOST_DIR}/Python-${PYTHON_39_VERSION}.tar.xz .
 RUN tar xf Python-${PYTHON_39_VERSION}.tar.xz
@@ -78,7 +78,7 @@ RUN make install
 
 # Python 3.10
 WORKDIR ${DEPS_BASE_BUILD_DIR}
-ARG PYTHON_310_VERSION=3.10.14
+ARG PYTHON_310_VERSION=3.10.15
 RUN curl -sSL -o Python-${PYTHON_310_VERSION}.tar.xz https://www.python.org/ftp/python/${PYTHON_310_VERSION}/Python-${PYTHON_310_VERSION}.tar.xz
 #COPY ${DEPS_HOST_DIR}/Python-${PYTHON_310_VERSION}.tar.xz .
 RUN tar xf Python-${PYTHON_310_VERSION}.tar.xz
@@ -90,7 +90,7 @@ RUN make install
 
 # Python 3.11
 WORKDIR ${DEPS_BASE_BUILD_DIR}
-ARG PYTHON_311_VERSION=3.11.9
+ARG PYTHON_311_VERSION=3.11.10
 RUN curl -sSL -o Python-${PYTHON_311_VERSION}.tar.xz https://www.python.org/ftp/python/${PYTHON_311_VERSION}/Python-${PYTHON_311_VERSION}.tar.xz
 #COPY ${DEPS_HOST_DIR}/Python-${PYTHON_311_VERSION}.tar.xz .
 RUN tar xf Python-${PYTHON_311_VERSION}.tar.xz
@@ -102,13 +102,25 @@ RUN make install
 
 # Python 3.12
 WORKDIR ${DEPS_BASE_BUILD_DIR}
-ARG PYTHON_312_VERSION=3.12.3
+ARG PYTHON_312_VERSION=3.12.7
 RUN curl -sSL -o Python-${PYTHON_312_VERSION}.tar.xz https://www.python.org/ftp/python/${PYTHON_312_VERSION}/Python-${PYTHON_312_VERSION}.tar.xz
 #COPY ${DEPS_HOST_DIR}/Python-${PYTHON_312_VERSION}.tar.xz .
 RUN tar xf Python-${PYTHON_312_VERSION}.tar.xz
 WORKDIR Python-${PYTHON_312_VERSION}
 ARG PYTHON_312_INSTALL_DIR=${DEPS_BASE_INSTALL_DIR}/Python-${PYTHON_312_VERSION}
 RUN ./configure --enable-shared --prefix ${PYTHON_312_INSTALL_DIR}
+RUN make -j ${NUM_CORES}
+RUN make install
+
+# Python 3.13
+WORKDIR ${DEPS_BASE_BUILD_DIR}
+ARG PYTHON_313_VERSION=3.13.0
+RUN curl -sSL -o Python-${PYTHON_313_VERSION}.tar.xz https://www.python.org/ftp/python/${PYTHON_313_VERSION}/Python-${PYTHON_313_VERSION}.tar.xz
+#COPY ${DEPS_HOST_DIR}/Python-${PYTHON_313_VERSION}.tar.xz .
+RUN tar xf Python-${PYTHON_313_VERSION}.tar.xz
+WORKDIR Python-${PYTHON_313_VERSION}
+ARG PYTHON_313_INSTALL_DIR=${DEPS_BASE_INSTALL_DIR}/Python-${PYTHON_313_VERSION}
+RUN ./configure --enable-shared --prefix ${PYTHON_313_INSTALL_DIR}
 RUN make -j ${NUM_CORES}
 RUN make install
 
@@ -126,8 +138,9 @@ RUN echo "using python : 3.9 : ${PYTHON_39_INSTALL_DIR}/bin/python3 : ${PYTHON_3
 RUN echo "using python : 3.10 : ${PYTHON_310_INSTALL_DIR}/bin/python3 : ${PYTHON_310_INSTALL_DIR}/include/python3.10 : ${PYTHON_310_INSTALL_DIR}/lib ;" >> ./user-config.jam
 RUN echo "using python : 3.11 : ${PYTHON_311_INSTALL_DIR}/bin/python3 : ${PYTHON_311_INSTALL_DIR}/include/python3.11 : ${PYTHON_311_INSTALL_DIR}/lib ;" >> ./user-config.jam
 RUN echo "using python : 3.12 : ${PYTHON_312_INSTALL_DIR}/bin/python3 : ${PYTHON_312_INSTALL_DIR}/include/python3.12 : ${PYTHON_312_INSTALL_DIR}/lib ;" >> ./user-config.jam
+RUN echo "using python : 3.13 : ${PYTHON_313_INSTALL_DIR}/bin/python3 : ${PYTHON_313_INSTALL_DIR}/include/python3.13 : ${PYTHON_313_INSTALL_DIR}/lib ;" >> ./user-config.jam
 RUN ./bootstrap.sh
-RUN ./b2 --user-config=./user-config.jam install -j ${NUM_CORES} --with-program_options --with-thread --with-system --with-python python=3.8,3.9,3.10,3.11,3.12
+RUN ./b2 --user-config=./user-config.jam install -j ${NUM_CORES} --with-program_options --with-thread --with-system --with-python python=3.8,3.9,3.10,3.11,3.12,3.13
 
 # SQLite3
 WORKDIR ${DEPS_BASE_BUILD_DIR}

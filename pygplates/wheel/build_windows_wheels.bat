@@ -6,7 +6,7 @@ setlocal EnableDelayedExpansion
 rem Change to the root directory of the pyGPlates source code.
 cd ..\.. || exit /B 1
 
-for %%v in (3.8 3.9 3.10 3.11 3.12) do (
+for %%v in (3.8 3.9 3.10 3.11 3.12 3.13) do (
 
 	rem Create and activate a Python virtual environment.
 	rem

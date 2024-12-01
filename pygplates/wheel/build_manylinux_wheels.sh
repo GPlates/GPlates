@@ -10,7 +10,7 @@ cp -r pygplates/CMakeLists.txt pygplates/test /pygplates/pygplates
 cd /pygplates
 
 # Build wheels (in the local file system) for each Python version.
-for cp_version in 38 39 310 311 312
+for cp_version in 38 39 310 311 312 313
 do
 
     # Remove virtual environment (if leftover from a failed run).
