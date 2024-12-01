@@ -41,7 +41,7 @@ Corresponding package dependencies
 Program/library Corresponding Macports packages
 cmake           cmake
 GLEW            glew
-Python          python3[x] py3[x]-numpy; where 'x' is the minor version
+Python          python3[x] py3[x]-numpy py3[x]-pip; where 'x' is the minor version
 Boost           boost
 Qt              qt5
 Qwt             qwt-qt5
@@ -70,6 +70,7 @@ Here we briefly describe how to install dependencies using Macports (http://www.
   • Install GLEW with 'sudo port install glew'.
   • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python310').
     Also install NumPy with 'sudo port install py3[x]-numpy' (eg, 'sudo port install py310-numpy').
+    Also install 'pip' with 'sudo port install py3[x]-pip' (eg, 'sudo port install py310-pip').
   • Install Boost with 'sudo port install boost +python3[x]'.
     Note the additional '+python3[x]' where 'x' is the python minor version number (eg, 'sudo port install boost +python310').
   • Install Qt with 'sudo port install qt5'.
@@ -84,7 +85,7 @@ Here we briefly describe how to install dependencies using Macports (http://www.
 
 For example, to install using Python 3.10:
 
-    sudo port -N install cmake glew python310 py310-numpy boost +python310 qt5 qwt-qt5 gdal +netcdf proj cgal5 zlib
+    sudo port -N install cmake glew python310 py310-numpy py310-pip boost +python310 qt5 qwt-qt5 gdal +netcdf proj cgal5 zlib
 
 ...note the '-N' *prevents* Macports asking you to confirm dependencies for each port.
 
@@ -101,9 +102,23 @@ For example, if you installed Python 3.10 via Macports then build GPlates/pyGPla
 
 ...or, equivalently, set the environment variable Python3_ROOT and then build GPlates/pyGPlates:
 
-    export Python3_ROOT_DIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.10
+    export Python3_ROOT=/opt/local/Library/Frameworks/Python.framework/Versions/3.10
     cmake .
     make
+
+
+A note about Boost
+
+If you get a CMake error like "Could NOT find Boost (missing: python310)" then you may need to create a symbolic link within Macports.
+For example, if your Boost version is 1.76 (and Python version is 3.10) then you can create the symbolic link with:
+
+    sudo ln -s /opt/local/libexec/boost/1.76/lib/libboost_python310-mt.dylib /opt/local/lib/libboost_python310-mt.dylib
+
+If you have multiple Python versions then you'll also need corresponding boost port variants (due to boost-python).
+However you'll need to add the variants to 'boost176' (for Boost 1.76) instead of just 'boost' (as was done above).
+For example, you could add Python version 3.11 with:
+
+    sudo port -N install python311 py311-numpy py311-pip boost176 +python311
 
 
 A note about Qwt

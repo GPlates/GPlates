@@ -206,7 +206,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::contains_disabled_sequence_flag() 
 		if(trs_pole)
 		{
 			const MetadataContainer &meta_data = trs_pole->get_metadata();
-			for (const Metadata::shared_ptr_type m : meta_data)
+			for (Metadata::shared_ptr_type m : meta_data)
 			{
 				if((m->get_name() == Metadata::DISABLED_SEQUENCE_FLAG) && 
 					!m->get_content().compare("true",Qt::CaseInsensitive))

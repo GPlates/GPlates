@@ -36,6 +36,7 @@
 
 #include "ColourPaletteAdapter.h"
 #include "ColourPaletteUtils.h"
+#include "ColourPaletteVisitor.h"
 #include "CptColourPalette.h"
 #include "RasterColourPalette.h"
 
@@ -50,6 +51,132 @@ namespace GPlatesGui
 {
 	namespace BuiltinColourPalettes
 	{
+		namespace
+		{
+			/**
+			 * Palette visitor to return a new palette with inverted colours.
+			 */
+			class InvertPaletteVisitor :
+					public ConstColourPaletteVisitor
+			{
+			public:
+
+				boost::optional<ColourPalette<double>::non_null_ptr_type>
+				get_inverted_colour_palette() const
+				{
+					return d_inverted_colour_palette;
+				}
+
+				virtual
+				void
+				visit_regular_cpt_colour_palette(
+						const RegularCptColourPalette &colour_palette)
+				{
+					generate_inverted_colour_palette(colour_palette);
+				}
+
+			private:
+
+				boost::optional<ColourPalette<double>::non_null_ptr_type> d_inverted_colour_palette;
+
+				void
+				generate_inverted_colour_palette(
+						const RegularCptColourPalette &colour_palette)
+				{
+					boost::optional<std::pair<GPlatesMaths::Real, GPlatesMaths::Real>> range = colour_palette.get_range();
+					if (!range)
+					{
+						return;
+					}
+					const GPlatesMaths::Real lower_bound = range->first;
+					const GPlatesMaths::Real upper_bound = range->second;
+
+					RegularCptColourPalette::non_null_ptr_type inverted_colour_palette = RegularCptColourPalette::create();
+
+					// Invert background and foreground colours (but keep NaN colour the same).
+					if (colour_palette.get_background_colour())
+					{
+						inverted_colour_palette->set_foreground_colour(colour_palette.get_background_colour().get());
+					}
+					if (colour_palette.get_foreground_colour())
+					{
+						inverted_colour_palette->set_background_colour(colour_palette.get_foreground_colour().get());
+					}
+					if (colour_palette.get_nan_colour())
+					{
+						inverted_colour_palette->set_nan_colour(colour_palette.get_nan_colour().get());
+					}
+
+					const std::vector<ColourSlice> &colour_slices = colour_palette.get_entries();
+
+					// Add colour slices in reverse order since we're inverting them.
+					// This way they'll be ordered with increasing values.
+					for (int n = colour_slices.size() - 1; n >= 0; --n)
+					{
+						const ColourSlice &colour_slice = colour_slices[n];
+						const ColourSlice::value_type inverted_lower_value = upper_bound - (colour_slice.upper_value() - lower_bound);
+						const ColourSlice::value_type inverted_upper_value = upper_bound - (colour_slice.lower_value() - lower_bound);
+						const boost::optional<Colour> inverted_lower_colour = colour_slice.upper_colour();
+						const boost::optional<Colour> inverted_upper_colour = colour_slice.lower_colour();
+
+						ColourSlice inverted_colour_slice(colour_slice);
+						inverted_colour_slice.set_lower_value(inverted_lower_value);
+						inverted_colour_slice.set_upper_value(inverted_upper_value);
+						inverted_colour_slice.set_lower_colour(inverted_lower_colour);
+						inverted_colour_slice.set_upper_colour(inverted_upper_colour);
+
+						inverted_colour_palette->add_entry(inverted_colour_slice);
+					}
+
+					d_inverted_colour_palette =
+							GPlatesGui::convert_colour_palette<GPlatesMaths::Real, double>(
+									inverted_colour_palette, RealToBuiltInConverter<double>());
+				}
+
+			};
+
+			/**
+			 * Create a colour palette from a CPT file.
+			 */
+			GPlatesGui::ColourPalette<double>::non_null_ptr_type
+			create_palette(
+					QString palette_filename,
+					bool invert)
+			{
+				// Don't need to report any read errors - the age CPT file is embedded and should just work.
+				GPlatesFileIO::ReadErrorAccumulation read_errors;
+
+				RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+						ColourPaletteUtils::read_cpt_raster_colour_palette(
+								palette_filename,
+								false/*allow_integer_colour_palette*/,
+								read_errors);
+
+				boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
+						RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
+
+				// Should be a real-valued palette.
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						colour_palette,
+						GPLATES_ASSERTION_SOURCE);
+
+				if (invert)
+				{
+					InvertPaletteVisitor invert_palette_visitor;
+					colour_palette.get()->accept_visitor(invert_palette_visitor);
+
+					colour_palette = invert_palette_visitor.get_inverted_colour_palette();
+
+					// Should be able to invert palette palette (ie, should be a RegularCptColourPalette).
+					GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+							colour_palette,
+							GPLATES_ASSERTION_SOURCE);
+				}
+
+				return colour_palette.get();
+			}
+		}
+
 		namespace Age
 		{
 			namespace
@@ -79,6 +206,98 @@ namespace GPlatesGui
 				}
 			}
 		}
+
+		namespace Topography
+		{
+			namespace
+			{
+				/**
+				 * Returns the filename of the requested topography CPT file (stored internally as a resource).
+				 */
+				QString
+				get_cpt_filename(
+						Type type)
+				{
+					switch (type)
+					{
+					case Etopo1:
+						return ":/topo_etopo1.cpt";
+					case Geo:
+						return ":/topo_geo.cpt";
+					case Relief:
+						return ":/topo_relief.cpt";
+
+					default:
+						break;
+					}
+
+					// Shouldn't be able to get here.
+					GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				}
+			}
+		}
+
+		namespace SCM
+		{
+			namespace
+			{
+				/**
+				 * Returns the filename of the requested SCM CPT file (stored internally as a resource).
+				 */
+				QString
+				get_cpt_filename(
+						Type type)
+				{
+					switch (type)
+					{
+					// Sequential...
+					case Batlow:
+						return ":/scm_batlow.cpt";
+					case Hawaii:
+						return ":/scm_hawaii.cpt";
+					case Oslo:
+						return ":/scm_oslo.cpt";
+					case Lapaz:
+						return ":/scm_lapaz.cpt";
+					case Lajolla:
+						return ":/scm_lajolla.cpt";
+					case Buda:
+						return ":/scm_buda.cpt";
+					case Davos:
+						return ":/scm_davos.cpt";
+					case Tokyo:
+						return ":/scm_tokyo.cpt";
+
+					// Diverging...
+					case Vik:
+						return ":/scm_vik.cpt";
+					case Roma:
+						return ":/scm_roma.cpt";
+					case Broc:
+						return ":/scm_broc.cpt";
+					case Berlin:
+						return ":/scm_berlin.cpt";
+					case Lisbon:
+						return ":/scm_lisbon.cpt";
+					case Bam:
+						return ":/scm_bam.cpt";
+
+					// Multi-sequential...
+					case Oleron:
+						return ":/scm_oleron.cpt";
+					case Bukavu:
+						return ":/scm_bukavu.cpt";
+
+					default:
+						break;
+					}
+
+					// Shouldn't be able to get here.
+					GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				}
+			}
+		}
+
 		namespace ColorBrewer
 		{
 			/*
@@ -1051,11 +1270,11 @@ GPlatesGui::BuiltinColourPalettes::Age::get_palette_name(
 	switch (type)
 	{
 	case Legacy:
-		return "Age (legacy)";
+		return "Legacy";
 	case Traditional:
-		return "Age (traditional)";
+		return "Traditional";
 	case Modern:
-		return "Age (modern)";
+		return "Modern";
 
 	default:
 		break;
@@ -1068,26 +1287,10 @@ GPlatesGui::BuiltinColourPalettes::Age::get_palette_name(
 
 GPlatesGui::ColourPalette<double>::non_null_ptr_type
 GPlatesGui::BuiltinColourPalettes::Age::create_palette(
-		Type type)
+		Type type,
+		bool invert)
 {
-	// Don't need to report any read errors - the age CPT file is embedded and should just work.
-	GPlatesFileIO::ReadErrorAccumulation read_errors;
-
-	RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
-			ColourPaletteUtils::read_cpt_raster_colour_palette(
-					get_cpt_filename(type),
-					false/*allow_integer_colour_palette*/,
-					read_errors);
-
-	boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
-			RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
-
-	// Should be a real-valued palette.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			colour_palette,
-			GPLATES_ASSERTION_SOURCE);
-
-	return colour_palette.get();
+	return BuiltinColourPalettes::create_palette(get_cpt_filename(type), invert);
 }
 
 
@@ -1103,7 +1306,166 @@ GPlatesGui::BuiltinColourPalettes::Age::transcribe(
 	{
 		GPlatesScribe::EnumValue("Legacy", Legacy),
 		GPlatesScribe::EnumValue("Traditional", Traditional),
-		GPlatesScribe::EnumValue("Modern", Modern)
+		GPlatesScribe::EnumValue("Modern", Modern),
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			type,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
+}
+
+
+QString
+GPlatesGui::BuiltinColourPalettes::Topography::get_palette_name(
+		Type type)
+{
+	switch (type)
+	{
+	case Etopo1:
+		return "Etopo1";
+	case Geo:
+		return "Geo";
+	case Relief:
+		return "Relief";
+
+	default:
+		break;
+	}
+
+	// Shouldn't be able to get here.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+}
+
+
+GPlatesGui::ColourPalette<double>::non_null_ptr_type
+GPlatesGui::BuiltinColourPalettes::Topography::create_palette(
+		Type type,
+		bool invert)
+{
+	return BuiltinColourPalettes::create_palette(get_cpt_filename(type), invert);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesGui::BuiltinColourPalettes::Topography::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		Type &type,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		GPlatesScribe::EnumValue("Etopo1", Etopo1),
+		GPlatesScribe::EnumValue("Geo", Geo),
+		GPlatesScribe::EnumValue("Relief", Relief),
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			type,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
+}
+
+
+QString
+GPlatesGui::BuiltinColourPalettes::SCM::get_palette_name(
+		Type type)
+{
+	switch (type)
+	{
+		// Sequential...
+	case Batlow:
+		return "Batlow";
+	case Hawaii:
+		return "Hawaii";
+	case Oslo:
+		return "Oslo";
+	case Lapaz:
+		return "Lapaz";
+	case Lajolla:
+		return "Lajolla";
+	case Buda:
+		return "Buda";
+	case Davos:
+		return "Davos";
+	case Tokyo:
+		return "Tokyo";
+
+	// Diverging...
+	case Vik:
+		return "Vik";
+	case Roma:
+		return "Roma";
+	case Broc:
+		return "Broc";
+	case Berlin:
+		return "Berlin";
+	case Lisbon:
+		return "Lisbon";
+	case Bam:
+		return "Bam";
+
+	// Multi-sequential...
+	case Oleron:
+		return "Oleron";
+	case Bukavu:
+		return "Bukavu";
+
+	default:
+		break;
+	}
+
+	// Shouldn't be able to get here.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+}
+
+
+GPlatesGui::ColourPalette<double>::non_null_ptr_type
+GPlatesGui::BuiltinColourPalettes::SCM::create_palette(
+		Type type,
+		bool invert)
+{
+	return BuiltinColourPalettes::create_palette(get_cpt_filename(type), invert);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesGui::BuiltinColourPalettes::SCM::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		Type &type,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		// Sequential...
+		GPlatesScribe::EnumValue("Batlow", Batlow),
+		GPlatesScribe::EnumValue("Hawaii", Hawaii),
+		GPlatesScribe::EnumValue("Oslo", Oslo),
+		GPlatesScribe::EnumValue("Lapaz", Lapaz),
+		GPlatesScribe::EnumValue("Lajolla", Lajolla),
+		GPlatesScribe::EnumValue("Buda", Buda),
+		GPlatesScribe::EnumValue("Davos", Davos),
+		GPlatesScribe::EnumValue("Tokyo", Tokyo),
+
+		// Diverging...
+		GPlatesScribe::EnumValue("Vik", Vik),
+		GPlatesScribe::EnumValue("Roma", Roma),
+		GPlatesScribe::EnumValue("Broc", Broc),
+		GPlatesScribe::EnumValue("Berlin", Berlin),
+		GPlatesScribe::EnumValue("Lisbon", Lisbon),
+		GPlatesScribe::EnumValue("Bam", Bam),
+
+		// Multi-sequential...
+		GPlatesScribe::EnumValue("Oleron", Oleron),
+		GPlatesScribe::EnumValue("Bukavu", Bukavu),
 	};
 
 	return GPlatesScribe::transcribe_enum_protocol(

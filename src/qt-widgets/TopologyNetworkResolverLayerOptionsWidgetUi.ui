@@ -1097,7 +1097,7 @@
     <widget class="QWidget" name="draw_style_placeholder_widget" native="true"/>
    </item>
    <item>
-    <widget class="QGroupBox" name="draw_mode_group_box">
+    <widget class="QGroupBox" name="triangulation_draw_mode_group_box">
      <property name="title">
       <string>Triangulation Draw Mode</string>
      </property>
@@ -1115,9 +1115,9 @@
        <number>6</number>
       </property>
       <item>
-       <widget class="QRadioButton" name="boundary_draw_mode_radio_button">
+       <widget class="QRadioButton" name="none_draw_mode_radio_button">
         <property name="text">
-         <string>Boundary</string>
+         <string>None</string>
         </property>
        </widget>
       </item>

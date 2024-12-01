@@ -194,6 +194,33 @@ namespace
 
 
 	/**
+	 * Calculate the size of one device-independent pixel in world space coordinates.
+	 */
+	double
+	calc_device_independent_pixel_to_world_space_ratio(
+			int scene_view_width_in_device_independent_pixels,
+			int scene_view_height_in_device_independent_pixels,
+			const double &zoom_factor)
+	{
+		// Smallest dimension (view width or height) in device-independent pixels.
+		double smaller_dim_in_device_independent_pixels;
+		if (scene_view_width_in_device_independent_pixels <= scene_view_height_in_device_independent_pixels)
+		{
+			smaller_dim_in_device_independent_pixels = static_cast<GLdouble>(scene_view_width_in_device_independent_pixels);
+		}
+		else
+		{
+			smaller_dim_in_device_independent_pixels = static_cast<GLdouble>(scene_view_height_in_device_independent_pixels);
+		}
+
+		// The smallest dimension (view width or height) is bounded by this size in world space.
+		const GLdouble smaller_dim_world_space = 2 * GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO / zoom_factor;
+
+		return smaller_dim_world_space / smaller_dim_in_device_independent_pixels;
+	}
+
+
+	/**
 	 * Given the scene view's dimensions (eg, canvas dimensions) generate projection transforms
 	 * needed to display the scene.
 	 *
@@ -1100,6 +1127,12 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	const float scale = calculate_scale(
 			paint_device_width_in_device_independent_pixels,
 			paint_device_height_in_device_independent_pixels);
+	const double device_independent_pixel_to_world_space_ratio =
+			calc_device_independent_pixel_to_world_space_ratio(
+					paint_device_width_in_device_independent_pixels,
+					paint_device_height_in_device_independent_pixels,
+					viewport_zoom_factor);
+
 
 	//
 	// Paint the globe and its contents.
@@ -1114,6 +1147,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	const cache_handle_type frame_cache_handle = d_globe.paint(
 			renderer,
 			viewport_zoom_factor,
+			device_independent_pixel_to_world_space_ratio,
 			scale,
 			projection_transform_include_front_half_globe,
 			projection_transform_include_rear_half_globe,

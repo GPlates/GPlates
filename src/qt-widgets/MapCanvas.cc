@@ -224,6 +224,11 @@ GPlatesQtWidgets::MapCanvas::render_scene(
 			paint_device_height_in_device_independent_pixels,
 			map_canvas_paint_device_width_in_device_independent_pixels,
 			map_canvas_paint_device_height_in_device_independent_pixels);
+	const double device_independent_pixel_to_map_space_ratio =
+			d_map_view_ptr->get_device_independent_pixel_to_map_space_ratio(
+					paint_device_width_in_device_independent_pixels,
+					paint_device_height_in_device_independent_pixels,
+					viewport_zoom_factor);
 
 	//
 	// Paint the map and its contents.
@@ -235,7 +240,11 @@ GPlatesQtWidgets::MapCanvas::render_scene(
 	// Since the view direction usually differs little from one frame to the next there is a lot
 	// of overlap that we want to reuse (and not recalculate).
 	//
-	const cache_handle_type frame_cache_handle = d_map.paint(renderer, viewport_zoom_factor, scale);
+	const cache_handle_type frame_cache_handle = d_map.paint(
+			renderer,
+			viewport_zoom_factor,
+			device_independent_pixel_to_map_space_ratio,
+			scale);
 
 	// The text overlay is rendered in screen window coordinates (ie, no model-view transform needed).
 	renderer.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);

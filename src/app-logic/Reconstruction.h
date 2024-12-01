@@ -28,11 +28,14 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTION_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTION_H
 
+#include <vector>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "LayerProxyUtils.h"
 #include "ReconstructionLayerProxy.h"
+#include "ResolvedTopologicalSection.h"
+#include "TopologyUtils.h"
 
 #include "maths/Real.h"
 
@@ -104,6 +107,8 @@ namespace GPlatesAppLogic
 				const LayerProxy::non_null_ptr_type &layer_proxy)
 		{
 			d_active_layer_outputs.push_back(layer_proxy);
+			d_all_resolved_topological_sections = boost::none;  // flush cache
+			d_all_resolved_topological_shared_sub_segments = boost::none;  // flush cache
 		}
 
 
@@ -188,7 +193,29 @@ namespace GPlatesAppLogic
 				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy)
 		{
 			d_default_reconstruction_layer_proxy = reconstruction_layer_proxy;
+			d_all_resolved_topological_sections = boost::none;  // flush cache
+			d_all_resolved_topological_shared_sub_segments = boost::none;  // flush cache
 		}
+
+
+		/**
+		 * Finds all resolved topological sections (sub-segments shared by resolved topology boundaries and network boundaries)
+		 * from ALL layer outputs in this reconstruction.
+		 *
+		 * Note: Only finds resolved topological sections when first called, and is then cached.
+		 *       Subsequently calling @a add_active_layer_output will flush the cache however.
+		 */
+		const std::vector<ResolvedTopologicalSection::non_null_ptr_type> &
+		get_all_resolved_topological_sections() const;
+
+		/**
+		 * A different representation of @a find_resolved_topological_sections.
+		 *
+		 * Instead of shared sub-segments referencing resolved topological boundaries and networks,
+		 * it's the other way around.
+		 */
+		const TopologyUtils::resolved_topological_boundaries_networks_to_shared_sub_segments_map_type &
+		get_all_resolved_topological_shared_sub_segments() const;
 
 	private:
 		/**
@@ -211,6 +238,17 @@ namespace GPlatesAppLogic
 		 * The sequence of active layer outputs.
 		 */
 		layer_output_seq_type d_active_layer_outputs;
+
+		/**
+		 * Resolved topological sections from ALL layer outputs in this reconstruction
+		 * (cached when calling @a get_all_resolved_topological_sections).
+		 */
+		mutable boost::optional<std::vector<ResolvedTopologicalSection::non_null_ptr_type>> d_all_resolved_topological_sections;
+		/**
+		 * Resolved topological shared sub-segments from ALL layer outputs in this reconstruction
+		 * (cached when calling @a get_all_resolved_topological_shared_sub_segments).
+		 */
+		mutable boost::optional<TopologyUtils::resolved_topological_boundaries_networks_to_shared_sub_segments_map_type> d_all_resolved_topological_shared_sub_segments;
 
 
 		/**

@@ -391,6 +391,9 @@ namespace GPlatesQtWidgets
 		enable_scalar_coverage_display();
 
 		void
+		enable_all_geometries_display();
+
+		void
 		handle_render_settings_changed();
 
 		void

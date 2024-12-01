@@ -61,15 +61,11 @@ if (TARGET Python3::Python)
 	list(APPEND python_embedding_LIBS ${Python3_LIBRARIES})
 	list(APPEND python_embedding_LIB_DIRS ${Python3_LIBRARY_DIRS})
 	list(APPEND python_embedding_INCLUDE_DIRS ${Python3_INCLUDE_DIRS})
-elseif (TARGET Python2::Python)
+else()  # TARGET Python2::Python
 	# We used the Python2 find module.
 	list(APPEND python_embedding_LIBS ${Python2_LIBRARIES})
 	list(APPEND python_embedding_LIB_DIRS ${Python2_LIBRARY_DIRS})
 	list(APPEND python_embedding_INCLUDE_DIRS ${Python2_INCLUDE_DIRS})
-else()
-	# We used the PythonLibs find module (which does not have imported targets).
-	list(APPEND python_embedding_LIBS ${PYTHON_LIBRARIES})
-	list(APPEND python_embedding_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
 endif()
 
 # According to the docs...

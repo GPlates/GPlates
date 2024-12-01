@@ -82,6 +82,8 @@ GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::ConfigureCa
 			d_rendered_geometry_parameters.get_reconstruction_layer_point_size_hint());
 	reconstruction_layer_line_width_hint_spinbox->setValue(
 			d_rendered_geometry_parameters.get_reconstruction_layer_line_width_hint());
+	reconstruction_layer_topology_size_multiplier_spinbox->setValue(
+			d_rendered_geometry_parameters.get_reconstruction_layer_topology_size_multiplier());
 
 	QObject::connect(
 			d_focused_feature_clicked_geometry_colour_button,
@@ -140,6 +142,11 @@ GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::ConfigureCa
 			SIGNAL(valueChanged(double)),
 			this,
 			SLOT(react_reconstruction_layer_line_width_hint_spinbox_value_changed(double)));
+	QObject::connect(
+			reconstruction_layer_topology_size_multiplier_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_reconstruction_layer_topology_size_multiplier_spinbox_value_changed(double)));
 
 	// Also update our GUI when the render geometry parameters change.
 	QObject::connect(
@@ -241,6 +248,14 @@ GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_recon
 
 
 void
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_reconstruction_layer_topology_size_multiplier_spinbox_value_changed(
+		double value)
+{
+	d_rendered_geometry_parameters.set_reconstruction_layer_topology_size_multiplier(value);
+}
+
+
+void
 GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::handle_rendered_geometry_parameters_changed()
 {
 	// Note: Calling 'ChooseColourButton::set_colour()' will only emit a signal if the colour changes and
@@ -279,4 +294,7 @@ GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::handle_rend
 
 	reconstruction_layer_line_width_hint_spinbox->setValue(
 			d_rendered_geometry_parameters.get_reconstruction_layer_line_width_hint());
+
+	reconstruction_layer_topology_size_multiplier_spinbox->setValue(
+			d_rendered_geometry_parameters.get_reconstruction_layer_topology_size_multiplier());
 }

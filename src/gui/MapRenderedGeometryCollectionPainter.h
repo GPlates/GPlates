@@ -95,7 +95,8 @@ namespace GPlatesGui
 		cache_handle_type
 		paint(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const double &viewport_zoom_factor);
+				const double &viewport_zoom_factor,
+				const double &device_independent_pixel_to_map_space_ratio);
 
 		void
 		set_scale(
@@ -132,9 +133,11 @@ namespace GPlatesGui
 		{
 			PaintParams(
 					GPlatesOpenGL::GLRenderer &renderer,
-					const double &viewport_zoom_factor) :
+					const double &viewport_zoom_factor,
+					const double &device_independent_pixel_to_map_space_ratio) :
 				d_renderer(&renderer),
 				d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
+				d_device_independent_pixel_to_map_space_ratio(device_independent_pixel_to_map_space_ratio),
 				d_cache_handle(new std::vector<cache_handle_type>()),
 				// Default to RECONSTRUCTION_LAYER (we set it before visiting each layer anyway) ...
 				d_main_rendered_layer_type(GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
@@ -142,6 +145,7 @@ namespace GPlatesGui
 
 			GPlatesOpenGL::GLRenderer *d_renderer;
 			double d_inverse_viewport_zoom_factor;
+			double d_device_independent_pixel_to_map_space_ratio;
 
 			// Cache of rendered geometry layers.
 			boost::shared_ptr<std::vector<cache_handle_type> > d_cache_handle;

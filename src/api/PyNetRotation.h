@@ -55,7 +55,7 @@ namespace GPlatesApi
 
 
 		//! Default number of grid points sampled along each meridian.
-		static const unsigned int DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN = 180;
+		static const unsigned int DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN;
 
 
 		/**

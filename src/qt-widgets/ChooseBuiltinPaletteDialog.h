@@ -81,7 +81,7 @@ namespace GPlatesQtWidgets
 				int state);
 
 		void
-		handle_colorbrewer_invert_check_box_changed(
+		handle_invert_check_box_changed(
 				int state);
 
 		void
@@ -105,6 +105,14 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::BuiltinColourPaletteType
 		create_palette_type(
+				GPlatesGui::BuiltinColourPalettes::Topography::Type topography_type);
+
+		GPlatesGui::BuiltinColourPaletteType
+		create_palette_type(
+				GPlatesGui::BuiltinColourPalettes::SCM::Type scm_type);
+
+		GPlatesGui::BuiltinColourPaletteType
+		create_palette_type(
 				GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Type sequential_type);
 
 		GPlatesGui::BuiltinColourPaletteType
@@ -112,7 +120,8 @@ namespace GPlatesQtWidgets
 				GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Type diverging_type);
 
 		void
-		re_populate_colorbrewer_buttons();
+		re_populate_buttons(
+				GPlatesGui::BuiltinColourPaletteType::PaletteType palette_type);
 
 
 		GPlatesGui::BuiltinColourPaletteType::Parameters d_builtin_parameters;
@@ -121,6 +130,29 @@ namespace GPlatesQtWidgets
 		ColourScaleButton *d_age_legacy_button;
 		ColourScaleButton *d_age_traditional_button;
 		ColourScaleButton *d_age_modern_button;
+
+		// Topography palettes.
+		ColourScaleButton *d_topography_etopo1_button;
+		ColourScaleButton *d_topography_geo_button;
+		ColourScaleButton *d_topography_relief_button;
+
+		// SCM palettes.
+		ColourScaleButton *d_scm_batlow_button;
+		ColourScaleButton *d_scm_hawaii_button;
+		ColourScaleButton *d_scm_oslo_button;
+		ColourScaleButton *d_scm_lapaz_button;
+		ColourScaleButton *d_scm_lajolla_button;
+		ColourScaleButton *d_scm_buda_button;
+		ColourScaleButton *d_scm_davos_button;
+		ColourScaleButton *d_scm_tokyo_button;
+		ColourScaleButton *d_scm_vik_button;
+		ColourScaleButton *d_scm_roma_button;
+		ColourScaleButton *d_scm_broc_button;
+		ColourScaleButton *d_scm_berlin_button;
+		ColourScaleButton *d_scm_lisbon_button;
+		ColourScaleButton *d_scm_bam_button;
+		ColourScaleButton *d_scm_oleron_button;
+		ColourScaleButton *d_scm_bukavu_button;
 
 		// ColorBrewer sequential multi-hue palettes.
 		ColourScaleButton *d_BuGn_button;

@@ -63,3 +63,12 @@ __pycache__/
 /src/global/License.cc
 /src/global/Version.cc
 /src/global/config.h
+
+# Python sdist/wheel building.
+/dist/
+/wheelhouse/
+
+# Docker.
+/pygplates/wheel/*.bz2
+/pygplates/wheel/*.gz
+/pygplates/wheel/*.xz

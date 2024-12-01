@@ -125,23 +125,27 @@ namespace
 			QObject::tr("Network triangulation colour mode");
 	const QString HELP_TRIANGULATION_COLOUR_MODE_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
-			"<p>The network triangulation is coloured with <i>use draw style</i> by default. "
-			"This colours the network triangulation and any interior rigid blocks using the colour scheme selected for the layer.</p>"
-			"<p>Alternatively the network triangulation can be coloured using <i>dilatation strain rate</i>, "
+			"<p>This selects the colour mode for the <i>triangulation</i> of the network.</p>"
+			"<p>By default, the triangulation is coloured with the <i>draw style</i> (this uses the colour scheme selected for the layer).</p>"
+			"<p>Alternatively the triangulation can be coloured using <i>dilatation strain rate</i>, "
 			"<i>total strain rate</i> or <i>strain rate style</i> and a colour palette.</p>"
 			"<p><i>Strain rate style</i> is typically in the range [-1.0, 1.0] where -1.0 implies contraction, "
 			"1.0 implies extension and 0.0 implies strike-slip.</p>"
+			"<p>Note that the <i>boundary</i> of the network (including any interior rigid blocks) is always coloured with the <i>draw style</i> "
+			"regardless of the <i>triangulation colour mode</i>.</p>"
 			"</body></html>\n");
 
 	const QString HELP_TRIANGULATION_DRAW_MODE_DIALOG_TITLE =
 			QObject::tr("Network triangulation draw mode");
 	const QString HELP_TRIANGULATION_DRAW_MODE_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
-			"<p>To display only the boundary of the network triangulation select <i>Boundary</i>. "
-			"<p>Alternatively the triangulation wireframe mesh can be displayed with <i>Mesh</i> or "
-			"the triangulation can be filled with <i>Fill</i>.</p>"
-			"<p>Note that the rigid interior blocks (if any) can be filled by selecting <i>fill rigid interior blocks</i> "
-			"and are always displayed using the <i>draw style</i>.</p>"
+			"<p>The wireframe mesh of the triangulation can be displayed with <i>Mesh</i>, or "
+			"the triangulation can be filled with <i>Fill</i>, or not displayed with <i>None</i>.</p>"
+			"<p>The triangulation is coloured using the <i>triangulation colour mode</i> (when <i>Mesh</i> or <i>Fill</i> is selected).</p>"
+			"<p>Note that the <i>boundary</i> of the network (including any interior rigid blocks) is always displayed "
+			"regardless of the <i>triangulation draw mode</i>, and is always coloured with the <i>draw style</i>.</p>"
+			"<p>Also note that the rigid interior blocks (if any) can be independently filled by selecting <i>fill rigid interior blocks</i> "
+			"(and are always coloured with the <i>draw style</i>).</p>"
 			"</body></html>\n");
 }
 
@@ -353,9 +357,9 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			d_help_triangulation_colour_mode_dialog, SLOT(show()));
 
 	// Draw mode.
-	boundary_draw_mode_radio_button->setCursor(QCursor(Qt::ArrowCursor));
+	none_draw_mode_radio_button->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
-			boundary_draw_mode_radio_button, SIGNAL(toggled(bool)),
+			none_draw_mode_radio_button, SIGNAL(toggled(bool)),
 			this, SLOT(handle_draw_mode_button(bool)));
 	mesh_draw_mode_radio_button->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
@@ -768,7 +772,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			// Changing the current mode will emit signals which can lead to an infinitely recursive decent.
 			// To avoid this we temporarily disconnect their signals.
 			QObject::disconnect(
-					boundary_draw_mode_radio_button, SIGNAL(toggled(bool)),
+					none_draw_mode_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_draw_mode_button(bool)));
 			QObject::disconnect(
 					mesh_draw_mode_radio_button, SIGNAL(toggled(bool)),
@@ -778,8 +782,8 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 					this, SLOT(handle_draw_mode_button(bool)));
 			switch (params->get_triangulation_draw_mode())
 			{
-			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY:
-				boundary_draw_mode_radio_button->setChecked(true);
+			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_NONE:
+				none_draw_mode_radio_button->setChecked(true);
 				break;
 			case GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH:
 				mesh_draw_mode_radio_button->setChecked(true);
@@ -792,7 +796,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 				break;
 			}
 			QObject::connect(
-					boundary_draw_mode_radio_button, SIGNAL(toggled(bool)),
+					none_draw_mode_radio_button, SIGNAL(toggled(bool)),
 					this, SLOT(handle_draw_mode_button(bool)));
 			QObject::connect(
 					mesh_draw_mode_radio_button, SIGNAL(toggled(bool)),
@@ -1343,10 +1347,10 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_draw_mode_bu
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			if (boundary_draw_mode_radio_button->isChecked())
+			if (none_draw_mode_radio_button->isChecked())
 			{
 				params->set_triangulation_draw_mode(
-						GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY);
+						GPlatesPresentation::TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_NONE);
 			}
 			if (mesh_draw_mode_radio_button->isChecked())
 			{

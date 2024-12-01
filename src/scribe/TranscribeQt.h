@@ -347,6 +347,10 @@ namespace GPlatesScribe
 			public TranscribeMap< QMap<Key, T> >
 	{
 		typedef QMultiMap<Key, T> map_type;
+		typedef typename map_type::key_type key_type;
+		typedef typename map_type::mapped_type mapped_type;
+		typedef typename map_type::iterator map_iterator;
+		typedef typename map_type::const_iterator map_const_iterator;
 
 		static
 		boost::optional<map_iterator>

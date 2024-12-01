@@ -881,16 +881,16 @@ class FeatureCollectionCase(unittest.TestCase):
                 lambda feature: feature.get_feature_id() == feature1.get_feature_id())
         self.assertTrue(feature.get_feature_id() == feature1.get_feature_id())
         feature = self.feature_collection.get(
-                lambda feature: feature.get_feature_id() == feature2.get_feature_id())
+                feature_query=lambda feature: feature.get_feature_id() == feature2.get_feature_id())
         self.assertTrue(feature.get_feature_id() == feature2.get_feature_id())
         self.assertFalse(self.feature_collection.get(
                 lambda feature: feature.get_feature_id() == pygplates.FeatureId.create_unique_id(),
-                pygplates.FeatureReturn.all))
+                feature_return=pygplates.FeatureReturn.all))
         # Of the four volcano features only two have reconstruction plate ids less than 800.
         features = self.feature_collection.get(
-                lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Volcano') and
+                feature_query=lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Volcano') and
                                 feature.get_reconstruction_plate_id() < 800,
-                pygplates.FeatureReturn.all)
+                feature_return=pygplates.FeatureReturn.all)
         self.assertTrue(len(features) == 2)
         # There are no isochrons.
         self.assertFalse(self.feature_collection.get(

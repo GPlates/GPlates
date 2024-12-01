@@ -45,6 +45,27 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	d_age_legacy_button(new ColourScaleButton(this)),
 	d_age_traditional_button(new ColourScaleButton(this)),
 	d_age_modern_button(new ColourScaleButton(this)),
+	// Topography palettes...
+	d_topography_etopo1_button(new ColourScaleButton(this)),
+	d_topography_geo_button(new ColourScaleButton(this)),
+	d_topography_relief_button(new ColourScaleButton(this)),
+	// SCM palettes...
+	d_scm_batlow_button(new ColourScaleButton(this)),
+	d_scm_hawaii_button(new ColourScaleButton(this)),
+	d_scm_oslo_button(new ColourScaleButton(this)),
+	d_scm_lapaz_button(new ColourScaleButton(this)),
+	d_scm_lajolla_button(new ColourScaleButton(this)),
+	d_scm_buda_button(new ColourScaleButton(this)),
+	d_scm_davos_button(new ColourScaleButton(this)),
+	d_scm_tokyo_button(new ColourScaleButton(this)),
+	d_scm_vik_button(new ColourScaleButton(this)),
+	d_scm_roma_button(new ColourScaleButton(this)),
+	d_scm_broc_button(new ColourScaleButton(this)),
+	d_scm_berlin_button(new ColourScaleButton(this)),
+	d_scm_lisbon_button(new ColourScaleButton(this)),
+	d_scm_bam_button(new ColourScaleButton(this)),
+	d_scm_oleron_button(new ColourScaleButton(this)),
+	d_scm_bukavu_button(new ColourScaleButton(this)),
 	// ColorBrewer sequential multi-hue palettes...
 	d_BuGn_button(new ColourScaleButton(this)),
 	d_BuPu_button(new ColourScaleButton(this)),
@@ -83,6 +104,29 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	add_colour_scale_button(d_age_traditional_button, age_traditional_placeholder);
 	add_colour_scale_button(d_age_modern_button, age_modern_placeholder);
 
+	// Topography palettes.
+	add_colour_scale_button(d_topography_etopo1_button, topo_etopo1_placeholder);
+	add_colour_scale_button(d_topography_geo_button, topo_geo_placeholder);
+	add_colour_scale_button(d_topography_relief_button, topo_relief_placeholder);
+
+	// SCM palettes.
+	add_colour_scale_button(d_scm_batlow_button, SCM_batlow_placeholder);
+	add_colour_scale_button(d_scm_hawaii_button, SCM_hawaii_placeholder);
+	add_colour_scale_button(d_scm_oslo_button, SCM_oslo_placeholder);
+	add_colour_scale_button(d_scm_lapaz_button, SCM_lapaz_placeholder);
+	add_colour_scale_button(d_scm_lajolla_button, SCM_lajolla_placeholder);
+	add_colour_scale_button(d_scm_buda_button, SCM_buda_placeholder);
+	add_colour_scale_button(d_scm_davos_button, SCM_davos_placeholder);
+	add_colour_scale_button(d_scm_tokyo_button, SCM_tokyo_placeholder);
+	add_colour_scale_button(d_scm_vik_button, SCM_vik_placeholder);
+	add_colour_scale_button(d_scm_roma_button, SCM_roma_placeholder);
+	add_colour_scale_button(d_scm_broc_button, SCM_broc_placeholder);
+	add_colour_scale_button(d_scm_berlin_button, SCM_berlin_placeholder);
+	add_colour_scale_button(d_scm_lisbon_button, SCM_lisbon_placeholder);
+	add_colour_scale_button(d_scm_bam_button, SCM_bam_placeholder);
+	add_colour_scale_button(d_scm_oleron_button, SCM_oleron_placeholder);
+	add_colour_scale_button(d_scm_bukavu_button, SCM_bukavu_placeholder);
+
 	// ColorBrewer sequential multi-hue palettes.
 	add_colour_scale_button(d_BuGn_button, BuGn_placeholder);
 	add_colour_scale_button(d_BuPu_button, BuPu_placeholder);
@@ -116,6 +160,11 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	add_colour_scale_button(d_RdYlGn_button, RdYlGn_placeholder);
 	add_colour_scale_button(d_Spectral_button, Spectral_placeholder);
 
+	invert_checkbox->setChecked(d_builtin_parameters.inverted);
+	QObject::connect(
+			invert_checkbox, SIGNAL(stateChanged(int)),
+			this, SLOT(handle_invert_check_box_changed(int)));
+
 	colorbrewer_sequential_classes_spinbox->setRange(
 			GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Three,
 			GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Nine);
@@ -134,15 +183,14 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 			colorbrewer_diverging_classes_spinbox, SIGNAL(valueChanged(int)),
 			this, SLOT(handle_colorbrewer_diverging_classes_changed(int)));
 
-	colorbrewer_discrete_checkbox->setChecked(!d_builtin_parameters.colorbrewer_continuous);
+	colorbrewer_sequential_discrete_checkbox->setChecked(!d_builtin_parameters.colorbrewer_sequential_continuous);
 	QObject::connect(
-			colorbrewer_discrete_checkbox, SIGNAL(stateChanged(int)),
+			colorbrewer_sequential_discrete_checkbox, SIGNAL(stateChanged(int)),
 			this, SLOT(handle_colorbrewer_discrete_check_box_changed(int)));
-
-	colorbrewer_invert_checkbox->setChecked(d_builtin_parameters.colorbrewer_inverted);
+	colorbrewer_diverging_discrete_checkbox->setChecked(!d_builtin_parameters.colorbrewer_diverging_continuous);
 	QObject::connect(
-			colorbrewer_invert_checkbox, SIGNAL(stateChanged(int)),
-			this, SLOT(handle_colorbrewer_invert_check_box_changed(int)));
+			colorbrewer_diverging_discrete_checkbox, SIGNAL(stateChanged(int)),
+			this, SLOT(handle_colorbrewer_discrete_check_box_changed(int)));
 
 	QtWidgetUtils::resize_based_on_size_hint(this);
 }
@@ -187,6 +235,86 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::get_builtin_colour_palette_type(
 	if (colour_scale_button == d_age_modern_button)
 	{
 		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Age::Modern);
+	}
+
+	// Topography palettes.
+	if (colour_scale_button == d_topography_etopo1_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Topography::Etopo1);
+	}
+	if (colour_scale_button == d_topography_geo_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Topography::Geo);
+	}
+	if (colour_scale_button == d_topography_relief_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Topography::Relief);
+	}
+
+	// SCM palettes.
+	if (colour_scale_button == d_scm_batlow_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Batlow);
+	}
+	if (colour_scale_button == d_scm_hawaii_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Hawaii);
+	}
+	if (colour_scale_button == d_scm_oslo_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Oslo);
+	}
+	if (colour_scale_button == d_scm_lapaz_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Lapaz);
+	}
+	if (colour_scale_button == d_scm_lajolla_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Lajolla);
+	}
+	if (colour_scale_button == d_scm_buda_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Buda);
+	}
+	if (colour_scale_button == d_scm_davos_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Davos);
+	}
+	if (colour_scale_button == d_scm_tokyo_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Tokyo);
+	}
+	if (colour_scale_button == d_scm_vik_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Vik);
+	}
+	if (colour_scale_button == d_scm_roma_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Roma);
+	}
+	if (colour_scale_button == d_scm_broc_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Broc);
+	}
+	if (colour_scale_button == d_scm_berlin_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Berlin);
+	}
+	if (colour_scale_button == d_scm_lisbon_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Lisbon);
+	}
+	if (colour_scale_button == d_scm_bam_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Bam);
+	}
+	if (colour_scale_button == d_scm_oleron_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Oleron);
+	}
+	if (colour_scale_button == d_scm_bukavu_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Bukavu);
 	}
 
 	// ColorBrewer sequential multi-hue palettes.
@@ -312,7 +440,23 @@ GPlatesGui::BuiltinColourPaletteType
 GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_palette_type(
 		GPlatesGui::BuiltinColourPalettes::Age::Type age_type)
 {
-	return GPlatesGui::BuiltinColourPaletteType(age_type);
+	return GPlatesGui::BuiltinColourPaletteType(age_type, d_builtin_parameters);
+}
+
+
+GPlatesGui::BuiltinColourPaletteType
+GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_palette_type(
+		GPlatesGui::BuiltinColourPalettes::Topography::Type topography_type)
+{
+	return GPlatesGui::BuiltinColourPaletteType(topography_type, d_builtin_parameters);
+}
+
+
+GPlatesGui::BuiltinColourPaletteType
+GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_palette_type(
+		GPlatesGui::BuiltinColourPalettes::SCM::Type scm_type)
+{
+	return GPlatesGui::BuiltinColourPaletteType(scm_type, d_builtin_parameters);
 }
 
 
@@ -333,40 +477,84 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_palette_type(
 
 
 void
-GPlatesQtWidgets::ChooseBuiltinPaletteDialog::re_populate_colorbrewer_buttons()
+GPlatesQtWidgets::ChooseBuiltinPaletteDialog::re_populate_buttons(
+		GPlatesGui::BuiltinColourPaletteType::PaletteType palette_type)
 {
-	// ColorBrewer sequential multi-hue palettes.
-	d_BuGn_button->populate(get_builtin_colour_palette_type(d_BuGn_button).create_palette());
-	d_BuPu_button->populate(get_builtin_colour_palette_type(d_BuPu_button).create_palette());
-	d_GnBu_button->populate(get_builtin_colour_palette_type(d_GnBu_button).create_palette());
-	d_OrRd_button->populate(get_builtin_colour_palette_type(d_OrRd_button).create_palette());
-	d_PuBu_button->populate(get_builtin_colour_palette_type(d_PuBu_button).create_palette());
-	d_PuBuGn_button->populate(get_builtin_colour_palette_type(d_PuBuGn_button).create_palette());
-	d_PuRd_button->populate(get_builtin_colour_palette_type(d_PuRd_button).create_palette());
-	d_RdPu_button->populate(get_builtin_colour_palette_type(d_RdPu_button).create_palette());
-	d_YlGn_button->populate(get_builtin_colour_palette_type(d_YlGn_button).create_palette());
-	d_YlGnBu_button->populate(get_builtin_colour_palette_type(d_YlGnBu_button).create_palette());
-	d_YlOrBr_button->populate(get_builtin_colour_palette_type(d_YlOrBr_button).create_palette());
-	d_YlOrRd_button->populate(get_builtin_colour_palette_type(d_YlOrRd_button).create_palette());
+	if (palette_type == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE)
+	{
+		// Age palettes.
+		d_age_legacy_button->populate(get_builtin_colour_palette_type(d_age_legacy_button).create_palette());
+		d_age_traditional_button->populate(get_builtin_colour_palette_type(d_age_traditional_button).create_palette());
+		d_age_modern_button->populate(get_builtin_colour_palette_type(d_age_modern_button).create_palette());
+	}
 
-	// ColorBrewer sequential single hue palettes.
-	d_Blues_button->populate(get_builtin_colour_palette_type(d_Blues_button).create_palette());
-	d_Greens_button->populate(get_builtin_colour_palette_type(d_Greens_button).create_palette());
-	d_Greys_button->populate(get_builtin_colour_palette_type(d_Greys_button).create_palette());
-	d_Oranges_button->populate(get_builtin_colour_palette_type(d_Oranges_button).create_palette());
-	d_Purples_button->populate(get_builtin_colour_palette_type(d_Purples_button).create_palette());
-	d_Reds_button->populate(get_builtin_colour_palette_type(d_Reds_button).create_palette());
+	if (palette_type == GPlatesGui::BuiltinColourPaletteType::TOPOGRAPHY_PALETTE)
+	{
+		// Topography palettes.
+		d_topography_etopo1_button->populate(get_builtin_colour_palette_type(d_topography_etopo1_button).create_palette());
+		d_topography_geo_button->populate(get_builtin_colour_palette_type(d_topography_geo_button).create_palette());
+		d_topography_relief_button->populate(get_builtin_colour_palette_type(d_topography_relief_button).create_palette());
+	}
 
-	// ColorBrewer diverging palettes.
-	d_BrBG_button->populate(get_builtin_colour_palette_type(d_BrBG_button).create_palette());
-	d_PiYG_button->populate(get_builtin_colour_palette_type(d_PiYG_button).create_palette());
-	d_PRGn_button->populate(get_builtin_colour_palette_type(d_PRGn_button).create_palette());
-	d_PuOr_button->populate(get_builtin_colour_palette_type(d_PuOr_button).create_palette());
-	d_RdBu_button->populate(get_builtin_colour_palette_type(d_RdBu_button).create_palette());
-	d_RdGy_button->populate(get_builtin_colour_palette_type(d_RdGy_button).create_palette());
-	d_RdYlBu_button->populate(get_builtin_colour_palette_type(d_RdYlBu_button).create_palette());
-	d_RdYlGn_button->populate(get_builtin_colour_palette_type(d_RdYlGn_button).create_palette());
-	d_Spectral_button->populate(get_builtin_colour_palette_type(d_Spectral_button).create_palette());
+	if (palette_type == GPlatesGui::BuiltinColourPaletteType::SCM_PALETTE)
+	{
+		// SCM palettes.
+		d_scm_batlow_button->populate(get_builtin_colour_palette_type(d_scm_batlow_button).create_palette());
+		d_scm_hawaii_button->populate(get_builtin_colour_palette_type(d_scm_hawaii_button).create_palette());
+		d_scm_oslo_button->populate(get_builtin_colour_palette_type(d_scm_oslo_button).create_palette());
+		d_scm_lapaz_button->populate(get_builtin_colour_palette_type(d_scm_lapaz_button).create_palette());
+		d_scm_lajolla_button->populate(get_builtin_colour_palette_type(d_scm_lajolla_button).create_palette());
+		d_scm_buda_button->populate(get_builtin_colour_palette_type(d_scm_buda_button).create_palette());
+		d_scm_davos_button->populate(get_builtin_colour_palette_type(d_scm_davos_button).create_palette());
+		d_scm_tokyo_button->populate(get_builtin_colour_palette_type(d_scm_tokyo_button).create_palette());
+		d_scm_vik_button->populate(get_builtin_colour_palette_type(d_scm_vik_button).create_palette());
+		d_scm_roma_button->populate(get_builtin_colour_palette_type(d_scm_roma_button).create_palette());
+		d_scm_broc_button->populate(get_builtin_colour_palette_type(d_scm_broc_button).create_palette());
+		d_scm_berlin_button->populate(get_builtin_colour_palette_type(d_scm_berlin_button).create_palette());
+		d_scm_lisbon_button->populate(get_builtin_colour_palette_type(d_scm_lisbon_button).create_palette());
+		d_scm_bam_button->populate(get_builtin_colour_palette_type(d_scm_bam_button).create_palette());
+		d_scm_oleron_button->populate(get_builtin_colour_palette_type(d_scm_oleron_button).create_palette());
+		d_scm_bukavu_button->populate(get_builtin_colour_palette_type(d_scm_bukavu_button).create_palette());
+	}
+
+	if (palette_type == GPlatesGui::BuiltinColourPaletteType::COLORBREWER_SEQUENTIAL_PALETTE)
+	{
+		// ColorBrewer sequential multi-hue palettes.
+		d_BuGn_button->populate(get_builtin_colour_palette_type(d_BuGn_button).create_palette());
+		d_BuPu_button->populate(get_builtin_colour_palette_type(d_BuPu_button).create_palette());
+		d_GnBu_button->populate(get_builtin_colour_palette_type(d_GnBu_button).create_palette());
+		d_OrRd_button->populate(get_builtin_colour_palette_type(d_OrRd_button).create_palette());
+		d_PuBu_button->populate(get_builtin_colour_palette_type(d_PuBu_button).create_palette());
+		d_PuBuGn_button->populate(get_builtin_colour_palette_type(d_PuBuGn_button).create_palette());
+		d_PuRd_button->populate(get_builtin_colour_palette_type(d_PuRd_button).create_palette());
+		d_RdPu_button->populate(get_builtin_colour_palette_type(d_RdPu_button).create_palette());
+		d_YlGn_button->populate(get_builtin_colour_palette_type(d_YlGn_button).create_palette());
+		d_YlGnBu_button->populate(get_builtin_colour_palette_type(d_YlGnBu_button).create_palette());
+		d_YlOrBr_button->populate(get_builtin_colour_palette_type(d_YlOrBr_button).create_palette());
+		d_YlOrRd_button->populate(get_builtin_colour_palette_type(d_YlOrRd_button).create_palette());
+
+		// ColorBrewer sequential single hue palettes.
+		d_Blues_button->populate(get_builtin_colour_palette_type(d_Blues_button).create_palette());
+		d_Greens_button->populate(get_builtin_colour_palette_type(d_Greens_button).create_palette());
+		d_Greys_button->populate(get_builtin_colour_palette_type(d_Greys_button).create_palette());
+		d_Oranges_button->populate(get_builtin_colour_palette_type(d_Oranges_button).create_palette());
+		d_Purples_button->populate(get_builtin_colour_palette_type(d_Purples_button).create_palette());
+		d_Reds_button->populate(get_builtin_colour_palette_type(d_Reds_button).create_palette());
+	}
+
+	if (palette_type == GPlatesGui::BuiltinColourPaletteType::COLORBREWER_DIVERGING_PALETTE)
+	{
+		// ColorBrewer diverging palettes.
+		d_BrBG_button->populate(get_builtin_colour_palette_type(d_BrBG_button).create_palette());
+		d_PiYG_button->populate(get_builtin_colour_palette_type(d_PiYG_button).create_palette());
+		d_PRGn_button->populate(get_builtin_colour_palette_type(d_PRGn_button).create_palette());
+		d_PuOr_button->populate(get_builtin_colour_palette_type(d_PuOr_button).create_palette());
+		d_RdBu_button->populate(get_builtin_colour_palette_type(d_RdBu_button).create_palette());
+		d_RdGy_button->populate(get_builtin_colour_palette_type(d_RdGy_button).create_palette());
+		d_RdYlBu_button->populate(get_builtin_colour_palette_type(d_RdYlBu_button).create_palette());
+		d_RdYlGn_button->populate(get_builtin_colour_palette_type(d_RdYlGn_button).create_palette());
+		d_Spectral_button->populate(get_builtin_colour_palette_type(d_Spectral_button).create_palette());
+	}
 }
 
 
@@ -377,8 +565,8 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::handle_colorbrewer_sequential_clas
 	d_builtin_parameters.colorbrewer_sequential_classes =
 			static_cast<GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Classes>(value);
 
-	// Redraw the ColorBrewer buttons since number of classes changed.
-	re_populate_colorbrewer_buttons();
+	// Redraw the ColorBrewer sequential buttons since number of classes changed.
+	re_populate_buttons(GPlatesGui::BuiltinColourPaletteType::COLORBREWER_SEQUENTIAL_PALETTE);
 
 	Q_EMIT builtin_parameters_changed(d_builtin_parameters);
 }
@@ -391,8 +579,8 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::handle_colorbrewer_diverging_class
 	d_builtin_parameters.colorbrewer_diverging_classes =
 			static_cast<GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Classes>(value);
 
-	// Redraw the ColorBrewer buttons since number of classes changed.
-	re_populate_colorbrewer_buttons();
+	// Redraw the ColorBrewer diverging buttons since number of classes changed.
+	re_populate_buttons(GPlatesGui::BuiltinColourPaletteType::COLORBREWER_DIVERGING_PALETTE);
 
 	Q_EMIT builtin_parameters_changed(d_builtin_parameters);
 }
@@ -400,25 +588,31 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::handle_colorbrewer_diverging_class
 
 void
 GPlatesQtWidgets::ChooseBuiltinPaletteDialog::handle_colorbrewer_discrete_check_box_changed(
-		int state)
+		int)
 {
-	d_builtin_parameters.colorbrewer_continuous = (state != Qt::Checked);
+	d_builtin_parameters.colorbrewer_sequential_continuous = (colorbrewer_sequential_discrete_checkbox->checkState() != Qt::Checked);
+	d_builtin_parameters.colorbrewer_diverging_continuous = (colorbrewer_diverging_discrete_checkbox->checkState() != Qt::Checked);
 
-	// Redraw the ColorBrewer buttons since transitioning from discrete to continuous (or vice versa).
-	re_populate_colorbrewer_buttons();
+	// Redraw all ColorBrewer buttons since transitioning from discrete to continuous (or vice versa).
+	re_populate_buttons(GPlatesGui::BuiltinColourPaletteType::COLORBREWER_SEQUENTIAL_PALETTE);
+	re_populate_buttons(GPlatesGui::BuiltinColourPaletteType::COLORBREWER_DIVERGING_PALETTE);
 
 	Q_EMIT builtin_parameters_changed(d_builtin_parameters);
 }
 
 
 void
-GPlatesQtWidgets::ChooseBuiltinPaletteDialog::handle_colorbrewer_invert_check_box_changed(
+GPlatesQtWidgets::ChooseBuiltinPaletteDialog::handle_invert_check_box_changed(
 		int state)
 {
-	d_builtin_parameters.colorbrewer_inverted = (state == Qt::Checked);
+	d_builtin_parameters.inverted = (state == Qt::Checked);
 
-	// Redraw the ColorBrewer buttons since inverting colours.
-	re_populate_colorbrewer_buttons();
+	// Redraw all buttons since inverting colours.
+	re_populate_buttons(GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE);
+	re_populate_buttons(GPlatesGui::BuiltinColourPaletteType::TOPOGRAPHY_PALETTE);
+	re_populate_buttons(GPlatesGui::BuiltinColourPaletteType::SCM_PALETTE);
+	re_populate_buttons(GPlatesGui::BuiltinColourPaletteType::COLORBREWER_SEQUENTIAL_PALETTE);
+	re_populate_buttons(GPlatesGui::BuiltinColourPaletteType::COLORBREWER_DIVERGING_PALETTE);
 
 	Q_EMIT builtin_parameters_changed(d_builtin_parameters);
 }

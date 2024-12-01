@@ -155,6 +155,7 @@ namespace GPlatesGui
 		paint(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
+				const double &device_independent_pixel_to_world_space_ratio,
 				float scale,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
@@ -244,6 +245,7 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor,
+				const double &device_independent_pixel_to_world_space_ratio,
 				const GPlatesOpenGL::GLMatrix &projection_transform,
 				bool is_front_half_globe);
 
@@ -257,6 +259,7 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor,
+				const double &device_independent_pixel_to_world_space_ratio,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none);
 	};

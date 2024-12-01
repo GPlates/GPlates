@@ -35,6 +35,7 @@
 #include "ResolvedTopologicalLine.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
+#include "TopologyUtils.h"
 
 
 void
@@ -127,6 +128,48 @@ GPlatesAppLogic::LayerProxyUtils::find_dependent_topological_sections(
 		// Get the dependent topological sections from the current layer.
 		topology_network_resolver_layer_proxy->get_current_dependent_topological_sections(dependent_topological_sections);
 	}
+}
+
+
+void
+GPlatesAppLogic::LayerProxyUtils::find_resolved_topological_sections(
+		std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
+		const Reconstruction &reconstruction)
+{
+	resolved_topological_sections.clear();
+
+	// Get the resolved geometry layer outputs.
+	std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> topology_geometry_resolver_layer_proxies;
+	reconstruction.get_active_layer_outputs<TopologyGeometryResolverLayerProxy>(topology_geometry_resolver_layer_proxies);
+
+	// Get the resolved topological boundaries.
+	std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_topological_boundaries;
+	for (auto topology_geometry_resolver_layer_proxy : topology_geometry_resolver_layer_proxies)
+	{
+		topology_geometry_resolver_layer_proxy->get_resolved_topological_boundaries(
+				resolved_topological_boundaries,
+				reconstruction.get_reconstruction_time());
+	}
+
+
+	// Get the resolved network layer outputs.
+	std::vector<TopologyNetworkResolverLayerProxy::non_null_ptr_type> topology_network_resolver_layer_proxies;
+	reconstruction.get_active_layer_outputs<TopologyNetworkResolverLayerProxy>(topology_network_resolver_layer_proxies);
+
+	// Get the resolved topological networks.
+	std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
+	for (auto topology_network_resolver_layer_proxy : topology_network_resolver_layer_proxies)
+	{
+		topology_network_resolver_layer_proxy->get_resolved_topological_networks(
+				resolved_topological_networks,
+				reconstruction.get_reconstruction_time());
+	}
+
+	// Find the resolved topological sections from the resolved topological boundaries and networks.
+	TopologyUtils::find_resolved_topological_sections(
+			resolved_topological_sections,
+			std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type>(resolved_topological_boundaries.begin(), resolved_topological_boundaries.end()),
+			std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type>(resolved_topological_networks.begin(), resolved_topological_networks.end()));
 }
 
 

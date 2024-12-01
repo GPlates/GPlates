@@ -65,19 +65,37 @@ namespace
 
 
 	/**
+	 * Calculate the scale factor to map one unit in (post projection) map space coordinates to device-independent pixels.
+	 */
+	double
+	calc_world_transform_scale_factor(
+			const GPlatesGui::MapTransform &map_transform,
+			int paint_device_width_in_device_independent_pixels,
+			int paint_device_height_in_device_independent_pixels,
+			const double &zoom_factor)
+	{
+		static const double FRAMING_RATIO = 1.07;
+		return map_transform.get_zoom_factor() * paint_device_width_in_device_independent_pixels /
+				(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X -
+				 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) / FRAMING_RATIO;
+	}
+
+
+	/**
 	 * Given the scene view's dimensions (eg, canvas dimensions) generate a world transform
 	 * needed to display the scene.
 	 */
 	QTransform
 	calc_world_transform(
 			const GPlatesGui::MapTransform &map_transform,
-			unsigned int scene_view_width,
-			unsigned int scene_view_height)
+			unsigned int paint_device_width_in_device_independent_pixels,
+			unsigned int paint_device_height_in_device_independent_pixels)
 	{
-		static const double FRAMING_RATIO = 1.07;
-		const double scale_factor = map_transform.get_zoom_factor() * scene_view_width /
-			(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X -
-			 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) / FRAMING_RATIO;
+		const double scale_factor = calc_world_transform_scale_factor(
+				map_transform,
+				paint_device_width_in_device_independent_pixels,
+				paint_device_height_in_device_independent_pixels,
+				map_transform.get_zoom_factor());
 
 		QTransform m;
 		// Invert 'y' coordinate to transform from OpenGL frame to Qt frame.
@@ -93,8 +111,8 @@ namespace
 		const GPlatesGui::MapTransform::point_type &centre = map_transform.get_centre_of_viewport();
 		double transformed_centre_x, transformed_centre_y;
 		m.map(centre.x(), centre.y(), &transformed_centre_x, &transformed_centre_y);
-		double offset_x = static_cast<double>(scene_view_width) / 2.0 - transformed_centre_x;
-		double offset_y = static_cast<double>(scene_view_height) / 2.0 - transformed_centre_y;
+		double offset_x = static_cast<double>(paint_device_width_in_device_independent_pixels) / 2.0 - transformed_centre_x;
+		double offset_y = static_cast<double>(paint_device_height_in_device_independent_pixels) / 2.0 - transformed_centre_y;
 
 		return QTransform(
 				m.m11(), m.m12(), m.m21(), m.m22(),
@@ -486,6 +504,22 @@ QSize
 GPlatesQtWidgets::MapView::get_viewport_size() const
 {
 	return QSize(width(), height());
+}
+
+
+double
+GPlatesQtWidgets::MapView::get_device_independent_pixel_to_map_space_ratio(
+		int paint_device_width_in_device_independent_pixels,
+		int paint_device_height_in_device_independent_pixels,
+		const double &zoom_factor)
+{
+	// The size of one device-independent pixel in map space coordinates
+	// (inverse of scale factor which maps one unit in map space coordinates to device-independent pixels).
+	return 1.0 / calc_world_transform_scale_factor(
+			d_map_transform,
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels,
+			zoom_factor);
 }
 
 

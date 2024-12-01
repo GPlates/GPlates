@@ -21,16 +21,6 @@ FOREACH(_PROJ_INCLUDE_DIR ${PROJ_INCLUDE_DIRS})
   ENDIF()
 ENDFOREACH()
 
-# The following system header files are found in the "system-fixes" directory.
-# If they also exist in the expected places on the user's system, we set a
-# variable to indicate the path to the installed version of the header file.
-# The 'src/system-fixes/boost/cstdint.hpp' gets included by our source code and
-# it, in turn, uses this variable to include the system <boost/cstdint.hpp>.
-SET (BOOST_CSTDINT_HPP_PATH "${Boost_INCLUDE_DIR}/boost/cstdint.hpp")
-IF (NOT EXISTS "${BOOST_CSTDINT_HPP_PATH}")
-	SET (BOOST_CSTDINT_HPP_PATH "")
-ENDIF()
-
 # Do we have boost.python.numpy?
 #
 # Only available for Boost >= 1.63, and if boost.python.numpy installed since

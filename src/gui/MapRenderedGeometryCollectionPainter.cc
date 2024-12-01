@@ -68,13 +68,14 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::initialise(
 GPlatesGui::MapRenderedGeometryCollectionPainter::cache_handle_type
 GPlatesGui::MapRenderedGeometryCollectionPainter::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
-		const double &viewport_zoom_factor)
+		const double &viewport_zoom_factor,
+		const double &device_independent_pixel_to_map_space_ratio)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_globe_state_scope(renderer);
 
 	// Initialise our paint parameters so our visit methods can access them.
-	d_paint_params = PaintParams(renderer, viewport_zoom_factor);
+	d_paint_params = PaintParams(renderer, viewport_zoom_factor, device_independent_pixel_to_map_space_ratio);
 
 	// Draw the layers.
 	d_rendered_geometry_collection.accept_visitor(*this);
@@ -110,6 +111,7 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::visit_rendered_geometry_layer(
 			rendered_geometry_layer,
 			d_gl_visual_layers,
 			d_paint_params->d_inverse_viewport_zoom_factor,
+			d_paint_params->d_device_independent_pixel_to_map_space_ratio,
 			d_colour_scheme);
 	rendered_geom_layer_painter.set_scale(d_scale);
 

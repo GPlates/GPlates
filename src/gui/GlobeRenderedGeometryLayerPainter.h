@@ -106,6 +106,7 @@ namespace GPlatesGui
 		GlobeRenderedGeometryLayerPainter(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const double &inverse_viewport_zoom_factor,
+				const double &device_independent_pixel_to_world_space_ratio,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme,
 				PaintRegionType paint_region,
@@ -177,6 +178,11 @@ namespace GPlatesGui
 		void
 		visit_rendered_coloured_polyline_on_sphere(
 				const GPlatesViewOperations::RenderedColouredPolylineOnSphere &rendered_coloured_polyline_on_sphere);
+
+		virtual
+		void
+		visit_rendered_subduction_teeth_polyline(
+				const GPlatesViewOperations::RenderedSubductionTeethPolyline &rendered_subduction_teeth_polyline);
 
 		virtual
 		void
@@ -331,6 +337,9 @@ namespace GPlatesGui
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
 
 		const double d_inverse_zoom_factor;
+
+		//! The size of one device-independent pixel in world space units.
+		const double d_device_independent_pixel_to_world_space_ratio;
 
 		//! For determining whether a particular point on the globe is visible or not
 		GlobeVisibilityTester d_visibility_tester;

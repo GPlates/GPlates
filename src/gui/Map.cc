@@ -137,6 +137,7 @@ GPlatesGui::Map::cache_handle_type
 GPlatesGui::Map::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &viewport_zoom_factor,
+		const double &device_independent_pixel_to_map_space_ratio,
 		float scale)
 {
 	cache_handle_type cache_handle;
@@ -175,7 +176,10 @@ GPlatesGui::Map::paint(
 		d_background->paint(renderer);
 
 		// Render the rendered geometry layers onto the map.
-		cache_handle = d_rendered_geom_collection_painter.paint(renderer, viewport_zoom_factor);
+		cache_handle = d_rendered_geom_collection_painter.paint(
+				renderer,
+				viewport_zoom_factor,
+				device_independent_pixel_to_map_space_ratio);
 
 		// Render the grid lines on the map.
 		d_grid->paint(renderer);

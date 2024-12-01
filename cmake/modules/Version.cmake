@@ -1,6 +1,6 @@
-#
-# Version variables.
-#
+#############################
+# GPlates/pyGPlates Version #
+#############################
 
 #
 # Whether to build (and install, package, etc) GPlates or pyGPlates.
@@ -18,9 +18,75 @@ option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)."
 
 
 #
+# The GPlates version.
+#
+# This is a *restricted* form of Semantic Versioning.
+# For the *unrestricted* form see https://semver.org/spec/v2.0.0.html.
+#
+# NOTE: The restrictions are:
+#       The first part of the version should be three dot-separated numbers (MAJOR.MINOR.PATCH).
+#       The optional pre-release suffix of the version (the part after the '-') should be one of:
+#       - a number for development pre-releases (eg, 1, 2, etc),
+#       - 'alpha' followed by '.' followed by a number for alpha pre-releases (eg, alpha.1, alpha.2, etc),
+#       - 'beta' followed by '.' followed by a number for beta pre-releases (eg, beta.1, beta.2, etc),
+#       - 'rc' followed by '.' followed by a number for pre-release candidates (eg, rc.1, rc.2, etc).
+#
+# For example (in order of precedence):
+#
+#   2.5.0-alpha.1
+#   2.5.0-beta.1
+#   2.5.0-rc.1
+#   2.5.0
+#   2.5.1
+#   2.6.0-1
+#   2.6.0-2
+#   2.6.0-rc1
+#   2.6.0-rc2
+#   2.6.0
+#
+set(GPLATES_SEMANTIC_VERSION 2.5.0)
+
+
+#
+# The pyGPlates version.
+#
+# This is a *restricted* form of Python PEP 440 versioning.
+# For the *unrestricted* form see https://peps.python.org/pep-0440/.
+#
+# NOTE: The restrictions are:
+#       The first part of the version should be three dot-separated numbers (MAJOR.MINOR.PATCH).
+#       The optional pre-release suffix of the version should be one of:
+#       - '.dev' followed by a number for development pre-releases (eg, .dev1, .dev2, etc),
+#       - 'a' followed by a number for alpha pre-releases (eg, a1, a2, etc),
+#       - 'b' followed by a number for beta pre-releases (eg, b1, b2, etc),
+#       - 'rc' followed by a number for pre-release candidates (eg, rc1, rc2, etc).
+#
+# For example (in order of precedence):
+#
+#   0.44.0a1
+#   0.44.0b1
+#   0.44.0rc1
+#   0.44.0
+#   0.45.0.dev1
+#   0.45.0.rc1
+#   0.45.0
+#   1.0.0rc1
+#   1.0.0rc2
+#   1.0.0
+#   1.0.1
+#
+set(PYGPLATES_PEP440_VERSION 0.45.0)
+
+
+##################
+# Implementation #
+##################
+
+
+#
 # A note about pre-release version suffixes (such as GPLATES_VERSION_PRERELEASE_SUFFIX and PYGPLATES_VERSION_PRERELEASE_SUFFIX)...
 #
-# This should be:
+# These are:
 # - empty if not a pre-release,
 # - a number for development pre-releases (eg, 1, 2, etc),
 # - 'alpha' followed by '.' followed by a number for alpha pre-releases (eg, alpha.1, alpha.2, etc),
@@ -49,86 +115,61 @@ option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)."
 # For Debian versioning:   2.3.0~1 < 2.3.0~alpha.1 < 2.3.0~beta.1 < 2.3.0~rc.1 < 2.3.0.
 #
 
-#
-# Ensure pre-release satisfies the above conditions.
-#
-function(check_prerelease_suffix prerelease_suffix)
-	if (prerelease_suffix)
-		if (NOT ${prerelease_suffix} MATCHES [[^((alpha|beta|rc)\.)?[0-9]+$]])
-			message(FATAL_ERROR "${prerelease_suffix} should be <N>, alpha.<N>, beta.<N> or rc.<N>")
-		endif()
-	endif()
-endfunction()
-
-#
-# Return the pre-release version (and human-readable user pre-release version), as well as a human-readable pre-release version *suffix*.
-#
-function(set_prerelease_version version version_prerelease_suffix version_prerelease version_prerelease_user version_prerelease_suffix_user)
-	# For a pre-release append the pre-release version (using a hyphen for pre-releases as dictated by Semantic Versioning).
-	if (version_prerelease_suffix)
-		set(_version_prerelease ${version}-${version_prerelease_suffix})
-		# A human-readable pre-release version (unset/empty if not a pre-release).
-		#
-		# If a development release (ie, if pre-release version is just a number) then insert 'dev' into the version *name* to make it more obvious to users.
-		# Note: We don't insert 'dev' into the version itself because that would give it a higher version ordering precedence than 'alpha' and 'beta' (since a < b < d).
-		#       Keeping only the development number in the actual version works because digits have lower precedence than non-digits (according to Semantic and Debian versioning).
-		if (version_prerelease_suffix MATCHES "^[0-9]+$")
-			set(_version_prerelease_suffix_user dev${version_prerelease_suffix})
-		else()
-			set(_version_prerelease_suffix_user ${version_prerelease_suffix})
-		endif()
-		set(_version_prerelease_user ${version}-${_version_prerelease_suffix_user})
-	else()
-		set(_version_prerelease ${version})
-		set(_version_prerelease_user ${version})
-		set(_version_prerelease_suffix_user "")
-	endif()
-
-	# Set caller's variables.
-	set(${version_prerelease} ${_version_prerelease} PARENT_SCOPE)
-	set(${version_prerelease_user} ${_version_prerelease_user} PARENT_SCOPE)
-	set(${version_prerelease_suffix_user} ${_version_prerelease_suffix_user} PARENT_SCOPE)
-endfunction()
-
 
 ###########
 # GPlates #
 ###########
 
 #
-# The GPlates version.
+# Various GPlates version variables (obtained from GPLATES_SEMANTIC_VERSION).
 #
-set(GPLATES_VERSION_MAJOR 2)
-set(GPLATES_VERSION_MINOR 4)
-set(GPLATES_VERSION_PATCH 0)
+# GPLATES_VERSION_MAJOR                     - Major version number.
+# GPLATES_VERSION_MINOR                     - Minor version number.
+# GPLATES_VERSION_PATCH                     - Patch version number.
+#
+# GPLATES_VERSION                           - Major.Minor.Patch version (without optional pre-release suffix).
+#
+# GPLATES_VERSION_PRERELEASE_SUFFIX         - Optional pre-release suffix (in Semantic Versioning format).
+# GPLATES_VERSION_PRERELEASE_SUFFIX_USER    - Human-readable pre-release suffix that inserts 'dev' for development pre-releases.
+#
+# GPLATES_VERSION_PRERELEASE                - Version dictated by Semantic Versioning.
+#                                             Used when need correct version precendence (eg, '1' < 'alpha.1').
+# GPLATES_VERSION_PRERELEASE_USER           - Human-readable version that inserts 'dev' for development pre-releases.
+#                                             Useful for any string the user might see.
+#                                             Does not maintain correct version precedence (eg, 'dev1' > 'alpha.1' whereas '1' < 'alpha.1').
+#
 
-# The pyGPlates version without the pre-release suffix
+# Extract version information from GPLATES_SEMANTIC_VERSION.
+if (NOT GPLATES_SEMANTIC_VERSION MATCHES [[^([0-9]+)\.([0-9]+)\.([0-9]+)([-]([0-9]+|alpha\.[0-9]+|beta\.[0-9]+|rc\.[0-9]+))?$]])
+	message(FATAL_ERROR "${GPLATES_SEMANTIC_VERSION} should be X.Y.Z or a pre-release X.Y.Z-N, X.Y.Z-alpha.N, X.Y.Z-beta.N or X.Y.Z-rc.N")
+endif()
+set(GPLATES_VERSION_MAJOR ${CMAKE_MATCH_1})
+set(GPLATES_VERSION_MINOR ${CMAKE_MATCH_2})
+set(GPLATES_VERSION_PATCH ${CMAKE_MATCH_3})
+# The GPlates version without the pre-release suffix
 # (matches the version generated by 'project()' which does not support pre-release suffixes).
 set(GPLATES_VERSION ${GPLATES_VERSION_MAJOR}.${GPLATES_VERSION_MINOR}.${GPLATES_VERSION_PATCH})
-
-#
-# GPlates pre-release version suffix (in Semantic Versioning format).
-#
-# See note about pre-release version suffixes above.
-#
-set(GPLATES_VERSION_PRERELEASE_SUFFIX "4")
-# Ensure pre-release contains only dot-separated alphanumeric identifiers.
-check_prerelease_suffix("${GPLATES_VERSION_PRERELEASE_SUFFIX}")
-
-#
-# Full GPlates version including pre-release suffix:
-#
-# GPLATES_VERSION_PRERELEASE             - Version dictated by Semantic Versioning (used when need correct version precendence, eg, '1' < 'alpha.1').
-# GPLATES_VERSION_PRERELEASE_USER        - Human-readable version that inserts 'dev' for development pre-releases (useful for any string the user might see).
-#                                          Does not maintain correct version precedence (eg, 'dev1' > 'alpha.1' whereas '1' < 'alpha.1').
-#
-# Also a human-readable version of the pre-release version suffix:
-#
-# GPLATES_VERSION_PRERELEASE_SUFFIX_USER - Human-readable pre-release suffix that inserts 'dev' for development pre-releases.
-#
-set_prerelease_version(
-		"${GPLATES_VERSION}" "${GPLATES_VERSION_PRERELEASE_SUFFIX}"
-		GPLATES_VERSION_PRERELEASE GPLATES_VERSION_PRERELEASE_USER GPLATES_VERSION_PRERELEASE_SUFFIX_USER)
+# If a pre-release suffix was specified.
+if (CMAKE_MATCH_COUNT EQUAL 5)
+	set(GPLATES_VERSION_PRERELEASE_SUFFIX ${CMAKE_MATCH_5})
+	set(GPLATES_VERSION_PRERELEASE ${GPLATES_VERSION}-${GPLATES_VERSION_PRERELEASE_SUFFIX})
+	# A human-readable pre-release version (unset/empty if not a pre-release).
+	#
+	# If a development release (ie, if pre-release version is just a number) then insert 'dev' into the version *name* to make it more obvious to users.
+	# Note: We don't insert 'dev' into the version itself because that would give it a higher version ordering precedence than 'alpha' and 'beta' (since a < b < d).
+	#       Keeping only the development number in the actual version works because digits have lower precedence than non-digits (according to Semantic and Debian versioning).
+	if (GPLATES_VERSION_PRERELEASE_SUFFIX MATCHES [[^[0-9]+$]])
+		set(GPLATES_VERSION_PRERELEASE_SUFFIX_USER dev${GPLATES_VERSION_PRERELEASE_SUFFIX})
+	else()
+		set(GPLATES_VERSION_PRERELEASE_SUFFIX_USER ${GPLATES_VERSION_PRERELEASE_SUFFIX})
+	endif()
+	set(GPLATES_VERSION_PRERELEASE_USER ${GPLATES_VERSION}-${GPLATES_VERSION_PRERELEASE_SUFFIX_USER})
+else()
+	set(GPLATES_VERSION_PRERELEASE_SUFFIX "")
+	set(GPLATES_VERSION_PRERELEASE_SUFFIX_USER "")
+	set(GPLATES_VERSION_PRERELEASE ${GPLATES_VERSION})
+	set(GPLATES_VERSION_PRERELEASE_USER ${GPLATES_VERSION})
+endif()
 
 
 #############
@@ -140,74 +181,65 @@ set_prerelease_version(
 #
 
 #
-# The pyGPlates version (MAJOR.MINOR.PATCH).
+# Various pyGPlates version variables (obtained from PYGPLATES_PEP440_VERSION).
 #
-set(PYGPLATES_VERSION_MAJOR 0)
-set(PYGPLATES_VERSION_MINOR 44)
-set(PYGPLATES_VERSION_PATCH 0)
+# PYGPLATES_VERSION_MAJOR                     - Major version number.
+# PYGPLATES_VERSION_MINOR                     - Minor version number.
+# PYGPLATES_VERSION_PATCH                     - Patch version number.
+#
+# PYGPLATES_VERSION                           - Major.Minor.Patch version (without optional pre-release suffix).
+#
+# PYGPLATES_VERSION_PRERELEASE_SUFFIX         - Optional pre-release suffix (in Semantic Versioning format).
+# PYGPLATES_VERSION_PRERELEASE_SUFFIX_USER    - Human-readable pre-release suffix that inserts 'dev' for development pre-releases.
+#
+# PYGPLATES_VERSION_PRERELEASE                - Version dictated by Semantic Versioning.
+#                                               Used when need correct version precendence (eg, '1' < 'alpha.1').
+# PYGPLATES_VERSION_PRERELEASE_USER           - Human-readable version that inserts 'dev' for development pre-releases.
+#                                               Useful for any string the user might see.
+#                                               Does not maintain correct version precedence (eg, 'dev1' > 'alpha.1' whereas '1' < 'alpha.1').
+#
 
+# Extract version information from PYGPLATES_PEP440_VERSION.
+if (NOT PYGPLATES_PEP440_VERSION MATCHES [[^([0-9]+)\.([0-9]+)\.([0-9]+)((\.dev|a|b|rc)[0-9]+)?$]])
+	message(FATAL_ERROR "${PYGPLATES_PEP440_VERSION} should be X.Y.Z or a pre-release X.Y.Z.devN, X.Y.ZaN, X.Y.ZbN or X.Y.ZrcN")
+endif()
+set(PYGPLATES_VERSION_MAJOR ${CMAKE_MATCH_1})
+set(PYGPLATES_VERSION_MINOR ${CMAKE_MATCH_2})
+set(PYGPLATES_VERSION_PATCH ${CMAKE_MATCH_3})
 # The pyGPlates version without the pre-release suffix
 # (matches the version generated by 'project()' which does not support pre-release suffixes).
 set(PYGPLATES_VERSION ${PYGPLATES_VERSION_MAJOR}.${PYGPLATES_VERSION_MINOR}.${PYGPLATES_VERSION_PATCH})
-
-#
-# PyGPlates pre-release version suffix (in Semantic Versioning format).
-#
-# See note about pre-release version suffixes above.
-#
-set(PYGPLATES_VERSION_PRERELEASE_SUFFIX "")
-# Ensure pre-release contains only dot-separated alphanumeric identifiers.
-check_prerelease_suffix("${PYGPLATES_VERSION_PRERELEASE_SUFFIX}")
-
-#
-# Full pyGPlates version including pre-release suffix:
-#
-# PYGPLATES_VERSION_PRERELEASE             - Version dictated by Semantic Versioning (used when need correct version precendence, eg, '1' < 'alpha.1').
-# PYGPLATES_VERSION_PRERELEASE_USER        - Human-readable version that inserts 'dev' for development pre-releases (useful for any string the user might see).
-#                                            Does not maintain correct version precedence (eg, 'dev1' > 'alpha.1' whereas '1' < 'alpha.1').
-#
-# Also a human-readable version of the pre-release version suffix:
-#
-# PYGPLATES_VERSION_PRERELEASE_SUFFIX_USER - Human-readable pre-release suffix that inserts 'dev' for development pre-releases.
-#
-set_prerelease_version(
-		"${PYGPLATES_VERSION}" "${PYGPLATES_VERSION_PRERELEASE_SUFFIX}"
-		PYGPLATES_VERSION_PRERELEASE PYGPLATES_VERSION_PRERELEASE_USER PYGPLATES_VERSION_PRERELEASE_SUFFIX_USER)
-
-
-#
-# Get the Python PEP 440 version from the pyGPlates version and optional pre-release suffix.
-#
-function(set_prerelease_PEP440_version version version_prerelease_suffix version_prerelease_PEP440)
-	# For a pre-release append the pre-release version in PEP 440 format.
-	if (version_prerelease_suffix)
-		# Note that the 'check_prerelease_suffix()' function has already guaranteed a
-		# prerelease suffix match with the regular expression "^((alpha|beta|rc)\.)?[0-9]+$".
-		if (version_prerelease_suffix MATCHES [[^([0-9]+)$]])
-			set(_version_prerelease_PEP440_suffix ".dev${CMAKE_MATCH_1}")
-		elseif (version_prerelease_suffix MATCHES [[^alpha\.([0-9]+)$]])
-			set(_version_prerelease_PEP440_suffix "a${CMAKE_MATCH_1}")
-		elseif (version_prerelease_suffix MATCHES [[^beta\.([0-9]+)$]])
-			set(_version_prerelease_PEP440_suffix "b${CMAKE_MATCH_1}")
-		elseif (version_prerelease_suffix MATCHES [[^rc\.([0-9]+)$]])
-			set(_version_prerelease_PEP440_suffix "rc${CMAKE_MATCH_1}")
-		else()
-			message(FATAL_ERROR "${version_prerelease_suffix} should be <N>, alpha.<N>, beta.<N> or rc.<N>")
-		endif()
-		set(_version_prerelease_PEP440 ${version}${_version_prerelease_PEP440_suffix})
-	else()
-		set(_version_prerelease_PEP440 ${version})
+# If a pre-release suffix was specified.
+if (CMAKE_MATCH_COUNT EQUAL 5)
+	set(PYGPLATES_VERSION_PRERELEASE_SUFFIX ${CMAKE_MATCH_4})
+	# For development releases remove the '.dev' part (and just leave the number).
+	# For alpha, beta and release candidates change, eg, a1 to alpha.1, b1 to beta.1, rc1 to rc.1).
+	if (PYGPLATES_VERSION_PRERELEASE_SUFFIX MATCHES [[^\.dev([0-9]+)$]])
+		set(PYGPLATES_VERSION_PRERELEASE_SUFFIX ${CMAKE_MATCH_1})
+	elseif (PYGPLATES_VERSION_PRERELEASE_SUFFIX MATCHES [[^a([0-9]+)$]])
+		set(PYGPLATES_VERSION_PRERELEASE_SUFFIX alpha.${CMAKE_MATCH_1})
+	elseif (PYGPLATES_VERSION_PRERELEASE_SUFFIX MATCHES [[^b([0-9]+)$]])
+		set(PYGPLATES_VERSION_PRERELEASE_SUFFIX beta.${CMAKE_MATCH_1})
+	elseif (PYGPLATES_VERSION_PRERELEASE_SUFFIX MATCHES [[^rc([0-9]+)$]])
+		set(PYGPLATES_VERSION_PRERELEASE_SUFFIX rc.${CMAKE_MATCH_1})
+	else()  # shouldn't be able to get here
+		message(FATAL_ERROR "${PYGPLATES_VERSION_PRERELEASE_SUFFIX} should be .devN, aN, bN or rcN")
 	endif()
-
-	# Set caller's variables.
-	set(${version_prerelease_PEP440} ${_version_prerelease_PEP440} PARENT_SCOPE)
-endfunction()
-
-#
-# Full Python PEP 440 pyGPlates version including PEP 440 pre-release suffix:
-#
-# PYGPLATES_VERSION_PRERELEASE_PEP440
-#
-set_prerelease_PEP440_version(
-		"${PYGPLATES_VERSION}" "${PYGPLATES_VERSION_PRERELEASE_SUFFIX}"
-		PYGPLATES_VERSION_PRERELEASE_PEP440)
+	set(PYGPLATES_VERSION_PRERELEASE ${PYGPLATES_VERSION}-${PYGPLATES_VERSION_PRERELEASE_SUFFIX})
+	# A human-readable pre-release version (unset/empty if not a pre-release).
+	#
+	# If a development release (ie, if pre-release version is just a number) then insert 'dev' into the version *name* to make it more obvious to users.
+	# Note: We don't insert 'dev' into the version itself because that would give it a higher version ordering precedence than 'alpha' and 'beta' (since a < b < d).
+	#       Keeping only the development number in the actual version works because digits have lower precedence than non-digits (according to Semantic and Debian versioning).
+	if (PYGPLATES_VERSION_PRERELEASE_SUFFIX MATCHES [[^[0-9]+$]])
+		set(PYGPLATES_VERSION_PRERELEASE_SUFFIX_USER dev${PYGPLATES_VERSION_PRERELEASE_SUFFIX})
+	else()
+		set(PYGPLATES_VERSION_PRERELEASE_SUFFIX_USER ${PYGPLATES_VERSION_PRERELEASE_SUFFIX})
+	endif()
+	set(PYGPLATES_VERSION_PRERELEASE_USER ${PYGPLATES_VERSION}-${PYGPLATES_VERSION_PRERELEASE_SUFFIX_USER})
+else()
+	set(PYGPLATES_VERSION_PRERELEASE_SUFFIX "")
+	set(PYGPLATES_VERSION_PRERELEASE_SUFFIX_USER "")
+	set(PYGPLATES_VERSION_PRERELEASE ${PYGPLATES_VERSION})
+	set(PYGPLATES_VERSION_PRERELEASE_USER ${PYGPLATES_VERSION})
+endif()

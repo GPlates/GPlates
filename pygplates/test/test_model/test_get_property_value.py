@@ -1002,7 +1002,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(len(properties) == 1)
         self.assertTrue(properties[0].get_value().get_integer() == 300)
         property_values = self.feature.get_value(
-                lambda property: property.get_name() == pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),
+                property_query=lambda property: property.get_name() == pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),
                 property_return=pygplates.PropertyReturn.all)
         self.assertTrue(len(property_values) == 1)
         self.assertTrue(property_values[0].get_integer() == 300)

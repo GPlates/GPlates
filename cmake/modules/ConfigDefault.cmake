@@ -6,17 +6,11 @@
 #
 
 
-# A short description of the GPlates (or pyGPlates) project (only a few words).
 #
-# CMake (>= 3.16) uses this as the first line of Debian package description and Debian doesn't want first word to be same name as package name ('GPlates' or 'PyGPlates').
-if (GPLATES_BUILD_GPLATES) # GPlates ...
-	set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Desktop software for the interactive visualisation of plate tectonics.")
-else() # pyGPlates ...
-	set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Python library for fine-grained access to GPlates functionality.")
-endif()
-
-
 # A longer description of the GPlates (or pyGPlates) project.
+#
+# Note: The short description is now in the 'project()' command in the root 'CMakeLists.txt' file.
+#
 if (GPLATES_BUILD_GPLATES) # GPlates ...
 
 	set(GPLATES_PACKAGE_DESCRIPTION [[
@@ -78,9 +72,9 @@ set(GPLATES_PACKAGE_CONTACT "" CACHE STRING "Package contact/maintainer. Use for
 
 # The GPlates (or pyGPlates) package license.
 set(GPLATES_PACKAGE_LICENSE [[
-Copyright (C) 2003-2023 The University of Sydney, Australia.
-Copyright (C) 2007-2023 The Geological Survey of Norway.
-Copyright (C) 2004-2023 California Institute of Technology.
+Copyright (C) 2003-2024 The University of Sydney, Australia.
+Copyright (C) 2007-2024 The Geological Survey of Norway.
+Copyright (C) 2004-2024 California Institute of Technology.
 This is free software. You may redistribute copies of it under the terms of
 the GNU General Public License version 2 <http://www.gnu.org/licenses/gpl.html>.
 There is NO WARRANTY, to the extent permitted by law.
@@ -89,9 +83,9 @@ There is NO WARRANTY, to the extent permitted by law.
 
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING [[
-Copyright (C) 2003-2023 The University of Sydney, Australia
-Copyright (C) 2004-2023 California Institute of Technology
-Copyright (C) 2007-2023 The Geological Survey of Norway
+Copyright (C) 2003-2024 The University of Sydney, Australia
+Copyright (C) 2004-2024 California Institute of Technology
+Copyright (C) 2007-2024 The Geological Survey of Norway
 
 The GPlates source code also contains code derived from:
  * ReconTreeViewer (James Boyden)
@@ -106,9 +100,9 @@ environment, the Inkscape vector graphics editor and the Tango icon library.
 # The GPlates copyright for html.
 set(GPLATES_HTML_COPYRIGHT_STRING [[
 <html><body>
-Copyright &copy; 2003-2023 The University of Sydney, Australia<br />
-Copyright &copy; 2004-2023 California Institute of Technology<br />
-Copyright &copy; 2007-2023 The Geological Survey of Norway<br />
+Copyright &copy; 2003-2024 The University of Sydney, Australia<br />
+Copyright &copy; 2004-2024 California Institute of Technology<br />
+Copyright &copy; 2007-2024 The Geological Survey of Norway<br />
 <br />
 
 The GPlates source code also contains code derived from: <ul>
@@ -126,10 +120,22 @@ environment, the Inkscape vector graphics editor and the Tango icon library.
 # The pyGPlates copyright - string version to be used in Python API documentation.
 # We don't include the word 'Copyright' since we're using Sphinx for documentation and it prepends it to our copyright string.
 set(PYGPLATES_DOCS_COPYRIGHT_STRING [[
-(C) 2003-2023 The University of Sydney, Australia
-(C) 2004-2023 California Institute of Technology
-(C) 2007-2023 The Geological Survey of Norway
+(C) 2003-2024 The University of Sydney, Australia
+(C) 2004-2024 California Institute of Technology
+(C) 2007-2024 The Geological Survey of Norway
 ]])
+
+
+# Detect if this build is part of a conda build (eg, a "conda build ..." command).
+#
+# Note: Conda builds use scikit-build-core (because conda relies on 'pip install') which in turn defines the SKBUILD CMake variable.
+#       A side note: Building using scikit-build-core happens when building wheels with pip (eg, 'pip wheel ...' or 'pip install ...').
+#       However there are cases where we'd like to distinguish between scikit-build-core builds that are conda and non-conda.
+#       An example is cross-compiling using conda where it uses the PYTHON environment variable to find the target platform Python (not build platform).
+#       Maybe that'll also be required non-conda cross-compiles but we've not encountered them yet (and they don't set the PYTHON environment variable).
+if (DEFINED ENV{CONDA_BUILD} AND ("$ENV{CONDA_BUILD}" EQUAL 1))
+    set(GPLATES_CONDA_BUILD TRUE)
+endif()
 
 
 # GPLATES_PUBLIC_RELEASE - Official public release (GPlates or pyGPlates depending on GPLATES_BUILD_GPLATES).
@@ -156,23 +162,52 @@ else() # pyGPlates ...
 endif()
 
 
-# Whether to install GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
+# GPLATES_INSTALL_STANDALONE - Whether to install GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
 #
 # When this is true then we install code to fix up GPlates (or pyGPlates) for deployment to another machine
 # (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
 # When this is false then we don't install dependencies, instead only installing the GPlates executable (or pyGPlates library) and a few non-dependency items.
-if (WIN32 OR APPLE)
-	# On Windows and Apple this is *enabled* by default since we typically distribute a self-contained package to users on those systems.
-	# However this can be *disabled* for use cases such as creating a conda package (since conda manages dependency installation itself).
-	set(_INSTALL_STANDALONE true)
-else() # Linux
-	# On Linux this is *disabled* by default since we rely on the Linux binary package manager to install dependencies on the user's system
-	# (for example, we create a '.deb' package that only *lists* the dependencies, which are then installed on the target system if not already there).
-	# However this can be *enabled* for use cases such as creating a standalone bundle for upload to a cloud service (where it is simply extracted).
-	set(_INSTALL_STANDALONE false)
+#
+if (SKBUILD)
+	# We're building using scikit-build-core. This happens when building pyGPlates wheels with pip (eg, 'pip wheel ...' or 'pip install ...').
+	# And conda also builds using scikit-build-core (because conda relies on 'pip install').
+	if (GPLATES_CONDA_BUILD)
+		# Conda does NOT need a standalone installation since conda manages binary shared library dependencies itself.
+		set(_INSTALL_STANDALONE false)
+	else()
+		# But a regular Python 'pip install ...' DOES need a standalone installation
+		# (since it does not manage binary shared libraries dependencies, only Python dependencies).
+		set(_INSTALL_STANDALONE true)
+	endif()
+else()
+	# We're NOT building using scikit-build-core (ie, not running 'pip wheel ...' or 'pip install ...' or 'conda install ...').
+	# Which means the user is probably doing a manual CMake build (eg, "cmake ." followed by "cmake --build .").
+	# In this case we'll use reasonable defaults based on the platform.
+	if (WIN32 OR APPLE)
+		# On Windows and Apple this is *enabled* by default since we typically distribute a self-contained package to users on those systems.
+		# However this can be *disabled* for use cases such as creating a conda package (since conda manages dependency installation itself).
+		set(_INSTALL_STANDALONE true)
+	else() # Linux
+		# On Linux this is *disabled* by default since we rely on the Linux binary package manager to install dependencies on the user's system
+		# (for example, we create a '.deb' package that only *lists* the dependencies, which are then installed on the target system if not already there).
+		# However this can be *enabled* for use cases such as creating a standalone bundle for upload to a cloud service (where it is simply extracted).
+		set(_INSTALL_STANDALONE false)
+	endif()
 endif()
-option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle (copy dependency libraries into the installation)." ${_INSTALL_STANDALONE})
+# Make GPLATES_INSTALL_STANDALONE a cache variable, using the "option()" command, so that the user can change it (eg, via command-line, ccmake or cmake-gui).
+option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle." ${_INSTALL_STANDALONE})
 unset(_INSTALL_STANDALONE)
+if (GPLATES_INSTALL_STANDALONE)
+	# We're installing standalone, so install shared library dependencies (unless specifically requested not to).
+	#
+	# An example where we explicitly request not to install dependency libraries is when creating a Python wheel for pyGPlates that will be
+	# post-processed using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows) which handles copying dependency libraries into the wheel.
+	option(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES "Copy dependency libraries into the GPlates (or pyGPlates) standalone bundle" true)
+	mark_as_advanced(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES)
+else()
+	# We're not installing standalone, so remove option to install shared library dependencies.
+	unset(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES CACHE)
+endif()
 
 
 # Only GPlates has option to install geodata (we don't distribute it with pyGPlates).
@@ -271,11 +306,11 @@ if (MSVC)
 		endif()
 	endif()
 
-	# If Visual Studio then enable parallel builds within a project.
+	# If Visual Studio then enable parallel builds WITHIN a project.
 	#
-	# To also enable parallel project builds set
-	# Tools->Options->Programs and Solutions->Build and Run->maximum number of parallel project builds to
-	# the number of cores on your CPU.
+	# Note: To ALSO enable parallel project builds set
+	#       Tools->Options->Projects and Solutions->Build and Run->maximum number of parallel project builds to
+	#       the number of cores on your CPU.
 	#
 	# This is on by default otherwise compilation will take a long time.
 	option(GPLATES_MSVC_PARALLEL_BUILD "Enable parallel builds within each Visual Studio project." true)

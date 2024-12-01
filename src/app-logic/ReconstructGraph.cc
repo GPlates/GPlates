@@ -375,14 +375,12 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 	}
 
 	// Iterate over the layers again and update them.
-	// Note that the layers can be updated in any order - it is only when their layer proxy
-	// interfaces are queried that they will reference any dependency layers and that won't
-	// happen until after we're finished here and have returned.
 	//
-	// In any case the layers now operate in a pull model where a layer directly makes requests
-	// to its dependencies layers and so on, whereas previously layers operated in a push model
-	// that required dependency layers to produce output before the executing layers that
-	// depended on them thus requiring layers to be executed in dependency order.
+	// Note: The layers can be updated in any order.
+	//       This is because the layers now operate in a pull model where a layer directly makes requests
+	//       to its dependencies layers and so on. Whereas previously, layers operated in a push model
+	//       that required dependency layers to produce output before the executing layers that
+	//       depended on them thus requiring layers to be executed in dependency order.
 	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
 	{
 		// If this layer is not active then we don't add the layer proxy to the current reconstruction.

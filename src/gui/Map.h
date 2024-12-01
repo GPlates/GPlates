@@ -113,6 +113,7 @@ namespace GPlatesGui
 		paint(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
+				const double &device_independent_pixel_to_map_space_ratio,
 				float scale);
 
 	private:

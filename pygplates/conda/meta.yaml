@@ -1,13 +1,14 @@
+{% set name = "pygplates" %}
+{% set version = "0.44" %}
+
 package:
-  name: pygplates
-  version: 0.39
+  name: {{ name|lower }}
+  version: {{ version }}
 
 source:
   path: ../../
 
 build:
-  skip: True  # [py<37]
-  skip: True  # [win and vc<14]
   number: 0
 
 requirements:
@@ -38,15 +39,17 @@ requirements:
     - {{ cdt('libxxf86vm-devel') }}      # [linux]
     - {{ cdt('libxdamage-devel') }}      # [linux]
   host:
-    - pip
     - python
+    - pip
+    - scikit-build-core
     - numpy
     - cgal-cpp
     - glew
     - libglu          # [linux]
     - xorg-libxfixes  # [linux]
     - qt-main
-    - boost
+    - libboost-devel
+    - libboost-python-devel
     - libgdal
     - proj
     - qwt
@@ -60,8 +63,6 @@ requirements:
     - glew
     - libglu     # [linux]
     - qt-main
-    - boost
-    - boost-cpp
     - libgdal
     - proj
     - qwt
@@ -82,6 +83,7 @@ about:
   license_family: GPL
   license_file: COPYING
   doc_url: https://www.gplates.org/docs/pygplates/index.html
+  dev_url: https://github.com/GPlates/GPlates
 
 extra:
   recipe-maintainers:

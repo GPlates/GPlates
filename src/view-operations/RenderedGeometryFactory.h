@@ -116,13 +116,35 @@ namespace GPlatesViewOperations
 		const float DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS = 0.03f;
 
 		/**
+		 * Determines the default size of an arrowhead (in device-independent pixels).
+		 * This is a view-dependent scalar.
+		 */
+		const float DEFAULT_ARROWHEAD_SIZE_IN_PIXELS = 8.0f;
+
+		/**
 		 * Determines the default ratio of the width of an arrowline relative to the size of its arrowhead.
 		 *
-		 * The size of an arrowhead is actually is length (along the arrowline), not its width -
+		 * The size of an arrowhead is actually its length (along the arrowline), not its width -
 		 * the arrowhead width to arrowhead length ratio is fixed in the rendering engine in order
 		 * to give the arrowhead a nice shape.
 		 */
 		const float DEFAULT_RATIO_ARROWLINE_WIDTH_TO_ARROWHEAD_SIZE = 0.2f;
+
+		/**
+		 * Determines the default width of a subduction tooth (in device-independent pixels).
+		 * This is a view-dependent scalar.
+		 */
+		const float DEFAULT_SUBDUCTION_TEETH_WIDTH_IN_PIXELS = 8.0f;
+
+		/**
+		 * Determines the default spacing-to-width ratio of subduction teeth.
+		 */
+		const float DEFAULT_SUBDUCTION_TEETH_SPACING_TO_WIDTH_RATIO = 2.0;
+
+		/**
+		 * Determines the default height-to-width ratio of a subduction tooth .
+		 */
+		const float DEFAULT_SUBDUCTION_TEETH_HEIGHT_TO_WIDTH_RATIO = 2.0f / 3.0f;
 
 		/**
 		 * Determines the size of symbol rendered geometries.
@@ -385,6 +407,15 @@ namespace GPlatesViewOperations
 				RenderedGeometry rendered_geom);
 
 		/**
+		 * Creates a composite @a RenderedGeometry containing another @a RenderedGeometry
+		 * and multiple @a ReconstructionGeometry objects associated with it.
+		 */
+		RenderedGeometry
+		create_rendered_multi_reconstruction_geometry(
+				const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> &reconstruction_geoms,
+				RenderedGeometry rendered_geom);
+
+		/**
 		 * Creates a @a RenderedGeometry for text.
 		 */
 		RenderedGeometry
@@ -434,8 +465,23 @@ namespace GPlatesViewOperations
 		create_rendered_arrowed_polyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
 				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
-				const float ratio_arrowhead_size_to_globe_radius = DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS,
+				const float arrowhead_size_in_pixels = DEFAULT_ARROWHEAD_SIZE_IN_PIXELS,
 				const float arrowline_width_hint = DEFAULT_LINE_WIDTH_HINT);
+
+		/**
+		 * Creates a @a RenderedGeometry for a @a PolylineOnSphere that has subduction teeth.
+		 *
+		 * If @a subduction_polarity_is_left is true then the overriding plate is on the left (otherwise on the right).
+		 */
+		RenderedGeometry
+		create_rendered_subduction_teeth_polyline(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline,
+				bool subduction_polarity_is_left,
+				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
+				float teeth_width_in_pixels = DEFAULT_SUBDUCTION_TEETH_WIDTH_IN_PIXELS,
+				float teeth_spacing_to_width_ratio = DEFAULT_SUBDUCTION_TEETH_SPACING_TO_WIDTH_RATIO,
+				float teeth_height_to_width_ratio = DEFAULT_SUBDUCTION_TEETH_HEIGHT_TO_WIDTH_RATIO);
 
 
 		/**

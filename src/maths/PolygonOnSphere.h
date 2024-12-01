@@ -2097,6 +2097,52 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * The exception thrown when an attempt is made to create a polygon using invalid points.
+	 */
+	class InvalidPointsForPolygonConstructionError:
+			public GPlatesGlobal::PreconditionViolationError
+	{
+	public:
+		/**
+		 * Instantiate the exception.
+		 *
+		 * @param cpv is the polygon's construction parameter validity value, which
+		 * presumably describes why the points are invalid.
+		 */
+		InvalidPointsForPolygonConstructionError(
+				const GPlatesUtils::CallStack::Trace &exception_source,
+				PolygonOnSphere::ConstructionParameterValidity cpv) :
+			GPlatesGlobal::PreconditionViolationError(exception_source),
+			d_cpv(cpv),
+			d_filename(exception_source.get_filename()),
+			d_line_num(exception_source.get_line_num())
+		{  }
+
+		virtual
+		~InvalidPointsForPolygonConstructionError() throw()
+		{  }
+
+	protected:
+		virtual
+		const char *
+		exception_name() const
+		{
+			return "InvalidPointsForPolygonConstructionError";
+		}
+
+		virtual
+		void
+		write_message(
+				std::ostream &os) const;
+
+	private:
+		PolygonOnSphere::ConstructionParameterValidity d_cpv;
+		const char *d_filename;
+		int d_line_num;
+	};
+
+
 	template <typename PointForwardIter>
 	const PolygonOnSphere::non_null_ptr_to_const_type
 	PolygonOnSphere::create(
@@ -2162,52 +2208,6 @@ namespace GPlatesMaths
 				interior_rings_begin, interior_rings_end);
 		return ptr;
 	}
-
-
-	/**
-	 * The exception thrown when an attempt is made to create a polygon using invalid points.
-	 */
-	class InvalidPointsForPolygonConstructionError:
-			public GPlatesGlobal::PreconditionViolationError
-	{
-	public:
-		/**
-		 * Instantiate the exception.
-		 *
-		 * @param cpv is the polygon's construction parameter validity value, which
-		 * presumably describes why the points are invalid.
-		 */
-		InvalidPointsForPolygonConstructionError(
-				const GPlatesUtils::CallStack::Trace &exception_source,
-				PolygonOnSphere::ConstructionParameterValidity cpv) :
-			GPlatesGlobal::PreconditionViolationError(exception_source),
-			d_cpv(cpv),
-			d_filename(exception_source.get_filename()),
-			d_line_num(exception_source.get_line_num())
-		{  }
-
-		virtual
-		~InvalidPointsForPolygonConstructionError() throw()
-		{  }
-
-	protected:
-		virtual
-		const char *
-		exception_name() const
-		{
-			return "InvalidPointsForPolygonConstructionError";
-		}
-
-		virtual
-		void
-		write_message(
-				std::ostream &os) const;
-
-	private:
-		PolygonOnSphere::ConstructionParameterValidity d_cpv;
-		const char *d_filename;
-		int d_line_num;
-	};
 
 
 	template <typename PointForwardIter>

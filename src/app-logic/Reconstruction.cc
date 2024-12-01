@@ -27,6 +27,8 @@
 
 #include "Reconstruction.h"
 
+#include "LayerProxyUtils.h"
+
 #include "global/PreconditionViolationError.h"
 
 
@@ -49,4 +51,34 @@ GPlatesAppLogic::Reconstruction::Reconstruction(
 	// Create a reconstruction layer proxy that performs identity rotations...
 	d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create())
 {
+}
+
+
+const std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> &
+GPlatesAppLogic::Reconstruction::get_all_resolved_topological_sections() const
+{
+	// Cache all resolved topological sections in this reconstruction if we haven't already.
+	if (!d_all_resolved_topological_sections)
+	{
+		d_all_resolved_topological_sections = std::vector<ResolvedTopologicalSection::non_null_ptr_type>();
+		LayerProxyUtils::find_resolved_topological_sections(d_all_resolved_topological_sections.get(), *this);
+	}
+
+	return d_all_resolved_topological_sections.get();
+}
+
+
+const GPlatesAppLogic::TopologyUtils::resolved_topological_boundaries_networks_to_shared_sub_segments_map_type &
+GPlatesAppLogic::Reconstruction::get_all_resolved_topological_shared_sub_segments() const
+{
+	// Cache all resolved topological shared sub-segments in this reconstruction if we haven't already.
+	if (!d_all_resolved_topological_shared_sub_segments)
+	{
+		d_all_resolved_topological_shared_sub_segments = TopologyUtils::resolved_topological_boundaries_networks_to_shared_sub_segments_map_type();
+		TopologyUtils::map_resolved_topological_boundaries_networks_to_shared_sub_segments(
+				d_all_resolved_topological_shared_sub_segments.get(),
+				get_all_resolved_topological_sections());
+	}
+
+	return d_all_resolved_topological_shared_sub_segments.get();
 }

@@ -735,7 +735,6 @@ class IntegerFloatCase(unittest.TestCase):
         pygplates.XsDouble(np.uint(1000))
         pygplates.XsDouble(np.float64(1000))
         pygplates.XsDouble(np.float32(-1000))
-        pygplates.XsDouble(np.float_(1000))
         pygplates.XsDouble(np.double(1000))
         pygplates.XsDouble(np.longdouble(-1000))
         self.assertAlmostEqual(pygplates.XsDouble(np.float64(105.67)).get_double(), 105.67)

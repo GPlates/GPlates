@@ -113,6 +113,27 @@ namespace GPlatesGui
 		void set_show_3d_scalar_fields(bool b) { d_show_3d_scalar_fields = b; Q_EMIT settings_changed(); }
 		void set_show_scalar_coverages(bool b) { d_show_scalar_coverages = b; Q_EMIT settings_changed(); }
 		void set_show_strings(bool b) { d_show_strings = b; Q_EMIT settings_changed(); }
+
+		void
+		set_show_all(
+				bool b)
+		{
+			d_show_static_points = b;
+			d_show_static_multipoints = b;
+			d_show_static_lines = b;
+			d_show_static_polygons = b;
+			d_show_topological_sections = b;
+			d_show_topological_lines = b;
+			d_show_topological_polygons = b;
+			d_show_topological_networks = b;
+			d_show_velocity_arrows = b;
+			d_show_rasters = b;
+			d_show_3d_scalar_fields = b;
+			d_show_scalar_coverages = b;
+			d_show_strings = b;
+
+			Q_EMIT settings_changed();
+		}
 	
 	Q_SIGNALS:
 
