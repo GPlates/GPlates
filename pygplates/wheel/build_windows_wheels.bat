@@ -40,6 +40,7 @@ for %%v in (3.8 3.9 3.10 3.11 3.12 3.13) do (
 		--wheel-dir !tmp_dist_dir! ^
 		-v ^
 		--config-settings cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=FALSE ^
+		--config-settings cmake.define.CMAKE_GENERATOR="Visual Studio 16 2019" ^
 		. ^
 		|| exit /B 1
 
