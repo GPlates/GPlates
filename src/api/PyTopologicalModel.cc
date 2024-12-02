@@ -1875,7 +1875,7 @@ export_topological_model()
 								boost::optional<GPlatesApi::ResolveTopologyParameters::non_null_ptr_to_const_type>(),
 							bp::arg("topological_snapshot_cache_size") = boost::optional<unsigned int>())),
 			"__init__(topological_features, rotation_model, [anchor_plate_id], [default_resolve_topology_parameters], [topological_snapshot_cache_size])\n"
-			"  Create from topological features, a rotation model and a time span.\n"
+			"  Create from topological features and a rotation model.\n"
 			"\n"
 			"  :param topological_features: The topological boundary and/or network features and the "
 			"topological section features they reference (regular and topological lines) as a feature collection, "

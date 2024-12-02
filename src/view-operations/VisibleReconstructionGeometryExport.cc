@@ -287,6 +287,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 			export_single_output_file,
 			export_per_input_file,
 			export_separate_output_directory_per_input_file,
+			boost::none/*force_polygon_orientation*/,
 			wrap_to_dateline);
 }
 

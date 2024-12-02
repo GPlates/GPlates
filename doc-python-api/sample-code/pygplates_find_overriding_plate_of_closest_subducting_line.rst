@@ -25,8 +25,8 @@ Sample code
     # Load one or more rotation files into a rotation model.
     rotation_model = pygplates.RotationModel('rotations.rot')
     
-    # Load some features to test for closeness to subducting lines.
-    features = pygplates.FeatureCollection('features.gpml')
+    # Create a reconstruct model from some regular (non-topological) features and the rotation model.
+    reconstruct_model = pygplates.ReconstructModel('features.gpml', rotation_model)
 
     # Create a topological model from the topological plate polygon features (can also include deforming networks)
     # and the rotation model.
@@ -40,9 +40,9 @@ Sample code
         
         print 'Time %f' % time
         
-        # Reconstruct the features to the current 'time'.
-        reconstructed_features = []
-        pygplates.reconstruct(features, rotation_model, reconstructed_features, time, group_with_feature=True)
+        # Reconstruct the regular features to the current 'time'.
+        reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(time)
+        reconstructed_features = reconstruct_snapshot.get_reconstructed_features()
         
         # Get a snapshot of our resolved topologies at the current 'time'.
         topological_snapshot = topological_model.topological_snapshot(time)
@@ -156,26 +156,26 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 
     rotation_model = pygplates.RotationModel('rotations.rot')
     
-Load the regular features that we want to see which subducting lines (in the topologies) are closest to.
+Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the regular (non-topological) features and the rotation model.
+These are the regular features that we want to see which subducting lines (in the topologies) are closest to.
 ::
 
-    features = pygplates.FeatureCollection('features.gpml')
+    reconstruct_model = pygplates.ReconstructModel('features.gpml', rotation_model)
 
 Create a :class:`topological model<pygplates.TopologicalModel>` from topological features and the rotation model.
 ::
 
     topological_model = pygplates.TopologicalModel('topologies.gpml', rotation_model)
 
-| All regular features are reconstructed to the current ``time`` using :func:`pygplates.reconstruct`.
-| We specify a ``list`` for *reconstructed_features* instead of a filename.
-| We also set the output parameter *group_with_feature* to ``True`` (it defaults to ``False``)
-  so that our :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>`
-  are grouped with their :class:`feature<pygplates.Feature>`.
+| All regular features are reconstructed to the current ``time`` using :meth:`pygplates.ReconstructModel.reconstruct_snapshot`
+  that returns a :class:`pygplates.ReconstructSnapshot`.
+| We then call :meth:`pygplates.ReconstructSnapshot.get_reconstructed_features` so that our
+  :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>` are grouped with their :class:`feature<pygplates.Feature>`.
 
 ::
 
-    reconstructed_features = []
-    pygplates.reconstruct(features, rotation_model, reconstructed_features, time, group_with_feature=True)
+    reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(time)
+    reconstructed_features = reconstruct_snapshot.get_reconstructed_features()
 
 | Each item in the *reconstructed_features* list is a tuple containing a feature and its associated
   reconstructed geometries.

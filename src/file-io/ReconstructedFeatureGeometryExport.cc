@@ -62,6 +62,7 @@ namespace GPlatesFileIO
 					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
+					boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 					bool wrap_to_dateline)
 			{
 				switch (export_format)
@@ -76,6 +77,7 @@ namespace GPlatesFileIO
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
+						force_polygon_orientation,
 						wrap_to_dateline);
 					break;
 
@@ -86,7 +88,8 @@ namespace GPlatesFileIO
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						force_polygon_orientation);
 					break;
 
 				default:
@@ -104,6 +107,7 @@ namespace GPlatesFileIO
 					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
+					boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 					bool wrap_to_dateline)
 			{
 				switch(export_format)
@@ -118,6 +122,7 @@ namespace GPlatesFileIO
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
+						force_polygon_orientation,
 						wrap_to_dateline);
 					break;
 				case GMT:
@@ -127,7 +132,8 @@ namespace GPlatesFileIO
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						force_polygon_orientation);
 					break;
 				default:
 					throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
@@ -188,6 +194,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file,
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
 	// Get the list of active reconstructable feature collection files that contain
@@ -228,6 +235,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 					active_reconstruction_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
+					force_polygon_orientation,
 					wrap_to_dateline);
 		}
 		else
@@ -245,6 +253,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 					active_reconstruction_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
+					force_polygon_orientation,
 					wrap_to_dateline);
 		}
 	}
@@ -272,6 +281,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 					active_reconstruction_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
+					force_polygon_orientation,
 					wrap_to_dateline);
 		}
 	}

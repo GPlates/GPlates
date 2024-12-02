@@ -157,6 +157,205 @@ class InterpolateTotalReconstructionSequenceTestCase(unittest.TestCase):
         # TODO: Compare pole.
 
 
+class ReconstructModelTestCase(unittest.TestCase):
+    def setUp(self):
+        self.rotations = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
+        self.rotation_model = pygplates.RotationModel(self.rotations)
+
+        self.reconstructable_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'volcanoes.gpml'))
+        self.reconstruct_model = pygplates.ReconstructModel(self.reconstructable_features, self.rotation_model)
+
+    def test_create(self):
+        self.assertRaises(
+                pygplates.OpenFileForReadingError,
+                pygplates.ReconstructModel,
+                'non_existant_reconstructable_file.gpml', self.rotations)
+
+        self.assertTrue(self.reconstruct_model.get_anchor_plate_id() == 0)
+
+        reconstruct_model = pygplates.ReconstructModel(self.reconstructable_features, self.rotation_model, anchor_plate_id=1)
+        self.assertTrue(reconstruct_model.get_anchor_plate_id() == 1)
+
+        # Make sure can specify a reconstruct snapshot cache size.
+        reconstruct_model = pygplates.ReconstructModel(self.reconstructable_features, self.rotation_model, reconstruct_snapshot_cache_size=2)
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            
+            reconstruct_model = pygplates.ReconstructModel(
+                FIXTURES / Path('volcanoes.gpml'),
+                FIXTURES / Path('rotations.rot'))
+
+    def test_get_reconstruct_snapshot(self):
+        reconstruct_snapshot = self.reconstruct_model.reconstruct_snapshot(10.5)  # note: it should allow a non-integral time
+        self.assertTrue(reconstruct_snapshot.get_anchor_plate_id() == self.reconstruct_model.get_anchor_plate_id())
+        self.assertTrue(reconstruct_snapshot.get_rotation_model() == self.reconstruct_model.get_rotation_model())
+
+    def test_get_rotation_model(self):
+        reconstruct_model = pygplates.ReconstructModel(self.reconstructable_features, self.rotation_model, anchor_plate_id=2)
+        self.assertTrue(reconstruct_model.get_rotation_model().get_rotation(1.0, 802) == self.rotation_model.get_rotation(1.0, 802, anchor_plate_id=2))
+        self.assertTrue(reconstruct_model.get_rotation_model().get_default_anchor_plate_id() == 2)
+
+        rotation_model_anchor_2 = pygplates.RotationModel(self.rotations, default_anchor_plate_id=2)
+        reconstruct_model = pygplates.ReconstructModel(self.reconstructable_features, rotation_model_anchor_2)
+        self.assertTrue(reconstruct_model.get_anchor_plate_id() == 2)
+        self.assertTrue(reconstruct_model.get_rotation_model().get_default_anchor_plate_id() == 2)
+    
+    def test_pickle(self):
+        # Pickle a ReconstructModel.
+        pickled_reconstruct_model = pickle.loads(pickle.dumps(self.reconstruct_model))
+        self.assertTrue(pickled_reconstruct_model.get_rotation_model().get_rotation(100, 802) ==
+                        self.reconstruct_model.get_rotation_model().get_rotation(100, 802))
+        # Check snapshots of the original and pickled reconstruct models.
+        reconstructed_geometries = self.reconstruct_model.reconstruct_snapshot(10.0).get_reconstructed_geometries(same_order_as_reconstructable_features=True)
+        pickled_reconstructed_geometries = pickled_reconstruct_model.reconstruct_snapshot(10.0).get_reconstructed_geometries(same_order_as_reconstructable_features=True)
+        self.assertTrue(len(pickled_reconstructed_geometries) == len(reconstructed_geometries))
+        for index in range(len(pickled_reconstructed_geometries)):
+            self.assertTrue(pickled_reconstructed_geometries[index].get_reconstructed_geometry() == reconstructed_geometries[index].get_reconstructed_geometry())
+
+
+class ReconstructSnapshotTestCase(unittest.TestCase):
+    def test(self):
+        #
+        # Class pygplates.ReconstructSnapshot is used internally by pygplates.reconstruct()
+        # so most of its testing is already done by testing pygplates.reconstruct().
+        #
+        # Here we're just making sure we can access the pygplates.ReconstructSnapshot methods.
+        #
+        snapshot = pygplates.ReconstructSnapshot(
+            os.path.join(FIXTURES, 'volcanoes.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10),
+            anchor_plate_id=1)
+        self.assertTrue(snapshot.get_anchor_plate_id() == 1)
+        self.assertTrue(snapshot.get_rotation_model())
+        
+        snapshot = pygplates.ReconstructSnapshot(
+            os.path.join(FIXTURES, 'volcanoes.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        
+        self.assertTrue(snapshot.get_anchor_plate_id() == 0)
+        self.assertTrue(snapshot.get_rotation_model())
+
+        reconstructed_geometries = snapshot.get_reconstructed_geometries()
+        self.assertTrue(len(reconstructed_geometries) == 4)  # See ReconstructTestCase
+        
+        snapshot.export_reconstructed_geometries(os.path.join(FIXTURES, 'reconstructed_geometries.gmt'))
+        self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'reconstructed_geometries.gmt')))
+        os.remove(os.path.join(FIXTURES, 'reconstructed_geometries.gmt'))
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            
+            snapshot = pygplates.ReconstructSnapshot(
+                FIXTURES / Path('volcanoes.gpml'),
+                FIXTURES / Path('rotations.rot'),
+                pygplates.GeoTimeInstant(10))
+            
+            self.assertTrue(snapshot.get_anchor_plate_id() == 0)
+            self.assertTrue(snapshot.get_rotation_model())
+    
+    def test_get_reconstructed_features(self):
+        # This example matches use of 'group_with_feature' in ReconstructTestCase.
+        reconstruction_time = 15
+        geometry = pygplates.PolylineOnSphere([(0,0), (10, 10)])
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.create_gpml('Coastline'),
+                geometry,
+                valid_time=(30, 0),
+                reconstruction_plate_id=801)
+        snapshot = pygplates.ReconstructSnapshot(
+                feature,
+                os.path.join(FIXTURES, 'rotations.rot'),
+                reconstruction_time)
+        
+        grouped_reconstructed_feature_geometries = snapshot.get_reconstructed_features()
+        self.assertTrue(len(grouped_reconstructed_feature_geometries) == 1)
+        grouped_feature, reconstructed_feature_geometries = grouped_reconstructed_feature_geometries[0]
+        self.assertTrue(grouped_feature.get_feature_id() == feature.get_feature_id())
+        self.assertTrue(len(reconstructed_feature_geometries) == 1)
+        self.assertTrue(geometry == reconstructed_feature_geometries[0].get_present_day_geometry())
+
+    def test_reconstructed_export_files(self):
+        reconstructable_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'volcanoes.gpml')) 
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        snapshot = pygplates.ReconstructSnapshot(
+            reconstructable_features,
+            rotation_model,
+            pygplates.GeoTimeInstant(10))
+        
+        def _internal_test_export_files(
+                test_case,
+                snapshot,
+                tmp_export_reconstructed_geometries_filename):
+            
+            def _remove_export(tmp_export_filename):
+                os.remove(tmp_export_filename)
+
+                # In case an OGR format file (which also has shapefile mapping XML file).
+                if os.path.isfile(tmp_export_filename + '.gplates.xml'):
+                    os.remove(tmp_export_filename + '.gplates.xml')
+                
+                # For Shapefile.
+                if tmp_export_filename.endswith('.shp'):
+                    tmp_export_base_filename = tmp_export_filename[:-len('.shp')]
+                    if os.path.isfile(tmp_export_base_filename + '.dbf'):
+                        os.remove(tmp_export_base_filename + '.dbf')
+                    if os.path.isfile(tmp_export_base_filename + '.prj'):
+                        os.remove(tmp_export_base_filename + '.prj')
+                    if os.path.isfile(tmp_export_base_filename + '.shx'):
+                        os.remove(tmp_export_base_filename + '.shx')
+            
+            tmp_export_reconstructed_geometries_filename = os.path.join(FIXTURES, tmp_export_reconstructed_geometries_filename)
+            snapshot.export_reconstructed_geometries(tmp_export_reconstructed_geometries_filename)
+            test_case.assertTrue(os.path.isfile(tmp_export_reconstructed_geometries_filename))
+
+            # Read back in the exported file to make sure correct number of reconstructed geometries (except cannot read '.xy' files).
+            if not tmp_export_reconstructed_geometries_filename.endswith('.xy'):
+                reconstructed_features = pygplates.FeatureCollection(tmp_export_reconstructed_geometries_filename) 
+                test_case.assertTrue(len(reconstructed_features) == len(snapshot.get_reconstructed_geometries()))
+            
+            _remove_export(tmp_export_reconstructed_geometries_filename)
+        
+        # Test reconstructed export to different format (eg, GMT, OGRGMT, Shapefile, etc).
+        _internal_test_export_files(self, snapshot, 'tmp.xy')  # GMT
+        _internal_test_export_files(self, snapshot, 'tmp.shp')  # Shapefile
+        _internal_test_export_files(self, snapshot, 'tmp.gmt')  # OGRGMT
+        _internal_test_export_files(self, snapshot, 'tmp.geojson')  # GeoJSON
+        _internal_test_export_files(self, snapshot, 'tmp.json')  # GeoJSON
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            
+            tmp_export_reconstructed_geometries_filename = FIXTURES / Path('tmp_export_reconstructed_geometries.gmt')
+            snapshot.export_reconstructed_geometries(tmp_export_reconstructed_geometries_filename)
+            self.assertTrue(tmp_export_reconstructed_geometries_filename.exists())
+            tmp_export_reconstructed_geometries_filename.unlink()
+    
+    def test_pickle(self):
+        snapshot = pygplates.ReconstructSnapshot(
+            os.path.join(FIXTURES, 'volcanoes.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        
+        # Pickle the ReconstructSnapshot.
+        pickled_snapshot = pickle.loads(pickle.dumps(snapshot))
+        self.assertTrue(pickled_snapshot.get_rotation_model().get_rotation(100, 802) == snapshot.get_rotation_model().get_rotation(100, 802))
+        # Check the original and pickled reconstruct snapshots.
+        reconstructed_geometries = snapshot.get_reconstructed_geometries(same_order_as_reconstructable_features=True)
+        pickled_reconstructed_geometries = pickled_snapshot.get_reconstructed_geometries(same_order_as_reconstructable_features=True)
+        self.assertTrue(len(pickled_reconstructed_geometries) == len(reconstructed_geometries))
+        for index in range(len(pickled_reconstructed_geometries)):
+            self.assertTrue(pickled_reconstructed_geometries[index].get_reconstructed_geometry() == reconstructed_geometries[index].get_reconstructed_geometry())
+
+
 class ReconstructTestCase(unittest.TestCase):
     def test_reconstruct(self):
         pygplates.reconstruct(
@@ -382,11 +581,12 @@ class ReconstructTestCase(unittest.TestCase):
                 valid_time=(30, 0),
                 relative_plate=201,
                 reconstruction_plate_id=801)
-        reconstructed_motion_paths = []
         # First without specifying motion paths.
+        reconstructed_motion_paths = []
         pygplates.reconstruct(motion_path_feature, rotation_model, reconstructed_motion_paths, reconstruction_time)
         self.assertEqual(len(reconstructed_motion_paths), 0)
         # Now specify motion paths.
+        reconstructed_motion_paths = []
         pygplates.reconstruct(
                 motion_path_feature, rotation_model, reconstructed_motion_paths, reconstruction_time,
                 reconstruct_type=pygplates.ReconstructType.motion_path)
@@ -1969,7 +2169,7 @@ class ReconstructionTreeCase(unittest.TestCase):
                 from_reconstruction_tree, self.reconstruction_tree, 10000, 291, use_identity_for_missing_plate_ids=False))
 
 
-class RotationModelCase(unittest.TestCase):
+class RotationModelTestCase(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
@@ -2169,7 +2369,7 @@ class RotationModelCase(unittest.TestCase):
                         rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802))
 
 
-class StrainCase(unittest.TestCase):
+class StrainTestCase(unittest.TestCase):
 
     def test_create(self):
         self.assertTrue(pygplates.StrainRate().get_velocity_spatial_gradient() == (0, 0, 0, 0))
@@ -2271,7 +2471,7 @@ class StrainCase(unittest.TestCase):
         self.assertTrue(pickled_strain == strain)
 
 
-class TopologicalModelCase(unittest.TestCase):
+class TopologicalModelTestCase(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
         self.rotation_model = pygplates.RotationModel(self.rotations)
@@ -2607,14 +2807,23 @@ class TopologicalModelCase(unittest.TestCase):
                             pickled_located_in_resolved_network.get_resolved_geometry() == located_in_resolved_network.get_resolved_geometry())
 
 
-class TopologicalSnapshotCase(unittest.TestCase):
+class TopologicalSnapshotTestCase(unittest.TestCase):
     def test(self):
         #
-        # Class pygplates.TopologicalSnapshot is used internally by pygplates.resolved_topologies()
-        # so most of its testing is already done by testing pygplates.resolved_topologies().
+        # Class pygplates.TopologicalSnapshot is used internally by pygplates.resolve_topologies()
+        # so most of its testing is already done by testing pygplates.resolve_topologies().
         #
         # Here we're just making sure we can access the pygplates.TopologicalSnapshot methods.
         #
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10),
+            anchor_plate_id=1)
+        
+        self.assertTrue(snapshot.get_anchor_plate_id() == 1)
+        self.assertTrue(snapshot.get_rotation_model())
+        
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),
             os.path.join(FIXTURES, 'rotations.rot'),
@@ -2857,13 +3066,15 @@ def suite():
             InterpolateTotalReconstructionSequenceTestCase,
             NetRotationTestCase,
             PlatePartitionerTestCase,
+            ReconstructModelTestCase,
+            ReconstructSnapshotTestCase,
             ReconstructTestCase,
             ReconstructionTreeCase,
             ResolvedTopologiesTestCase,
-            RotationModelCase,
-            StrainCase,
-            TopologicalModelCase,
-            TopologicalSnapshotCase
+            RotationModelTestCase,
+            StrainTestCase,
+            TopologicalModelTestCase,
+            TopologicalSnapshotTestCase
         ]
 
     for test_case in test_cases:
