@@ -1930,6 +1930,12 @@ namespace GPlatesApi
 			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere,
 			const double &tessellate_radians)
 	{
+		if (tessellate_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type' and rely on
@@ -1940,6 +1946,60 @@ namespace GPlatesApi
 		// So we avoid it by using returning a pointer to 'non-const' GPlatesMaths::PolylineOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(
 				tessellate(polyline_on_sphere, tessellate_radians));
+	}
+
+	bp::object
+	polyline_on_sphere_to_uniform_points(
+			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere,
+			const double &point_spacing_radians,
+			const double &first_point_spacing_radians,
+			bool return_segment_informations)
+	{
+		if (point_spacing_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
+		// Whether to query the segment information for each uniform point, or not.
+		boost::optional<std::vector<std::pair<unsigned int, double>> &> segment_informations_ref;
+		std::vector<std::pair<unsigned int, double>> segment_informations;
+		if (return_segment_informations)
+		{
+			segment_informations_ref = segment_informations;
+		}
+
+		std::vector<GPlatesMaths::PointOnSphere> uniform_points;
+		uniformly_spaced_points(
+				uniform_points,
+				polyline_on_sphere,
+				point_spacing_radians,
+				first_point_spacing_radians,
+				segment_informations_ref);
+
+		bp::list uniform_points_list;
+		for (const auto &point : uniform_points)
+		{
+			uniform_points_list.append(point);
+		}
+
+		if (return_segment_informations)
+		{
+			// List of 2-tuples (segment index, segment interpolation).
+			// One tuple for each uniform point.
+			bp::list segment_informations_list;
+			for (const auto &segment_information : segment_informations)
+			{
+				segment_informations_list.append(
+						bp::make_tuple(
+								segment_information.first,    // segment index
+								segment_information.second)); // segment interpolation
+			}
+
+			return bp::make_tuple(uniform_points_list, segment_informations_list);
+		}
+
+		return uniform_points_list;
 	}
 
 	bp::object
@@ -2644,11 +2704,12 @@ export_polyline_on_sphere()
 				&GPlatesApi::polyline_on_sphere_to_tessellated,
 				(bp::arg("tessellate_radians")),
 				"to_tessellated(tessellate_radians)\n"
-				"  Returns a new polyline that is tessellated version of this polyline.\n"
+				"  Returns a new polyline that is a tessellated version of this polyline.\n"
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: :class:`PolylineOnSphere`\n"
+				"  :raises: ValueError if *tessellate_radians* is negative or zero\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polyline) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"
@@ -2666,7 +2727,61 @@ export_polyline_on_sphere()
 				"tessellated to the nearest integer number of points (that keeps that segment under the threshold) "
 				"and hence each original *segment* will have a slightly different tessellation angle.\n"
 				"\n"
-				"  .. seealso:: :meth:`GreatCircleArc.to_tessellated`\n")
+				"  .. seealso:: :meth:`to_uniform_points`\n")
+		.def("to_uniform_points",
+				&GPlatesApi::polyline_on_sphere_to_uniform_points,
+				(bp::arg("point_spacing_radians"),
+						bp::arg("first_point_spacing_radians") = 0.0,
+						bp::arg("return_segment_informations") = false),
+				"to_uniform_points(point_spacing_radians, [first_point_spacing_radians=0.0], [return_segment_informations=False])\n"
+				"  Returns a sequence of points uniformly spaced along this polyline.\n"
+				"\n"
+				"  :param point_spacing_radians: spacing between points (in radians)\n"
+				"  :type point_spacing_radians: float\n"
+				"  :param first_point_spacing_radians: Spacing of first uniform point from this polyline's first vertex (in radians). "
+				"By default the first uniform point *coincides* with this polyline's first vertex. "
+				"Ideally this is non-negative (but, for example, if it's slightly negative then the first uniform point will be slightly off "
+				"the first arc near its start point but still on its great circle).\n"
+				"  :type first_point_spacing_radians: float\n"
+				"  :param return_segment_informations: whether to also return information about the polyline segment that each uniform point is on - default is ``False``\n"
+				"  :type return_segment_informations: bool\n"
+				"  :returns: list of points, or (if *return_segment_informations* is ``True``) a 2-tuple containing a list of points and "
+				"a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, "
+				"and where the point is located *on* that segment in the range [0,1])\n"
+				"  :rtype: list of :class:`PointOnSphere`, or tuple (list of :class:`PointOnSphere`, list of tuple (int, float)) if *return_segment_informations* is ``True``\n"
+				"  :raises: ValueError if *point_spacing_radians* is negative or zero\n"
+				"\n"
+				"  .. note:: The distance (along the polyline) between the last uniform point and the last vertex "
+				"of the polyline can be less than *point_spacing_radians* (since the length of the polyline "
+				"minus *first_point_spacing_radians* might not be an integer multiple of *point_spacing_radians*).\n"
+				"\n"
+				"  .. note:: | If *first_point_spacing_radians* is greater than the :meth:`polyline's length <get_arc_length>` then no uniform points will be generated.\n"
+				"            | And if the polyline length is zero and *first_point_spacing_radians* is zero then a single uniform point will be generated.\n"
+				"\n"
+				"  Create points uniformly spaced by 1 degree along a polyline starting 0.5 degrees from the first polyline vertex:\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points = polyline.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5))\n"
+				"\n"
+				"  Next, we extend the above example by associating a segment normal (from great circle arc) with each uniform point:\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points, uniform_point_segment_informations = polyline.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5),\n"
+				"        return_segment_informations = True)\n"
+				"\n"
+				"    # Each uniform point is on a segment, so retrieve a segment normal for each point.\n"
+				"    # We end up with a list of normals (with a list length equal to the number of uniform points).\n"
+				"    polyline_segments = polyline.get_segments()\n"
+				"    uniform_point_normals = [polyline_segments[segment_index].get_great_circle_normal()\n"
+				"        for segment_index, _ in uniform_point_segment_informations]\n"
+				"\n"
+				"  .. seealso:: :meth:`to_tessellated`\n"
+				"\n"
+				"  .. versionadded:: 0.47\n")
 		.def("__iter__",
 				bp::range(
 						&GPlatesMaths::PolylineOnSphere::vertex_begin,
@@ -3369,6 +3484,12 @@ namespace GPlatesApi
 			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
 			const double &tessellate_radians)
 	{
+		if (tessellate_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type' and rely on
@@ -3379,6 +3500,60 @@ namespace GPlatesApi
 		// So we avoid it by using returning a pointer to 'non-const' GPlatesMaths::PolygonOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(
 				tessellate(polygon_on_sphere, tessellate_radians));
+	}
+
+	bp::object
+	polygon_on_sphere_to_uniform_points(
+			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
+			const double &point_spacing_radians,
+			const double &first_point_spacing_radians,
+			bool return_segment_informations)
+	{
+		if (point_spacing_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
+		// Whether to query the segment information for each uniform point, or not.
+		boost::optional<std::vector<std::pair<unsigned int, double>> &> segment_informations_ref;
+		std::vector<std::pair<unsigned int, double>> segment_informations;
+		if (return_segment_informations)
+		{
+			segment_informations_ref = segment_informations;
+		}
+
+		std::vector<GPlatesMaths::PointOnSphere> uniform_points;
+		uniformly_spaced_points(
+				uniform_points,
+				polygon_on_sphere,
+				point_spacing_radians,
+				first_point_spacing_radians,
+				segment_informations_ref);
+
+		bp::list uniform_points_list;
+		for (const auto &point : uniform_points)
+		{
+			uniform_points_list.append(point);
+		}
+
+		if (return_segment_informations)
+		{
+			// List of 2-tuples (segment index, segment interpolation).
+			// One tuple for each uniform point.
+			bp::list segment_informations_list;
+			for (const auto &segment_information : segment_informations)
+			{
+				segment_informations_list.append(
+						bp::make_tuple(
+								segment_information.first,    // segment index
+								segment_information.second)); // segment interpolation
+			}
+
+			return bp::make_tuple(uniform_points_list, segment_informations_list);
+		}
+
+		return uniform_points_list;
 	}
 
 	GPlatesMaths::PolygonPartitioner::Result
@@ -4256,11 +4431,12 @@ export_polygon_on_sphere()
 				&GPlatesApi::polygon_on_sphere_to_tessellated,
 				(bp::arg("tessellate_radians")),
 				"to_tessellated(tessellate_radians)\n"
-				"  Returns a new polygon that is tessellated version of this polygon.\n"
+				"  Returns a new polygon that is a tessellated version of this polygon.\n"
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: :class:`PolygonOnSphere`\n"
+				"  :raises: ValueError if *tessellate_radians* is negative or zero\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polygon) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"
@@ -4278,7 +4454,65 @@ export_polygon_on_sphere()
 				"tessellated to the nearest integer number of points (that keeps that segment under the threshold) "
 				"and hence each original *segment* will have a slightly different tessellation angle.\n"
 				"\n"
-				"  .. seealso:: :meth:`GreatCircleArc.to_tessellated`\n")
+				"  .. seealso:: :meth:`to_uniform_points`\n")
+		.def("to_uniform_points",
+				&GPlatesApi::polygon_on_sphere_to_uniform_points,
+				(bp::arg("point_spacing_radians"),
+						bp::arg("first_point_spacing_radians") = 0.0,
+						bp::arg("return_segment_informations") = false),
+				"to_uniform_points(point_spacing_radians, [first_point_spacing_radians=0.0], [return_segment_informations=False])\n"
+				"  Returns a sequence of points uniformly spaced along each ring of this polygon.\n"
+				"\n"
+				"  :param point_spacing_radians: spacing between points within a ring (in radians)\n"
+				"  :type point_spacing_radians: float\n"
+				"  :param first_point_spacing_radians: Spacing of first uniform point in each ring from the ring's first vertex (in radians). "
+				"By default the first uniform point in each ring *coincides* with the ring's first vertex. "
+				"Ideally this is non-negative (but, for example, if it's slightly negative then the first uniform point in each ring will be slightly off "
+				"its first arc near its start point but still on its great circle).\n"
+				"  :type first_point_spacing_radians: float\n"
+				"  :param return_segment_informations: whether to also return information about the polygon segment that each uniform point is on - default is ``False``\n"
+				"  :type return_segment_informations: bool\n"
+				"  :returns: list of points, or (if *return_segment_informations* is ``True``) a 2-tuple containing a list of points and "
+				"a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, "
+				"and where the point is located *on* that segment in the range [0,1])\n"
+				"  :rtype: list of :class:`PointOnSphere`, or tuple (list of :class:`PointOnSphere`, list of tuple (int, float)) if *return_segment_informations* is ``True``\n"
+				"  :raises: ValueError if *point_spacing_radians* is negative or zero\n"
+				"\n"
+				"  .. note:: | The distance (along a polygon ring) between the last uniform point of a ring and the last vertex "
+				"of the ring (also its first vertex) can be less than *point_spacing_radians* (since the length of the ring "
+				"minus *first_point_spacing_radians* might not be an integer multiple of *point_spacing_radians*).\n"
+				"            | And if the first uniform point of a ring was added at the ring's first vertex location (ie, *first_point_spacing_radians* is zero) and "
+				"the last uniform point of the ring is at the same location (ie, the ring's first/last vertex location), due to the ring's length being an "
+				"integer multiple of *point_spacing_radians*, then the last uniform point is not added.\n"
+				"\n"
+				"  .. note:: | If *first_point_spacing_radians* is greater than a ring's length then no uniform points will be generated for that ring.\n"
+				"            | And if the ring's length is zero and *first_point_spacing_radians* is zero then a single uniform point will be generated for that ring.\n"
+				"\n"
+				"  Create points uniformly spaced by 1 degree along a polygon starting 0.5 degrees from the first vertex of each ring:\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points = polygon.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5))\n"
+				"\n"
+				"  Next, we extend the above example by associating a segment normal (from great circle arc) with each uniform point "
+				"(noting that segments come from the exterior ring and any interior rings since :meth:`get_segments` includes all segments):\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points, uniform_point_segment_informations = polygon.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5),\n"
+				"        return_segment_informations = True)\n"
+				"\n"
+				"    # Each uniform point is on a segment, so retrieve a segment normal for each point.\n"
+				"    # We end up with a list of normals (with a list length equal to the number of uniform points).\n"
+				"    polygon_segments = polygon.get_segments()\n"
+				"    uniform_point_normals = [polygon_segments[segment_index].get_great_circle_normal()\n"
+				"        for segment_index, _ in uniform_point_segment_informations]\n"
+				"\n"
+				"  .. seealso:: :meth:`to_tessellated`\n"
+				"\n"
+				"  .. versionadded:: 0.47\n")
 		.def("__iter__",
 				bp::range(
 						&GPlatesMaths::PolygonOnSphere::vertex_begin,

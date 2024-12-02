@@ -722,6 +722,38 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.assertTrue(tessellated[7] == pygplates.FiniteRotation((1,0,0), math.pi / 6) * self.points[2])
         self.assertTrue(tessellated[8] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.points[2])
     
+    def test_uniform_points(self):
+        uniform_points = self.polyline.to_uniform_points(math.radians(20), first_point_spacing_radians=math.radians(5))
+        self.assertTrue(len(uniform_points) == 14)
+        self.assertTrue(uniform_points[0] == pygplates.PointOnSphere(0, 5))
+        self.assertTrue(uniform_points[1] == pygplates.PointOnSphere(0, 25))
+        self.assertTrue(uniform_points[2] == pygplates.PointOnSphere(0, 45))
+        self.assertTrue(uniform_points[3] == pygplates.PointOnSphere(0, 65))
+        self.assertTrue(uniform_points[4] == pygplates.PointOnSphere(0, 85))
+        self.assertTrue(uniform_points[5] == pygplates.PointOnSphere(15, 90))
+        self.assertTrue(uniform_points[6] == pygplates.PointOnSphere(35, 90))
+        self.assertTrue(uniform_points[7] == pygplates.PointOnSphere(55, 90))
+        self.assertTrue(uniform_points[8] == pygplates.PointOnSphere(75, 90))
+        self.assertTrue(uniform_points[9] == pygplates.PointOnSphere(85, -90))
+        self.assertTrue(uniform_points[10] == pygplates.PointOnSphere(65, -90))
+        self.assertTrue(uniform_points[11] == pygplates.PointOnSphere(45, -90))
+        self.assertTrue(uniform_points[12] == pygplates.PointOnSphere(25, -90))
+        self.assertTrue(uniform_points[13] == pygplates.PointOnSphere(5, -90))
+
+        # Last point very near last vertex of polyline should get included.
+        uniform_points = self.polyline.to_uniform_points(math.radians(30 - 1e-6))
+        self.assertTrue(len(uniform_points) == 10)
+
+        # Check segment informations.
+        uniform_points, segment_informations = self.polyline.to_uniform_points(
+            math.radians(70), first_point_spacing_radians=math.radians(5), return_segment_informations=True)
+        self.assertTrue(len(uniform_points) == 4)
+        self.assertTrue(len(segment_informations) == 4)
+        self.assertTrue(segment_informations[0][0] == 0); self.assertAlmostEqual(segment_informations[0][1], (0 + 5) / 90.0)
+        self.assertTrue(segment_informations[1][0] == 0); self.assertAlmostEqual(segment_informations[1][1], (70 + 5) / 90.0)
+        self.assertTrue(segment_informations[2][0] == 1); self.assertAlmostEqual(segment_informations[2][1], (2*70 + 5 - 90) / 90.0)
+        self.assertTrue(segment_informations[3][0] == 2); self.assertAlmostEqual(segment_informations[3][1], (3*70 + 5 - 180) / 90.0)
+    
     def test_pickle(self):
         self.assertTrue(self.polyline == pickle.loads(pickle.dumps(self.polyline)))
         self.assertTrue(self.polyline.get_points() == pickle.loads(pickle.dumps(self.polyline.get_points())))
@@ -1128,6 +1160,59 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(tessellated[10] == pygplates.FiniteRotation((0,0,1), math.pi / 6) * self.points[3])
         self.assertTrue(tessellated[11] == pygplates.FiniteRotation((0,0,1), 2 * math.pi / 6) * self.points[3])
     
+    def test_uniform_points(self):
+        uniform_points = self.polygon.to_uniform_points(math.radians(20), first_point_spacing_radians=math.radians(5))
+        self.assertTrue(len(uniform_points) == 18)
+        self.assertTrue(uniform_points[0] == pygplates.PointOnSphere(0, 5))
+        self.assertTrue(uniform_points[1] == pygplates.PointOnSphere(0, 25))
+        self.assertTrue(uniform_points[2] == pygplates.PointOnSphere(0, 45))
+        self.assertTrue(uniform_points[3] == pygplates.PointOnSphere(0, 65))
+        self.assertTrue(uniform_points[4] == pygplates.PointOnSphere(0, 85))
+        self.assertTrue(uniform_points[5] == pygplates.PointOnSphere(15, 90))
+        self.assertTrue(uniform_points[6] == pygplates.PointOnSphere(35, 90))
+        self.assertTrue(uniform_points[7] == pygplates.PointOnSphere(55, 90))
+        self.assertTrue(uniform_points[8] == pygplates.PointOnSphere(75, 90))
+        self.assertTrue(uniform_points[9] == pygplates.PointOnSphere(85, -90))
+        self.assertTrue(uniform_points[10] == pygplates.PointOnSphere(65, -90))
+        self.assertTrue(uniform_points[11] == pygplates.PointOnSphere(45, -90))
+        self.assertTrue(uniform_points[12] == pygplates.PointOnSphere(25, -90))
+        self.assertTrue(uniform_points[13] == pygplates.PointOnSphere(5, -90))
+        self.assertTrue(uniform_points[14] == pygplates.PointOnSphere(0, -75))
+        self.assertTrue(uniform_points[15] == pygplates.PointOnSphere(0, -55))
+        self.assertTrue(uniform_points[16] == pygplates.PointOnSphere(0, -35))
+        self.assertTrue(uniform_points[17] == pygplates.PointOnSphere(0, -15))
+
+        # Last point very near first vertex of polygon should NOT get included (it's a duplicate ring vertex).
+        #
+        # Note: A negative epsilon ensures last point not clipped but should be small enough that last point
+        #       compares equal to the first point (ie, don't want them to compare as separate points) so that
+        #       it then gets removed from the uniform points (as a duplicate).
+        uniform_points = self.polygon.to_uniform_points(math.radians(30 - 1e-12))
+        self.assertTrue(len(uniform_points) == 12)  # it would be 13 if last point was included
+    
+        polygon_with_interior = pygplates.PolygonOnSphere(
+                [(0, 0), (0, 90), (90, 0), (0, -90)],  # exterior ring
+                [[(0, 0), (0, 90), (90, 0), (0, -90)], [(0, 0), (0, 90), (90, 0), (0, -90)]])  # 2 interior rings each same as exterior ring
+        uniform_points = polygon_with_interior.to_uniform_points(math.radians(20), first_point_spacing_radians=math.radians(5))
+        self.assertTrue(len(uniform_points) == 3 * 18)  # each ring has 18 uniform points
+
+        # Check segment informations.
+        uniform_points, segment_informations = self.polygon.to_uniform_points(
+            math.radians(70), first_point_spacing_radians=math.radians(5), return_segment_informations=True)
+        self.assertTrue(len(uniform_points) == 6)
+        self.assertTrue(len(segment_informations) == 6)
+        self.assertTrue(segment_informations[0][0] == 0); self.assertAlmostEqual(segment_informations[0][1], (0 + 5) / 90.0)
+        self.assertTrue(segment_informations[1][0] == 0); self.assertAlmostEqual(segment_informations[1][1], (70 + 5) / 90.0)
+        self.assertTrue(segment_informations[2][0] == 1); self.assertAlmostEqual(segment_informations[2][1], (2*70 + 5 - 90) / 90.0)
+        self.assertTrue(segment_informations[3][0] == 2); self.assertAlmostEqual(segment_informations[3][1], (3*70 + 5 - 180) / 90.0)
+        self.assertTrue(segment_informations[4][0] == 3); self.assertAlmostEqual(segment_informations[4][1], (4*70 + 5 - 270) / 90.0)
+        self.assertTrue(segment_informations[5][0] == 3); self.assertAlmostEqual(segment_informations[5][1], (5*70 + 5 - 270) / 90.0)
+
+        uniform_points, segment_informations = polygon_with_interior.to_uniform_points(
+            math.radians(20), first_point_spacing_radians=math.radians(5), return_segment_informations=True)
+        self.assertTrue(len(uniform_points) == 3 * 18)        # each ring has 18 uniform points
+        self.assertTrue(len(segment_informations) == 3 * 18)  # each ring has 18 uniform points
+
     def test_pickle(self):
         self.assertTrue(self.polygon == pickle.loads(pickle.dumps(self.polygon)))
         self.assertTrue(self.polygon.get_points() == pickle.loads(pickle.dumps(self.polygon.get_points())))

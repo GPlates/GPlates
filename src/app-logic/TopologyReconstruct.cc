@@ -1330,39 +1330,6 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_or_create_stage_rota
 }
 
 
-const GPlatesMaths::FiniteRotation &
-GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_or_create_velocity_stage_rotation(
-		GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const double &reconstruction_time,
-		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type,
-		plate_id_to_stage_rotation_map_type &stage_rotation_map) const
-{
-	// See if already exists.
-	plate_id_to_stage_rotation_map_type::const_iterator stage_rotation_iter =
-			stage_rotation_map.find(reconstruction_plate_id);
-	if (stage_rotation_iter != stage_rotation_map.end())
-	{
-		return stage_rotation_iter->second;
-	}
-
-	// Calculate stage rotation and insert into the map.
-	const std::pair<plate_id_to_stage_rotation_map_type::iterator, bool> insert_result =
-			stage_rotation_map.insert(
-					plate_id_to_stage_rotation_map_type::value_type(
-							reconstruction_plate_id,
-							PlateVelocityUtils::calculate_stage_rotation(
-									reconstruction_plate_id,
-									reconstruction_tree_creator,
-									reconstruction_time,
-									velocity_delta_time,
-									velocity_delta_time_type)));
-
-	return insert_result.first->second;
-}
-
-
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::non_null_ptr_type
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::rigid_reconstruct(
 		const GeometrySample::non_null_ptr_type &geometry_sample,
@@ -2061,6 +2028,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms,
 		boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points,
 		boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations) const
 {
@@ -2086,6 +2055,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
 			reconstruction_time,
 			velocity_delta_time,
 			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms,
 			all_domain_points_reference,
 			all_domain_point_locations_reference))
 	{
@@ -2164,6 +2135,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_velocities(
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms,
 		boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points,
 		boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations) const
 {
@@ -2193,6 +2166,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_velocities(
 				reconstruction_time,
 				velocity_delta_time,
 				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms,
 				domain_points,
 				domain_point_locations);
 
@@ -2238,6 +2213,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_velocities(
 			initial_time,
 			velocity_delta_time,
 			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms,
 			boost::none/*domain_points*/,
 			domain_point_locations);
 
@@ -2295,6 +2272,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms,
 		boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points,
 		boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations) const
 {
@@ -2322,7 +2301,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 
 	// Keep track of the stage rotations of resolved boundaries as we encounter them.
 	// This is an optimisation since many points can be inside the same resolved boundary.
-	plate_id_to_stage_rotation_map_type resolved_boundary_stage_rotation_map;
+	const PlateVelocityUtils::StageRotationCalculator resolved_boundary_stage_rotation_calculator(
+			reconstruction_time, velocity_delta_time, velocity_delta_time_type);
 
 	// Iterate over the domain points and calculate their velocities (and surfaces).
 	for (unsigned int domain_geometry_point_index = 0;
@@ -2363,7 +2343,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 		if (const boost::optional<TopologyPointLocation::network_location_type> network_point_location =
 			domain_point_location.located_in_resolved_network())
 		{
-			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_location->first;
+			const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &resolved_network = network_point_location->first;
 			const ResolvedTriangulation::Network::PointLocation &point_location = network_point_location->second;
 
 			boost::optional<
@@ -2374,6 +2354,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 							domain_point,
 							velocity_delta_time,
 							velocity_delta_time_type,
+							velocity_units,
+							earth_radius_in_kms,
 							point_location);
 			if (velocity)
 			{
@@ -2386,7 +2368,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 		}
 
 		// Get the resolved boundary point location that the current point lies within (if any).
-		if (const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_boundary =
+		if (const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> resolved_boundary =
 			domain_point_location.located_in_resolved_boundary())
 		{
 			// Get the plate ID from resolved boundary.
@@ -2394,21 +2376,15 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 					resolved_boundary.get()->plate_id();
 			if (resolved_boundary_plate_id)
 			{
-				const GPlatesMaths::FiniteRotation &resolved_boundary_stage_rotation =
-						get_or_create_velocity_stage_rotation(
-								resolved_boundary_plate_id.get(),
-								resolved_boundary.get()->get_reconstruction_tree_creator(),
-								reconstruction_time,
-								velocity_delta_time,
-								velocity_delta_time_type,
-								resolved_boundary_stage_rotation_map);
-
 				// Calculate the velocity of the point inside the resolved boundary.
 				const GPlatesMaths::Vector3D velocity_vector =
-						GPlatesMaths::calculate_velocity_vector(
+						PlateVelocityUtils::calculate_velocity_vector(
 								domain_point,
-								resolved_boundary_stage_rotation,
-								velocity_delta_time);
+								resolved_boundary_plate_id.get(),
+								resolved_boundary.get()->get_reconstruction_tree_creator(),
+								resolved_boundary_stage_rotation_calculator,
+								velocity_units,
+								earth_radius_in_kms);
 
 				velocities.push_back(velocity_vector);
 
@@ -2435,10 +2411,12 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 
 		// Calculate the velocity.
 		const GPlatesMaths::Vector3D velocity_vector =
-				GPlatesMaths::calculate_velocity_vector(
+				PlateVelocityUtils::calculate_velocity_vector(
 						domain_point,
 						rigid_stage_rotation.get(),
-						velocity_delta_time);
+						velocity_delta_time,
+						velocity_units,
+						earth_radius_in_kms);
 
 		// Add the velocity - there was no surface (ie, resolved boundary/network) intersection though.
 		velocities.push_back(velocity_vector);
@@ -2566,7 +2544,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 				initial_point_location.located_in_resolved_network();
 		if (network_point_location)
 		{
-			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_location->first;
+			const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &resolved_network = network_point_location->first;
 			const ResolvedTriangulation::Network::PointLocation &point_location = network_point_location->second;
 
 			// Deform the initial point by the interpolate time increment.
@@ -2596,7 +2574,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 			//
 
 			// Get the resolved boundary point location that the initial point lies within (if any).
-			const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_boundary =
+			const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> resolved_boundary =
 					initial_point_location.located_in_resolved_boundary();
 			if (resolved_boundary)
 			{
@@ -2899,7 +2877,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::calc_def
 		{
 			const GPlatesMaths::PointOnSphere point(geometry_point->position);
 
-			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_location->first;
+			const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &resolved_network = network_point_location->first;
 			const ResolvedTriangulation::Network::PointLocation &point_location = network_point_location->second;
 
 			boost::optional<ResolvedTriangulation::DeformationInfo> face_deformation_info =
@@ -3010,7 +2988,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 			current_location.located_in_resolved_network();
 	if (current_network_location)
 	{
-		const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> prev_boundary =
+		const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> prev_boundary =
 				prev_location.located_in_resolved_boundary();
 		if (!prev_boundary)
 		{
@@ -3024,7 +3002,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 		// Point currently in a deforming network and previously in a rigid plate...
 		//
 
-		const ResolvedTopologicalNetwork::non_null_ptr_type &current_resolved_network = current_network_location->first;
+		const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &current_resolved_network = current_network_location->first;
 
 		boost::optional<
 				std::pair<
@@ -3035,6 +3013,8 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 						time_increment,
 						// Note the use of delta-time is the same as if we had calculated velocity normally at the current time...
 						reverse_reconstruct ? VelocityDeltaTime::T_PLUS_DELTA_T_TO_T : VelocityDeltaTime::T_TO_T_MINUS_DELTA_T,
+						VelocityUnits::CMS_PER_YR,
+						GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 						current_network_location->second);
 		// Should get a result because we know point is inside the network.
 		// If we don't, for some reason, then leave velocity as zero.
@@ -3090,7 +3070,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 		return true;
 	}
 
-	const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> current_boundary =
+	const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> current_boundary =
 			current_location.located_in_resolved_boundary();
 	if (!current_boundary)
 	{
@@ -3104,7 +3084,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 	// Point currently in a rigid plate...
 	//
 
-	const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> prev_boundary =
+	const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> prev_boundary =
 			prev_location.located_in_resolved_boundary();
 	if (prev_boundary)
 	{
@@ -3216,7 +3196,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 				time_increment);
 	}
 
-	const ResolvedTopologicalNetwork::non_null_ptr_type &prev_resolved_network = prev_network_location->first;
+	const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &prev_resolved_network = prev_network_location->first;
 
 	// Calculate the velocity of the *previous* point using the previous resolved network.
 	//
@@ -3231,6 +3211,8 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 					time_increment,
 					// Note the normal use of delta-time (since network is already at the previous time)...
 					reverse_reconstruct ? VelocityDeltaTime::T_TO_T_MINUS_DELTA_T : VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::CMS_PER_YR,
+					GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 					prev_network_location->second);
 	// Should get a result because we know point is inside the network.
 	// If we don't, for some reason, then leave velocity as zero.
@@ -3312,7 +3294,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::is_delta_velocity_
 }
 
 
-const GPlatesMaths::FiniteRotation &
+GPlatesMaths::FiniteRotation
 GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::get_or_create_velocity_stage_rotation(
 		GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -3322,28 +3304,16 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::get_or_create_velo
 {
 	// Only cache stage rotations for a specific reconstruction time.
 	// We clear it when we move onto a different reconstruction time.
-	if (reconstruction_time != d_velocity_stage_rotation_time)
+	if (!d_velocity_stage_rotation_calculator ||
+		reconstruction_time != d_velocity_stage_rotation_time)
 	{
-		d_velocity_stage_rotation_map.clear();
+		d_velocity_stage_rotation_calculator = PlateVelocityUtils::StageRotationCalculator(
+				reconstruction_time, velocity_delta_time, velocity_delta_time_type);
+
+		d_velocity_stage_rotation_time = reconstruction_time;
 	}
 
-	// See if already exists.
-	auto stage_rotation_iter = d_velocity_stage_rotation_map.find(reconstruction_plate_id);
-	if (stage_rotation_iter != d_velocity_stage_rotation_map.end())
-	{
-		return stage_rotation_iter->second;
-	}
-
-	// Calculate stage rotation and insert into the map.
-	auto insert_result = d_velocity_stage_rotation_map.insert(
-			plate_id_to_stage_rotation_map_type::value_type(
-					reconstruction_plate_id,
-					PlateVelocityUtils::calculate_stage_rotation(
-							reconstruction_plate_id,
-							reconstruction_tree_creator,
-							reconstruction_time,
-							velocity_delta_time,
-							velocity_delta_time_type)));
-
-	return insert_result.first->second;
+	return d_velocity_stage_rotation_calculator->calculate_stage_rotation(
+			reconstruction_plate_id,
+			reconstruction_tree_creator);
 }

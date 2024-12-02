@@ -29,13 +29,12 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "PyCalculateVelocities.h"
-
 #include "PyGeometriesOnSphere.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "app-logic/VelocityDeltaTime.h"
+#include "app-logic/VelocityUnits.h"
 
 #include "global/python.h"
 
@@ -55,7 +54,7 @@ namespace GPlatesApi
 			PointSequenceFunctionArgument domain_points_function_argument,
 			const GPlatesMaths::FiniteRotation &finite_rotation,
 			const double &time_inverval_in_my,
-			VelocityUnits::Value velocity_units,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
 		// Get the sequence of points.
@@ -89,7 +88,7 @@ namespace GPlatesApi
 							cross(rotation_params.axis, domain_point.position_vector());
 
 			// Units are currently in kms/my so change if need cms/yr.
-			if (velocity_units == VelocityUnits::CMS_PER_YR)
+			if (velocity_units == GPlatesAppLogic::VelocityUnits::CMS_PER_YR)
 			{
 				// kms/my -> cm/yr...
 				velocity = 1e-1 * velocity;
@@ -107,9 +106,9 @@ void
 export_calculate_velocities()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::VelocityUnits::Value>("VelocityUnits")
-			.value("kms_per_my", GPlatesApi::VelocityUnits::KMS_PER_MY)
-			.value("cms_per_yr", GPlatesApi::VelocityUnits::CMS_PER_YR);
+	bp::enum_<GPlatesAppLogic::VelocityUnits::Value>("VelocityUnits")
+			.value("kms_per_my", GPlatesAppLogic::VelocityUnits::KMS_PER_MY)
+			.value("cms_per_yr", GPlatesAppLogic::VelocityUnits::CMS_PER_YR);
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesAppLogic::VelocityDeltaTime::Type>("VelocityDeltaTimeType")
@@ -123,7 +122,7 @@ export_calculate_velocities()
 			(bp::arg("domain_points"),
 					bp::arg("finite_rotation"),
 					bp::arg("time_interval_in_my"),
-					bp::arg("velocity_units") = GPlatesApi::VelocityUnits::KMS_PER_MY,
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
 					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS),
 			"calculate_velocities(domain_points, finite_rotation, time_interval_in_my, "
 			"[velocity_units=pygplates.VelocityUnits.kms_per_my], "

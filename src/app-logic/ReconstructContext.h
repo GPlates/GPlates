@@ -656,7 +656,7 @@ namespace GPlatesAppLogic
 				const context_state_reference_type &context_state_ref,
 				const double &reconstruction_time,
 				const double &velocity_delta_time = 1.0,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T);
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T);
 
 	private:
 

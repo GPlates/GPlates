@@ -75,7 +75,7 @@ set(GPLATES_SEMANTIC_VERSION 2.5.0)
 #   1.0.0
 #   1.0.1
 #
-set(PYGPLATES_PEP440_VERSION 0.46.0)
+set(PYGPLATES_PEP440_VERSION 0.47.0)
 
 
 ##################

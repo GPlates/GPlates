@@ -17,10 +17,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_API_PY_CALCULATE_VELOCITIES_H
-#define GPLATES_API_PY_CALCULATE_VELOCITIES_H
+#ifndef GPLATES_APP_LOGIC_VELOCITY_UNITS_H
+#define GPLATES_APP_LOGIC_VELOCITY_UNITS_H
 
-namespace GPlatesApi
+namespace GPlatesAppLogic
 {
 	/**
 	 * Enumeration to determine what velocity units to use.
@@ -35,4 +35,4 @@ namespace GPlatesApi
 	};
 }
 
-#endif // GPLATES_API_PY_CALCULATE_VELOCITIES_H
+#endif // GPLATES_APP_LOGIC_VELOCITY_UNITS_H

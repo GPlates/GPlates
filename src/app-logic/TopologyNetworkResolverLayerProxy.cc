@@ -37,11 +37,14 @@
 #include "ResolvedVertexSourceInfo.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyUtils.h"
+#include "VelocityUnits.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 #include "maths/MathsUtils.h"
+
+#include "utils/Earth.h"
 
 
 namespace GPlatesAppLogic
@@ -1004,7 +1007,9 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 							*domain_iter,
 							reconstruction_time,
 							velocity_delta_time,
-							velocity_delta_time_type);
+							velocity_delta_time_type,
+							VelocityUnits::CMS_PER_YR,
+							GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 			*field_iter = MultiPointVectorField::CodomainElement(
 					vector_xyz,
@@ -1077,7 +1082,9 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 							*domain_iter,
 							reconstruction_time,
 							velocity_delta_time,
-							velocity_delta_time_type);
+							velocity_delta_time_type,
+							VelocityUnits::CMS_PER_YR,
+							GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 			*field_iter = MultiPointVectorField::CodomainElement(
 					vector_xyz,

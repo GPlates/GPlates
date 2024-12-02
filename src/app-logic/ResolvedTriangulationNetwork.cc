@@ -166,6 +166,8 @@ namespace GPlatesAppLogic
 
 	/**
 	 * Calculate the velocity at a delaunay vertex.
+	 *
+	 * Note: Velocity units are cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
 	 */
 	GPlatesMaths::Vector3D
 	calc_delaunay_vertex_velocity(
@@ -857,6 +859,8 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 		const GPlatesMaths::PointOnSphere &point,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms,
 		boost::optional<PointLocation> point_location) const
 {
 	if (!point_location &&
@@ -882,7 +886,9 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 						point,
 						rigid_block.get(),
 						velocity_delta_time,
-						velocity_delta_time_type);
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms);
 
 		return std::make_pair(rigid_block_velocity, PointLocation(rigid_block.get()));
 	}
@@ -917,7 +923,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 
 	// Interpolate the 3D velocity vectors in the triangulation using the interpolation coordinates.
 	// Velocity 3D vectors must be interpolated (cannot interpolate velocity colat/lon).
-	const GPlatesMaths::Vector3D interpolated_velocity =
+	GPlatesMaths::Vector3D interpolated_velocity =
 			linear_interpolation_2(
 					natural_neighbor_coordinates,
 					CachedDataAccess<DelaunayVertexHandleToVelocityMapType>(
@@ -927,6 +933,19 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 									boost::placeholders::_1,
 									velocity_delta_time,
 									velocity_delta_time_type)));
+
+	// Velocity has units cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
+	//
+	// Convert to kms/myr if requested.
+	if (velocity_units == VelocityUnits::KMS_PER_MY)
+	{
+		interpolated_velocity = 10/*cms/yr -> kms/myr*/ * interpolated_velocity;
+	}
+	// Convert from GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS to requested Earth radius (if necessary).
+	if (!GPlatesMaths::are_almost_exactly_equal(earth_radius_in_kms, GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS))
+	{
+		interpolated_velocity = (earth_radius_in_kms / GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) * interpolated_velocity;
+	}
 
 	return std::make_pair(interpolated_velocity, PointLocation(delaunay_face));
 }
@@ -2380,7 +2399,9 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_rigid_block_velocity(
 		const GPlatesMaths::PointOnSphere &point,
 		const RigidBlock &rigid_block,
 		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type) const
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
 {
 	ReconstructedFeatureGeometry::non_null_ptr_type rigid_block_rfg =
 			rigid_block.get_reconstructed_feature_geometry();
@@ -2402,5 +2423,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_rigid_block_velocity(
 			rigid_block_rfg->get_reconstruction_tree_creator(),
 			rigid_block_rfg->get_reconstruction_time(),
 			velocity_delta_time,
-			velocity_delta_time_type);
+			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms);
 }

@@ -128,6 +128,14 @@ The following classes represent strain rate and strain (at a particular surface 
    pygplates.Strain
    pygplates.StrainRate
 
+The following class contains statistics (like convergence velocity) at a point on a plate boundary.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.PlateBoundaryStatistic
+
 Rotation
 --------
 

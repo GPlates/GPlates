@@ -43,6 +43,9 @@ namespace GPlatesMaths
 	class PolylineOnSphere;
 	class PolygonOnSphere;
 	class GeometryOnSphere;
+	class GreatCircleArc;
+	class GreatCircle;
+	class SmallCircle;
 
 
 	/** 
@@ -324,6 +327,39 @@ namespace GPlatesMaths
 	operator*(
 			const Rotation &r,
 			const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere> &g);
+
+
+	/**
+	 * Apply the given rotation to the given great circle arc.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GreatCircleArc
+	operator*(
+			const Rotation &r,
+			const GreatCircleArc &g);
+
+
+	/**
+	 * Apply the given rotation to the given great circle.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GreatCircle
+	operator*(
+			const Rotation &r,
+			const GreatCircle &g);
+
+
+	/**
+	 * Apply the given rotation to the given small circle.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const SmallCircle
+	operator*(
+			const Rotation &r,
+			const SmallCircle &s);
 }
 
 #endif  // GPLATES_MATHS_ROTATION_H
