@@ -1,5 +1,5 @@
 {% set name = "pygplates" %}
-{% set version = "0.44" %}
+{% set version = "1.0.0rc1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,6 +7,13 @@ package:
 
 source:
   path: ../../
+
+  #url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  #sha256: 97fdf1b85d10bf038ce6c4a04a0fcc5f76ab5b439467911e2c672ec2147f5226
+
+  #git_url: https://github.com/GPlates/GPlates.git
+  #git_rev: release/pygplates-1.0
+  #git_depth: 1
 
 build:
   number: 0

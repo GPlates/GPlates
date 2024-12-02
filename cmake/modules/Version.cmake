@@ -68,14 +68,14 @@ set(GPLATES_SEMANTIC_VERSION 2.5.0)
 #   0.44.0rc1
 #   0.44.0
 #   0.45.0.dev1
-#   0.45.0.rc1
+#   0.45.0rc1
 #   0.45.0
 #   1.0.0rc1
 #   1.0.0rc2
 #   1.0.0
 #   1.0.1
 #
-set(PYGPLATES_PEP440_VERSION 0.50.0)
+set(PYGPLATES_PEP440_VERSION 1.0.0rc1)
 
 
 ##################
