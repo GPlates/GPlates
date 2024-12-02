@@ -35,10 +35,16 @@
 #include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalGeometrySubSegment.h"
 #include "ResolvedVertexSourceInfo.h"
+#include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
+#include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
+#include "maths/Vector3D.h"
 
 #include "model/WeakObserverVisitor.h"
+
+#include "utils/Earth.h"
 
 
 namespace GPlatesAppLogic
@@ -138,6 +144,30 @@ namespace GPlatesAppLogic
 		{
 			return d_resolved_topology_line_ptr;
 		}
+
+		/**
+		 * Returns the resolved topology geometry points in @a resolved_topology_geometry.
+		 */
+		virtual
+		void
+		resolved_topology_geometry_points(
+				std::vector<GPlatesMaths::PointOnSphere> &resolved_topology_geometry_points_) const;
+
+		/**
+		 * Returns the velocities at points in @a resolved_topology_geometry_points.
+		 *
+		 * Note: Each velocity maps to a point in @a resolved_topology_geometry_points.
+		 *
+		 * Note: The number of velocities is guaranteed to match points in @a resolved_topology_geometry_points.
+		 */
+		virtual
+		void
+		resolved_topology_geometry_point_velocities(
+				std::vector<GPlatesMaths::Vector3D> &resolved_topology_geometry_point_velocities_,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
 
 		/**
 		 * Returns the resolved topology polyline as a @a PolylineOnSphere.

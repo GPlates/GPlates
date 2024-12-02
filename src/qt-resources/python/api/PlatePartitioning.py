@@ -533,10 +533,10 @@ def partition_into_plates(
     :type partitioning_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
-    :param rotation_model: A rotation model or a rotation feature collection or a rotation \
-        filename or a sequence of rotation feature collections and/or rotation filenames
-    :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string/``os.PathLike`` \
-        or sequence of :class:`FeatureCollection` instances and/or string/``os.PathLike`` instances
+    :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, \
+        or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
+    :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, \
+        or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param features_to_partition: the features to be partitioned
     :type features_to_partition: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
@@ -811,8 +811,7 @@ def partition_into_plates(
     to overlap you don't need to sort them by plate *ID* to get deterministic partitioning results.
     So we are free to sort by plate *area* (well, plate area is also deterministic but not as deterministic
     as sorting by plate *ID* since modifications to the plate geometries change their areas but not their plate IDs).
-    Note that we also group by partition type in case the topological networks happen
-    to overlay the topological plate boundaries (usually this isn't the case though):
+    Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:
     ::
     
         features = pygplates.partition_into_plates(...,

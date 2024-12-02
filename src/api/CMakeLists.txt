@@ -54,6 +54,8 @@ set(srcs
     PyLocalCartesian.cc
     PyNetRotation.cc
     PyNetRotation.h
+    PyNetworkTriangulation.cc
+    PyNetworkTriangulation.h
     PyOldFeature.cc
     PyOldFeature.h
     PyOldFeatureCollection.cc

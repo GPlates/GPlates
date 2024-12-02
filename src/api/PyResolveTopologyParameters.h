@@ -26,6 +26,8 @@
 #ifndef GPLATES_API_PYRESOLVETOPOLOGYPARAMETERS_H
 #define GPLATES_API_PYRESOLVETOPOLOGYPARAMETERS_H
 
+#include <boost/operators.hpp>
+
 #include "app-logic/TopologyNetworkParams.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
@@ -40,7 +42,8 @@ namespace GPlatesApi
 	 * Parameters used when resolving topologies (mostly for deforming network topologies).
 	 */
 	class ResolveTopologyParameters :
-			public GPlatesUtils::ReferenceCount<ResolveTopologyParameters>
+			public GPlatesUtils::ReferenceCount<ResolveTopologyParameters>,
+			public boost::equality_comparable<ResolveTopologyParameters>
 	{
 	public:
 
@@ -56,12 +59,20 @@ namespace GPlatesApi
 		non_null_ptr_type
 		create(
 				bool enable_strain_rate_clamping = DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().enable_clamping,
-				const double &max_total_strain_rate = DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().max_total_strain_rate)
+				const double &max_total_strain_rate = DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().max_total_strain_rate,
+				GPlatesAppLogic::TopologyNetworkParams::StrainRateSmoothing strain_rate_smoothing = DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_smoothing(),
+				const double &rift_exponential_stretching_constant = DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_rift_params().exponential_stretching_constant,
+				const double &rift_strain_rate_resolution = DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_rift_params().strain_rate_resolution,
+				const double &rift_edge_length_threshold_degrees = DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_rift_params().edge_length_threshold_degrees)
 		{
 			return non_null_ptr_type(
 					new ResolveTopologyParameters(
 							enable_strain_rate_clamping,
-							max_total_strain_rate));
+							max_total_strain_rate,
+							strain_rate_smoothing,
+							rift_exponential_stretching_constant,
+							rift_strain_rate_resolution,
+							rift_edge_length_threshold_degrees));
 		}
 
 		/**
@@ -73,11 +84,61 @@ namespace GPlatesApi
 			return d_topology_network_params;
 		}
 
+
+		bool
+		get_enable_strain_rate_clamping() const
+		{
+			return d_topology_network_params.get_strain_rate_clamping().enable_clamping;
+		}
+
+		double
+		get_max_clamped_strain_rate() const
+		{
+			return d_topology_network_params.get_strain_rate_clamping().max_total_strain_rate;
+		}
+
+		GPlatesAppLogic::TopologyNetworkParams::StrainRateSmoothing
+		get_strain_rate_smoothing() const
+		{
+			return d_topology_network_params.get_strain_rate_smoothing();
+		}
+
+		double
+		get_rift_exponential_stretching_constant() const
+		{
+			return d_topology_network_params.get_rift_params().exponential_stretching_constant;
+		}
+
+		double
+		get_rift_strain_rate_resolution() const
+		{
+			return d_topology_network_params.get_rift_params().strain_rate_resolution;
+		}
+
+		double
+		get_rift_edge_length_threshold_degrees() const
+		{
+			return d_topology_network_params.get_rift_params().edge_length_threshold_degrees;
+		}
+
+
+		//! Equality comparison operator.
+		bool
+		operator==(
+				const ResolveTopologyParameters &other) const
+		{
+			return d_topology_network_params == other.d_topology_network_params;
+		}
+
 	private:
 
 		ResolveTopologyParameters(
 				bool enable_strain_rate_clamping,
-				const double &max_total_strain_rate);
+				const double &max_total_strain_rate,
+				GPlatesAppLogic::TopologyNetworkParams::StrainRateSmoothing strain_rate_smoothing,
+				const double &rift_exponential_stretching_constant,
+				const double &rift_strain_rate_resolution,
+				const double &rift_edge_length_threshold_degrees);
 
 		GPlatesAppLogic::TopologyNetworkParams d_topology_network_params;
 

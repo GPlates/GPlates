@@ -276,7 +276,8 @@ namespace GPlatesApi
 				boost::python::object scalar_type_to_values_mapping_object = boost::python::object()/*Py_None*/,
 				boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points =
 						GPlatesUtils::static_pointer_cast<const GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>(
-								GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create()));
+								GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create()),
+				bool deformation_uses_natural_neighbour_interpolation = true);
 
 
 		/**

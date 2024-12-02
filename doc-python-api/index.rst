@@ -16,8 +16,8 @@ This documentation includes:
 
 * :ref:`pygplates_introduction` - introduces pyGPlates and covers some advantages over GPlates,
 * :ref:`pygplates_getting_started` - installation of pyGPlates and a tutorial to get you started using pyGPlates,
+* :ref:`pygplates_primer` - covers the main areas of pyGPlates functionality and some plate tectonic foundations,
 * :ref:`pygplates_sample_code` - documented sample code solving common plate tectonic problems using pyGPlates,
-* :ref:`pygplates_foundations` - plate tectonic foundations of pyGPlates,
 * :ref:`pygplates_reference` - a detailed reference of pyGPlates functions and classes.
 
 
@@ -29,8 +29,8 @@ Contents
 
    pygplates_introduction
    pygplates_getting_started
+   pygplates_primer
    pygplates_sample_code
-   pygplates_foundations
    pygplates_reference
 
 Indices and tables

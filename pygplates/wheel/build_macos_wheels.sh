@@ -5,7 +5,7 @@ set -e  # exit if any command fails
 cd ../..
 
 # Build and test wheels for each Python version.
-for cp_version in 38 39 310 311 312
+for cp_version in 38 39 310 311 312 313
 do
 
 	# Select the current Python version (in Macports).

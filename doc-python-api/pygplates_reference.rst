@@ -118,6 +118,14 @@ The following classes represent sub-segments *shared* by one or more resolved to
    pygplates.ResolvedTopologicalSection
    pygplates.ResolvedTopologicalSharedSubSegment
 
+The following class contains the triangulation of the deforming region of a resolved topological network.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.NetworkTriangulation
+
 Velocity and strain
 -------------------
 

@@ -44,6 +44,7 @@ This section covers how to create features from scratch and how to query their p
 
    sample-code/pygplates_create_common_feature_types
    sample-code/pygplates_query_common_feature_types
+   sample-code/pygplates_create_topological_features
 
 Reconstruct features
 --------------------
@@ -83,10 +84,10 @@ at past geological times, and how to query their topologies.
 
    sample-code/pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies
    sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths
+   sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges
    sample-code/pygplates_detect_topology_gaps_and_overlaps
    sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence
    sample-code/pygplates_reconstruct_strain_and_strain_rate
-   sample-code/pygplates_create_topological_features
 
 Velocities
 ----------

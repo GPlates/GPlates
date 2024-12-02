@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <iterator>
 #include <ostream>
 #include <set>
@@ -76,6 +77,7 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalPolygon.h"
@@ -725,6 +727,141 @@ namespace GPlatesApi
 
 			// Call python since Feature.set_valid_time is implemented in python code...
 			feature_object.attr("set_valid_time")(extract_begin_time(), extract_end_time(), verify_information_model);
+		}
+
+		/**
+		 * Extract the rift parameters from a tuple and set them on the specified network feature.
+		 */
+		void
+		set_rift_parameters_from_tuple(
+				GPlatesModel::FeatureHandle &network_feature_handle,
+				bp::object rift_parameters,
+				VerifyInformationModel::Value verify_information_model)
+		{
+			bp::extract<bp::tuple> extract_tuple(rift_parameters);
+			if (!extract_tuple.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a tuple for 'rift_parameters'");
+				bp::throw_error_already_set();
+			}
+
+			bp::tuple rift_parameters_tuple = extract_tuple();
+			const unsigned int num_rift_parameters = bp::len(rift_parameters_tuple);
+			if (!(num_rift_parameters >= 2 && num_rift_parameters <= 5))
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting between 2 and 5 parameters in 'rift_parameters' tuple");
+				bp::throw_error_already_set();
+			}
+
+			// Check left/right rift plate IDs (first and second parameters).
+			bp::extract<GPlatesModel::integer_plate_id_type> extract_rift_left_plate(rift_parameters[0]);
+			bp::extract<GPlatesModel::integer_plate_id_type> extract_rift_right_plate(rift_parameters[1]);
+			if (!extract_rift_left_plate.check() ||
+				!extract_rift_right_plate.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting int for rift left/right plate IDs in 'rift_parameters'");
+				bp::throw_error_already_set();
+			}
+
+			// Set left rift plate ID.
+			feature_handle_set_property(
+					network_feature_handle,
+					GPlatesModel::PropertyName::create_gpml("riftLeftPlate"),
+					bp::object(GPlatesPropertyValues::GpmlPlateId::create(extract_rift_left_plate())),
+					verify_information_model);
+
+			// Set right rift plate ID.
+			feature_handle_set_property(
+					network_feature_handle,
+					GPlatesModel::PropertyName::create_gpml("riftRightPlate"),
+					bp::object(GPlatesPropertyValues::GpmlPlateId::create(extract_rift_right_plate())),
+					verify_information_model);
+
+			//
+			// The remaining 3 parameters are optional.
+			//
+
+			if (num_rift_parameters >= 3)
+			{
+				// Rift exponential stretching constant (it's optional since user can specify None).
+				bp::object rift_exponential_stretching_constant_object = rift_parameters[2];
+				if (rift_exponential_stretching_constant_object != bp::object()/*Py_None*/)
+				{
+					bp::extract<double> extract_rift_exponential_stretching_constant(rift_exponential_stretching_constant_object);
+					if (!extract_rift_exponential_stretching_constant.check())
+					{
+						PyErr_SetString(PyExc_TypeError, "Expecting float for rift exponential stretching constant in 'rift_parameters'");
+						bp::throw_error_already_set();
+					}
+
+					feature_handle_set_property(
+							network_feature_handle,
+							GPlatesModel::PropertyName::create_gpml("riftExponentialStretchingConstant"),
+							bp::object(GPlatesPropertyValues::XsDouble::create(extract_rift_exponential_stretching_constant())),
+							verify_information_model);
+				}
+			}
+
+			if (num_rift_parameters >= 4)
+			{
+				// Rift strain rate resolution (it's optional since user can specify None).
+				bp::object rift_strain_rate_resolution_object = rift_parameters[3];
+				if (rift_strain_rate_resolution_object != bp::object()/*Py_None*/)
+				{
+					bp::extract<double> extract_rift_strain_rate_resolution(rift_strain_rate_resolution_object);
+					if (!extract_rift_strain_rate_resolution.check())
+					{
+						PyErr_SetString(PyExc_TypeError, "Expecting float for rift strain rate resolution in 'rift_parameters'");
+						bp::throw_error_already_set();
+					}
+
+					// Rift strain rate resolution must be positive.
+					const double rift_strain_rate_resolution = extract_rift_strain_rate_resolution();
+					if (rift_strain_rate_resolution <= 0)
+					{
+						PyErr_SetString(PyExc_ValueError, "rift strain rate resolution, in 'rift_parameters', must be positive");
+						bp::throw_error_already_set();
+					}
+
+					// Convert to log10 since feature property stores strain rate resolution as log10.
+					const double rift_strain_rate_resolution_log10 = std::log10(rift_strain_rate_resolution);
+
+					feature_handle_set_property(
+							network_feature_handle,
+							GPlatesModel::PropertyName::create_gpml("riftStrainRateResolutionLog10"),
+							bp::object(GPlatesPropertyValues::XsDouble::create(rift_strain_rate_resolution_log10)),
+							verify_information_model);
+				}
+			}
+
+			if (num_rift_parameters == 5)
+			{
+				// Rift edge length threshold degrees (it's optional since user can specify None).
+				bp::object rift_edge_length_threshold_degrees_object = rift_parameters[4];
+				if (rift_edge_length_threshold_degrees_object != bp::object()/*Py_None*/)
+				{
+					bp::extract<double> extract_rift_edge_length_threshold_degrees(rift_edge_length_threshold_degrees_object);
+					if (!extract_rift_edge_length_threshold_degrees.check())
+					{
+						PyErr_SetString(PyExc_TypeError, "Expecting float for rift edge length threshold in 'rift_parameters'");
+						bp::throw_error_already_set();
+					}
+
+					// Rift edge length threshold degrees must be positive.
+					const double rift_edge_length_threshold_degrees = extract_rift_edge_length_threshold_degrees();
+					if (rift_edge_length_threshold_degrees <= 0)
+					{
+						PyErr_SetString(PyExc_ValueError, "rift rift edge length threshold, in 'rift_parameters', must be positive");
+						bp::throw_error_already_set();
+					}
+
+					feature_handle_set_property(
+							network_feature_handle,
+							GPlatesModel::PropertyName::create_gpml("riftEdgeLengthThresholdDegrees"),
+							bp::object(GPlatesPropertyValues::XsDouble::create(rift_edge_length_threshold_degrees)),
+							verify_information_model);
+				}
+			}
 		}
 
 		/**
@@ -3434,6 +3571,36 @@ namespace GPlatesApi
 	}
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
+	feature_handle_create_topological_network_feature(
+			GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type topological_network_geometry,
+			const GPlatesModel::FeatureType &network_feature_type,
+			bp::object name,
+			boost::optional<QString> description,
+			bp::object valid_time,
+			bp::object rift_parameters,
+			bp::object other_properties,
+			boost::optional<GPlatesModel::FeatureId> feature_id,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		GPlatesModel::FeatureHandle::non_null_ptr_type network_feature = feature_handle_create_topological_feature(
+				network_feature_type,
+				bp::object(topological_network_geometry),
+				name,
+				description,
+				valid_time,
+				other_properties,
+				feature_id,
+				verify_information_model);
+
+		if (rift_parameters != bp::object()/*Py_None*/)
+		{
+			set_rift_parameters_from_tuple(*network_feature, rift_parameters, verify_information_model);
+		}
+
+		return network_feature;
+	}
+
+	const GPlatesModel::FeatureHandle::non_null_ptr_type
 	feature_handle_create_tectonic_section(
 			const GPlatesModel::FeatureType &feature_type,
 			bp::object geometry,
@@ -3755,6 +3922,7 @@ export_feature()
 					"\n"
 					"* :meth:`create_reconstructable_feature`\n"
 					"* :meth:`create_topological_feature`\n"
+					"* :meth:`create_topological_network_feature`\n"
 					"* :meth:`create_tectonic_section`\n"
 					"* :meth:`create_flowline`\n"
 					"* :meth:`create_motion_path`\n"
@@ -4253,6 +4421,101 @@ export_feature()
 				"\n"
 				"  .. versionadded:: 0.24\n")
 		.staticmethod("create_topological_feature")
+		.def("create_topological_network_feature",
+				&GPlatesApi::feature_handle_create_topological_network_feature,
+				(bp::arg("topological_network_geometry"),
+						bp::arg("network_feature_type") = GPlatesModel::FeatureType::create_gpml("TopologicalNetwork"),
+						bp::arg("name") = bp::object()/*Py_None*/,
+						bp::arg("description") = boost::optional<QString>(),
+						bp::arg("valid_time") = bp::object()/*Py_None*/,
+						bp::arg("rift_parameters") = bp::object()/*Py_None*/,
+						bp::arg("other_properties") = bp::object()/*Py_None*/,
+						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"create_topological_network_feature(topological_network_geometry, [network_feature_type=pygplates.FeatureType.gpml_topological_network], "
+				"[name], [description], [valid_time], [rift_parameters], [other_properties], [feature_id], [verify_information_model=VerifyInformationModel.yes])\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a topological *network* feature.\n"
+				"\n"
+				"  :param topological_network_geometry: the topological *network* geometry\n"
+				"  :type topological_network_geometry: :class:`GpmlTopologicalNetwork`\n"
+				"  :param network_feature_type: The type of *network* feature to create. Defaults to ``pygplates.FeatureType.gpml_topological_network``.\n"
+				"  :type network_feature_type: :class:`FeatureType`\n"
+				"  :param name: the name or names, if not specified then no "
+				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
+				"  :type name: string, or sequence of string\n"
+				"  :param description: the description, if not specified then a "
+				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
+				"  :type description: string\n"
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
+				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
+				"property is not added\n"
+				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :param rift_parameters: An optional tuple containing between 2 and 5 rift parameters. If a tuple is specified, then the first two parameters must be specified, and "
+				"are the rift's conjugate left/right plate IDs (it doesn't matter which is left or right; can swap them). These 2 parameters will add the feature properties "
+				"``gpml:riftLeftPlate``/``gpml:riftRightPlate``. The remaining 3 rift parameters are optional and are equivalent to the 3 rift parameters in "
+				":class:`ResolveTopologyParameters`. If any of these 3 parameters are specified then they'll override those in :class:`ResolveTopologyParameters` "
+				"(for the returned network feature only). Any of these 3 parameters can be ``None``. Those that are *not* ``None`` will add an associated "
+				"feature property to the returned network feature. The first optional parameter is the rift exponential stretching constant "
+				"(see :attr:`ResolveTopologyParameters.rift_exponential_stretching_constant`) which adds the feature property ``gpml:riftExponentialStretchingConstant``. "
+				"The second optional parameter is the rift strain rate resolution (see :attr:`ResolveTopologyParameters.rift_strain_rate_resolution`) which adds the feature property "
+				"``gpml::riftStrainRateResolutionLog10`` (with the property name indicating that :math:`\\log_{10}(param)` is stored in the property). "
+				"The third optional parameter is the rift edge length threshold in degrees (see :attr:`ResolveTopologyParameters.rift_edge_length_threshold_degrees`) which adds "
+				"the feature property ``gpml:riftEdgeLengthThresholdDegrees``.\n"
+				"\n"
+				"  :type rift_parameters: tuple\n"
+				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
+				"be added later with :meth:`add`\n"
+				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
+				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param verify_information_model: whether to check the information model (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :rtype: :class:`Feature`\n"
+				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
+				"\n"
+				"  This function is a specialised version of :meth:`create_topological_feature` designed for topological *network* features. "
+				"Whereas :meth:`create_topological_feature` can be used for topological lines, boundaries or networks.\n"
+				"\n"
+				"  To create a topological network feature:\n"
+				"  ::\n"
+				"\n"
+				"    topological_network = pygplates.GpmlTopologicalNetwork([...])\n"
+				"    Andes_network_feature = pygplates.Feature.create_topological_network_feature(\n"
+				"        topological_network,\n"
+				"        name='Andes',\n"
+				"        valid_time=(10, pygplates.GeoTimeInstant.create_distant_future()))\n"
+				"    \n"
+				"    Andes_network_feature.set_reconstruction_plate_id(201)\n"
+				"\n"
+				"  To create a rift between Africa and South America with an exponential strain rate curve accurate to 1e-16 :math:`second^{-1}`:\n"
+				"  ::\n"
+				"\n"
+				"    SAM_rift_network = pygplates.GpmlTopologicalNetwork([...])\n"
+				"    SAM_rift_feature = pygplates.Feature.create_topological_network_feature(\n"
+				"        SAM_rift_network,\n"
+				"        name='SAM rift',\n"
+				"        valid_time=(145, 115),\n"
+				"        rift_parameters=(201, 701, None, 1e-16))\n"
+				"    SAM_rift_feature.set_reconstruction_plate_id(201)\n"
+				"\n"
+				"    AFR_rift_network = pygplates.GpmlTopologicalNetwork([...])\n"
+				"    AFR_rift_feature = pygplates.Feature.create_topological_network_feature(\n"
+				"        AFR_rift_network,\n"
+				"        name='AFR rift',\n"
+				"        valid_time=(145, 115),\n"
+				"        rift_parameters=(201, 701, None, 1e-16))\n"
+				"    AFR_rift_feature.set_reconstruction_plate_id(701)\n"
+				"\n"
+				"  .. seealso:: :ref:`pygplates_primer_exponential_rift_stretching_profile` in the *Primer* documentation."
+				"\n"
+				"  .. seealso:: :meth:`create_topological_feature`\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
+		.staticmethod("create_topological_network_feature")
 		.def("create_tectonic_section",
 				&GPlatesApi::feature_handle_create_tectonic_section,
 				(bp::arg("feature_type"),

@@ -2,6 +2,7 @@
 Unit tests for the pygplates model API.
 """
 
+import math
 import os
 import sys
 import pickle
@@ -129,6 +130,90 @@ class CreateFeatureCase(unittest.TestCase):
         self.assertTrue(plate_feature.get_description() == 'South America rigid plate')
         self.assertTrue(plate_feature.get_valid_time() == (10, pygplates.GeoTimeInstant.create_distant_future()))
         self.assertTrue(plate_feature.get_reconstruction_plate_id() == 201)
+
+    def test_create_topological_network_feature(self):
+        network_boundary_topological_sections = [
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False),
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False)]
+        topological_network = pygplates.GpmlTopologicalNetwork(network_boundary_topological_sections)
+
+        network_feature = pygplates.Feature.create_topological_network_feature(
+                topological_network,
+                name='Network',
+                description='Rift network',
+                valid_time=(10, pygplates.GeoTimeInstant.create_distant_future()))
+        self.assertTrue(len(network_feature) == 4)
+        self.assertTrue(network_feature.get_feature_type() == pygplates.FeatureType.gpml_topological_network)
+        self.assertTrue(network_feature.get_topological_geometry() == topological_network)
+        self.assertTrue(network_feature.get_name() == 'Network')
+        self.assertTrue(network_feature.get_description() == 'Rift network')
+        self.assertTrue(network_feature.get_valid_time() == (10, pygplates.GeoTimeInstant.create_distant_future()))
+
+        # Test rift parameters.
+        network_feature = pygplates.Feature.create_topological_network_feature(
+                topological_network,
+                name='Network',
+                description='Rift network',
+                valid_time=(10, pygplates.GeoTimeInstant.create_distant_future()),
+                rift_parameters=(201, 701))
+        self.assertTrue(len(network_feature) == 6)
+        self.assertTrue(network_feature.get_feature_type() == pygplates.FeatureType.gpml_topological_network)
+        self.assertTrue(network_feature.get_topological_geometry() == topological_network)
+        self.assertTrue(network_feature.get_name() == 'Network')
+        self.assertTrue(network_feature.get_description() == 'Rift network')
+        self.assertTrue(network_feature.get_valid_time() == (10, pygplates.GeoTimeInstant.create_distant_future()))
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_left_plate).get_plate_id() == 201)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_right_plate).get_plate_id() == 701)
+        
+        network_feature = pygplates.Feature.create_topological_network_feature(
+                topological_network,
+                rift_parameters=(201, 701))
+        self.assertTrue(len(network_feature) == 3)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_left_plate).get_plate_id() == 201)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_right_plate).get_plate_id() == 701)
+        
+        network_feature = pygplates.Feature.create_topological_network_feature(
+                topological_network,
+                rift_parameters=(201, 701, 1.2))
+        self.assertTrue(len(network_feature) == 4)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_left_plate).get_plate_id() == 201)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_right_plate).get_plate_id() == 701)
+        self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_exponential_stretching_constant).get_double(), 1.2)
+        
+        network_feature = pygplates.Feature.create_topological_network_feature(
+                topological_network,
+                rift_parameters=(201, 701, 1.2, 1e-16, 0.2))
+        self.assertTrue(len(network_feature) == 6)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_left_plate).get_plate_id() == 201)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_right_plate).get_plate_id() == 701)
+        self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_exponential_stretching_constant).get_double(), 1.2)
+        self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_strain_rate_resolution_log10).get_double(), math.log10(1e-16))  # property stored as log10
+        self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_edgeLength_threshold_degrees).get_double(), 0.2)
+        
+        network_feature = pygplates.Feature.create_topological_network_feature(
+                topological_network,
+                rift_parameters=(201, 701, None, None, None))  # params 3-5 can be optional
+        self.assertTrue(len(network_feature) == 3)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_left_plate).get_plate_id() == 201)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_right_plate).get_plate_id() == 701)
+        
+        network_feature = pygplates.Feature.create_topological_network_feature(
+                topological_network,
+                rift_parameters=(201, 701, None, None, 0.3))  # params 3-5 can be optional
+        self.assertTrue(len(network_feature) == 4)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_left_plate).get_plate_id() == 201)
+        self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_right_plate).get_plate_id() == 701)
+        self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_edgeLength_threshold_degrees).get_double(), 0.3)
  
     def test_create_tectonic_section(self):
         geometry = pygplates.PolylineOnSphere([

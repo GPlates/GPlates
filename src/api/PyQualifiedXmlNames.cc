@@ -537,6 +537,11 @@ namespace GPlatesApi
 	const GPlatesModel::PropertyName gpml_reconstruction_method = GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 	const GPlatesModel::PropertyName gpml_reconstruction_plate_id = GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 	const GPlatesModel::PropertyName gpml_relative_plate = GPlatesModel::PropertyName::create_gpml("relativePlate");
+	const GPlatesModel::PropertyName gpml_rift_edgeLength_threshold_degrees = GPlatesModel::PropertyName::create_gpml("riftEdgeLengthThresholdDegrees");
+	const GPlatesModel::PropertyName gpml_rift_exponential_stretching_constant = GPlatesModel::PropertyName::create_gpml("riftExponentialStretchingConstant");
+	const GPlatesModel::PropertyName gpml_rift_left_plate = GPlatesModel::PropertyName::create_gpml("riftLeftPlate");
+	const GPlatesModel::PropertyName gpml_rift_right_plate = GPlatesModel::PropertyName::create_gpml("riftRightPlate");
+	const GPlatesModel::PropertyName gpml_rift_strain_rate_resolution_log10 = GPlatesModel::PropertyName::create_gpml("riftStrainRateResolutionLog10");
 	const GPlatesModel::PropertyName gpml_right_plate = GPlatesModel::PropertyName::create_gpml("rightPlate");
 	const GPlatesModel::PropertyName gpml_shapefile_attributes = GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
 	const GPlatesModel::PropertyName gpml_times = GPlatesModel::PropertyName::create_gpml("times");
@@ -609,6 +614,11 @@ export_property_name()
 			"* `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_\n"
 			"* `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_\n"
 			"* `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_\n"
+			"* `pygplates.PropertyName.gpml_rift_edgeLength_threshold_degrees <http://www.gplates.org/docs/gpgim/#gpml:rift_edgeLength_threshold_degrees>`_\n"
+			"* `pygplates.PropertyName.gpml_rift_exponential_stretching_constant <http://www.gplates.org/docs/gpgim/#gpml:rift_exponential_stretching_constant>`_\n"
+			"* `pygplates.PropertyName.gpml_rift_left_plate <http://www.gplates.org/docs/gpgim/#gpml:rift_left_plate>`_\n"
+			"* `pygplates.PropertyName.gpml_rift_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rift_right_plate>`_\n"
+			"* `pygplates.PropertyName.gpml_rift_strain_rate_resolution_log10 <http://www.gplates.org/docs/gpgim/#gpml:rift_strain_rate_resolution_log10>`_\n"
 			"* `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_\n"
 			"* `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_\n"
 			"* `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_\n"
@@ -647,7 +657,11 @@ export_property_name()
 			"A *PropertyName* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 			"\n"
 			".. versionchanged:: 0.42\n"
-			"   Added pickle support.\n",
+			"   Added pickle support.\n"
+			"\n"
+			".. versionchanged:: 0.49\n"
+			"   Added attributes *gpml_rift_edgeLength_threshold_degrees*, *gpml_rift_exponential_stretching_constant*, "
+			"*gpml_rift_left_plate*, *gpml_rift_right_plate* and *gpml_rift_strain_rate_resolution_log10*.\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common property names...
@@ -671,6 +685,11 @@ export_property_name()
 	property_name_class.def_readonly("gpml_reconstruction_plate_id", GPlatesApi::gpml_reconstruction_plate_id);
 	property_name_class.def_readonly("gpml_right_plate", GPlatesApi::gpml_right_plate);
 	property_name_class.def_readonly("gpml_relative_plate", GPlatesApi::gpml_relative_plate);
+	property_name_class.def_readonly("gpml_rift_edgeLength_threshold_degrees", GPlatesApi::gpml_rift_edgeLength_threshold_degrees);
+	property_name_class.def_readonly("gpml_rift_exponential_stretching_constant", GPlatesApi::gpml_rift_exponential_stretching_constant);
+	property_name_class.def_readonly("gpml_rift_left_plate", GPlatesApi::gpml_rift_left_plate);
+	property_name_class.def_readonly("gpml_rift_right_plate", GPlatesApi::gpml_rift_right_plate);
+	property_name_class.def_readonly("gpml_rift_strain_rate_resolution_log10", GPlatesApi::gpml_rift_strain_rate_resolution_log10);
 	property_name_class.def_readonly("gpml_shapefile_attributes", GPlatesApi::gpml_shapefile_attributes);
 	property_name_class.def_readonly("gpml_times", GPlatesApi::gpml_times);
 	property_name_class.def_readonly("gpml_total_reconstruction_pole", GPlatesApi::gpml_total_reconstruction_pole);

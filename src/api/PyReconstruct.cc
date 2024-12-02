@@ -362,16 +362,16 @@ namespace GPlatesApi
 		}
 		else // list of reconstructed geometries...
 		{
-			// Group the reconstructed geometries by their feature.
-			//
-			// Note: The features are sorted in the order of the features in the reconstructable files (and the order across files).
-			const std::list<ReconstructSnapshot::feature_geometry_group_type> reconstructed_features =
-					reconstruct_snapshot->get_reconstructed_features(reconstruct_type);
-
 			if (group_with_feature)
 			{
 				// The caller's Python list.
 				bp::list output_reconstructed_features_list = boost::get<bp::list>(reconstructed_geometries_argument);
+
+				// Group the reconstructed geometries by their feature.
+				//
+				// Note: The features are sorted in the order of the features in the reconstructable files (and the order across files).
+				const std::list<ReconstructSnapshot::feature_geometry_group_type> reconstructed_features =
+						reconstruct_snapshot->get_reconstructed_features(reconstruct_type);
 
 				// Output the reconstructed geometries of each feature.
 				for (const auto &reconstructed_feature : reconstructed_features)
@@ -397,13 +397,17 @@ namespace GPlatesApi
 				// The caller's Python list.
 				bp::list output_reconstructed_geometries_list = boost::get<bp::list>(reconstructed_geometries_argument);
 
-				// Output the reconstructed geometries of each feature.
-				for (const auto &reconstructed_feature : reconstructed_features)
+				// Group the reconstructed geometries by their feature.
+				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+						reconstructed_geometries = reconstruct_snapshot->get_reconstructed_geometries(
+								reconstruct_type,
+								// Sort in the order of the features in the reconstructable files (and the order across files)...
+								true/*same_order_as_reconstructable_features*/);
+
+				// Output the reconstructed geometries.
+				for (const auto &reconstructed_geometry : reconstructed_geometries)
 				{
-					for (auto reconstructed_geometry : reconstructed_feature.recon_geoms)
-					{
-						output_reconstructed_geometries_list.append(reconstructed_geometry->get_non_null_pointer_to_const());
-					}
+					output_reconstructed_geometries_list.append(reconstructed_geometry);
 				}
 			}
 		}
@@ -565,10 +569,10 @@ export_reconstruct()
 			"combination of those four types\n"
 			"  :type reconstructable_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
-			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel`, or :class:`FeatureCollection`, or string/``os.PathLike``, "
-			"or sequence of :class:`FeatureCollection` instances and/or string/``os.PathLike`` instances\n"
+			"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
+			"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
+			"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
+			"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param reconstructed_geometries: the "
 			":class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` (default) or "
 			":class:`reconstructed motion paths<ReconstructedMotionPath>` or "
@@ -776,10 +780,10 @@ export_reconstruct()
 			"combination of those four types - all features used as input and output\n"
 			"  :type reconstructable_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
-			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string/``os.PathLike`` "
-			"or sequence of :class:`FeatureCollection` instances and/or string/``os.PathLike`` instances\n"
+			"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
+			"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
+			"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
+			"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param reconstruction_time: the specific geological time to reverse reconstruct from "
 			"(note that this also :meth:`sets the geometry import time<Feature.set_geometry_import_time>`).\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"

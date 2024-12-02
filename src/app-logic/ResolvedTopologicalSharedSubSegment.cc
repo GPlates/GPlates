@@ -31,6 +31,96 @@
 #include "TopologyInternalUtils.h"
 #include "ResolvedTopologicalSubSegmentImpl.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_shared_sub_segment_point_velocities(
+		std::vector<GPlatesMaths::Vector3D> &geometry_point_velocities,
+		bool include_rubber_band_points,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
+{
+	// Get the points in the shared sub-segment.
+	std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+	get_shared_sub_segment_points(geometry_points, include_rubber_band_points);
+
+	// Get the resolved source infos (one per point in the shared sub-segment).
+	resolved_vertex_source_info_seq_type geometry_point_source_infos;
+	get_shared_sub_segment_point_source_infos(geometry_point_source_infos, include_rubber_band_points);
+
+	// Number of resolved source infos should match number of points in the shared sub-segment.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			geometry_point_source_infos.size() == geometry_points.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Iterate over the vertex positions and source infos and calculate velocities.
+	auto geometry_points_iter = geometry_points.begin();
+	auto geometry_points_end = geometry_points.end();
+	auto geometry_point_source_infos_iter = geometry_point_source_infos.begin();
+	for ( ; geometry_points_iter != geometry_points_end; ++geometry_points_iter, ++geometry_point_source_infos_iter)
+	{
+		const GPlatesMaths::PointOnSphere &geometry_point = *geometry_points_iter;
+		const auto geometry_point_source_info = *geometry_point_source_infos_iter;
+
+		geometry_point_velocities.push_back(
+				geometry_point_source_info->get_velocity_vector(
+						geometry_point,
+						d_shared_segment_reconstruction_geometry->get_reconstruction_time(),
+						velocity_delta_time,
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms));
+	}
+}
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_reversed_shared_sub_segment_point_velocities(
+		std::vector<GPlatesMaths::Vector3D> &geometry_point_velocities,
+		bool use_reverse,
+		bool include_rubber_band_points,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
+{
+	// Get the points in the shared sub-segment.
+	std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+	get_reversed_shared_sub_segment_points(geometry_points, include_rubber_band_points);
+
+	// Get the resolved source infos (one per point in the shared sub-segment).
+	resolved_vertex_source_info_seq_type geometry_point_source_infos;
+	get_reversed_shared_sub_segment_point_source_infos(geometry_point_source_infos, include_rubber_band_points);
+
+	// Number of resolved source infos should match number of points in the shared sub-segment.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			geometry_point_source_infos.size() == geometry_points.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Iterate over the vertex positions and source infos and calculate velocities.
+	auto geometry_points_iter = geometry_points.begin();
+	auto geometry_points_end = geometry_points.end();
+	auto geometry_point_source_infos_iter = geometry_point_source_infos.begin();
+	for ( ; geometry_points_iter != geometry_points_end; ++geometry_points_iter, ++geometry_point_source_infos_iter)
+	{
+		const GPlatesMaths::PointOnSphere &geometry_point = *geometry_points_iter;
+		const auto geometry_point_source_info = *geometry_point_source_infos_iter;
+
+		geometry_point_velocities.push_back(
+				geometry_point_source_info->get_velocity_vector(
+						geometry_point,
+						d_shared_segment_reconstruction_geometry->get_reconstruction_time(),
+						velocity_delta_time,
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms));
+	}
+}
+
 
 void
 GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_shared_sub_segment_point_source_infos(

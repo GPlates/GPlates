@@ -109,11 +109,11 @@ namespace GPlatesAppLogic
 			operator<(
 					const RiftParams &rhs) const;
 
-			//! An edge should not be subdivided if it is shorter than this length.
-			double exponential_stretching_constant;
 			//! Default stretching profile is exp(exponential_stretching_constant * x).
-			double strain_rate_resolution;
+			double exponential_stretching_constant;
 			//! Adjacent strain rates samples should resolved within this tolerance (in units 1/sec).
+			double strain_rate_resolution;
+			//! An edge should not be subdivided if it is shorter than this length (in degrees).
 			double edge_length_threshold_degrees;
 
 		private: // Transcribe for sessions/projects...

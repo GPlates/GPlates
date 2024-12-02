@@ -564,7 +564,7 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_net
 	d_partitioning_geometries.push_back(
 			PartitioningGeometry(
 					rtn,
-					rtn->get_triangulation_network().get_boundary_polygon_with_rigid_block_holes(),
+					rtn->get_triangulation_network().get_boundary_polygon(true/*include_rigid_blocks_as_interior_holes*/),
 					d_partition_point_speed_and_memory));
 }
 

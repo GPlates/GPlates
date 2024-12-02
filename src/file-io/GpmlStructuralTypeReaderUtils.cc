@@ -120,19 +120,19 @@ namespace
 			const QString &str)
 	{
 		/* This guess is based on the assumption that each coordinate will have
-		 * three significant figures; thus every five characters will correspond to
-		 * a coordinate (three for the coordinate, one for the decimal point, and 
-		 * one for the delimiting space.
+		 * 14 significant figures; thus every 16 characters will correspond to
+		 * a coordinate (14 for the coordinate, 1 for the decimal point, and
+		 * 1 for the delimiting space).
 		 *
 		 * Note that this estimate is deliberately conservative, since underestimating
-		 * the number of chars in coordinate will result in an over-estimate of the 
-		 * total number of coordinates, thus making reallocation of the vector (in 
+		 * the number of chars in coordinate will result in an over-estimate of the
+		 * total number of coordinates, thus making reallocation of the vector (in
 		 * create_polyline below) much less likely.
 		 *
 		 * Also note that, at this stage, we're assuming that we're only reading in
 		 * lat long points, hence there are two (2) coords per point.
 		 */
-		static const size_t CHARS_PER_COORD_ESTIMATE = 5;
+		static const size_t CHARS_PER_COORD_ESTIMATE = 16;
 		static const size_t COORDS_PER_POINT = 2;
 		return str.length()/(CHARS_PER_COORD_ESTIMATE*COORDS_PER_POINT);
 	}

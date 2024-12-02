@@ -111,6 +111,34 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the reconstructed geometry points in @a reconstructed_geometry.
 		 */
+		virtual
+		void
+		reconstructed_geometry_points(
+				point_seq_type &reconstructed_geometry_points_) const
+		{
+			get_reconstructed_points(reconstructed_geometry_points_);
+		}
+
+		/**
+		 * Returns the per-geometry-point velocities.
+		 *
+		 * Note: Each velocity maps to a point in @a reconstructed_geometry_points.
+		 *
+		 * Note: The number of velocities is guaranteed to match points in @a reconstructed_geometry_points.
+		 */
+		virtual
+		void
+		reconstructed_geometry_point_velocities(
+				velocity_seq_type &reconstructed_geometry_point_velocities_,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
+
+
+		/**
+		 * Returns the reconstructed geometry points in @a reconstructed_geometry.
+		 */
 		void
 		get_reconstructed_points(
 				point_seq_type &reconstructed_points) const

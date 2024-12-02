@@ -41,6 +41,7 @@
 
 #include "PyFeature.h"
 #include "PyFeatureCollectionFunctionArgument.h"
+#include "PyNetworkTriangulation.h"
 #include "PyPropertyValues.h"
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
@@ -189,7 +190,10 @@ namespace GPlatesApi
 			if (return_inactive_points)
 			{
 				std::vector<boost::optional<GPlatesMaths::PointOnSphere>> all_geometry_points;
-				geometry_time_span->get_all_geometry_data(reconstruction_time, all_geometry_points);
+				if (!geometry_time_span->get_all_geometry_data(reconstruction_time, all_geometry_points))
+				{
+					all_geometry_points.resize(geometry_time_span->get_num_all_geometry_points());
+				}
 
 				for (auto geometry_point : all_geometry_points)
 				{
@@ -228,10 +232,13 @@ namespace GPlatesApi
 			if (return_inactive_points)
 			{
 				std::vector<boost::optional<GPlatesAppLogic::TopologyPointLocation>> all_topology_point_locations;
-				geometry_time_span->get_all_geometry_data(
+				if (!geometry_time_span->get_all_geometry_data(
 						reconstruction_time,
 						boost::none/*points*/,
-						all_topology_point_locations);
+						all_topology_point_locations))
+				{
+					all_topology_point_locations.resize(geometry_time_span->get_num_all_geometry_points());
+				}
 
 				for (auto topology_point_location : all_topology_point_locations)
 				{
@@ -273,12 +280,15 @@ namespace GPlatesApi
 			if (return_inactive_points)
 			{
 				std::vector<boost::optional<GPlatesAppLogic::DeformationStrain>> all_strains;
-				geometry_time_span->get_all_geometry_data(
+				if (!geometry_time_span->get_all_geometry_data(
 						reconstruction_time,
 						boost::none/*points*/,
 						boost::none/*point_locations*/,
 						boost::none/*strain_rates*/,
-						all_strains);
+						all_strains))
+				{
+					all_strains.resize(geometry_time_span->get_num_all_geometry_points());
+				}
 
 				for (auto strain : all_strains)
 				{
@@ -322,11 +332,14 @@ namespace GPlatesApi
 			if (return_inactive_points)
 			{
 				std::vector<boost::optional<GPlatesAppLogic::DeformationStrainRate>> all_strain_rates;
-				geometry_time_span->get_all_geometry_data(
+				if (!geometry_time_span->get_all_geometry_data(
 						reconstruction_time,
 						boost::none/*points*/,
 						boost::none/*point_locations*/,
-						all_strain_rates);
+						all_strain_rates))
+				{
+					all_strain_rates.resize(geometry_time_span->get_num_all_geometry_points());
+				}
 
 				for (auto strain_rate : all_strain_rates)
 				{
@@ -373,13 +386,16 @@ namespace GPlatesApi
 			if (return_inactive_points)
 			{
 				std::vector<boost::optional<GPlatesMaths::Vector3D>> all_velocities;
-				geometry_time_span->get_all_velocities(
+				if (!geometry_time_span->get_all_velocities(
 						all_velocities,
 						reconstruction_time,
 						velocity_delta_time,
 						velocity_delta_time_type,
 						velocity_units,
-						earth_radius_in_kms);
+						earth_radius_in_kms))
+				{
+					all_velocities.resize(geometry_time_span->get_num_all_geometry_points());
+				}
 
 				for (const auto &velocity : all_velocities)
 				{
@@ -442,6 +458,14 @@ namespace GPlatesApi
 						scalar_values_list_object.append(scalar_value);
 					}
 				}
+				else
+				{
+					const unsigned int num_all_scalar_values = scalar_coverage_time_span->get_num_all_scalar_values();
+					for (unsigned int scalar_value_index = 0; scalar_value_index < num_all_scalar_values; ++scalar_value_index)
+					{
+						scalar_values_list_object.append(bp::object()/*Py_None*/);
+					}
+				}
 			}
 			else // only active points...
 			{
@@ -457,6 +481,23 @@ namespace GPlatesApi
 
 			return scalar_values_list_object;
 		}
+	}
+
+	/**
+	 * Returns the time span of the history of reconstructed geometry points.
+	 */
+	bp::tuple
+	reconstructed_geometry_time_span_get_time_span(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span)
+	{
+		const GPlatesAppLogic::TimeSpanUtils::TimeRange &time_range =
+				reconstructed_geometry_time_span->get_geometry_time_span()->get_time_range();
+
+		return bp::make_tuple(
+				time_range.get_begin_time(),
+				time_range.get_end_time(),
+				time_range.get_time_increment(),
+				time_range.get_num_time_slots());
 	}
 
 	/**
@@ -689,6 +730,86 @@ namespace GPlatesApi
 	}
 
 	/**
+	 * Returns the list of reconstructed crustal thicknesses (in kms) at reconstruction time.
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_crustal_thicknesses(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THICKNESS =
+				GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThickness");
+
+		return reconstructed_geometry_time_span_get_scalar_values(
+				reconstructed_geometry_time_span,
+				reconstruction_time,
+				GPML_CRUSTAL_THICKNESS,
+				return_inactive_points);
+	}
+
+	/**
+	 * Returns the list of reconstructed crustal stretching factors at reconstruction time.
+	 *
+	 * Stretching (beta) factor is 'beta = Ti/T'.
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_crustal_stretching_factors(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_STRETCHING_FACTOR =
+				GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalStretchingFactor");
+
+		return reconstructed_geometry_time_span_get_scalar_values(
+				reconstructed_geometry_time_span,
+				reconstruction_time,
+				GPML_CRUSTAL_STRETCHING_FACTOR,
+				return_inactive_points);
+	}
+
+	/**
+	 * Returns the list of reconstructed crustal thinning factors at reconstruction time.
+	 *
+	 * Thinning (gamma) factor is 'gamma = (1 - T/Ti)'.
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_crustal_thinning_factors(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THINNING_FACTOR =
+				GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
+
+		return reconstructed_geometry_time_span_get_scalar_values(
+				reconstructed_geometry_time_span,
+				reconstruction_time,
+				GPML_CRUSTAL_THINNING_FACTOR,
+				return_inactive_points);
+	}
+
+	/**
+	 * Returns the list of reconstructed tectonic subsidences (at reconstruction time).
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_tectonic_subsidences(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		static const GPlatesPropertyValues::ValueObjectType GPML_TECTONIC_SUBSIDENCE =
+				GPlatesPropertyValues::ValueObjectType::create_gpml("TectonicSubsidence");
+
+		return reconstructed_geometry_time_span_get_scalar_values(
+				reconstructed_geometry_time_span,
+				reconstruction_time,
+				GPML_TECTONIC_SUBSIDENCE,
+				return_inactive_points);
+	}
+
+	/**
 	 * Returns true if point is not located in any resolved topologies.
 	 */
 	bool
@@ -728,10 +849,13 @@ namespace GPlatesApi
 
 	/**
 	 * Returns resolved topological network if its deforming region (excludes rigid blocks) contains point, otherwise None.
+	 *
+	 * Also returns network triangle (in a 2-tuple) if 'return_network_triangle' is true.
 	 */
-	boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type>
+	bp::object
 	topology_point_located_in_resolved_network_deforming_region(
-			const GPlatesAppLogic::TopologyPointLocation &topology_point_location)
+			const GPlatesAppLogic::TopologyPointLocation &topology_point_location,
+			bool return_network_triangle)
 	{
 		boost::optional<GPlatesAppLogic::TopologyPointLocation::network_location_type>
 				network_location = topology_point_location.located_in_resolved_network();
@@ -740,13 +864,23 @@ namespace GPlatesApi
 			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_network = network_location->first;
 			const GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation &point_location = network_location->second;
 
-			if (point_location.located_in_deforming_region())
+			if (boost::optional<GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle> deforming_face =
+				point_location.located_in_deforming_region())
 			{
-				return resolved_network;
+				if (return_network_triangle)
+				{
+					const GPlatesApi::NetworkTriangulation::Triangle network_triangle(resolved_network, deforming_face.get());
+
+					return bp::make_tuple(resolved_network, network_triangle);
+				}
+				else
+				{
+					return bp::object(resolved_network);
+				}
 			}
 		}
 
-		return boost::none;
+		return bp::object()/*Py_None*/;
 	}
 
 	/**
@@ -1093,7 +1227,8 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 		const double &time_increment,
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 		bp::object scalar_type_to_initial_scalar_values_mapping_object,
-		boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points)
+		boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points,
+		bool deformation_uses_natural_neighbour_interpolation)
 {
 	// Initial reconstruction time must not be distant past/future.
 	if (!initial_time.is_real())
@@ -1177,7 +1312,8 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 							? reconstruction_plate_id.get()
 							: d_rotation_model->get_reconstruction_tree_creator().get_default_anchor_plate_id(),
 					initial_time.value(),
-					deactivate_points);
+					deactivate_points,
+					deformation_uses_natural_neighbour_interpolation);
 
 	// Extract the optional initial scalar values.
 	GPlatesAppLogic::ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
@@ -1439,14 +1575,45 @@ export_topological_model()
 				"or inside any one of its interior rigid blocks (if it has any).\n")
 		.def("located_in_resolved_network_deforming_region",
 				&GPlatesApi::topology_point_located_in_resolved_network_deforming_region,
-				"located_in_resolved_network_deforming_region()\n"
+				(bp::arg("return_network_triangle") = false),
+				"located_in_resolved_network_deforming_region([return_network_triangle=False])\n"
 				"  Query if point is located in the deforming region of a :class:`resolved topological network<ResolvedTopologicalNetwork>`.\n"
 				"\n"
-				"  :returns: the resolved topological network whose deforming region contains the point, otherwise ``None``\n"
-				"  :rtype: :class:`ResolvedTopologicalNetwork` or ``None``\n"
+				"  :param return_network_triangle: Whether to also return the :class:`triangle <NetworkTriangulation.Triangle>` "
+				"(in the network triangulation) containing the point. Defaults to ``False``.\n"
+				"  :type return_network_triangle: bool\n"
+				"  :returns: the resolved topological network whose deforming region contains the point (and the triangle in "
+				"the network triangulation containing the point if *return_network_triangle* is ``True``), otherwise ``None``\n"
+				"  :rtype: :class:`ResolvedTopologicalNetwork`, or 2-tuple (:class:`ResolvedTopologicalNetwork`, :class:`NetworkTriangulation.Triangle`) "
+				"if *return_network_triangle* is ``True``, or ``None``\n"
 				"\n"
 				"  .. note:: Returns ``None`` if point is inside a resolved topological network but is also inside one of "
-				"its interior rigid blocks (and hence not inside its deforming region).\n")
+				"its interior rigid blocks (and hence not inside its deforming region).\n"
+				"\n"
+				"  To locate the triangle (in the network triangulation) that contains the point:\n"
+				"  ::\n"
+				"\n"
+				"    resolved_topological_network_and_triangle = topology_point_location.located_in_resolved_network_deforming_region(\n"
+				"            return_network_triangle=True)\n"
+				"    if resolved_topological_network_and_triangle:\n"
+				"        resolved_topological_network, network_triangle_containing_point = resolved_topological_network_and_triangle\n"
+				"\n"
+				"  .. note:: | When a point location is queried, for example with :meth:`ResolvedTopologicalNetwork.get_point_location`, the point "
+				"is first projected from 3D space into 2D projection space using the Lambert azimuthal equal-area projection (with projection centre "
+				"at the centroid of the network's polygon boundary). Only then is the point tested against the triangles of the network's 2D Delaunay "
+				"triangulation (also in the same 2D projection) to locate the containing 2D triangle.\n"
+				"            | This means the original 3D point might not be contained by the 3D version of that triangle (ie, the 2D triangle with vertices unprojected back to 3D). "
+				"For example, if you took the :class:`network triangle <NetworkTriangulation.Triangle>` (containing the 2D point) and created a :class:`polygon <PolygonOnSphere>` "
+				"from its :attr:`3D vertices <NetworkTriangulation.Vertex.position>` and then did a :meth:`point-in-polygon test <PolygonOnSphere.is_point_in_polygon>` "
+				"using the original 3D point then it could potentially be *outside* the polygon (3D triangle). This is because the triangle boundary lines in 2D space do not map "
+				"to the triangle boundary lines in 3D space (since the projection is not gnomonic, ie, doesn't project 3D great circle arcs as *straight* 2D lines).\n"
+				"            | This also means the network triangle containing the point might be :attr:`marked <NetworkTriangulation.Triangle.is_in_deforming_region>` "
+				"as *outside* the deforming region. However the point is still considered to be *inside* the deforming region since it is inside the network's polygon boundary "
+				"(and outside the network's interior rigid blocks, if any). And it can still have a *non-zero* :meth:`strain rate <ResolvedTopologicalNetwork.get_point_strain_rate>` "
+				"due to :ref:`strain rate smoothing <pygplates_primer_strain_rate_smoothing>`.\n"
+				"\n"
+				"  .. versionchanged:: 0.50\n"
+				"     Added *return_network_triangle* argument.\n")
 		.def("located_in_resolved_network_rigid_block",
 				&GPlatesApi::topology_point_located_in_resolved_network_rigid_block,
 				"located_in_resolved_network_rigid_block()\n"
@@ -1467,6 +1634,7 @@ export_topological_model()
 	// Enable boost::optional<TopologyPointLocation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::TopologyPointLocation>();
 
+
 	{
 		//
 		// ReconstructedGeometryTimeSpan - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -1476,12 +1644,29 @@ export_topological_model()
 				GPlatesApi::ReconstructedGeometryTimeSpan::non_null_ptr_type,
 				boost::noncopyable>(
 						"ReconstructedGeometryTimeSpan",
-						"A history of geometries reconstructed using topologies over geological time.\n"
+						"A history of geometries :meth:`reconstructed using topologies <TopologicalModel.reconstruct_geometry>` over geological time.\n"
 						"\n"
-						"  .. versionadded:: 0.29\n",
+						".. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span` in the *Primer* documentation.\n"
+						"\n"
+						".. versionadded:: 0.29\n",
 						// Don't allow creation from python side...
 						// (Also there is no publicly-accessible default constructor).
 						bp::no_init)
+			.def("get_time_span",
+					&GPlatesApi::reconstructed_geometry_time_span_get_time_span,
+					"get_time_span()\n"
+					"  Returns the time span of the history of reconstructed geometries.\n"
+					"\n"
+					"  :returns: the 4-tuple of (oldest time, youngest time, time increment, number of time slots)\n"
+					"  :rtype: 4-tuple (float, float, float, int)\n"
+					"\n"
+					"  The oldest time, youngest time and time increment are the same as were specified in :meth:`TopologicalModel.reconstruct_geometry`. "
+					"And the number of time slots is :math:`\\frac{(oldest\\_time - youngest\\_time)}{time\\_increment}` which is an integer value "
+					"(since :meth:`TopologicalModel.reconstruct_geometry` requires the oldest to youngest time period to be an integer multiple of the time increment).\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span` in the *Primer* documentation.\n"
+					"\n"
+					"  .. versionadded:: 0.50\n")
 			.def("get_geometry_points",
 					&GPlatesApi::reconstructed_geometry_time_span_get_geometry_points,
 					(bp::arg("reconstruction_time"),
@@ -1489,11 +1674,11 @@ export_topological_model()
 					"get_geometry_points(reconstruction_time, [return_inactive_points=False])\n"
 					"  Returns geometry points at a specific reconstruction time.\n"
 					"\n"
-					"  :param reconstruction_time: Time to extract reconstructed geometry points. Can be any non-negative time "
-					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
+					"  :param reconstruction_time: Time to extract reconstructed geometry points. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param return_inactive_points: Whether to return inactive geometry points. "
-					"If ``True`` then each inactive point stores ``None`` instead of a point and hence the size of each ``list`` "
+					"If ``True`` then each inactive point stores ``None`` instead of a point and hence the size of the ``list`` "
 					"of points is equal to the number of points in the initial geometry (which are all initially active). "
 					"By default only active points are returned.\n"
 					"  :type return_inactive_points: bool\n"
@@ -1501,7 +1686,9 @@ export_topological_model()
 					"  :rtype: ``list`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points` in the *Primer* documentation.\n")
 			.def("get_topology_point_locations",
 					&GPlatesApi::reconstructed_geometry_time_span_get_topology_point_locations,
 					(bp::arg("reconstruction_time"),
@@ -1509,12 +1696,12 @@ export_topological_model()
 					"get_topology_point_locations(reconstruction_time, [return_inactive_points=False])\n"
 					"  Returns the locations of geometry points in resolved topologies at a specific reconstruction time.\n"
 					"\n"
-					"  :param reconstruction_time: Time to extract topology point locations. Can be any non-negative time "
-					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
+					"  :param reconstruction_time: Time to extract topology point locations. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param return_inactive_points: Whether to return topology locations associated with inactive points. "
 					"If ``True`` then each topology location corresponding to an inactive point stores ``None`` instead of a "
-					"topology location and hence the size of each ``list`` of topology locations is equal to the number of points "
+					"topology location and hence the size of the ``list`` of topology locations is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only topology locations for active points are returned.\n"
 					"  :type return_inactive_points: bool\n"
@@ -1522,7 +1709,9 @@ export_topological_model()
 					"  :rtype: ``list`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_topology_locations` in the *Primer* documentation.\n")
 			.def("get_strains",
 					&GPlatesApi::reconstructed_geometry_time_span_get_strains,
 					(bp::arg("reconstruction_time"),
@@ -1530,12 +1719,12 @@ export_topological_model()
 					"get_strains(reconstruction_time, [return_inactive_points=False])\n"
 					"  Returns the strains accumulated at geometry points in resolved topologies at a specific reconstruction time.\n"
 					"\n"
-					"  :param reconstruction_time: Time to extract accumulated strains. Can be any non-negative time "
-					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
+					"  :param reconstruction_time: Time to extract accumulated strains. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param return_inactive_points: Whether to return strains associated with inactive points. "
 					"If ``True`` then each strain corresponding to an inactive point stores ``None`` instead of a "
-					"strain and hence the size of each ``list`` of strains is equal to the number of points "
+					"strain and hence the size of the ``list`` of strains is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only strains for active points are returned.\n"
 					"  :type return_inactive_points: bool\n"
@@ -1545,6 +1734,8 @@ export_topological_model()
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_strains` in the *Primer* documentation.\n"
+					"\n"
 					"  .. versionadded:: 0.46\n")
 			.def("get_strain_rates",
 					&GPlatesApi::reconstructed_geometry_time_span_get_strain_rates,
@@ -1553,12 +1744,12 @@ export_topological_model()
 					"get_strain_rates(reconstruction_time, [return_inactive_points=False])\n"
 					"  Returns the strain rates at geometry points in resolved topologies at a specific reconstruction time.\n"
 					"\n"
-					"  :param reconstruction_time: Time to extract strain rates. Can be any non-negative time "
-					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
+					"  :param reconstruction_time: Time to extract strain rates. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param return_inactive_points: Whether to return strain rates associated with inactive points. "
 					"If ``True`` then each strain rate corresponding to an inactive point stores ``None`` instead of a "
-					"strain rate and hence the size of each ``list`` of strain rates is equal to the number of points "
+					"strain rate and hence the size of the ``list`` of strain rates is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only strain rates for active points are returned.\n"
 					"  :type return_inactive_points: bool\n"
@@ -1568,12 +1759,14 @@ export_topological_model()
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_strain_rates` in the *Primer* documentation.\n"
+					"\n"
 					"  .. versionadded:: 0.46\n")
 			.def("get_velocities",
 					&GPlatesApi::reconstructed_geometry_time_span_get_velocities,
 					(bp::arg("reconstruction_time"),
-						bp::arg("velocity_delta_time"),
-						bp::arg("velocity_delta_time_type"),
+						bp::arg("velocity_delta_time") = 1.0,
+						bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 						bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
 						bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS,
 						bp::arg("return_inactive_points") = false),
@@ -1581,8 +1774,8 @@ export_topological_model()
 					"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms], [return_inactive_points=False])\n"
 					"  Returns the velocities at geometry points in resolved topologies at a specific reconstruction time.\n"
 					"\n"
-					"  :param reconstruction_time: Time to extract velocities. Can be any non-negative time "
-					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
+					"  :param reconstruction_time: Time to extract velocities. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
 					"  :type velocity_delta_time: float\n"
@@ -1597,16 +1790,18 @@ export_topological_model()
 					"  :type earth_radius_in_kms: float\n"
 					"  :param return_inactive_points: Whether to return velocities associated with inactive points. "
 					"If ``True`` then each velocity corresponding to an inactive point stores ``None`` instead of a "
-					"velocity and hence the size of each ``list`` of velocities is equal to the number of points "
+					"velocity and hence the size of the ``list`` of velocities is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only velocities for active points are returned.\n"
-					"  :returns: list of :class:`Vector3D`, or ``None`` if no points are active at *reconstruction_time*\n"
 					"  :type return_inactive_points: bool\n"
+					"  :returns: list of :class:`Vector3D`, or ``None`` if no points are active at *reconstruction_time*\n"
 					"  :rtype: ``list`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 					"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_velocities` in the *Primer* documentation.\n"
 					"\n"
 					"  .. versionadded:: 0.46\n"
 					"\n"
@@ -1622,8 +1817,8 @@ export_topological_model()
 					"  Returns scalar values at a specific reconstruction time either for a single scalar type (as a ``list``) or "
 					"for all scalar types (as a ``dict``).\n"
 					"\n"
-					"  :param reconstruction_time: Time to extract reconstructed scalar values. Can be any non-negative time "
-					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
+					"  :param reconstruction_time: Time to extract reconstructed scalar values. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param scalar_type: Optional scalar type to retrieve scalar values for (returned as a ``list``). "
 					"If not specified then all scalar values for all scalar types are returned (returned as a ``dict``).\n"
@@ -1641,7 +1836,105 @@ export_topological_model()
 					"  :rtype: ``list`` or ``dict`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_scalar_values` in the *Primer* documentation.\n")
+			.def("get_tectonic_subsidences",
+					&GPlatesApi::reconstructed_geometry_time_span_get_tectonic_subsidences,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_tectonic_subsidences(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns tectonic subsidence values (in kms) at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract reconstructed tectonic subsidence values. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return tectonic subsidence values associated with inactive points. "
+					"If ``True`` then each tectonic subsidence value corresponding to an inactive point stores ``None`` and hence "
+					"the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). "
+					"By default only tectonic subsidence values for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
+					"  :returns: list of float, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence` in the *Primer* documentation.\n"
+					"\n"
+					"  .. versionadded:: 0.50\n")
+			.def("get_crustal_thicknesses",
+					&GPlatesApi::reconstructed_geometry_time_span_get_crustal_thicknesses,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_crustal_thicknesses(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns crustal thicknesses (in kms) at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract reconstructed crustal thicknesses. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return crustal thicknesses associated with inactive points. "
+					"If ``True`` then each crustal thickness corresponding to an inactive point stores ``None`` and hence "
+					"the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). "
+					"By default only crustal thicknesses for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
+					"  :returns: list of float, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.\n"
+					"\n"
+					"  .. versionadded:: 0.50\n")
+			.def("get_crustal_stretching_factors",
+					&GPlatesApi::reconstructed_geometry_time_span_get_crustal_stretching_factors,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_crustal_stretching_factors(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns crustal stretching factors at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract reconstructed crustal stretching factors. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return crustal stretching factors associated with inactive points. "
+					"If ``True`` then each crustal stretching factor corresponding to an inactive point stores ``None`` and hence "
+					"the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). "
+					"By default only crustal stretching factors for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
+					"  :returns: list of float, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.\n"
+					"\n"
+					"  .. versionadded:: 0.50\n")
+			.def("get_crustal_thinning_factors",
+					&GPlatesApi::reconstructed_geometry_time_span_get_crustal_thinning_factors,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_crustal_thinning_factors(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns crustal thinning factors at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract reconstructed crustal thinning factors. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return crustal thinning factors associated with inactive points. "
+					"If ``True`` then each crustal thinning factor corresponding to an inactive point stores ``None`` and hence "
+					"the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). "
+					"By default only crustal thinning factors for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
+					"  :returns: list of float, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.\n"
+					"\n"
+					"  .. versionadded:: 0.50\n")
 			// Make hash and comparisons based on C++ object identity (not python object identity)...
 			.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 		;
@@ -1686,6 +1979,8 @@ export_topological_model()
 						"in your derived class then Python will call the base class *__init__* (so you don't have to do anything). "
 						"However if you do define *__init__* in your derived class then it must explicitly call the base class *__init__*.\n"
 						"\n"
+						".. seealso:: :ref:`pygplates_primer_using_topological_reconstruction_deactivating_points` in the *Primer* documentation.\n"
+						"\n"
 						".. versionadded:: 0.31\n"
 						"\n"
 						"__init__()\n"
@@ -1723,16 +2018,18 @@ export_topological_model()
 					":meth:`geometry being reconstructed <TopologicalModel.reconstruct_geometry>`. If you return ``True`` then the point will be "
 					"deactivated and will not have a position at the *next* time (where ``next_time = current_time + (current_time - prev_time)``).\n"
 					"\n"
-					".. note:: If the current time is *younger* than the previous time (``current_time < prev_time``) then we are reconstructing "
+					"  .. note:: If the current time is *younger* than the previous time (``current_time < prev_time``) then we are reconstructing "
 					"*forward* in time and the next time will be *younger* than the current time (``next_time < current_time``). Conversely, if "
 					"the current time is *older* than the previous time (``current_time > prev_time``) then we are reconstructing "
 					"*backward* in time and the next time will be *older* than the current time (``next_time > current_time``).\n"
 					"\n"
-					".. note:: This function is called for each point that is reconstructed using :meth:`TopologicalModel.reconstruct_geometry` "
+					"  .. note:: This function is called for each point that is reconstructed using :meth:`TopologicalModel.reconstruct_geometry` "
 					"at each time step.\n"
 					"\n"
 					// For some reason Sphinx (tested version 3.4.3) seems to repeat this docstring twice (not sure why, so we'll let users know)...
-					".. note:: This function might be inadvertently documented twice.\n")
+					"  .. note:: This function might be inadvertently documented twice.\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_using_topological_reconstruction_deactivating_points` in the *Primer* documentation.\n")
 		;
 
 		// Enable GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_type to be stored in a Python object.
@@ -1761,6 +2058,8 @@ export_topological_model()
 		std::stringstream default_deactivate_points_class_docstring_stream;
 		default_deactivate_points_class_docstring_stream <<
 				"The default algorithm for deactivating geometry points as they are reconstructed forward and/or backward in time.\n"
+				"\n"
+				".. seealso:: :ref:`pygplates_primer_using_topological_reconstruction_deactivating_points` in the *Primer* documentation.\n"
 				"\n"
 				".. versionadded:: 0.31\n"
 				"\n"
@@ -1797,21 +2096,7 @@ export_topological_model()
 				<< (GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK ? "True" : "False")
 				<< "``.\n"
 				"\n"
-				".. note:: This is the default algorithm used internally.\n"
-				"\n"
-				"To use the default deactivation algorithm (this class) but with some non-default parameters, and then use that "
-				"when :meth:`reconstructing a geometry using topologies <TopologicalModel.reconstruct_geometry>`:\n"
-				"::\n"
-				"\n"
-				"  # Reconstruct points in 'geometry' from 100Ma to present day using this class to deactivate them (in this case subduct).\n"
-				"  topological_model.reconstruct_geometry(\n"
-				"      geometry,\n"
-				"      100,\n"
-				"      deactivate_points = pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints(\n"
-				"          # Choose our own parameters that are different than the defaults.\n"
-				"          threshold_velocity_delta = 0.9, # cms/yr\n"
-				"          threshold_distance_to_boundary = 15, # kms/myr\n"
-				"          deactivate_points_that_fall_outside_a_network = True))\n"
+				"  .. seealso:: :ref:`pygplates_primer_using_topological_reconstruction_deactivating_points` in the *Primer* documentation.\n"
 				;
 
 		//
@@ -1855,6 +2140,8 @@ export_topological_model()
 					"TopologicalModel",
 					"A history of topologies over geological time.\n"
 					"\n"
+					".. seealso:: :ref:`pygplates_primer_topological_model` in the *Primer* documentation.\n"
+					"\n"
 					"A *TopologicalModel* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 					"\n"
 					".. versionadded:: 0.30\n"
@@ -1880,14 +2167,14 @@ export_topological_model()
 			"  :param topological_features: The topological boundary and/or network features and the "
 			"topological section features they reference (regular and topological lines) as a feature collection, "
 			"or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) "
-			"of any combination of those four types. Note: Each sequence entry can optionally be a 2-tuple "
+			"of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple "
 			"(entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.\n"
 			"  :type topological_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
-			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string/``os.PathLike`` "
-			"or sequence of :class:`FeatureCollection` instances and/or string/``os.PathLike`` instances\n"
+			"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
+			"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
+			"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
+			"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param anchor_plate_id: The anchored plate id used for all reconstructions "
 			"(resolving topologies, and reconstructing regular features and :meth:`geometries<reconstruct_geometry>`). "
 			"Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).\n"
@@ -1899,16 +2186,7 @@ export_topological_model()
 			"  :param topological_snapshot_cache_size: Number of topological snapshots to cache internally. Defaults to unlimited.\n"
 			"  :type topological_snapshot_cache_size: int\n"
 			"\n"
-			"  Load a topological model (and its associated rotation model):\n"
-			"  ::\n"
-			"\n"
-			"    rotation_model = pygplates.RotationModel('rotations.rot')\n"
-			"    topological_model = pygplates.TopologicalModel('topologies.gpml', rotation_model)\n"
-			"\n"
-			"  ...or alternatively just:"
-			"  ::\n"
-			"\n"
-			"    topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')\n"
+			"  .. seealso:: :ref:`pygplates_primer_topological_model` in the *Primer* documentation.\n"
 			"\n"
 			"  .. note:: All reconstructions (including resolving topologies and reconstructing regular features and "
 			":meth:`geometries<reconstruct_geometry>`) use *anchor_plate_id*. So if you need to use a different "
@@ -1951,6 +2229,8 @@ export_topological_model()
 				"  :rtype: :class:`TopologicalSnapshot`\n"
 				"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
 				"\n"
+				"  .. seealso:: :ref:`pygplates_primer_topological_snapshot` in the *Primer* documentation.\n"
+				"\n"
 				"  .. versionchanged:: 0.43\n"
 				"     *reconstruction_time* no longer required to be integral.\n")
 		.def("reconstruct_geometry",
@@ -1964,9 +2244,11 @@ export_topological_model()
 					bp::arg("initial_scalars") = bp::object()/*Py_None*/,
 					bp::arg("deactivate_points") = boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type>(
 							GPlatesUtils::static_pointer_cast<const GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>(
-									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create()))),
+									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create())),
+					bp::arg("deformation_uses_natural_neighbour_interpolation") = true),
 				"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], "
-				"[reconstruction_plate_id], [initial_scalars], [deactivate_points=ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()])\n"
+				"[reconstruction_plate_id], [initial_scalars], [deactivate_points=ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()], "
+				"[deformation_uses_natural_neighbour_interpolation=True])\n"
 				"  Reconstruct a geometry (and optional scalars) over a time span.\n"
 				"\n"
 				"  :param geometry: The geometry to reconstruct (using topologies). Currently limited to a "
@@ -1982,8 +2264,8 @@ export_topological_model()
 				"  :param time_increment: Time step in the history of topologies ("
 				"``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My.\n"
 				"  :type time_increment: float\n"
-				"  :param reconstruction_plate_id: Used to rotate *geometry* (assumed to be in its present day position) to its "
-				"initial position at time *initial_time*. Defaults to the anchored plate (specified in :meth:`constructor<__init__>`).\n"
+				"  :param reconstruction_plate_id: If specified then *geometry* is assumed to be a snapshot at present day, and this will "
+				"rotate it to *initial_time*. If not specified then *geometry* is assumed to already be a snapshot at *initial_time* - this is the default.\n"
 				"  :type reconstruction_plate_id: int\n"
 				"  :param initial_scalars: optional mapping of scalar types to sequences of initial scalar values\n"
 				"  :type initial_scalars: ``dict`` mapping each :class:`ScalarType` to a sequence "
@@ -1995,6 +2277,10 @@ export_topological_model()
 				"use the provided class :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`. "
 				"Defaults to a default-constructed :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`.\n"
 				"  :type deactivate_points: :class:`ReconstructedGeometryTimeSpan.DeactivatePoints` or None\n"
+				"  :param deformation_uses_natural_neighbour_interpolation: If ``True`` then any point that lies (at any time) within a deforming region of a "
+				"resolved topological network will be reconstructed using natural neighbour interpolation (otherwise barycentric interpolation will be used) - "
+				"see :meth:`ResolvedTopologicalNetwork.reconstruct_point`. Defaults to ``True``.\n"
+				"  :type deformation_uses_natural_neighbour_interpolation: bool\n"
 				"  :rtype: :class:`ReconstructedGeometryTimeSpan`\n"
 				"  :raises: ValueError if initial time, oldest time or youngest time is "
 				"distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
@@ -2005,47 +2291,16 @@ export_topological_model()
 				"is not mapped to the same number of scalar values, or the number of scalars is not equal to the "
 				"number of points in *geometry*\n"
 				"\n"
-				"  The *reconstruction_plate_id* is used for any **rigid** reconstructions of *geometry*. This includes "
-				"the initial rigid rotation of *geometry* (assumed to be in its present day position) to its initial position "
-				"at time *initial_time*. If a reconstruction plate ID is not specified, then *geometry* is assumed to "
-				"already be at its initial position at time *initial_time*. "
-				"In addition, the reconstruction plate ID is also used when incrementally reconstructing from the initial time "
-				"to other times for any geometry points that fail to intersect topologies (dynamic plates and deforming networks). "
-				"This can happen either due to small gaps/cracks in a global topological model or when using a topological model that "
-				"does not cover the entire globe. And finally, the reconstruction plate ID is also used when "
-				":meth:`ReconstructedGeometryTimeSpan.get_geometry_points` is called with a *reconstruction_time* that is outside the "
-				"time range [*oldest_time*, *youngest_time*], in which case it is used to rigidly reconstruct from *reconstruction_time* "
-				"to *oldest_time* or from *youngest_time* to *reconstruction_time* (but typically you would specify a time range that "
-				"includes all desired reconstruction times).\n"
-				"\n"
-				"  To reconstruct points in a geometry *forward* in time from 100Ma to present day in increments of 1 Myr using default deactivation "
-				"(in this case subduction of oceanic points), noting that the *geometry* is specified at its initial position at 100Ma:\n"
-				"  ::\n"
-				"\n"
-				"    topological_model.reconstruct_geometry(geometry, 100)\n"
-				"\n"
-				"  To do the same but with no deactivation (in this case continental points):\n"
-				"  ::\n"
-				"\n"
-				"    topological_model.reconstruct_geometry(geometry, 100, deactivate_points=None)\n"
-				"\n"
-				"  To reconstruct points in a geometry *backward* in time from present day to 100Ma in increments of 1 Myr using default deactivation "
-				"(in this case oceanic points produced at mid-ocean ridges disappear for times prior to their creation), noting that the *geometry* "
-				"is specified at its initial position at present day:\n"
-				"  ::\n"
-				"\n"
-				"    topological_model.reconstruct_geometry(geometry, 0, oldest_time=100)\n"
-				"\n"
-				"  To do the same but with no deactivation (in this case continental points):\n"
-				"  ::\n"
-				"\n"
-				"    topological_model.reconstruct_geometry(geometry, 0, oldest_time=100, deactivate_points=None)\n"
+				"  .. seealso:: :ref:`pygplates_primer_topologically_reconstruct_geometries` in the *Primer* documentation.\n"
 				"\n"
 				"  .. versionchanged:: 0.31\n"
 				"     Added *deactivate_points* argument.\n"
 				"\n"
 				"  .. versionchanged:: 0.43\n"
-				"     Oldest time, youngest time and time increment no longer required to be *integral* values.\n")
+				"     Oldest time, youngest time and time increment no longer required to be *integral* values.\n"
+				"\n"
+				"  .. versionchanged:: 0.50\n"
+				"     Added *deformation_uses_natural_neighbour_interpolation* argument. Previously it was hardwired to ``True``.\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalModel::get_rotation_model,
 				"get_rotation_model()\n"

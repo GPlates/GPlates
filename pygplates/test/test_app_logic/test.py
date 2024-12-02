@@ -280,6 +280,187 @@ class ReconstructSnapshotTestCase(unittest.TestCase):
         self.assertTrue(grouped_feature.get_feature_id() == feature.get_feature_id())
         self.assertTrue(len(reconstructed_feature_geometries) == 1)
         self.assertTrue(geometry == reconstructed_feature_geometries[0].get_present_day_geometry())
+    
+    def test_point_locations_velocities(self):
+        # We'll reconstruct a polyline and two polygons.
+        # The polyline will get ignored (since it cannot contain points).
+        polyline_1 = pygplates.PolylineOnSphere([(0,0), (10, 10)])
+        polyline_1_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.create_gpml('Coastline'),
+                polyline_1, name='polyline_1', reconstruction_plate_id=1)
+        polygon_1 = pygplates.PolygonOnSphere([(1,-32), (1,-28), (-1,-28), (-1,-32)])
+        polygon_1_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature,
+                polygon_1, name='polygon_1', reconstruction_plate_id=1)
+        polygon_2 = pygplates.PolygonOnSphere([(1,31), (1,29), (-1,29), (-1,31)])  # smaller area than polygon_1
+        polygon_2_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature,
+                polygon_2, name='polygon_2', reconstruction_plate_id=2)
+        reconstructable_features = [polyline_1_feature, polygon_1_feature, polygon_2_feature]
+
+        # Create our own rotation model (for plate IDs 1 and 2 relative to 0).
+        #
+        # Both rotations have same velocity *magnitude* of 1 degree per Myr (just in different directions).
+        velocity_magnitude_kms_per_my = math.radians(1) * pygplates.Earth.mean_radius_in_kms
+        #
+        # Plate ID 1 rotates *anti-clockwise* around North pole at 1 degree per Myr (going backward in time).
+        # Note: This is *clockwise* going *forward* in time (used for velocities).
+        rotation_time_samples_1 = [
+                pygplates.GpmlTimeSample(
+                    pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((lat, lon), math.radians(angle))),
+                    time)
+                for time, lat, lon, angle in [(0, 90, 0, 0), (100, 90, 0, 100)]]
+        rotation_feature_1 = pygplates.Feature.create_total_reconstruction_sequence(
+            0, 1, pygplates.GpmlIrregularSampling(rotation_time_samples_1))
+        # Plate ID 2 rotates *clockwise* around North pole at 1 degree per Myr (going backward in time).
+        # Note: This is *anti-clockwise* going *forward* in time.
+        rotation_time_samples_2 = [
+                pygplates.GpmlTimeSample(
+                    pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((lat, lon), math.radians(angle))),
+                    time)
+                for time, lat, lon, angle in [(0, 90, 0, 0), (100, 90, 0, -100)]]
+        rotation_feature_2 = pygplates.Feature.create_total_reconstruction_sequence(
+            0, 2, pygplates.GpmlIrregularSampling(rotation_time_samples_2))
+        rotation_model = pygplates.RotationModel([rotation_feature_1, rotation_feature_2])
+        
+        # Points to test.
+        points = [
+                pygplates.PointOnSphere(0, -30),
+                (0, 0),
+                pygplates.LatLonPoint(0, 30).to_xyz(),
+        ]
+
+        #
+        # Reconstruct to 0 Ma.
+        # Polygon 1 should contain 1st point.
+        # Polygon 2 should contain 2nd point.
+        #
+        snapshot = pygplates.ReconstructSnapshot(
+                reconstructable_features,
+                rotation_model,
+                reconstruction_time=0)
+        point_locations = snapshot.get_point_locations(points)
+        point_velocities, point_locations_from_vel = snapshot.get_point_velocities(points,
+                                                                            # Also test velocity arguments get accepted...
+                                                                            velocity_delta_time=1.0,
+                                                                            velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
+                                                                            velocity_units=pygplates.VelocityUnits.kms_per_my,
+                                                                            earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms,
+                                                                            return_point_locations=True)
+        self.assertTrue(len(point_velocities) == len(point_locations_from_vel) == len(points))
+        self.assertTrue(point_locations == point_locations_from_vel)
+        # Polygon 1 contains 1st point.
+        self.assertTrue(point_locations[0].get_feature().get_name() == 'polygon_1')
+        self.assertTrue(point_locations[0].get_reconstructed_geometry() == polygon_1)
+        # Compare velocities to only 4 decimal places.
+        for vel_comp_calc, vel_comp_actual in zip(
+                point_velocities[0].to_xyz(),
+                # Velocity is *clockwise* (going forward in time)...
+                (pygplates.FiniteRotation((90, 0), math.radians(-30)) * pygplates.Vector3D(0, -velocity_magnitude_kms_per_my, 0)).to_xyz()):
+            self.assertAlmostEqual(vel_comp_calc, vel_comp_actual, places=4)
+        # No polygon contains 2nd point.
+        self.assertTrue(point_locations[1] is None)
+        self.assertTrue(point_velocities[1] is None)
+        # Polygon 2 contains 3rd point.
+        self.assertTrue(point_locations[2].get_feature().get_name() == 'polygon_2')
+        self.assertTrue(point_locations[2].get_reconstructed_geometry() == polygon_2)
+        # Compare velocities to only 4 decimal places.
+        for vel_comp_calc, vel_comp_actual in zip(
+                point_velocities[2].to_xyz(),
+                # Velocity is *anti-clockwise* (going forward in time)...
+                (pygplates.FiniteRotation((90, 0), math.radians(30)) * pygplates.Vector3D(0, velocity_magnitude_kms_per_my, 0)).to_xyz()):
+            self.assertAlmostEqual(vel_comp_calc, vel_comp_actual, places=4)
+
+        #
+        # Reconstruct to 30 Ma.
+        # Polygon 1 should contain 3rd point.
+        # Polygon 2 should contain 3rd point.
+        #
+        snapshot = pygplates.ReconstructSnapshot(
+                reconstructable_features,
+                rotation_model,
+                reconstruction_time=30)
+        
+        #
+        # Use original order of polygon features (polygon_1 then polygon_2).
+        #
+        sort_reconstructed_static_polygons = None
+        point_locations = snapshot.get_point_locations(points,
+                                                       sort_reconstructed_static_polygons=sort_reconstructed_static_polygons)
+        point_velocities, point_locations_from_vel = snapshot.get_point_velocities(points,
+                                                                                   sort_reconstructed_static_polygons=sort_reconstructed_static_polygons,
+                                                                                   return_point_locations=True)
+        self.assertTrue(len(point_velocities) == len(point_locations_from_vel) == len(points))
+        self.assertTrue(point_locations == point_locations_from_vel)
+        # No polygon contains 1st point.
+        self.assertTrue(point_locations[0] is None)
+        self.assertTrue(point_velocities[0] is None)
+        # Both polygon 1 and 2 contain 2nd point (but polygon 1 wins since it's the first reconstructable polygon when snapshot created).
+        self.assertTrue(point_locations[1].get_feature().get_name() == 'polygon_1')
+        self.assertTrue(point_locations[1].get_reconstructed_geometry() == pygplates.FiniteRotation((90, 0), math.radians(30)) * polygon_1)
+        # Compare velocities to only 4 decimal places.
+        for vel_comp_calc, vel_comp_actual in zip(
+                point_velocities[1].to_xyz(),
+                # Velocity is *clockwise* (going forward in time)...
+                pygplates.Vector3D(0, -velocity_magnitude_kms_per_my, 0).to_xyz()):
+            self.assertAlmostEqual(vel_comp_calc, vel_comp_actual, places=4)
+        # No polygon contains 3rd point.
+        self.assertTrue(point_locations[2] is None)
+        self.assertTrue(point_velocities[2] is None)
+        
+        #
+        # Sort polygon features by plate ID (polygon_2 then polygon_1).
+        #
+        sort_reconstructed_static_polygons = pygplates.SortReconstructedStaticPolygons.by_plate_id
+        point_locations = snapshot.get_point_locations(points,
+                                                       sort_reconstructed_static_polygons=sort_reconstructed_static_polygons)
+        point_velocities, point_locations_from_vel = snapshot.get_point_velocities(points,
+                                                                                   sort_reconstructed_static_polygons=sort_reconstructed_static_polygons,
+                                                                                   return_point_locations=True)
+        self.assertTrue(len(point_velocities) == len(point_locations_from_vel) == len(points))
+        self.assertTrue(point_locations == point_locations_from_vel)
+        # No polygon contains 1st point.
+        self.assertTrue(point_locations[0] is None)
+        self.assertTrue(point_velocities[0] is None)
+        # Both polygon 1 and 2 contain 2nd point (but polygon 2 wins since it has a higher plate ID).
+        self.assertTrue(point_locations[1].get_feature().get_name() == 'polygon_2')
+        self.assertTrue(point_locations[1].get_reconstructed_geometry() == pygplates.FiniteRotation((90, 0), math.radians(-30)) * polygon_2)
+        # Compare velocities to only 4 decimal places.
+        for vel_comp_calc, vel_comp_actual in zip(
+                point_velocities[1].to_xyz(),
+                # Velocity is *anti-clockwise* (going forward in time)...
+                pygplates.Vector3D(0, velocity_magnitude_kms_per_my, 0).to_xyz()):
+            self.assertAlmostEqual(vel_comp_calc, vel_comp_actual, places=4)
+        # No polygon contains 3rd point.
+        self.assertTrue(point_locations[2] is None)
+        self.assertTrue(point_velocities[2] is None)
+        
+        #
+        # Sort polygon features by plate area (polygon_1 then polygon_2).
+        #
+        sort_reconstructed_static_polygons = pygplates.SortReconstructedStaticPolygons.by_plate_area
+        point_locations = snapshot.get_point_locations(points,
+                                                       sort_reconstructed_static_polygons=sort_reconstructed_static_polygons)
+        point_velocities, point_locations_from_vel = snapshot.get_point_velocities(points,
+                                                                                   sort_reconstructed_static_polygons=sort_reconstructed_static_polygons,
+                                                                                   return_point_locations=True)
+        self.assertTrue(len(point_velocities) == len(point_locations_from_vel) == len(points))
+        self.assertTrue(point_locations == point_locations_from_vel)
+        # No polygon contains 1st point.
+        self.assertTrue(point_locations[0] is None)
+        self.assertTrue(point_velocities[0] is None)
+        # Both polygon 1 and 2 contain 2nd point (but polygon 1 wins since it has a larger plate area).
+        self.assertTrue(point_locations[1].get_feature().get_name() == 'polygon_1')
+        self.assertTrue(point_locations[1].get_reconstructed_geometry() == pygplates.FiniteRotation((90, 0), math.radians(30)) * polygon_1)
+        # Compare velocities to only 4 decimal places.
+        for vel_comp_calc, vel_comp_actual in zip(
+                point_velocities[1].to_xyz(),
+                # Velocity is *clockwise* (going forward in time)...
+                pygplates.Vector3D(0, -velocity_magnitude_kms_per_my, 0).to_xyz()):
+            self.assertAlmostEqual(vel_comp_calc, vel_comp_actual, places=4)
+        # No polygon contains 3rd point.
+        self.assertTrue(point_locations[2] is None)
+        self.assertTrue(point_velocities[2] is None)
 
     def test_reconstructed_export_files(self):
         reconstructable_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'volcanoes.gpml')) 
@@ -476,17 +657,34 @@ class ReconstructTestCase(unittest.TestCase):
     def test_reconstruct_feature_geometry(self):
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
         reconstruction_time = 15
+        reconstruction_plate_id = 801
         geometry = pygplates.PolylineOnSphere([(0,0), (10, 10)])
         feature = pygplates.Feature.create_reconstructable_feature(
                 pygplates.FeatureType.create_gpml('Coastline'),
                 geometry,
                 valid_time=(30, 0),
-                reconstruction_plate_id=801)
+                reconstruction_plate_id=reconstruction_plate_id)
         reconstructed_feature_geometries = []
         pygplates.reconstruct(feature, rotation_model, reconstructed_feature_geometries, reconstruction_time)
         self.assertEqual(len(reconstructed_feature_geometries), 1)
-        self.assertTrue(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())
-        self.assertTrue(geometry == reconstructed_feature_geometries[0].get_present_day_geometry())
+        reconstructed_feature_geometry = reconstructed_feature_geometries[0]
+        self.assertTrue(reconstructed_feature_geometry.get_feature().get_feature_id() == feature.get_feature_id())
+        self.assertTrue(geometry == reconstructed_feature_geometry.get_present_day_geometry())
+        reconstructed_geometry = rotation_model.get_rotation(
+            reconstructed_feature_geometry.get_reconstruction_time(),
+            reconstructed_feature_geometry.get_feature().get_reconstruction_plate_id()) * geometry
+        self.assertTrue(reconstructed_geometry == reconstructed_feature_geometry.get_reconstructed_geometry())
+        # Test reconstructed points and their velocities.
+        self.assertTrue(reconstructed_geometry == pygplates.PolylineOnSphere(reconstructed_feature_geometry.get_reconstructed_geometry_points()))
+        velocity_stage_rotation = rotation_model.get_rotation(
+            reconstructed_feature_geometry.get_reconstruction_time(),
+            reconstructed_feature_geometry.get_feature().get_reconstruction_plate_id(),
+            reconstructed_feature_geometry.get_reconstruction_time() + 1)
+        velocities = pygplates.calculate_velocities(
+            reconstructed_feature_geometry.get_reconstructed_geometry_points(),
+            velocity_stage_rotation,
+            1.0)
+        self.assertTrue(velocities == reconstructed_feature_geometry.get_reconstructed_geometry_point_velocities())
         # Test grouping with feature.
         grouped_reconstructed_feature_geometries = []
         pygplates.reconstruct(feature, rotation_model, grouped_reconstructed_feature_geometries, reconstruction_time, group_with_feature=True)
@@ -502,7 +700,7 @@ class ReconstructTestCase(unittest.TestCase):
                 pygplates.FeatureType.create_gpml('Coastline'),
                 geometry,
                 valid_time=(30, 0),
-                reconstruction_plate_id=801,
+                reconstruction_plate_id=reconstruction_plate_id,
                 reverse_reconstruct=(rotation_model, reconstruction_time))
         geometry_at_present_day = feature.get_geometry()
         reconstructed_feature_geometries = []
@@ -544,6 +742,11 @@ class ReconstructTestCase(unittest.TestCase):
         for index, reconstructed_flowline in enumerate(reconstructed_flowlines):
             self.assertTrue(reconstructed_flowline.get_feature().get_feature_id() == flowline_feature.get_feature_id())
             self.assertTrue(seed_points[index] == reconstructed_flowline.get_present_day_seed_point())
+            # First point in left/right flowline is reconstructed seed point.
+            self.assertTrue(reconstructed_flowline.get_left_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
+            self.assertTrue(reconstructed_flowline.get_right_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
+            # Should have non-zero velocity at reconstructed seed point
+            self.assertTrue(reconstructed_flowline.get_reconstructed_seed_point_velocity() != pygplates.Vector3D.zero)
         
         # Test reverse reconstruction.
         seed_points_at_reconstruction_time = pygplates.MultiPointOnSphere([(0,0), (0,90)])
@@ -594,6 +797,10 @@ class ReconstructTestCase(unittest.TestCase):
         for index, reconstructed_motion_path in enumerate(reconstructed_motion_paths):
             self.assertTrue(reconstructed_motion_path.get_feature().get_feature_id() == motion_path_feature.get_feature_id())
             self.assertTrue(seed_points[index] == reconstructed_motion_path.get_present_day_seed_point())
+            # Last point in motion path is reconstructed seed point.
+            self.assertTrue(reconstructed_motion_path.get_motion_path()[-1] == reconstructed_motion_path.get_reconstructed_seed_point())
+            # Should have non-zero velocity at reconstructed seed point
+            self.assertTrue(reconstructed_motion_path.get_reconstructed_seed_point_velocity() != pygplates.Vector3D.zero)
         
         # Test reverse reconstruction.
         seed_points_at_reconstruction_time = pygplates.MultiPointOnSphere([(0,0), (0,90)])
@@ -1460,6 +1667,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sss.get_resolved_feature().get_geometry() == sss.get_resolved_geometry())
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_overriding_plate()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section2_shared_sub_segments = resolved_topological_sections_dict['section2'].get_shared_sub_segments()
@@ -1469,6 +1677,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_overriding_plate()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section3_shared_sub_segments = resolved_topological_sections_dict['section3'].get_shared_sub_segments()
@@ -1478,6 +1687,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology1']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_overriding_plate()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section4_shared_sub_segments = resolved_topological_sections_dict['section4'].get_shared_sub_segments()
@@ -1487,6 +1697,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology2']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_overriding_plate()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section5_shared_sub_segments = resolved_topological_sections_dict['section5'].get_shared_sub_segments()
@@ -1498,10 +1709,21 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                             sharing_topologies == set(['topology5']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             if sharing_topologies == set(['topology5']):
-                self.assertFalse(sss.get_overriding_and_subducting_plates()) # Only one adjacent plate.
+                self.assertFalse(sss.get_overriding_and_subducting_plates()) # Only one adjacent plate (subducting)
+                overriding_plate, subducting_plate = sss.get_overriding_and_subducting_plates(enforce_single_plates=False)
+                self.assertTrue(overriding_plate is None)
+                self.assertTrue(subducting_plate.get_feature().get_name() == 'topology5')
+                self.assertFalse(sss.get_overriding_plate(return_subduction_polarity=True)) # Only one adjacent plate (subducting)
+                overriding_plate, subduction_polarity = sss.get_overriding_plate(return_subduction_polarity=True, enforce_single_plate=False)
+                self.assertTrue(overriding_plate is None)
             else:
                 self.assertTrue(sss.get_overriding_and_subducting_plates()) # Two adjacent plates.
-            subducting_plate = sss.get_subducting_plate(False)
+                overriding_plate = sss.get_overriding_plate()
+                self.assertTrue(overriding_plate == sss.get_overriding_plate(enforce_single_plate=False))
+                self.assertTrue(overriding_plate.get_feature().get_name() == 'topology2')
+                subducting_plate = sss.get_subducting_plate()
+                self.assertTrue(subducting_plate == sss.get_subducting_plate(enforce_single_plate=False))
+            subducting_plate = sss.get_subducting_plate()
             # Can always find just the subducting plate though.
             self.assertTrue(subducting_plate.get_feature().get_name() == 'topology4' or
                             subducting_plate.get_feature().get_name() == 'topology5')
@@ -1513,6 +1735,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_overriding_plate()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section7_shared_sub_segments = resolved_topological_sections_dict['section7'].get_shared_sub_segments()
@@ -1522,6 +1745,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology1', 'topology2']) or sharing_topologies == set(['topology2', 'topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_overriding_plate()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section8_shared_sub_segments = resolved_topological_sections_dict['section8'].get_shared_sub_segments()
@@ -1538,7 +1762,9 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             subducting_plate = sss.get_subducting_plate()
             subducting_plate, subduction_polarity = sss.get_subducting_plate(True)
             self.assertTrue(subducting_plate.get_feature().get_reconstruction_plate_id() == 0)
-            self.assertTrue(subduction_polarity == 'Left')
+            overriding_plate = sss.get_overriding_plate()
+            overriding_plate, subduction_polarity = sss.get_overriding_plate(True)
+            self.assertTrue(overriding_plate.get_feature().get_reconstruction_plate_id() == 2)
         
         # 'section9' is a single point.
         section9_shared_sub_segments = resolved_topological_sections_dict['section9'].get_shared_sub_segments()
@@ -1576,6 +1802,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                 self.assertTrue(not sharing_topology_on_left_flags['topology3'])  # topology on right of sub-segment
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_overriding_plate()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         # 'section10' is a single point.
@@ -1614,6 +1841,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                 self.assertTrue(not sharing_topology_on_left_flags['topology3'])  # topology on right of sub-segment
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_overriding_plate()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         # Sections 11, 12, 13 are not resolved topological sections since they're only used in a resolved topological line (not in boundaries/networks).
@@ -1637,6 +1865,9 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                 self.assertTrue(len(sss.get_sub_segments()[0].get_resolved_geometry()) == 3)
                 self.assertTrue(len(sss.get_resolved_geometry()) == 3)
                 self.assertFalse(sss.get_overriding_and_subducting_plates()) # Don't have two sharing plates (only one).
+                overriding_plate, subducting_plate = sss.get_overriding_and_subducting_plates(enforce_single_plates=False)
+                self.assertTrue(overriding_plate is None)
+                self.assertTrue(subducting_plate.get_feature().get_name() == 'topology7')
             elif sharing_topologies == set(['topology7', 'topology3']):
                 self.assertTrue(sub_sub_segments == set(['section13']))
                 # The one shared sub-segment happens to have 2 vertices (from resolved line).
@@ -1879,6 +2110,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[2].to_lat_lon()[0]) # More Southern
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_overriding_plate()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         # Test 'section15' still gives correct result when changing order of adding topologies
@@ -2543,7 +2775,8 @@ class TopologicalModelTestCase(unittest.TestCase):
                 oldest_time=30.0,
                 youngest_time=10.0,
                 reconstruction_plate_id=802,
-                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]},
+                deformation_uses_natural_neighbour_interpolation=False)
         # Create from a point.
         reconstructed_point_time_span = self.topological_model.reconstruct_geometry(
                 pygplates.PointOnSphere(0, 0),
@@ -2704,6 +2937,10 @@ class TopologicalModelTestCase(unittest.TestCase):
                 youngest_time=10.0,
                 initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0, 1.0]})
         
+        # Time range.
+        oldest_time, youngest_time, time_increment, num_time_slots = reconstructed_multipoint_time_span.get_time_span()
+        self.assertTrue(oldest_time == 30 and youngest_time == 10 and time_increment == 1 and num_time_slots == 21)
+        
         # Points.
         reconstructed_points = reconstructed_multipoint_time_span.get_geometry_points(20)
         self.assertTrue(len(reconstructed_points) == 3)
@@ -2742,7 +2979,7 @@ class TopologicalModelTestCase(unittest.TestCase):
         self.assertTrue(len(strains) == 3)
         
         # Velocities.
-        velocities = reconstructed_multipoint_time_span.get_velocities(20, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, pygplates.VelocityUnits.cms_per_yr)
+        velocities = reconstructed_multipoint_time_span.get_velocities(20)
         self.assertTrue(len(velocities) == 3)
         self.assertTrue(velocities[0] == pygplates.Vector3D.zero)
         self.assertTrue(velocities[1] == pygplates.Vector3D.zero)
@@ -2752,16 +2989,56 @@ class TopologicalModelTestCase(unittest.TestCase):
         
         # Scalars.
         scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20)
-        # Should be at least the 2 scalar types we supplied initial values for.
-        # There will be more since other *evolved* scalar types are reconstructed (such as crustal thinning factor) even if we did not provide initial values.
-        self.assertTrue(len(scalars_dict) >= 2)
+        # Although we only supplied initial values for 2 scalar types, there will be more since other *evolved* scalar types are reconstructed
+        # (such as crustal thinning factor) that we did not provide initial values for.
+        self.assertTrue(len(scalars_dict) == 4)
         self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_thickness] == [10.0, 10.0, 10.0])
         self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_stretching_factor] == [1.0, 1.0, 1.0])
+        self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_thinning_factor] == [0.0, 0.0, 0.0])
+        self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_tectonic_subsidence] == [0.0, 0.0, 0.0])
         self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_thickness) == [10.0, 10.0, 10.0])
         self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_stretching_factor) == [1.0, 1.0, 1.0])
+        self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_thinning_factor) == [0.0, 0.0, 0.0])
+        self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_tectonic_subsidence) == [0.0, 0.0, 0.0])
         scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20, return_inactive_points=True)
-        self.assertTrue(len(scalars_dict) >= 2)
-    
+        self.assertTrue(len(scalars_dict) == 4)
+         
+        # Crustal thicknesses.
+        crustal_thickness = reconstructed_multipoint_time_span.get_crustal_thicknesses(20)
+        self.assertTrue(len(crustal_thickness) == 3)
+        self.assertTrue(crustal_thickness[0] == 10.0)
+        self.assertTrue(crustal_thickness[1] == 10.0)
+        self.assertTrue(crustal_thickness[2] == 10.0)
+        crustal_thickness = reconstructed_multipoint_time_span.get_crustal_thicknesses(20, return_inactive_points=True)
+        self.assertTrue(len(crustal_thickness) == 3)
+         
+        # Crustal stretching factors.
+        crustal_stretching_factors = reconstructed_multipoint_time_span.get_crustal_stretching_factors(20)
+        self.assertTrue(len(crustal_stretching_factors) == 3)
+        self.assertTrue(crustal_stretching_factors[0] == 1.0)
+        self.assertTrue(crustal_stretching_factors[1] == 1.0)
+        self.assertTrue(crustal_stretching_factors[2] == 1.0)
+        crustal_stretching_factors = reconstructed_multipoint_time_span.get_crustal_stretching_factors(20, return_inactive_points=True)
+        self.assertTrue(len(crustal_stretching_factors) == 3)
+         
+        # Crustal thinning factors.
+        crustal_thinning_factors = reconstructed_multipoint_time_span.get_crustal_thinning_factors(20)
+        self.assertTrue(len(crustal_thinning_factors) == 3)
+        self.assertTrue(crustal_thinning_factors[0] == 0.0)
+        self.assertTrue(crustal_thinning_factors[1] == 0.0)
+        self.assertTrue(crustal_thinning_factors[2] == 0.0)
+        crustal_thinning_factors = reconstructed_multipoint_time_span.get_crustal_thinning_factors(20, return_inactive_points=True)
+        self.assertTrue(len(crustal_thinning_factors) == 3)
+         
+        # Tectonic subsidence.
+        tectonic_subsidences = reconstructed_multipoint_time_span.get_tectonic_subsidences(20)
+        self.assertTrue(len(tectonic_subsidences) == 3)
+        self.assertTrue(tectonic_subsidences[0] == 0.0)
+        self.assertTrue(tectonic_subsidences[1] == 0.0)
+        self.assertTrue(tectonic_subsidences[2] == 0.0)
+        tectonic_subsidences = reconstructed_multipoint_time_span.get_tectonic_subsidences(20, return_inactive_points=True)
+        self.assertTrue(len(tectonic_subsidences) == 3)
+   
     def test_pickle(self):
         # Pickle a TopologicalModel.
         pickled_topological_model = pickle.loads(pickle.dumps(self.topological_model))
@@ -2853,13 +3130,16 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             topologies,
             rotations,
             pygplates.GeoTimeInstant(10),
-            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters(
+                    enable_strain_rate_clamping=True,
+                    strain_rate_smoothing=pygplates.StrainRateSmoothing.barycentric))
         # Make sure can specify ResolveTopologyParameters with the topological features.
         snapshot = pygplates.TopologicalSnapshot(
             (topologies, pygplates.ResolveTopologyParameters()),
             rotations,
             pygplates.GeoTimeInstant(10),
-            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters(
+                    strain_rate_smoothing=pygplates.StrainRateSmoothing.none))
         snapshot = pygplates.TopologicalSnapshot(
             [
                 (topologies[0], pygplates.ResolveTopologyParameters()),  # single feature with ResolveTopologyParameters
@@ -2882,6 +3162,290 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             
             self.assertTrue(snapshot.get_anchor_plate_id() == 0)
             self.assertTrue(snapshot.get_rotation_model())
+
+    def test_resolved_topological_lines(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        resolved_topological_lines = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.line)
+        self.assertTrue(len(resolved_topological_lines) == 1)
+
+        # Test geometry points and velocities.
+        resolved_topological_line = resolved_topological_lines[0]
+        resolved_geometry_points = resolved_topological_line.get_resolved_geometry_points()
+        resolved_geometry_point_velocities = resolved_topological_line.get_resolved_geometry_point_velocities()
+        self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+        self.assertTrue(resolved_topological_line.get_resolved_geometry() == pygplates.PolylineOnSphere(resolved_geometry_points))
+        self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+
+    def test_resolved_topological_boundaries(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        resolved_topological_boundaries = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.boundary)
+        self.assertTrue(len(resolved_topological_boundaries) >= 1)
+
+        # Test geometry points and velocities.
+        for resolved_topological_boundary in resolved_topological_boundaries:
+            resolved_geometry_points = resolved_topological_boundary.get_resolved_geometry_points()
+            resolved_geometry_point_velocities = resolved_topological_boundary.get_resolved_geometry_point_velocities()
+            self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+            self.assertTrue(resolved_topological_boundary.get_resolved_geometry() == pygplates.PolygonOnSphere(resolved_geometry_points))
+            self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+
+        # Test point location/velocity/strain-rate and reconstructed point.
+        for resolved_topological_boundary in resolved_topological_boundaries:
+            point_in_topology2 = pygplates.PointOnSphere(0, -30)  # only 'topology2' contains this point
+            point_location = resolved_topological_boundary.get_point_location(point_in_topology2)
+            point_velocity = resolved_topological_boundary.get_point_velocity(point_in_topology2)
+            point_strain_rate = resolved_topological_boundary.get_point_strain_rate(point_in_topology2)
+            reconstructed_point = resolved_topological_boundary.reconstruct_point(
+                    point_in_topology2,
+                    resolved_topological_boundary.get_reconstruction_time() + 1.0)
+            if resolved_topological_boundary.get_feature().get_name() == 'topology2':
+                self.assertTrue(point_location.located_in_resolved_boundary() == resolved_topological_boundary)
+                self.assertTrue(point_velocity == pygplates.Vector3D.zero)
+                self.assertTrue(point_strain_rate == pygplates.StrainRate.zero)
+                self.assertTrue(reconstructed_point == point_in_topology2)  # plates don't actually move
+            else:
+                self.assertTrue(point_location.located_in_resolved_boundary() is None)
+                self.assertTrue(point_velocity is None)
+                self.assertTrue(point_strain_rate is None)
+                self.assertTrue(reconstructed_point is None)
+            point_in_network = pygplates.PointOnSphere(0, -60)
+            self.assertTrue(resolved_topological_boundary.get_point_location(point_in_network).located_in_resolved_network() is None)  # no networks resolved
+
+    def test_resolved_topological_networks(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        resolved_topological_networks = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.network)
+        self.assertTrue(len(resolved_topological_networks) == 1)
+        resolved_topological_network = resolved_topological_networks[0]
+
+        # Test geometry points and velocities.
+        for include_rigid_blocks_as_interior_holes in (True, False):
+            resolved_geometry_points = resolved_topological_network.get_resolved_geometry_points(include_rigid_blocks_as_interior_holes)
+            resolved_geometry_point_velocities = resolved_topological_network.get_resolved_geometry_point_velocities(include_rigid_blocks_as_interior_holes)
+            self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+            self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+            # Note: The network has NO interior holes. If it did then this would fail.
+            self.assertTrue(resolved_topological_network.get_resolved_geometry() == pygplates.PolygonOnSphere(resolved_geometry_points))
+
+        # Test interior rigid blocks.
+        boundary_with_holes = resolved_topological_network.get_resolved_boundary(True)
+        self.assertTrue(boundary_with_holes == resolved_topological_network.get_resolved_geometry(include_rigid_blocks_as_interior_holes=True))
+        interior_rigid_blocks = resolved_topological_network.get_rigid_blocks()
+        self.assertTrue(len(interior_rigid_blocks) == 0)
+
+        # Test network triangulation.
+        network_triangulation = resolved_topological_network.get_network_triangulation()
+        triangles = network_triangulation.get_triangles()
+        # There are 22 triangles in the Delaunay triangulation but only 13 in the deforming region.
+        num_triangles = 22
+        num_deforming_triangles = 13
+        num_deforming_triangulation_boundary_edges = 15  # triangle edges bounding the *deforming* triangulation
+        self.assertTrue(len(triangles) == num_triangles)
+        deforming_triangles = [tri for tri in triangles if tri.is_in_deforming_region]
+        self.assertTrue(len(deforming_triangles) == num_deforming_triangles)
+        vertices = network_triangulation.get_vertices()
+        self.assertTrue(len(vertices) == 15)
+        # Can use vertices as keys in a dict.
+        vertex_to_triangles_dict = {}  # mapping of each vertex to all triangles referencing it
+        for triangle_index, triangle in enumerate(triangles):
+            self.assertTrue(triangle == triangles[triangle_index])
+            for index in range(3):
+                triangle_vertex = triangle.get_vertex(index)
+                self.assertTrue(triangle_vertex in vertices)
+                vertex_to_triangles_dict.setdefault(triangle_vertex, []).append(triangle)
+            self.assertTrue(triangle.strain_rate == pygplates.StrainRate.zero)
+        self.assertTrue(len(vertex_to_triangles_dict) == len(vertices))
+        self.assertTrue(sum(len(vertex_to_triangles_dict[v]) for v in vertices) == 3 * num_triangles)
+        # Can use triangles as keys in a dict.
+        deforming_triangle_to_adjacent_deforming_triangles_dict = {}  # mapping of each *deforming* triangle to its adjacent *deforming* triangles
+        for deforming_triangle in deforming_triangles:
+            deforming_triangle_to_adjacent_deforming_triangles_dict[deforming_triangle] = []
+            for index in range(3):
+                adjacent_triangle = deforming_triangle.get_adjacent_triangle(index)
+                if (adjacent_triangle and                       # if adjacent triangle is not at a triangulation boundary
+                    adjacent_triangle.is_in_deforming_region):  # if adjacent triangle is deforming
+                    deforming_triangle_to_adjacent_deforming_triangles_dict[deforming_triangle].append(adjacent_triangle)
+        self.assertTrue(len(deforming_triangle_to_adjacent_deforming_triangles_dict) == num_deforming_triangles)
+        self.assertTrue(sum(len(deforming_triangle_to_adjacent_deforming_triangles_dict[t]) for t in deforming_triangles) ==
+                        3 * num_deforming_triangles - num_deforming_triangulation_boundary_edges)  # no adjacent triangles at the boundary
+        for vertex_index, vertex in enumerate(vertices):
+            self.assertTrue(vertex == vertices[vertex_index])
+            vertex.position  # just access
+            self.assertTrue(vertex.strain_rate == pygplates.StrainRate.zero)
+            self.assertTrue(vertex.get_velocity() == pygplates.Vector3D.zero)
+            # Test velocity with parameters.
+            self.assertTrue(vertex.get_velocity(
+                velocity_delta_time=1.0, velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
+                velocity_units=pygplates.VelocityUnits.kms_per_my, earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms
+            ) == pygplates.Vector3D.zero)
+        # Each incident vertex has itself a list of incident vertices which should contain the original vertex.
+        for vertex in vertices:
+            incident_vertices = vertex.get_incident_vertices()
+            self.assertTrue(incident_vertices)
+            for incident_vertex in incident_vertices:
+                self.assertTrue(vertex in incident_vertex.get_incident_vertices())
+        # Each incident vertex has a list of incident triangles of which each triangle should contain the original vertex.
+        for vertex in vertices:
+            incident_triangles = vertex.get_incident_triangles()
+            self.assertTrue(incident_triangles)
+            for incident_triangle in incident_triangles:
+                triangle_vertices_matching_original_vertex = 0
+                # Exactly one vertex of the incident triangle should match the original vertex.
+                for index in range(3):
+                    if incident_triangle.get_vertex(index) == vertex:
+                        triangle_vertices_matching_original_vertex += 1
+                self.assertTrue(triangle_vertices_matching_original_vertex == 1)
+
+        # Test point location/velocity/strain-rate and reconstructed point.
+        point_inside_network = pygplates.PointOnSphere(0, -60)  # point is inside network
+        self.assertTrue(resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network() == resolved_topological_network)
+
+        # Check that point is in correct triangle of network triangulation.
+        self.assertTrue(resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network_deforming_region() == resolved_topological_network)
+        _, network_triangle = resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network_deforming_region(return_network_triangle=True)
+        # Point should be in the triangle with these vertices - so check they match the network triangle.
+        network_triangle_vertex_lat_lons = [
+            (1.9190404608408473, -46.33105360687644),
+            (0.1281258847639748, -89.46803133550394),
+            (-25.92674267168927, -67.49384878759929)]
+        network_triangle_vertices = [pygplates.PointOnSphere(lat, lon) for lat, lon in network_triangle_vertex_lat_lons]
+        for index in range(3):
+            self.assertTrue(network_triangle.get_vertex(index).position in network_triangle_vertices)
+        self.assertTrue(network_triangle.is_in_deforming_region)
+        
+        self.assertTrue(resolved_topological_network.get_point_velocity(point_inside_network) == pygplates.Vector3D.zero)
+        self.assertTrue(resolved_topological_network.get_point_strain_rate(point_inside_network) == pygplates.StrainRate.zero)
+        self.assertTrue(resolved_topological_network.reconstruct_point(
+                point_inside_network,
+                resolved_topological_network.get_reconstruction_time() + 1.0,
+                use_natural_neighbour_interpolation=False)
+                        == point_inside_network)  # network doesn't rotate/deform
+        point_in_boundary = pygplates.PointOnSphere(0, -30)  # point is outside network
+        self.assertTrue(resolved_topological_network.get_point_location(point_in_boundary).located_in_resolved_network() is None)
+        self.assertTrue(resolved_topological_network.get_point_location(point_in_boundary).located_in_resolved_boundary() is None)  # no boundaries resolved
+        self.assertTrue(resolved_topological_network.get_point_velocity(point_in_boundary) is None)
+        self.assertTrue(resolved_topological_network.get_point_strain_rate(point_in_boundary) is None)
+        self.assertTrue(resolved_topological_network.reconstruct_point(
+                point_in_boundary,
+                resolved_topological_network.get_reconstruction_time() + 1.0)
+                        is None)
+
+    def test_resolved_topological_sub_segments(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        resolved_topological_boundaries = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.boundary)
+        self.assertTrue(len(resolved_topological_boundaries) >= 1)
+
+        # Test geometry points and velocities.
+        for resolved_topological_boundary in resolved_topological_boundaries:
+            for boundary_sub_segment in resolved_topological_boundary.get_boundary_sub_segments():
+                resolved_geometry_points = boundary_sub_segment.get_resolved_geometry_points()
+                resolved_geometry_point_velocities = boundary_sub_segment.get_resolved_geometry_point_velocities()
+                self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+                self.assertTrue(boundary_sub_segment.get_resolved_geometry() == pygplates.PolylineOnSphere(resolved_geometry_points))
+                self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+
+    def test_resolved_topological_shared_sub_segments(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        resolved_topological_sections = snapshot.get_resolved_topological_sections()
+        self.assertTrue(len(resolved_topological_sections) >= 1)
+
+        # Test geometry points and velocities.
+        for resolved_topological_section in resolved_topological_sections:
+            for shared_sub_segment in resolved_topological_section.get_shared_sub_segments():
+                resolved_geometry_points = shared_sub_segment.get_resolved_geometry_points()
+                resolved_geometry_point_velocities = shared_sub_segment.get_resolved_geometry_point_velocities()
+                self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+                self.assertTrue(shared_sub_segment.get_resolved_geometry() == pygplates.PolylineOnSphere(resolved_geometry_points))
+                self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+    
+    def test_point_locations_velocities_strain_rates(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        points = [
+                pygplates.PointOnSphere(0, -30),  # only 'topology2' contains this point
+                (0, -60),  # only the sole network 'topology3' contains this point
+        ]
+
+        # Search only resolved boundaries (not resolved networks).
+        point_locations = snapshot.get_point_locations(points,
+                                                       resolve_topology_types=pygplates.ResolveTopologyType.boundary)
+        point_velocities, point_locations_2 = snapshot.get_point_velocities(points,
+                                                                            resolve_topology_types=pygplates.ResolveTopologyType.boundary,
+                                                                            # Also test velocity arguments get accepted...
+                                                                            velocity_delta_time=1.0,
+                                                                            velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
+                                                                            velocity_units=pygplates.VelocityUnits.kms_per_my,
+                                                                            earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms,
+                                                                            return_point_locations=True)
+        self.assertTrue(len(point_velocities) == len(point_locations_2) == 2)
+        point_strain_rates, point_locations_3 = snapshot.get_point_strain_rates(points,
+                                                                                resolve_topology_types=pygplates.ResolveTopologyType.boundary,
+                                                                                return_point_locations=True)
+        self.assertTrue(len(point_strain_rates) == len(point_locations_3) == 2)
+        # First point is in resolved boundary 'topology2'.
+        self.assertTrue(point_locations == point_locations_2 == point_locations_3)
+        resolved_topology2 = point_locations[0].located_in_resolved_boundary()
+        self.assertTrue(resolved_topology2 and resolved_topology2.get_feature().get_name() == 'topology2')
+        self.assertTrue(point_velocities[0] == pygplates.Vector3D.zero)
+        self.assertTrue(point_strain_rates[0] == pygplates.StrainRate.zero)
+        # Second point is in resolved network 'topology3', but we only searched resolved boundaries.
+        self.assertTrue(point_locations[1].not_located_in_resolved_topology())
+        self.assertTrue(point_velocities[1] is None)
+        self.assertTrue(point_strain_rates[1] is None)
+
+        # Search again, but include networks this time.
+        point_locations = snapshot.get_point_locations(points)
+        point_velocities = snapshot.get_point_velocities(points)
+        point_strain_rates = snapshot.get_point_strain_rates(points)
+        self.assertTrue(len(points) == len(point_locations) == len(point_velocities) == len(point_strain_rates) == 2)
+        # First point is in resolved boundary 'topology2'.
+        resolved_topology2 = point_locations[0].located_in_resolved_boundary()
+        self.assertTrue(resolved_topology2 and resolved_topology2.get_feature().get_name() == 'topology2')
+        # Second point is in resolved network 'topology3'.
+        resolved_topology3 = point_locations[1].located_in_resolved_network_deforming_region()
+        self.assertTrue(resolved_topology3 and resolved_topology3.get_feature().get_name() == 'topology3')
+        # Both velocities and strain rates are zero.
+        self.assertTrue(point_velocities == [pygplates.Vector3D.zero] * len(points))
+        self.assertTrue(point_strain_rates == [pygplates.StrainRate.zero] * len(points))
+    
+    def test_resolve_topology_parameters(self):
+        default_resolve_topology_parameters=pygplates.ResolveTopologyParameters()
+        self.assertFalse(default_resolve_topology_parameters.enable_strain_rate_clamping)
+        self.assertAlmostEqual(default_resolve_topology_parameters.max_clamped_strain_rate, 5e-15, 19)
+        self.assertTrue(default_resolve_topology_parameters.strain_rate_smoothing == pygplates.StrainRateSmoothing.natural_neighbour)
+        self.assertAlmostEqual(default_resolve_topology_parameters.rift_exponential_stretching_constant, 1.0)
+        self.assertAlmostEqual(default_resolve_topology_parameters.rift_strain_rate_resolution, 5e-17, 19)
+        self.assertAlmostEqual(default_resolve_topology_parameters.rift_edge_length_threshold_degrees, 0.1)
+
+        resolve_topology_parameters=pygplates.ResolveTopologyParameters(
+                enable_strain_rate_clamping=True,
+                max_clamped_strain_rate=1e-14,
+                strain_rate_smoothing=pygplates.StrainRateSmoothing.barycentric,
+                rift_exponential_stretching_constant=1.5,
+                rift_strain_rate_resolution=1e-16,
+                rift_edge_length_threshold_degrees=0.2)
+        self.assertTrue(resolve_topology_parameters.enable_strain_rate_clamping)
+        self.assertAlmostEqual(resolve_topology_parameters.max_clamped_strain_rate, 1e-14, 19)
+        self.assertTrue(resolve_topology_parameters.strain_rate_smoothing == pygplates.StrainRateSmoothing.barycentric)
+        self.assertAlmostEqual(resolve_topology_parameters.rift_exponential_stretching_constant, 1.5)
+        self.assertAlmostEqual(resolve_topology_parameters.rift_strain_rate_resolution, 1e-16, 19)
+        self.assertAlmostEqual(resolve_topology_parameters.rift_edge_length_threshold_degrees, 0.2)
 
     def test_resolved_export_files(self):
         resolve_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml')) 
@@ -2989,11 +3553,68 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         self.assertTrue(len(plate_boundary_stats) == 46)
         plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), first_uniform_point_spacing_radians=0.0, include_network_boundaries=True)
         self.assertTrue(len(plate_boundary_stats) == 60)
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10))
+        self.assertTrue(len(plate_boundary_stats) == 35)
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True)
+        self.assertTrue(len(plate_boundary_stats) == 47)
+        # Test the boundary point locations are what we expect.
+        plate_boundary_point_lat_lons = [
+                (-21.946252475914736, -19.346293200343844),
+                (-22.263605990417016, -30.091019489088392),
+                (-14.129996291084824, -11.506734532892487),
+                (-14.430381668646307, -21.821783377601868),
+                (-14.283044764886622, -32.143886500299004),
+                (-13.693316402918944, -42.432420981802544),
+                (18.326889205210314, -14.998878874263106),
+                (18.554579148162833, -25.522685963030952),
+                (-22.764772155019195, -39.71273543910178),
+                (16.70728652671387, -48.89580498731181),
+                (-31.732842469635937, -17.51643377293209),
+                (39.50030441441998, -22.582837115784884),
+                (33.23157851662342, -12.915515099055257),
+                (-31.83922723518894, -29.204913960315768),
+                (-30.99540328138162, -44.876248571709745),
+                (-32.054485342279214, -34.08499535394857),
+                (0.39052799774844704, -46.19246934095273),
+                (-9.581073246488833, -45.50253053612027),
+                (-21.756972872766777, -6.76622067408889),
+                (40.06528806134546, -50.33794799230483),
+                (42.35195077531569, -37.38298913948155),
+                (10.312560528313567, -47.43561181664631),
+                (16.077431034728548, -9.688752704075124),
+                (6.098016658202067, -9.074482704326721),
+                (-3.8880946684713225, -8.822690073188438),
+                (-13.885676744359461, -9.045558108663817),
+                (-21.39194690061765, -1.4036247206911152),
+                (21.92609237556592, -89.59715591286103),
+                (11.926266099667044, -89.53544210807405),
+                (1.9264273486903765, -89.47815991774948),
+                (-8.073412629307109, -89.42143354345046),
+                (-18.073244242729142, -89.36176938774878),
+                (29.430057905628797, -84.72043539544897),
+                (33.843078259328216, -74.17084500284454),
+                (37.26900636827229, -62.61183577799688),
+                (-25.926603811980286, -83.74805508707956),
+                (-25.827966619343684, -72.6707317363454),
+                (-26.05969135338931, -61.55260351765192),
+                (-26.04527471565717, -50.43015875739786),
+                (-31.73370294004206, -5.992946229710096),
+                (-19.57764637188272, -45.231632684686),
+                (19.068459681220613, -36.06969403649895),
+                (19.399001381324304, -46.65673771463496),
+                (35.68660277464262, -48.1785066964556),
+                (27.47040397496536, -41.474010277625624),
+                (26.07532695910801, -9.908990918811437),
+                (-13.392730536929992, -1.2383560708492212)
+        ]
+        plate_boundary_points = [pygplates.PointOnSphere(lat, lon) for lat, lon in plate_boundary_point_lat_lons]
+        for stat in plate_boundary_stats:
+            self.assertTrue(stat.boundary_point in plate_boundary_points)
 
         # Access PlateBoundaryStatistic attributes - just to make sure they can be queried.
         for plate_boundary_stat in plate_boundary_stats:
-            plate_boundary_stat.point_location
-            self.assertTrue(plate_boundary_stat.length <= 2*math.radians(10) and plate_boundary_stat.length >= 0)
+            plate_boundary_stat.boundary_point
+            self.assertTrue(plate_boundary_stat.boundary_length <= 2*math.radians(10) and plate_boundary_stat.boundary_length >= 0)
             self.assertAlmostEqual(plate_boundary_stat.boundary_normal.get_magnitude(), 1.0)
             self.assertTrue(plate_boundary_stat.boundary_normal_azimuth <= 2*math.pi and plate_boundary_stat.boundary_normal_azimuth >= 0)
             self.assertTrue(plate_boundary_stat.boundary_velocity == pygplates.Vector3D.zero)
@@ -3001,14 +3622,14 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             plate_boundary_stat.boundary_velocity_obliquity
             plate_boundary_stat.boundary_velocity_orthogonal
             plate_boundary_stat.boundary_velocity_parallel
-            plate_boundary_stat.left_plate_location
+            plate_boundary_stat.left_plate
             plate_boundary_stat.left_plate_velocity
             plate_boundary_stat.left_plate_velocity_magnitude
             plate_boundary_stat.left_plate_velocity_obliquity
             plate_boundary_stat.left_plate_velocity_orthogonal
             plate_boundary_stat.left_plate_velocity_parallel
             self.assertTrue(plate_boundary_stat.left_plate_strain_rate == pygplates.StrainRate.zero)
-            plate_boundary_stat.right_plate_location
+            plate_boundary_stat.right_plate
             plate_boundary_stat.right_plate_velocity
             plate_boundary_stat.right_plate_velocity_magnitude
             plate_boundary_stat.right_plate_velocity_obliquity
@@ -3033,11 +3654,32 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
 
         # Return a dict mapping each shared sub-segment to its statistics.
         plate_boundary_stats_dict = snapshot.calculate_plate_boundary_statistics(math.radians(10),
-                                                                                 first_uniform_point_spacing_radians=0.0,
                                                                                  include_network_boundaries=True,
                                                                                  return_shared_sub_segment_dict=True)
-        self.assertTrue(len(plate_boundary_stats_dict) == 32)
-        self.assertTrue(sum(len(shared_sub_segment_stats) for _, shared_sub_segment_stats in plate_boundary_stats_dict.items()) == 60)
+        self.assertTrue(len(plate_boundary_stats_dict) == 26)
+        self.assertTrue(sum(len(shared_sub_segment_stats) for _, shared_sub_segment_stats in plate_boundary_stats_dict.items()) == 47)
+
+        # Filter boundary sections by feature type.
+        plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 include_network_boundaries=True,
+                                                                                 # All boundary sections are this feature type...
+                                                                                 boundary_section_filter=pygplates.FeatureType.gpml_unclassified_feature,
+                                                                                 return_shared_sub_segment_dict=True)
+        self.assertTrue(len(plate_boundary_stats_filtered) == 26)
+        plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 include_network_boundaries=True,
+                                                                                 # None of the boundary sections include these feature types...
+                                                                                 boundary_section_filter=[pygplates.FeatureType.gpml_subduction_zone, pygplates.FeatureType.gpml_mid_ocean_ridge],
+                                                                                 return_shared_sub_segment_dict=True)
+        self.assertTrue(len(plate_boundary_stats_filtered) == 0)
+        plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 include_network_boundaries=True,
+                                                                                 # Filter boundary sections that are resolved topological lines...
+                                                                                 boundary_section_filter=lambda rts: isinstance(rts.get_topological_section(), pygplates.ResolvedTopologicalLine),
+                                                                                 return_shared_sub_segment_dict=True)
+        # There is only one resolved topological line, but it has multiple shared sub-segments.
+        topological_sections = set(shared_sub_segment.get_topological_section() for shared_sub_segment in plate_boundary_stats_filtered.keys())
+        self.assertTrue(len(topological_sections) == 1)
     
     def test_pickle(self):
         snapshot = pygplates.TopologicalSnapshot(

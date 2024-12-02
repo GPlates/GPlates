@@ -2322,13 +2322,21 @@ namespace GPlatesMaths
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-			// Only add last ring vertex if it's not the same as the first
-			// (provided the ring will have at least 3 vertices).
-			if (num_ring_points == s_min_num_ring_points ||
-				p1 != p2)
-			{
-				ring.push_back(GreatCircleArc::create(p1, p2));
-			}
+			// Note: Previously we only added the last ring vertex if was not the same as the first
+			//       (provided the ring would have at least 3 vertices).
+			//
+			//       We no longer do this since the user might want the last ring vertex included.
+			//       For example, when topological boundaries are resolved, each sub-segment has all
+			//       its vertices added to the polygon, which means duplicate vertices where two
+			//       adjacent sub-segments intersect - if we removed one vertex then the sum of all
+			//       sub-segment vertices no longer matches number of polygon exterior ring vertices
+			//       (which causes other quantities derived from vertices to get out-of-sync).
+			//
+			//       In any case, when writing polygons to GPML we add an extra vertex (ring's start vertex)
+			//       if it doesn't coincide with the ring's last vertex. And when reading polygons from GPML
+			//       we remove a ring's last vertex if it coincides with the ring's start vertex
+			//       (provided the ring will still have at least 3 vertices).
+			ring.push_back(GreatCircleArc::create(p1, p2));
 		}
 	}
 }

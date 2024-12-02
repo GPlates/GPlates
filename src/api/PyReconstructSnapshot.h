@@ -50,6 +50,7 @@
  // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"
 
+#include "utils/Base2Utils.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -85,6 +86,15 @@ namespace GPlatesApi
 		//
 		// Note: 'pygplates.ReconstructSnapshot.get_reconstructed_geometries()' accepts *multiple* types.
 		constexpr flags_type DEFAULT_RECONSTRUCT_TYPES = DEFAULT_RECONSTRUCT_TYPE;
+
+		// Returns true if only one reconstruct type is set in the specified flags.
+		inline
+		bool
+		only_one_reconstruct_type(
+				flags_type flags)
+		{
+			return GPlatesUtils::Base2::is_power_of_two(flags);
+		}
 	};
 
 
@@ -136,6 +146,9 @@ namespace GPlatesApi
 
 		/**
 		 * Get reconstructed feature geometries.
+		 *
+		 * Note: Since this is a *single* reconstruct type, the reconstructed geometries will be
+		 *       in the order of the features in the reconstructable files (and the order across files).
 		 */
 		const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &
 		get_reconstructed_feature_geometries() const
@@ -145,6 +158,9 @@ namespace GPlatesApi
 
 		/**
 		 * Get reconstructed motion paths.
+		 *
+		 * Note: Since this is a *single* reconstruct type, the reconstructed geometries will be
+		 *       in the order of the features in the reconstructable files (and the order across files).
 		 */
 		const std::vector<GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type> &
 		get_reconstructed_motion_paths() const
@@ -154,6 +170,9 @@ namespace GPlatesApi
 
 		/**
 		 * Get reconstructed flowlines.
+		 *
+		 * Note: Since this is a *single* reconstruct type, the reconstructed geometries will be
+		 *       in the order of the features in the reconstructable files (and the order across files).
 		 */
 		const std::vector<GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type> &
 		get_reconstructed_flowlines() const
@@ -164,7 +183,7 @@ namespace GPlatesApi
 		/**
 		 * Get features grouped with their reconstructed geometries (feature geometries, motion paths and flowlines).
 		 *
-		 * The features are sorted in the order of the features in the reconstructable files (and the order across files).
+		 * The features will ALWAYS be sorted in the order of the features in the reconstructable files (and the order across files).
 		 *
 		 * By default returns only features associated with reconstructed feature geometries (excludes motion paths and flowlines).
 		 */
@@ -175,13 +194,18 @@ namespace GPlatesApi
 		/**
 		 * Get reconstructed geometries (feature geometries, motion paths and flowlines).
 		 *
-		 * The reconstructed geometries are NOT sorted (use @a get_reconstructed_features if you want sorting).
+		 * If @a same_order_as_reconstructable_features is true then the reconstructed geometries will be sorted
+		 * in the order of the features in the reconstructable files (and the order across files).
+		 * By default they are *not* guaranteed to be sorted.
+		 * Note that if a *single* reconstruct type is specified then the reconstructed geometries will already be sorted regardless of
+		 * @a same_order_as_reconstructable_features (they're just not guaranteed to be sorted *across* reconstruct types unless it's true).
 		 *
 		 * By default returns only reconstructed feature geometries (excludes motion paths and flowlines).
 		 */
-		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
+		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
 		get_reconstructed_geometries(
-				ReconstructType::flags_type reconstruct_types = ReconstructType::DEFAULT_RECONSTRUCT_TYPES) const;
+				ReconstructType::flags_type reconstruct_types = ReconstructType::DEFAULT_RECONSTRUCT_TYPES,
+				bool same_order_as_reconstructable_features = false) const;
 
 		/**
 		 * Export reconstructed geometries (feature geometries, motion paths and flowlines) to a file.
@@ -280,7 +304,7 @@ namespace GPlatesApi
 		void
 		find_feature_geometry_groups(
 				std::list<ReconstructSnapshot::feature_geometry_group_type> &grouped_reconstructed_geometries,
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_geometries) const;
+				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type> &reconstructed_geometries) const;
 
 		void
 		export_reconstructed_feature_geometries(

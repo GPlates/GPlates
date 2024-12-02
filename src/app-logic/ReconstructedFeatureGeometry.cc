@@ -27,7 +27,9 @@
 
 #include "ReconstructedFeatureGeometry.h"
 
+#include "GeometryUtils.h"
 #include "ReconstructionGeometryVisitor.h"
+#include "ResolvedVertexSourceInfo.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -138,6 +140,50 @@ GPlatesAppLogic::ReconstructedFeatureGeometry::reconstructed_geometry() const
 	}
 
 	return d_reconstructed_geometry.get();
+}
+
+
+void
+GPlatesAppLogic::ReconstructedFeatureGeometry::reconstructed_geometry_points(
+		point_seq_type &reconstructed_geometry_points_) const
+{
+	const geometry_ptr_type reconstructed_geometry_ = reconstructed_geometry();
+
+	GeometryUtils::get_geometry_points(*reconstructed_geometry_, reconstructed_geometry_points_);
+}
+
+
+void
+GPlatesAppLogic::ReconstructedFeatureGeometry::reconstructed_geometry_point_velocities(
+		velocity_seq_type &reconstructed_geometry_point_velocities_,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
+{
+	// All points in the geometry are reconstructed the same way.
+	// So they will have the same stage rotation but different velocities (due to different positions).
+	const ResolvedVertexSourceInfo::non_null_ptr_to_const_type reconstructed_source_info =
+			ResolvedVertexSourceInfo::create(get_non_null_pointer_to_const());
+
+	// Get the geometry points.
+	point_seq_type reconstructed_geometry_points_;
+	reconstructed_geometry_points(reconstructed_geometry_points_);
+
+	// Calculate a velocity at each point.
+	reconstructed_geometry_point_velocities_.reserve(
+			reconstructed_geometry_point_velocities_.size() + reconstructed_geometry_points_.size());
+	for (const GPlatesMaths::PointOnSphere &point : reconstructed_geometry_points_)
+	{
+		reconstructed_geometry_point_velocities_.push_back(
+				reconstructed_source_info->get_velocity_vector(
+						point,
+						get_reconstruction_time(),
+						velocity_delta_time,
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms));
+	}
 }
 
 
