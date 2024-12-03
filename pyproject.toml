@@ -13,7 +13,9 @@ requires = [
     #       However the NumPy *runtime* requirement (in 'dependencies' below) needs no version restriction.
     'numpy>=2.0; python_version>="3.9"',
     # Note: Python 3.8 is not supported by NumPy 2.0.
-    'numpy; python_version<"3.9"'
+    #       Also note that *building* against NumPy 1.x does NOT support earlier (<1.x) versions at runtime.
+    #       So we use the oldest supported NumPy for the Python version and platform.
+    'oldest-supported-numpy; python_version<"3.9"'
 ]
 
 #
