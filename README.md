@@ -12,7 +12,10 @@
   <strong>PyGPlates</strong> is a library for accessing GPlates functionality via the Python programming language.
 </p>
 
-[![Anaconda-Server Badge](https://img.shields.io/conda/vn/conda-forge/pygplates?label=conda%20pygplates)](https://anaconda.org/conda-forge/pygplates)
+[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/pygplates?label=Conda%20downloads)](
+https://anaconda.org/conda-forge/pygplates)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/pygplates?label=PyPI%20downloads)](
+https://pypi.org/project/pygplates/)
 
 
 #### Citations:
