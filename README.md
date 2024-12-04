@@ -66,13 +66,13 @@ GPlates and pyGPlates are [free software](https://www.gnu.org/philosophy/free-sw
 
 #### Dependencies
 
-* [Boost](https://www.boost.org/) 1.35 or above
-* [CGAL](https://www.cgal.org/) 4.7 or above (preferably 4.12 or above)
-* [CMake](https://cmake.org/) 3.10 or above
-* [GDAL](https://gdal.org/) 1.3.2 or above (preferably 2 or above)
+* [Boost](https://www.boost.org/) 1.55 or above (1.70 or above if cmake >= 3.30)
+* [CGAL](https://www.cgal.org/) 4.12 or above
+* [CMake](https://cmake.org/) 3.16 or above
+* [GDAL](https://gdal.org/) 2.0 or above
 * [GLEW](http://glew.sourceforge.net/)
 * [PROJ](https://proj.org/) 4.6 or above (preferably 6 or above)
-* [Python](http://python.org/) 3.7 or above (or 2.7)
+* [Python](http://python.org/) 3.8 or above
 * [Qt](https://www.qt.io/) 5.6 - 5.15 (__note__: 6.x will only be supported for GPlates 3.0)
 * [Qwt](https://qwt.sourceforge.io/) 6.0.1 or above (preferably 6.1 or above)
 
