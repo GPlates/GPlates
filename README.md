@@ -46,25 +46,23 @@ There is also a [GPlates online forum](https://discourse.gplates.org/) for the u
 
 ### Binary packages
 
-Ready-to-use [binary packages](https://www.gplates.org/download/) are available to install __GPlates__ and __pyGPlates__ on Windows, macOS (Intel and Silicon) and Ubuntu. These also include [GPlates-compatible geodata](https://www.gplates.org/download/#download-gplates-compatible-data).
+__GPlates__ can be installed on Windows, macOS (Intel and Silicon) and Ubuntu via ready-to-use [binary packages](https://www.gplates.org/download/). These packages also include [GPlates-compatible geodata](https://www.gplates.org/download/#download-gplates-compatible-data).
 
-PyGPlates can also be installed using [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/index.html). Please see the [pyGPlates documentation](https://www.gplates.org/docs/pygplates/index.html) for details.
+__PyGPlates__ can be installed using [conda](https://anaconda.org/conda-forge/pygplates) and [pip](https://pypi.org/project/pygplates). Please see the [pyGPlates documentation](https://www.gplates.org/docs/pygplates/index.html) for details.
 
 ### Source code
 
-The source code can be compiled on Windows, macOS and Linux. This can be useful for non-Ubuntu Linux users.
+The source code can be compiled on Windows, macOS and Linux.
 
-The source code is obtained either by:
-- downloading from the same [download page](https://www.gplates.org/download/) as the binary packages, or
-- checking out a [primary branch in this repository](#primary-branches).
+The source code is obtained by checking out a [primary branch in this repository](#primary-branches).
 
 Instructions for installing the [dependencies](#dependencies) and compiling GPlates/pyGPlates can be found in the source code, in the files:
 
-- [DEPS.Linux](DEPS.Linux) and [BUILD.Linux](BUILD.Linux) (on Linux)
-- [DEPS.OSX](DEPS.OSX) and [BUILD.OSX](BUILD.OSX) (on macOS)
-- [DEPS.Windows](DEPS.Windows) and [BUILD.Windows](BUILD.Windows) (on Windows)
+- `DEPS.Linux` and `BUILD.Linux` (on Linux)
+- `DEPS.OSX` and `BUILD.OSX` (on macOS)
+- `DEPS.Windows` and `BUILD.Windows` (on Windows)
 
-GPlates and pyGPlates are licensed for distribution under the GNU [General Public License (GPL), version 2](COPYING).
+GPlates and pyGPlates are [free software](https://www.gnu.org/philosophy/free-sw.html) (also known as [open-source](https://opensource.org/docs/definition.php) software), licensed for distribution under the GNU [General Public License](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) (GPL) version 2 (see `COPYING`).
 
 #### Dependencies
 
@@ -87,11 +85,12 @@ Public releases and development snapshots can be compiled from the __primary bra
 To compile the latest official __public release__:
 - For GPlates, use the `release-gplates` branch.
 - For PyGPlates, use the `release-pygplates` branch.
-> __Note:__ Alternatively, download the source code from the [download page](https://www.gplates.org/download/).
 
 To compile the latest __development snapshot__:
 - For GPlates, use the `gplates` branch (_the default branch_).
 - For PyGPlates, use the `pygplates` branch.
+
+> __Note:__ Please do __not__ compile GPlates from a pyGPlates branch (or compile pyGPlates from a GPlates branch).
 
 ##### Development branching model
 
