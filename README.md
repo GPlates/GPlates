@@ -1,21 +1,33 @@
-<p align="center">
-  <img width="150"  src="https://github.com/GPlates/GPlates/assets/2688316/57d378d5-ef43-4185-b282-b7da8f612797" alt="GPlates Logo">
-</p>
-<p align="center">
-  <strong>GPlates</strong> is a desktop application for the interactive visualisation of plate tectonics.
-</p>
+<div align="center">
 
-<p align="center">
-  <img width="260" alt="PyGPlates Logo" src="https://github.com/GPlates/GPlates/assets/2688316/8f025d75-7d92-42ce-8818-b2e2aeda0142">
-</p>
-<p align="center">
-  <strong>PyGPlates</strong> is a library for accessing GPlates functionality via the Python programming language.
-</p>
+  <p>
+    <img width="150"  src="https://github.com/GPlates/GPlates/assets/2688316/57d378d5-ef43-4185-b282-b7da8f612797" alt="GPlates Logo">
+  </p>
+  <p>
+    <strong>GPlates</strong> is a desktop application for the interactive visualisation of plate tectonics.
+  </p>
 
-[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/pygplates?label=Conda%20downloads)](
-https://anaconda.org/conda-forge/pygplates)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/pygplates?label=PyPI%20downloads)](
-https://pypi.org/project/pygplates/)
+</div>
+
+<div align="center">
+
+  <p>
+    <img width="260" alt="PyGPlates Logo" src="https://github.com/GPlates/GPlates/assets/2688316/8f025d75-7d92-42ce-8818-b2e2aeda0142">
+  </p>
+  <p>
+    <strong>PyGPlates</strong> is a library for accessing GPlates functionality via the Python programming language.
+  </p>
+
+  [![PyGPlates Version](https://img.shields.io/pypi/v/pygplates?label=PyGPlates)](
+  https://www.gplates.org/docs/pygplates/index.html)
+  [![Python Versions](https://img.shields.io/pypi/pyversions/pygplates?label=Python)](
+  https://pypi.org/project/pygplates)
+  [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/pygplates?label=Conda%20downloads)](
+  https://anaconda.org/conda-forge/pygplates)
+  [![PyPI Downloads](https://img.shields.io/pypi/dm/pygplates?label=PyPI%20downloads)](
+  https://pypistats.org/packages/pygplates)
+
+</div>
 
 
 #### Citations:
