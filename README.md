@@ -60,7 +60,7 @@ There is also a [GPlates online forum](https://discourse.gplates.org/) for the u
 
 __GPlates__ can be installed on Windows, macOS (Intel and Silicon) and Ubuntu via ready-to-use [binary packages](https://www.gplates.org/download/). These packages also include [GPlates-compatible geodata](https://www.gplates.org/download/#download-gplates-compatible-data).
 
-__PyGPlates__ can be installed using [conda](https://anaconda.org/conda-forge/pygplates) and [pip](https://pypi.org/project/pygplates). Please see the [pyGPlates documentation](https://www.gplates.org/docs/pygplates/index.html) for details.
+__PyGPlates__ can be installed using [conda](https://anaconda.org/conda-forge/pygplates) or [pip](https://pypi.org/project/pygplates). Please see the [pyGPlates documentation](https://www.gplates.org/docs/pygplates/index.html) for details.
 
 ### Source code
 
