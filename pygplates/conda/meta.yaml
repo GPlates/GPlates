@@ -8,12 +8,8 @@ package:
 source:
   path: ../../
 
-  #url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  #sha256: 97fdf1b85d10bf038ce6c4a04a0fcc5f76ab5b439467911e2c672ec2147f5226
-
-  #git_url: https://github.com/GPlates/GPlates.git
-  #git_rev: release/pygplates-1.0
-  #git_depth: 1
+  #url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  #sha256: 24d5eccfb1716d4fd1eb109d0a46cf62a58e247676623ff578d773904b94e645
 
 build:
   number: 0
@@ -57,8 +53,11 @@ requirements:
     - gmp
     - mpfr
     - glew
-    - libglu          # [linux]
-    - xorg-libxfixes  # [linux]
+    - libopengl-devel  # [linux]
+    - libgl-devel      # [linux]
+    - libglx-devel     # [linux]
+    - libglu           # [linux]
+    - xorg-libxfixes   # [linux]
     - qt-main
     - libboost-devel
     - libboost-python-devel
