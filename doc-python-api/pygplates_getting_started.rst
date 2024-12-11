@@ -20,9 +20,15 @@ This section covers the installation of pyGPlates.
    :local:
    :depth: 1
 
-Starting with version 1.0, pyGPlates can now be installed using ``conda`` or ``pip``.
+Starting with version 1.0, pyGPlates can now be installed using
+`conda <https://docs.conda.io/projects/conda/en/latest/user-guide/index.html>`_ or
+`pip <https://pip.pypa.io/en/stable/>`_.
 
-You can also install pyGPlates *from source code*.
+.. note:: We recommend installing pyGPlates using ``conda``
+  (since it is designed with binary Python extensions, like pyGPlates, in mind).
+  However we also provide comprehensive support for ``pip`` (via our `binary wheels <https://pypi.org/project/pygplates/#files>`_).
+
+Alternatively, you can install pyGPlates *from source code*.
 However, that requires installing the required dependency libraries and compilation tools.
 
 .. note:: | Be sure to remove the locations of any pyGPlates versions older than 1.0 from the ``PYTHONPATH`` environment variable.
@@ -40,7 +46,21 @@ However, that requires installing the required dependency libraries and compilat
 Install using conda
 ^^^^^^^^^^^^^^^^^^^
 
-We recommend installing pyGPlates using `conda <https://docs.conda.io/projects/conda/en/latest/user-guide/index.html>`_.
+PyGPlates installed using ``conda`` supports:
+
+- Platforms:
+
+  - Windows (x86-64),
+  - macOS (x86-64) and macOS (ARM64),
+  - Linux (x86-64) and Linux (ARM64).
+
+- Python:
+
+  - Version 3.9 - 3.12.
+
+- NumPy:
+
+  - Version 1.x.
 
 To install the latest stable version of pyGPlates type the following in a terminal or command window
 (on macOS and Ubuntu this is a *Terminal* window, and on Windows you'll need to open an *Anaconda prompt* from the Start menu):
@@ -49,7 +69,8 @@ To install the latest stable version of pyGPlates type the following in a termin
   conda install -c conda-forge/label/pygplates_rc -c conda-forge pygplates
 
 .. note:: Since the current release is a *pre-release* (release candidate ``1.0.0rc1``), it is in a special *release candidate*
-  channel ``conda-forge/label/pygplates_rc`` (which must be specified *before* the usual ``conda-forge`` channel).
+  channel ``conda-forge/label/pygplates_rc`` (which must be specified **before** the *main* channel ``conda-forge``).
+  If you don't do this then you'll install the older unofficial version ``0.39`` from the *main* channel.
 
 We recommend installing pyGPlates into a new conda environment.
 For example, the following creates and activates a Python 3.12 environment named ``pygplates_py312`` containing pyGPlates and all its dependency libraries:
@@ -74,6 +95,32 @@ For example, if you want ``gplately`` to use ``pygplates-1.0.0rc1`` (instead of 
 
 Install using pip
 ^^^^^^^^^^^^^^^^^
+
+PyGPlates installed using ``pip`` supports (via our `binary wheels <https://pypi.org/project/pygplates/#files>`_):
+
+- Platforms:
+
+  - Windows (x86-64),
+  - macOS **10.15+** (x86-64) and macOS **11.0+** (ARM64),
+  - Linux (x86-64) and Linux (ARM64).
+
+    - Our *manylinux* wheels are compatible with Linux distros using glibc 2.17 or later.
+    - Eg, Ubuntu 13.10+, Debian 8+, Fedora 19+, CentOS/RHEL 7+.
+
+- Python:
+
+  - Version 3.8 - 3.13.
+
+    - Except 3.13 not yet available on macOS.
+
+- NumPy:
+
+  - Version 1.24+ (for Python 3.8):
+
+    - Make sure your NumPy version is 1.24+ to avoid a binary incompatible error.
+    - This will be fixed in the final release `1.0.0`. The current release is a *pre-release* (`1.0.0rc1`).
+
+  - Version 2.x and 1.x (for Python 3.9 and later).
 
 On **macOS** or **Linux**, to install the latest stable version of pyGPlates type the following in a terminal:
 ::
