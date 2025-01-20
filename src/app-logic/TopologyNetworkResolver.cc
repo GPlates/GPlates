@@ -914,7 +914,7 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 
 			// Get the point source infos for this interior resolved line.
 			const resolved_vertex_source_info_seq_type &interior_point_source_infos =
-					interior_rtl.get()->get_vertex_source_infos();
+					interior_rtl.get()->get_resolved_topology_geometry_point_source_infos();
 
 			// Interior resolved line should have matching number of points and point source infos.
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(

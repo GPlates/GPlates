@@ -165,14 +165,25 @@ namespace GPlatesAppLogic
 				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
 
 		/**
-		 * Returns the boundary per-vertex source reconstructed feature geometries.
+		 * Returns the source infos at points in @a boundary_polygon_points.
 		 *
-		 * Each vertex returned by @a boundary_polygon references a source reconstructed feature geometry.
-		 * This method returns the same number of vertex sources as vertices returned by @a boundary_polygon
-		 * (with the same value of @a include_rigid_blocks_as_interior_holes).
+		 * Note: Each source info maps to a point in @a boundary_polygon_points.
+		 *
+		 * Note: The number of source infos is guaranteed to match points in @a boundary_polygon_points.
 		 */
 		const resolved_vertex_source_info_seq_type &
-		get_boundary_vertex_source_infos(
+		boundary_polygon_point_source_infos(
+				bool include_rigid_blocks_as_interior_holes = false) const;
+
+		/**
+		 * Returns the source features at points in @a boundary_polygon_points.
+		 *
+		 * Note: Each source feature maps to a point in @a boundary_polygon_points.
+		 *
+		 * Note: The number of source features is guaranteed to match points in @a boundary_polygon_points.
+		 */
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &
+		boundary_polygon_point_source_features(
 				bool include_rigid_blocks_as_interior_holes = false) const;
 
 
@@ -371,8 +382,7 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Each point in the boundary of the resolved topological network can potentially reference
-		 * a different source reconstructed feature geometry.
+		 * Each point in the boundary of the resolved topological network can potentially reference a different source info.
 		 *
 		 * As an optimisation, this is only created when first requested.
 		 */
@@ -381,6 +391,18 @@ namespace GPlatesAppLogic
 		 * Same as @a d_boundary_vertex_source_infos except includes vertices of interior rigid blocks.
 		 */
 		mutable boost::optional<resolved_vertex_source_info_seq_type> d_boundary_with_rigid_blocks_vertex_source_infos;
+
+
+		/**
+		 * Each point in the boundary of the resolved topological network can potentially reference a different source feature.
+		 *
+		 * As an optimisation, this is only created when first requested.
+		 */
+		mutable boost::optional<std::vector<GPlatesModel::FeatureHandle::weak_ref>> d_boundary_vertex_source_features;
+		/**
+		 * Same as @a d_boundary_vertex_source_features except includes vertices of interior rigid blocks.
+		 */
+		mutable boost::optional<std::vector<GPlatesModel::FeatureHandle::weak_ref>> d_boundary_with_rigid_blocks_vertex_source_features;
 
 
 		/**
@@ -412,6 +434,10 @@ namespace GPlatesAppLogic
 
 		void
 		calc_boundary_vertex_source_infos(
+				bool include_rigid_blocks_as_interior_holes) const;
+
+		void
+		calc_boundary_vertex_source_features(
 				bool include_rigid_blocks_as_interior_holes) const;
 	};
 }

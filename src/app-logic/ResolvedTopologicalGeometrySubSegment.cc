@@ -212,6 +212,99 @@ GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_reversed_sub_segment
 }
 
 
+void
+GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_sub_segment_point_source_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &point_source_features,
+		bool include_rubber_band_points) const
+{
+	if (!d_point_source_features)
+	{
+		d_point_source_features = std::vector<GPlatesModel::FeatureHandle::weak_ref>();
+
+		// Get the point source features (including at the optional rubber band points).
+		ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_source_features(
+				d_point_source_features.get(),
+				d_sub_segment,
+				d_segment_reconstruction_geometry,
+				true/*include_rubber_band_points*/);
+	}
+
+	// Copy to caller's sequence.
+	//
+	// If the caller does not want rubber band points then avoid copying them (if they exist).
+	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator src_point_source_infos_begin = d_point_source_features->begin();
+	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator src_point_source_infos_end = d_point_source_features->end();
+	if (!include_rubber_band_points)
+	{
+		if (d_sub_segment.get_start_rubber_band())
+		{
+			++src_point_source_infos_begin;
+		}
+		if (d_sub_segment.get_end_rubber_band())
+		{
+			--src_point_source_infos_end;
+		}
+	}
+
+	std::copy(
+			src_point_source_infos_begin,
+			src_point_source_infos_end,
+			std::back_inserter(point_source_features));
+}
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_reversed_sub_segment_point_source_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &point_source_features,
+		bool use_reverse,
+		bool include_rubber_band_points) const
+{
+	if (!d_point_source_features)
+	{
+		d_point_source_features = std::vector<GPlatesModel::FeatureHandle::weak_ref>();
+
+		// Get the point source features (including at the optional rubber band points).
+		ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_source_features(
+				d_point_source_features.get(),
+				d_sub_segment,
+				d_segment_reconstruction_geometry,
+				true/*include_rubber_band_points*/);
+	}
+
+	// Copy to caller's sequence.
+	//
+	// If the caller does not want rubber band points then avoid copying them (if they exist).
+	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator src_point_source_infos_begin = d_point_source_features->begin();
+	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator src_point_source_infos_end = d_point_source_features->end();
+	if (!include_rubber_band_points)
+	{
+		if (d_sub_segment.get_start_rubber_band())
+		{
+			++src_point_source_infos_begin;
+		}
+		if (d_sub_segment.get_end_rubber_band())
+		{
+			--src_point_source_infos_end;
+		}
+	}
+
+	if (use_reverse)
+	{
+		std::reverse_copy(
+				src_point_source_infos_begin,
+				src_point_source_infos_end,
+				std::back_inserter(point_source_features));
+	}
+	else
+	{
+		std::copy(
+				src_point_source_infos_begin,
+				src_point_source_infos_end,
+				std::back_inserter(point_source_features));
+	}
+}
+
+
 const boost::optional<GPlatesAppLogic::sub_segment_seq_type> &
 GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_sub_sub_segments() const
 {

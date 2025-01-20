@@ -42,6 +42,7 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/Vector3D.h"
 
+#include "model/FeatureHandle.h"
 #include "model/WeakObserverVisitor.h"
 
 #include "utils/Earth.h"
@@ -136,6 +137,15 @@ namespace GPlatesAppLogic
 		}
 
 		/**
+		 * Returns the resolved topology polygon as a @a PolygonOnSphere.
+		 */
+		resolved_topology_boundary_ptr_type
+		resolved_topology_boundary() const
+		{
+			return d_resolved_topology_boundary_ptr;
+		}
+
+		/**
 		 * Access the resolved topology polygon as a @a GeometryOnSphere.
 		 */
 		virtual
@@ -169,24 +179,27 @@ namespace GPlatesAppLogic
 				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
 				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
 
-		/**
-		 * Returns the resolved topology polygon as a @a PolygonOnSphere.
-		 */
-		resolved_topology_boundary_ptr_type
-		resolved_topology_boundary() const
-		{
-			return d_resolved_topology_boundary_ptr;
-		}
-
 
 		/**
-		 * Returns the per-vertex source reconstructed feature geometries.
+		 * Returns the source infos at points in @a resolved_topology_geometry_points.
 		 *
-		 * Each vertex returned by @a resolved_topology_boundary references a source reconstructed feature geometry.
-		 * This method returns the same number of vertex sources as vertices returned by @a resolved_topology_boundary.
+		 * Note: Each source info maps to a point in @a resolved_topology_geometry_points.
+		 *
+		 * Note: The number of source infos is guaranteed to match points in @a resolved_topology_geometry_points.
 		 */
 		const resolved_vertex_source_info_seq_type &
-		get_vertex_source_infos() const;
+		get_resolved_topology_geometry_point_source_infos() const;
+
+
+		/**
+		 * Returns the source features at points in @a resolved_topology_geometry_points.
+		 *
+		 * Note: Each source feature maps to a point in @a resolved_topology_geometry_points.
+		 *
+		 * Note: The number of source features is guaranteed to match points in @a resolved_topology_geometry_points.
+		 */
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &
+		get_resolved_topology_geometry_point_source_features() const;
 
 
 		/**
@@ -262,12 +275,18 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Each point in the resolved topological line can potentially reference a different
-		 * source reconstructed feature geometry.
+		 * Each point in the resolved topological line can potentially reference a different source info.
 		 *
 		 * As an optimisation, this is only created when first requested.
 		 */
 		mutable boost::optional<resolved_vertex_source_info_seq_type> d_vertex_source_infos;
+
+		/**
+		 * Each point in the resolved topological line can potentially reference a different source feature.
+		 *
+		 * As an optimisation, this is only created when first requested.
+		 */
+		mutable boost::optional<std::vector<GPlatesModel::FeatureHandle::weak_ref>> d_vertex_source_features;
 
 
 		/**
@@ -303,6 +322,9 @@ namespace GPlatesAppLogic
 
 		void
 		calc_vertex_source_infos() const;
+
+		void
+		calc_vertex_source_features() const;
 	};
 }
 
