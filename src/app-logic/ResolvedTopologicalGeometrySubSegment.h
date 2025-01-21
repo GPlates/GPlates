@@ -379,7 +379,6 @@ namespace GPlatesAppLogic
 		void
 		get_reversed_sub_segment_point_source_features(
 				std::vector<GPlatesModel::FeatureHandle::weak_ref> &point_source_features,
-				bool use_reverse,
 				bool include_rubber_band_points = true) const;
 
 
