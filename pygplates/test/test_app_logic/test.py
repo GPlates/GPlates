@@ -3658,6 +3658,16 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                                                                                  return_shared_sub_segment_dict=True)
         self.assertTrue(len(plate_boundary_stats_dict) == 26)
         self.assertTrue(sum(len(shared_sub_segment_stats) for _, shared_sub_segment_stats in plate_boundary_stats_dict.items()) == 47)
+        for shared_sub, shared_sub_segment_stats in plate_boundary_stats_dict.items():
+            shared_sub_feature_name = shared_sub.get_feature().get_name()
+            for shared_sub_segment_stat in shared_sub_segment_stats:
+                self.assertTrue(shared_sub_segment_stat.shared_sub_segment == shared_sub)
+                # Boundary feature matches shared sub-segment if it's an RFG, otherwise matches sub-segments of shared sub-segment if it's an RTL.
+                if shared_sub_feature_name == 'section14':  # the only topological line
+                    shared_sub_sub_feature_names = [shared_sub_sub_segment.get_feature().get_name() for shared_sub_sub_segment in shared_sub.get_sub_segments()]
+                    self.assertTrue(shared_sub_segment_stat.boundary_feature.get_name() in shared_sub_sub_feature_names)
+                else:
+                    self.assertTrue(shared_sub_segment_stat.boundary_feature.get_name() == shared_sub_feature_name)
 
         # Filter boundary sections by feature type.
         plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),

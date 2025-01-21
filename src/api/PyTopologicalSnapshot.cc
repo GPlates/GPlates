@@ -775,6 +775,27 @@ namespace GPlatesApi
 		}
 	}
 
+	/**
+	 * Returns the boundary feature.
+	 *
+	 * The feature reference could be invalid.
+	 * It should normally be valid though so we don't document that Py_None could be returned to the caller.
+	 */
+	boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
+	plate_boundary_statistic_get_boundary_feature(
+			const GPlatesAppLogic::PlateBoundaryStat &plate_boundary_statistic)
+	{
+		// The feature reference could be invalid. It should normally be valid though.
+		const GPlatesModel::FeatureHandle::weak_ref boundary_feature_ref =
+				plate_boundary_statistic.get_boundary_feature();
+		if (!boundary_feature_ref.is_valid())
+		{
+			return boost::none;
+		}
+
+		return GPlatesModel::FeatureHandle::non_null_ptr_type(boundary_feature_ref.handle_ptr());
+	}
+
 	// Convert UnitVector3D to Vector3D.
 	GPlatesMaths::Vector3D
 	plate_boundary_statistic_get_boundary_normal(
@@ -1643,6 +1664,36 @@ export_topological_snapshot()
 					"\n"
 					".. versionadded:: 0.47\n",
 					bp::no_init)
+		.add_property("shared_sub_segment",
+				&GPlatesAppLogic::PlateBoundaryStat::get_shared_sub_segment,
+				"Shared sub-segment containing the :attr:`boundary point <boundary_point>`.\n"
+				"\n"
+				"  :type: :class:`ResolvedTopologicalSharedSubSegment`\n"
+				"\n"
+				"  .. note:: Another way to get the shared sub-segment is to call :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics` "
+				"with ``return_shared_sub_segment_dict=True`` (which associates each shared sub-segment with a list of boundary point statistics).\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_feature`\n"
+				"\n"
+				".. versionadded:: 1.0\n")
+		.add_property("boundary_feature",
+				&GPlatesApi::plate_boundary_statistic_get_boundary_feature,
+				"Boundary feature associated with the :attr:`boundary point <boundary_point>`.\n"
+				"\n"
+				"  :type: :class:`Feature`\n"
+				"\n"
+				"  If the :attr:`shared sub-segment <shared_sub_segment>` containing the :attr:`boundary point <boundary_point>` "
+				"is from a :class:`ReconstructedFeatureGeometry` then the returned feature matches the shared sub-segment's feature. "
+				"However, if the shared sub-segment is from a :class:`ResolvedTopologicalLine` then the returned feature matches one of "
+				"the resolved topological line's :meth:`sub-segments <ResolvedTopologicalLine.get_line_sub_segments>` (the one containing the boundary point).\n"
+				"\n"
+				"  .. note:: An example where this is useful is along a deforming trench line when you need to know the reconstruction plate ID "
+				"associated with the sub-segment of the trench line that the :attr:`boundary point <boundary_point>` is on, since that plate ID "
+				"more accurately represents motion of the trench near the boundary point.\n"
+				"\n"
+				"  .. seealso:: :attr:`shared_sub_segment`\n"
+				"\n"
+				".. versionadded:: 1.0\n")
 		.add_property("boundary_point",
 				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_boundary_point, bp::return_value_policy<bp::copy_const_reference>()),
 				"Position of the point on a plate boundary.\n"

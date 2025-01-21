@@ -51,6 +51,8 @@ namespace GPlatesAppLogic
 	{
 	public:
 		PlateBoundaryStat(
+				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &shared_sub_segment,
+				const GPlatesModel::FeatureHandle::weak_ref &boundary_feature,
 				const GPlatesMaths::PointOnSphere &boundary_point_,
 				const double &boundary_length_,
 				const GPlatesMaths::UnitVector3D &boundary_normal_,
@@ -63,6 +65,8 @@ namespace GPlatesAppLogic
 				const double &distance_to_end_of_shared_sub_segment_,
 				const double &signed_distance_from_start_of_topological_section_,
 				const double &signed_distance_to_end_of_topological_section_) :
+			d_shared_sub_segment(shared_sub_segment),
+			d_boundary_feature(boundary_feature),
 			d_boundary_point(boundary_point_),
 			d_boundary_length(boundary_length_),
 			d_boundary_normal(boundary_normal_),
@@ -76,6 +80,29 @@ namespace GPlatesAppLogic
 			d_signed_distance_from_start_of_topological_section(signed_distance_from_start_of_topological_section_),
 			d_signed_distance_to_end_of_topological_section(signed_distance_to_end_of_topological_section_)
 		{  }
+
+		//! Get the shared sub-segment containing the boundary point.
+		ResolvedTopologicalSharedSubSegment::non_null_ptr_type
+		get_shared_sub_segment() const
+		{
+			return d_shared_sub_segment;
+		}
+
+		/**
+		 * Get the boundary feature associated with the boundary point.
+		 *
+		 * If the shared sub-segment is from a ReconstructedFeatureGeometry then the returned feature
+		 * is the same as the topological section feature referenced by the shared sub-segment.
+		 * In other words, all boundary points on the shared sub-segment will have the same boundary feature.
+		 *
+		 * However, if the shared sub-segment is from a ResolvedTopologicalLine then the returned feature
+		 * is associated with the sub-segment of the ResolvedTopologicalLine that contains this boundary point.
+		 */
+		GPlatesModel::FeatureHandle::weak_ref
+		get_boundary_feature() const
+		{
+			return d_boundary_feature;
+		}
 
 		//! Get the point on a plate boundary.
 		const GPlatesMaths::PointOnSphere &
@@ -535,6 +562,12 @@ namespace GPlatesAppLogic
 		get_strain_rate(
 				const TopologyPointLocation &topology_point_location) const;
 
+
+		//! Shared sub-segment containing the boundary point.
+		ResolvedTopologicalSharedSubSegment::non_null_ptr_type d_shared_sub_segment;
+
+		//! Boundary feature associated with the boundary point.
+		GPlatesModel::FeatureHandle::weak_ref d_boundary_feature;
 
 		//! Point location on a plate boundary.
 		GPlatesMaths::PointOnSphere d_boundary_point;
