@@ -2062,6 +2062,9 @@ export_topological_snapshot()
 				"deforming network overlaid on top) or if :attr:`boundary point <boundary_point>` is inside an interior rigid block of the left deforming network. "
 				"See :attr:`left_plate` for details on how the left plate is determined.\n"
 				"\n"
+				"  .. note:: Strain rate in a deforming network is calculated from the spatial gradients of velocity where the velocities are calculated over "
+				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
+				"\n"
 				"  .. seealso:: :attr:`left_plate` and :attr:`left_plate_velocity`\n")
 		.add_property("right_plate_strain_rate",
 				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_strain_rate,
@@ -2072,6 +2075,9 @@ export_topological_snapshot()
 				"  Returns ``pygplates.StrainRate.zero`` (no deformation) if there's no right deforming network (eg, there's just a rigid plate with no "
 				"deforming network overlaid on top) or if :attr:`boundary point <boundary_point>` is inside an interior rigid block of the right deforming network. "
 				"See :attr:`right_plate` for details on how the right plate is determined.\n"
+				"\n"
+				"  .. note:: Strain rate in a deforming network is calculated from the spatial gradients of velocity where the velocities are calculated over "
+				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
 				"\n"
 				"  .. seealso:: :attr:`right_plate` and :attr:`right_plate_velocity`\n")
 		.add_property("convergence_velocity",
@@ -2622,7 +2628,8 @@ export_topological_snapshot()
 				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
 				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
-				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :param earth_radius_in_kms: The radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``). "
+				"This is only used to calculate velocities (strain rates always use ``pygplates.Earth.equatorial_radius_in_kms``).\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :param include_network_boundaries: Whether to calculate statistics along *network* boundaries "
 				"that are **not** also plate boundaries (defaults to ``False``). If a deforming network shares a "
@@ -2814,6 +2821,9 @@ export_topological_snapshot()
 				"\n"
 				"  .. note:: It is more efficient to call ``topological_snapshot.get_point_strain_rates(points, return_point_locations=True)`` to get both strain rates and "
 				"point locations than it is to call both ``topological_snapshot.get_point_strain_rates(points)`` and ``topological_snapshot.get_point_locations(points)``.\n"
+				"\n"
+				"  .. note:: Strain rates in deforming networks are calculated from the spatial gradients of velocity where the velocities are calculated over "
+				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
 		.def("get_rotation_model",

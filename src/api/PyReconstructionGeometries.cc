@@ -2915,6 +2915,9 @@ export_resolved_topological_network()
 				"        # Point is *not* located in the resolved topological network.\n"
 				"        return None\n"
 				"\n"
+				"  .. note:: Strain rate is calculated from the spatial gradients of velocity where the velocities are calculated over "
+				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
+				"\n"
 				"  .. versionadded:: 0.49\n")
 		.def("reconstruct_point",
 				&GPlatesApi::resolved_topological_network_reconstruct_point,
