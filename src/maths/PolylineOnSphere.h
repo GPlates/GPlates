@@ -32,7 +32,7 @@
 #define GPLATES_MATHS_POLYLINEONSPHERE_H
 
 #include <algorithm>
-#include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
+#include <iterator>  // std::random_access_iterator_tag, std::distance
 #include <utility>  // std::pair
 #include <vector>
 #include <boost/intrusive_ptr.hpp>

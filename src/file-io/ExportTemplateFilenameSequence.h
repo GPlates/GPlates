@@ -27,7 +27,7 @@
 #define GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCE_H
 
 #include <cstddef>
-#include <iterator>  // std::iterator
+#include <iterator>  // std::forward_iterator_tag
 #include <boost/operators.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QDateTime>
