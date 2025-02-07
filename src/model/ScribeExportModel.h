@@ -22,6 +22,7 @@
 
 #include "GpgimVersion.h"
 #include "TopLevelPropertyInline.h"
+#include "XmlNode.h"
 
 
 /**
@@ -41,6 +42,12 @@
 		\
 		(((GPlatesModel::TopLevelPropertyInline), \
 			"GPlatesModel::TopLevelPropertyInline")) \
+		\
+		(((GPlatesModel::XmlElementNode), \
+			"GPlatesModel::XmlElementNode")) \
+		\
+		(((GPlatesModel::XmlTextNode), \
+			"GPlatesModel::XmlTextNode")) \
 		\
 
 

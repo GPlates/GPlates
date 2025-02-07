@@ -34,6 +34,10 @@
 
 #include "XmlNodeUtils.h"
 
+#include "model/TranscribeQualifiedXmlName.h"
+
+#include "scribe/Scribe.h"
+
 #include "utils/CallStackTracker.h"
 
 
@@ -145,6 +149,24 @@ GPlatesModel::XmlNode::create(
 #endif
 
 
+GPlatesScribe::TranscribeResult
+GPlatesModel::XmlNode::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_line_num, "line_number") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_col_num, "column_number"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 const GPlatesModel::XmlTextNode::non_null_ptr_type
 GPlatesModel::XmlTextNode::create(
 		QXmlStreamReader &reader)
@@ -163,6 +185,77 @@ GPlatesModel::XmlTextNode::write_to(
 		QXmlStreamWriter &writer) const 
 {
 	writer.writeCharacters(d_text);
+}
+
+
+void
+GPlatesModel::XmlTextNode::accept_visitor(
+		GPlatesModel::XmlNodeVisitor &visitor)
+{
+	visitor.visit_text_node(non_null_ptr_type(this));
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::XmlTextNode::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<XmlTextNode> &xml_text_node)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, xml_text_node->line_number(), "line_number");
+		scribe.save(TRANSCRIBE_SOURCE, xml_text_node->column_number(), "column_number");
+		scribe.save(TRANSCRIBE_SOURCE, xml_text_node->get_text(), "text");
+	}
+	else // loading
+	{
+		qint64 line_number_;
+		qint64 column_number_;
+		QString text_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, line_number_, "line_number") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, column_number_, "column_number") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, text_, "text"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		xml_text_node.construct_object(line_number_, column_number_, text_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::XmlTextNode::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (transcribed_construct_data)
+	{
+		// Base class (XmlNode) has already been transcribed (in 'XmlTextNode::transcribe_construct_data()').
+		// So just record base/derived inheritance relationship.
+		if (!scribe.transcribe_base<XmlNode, XmlTextNode>(TRANSCRIBE_SOURCE))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Our data member 'd_text' has also been transcribed (in 'XmlTextNode::transcribe_construct_data()').
+	}
+	else  // 'XmlTextNode::transcribe_construct_data()' has NOT been called...
+	{
+		// Transcribe base class (XmlNode) and our data members normally initialised from constructor (d_text).
+		if (!scribe.transcribe_base<XmlNode>(TRANSCRIBE_SOURCE, *this, "XmlNode") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_text, "text"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	// Transcribe data members NOT initialised from constructor.
+	// Currently none.
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 
@@ -325,14 +418,6 @@ GPlatesModel::XmlElementNode::get_next_child_by_name(
 
 
 void
-GPlatesModel::XmlTextNode::accept_visitor(
-		GPlatesModel::XmlNodeVisitor &visitor)
-{
-	visitor.visit_text_node(non_null_ptr_type(this));
-}
-
-
-void
 GPlatesModel::XmlElementNode::accept_visitor(
 		GPlatesModel::XmlNodeVisitor &visitor)
 {
@@ -353,3 +438,74 @@ GPlatesModel::XmlElementNode::operator==(
 		d_alias_map == other.d_alias_map;
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::XmlElementNode::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<XmlElementNode> &xml_element_node)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, xml_element_node->line_number(), "line_number");
+		scribe.save(TRANSCRIBE_SOURCE, xml_element_node->column_number(), "column_number");
+		scribe.save(TRANSCRIBE_SOURCE, xml_element_node->get_name(), "name");
+	}
+	else // loading
+	{
+		qint64 line_number_;
+		qint64 column_number_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, line_number_, "line_number") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, column_number_, "column_number"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<XmlElementName> name_ = scribe.load<XmlElementName>(TRANSCRIBE_SOURCE, "name");
+		if (!name_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		xml_element_node.construct_object(line_number_, column_number_, name_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::XmlElementNode::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (transcribed_construct_data)
+	{
+		// Base class (XmlNode) has already been transcribed (in 'XmlElementNode::transcribe_construct_data()').
+		// So just record base/derived inheritance relationship.
+		if (!scribe.transcribe_base<XmlNode, XmlElementNode>(TRANSCRIBE_SOURCE))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Our data member 'd_name' has also been transcribed (in 'XmlElementNode::transcribe_construct_data()').
+	}
+	else  // 'XmlElementNode::transcribe_construct_data()' has NOT been called...
+	{
+		// Transcribe base class (XmlNode) and our data members normally initialised from constructor (d_name).
+		if (!scribe.transcribe_base<XmlNode>(TRANSCRIBE_SOURCE, *this, "XmlNode") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_name, "name"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	// Transcribe data members NOT initialised from constructor.
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_attributes, "attributes") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_children, "children") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_alias_map, "alias_map"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

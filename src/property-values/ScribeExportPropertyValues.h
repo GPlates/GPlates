@@ -51,6 +51,7 @@
 #include "GpmlTopologicalPoint.h"
 #include "GpmlTopologicalPolygon.h"
 #include "GpmlTopologicalSection.h"
+#include "UninterpretedPropertyValue.h"
 #include "XsBoolean.h"
 #include "XsDouble.h"
 #include "XsInteger.h"
@@ -182,6 +183,9 @@
 		\
 		(((GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>), \
 			"GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>")) \
+		\
+		(((GPlatesPropertyValues::UninterpretedPropertyValue), \
+			"GPlatesPropertyValues::UninterpretedPropertyValue")) \
 		\
 		(((GPlatesPropertyValues::XsBoolean), \
 			"GPlatesPropertyValues::XsBoolean")) \

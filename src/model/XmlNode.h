@@ -37,10 +37,14 @@
 #include "XmlAttributeValue.h"
 #include "XmlElementName.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
 #include "utils/StringSet.h"
+
 
 namespace GPlatesModel
 {
@@ -119,6 +123,14 @@ namespace GPlatesModel
 		operator=(
 				const XmlNode &);
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
@@ -174,6 +186,21 @@ namespace GPlatesModel
 		XmlTextNode &
 		operator=(
 				const XmlTextNode &);
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<XmlTextNode> &xml_text_node);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
@@ -352,6 +379,21 @@ namespace GPlatesModel
 		void
 		load_attributes(
 				const QXmlStreamAttributes &attributes);
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<XmlElementNode> &xml_element_node);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
