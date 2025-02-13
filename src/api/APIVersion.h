@@ -68,24 +68,25 @@ namespace GPlatesApi
 
 
 		/**
-		 * Creates a Version using the specified major, minor, patch numbers and
-		 * optional pre-release PEP440 suffix "(.dev|a|b|rc)N".
+		 * Creates a Version using the specified major, minor, patch numbers and optional release PEP440 suffix
+		 * (a combination of pre/post/dev release suffixes "[{a|b|rc}N][.postN][.devN]").
 		 *
-		 * Note: The pre-release suffix (if specified) should use the PEP440 format restricted to just
-		 *       ".devN", "aN", "bN" and "rcN" (where N is a non-negative integer).
+		 * Note: The release suffix (if specified) should use the PEP440 format for a *public* version identifier
+		 *       (ie, no "+<local version label>" appended).
 		 */
 		Version(
 				unsigned int major,
 				unsigned int minor,
 				unsigned int patch = 0,
-				boost::optional<QString> prerelease_suffix_string = boost::none);
+				boost::optional<QString> deprecated_prerelease_suffix_string = boost::none,  // 'prerelease_suffix' keyword deprecated since 1.0
+				boost::optional<QString> release_suffix_string = boost::none);
 
 
 		/**
-		 * Create using the specified PEP440 version string "N.N[.N][(.dev|a|b|rc)N]".
+		 * Create using the specified PEP440 version string "N.N[.N][{a|b|rc}N][.postN][.devN]".
 		 *
-		 * Note: The pre-release suffix (if included) should use the PEP440 format restricted to just
-		 *       ".devN", "aN", "bN" and "rcN" (where N is a non-negative integer).
+		 * Note: The release suffix (if specified) should use the PEP440 format for a *public* version identifier
+		 *       (ie, no "+<local version label>" appended).
 		 */
 		explicit
 		Version(
@@ -111,14 +112,14 @@ namespace GPlatesApi
 		}
 
 		/**
-		 * Return the optional pre-release PEP440 suffix "(.dev|a|b|rc)N".
+		 * Return the optional release PEP440 suffix "[{a|b|rc}N][.postN][.devN]".
 		 */
 		boost::optional<QString>
-		get_prerelease_suffix_string() const;
+		get_release_suffix_string() const;
 
 
 		/**
-		 * Return the PEP440 version string "N.N.N[(.dev|a|b|rc)N]".
+		 * Return the PEP440 version string "N.N.N[{a|b|rc}N][.postN][.devN]".
 		 */
 		QString
 		get_version_string() const;
@@ -145,12 +146,14 @@ namespace GPlatesApi
 
 	private:
 
-		struct PrereleaseSuffix
+		/**
+		 * Pre-release suffix.
+		 */
+		struct PreReleaseSuffix
 		{
 			// NOTE: These enum values are ordered by version precedence.
 			enum Type
 			{
-				DEVELOPMENT,
 				ALPHA,
 				BETA,
 				RELEASE_CANDIDATE
@@ -159,8 +162,7 @@ namespace GPlatesApi
 			Type type;
 			unsigned int number;
 
-		private: // Transcribe...
-
+		private:
 			friend class GPlatesScribe::Access;
 
 			GPlatesScribe::TranscribeResult
@@ -180,7 +182,6 @@ namespace GPlatesApi
 				//          So don't change the string ids even if the enum name changes.
 				static const GPlatesScribe::EnumValue enum_values[] =
 				{
-					GPlatesScribe::EnumValue("DEVELOPMENT", DEVELOPMENT),
 					GPlatesScribe::EnumValue("ALPHA", ALPHA),
 					GPlatesScribe::EnumValue("BETA", BETA),
 					GPlatesScribe::EnumValue("RELEASE_CANDIDATE", RELEASE_CANDIDATE)
@@ -195,17 +196,53 @@ namespace GPlatesApi
 			}
 		};
 
+		/**
+		 * Post-release suffix.
+		 */
+		struct PostReleaseSuffix
+		{
+			unsigned int number;
+
+		private: // Transcribe...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+		};
+
+		/**
+		 * Development-release suffix.
+		 */
+		struct DevelopmentReleaseSuffix
+		{
+			unsigned int number;
+
+		private: // Transcribe...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+		};
+
 		unsigned int d_major;
 		unsigned int d_minor;
 		unsigned int d_patch;
-		// Optional pre-release suffix...
-		boost::optional<PrereleaseSuffix> d_prerelease_suffix;
+
+		// Optional release suffixes...
+		boost::optional<PreReleaseSuffix> d_pre_release_suffix;
+		boost::optional<PostReleaseSuffix> d_post_release_suffix;
+		boost::optional<DevelopmentReleaseSuffix> d_development_release_suffix;
 
 
-		static
-		boost::optional<PrereleaseSuffix>
-		extract_prerelease_suffix(
-				QString prerelease_suffix_string);
+		bool
+		extract_release_suffix(
+				QString release_suffix_string);
 
 	private: // Transcribe...
 

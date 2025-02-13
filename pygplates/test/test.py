@@ -102,8 +102,10 @@ class VersionCase(unittest.TestCase):
     def test_version(self):
         self.assertTrue(pygplates.Version(0, 1) < pygplates.Version.get_imported_version())
         self.assertTrue(pygplates.Version(0, 21) > pygplates.Version(0, 20))
-        self.assertTrue(pygplates.Version(0, 34, prerelease_suffix='.dev1') < pygplates.Version(0, 34))
-        self.assertTrue(pygplates.Version(0, 34, prerelease_suffix='.dev1') > pygplates.Version(0, 33))
+        self.assertTrue(pygplates.Version(0, 34, release_suffix='.dev1') < pygplates.Version(0, 34))
+        self.assertTrue(pygplates.Version(0, 34, release_suffix='.dev1') > pygplates.Version(0, 33))
+        self.assertTrue(pygplates.Version(0, 34, release_suffix='.dev1') == pygplates.Version('0.34.dev1'))
+        self.assertTrue(pygplates.Version(0, 34, 0, '.dev1') == pygplates.Version('0.34.dev1'))
         self.assertTrue(pygplates.Version('0.34.dev1') == pygplates.Version(0, 34, 0, '.dev1'))
         self.assertTrue(pygplates.Version('0.34.dev1') < pygplates.Version(0, 34))
         self.assertTrue(pygplates.Version('0.34.1.dev1') > pygplates.Version(0, 34))
@@ -113,50 +115,75 @@ class VersionCase(unittest.TestCase):
         self.assertTrue(pygplates.Version('0.34a2') < pygplates.Version('0.34b1'))
         self.assertTrue(pygplates.Version('0.34b1') < pygplates.Version('0.34rc1'))
         self.assertTrue(pygplates.Version('0.34rc1') < pygplates.Version('0.34'))
+        self.assertTrue(pygplates.Version('0.34.post0') < pygplates.Version('0.34.post1'))
+        self.assertTrue(pygplates.Version('0.34rc0') > pygplates.Version('0.34.dev0'))
+        self.assertTrue(pygplates.Version('0.34.post0') > pygplates.Version(0, 34))
+        self.assertTrue(pygplates.Version('1.34.post0.dev1') < pygplates.Version(1, 34, release_suffix='.post0'))
+        self.assertTrue(pygplates.Version('1.34rc1.post0.dev1') > pygplates.Version(1, 34, release_suffix='rc1'))
+        self.assertTrue(pygplates.Version('1.34rc1.post1.dev1') > pygplates.Version(1, 34, release_suffix='rc1.post0'))
+        self.assertTrue(pygplates.Version('1.34rc1.dev1') < pygplates.Version(1, 34, release_suffix='rc1.dev2'))
+        self.assertTrue(pygplates.Version('1.34rc1.dev2') < pygplates.Version(1, 34, release_suffix='rc1'))
         
         self.assertTrue(pygplates.Version('0.33').get_major() == 0)
         self.assertTrue(pygplates.Version('0.33').get_minor() == 33)
         self.assertTrue(pygplates.Version('1.33').get_major() == 1)
         self.assertTrue(pygplates.Version('0.33.1').get_patch() == 1)
-        self.assertTrue(pygplates.Version('0.33.1').get_prerelease_suffix() is None)
+        self.assertTrue(pygplates.Version('0.33.1').get_release_suffix() is None)
         self.assertTrue(pygplates.Version('1.33.2.dev1').get_patch() == 2)
-        self.assertTrue(pygplates.Version('1.33.2.dev1').get_prerelease_suffix() == ".dev1")
+        self.assertTrue(pygplates.Version('1.33.2.dev1').get_release_suffix() == ".dev1")
         self.assertTrue(pygplates.Version('1.33.dev1').get_patch() == 0)
-        self.assertTrue(pygplates.Version('1.33.dev1').get_prerelease_suffix() == ".dev1")
+        self.assertTrue(pygplates.Version('1.33.dev1').get_release_suffix() == ".dev1")
         with self.assertRaises(ValueError):
             pygplates.Version('1.33.2dev1')  # Should be "1.33.2.dev1"
         self.assertTrue(pygplates.Version('1.33.2a1').get_patch() == 2)
-        self.assertTrue(pygplates.Version('1.33.2a1').get_prerelease_suffix() == "a1")
+        self.assertTrue(pygplates.Version('1.33.2a1').get_release_suffix() == "a1")
         self.assertTrue(pygplates.Version('1.33a1').get_patch() == 0)
-        self.assertTrue(pygplates.Version('1.33a1').get_prerelease_suffix() == "a1")
+        self.assertTrue(pygplates.Version('1.33a1').get_release_suffix() == "a1")
         with self.assertRaises(ValueError):
             pygplates.Version('1.33.2.a1')  # Should be "1.33.2a1"
         self.assertTrue(pygplates.Version('1.33.2b2').get_patch() == 2)
-        self.assertTrue(pygplates.Version('1.33.2b2').get_prerelease_suffix() == "b2")
+        self.assertTrue(pygplates.Version('1.33.2b2').get_release_suffix() == "b2")
         self.assertTrue(pygplates.Version('1.33b2').get_patch() == 0)
-        self.assertTrue(pygplates.Version('1.33b2').get_prerelease_suffix() == "b2")
+        self.assertTrue(pygplates.Version('1.33b2').get_release_suffix() == "b2")
         with self.assertRaises(ValueError):
             pygplates.Version('1.33.2.b2')  # Should be "1.33.2b2"
         self.assertTrue(pygplates.Version('1.33.2rc3').get_patch() == 2)
-        self.assertTrue(pygplates.Version('1.33.2rc3').get_prerelease_suffix() == "rc3")
+        self.assertTrue(pygplates.Version('1.33.2rc3').get_release_suffix() == "rc3")
         self.assertTrue(pygplates.Version('1.33rc3').get_patch() == 0)
-        self.assertTrue(pygplates.Version('1.33rc3').get_prerelease_suffix() == "rc3")
+        self.assertTrue(pygplates.Version('1.33rc3').get_release_suffix() == "rc3")
         with self.assertRaises(ValueError):
             pygplates.Version('1.33.2.rc3')  # Should be "1.33.2rc3"
         with self.assertRaises(ValueError):
             pygplates.Version('1.33.rc3')  # Should be "1.33rc3"
+        version = pygplates.Version('1.33.2.post1')
+        self.assertTrue(version.get_major() == 1 and version.get_minor() == 33 and version.get_patch() == 2 and version.get_release_suffix() == '.post1')
+        version = pygplates.Version('1.33.2.post1.dev1')
+        self.assertTrue(version.get_major() == 1 and version.get_minor() == 33 and version.get_patch() == 2 and version.get_release_suffix() == '.post1.dev1')
+        version = pygplates.Version('1.33.2a2.dev0')
+        self.assertTrue(version.get_major() == 1 and version.get_minor() == 33 and version.get_patch() == 2 and version.get_release_suffix() == 'a2.dev0')
+        version = pygplates.Version('1.33.2rc1.post1.dev0')
+        self.assertTrue(version.get_major() == 1 and version.get_minor() == 33 and version.get_patch() == 2 and version.get_release_suffix() == 'rc1.post1.dev0')
+        with self.assertRaises(ValueError):
+            pygplates.Version('1.33.2rc1.dev0.post1')  # Should be "1.33.2rc1.post1.dev0"
+            pygplates.Version('1.33.2.post1rc1.dev0')  # Should be "1.33.2rc1.post1.dev0"
         
         # Test deprecated functions
         self.assertTrue(pygplates.Version(20).get_revision() == 20)  # 'get_revision()' is deprecated
         self.assertTrue(pygplates.Version(20).get_major() == 0)  # 'Version(revision)' is deprecated
         self.assertTrue(pygplates.Version(20).get_minor() == 20)  # 'Version(revision)' is deprecated
         self.assertTrue(pygplates.Version(20).get_patch() == 0)  # 'Version(revision)' is deprecated
-        self.assertTrue(pygplates.Version(20).get_prerelease_suffix() is None)  # 'Version(revision)' is deprecated
+        self.assertTrue(pygplates.Version(20).get_prerelease_suffix() is None)  # 'Version(revision)' and 'get_prerelease_suffix()' are deprecated
         self.assertTrue(pygplates.Version(20) < pygplates.Version(21))  # 'Version(revision)' is deprecated
         self.assertTrue(pygplates.Version(20) < pygplates.Version(0, 21))  # 'Version(revision)' is deprecated
+        self.assertTrue(pygplates.Version(1, 0, prerelease_suffix='.dev1') == pygplates.Version('1.0.dev1'))  # 'prerelease_suffix' keyword deprecated
+        self.assertTrue(pygplates.Version(1, 0, 0, '.dev1', None) == pygplates.Version('1.0.dev1'))  # actually two keywords deprecated 'prerelease_suffix' and new 'release_suffix'
+        self.assertTrue(pygplates.Version(1, 0, 0, None, '.dev1') == pygplates.Version('1.0.dev1'))  # actually two keywords deprecated 'prerelease_suffix' and new 'release_suffix'
+        with self.assertRaises(ValueError):
+            pygplates.Version(1, 0, 0, '.dev1', '.dev1')  # can't specify both deprecated 'prerelease_suffix' and new 'release_suffix'
 
     def test_pickle(self):
-        for version in (pygplates.Version(0, 1), pygplates.Version('0.34.dev1'), pygplates.Version('0.34a2'), pygplates.Version('0.34b1'), pygplates.Version('0.34rc1')):
+        for version in (pygplates.Version(0, 1), pygplates.Version('0.34.dev1'), pygplates.Version('0.34a2'), pygplates.Version('0.34b1'), pygplates.Version('0.34rc1'),
+                        pygplates.Version('1.0.1.post0'), pygplates.Version('1.0.1b1.post0'), pygplates.Version('1.0.1a0.dev0'), pygplates.Version('1.0.1rc0.post0.dev0')):
             self.assertTrue(version == pickle.loads(pickle.dumps(version)))
 
 
