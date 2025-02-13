@@ -103,6 +103,8 @@ if (GPLATES_BUILD_GPLATES)  # GPlates ...
     else() # not standalone
         #
         # When not a standalone installation just use the standard install location ('bin').
+        # For example, this would end up in '/usr/bin/' if no install prefix is specified (when running "cmake --install .")
+        # since the default install prefix is '/usr'.
         #
         install(TARGETS gplates
             RUNTIME # Windows and Linux
@@ -127,7 +129,7 @@ else()  # pyGPlates ...
     set(PYGPLATES_PYTHON_PACKAGE_DIR pygplates)
     #
     # When NOT building using scikit-build-core we install the 'pygplates' package into the 'lib/' sub-directory of the install prefix directory.
-    # For example, we want pyGPlates Debian packages (which are non-standalone) to install into '/usr/lib' instead of '/usr' (where '/usr' is the default install prefix).
+    # For example, this would end up in '/usr/lib/' if no install prefix is specified (when running "cmake --install .") since the default install prefix is '/usr'.
     #
     # Building using scikit-build-core happens when building wheels with pip (eg, 'pip wheel ...' or 'pip install ...').
     # And conda also builds using scikit-build-core (because conda relies on 'pip install').
