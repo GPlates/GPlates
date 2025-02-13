@@ -67,7 +67,6 @@ requirements:
     - zlib
   run:
     - python
-    - {{ pin_compatible('numpy') }}
     - glew
     - libglu     # [linux]
     - qt-main
