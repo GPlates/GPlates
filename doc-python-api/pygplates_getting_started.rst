@@ -52,15 +52,15 @@ PyGPlates installed using ``conda`` supports:
 
   - Windows (x86-64),
   - macOS (x86-64) and macOS (ARM64),
-  - Linux (x86-64) and Linux (ARM64).
+  - Linux (x86-64), Linux (ARM64) and Linux (PPC64LE).
 
 - Python:
 
-  - Version 3.9 - 3.12.
+  - Version 3.9 - 3.13.
 
 - NumPy:
 
-  - Version 1.x.
+  - Version 2.x and 1.x.
 
 To install the latest stable version of pyGPlates type the following in a terminal or command window
 (on macOS and Ubuntu this is a *Terminal* window, and on Windows you'll need to open an *Anaconda prompt* from the Start menu):
