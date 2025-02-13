@@ -143,9 +143,9 @@ endif()
 # Official public releases disable all warnings.
 # Also defines a compiler flag GPLATES_PUBLIC_RELEASE (see 'src/global/config.h.in').
 #
+# First remove cache variable (eg, leftover from older versions where a pyGPlates build would create it as a cache variable).
+unset(GPLATES_PUBLIC_RELEASE CACHE)
 if (GPLATES_BUILD_GPLATES) # GPlates ...
-	# First remove cache variable (eg, leftover if switching from a pyGPlates build to GPlates by enabling GPLATES_BUILD_GPLATES).
-	unset(GPLATES_PUBLIC_RELEASE CACHE)
 	# If GPLATES_VERSION_PRERELEASE_SUFFIX is empty then it's an offical public GPlates release (eg, 2.3.0).
 	if (GPLATES_VERSION_PRERELEASE_SUFFIX)
 		set(GPLATES_PUBLIC_RELEASE false)
@@ -153,12 +153,12 @@ if (GPLATES_BUILD_GPLATES) # GPlates ...
 		set(GPLATES_PUBLIC_RELEASE true)
 	endif()
 else() # pyGPlates ...
-	# Currently the pyGPlates major version is zero and the minor version increments each time the API is changed
-	# (including internal releases) and so the pre-release suffix is typically left empty, so we can't really use
-	# the presence of the pre-release suffix to distinguish public releases (like we do with GPlates).
-	# So we just default to false and rely on the developer setting it to true for official releases
-	# (eg, using 'cmake -D GPLATES_PUBLIC_RELEASE:BOOL=TRUE ...', or via ccmake or cmake-gui).
-	option(GPLATES_PUBLIC_RELEASE "PyGPlates official public release." false)
+	# If PYGPLATES_VERSION_RELEASE_SUFFIX is empty then it's an offical public pyGPlates release (eg, 1.0.0).
+	if (PYGPLATES_VERSION_RELEASE_SUFFIX)
+		set(GPLATES_PUBLIC_RELEASE false)
+	else()
+		set(GPLATES_PUBLIC_RELEASE true)
+	endif()
 endif()
 
 
