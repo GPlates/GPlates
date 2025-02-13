@@ -26,28 +26,27 @@ requirements:
     #       Otherwise local conda builds will give a dependency error that "c_win-64 does not exist".
     #- {{ stdlib("c") }}
     - {{ compiler('cxx') }}
-    - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
-    - {{ cdt('libx11-devel') }}          # [linux]
-    - {{ cdt('libxext-devel') }}         # [linux]
-    - {{ cdt('libxrender-devel') }}      # [linux]
-    - {{ cdt('mesa-libgl-devel') }}      # [linux]
-    - {{ cdt('mesa-libegl-devel') }}     # [linux]
-    - {{ cdt('mesa-dri-drivers') }}      # [linux]
-    - {{ cdt('libxau-devel') }}          # [linux]
-    - {{ cdt('libdrm-devel') }}          # [linux]
-    - {{ cdt('libxcomposite-devel') }}   # [linux]
-    - {{ cdt('libxcursor-devel') }}      # [linux]
-    - {{ cdt('libxi-devel') }}           # [linux]
-    - {{ cdt('libxrandr-devel') }}       # [linux]
-    - {{ cdt('libxscrnsaver-devel') }}   # [linux]
-    - {{ cdt('libxtst-devel') }}         # [linux]
+    - libdrm                             # [linux]
+    - libegl-devel                       # [linux]
+    - libgl-devel                        # [linux]
+    - xorg-libx11                        # [linux]
+    - xorg-libxau                        # [linux]
+    - xorg-libxcomposite                 # [linux]
+    - xorg-libxcursor                    # [linux]
+    - xorg-libxdamage                    # [linux]
+    - xorg-libxext                       # [linux]
+    - xorg-libxi                         # [linux]
+    - xorg-libxrandr                     # [linux]
+    - xorg-libxrender                    # [linux]
+    - xorg-libxscrnsaver                 # [linux]
+    - xorg-libxtst                       # [linux]
+    - xorg-libxxf86vm                    # [linux]
+    - xorg-xorgproto                     # [linux]
     - {{ cdt('libselinux-devel') }}      # [linux]
-    - {{ cdt('libxxf86vm-devel') }}      # [linux]
-    - {{ cdt('libxdamage-devel') }}      # [linux]
   host:
     - python
     - pip
-    - scikit-build-core
+    - scikit-build-core <0.11  # avoid version 0.11 for now (causing problems with license.file)
     - numpy
     - cgal-cpp
     - gmp
