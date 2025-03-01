@@ -38,9 +38,15 @@
 
 ## Introduction
 
-GPlates is a plate tectonics program with a [range of features](https://www.gplates.org/features/) for visualising and manipulating plate tectonic reconstructions and associated data through geological time. GPlates is developed by [an international team](https://www.gplates.org/contact/) of scientists and software developers.
+__GPlates__ is a plate tectonics program with a [range of features](https://www.gplates.org/features/) for visualising and manipulating plate tectonic reconstructions and associated data through geological time.
+
+__PyGPlates__ is a Python package enabling fine-grained access to the core tectonic plate reconstruction functionality in GPlates.
+
+> Both GPlates and pyGPlates are available in this repository.
 
 The [initial release of GPlates](https://web.archive.org/web/20031221211144/http://gplates.org/), version 0.5 Beta, debuted on October 30, 2003. Since its inception, GPlates has evolved into a robust software suite encompassing desktop application, Python libraries, web service and application, and mobile app, offering a comprehensive range of functionalities.
+
+GPlates is developed by [an international team](https://www.gplates.org/contact/) of scientists and software developers.
 
 For more information please visit the [GPlates website](https://www.gplates.org/).
 
@@ -69,6 +75,8 @@ Please see the [installation instructions](https://www.gplates.org/docs/pygplate
 The source code can be compiled on Windows, macOS and Linux.
 
 The source code is obtained by checking out a [primary branch in this repository](#primary-branches).
+
+> Both the GPlates and pyGPlates source code are in this repository (on different [branches](#primary-branches)).
 
 Instructions for installing the [dependencies](#dependencies) and compiling GPlates/pyGPlates can be found in the source code, in the files:
 
