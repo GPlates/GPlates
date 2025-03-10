@@ -35,6 +35,7 @@
 #include "XmlNodeUtils.h"
 
 #include "model/TranscribeQualifiedXmlName.h"
+#include "model/TranscribeStringContentTypeGenerator.h"
 
 #include "scribe/Scribe.h"
 
