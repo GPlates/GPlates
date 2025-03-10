@@ -48,16 +48,22 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # This can avoid wasted time trying to notarize a package (created via cpack) only to fail because it was not code signed.
     if (APPLE)
-        # Check at *install* time thus allowing users to build without a code signing identity
-        # (if they just plan to run the build locally and don't plan to deploy to other machines).
-        install(
-                CODE "
-                    set(CODE_SIGN_IDENTITY [[${GPLATES_APPLE_CODE_SIGN_IDENTITY}]])
-                    if (NOT CODE_SIGN_IDENTITY)
-                        message(WARNING [[Code signing identity not specified - please set GPLATES_APPLE_CODE_SIGN_IDENTITY before distributing to other machines]])
-                    endif()
-                "
-        )
+        # Only need to code-sign GPlates (not pyGPlates).
+        #
+        # NOTE: Packaging pyGPlates with CPack is no longer used (users now install pyGPlates using conda or pip).
+        #       So code-signing pyGPlates is no longer required (quarantine is handled by conda and pip package managers).
+        if (GPLATES_BUILD_GPLATES)  # GPlates
+            # Check at *install* time thus allowing users to build without a code signing identity
+            # (if they just plan to run the build locally and don't plan to deploy to other machines).
+            install(
+                    CODE "
+                        set(CODE_SIGN_IDENTITY [[${GPLATES_APPLE_CODE_SIGN_IDENTITY}]])
+                        if (NOT CODE_SIGN_IDENTITY)
+                            message(WARNING [[Code signing identity not specified - please set GPLATES_APPLE_CODE_SIGN_IDENTITY before distributing to other machines]])
+                        endif()
+                    "
+            )
+        endif()
     endif()
 endif()
 
