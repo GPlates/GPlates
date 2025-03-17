@@ -30,6 +30,7 @@
 #include <map>
 #include <list>
 #include <utility>
+#include <boost/operators.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QXmlStreamReader>
 
@@ -57,7 +58,8 @@ namespace GPlatesModel
 	 * XML tree in memory.
 	 */
 	class XmlNode :
-			public GPlatesUtils::ReferenceCount<XmlNode>
+			public GPlatesUtils::ReferenceCount<XmlNode>,
+			public boost::equality_comparable<XmlNode>
 	{
 	public:
 		typedef GPlatesUtils::non_null_intrusive_ptr<XmlNode,
@@ -107,6 +109,18 @@ namespace GPlatesModel
 			return d_col_num;
 		}
 
+		/**
+		 * Value equality comparison operator.
+		 *
+		 * Returns false if the types of @a other and 'this' aren't the same type, otherwise
+		 * returns true if their values (tested recursively as needed) compare equal.
+		 *
+		 * Inequality provided by boost equality_comparable.
+		 */
+		bool
+		operator==(
+				const XmlNode &other) const;
+
 
 	protected:
 		XmlNode(
@@ -122,6 +136,19 @@ namespace GPlatesModel
 		XmlNode &
 		operator=(
 				const XmlNode &);
+
+		/**
+		 * Determine if two instances ('this' and 'other') value compare equal.
+		 *
+		 * This should recursively test for equality as needed.
+		 *
+		 * A precondition of this method is that the type of 'this' is the same as the type of 'object'
+		 * so static_cast can be used instead of dynamic_cast.
+		 */
+		virtual
+		bool
+		equality(
+				const XmlNode &other) const = 0;
 
 	private: // Transcribe...
 
@@ -186,6 +213,10 @@ namespace GPlatesModel
 		XmlTextNode &
 		operator=(
 				const XmlTextNode &);
+
+		bool
+		equality(
+				const XmlNode &other) const override;
 
 	private: // Transcribe...
 
@@ -354,10 +385,6 @@ namespace GPlatesModel
 		accept_visitor(
 				XmlNodeVisitor &visitor);
 
-		bool
-		operator==(
-				const XmlElementNode &other) const;
-
 	private:
 
 		XmlElementName d_name;
@@ -375,6 +402,10 @@ namespace GPlatesModel
 		XmlElementNode &
 		operator=(
 				const XmlElementNode &);
+
+		bool
+		equality(
+				const XmlNode &other) const override;
 
 		void
 		load_attributes(

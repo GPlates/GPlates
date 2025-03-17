@@ -204,7 +204,8 @@ GPlatesPropertyValues::GmlPoint::Revision::equality(
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-	return get_point_2d() == other_revision.get_point_2d() &&
+	// Note: Compare PointOnSphere rather than lat/lon doubles (since former has epsilon comparison).
+	return get_point() == other_revision.get_point() &&
 			gml_property == other_revision.gml_property &&
 			PropertyValue::Revision::equality(other);
 }

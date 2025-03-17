@@ -172,9 +172,9 @@ namespace GPlatesPropertyValues
 		{
 			const UninterpretedPropertyValue &other_pv = dynamic_cast<const UninterpretedPropertyValue &>(other);
 
-			// TODO: Compare XML element nodes instead of pointers.
-			return d_value == other_pv.d_value &&
-				Revisionable::equality(other);
+			// Compare XML element nodes instead of pointers.
+			return *d_value == *other_pv.d_value &&
+					Revisionable::equality(other);
 		}
 
 	private:

@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iterator>
+#include <typeinfo>
 #include <boost/bind/bind.hpp>
 
 #include "XmlNode.h"
@@ -150,6 +151,29 @@ GPlatesModel::XmlNode::create(
 #endif
 
 
+bool
+GPlatesModel::XmlNode::operator==(
+		const XmlNode &other) const
+{
+	// Both objects must have the same type before testing for equality.
+	// This also means derived classes need no type-checking.
+	if (typeid(*this) != typeid(other))
+	{
+		return false;
+	}
+
+	// Compare base class data.
+	if (d_line_num != other.d_line_num ||
+		d_col_num != other.d_col_num)
+	{
+		return false;
+	}
+
+	// Compare the derived class data.
+	return equality(other);
+}
+
+
 GPlatesScribe::TranscribeResult
 GPlatesModel::XmlNode::transcribe(
 		GPlatesScribe::Scribe &scribe,
@@ -194,6 +218,17 @@ GPlatesModel::XmlTextNode::accept_visitor(
 		GPlatesModel::XmlNodeVisitor &visitor)
 {
 	visitor.visit_text_node(non_null_ptr_type(this));
+}
+
+
+bool
+GPlatesModel::XmlTextNode::equality(
+		const XmlNode &other) const
+{
+	// Can use 'static_cast' (instead of 'dynamic_cast') since XmlNode::operator==() has confirmed that.
+	const XmlTextNode &other_xml_text_node = static_cast<const XmlTextNode &>(other);
+
+	return d_text == other_xml_text_node.d_text;
 }
 
 
@@ -430,13 +465,31 @@ GPlatesModel::XmlElementNode::accept_visitor(
 
 
 bool
-GPlatesModel::XmlElementNode::operator==(
-		const XmlElementNode &other) const
+GPlatesModel::XmlElementNode::equality(
+		const XmlNode &other) const
 {
-	return d_name == other.d_name &&
-		d_attributes == other.d_attributes &&
-		d_children == other.d_children &&
-		d_alias_map == other.d_alias_map;
+	// Can use 'static_cast' (instead of 'dynamic_cast') since XmlNode::operator==() has confirmed that.
+	const XmlElementNode &other_xml_element_node = static_cast<const XmlElementNode &>(other);
+
+	if (d_children.size() != other_xml_element_node.d_children.size())
+	{
+		return false;
+	}
+
+	auto children_iter = d_children.begin();
+	auto other_children_iter = other_xml_element_node.d_children.begin();
+	for (; children_iter != d_children.end(); ++children_iter, ++other_children_iter)
+	{
+		// Compare values (not pointers).
+		if (**children_iter != **other_children_iter)
+		{
+			return false;
+		}
+	}
+
+	return d_name == other_xml_element_node.d_name &&
+			d_attributes == other_xml_element_node.d_attributes &&
+			*d_alias_map == *other_xml_element_node.d_alias_map;
 }
 
 
