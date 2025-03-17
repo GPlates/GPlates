@@ -376,15 +376,21 @@ class FeatureCase(unittest.TestCase):
     def test_pickle_property_values_not_in_pygplates(self):
         # Not all property values are exposed via pygplates.
         # For example, a feature could contain an UninterpretedPropertyValue.
-        # These properties are not tested for pickling via the pygplates property values.
-        # So we test them indirectly here instead by loading a feature containing those properties.
+        # These properties cannot be tested for pickling via the *pygplates* property values.
+        # So we test them indirectly instead, by loading a feature containing those properties.
         features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'feature_with_properties_not_in_pygplates.gpml'))
         pickled_features = pickle.loads(pickle.dumps(features))
-        for pickled_feature in pickled_features:
-            for property in pickled_feature:
+        for feature_index, pickled_feature in enumerate(pickled_features):
+            for property_index, pickled_property in enumerate(pickled_feature):
+                property = features[feature_index][property_index]
+                # Even though pygplates is unaware of the derived type of this property's value
+                # we should still be able to compare derived types.
+                self.assertTrue(pickled_property == property)
                 # Even though pygplates is unaware of the derived type of this property value
                 # we should still be able to clone via base class pygplates.PropertyValue.clone().
-                self.assertTrue(isinstance(property.get_value().clone(), pygplates.PropertyValue))
+                cloned_pickled_property_value = pickled_property.get_value().clone()
+                self.assertTrue(isinstance(cloned_pickled_property_value, pygplates.PropertyValue))
+                self.assertTrue(cloned_pickled_property_value == property.get_value())
 
     def test_feature_id(self):
         feature_id = self.feature.get_feature_id()

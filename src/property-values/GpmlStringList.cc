@@ -30,6 +30,9 @@
 #include "GpmlStringList.h"
 
 #include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeStringContentTypeGenerator.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -75,3 +78,61 @@ GPlatesPropertyValues::GpmlStringList::print_to(
 	return os;
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlStringList::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlStringList> &gpml_string_list)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_string_list->get_string_list(), "string_list");
+	}
+	else // loading
+	{
+		string_list_type string_list_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, string_list_, "string_list"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gpml_string_list.construct_object(string_list_.begin(), string_list_.end());
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlStringList::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_string_list(), "string_list");
+		}
+		else // loading
+		{
+			string_list_type string_list_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, string_list_, "string_list"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_string_list(string_list_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlStringList>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

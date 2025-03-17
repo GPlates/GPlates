@@ -34,7 +34,6 @@
 #include "global/GPlatesAssert.h"
 
 #include "model/BubbleUpRevisionHandler.h"
-#include "model/TranscribeRevisionedVector.h"
 
 #include "scribe/Scribe.h"
 

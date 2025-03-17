@@ -23,26 +23,37 @@
 #include "Enumeration.h"
 #include "GmlDataBlock.h"
 #include "GmlDataBlockCoordinateList.h"
+#include "GmlFile.h"
+#include "GmlGridEnvelope.h"
 #include "GmlLineString.h"
 #include "GmlMultiPoint.h"
 #include "GmlOrientableCurve.h"
 #include "GmlPoint.h"
 #include "GmlPolygon.h"
+#include "GmlRectifiedGrid.h"
 #include "GmlTimeInstant.h"
 #include "GmlTimePeriod.h"
+#include "GpmlAge.h"
 #include "GpmlArray.h"
 #include "GpmlConstantValue.h"
+#include "GpmlFeatureReference.h"
+#include "GpmlFeatureSnapshotReference.h"
 #include "GpmlFiniteRotation.h"
 #include "GpmlFiniteRotationSlerp.h"
+#include "GpmlHotSpotTrailMark.h"
 #include "GpmlIrregularSampling.h"
 #include "GpmlKeyValueDictionary.h"
 #include "GpmlKeyValueDictionaryElement.h"
+#include "GpmlMeasure.h"
 #include "GpmlMetadata.h"
 #include "GpmlOldPlatesHeader.h"
 #include "GpmlPiecewiseAggregation.h"
 #include "GpmlPlateId.h"
 #include "GpmlPolarityChronId.h"
 #include "GpmlPropertyDelegate.h"
+#include "GpmlRasterBandNames.h"
+#include "GpmlScalarField3DFile.h"
+#include "GpmlStringList.h"
 #include "GpmlTimeSample.h"
 #include "GpmlTimeWindow.h"
 #include "GpmlTopologicalLine.h"
@@ -82,6 +93,12 @@
 		(((GPlatesPropertyValues::GmlDataBlockCoordinateList), \
 			"GPlatesPropertyValues::GmlDataBlockCoordinateList")) \
 		\
+		(((GPlatesPropertyValues::GmlFile), \
+			"GPlatesPropertyValues::GmlFile")) \
+		\
+		(((GPlatesPropertyValues::GmlGridEnvelope), \
+			"GPlatesPropertyValues::GmlGridEnvelope")) \
+		\
 		(((GPlatesPropertyValues::GmlLineString), \
 			"GPlatesPropertyValues::GmlLineString")) \
 		\
@@ -97,11 +114,17 @@
 		(((GPlatesPropertyValues::GmlPolygon), \
 			"GPlatesPropertyValues::GmlPolygon")) \
 		\
+		(((GPlatesPropertyValues::GmlRectifiedGrid), \
+			"GPlatesPropertyValues::GmlRectifiedGrid")) \
+		\
 		(((GPlatesPropertyValues::GmlTimeInstant), \
 			"GPlatesPropertyValues::GmlTimeInstant")) \
 		\
 		(((GPlatesPropertyValues::GmlTimePeriod), \
 			"GPlatesPropertyValues::GmlTimePeriod")) \
+		\
+		(((GPlatesPropertyValues::GpmlAge), \
+			"GPlatesPropertyValues::GpmlAge")) \
 		\
 		(((GPlatesPropertyValues::GpmlArray), \
 			"GPlatesPropertyValues::GpmlArray")) \
@@ -109,11 +132,20 @@
 		(((GPlatesPropertyValues::GpmlConstantValue), \
 			"GPlatesPropertyValues::GpmlConstantValue")) \
 		\
+		(((GPlatesPropertyValues::GpmlFeatureReference), \
+			"GPlatesPropertyValues::GpmlFeatureReference")) \
+		\
+		(((GPlatesPropertyValues::GpmlFeatureSnapshotReference), \
+			"GPlatesPropertyValues::GpmlFeatureSnapshotReference")) \
+		\
 		(((GPlatesPropertyValues::GpmlFiniteRotation), \
 			"GPlatesPropertyValues::GpmlFiniteRotation")) \
 		\
 		(((GPlatesPropertyValues::GpmlFiniteRotationSlerp), \
 			"GPlatesPropertyValues::GpmlFiniteRotationSlerp")) \
+		\
+		(((GPlatesPropertyValues::GpmlHotSpotTrailMark), \
+			"GPlatesPropertyValues::GpmlHotSpotTrailMark")) \
 		\
 		(((GPlatesPropertyValues::GpmlIrregularSampling), \
 			"GPlatesPropertyValues::GpmlIrregularSampling")) \
@@ -123,6 +155,9 @@
 		\
 		(((GPlatesPropertyValues::GpmlKeyValueDictionaryElement), \
 			"GPlatesPropertyValues::GpmlKeyValueDictionaryElement")) \
+		\
+		(((GPlatesPropertyValues::GpmlMeasure), \
+			"GPlatesPropertyValues::GpmlMeasure")) \
 		\
 		(((GPlatesPropertyValues::GpmlMetadata), \
 			"GPlatesPropertyValues::GpmlMetadata")) \
@@ -141,6 +176,15 @@
 		\
 		(((GPlatesPropertyValues::GpmlPropertyDelegate), \
 			"GPlatesPropertyValues::GpmlPropertyDelegate")) \
+		\
+		(((GPlatesPropertyValues::GpmlRasterBandNames), \
+			"GPlatesPropertyValues::GpmlRasterBandNames")) \
+		\
+		(((GPlatesPropertyValues::GpmlScalarField3DFile), \
+			"GPlatesPropertyValues::GpmlScalarField3DFile")) \
+		\
+		(((GPlatesPropertyValues::GpmlStringList), \
+			"GPlatesPropertyValues::GpmlStringList")) \
 		\
 		(((GPlatesPropertyValues::GpmlTimeSample), \
 			"GPlatesPropertyValues::GpmlTimeSample")) \
