@@ -192,12 +192,12 @@ namespace GPlatesModel
 		virtual
 		void
 		write_to(
-				QXmlStreamWriter &writer) const;
+				QXmlStreamWriter &writer) const override;
 
 		virtual
 		void
 		accept_visitor(
-				XmlNodeVisitor &visitor);
+				XmlNodeVisitor &visitor) override;
 
 	private:
 		QString d_text;
@@ -378,12 +378,12 @@ namespace GPlatesModel
 		virtual
 		void
 		write_to(
-				QXmlStreamWriter &writer) const;
+				QXmlStreamWriter &writer) const override;
 
 		virtual
 		void
 		accept_visitor(
-				XmlNodeVisitor &visitor);
+				XmlNodeVisitor &visitor) override;
 
 	private:
 
