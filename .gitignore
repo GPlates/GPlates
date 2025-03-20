@@ -35,6 +35,7 @@ __pycache__/
 /bin/
 /install_manifest*.txt
 /.vs*
+/*.log
 
 #
 # /cmake/modules/
