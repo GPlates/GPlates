@@ -26,7 +26,7 @@
 #ifndef GPLATES_UTILS_ENDIAN_H
 #define GPLATES_UTILS_ENDIAN_H
 
-#include <boost/cstdint.hpp>
+#include <cstdint>
 
 #include <QSysInfo>
 
@@ -195,7 +195,7 @@ namespace GPlatesUtils
 			swap<2>(
 					void *data)
 			{
-				boost::uint16_t &element = *static_cast<boost::uint16_t *>(data);
+				std::uint16_t &element = *static_cast<std::uint16_t *>(data);
 				element = ((element & 0xff00) >> 8) | ((element & 0x00ff) << 8);
 			}
 
@@ -205,7 +205,7 @@ namespace GPlatesUtils
 			swap<4>(
 					void *data)
 			{
-				boost::uint32_t &element = *static_cast<boost::uint32_t *>(data);
+				std::uint32_t &element = *static_cast<std::uint32_t *>(data);
 				element =
 							((element & 0xff000000) >> 24) |
 							((element & 0x00ff0000) >> 8) |
@@ -219,8 +219,7 @@ namespace GPlatesUtils
 			swap<8>(
 					void *data)
 			{
-#ifndef BOOST_NO_INT64_T
-				boost::uint64_t &element = *static_cast<boost::uint64_t *>(data);
+				std::uint64_t &element = *static_cast<std::uint64_t *>(data);
 				element =
 							((element & UINT64_C(0xff00000000000000)) >> 56) |
 							((element & UINT64_C(0x00ff000000000000)) >> 40) |
@@ -230,23 +229,6 @@ namespace GPlatesUtils
 							((element & UINT64_C(0x0000000000ff0000)) << 24) |
 							((element & UINT64_C(0x000000000000ff00)) << 40) |
 							((element & UINT64_C(0x00000000000000ff)) << 56);
-#else
-				// Simulate 64-bit with 32-bit since 64-bit arithmetic is not available.
-				// The high and low 32-bit words of the 64-bit word.
-				boost::uint8_t *element_bytes = static_cast<boost::uint8_t *>(data);
-				const boost::uint32_t element_hi = *static_cast<const boost::uint32_t *>(static_cast<void *>(element_bytes));
-				const boost::uint32_t element_lo = *static_cast<const boost::uint32_t *>(static_cast<void *>(element_bytes + 4));
-				*static_cast<boost::uint32_t *>(static_cast<void *>(element_bytes)) =
-						((element_lo & 0xff000000) >> 24) |
-						((element_lo & 0x00ff0000) >> 8) |
-						((element_lo & 0x0000ff00) << 8) |
-						((element_lo & 0x000000ff) << 24);
-				*static_cast<boost::uint32_t *>(static_cast<void *>(element_bytes + 4)) =
-						((element_hi & 0xff000000) >> 24) |
-						((element_hi & 0x00ff0000) >> 8) |
-						((element_hi & 0x0000ff00) << 8) |
-						((element_hi & 0x000000ff) << 24);
-#endif
 			}
 		}
 
@@ -320,6 +302,24 @@ namespace GPlatesUtils
 				unsigned long &object)
 		{
 			Implementation::swap<sizeof(unsigned long)>(&object);
+		}
+
+		template<>
+		inline
+		void
+		swap<long long>(
+				long long &object)
+		{
+			Implementation::swap<sizeof(long long)>(&object);
+		}
+
+		template<>
+		inline
+		void
+		swap<unsigned long long>(
+				unsigned long long &object)
+		{
+			Implementation::swap<sizeof(unsigned long long)>(&object);
 		}
 
 		template<>

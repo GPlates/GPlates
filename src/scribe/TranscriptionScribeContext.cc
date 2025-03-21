@@ -937,6 +937,86 @@ GPlatesScribe::TranscriptionScribeContext::transcribe(
 
 bool
 GPlatesScribe::TranscriptionScribeContext::transcribe(
+		long long &object)
+{
+	long long_object;
+
+	if (is_saving())
+	{
+		// If we get any 64-bit signed integers that are greater than the range of 'long'
+		// then we'll get a 'boost::numeric::bad_numeric_cast' exception.
+		try
+		{
+			long_object = boost::numeric_cast<long>(object);
+		}
+		catch (boost::numeric::bad_numeric_cast &)
+		{
+			// Throw as one of our exceptions instead.
+			GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					"64-bit signed integer is out of range of 'long'.");
+		}
+	}
+
+	// Re-use 'transcribe()' for 'long'.
+	// Ie, we treat 64-bit signed integers as 'long'.
+	if (!transcribe(long_object))
+	{
+		return false;
+	}
+
+	if (is_loading())
+	{
+		object = long_object;
+	}
+
+	return true;
+}
+
+
+bool
+GPlatesScribe::TranscriptionScribeContext::transcribe(
+		unsigned long long &object)
+{
+	unsigned long long_object;
+
+	if (is_saving())
+	{
+		// If we get any 64-bit unsigned integers that are greater than the range of 'unsigned long'
+		// then we'll get a 'boost::numeric::bad_numeric_cast' exception.
+		try
+		{
+			long_object = boost::numeric_cast<unsigned long>(object);
+		}
+		catch (boost::numeric::bad_numeric_cast &)
+		{
+			// Throw as one of our exceptions instead.
+			GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					"64-bit unsigned integer is out of range of 'unsigned long'.");
+		}
+	}
+
+	// Re-use 'transcribe()' for 'unsigned long'.
+	// Ie, we treat 64-bit unsigned integers as 'unsigned long'.
+	if (!transcribe(long_object))
+	{
+		return false;
+	}
+
+	if (is_loading())
+	{
+		object = long_object;
+	}
+
+	return true;
+}
+
+
+bool
+GPlatesScribe::TranscriptionScribeContext::transcribe(
 		unsigned long &object)
 {
 	TranscribedObject &transcribed_object = d_transcribed_object_stack.top();
