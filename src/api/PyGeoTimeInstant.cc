@@ -413,15 +413,15 @@ namespace GPlatesApi
 	}
 
 
-	//
-	// The following to/from Python conversions are handled:
-	//
-	// To Python               GPlatesApi::GeoTimeInstant     float
-	//     /\                             |                     /\
-	//     |                              |                     |
-	//     \/                             \/                    \/
-	// From Python                  GPlatesPropertyValues::GeoTimeInstant
-	//
+	/*
+	 * The following to/from Python conversions are handled:
+	 *
+	 * To Python               GPlatesApi::GeoTimeInstant     float
+	 *     /\                             |                     /\
+	 *     |                              |                     |
+	 *     \/                             \/                    \/
+	 * From Python                  GPlatesPropertyValues::GeoTimeInstant
+	 */
 
 	/**
 	 * Enables passing GPlatesApi::GeoTimeInstant object (the python 'GeoTimeInstant') to
@@ -561,29 +561,29 @@ namespace GPlatesApi
 void
 export_geo_time_instant()
 {
-	//
-	// GeoTimeInstant - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
-	//
-	// NOTE: We wrap GPlatesApi::GeoTimeInstant instead of GPlatesPropertyValues::GeoTimeInstant
-	// since we already have a converter from the latter to python 'float' (and vice versa).
-	// So GPlatesPropertyValues::GeoTimeInstant converts to/from python 'float' and
-	// GPlatesApi::GeoTimeInstant only converts *from* python 'GeoTimeInstant'.
-	// In other words a C++ GeoTimeInstant is only passed *to* python as python 'float' whereas both
-	// python GeoTimeInstant and python 'float' can be passed *from* python to C++ GeoTimeInstant.
-	// The python 'GeoTimeInstant' is mainly provided as a convenience class for python users so they
-	// can test for distant past/future and perform epsilon equality comparison tests - to do this
-	// they simply create a python 'GeoTimeInstant' (from their python 'float') and then do tests on that.
-	//
-	// To Python               GPlatesApi::GeoTimeInstant     float
-	//     /\                             |                     /\
-	//     |                              |                     |
-	//     \/                             \/                    \/
-	// From Python                  GPlatesPropertyValues::GeoTimeInstant
-	//
-	// GeoTimeInstant is immutable (contains no mutable methods) hence we can copy it into python
-	// wrapper objects without worrying that modifications from the C++ will not be visible to the
-	// python side and vice versa.
-	//
+	/*
+	 * GeoTimeInstant - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	 *
+	 * NOTE: We wrap GPlatesApi::GeoTimeInstant instead of GPlatesPropertyValues::GeoTimeInstant
+	 * since we already have a converter from the latter to python 'float' (and vice versa).
+	 * So GPlatesPropertyValues::GeoTimeInstant converts to/from python 'float' and
+	 * GPlatesApi::GeoTimeInstant only converts *from* python 'GeoTimeInstant'.
+	 * In other words a C++ GeoTimeInstant is only passed *to* python as python 'float' whereas both
+	 * python GeoTimeInstant and python 'float' can be passed *from* python to C++ GeoTimeInstant.
+	 * The python 'GeoTimeInstant' is mainly provided as a convenience class for python users so they
+	 * can test for distant past/future and perform epsilon equality comparison tests - to do this
+	 * they simply create a python 'GeoTimeInstant' (from their python 'float') and then do tests on that.
+	 *
+	 * To Python               GPlatesApi::GeoTimeInstant     float
+	 *     /\                             |                     /\
+	 *     |                              |                     |
+	 *     \/                             \/                    \/
+	 * From Python                  GPlatesPropertyValues::GeoTimeInstant
+	 *
+	 * GeoTimeInstant is immutable (contains no mutable methods) hence we can copy it into python
+	 * wrapper objects without worrying that modifications from the C++ will not be visible to the
+	 * python side and vice versa.
+	 */
 	bp::class_<
 			GPlatesApi::GeoTimeInstant/*NOTE: This is not GPlatesPropertyValues::GeoTimeInstant*/,
 			// A pointer holder is required by 'bp::make_constructor'...
