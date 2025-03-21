@@ -354,8 +354,7 @@ namespace GPlatesAppLogic
 								resolved_topological_line_source_features));
 			}
 			// Else add the start rubber band, if one.
-			else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &start_rubber_band =
-					sub_segment_range.get_start_rubber_band())
+			else if (sub_segment_range.get_start_rubber_band())
 			{
 				if (include_rubber_band_points)
 				{
@@ -398,8 +397,7 @@ namespace GPlatesAppLogic
 								resolved_topological_line_source_features));
 			}
 			// Else add the end rubber band, if one.
-			else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &end_rubber_band =
-					sub_segment_range.get_end_rubber_band())
+			else if (sub_segment_range.get_end_rubber_band())
 			{
 				if (include_rubber_band_points)
 				{
@@ -498,8 +496,7 @@ namespace GPlatesAppLogic
 				vertex_source_features.push_back(section_source_feature);
 			}
 			// Else add the start rubber band, if one.
-			else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand>& start_rubber_band =
-				sub_segment_range.get_start_rubber_band())
+			else if (sub_segment_range.get_start_rubber_band())
 			{
 				if (include_rubber_band_points)
 				{
@@ -530,8 +527,7 @@ namespace GPlatesAppLogic
 				vertex_source_features.push_back(section_source_feature);
 			}
 			// Else add the end rubber band, if one.
-			else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand>& end_rubber_band =
-				sub_segment_range.get_end_rubber_band())
+			else if (sub_segment_range.get_end_rubber_band())
 			{
 				if (include_rubber_band_points)
 				{
