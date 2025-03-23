@@ -729,7 +729,7 @@ export_reconstructed_feature_geometry()
 				"  ::\n"
 				"\n"
 				"    points = reconstructed_feature_geometry.get_reconstructed_geometry_points()\n"
-				"    velocities = reconstructed_feature_geometry.get_reconstructed_geometry_point_velocities()\n"
+				"    point_velocities = reconstructed_feature_geometry.get_reconstructed_geometry_point_velocities()\n"
 				"\n"
 				"    points_and_velocities = zip(points, point_velocities)\n"
 				"\n"
@@ -1287,6 +1287,24 @@ namespace GPlatesApi
 	}
 
 	bp::list
+	resolved_topological_line_get_resolved_geometry_point_features(
+			const GPlatesAppLogic::ResolvedTopologicalLine &resolved_topological_line)
+	{
+		bp::list resolved_geometry_point_features_list;
+
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &resolved_geometry_point_features_ =
+				resolved_topological_line.get_resolved_topology_geometry_point_source_features();
+
+		for (const auto &feature_ref : resolved_geometry_point_features_)
+		{
+			resolved_geometry_point_features_list.append(
+					GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr()));
+		}
+
+		return resolved_geometry_point_features_list;
+	}
+
+	bp::list
 	resolved_topological_line_get_line_sub_segments(
 			const GPlatesAppLogic::ResolvedTopologicalLine &resolved_topological_line)
 	{
@@ -1471,7 +1489,7 @@ export_resolved_topological_line()
 				"  ::\n"
 				"\n"
 				"    points = resolved_topological_line.get_resolved_geometry_points()\n"
-				"    velocities = resolved_topological_line.get_resolved_geometry_point_velocities()\n"
+				"    point_velocities = resolved_topological_line.get_resolved_geometry_point_velocities()\n"
 				"\n"
 				"    points_and_velocities = zip(points, point_velocities)\n"
 				"\n"
@@ -1479,6 +1497,30 @@ export_resolved_topological_line()
 				"      ...\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
+		.def("get_resolved_geometry_point_features",
+				&GPlatesApi::resolved_topological_line_get_resolved_geometry_point_features,
+				"get_resolved_geometry_point_features()\n"
+				"  Returns the source feature associated with each point in the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
+				"\n"
+				"  :rtype: list of :class:`Feature`\n"
+				"\n"
+				"  The motion of each point in the resolved geometry is determined by its source feature. "
+				"And the source features are the building blocks from which topologies are assembled and resolved.\n"
+				"\n"
+				"  To associate each source feature with its point (in a resolved topological line):\n"
+				"  ::\n"
+				"\n"
+				"    points = resolved_topological_line.get_resolved_geometry_points()\n"
+				"    point_features = resolved_topological_line.get_resolved_geometry_point_features()\n"
+				"\n"
+				"    points_and_features = zip(points, point_features)\n"
+				"\n"
+				"    for point, feature in points_and_features:\n"
+				"      ...\n"
+				"\n"
+				"  .. seealso:: :meth:`get_resolved_geometry_point_velocities`\n"
+				"\n"
+				"  .. versionadded:: 1.0\n")
 		.def("get_resolved_feature",
 				&GPlatesApi::resolved_topological_line_get_resolved_feature,
 				"get_resolved_feature()\n"
@@ -1636,6 +1678,24 @@ namespace GPlatesApi
 		}
 
 		return resolved_geometry_point_velocities_list;
+	}
+
+	bp::list
+	resolved_topological_boundary_get_resolved_geometry_point_features(
+			const GPlatesAppLogic::ResolvedTopologicalBoundary &resolved_topological_boundary)
+	{
+		bp::list resolved_geometry_point_features_list;
+
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &resolved_geometry_point_features_ =
+				resolved_topological_boundary.get_resolved_topology_geometry_point_source_features();
+
+		for (const auto &feature_ref : resolved_geometry_point_features_)
+		{
+			resolved_geometry_point_features_list.append(
+					GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr()));
+		}
+
+		return resolved_geometry_point_features_list;
 	}
 
 	bp::list
@@ -1969,7 +2029,7 @@ export_resolved_topological_boundary()
 				"  ::\n"
 				"\n"
 				"    points = resolved_topological_boundary.get_resolved_geometry_points()\n"
-				"    velocities = resolved_topological_boundary.get_resolved_geometry_point_velocities()\n"
+				"    point_velocities = resolved_topological_boundary.get_resolved_geometry_point_velocities()\n"
 				"\n"
 				"    points_and_velocities = zip(points, point_velocities)\n"
 				"\n"
@@ -1977,6 +2037,30 @@ export_resolved_topological_boundary()
 				"      ...\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
+		.def("get_resolved_geometry_point_features",
+				&GPlatesApi::resolved_topological_boundary_get_resolved_geometry_point_features,
+				"get_resolved_geometry_point_features()\n"
+				"  Returns the source feature associated with each point in the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
+				"\n"
+				"  :rtype: list of :class:`Feature`\n"
+				"\n"
+				"  The motion of each point in the resolved geometry is determined by its source feature. "
+				"And the source features are the building blocks from which topologies are assembled and resolved.\n"
+				"\n"
+				"  To associate each source feature with its point (in a resolved topological boundary):\n"
+				"  ::\n"
+				"\n"
+				"    points = resolved_topological_boundary.get_resolved_geometry_points()\n"
+				"    point_features = resolved_topological_boundary.get_resolved_geometry_point_features()\n"
+				"\n"
+				"    points_and_features = zip(points, point_features)\n"
+				"\n"
+				"    for point, feature in points_and_features:\n"
+				"      ...\n"
+				"\n"
+				"  .. seealso:: :meth:`get_resolved_geometry_point_velocities`\n"
+				"\n"
+				"  .. versionadded:: 1.0\n")
 		.def("get_resolved_feature",
 				&GPlatesApi::resolved_topological_boundary_get_resolved_feature,
 				"get_resolved_feature()\n"
@@ -2311,6 +2395,26 @@ namespace GPlatesApi
 		}
 
 		return resolved_geometry_point_velocities_list;
+	}
+
+	bp::list
+	resolved_topological_network_get_resolved_geometry_point_features(
+			const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network,
+			bool include_rigid_blocks_as_interior_holes)
+	{
+		bp::list resolved_geometry_point_features_list;
+
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &resolved_geometry_point_features_ =
+				resolved_topological_network.boundary_polygon_point_source_features(
+						include_rigid_blocks_as_interior_holes);
+
+		for (const auto &feature_ref : resolved_geometry_point_features_)
+		{
+			resolved_geometry_point_features_list.append(
+					GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr()));
+		}
+
+		return resolved_geometry_point_features_list;
 	}
 
 	bp::list
@@ -2667,7 +2771,7 @@ export_resolved_topological_network()
 				"  ::\n"
 				"\n"
 				"    points = resolved_topological_network.get_resolved_geometry_points()\n"
-				"    velocities = resolved_topological_network.get_resolved_geometry_point_velocities()\n"
+				"    point_velocities = resolved_topological_network.get_resolved_geometry_point_velocities()\n"
 				"\n"
 				"    points_and_velocities = zip(points, point_velocities)\n"
 				"\n"
@@ -2675,6 +2779,36 @@ export_resolved_topological_network()
 				"      ...\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
+		.def("get_resolved_geometry_point_features",
+				&GPlatesApi::resolved_topological_network_get_resolved_geometry_point_features,
+				(bp::arg("include_rigid_blocks_as_interior_holes") = false),
+				"get_resolved_geometry_point_features([include_rigid_blocks_as_interior_holes=False])\n"
+				"  Returns the source feature associated with each point in the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
+				"\n"
+				"  :param include_rigid_blocks_as_interior_holes: Whether to include source features at vertices of "
+				":meth:`interior rigid block <get_rigid_blocks>` polygons (if any) in the returned source features. "
+				"Defaults to ``False``.\n"
+				"  :type include_rigid_blocks_as_interior_holes: bool\n"
+				"\n"
+				"  :rtype: list of :class:`Feature`\n"
+				"\n"
+				"  The motion of each point in the resolved geometry is determined by its source feature. "
+				"And the source features are the building blocks from which topologies are assembled and resolved.\n"
+				"\n"
+				"  To associate each source feature with its point (in a resolved topological network boundary):\n"
+				"  ::\n"
+				"\n"
+				"    points = resolved_topological_network.get_resolved_geometry_points()\n"
+				"    point_features = resolved_topological_network.get_resolved_geometry_point_features()\n"
+				"\n"
+				"    points_and_features = zip(points, point_features)\n"
+				"\n"
+				"    for point, feature in points_and_features:\n"
+				"      ...\n"
+				"\n"
+				"  .. seealso:: :meth:`get_resolved_geometry_point_velocities`\n"
+				"\n"
+				"  .. versionadded:: 1.0\n")
 		.def("get_resolved_feature",
 				&GPlatesApi::resolved_topological_network_get_resolved_feature,
 				"get_resolved_feature()\n"
@@ -3088,6 +3222,25 @@ namespace GPlatesApi
 		return resolved_geometry_point_velocities_list;
 	}
 
+	bp::list
+	resolved_topological_geometry_sub_segment_get_resolved_geometry_point_features(
+			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment)
+	{
+		bp::list resolved_geometry_point_features_list;
+
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> resolved_geometry_point_features_;
+		resolved_topological_geometry_sub_segment.get_sub_segment_geometry_point_source_features(
+				resolved_geometry_point_features_);
+
+		for (const auto &feature_ref : resolved_geometry_point_features_)
+		{
+			resolved_geometry_point_features_list.append(
+					GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr()));
+		}
+
+		return resolved_geometry_point_features_list;
+	}
+
 	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
 	// It should normally be one though so we don't document that Py_None could be returned to the caller.
 	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
@@ -3302,7 +3455,7 @@ export_resolved_topological_geometry_sub_segment()
 				"  ::\n"
 				"\n"
 				"    points = sub_segment.get_resolved_geometry_points()\n"
-				"    velocities = sub_segment.get_resolved_geometry_point_velocities()\n"
+				"    point_velocities = sub_segment.get_resolved_geometry_point_velocities()\n"
 				"\n"
 				"    points_and_velocities = zip(points, point_velocities)\n"
 				"\n"
@@ -3310,6 +3463,30 @@ export_resolved_topological_geometry_sub_segment()
 				"      ...\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
+		.def("get_resolved_geometry_point_features",
+				&GPlatesApi::resolved_topological_geometry_sub_segment_get_resolved_geometry_point_features,
+				"get_resolved_geometry_point_features()\n"
+				"  Returns the source feature associated with each point in the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
+				"\n"
+				"  :rtype: list of :class:`Feature`\n"
+				"\n"
+				"  The motion of each point in the resolved geometry is determined by its source feature. "
+				"And the source features are the building blocks from which topologies are assembled and resolved.\n"
+				"\n"
+				"  To associate each source feature with its point (in a sub-segment):\n"
+				"  ::\n"
+				"\n"
+				"    points = sub_segment.get_resolved_geometry_points()\n"
+				"    point_features = sub_segment.get_resolved_geometry_point_features()\n"
+				"\n"
+				"    points_and_features = zip(points, point_features)\n"
+				"\n"
+				"    for point, feature in points_and_features:\n"
+				"      ...\n"
+				"\n"
+				"  .. seealso:: :meth:`get_resolved_geometry_point_velocities`\n"
+				"\n"
+				"  .. versionadded:: 1.0\n")
 		.def("get_geometry",
 				&GPlatesApi::resolved_topological_geometry_sub_segment_get_resolved_geometry,
 				"get_geometry()\n"
@@ -3491,6 +3668,25 @@ namespace GPlatesApi
 		}
 
 		return resolved_geometry_point_velocities_list;
+	}
+
+	bp::list
+	resolved_topological_shared_sub_segment_get_resolved_geometry_point_features(
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment)
+	{
+		bp::list resolved_geometry_point_features_list;
+
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> resolved_geometry_point_features_;
+		resolved_topological_shared_sub_segment.get_shared_sub_segment_geometry_point_source_features(
+				resolved_geometry_point_features_);
+
+		for (const auto &feature_ref : resolved_geometry_point_features_)
+		{
+			resolved_geometry_point_features_list.append(
+					GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr()));
+		}
+
+		return resolved_geometry_point_features_list;
 	}
 
 	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
@@ -3790,7 +3986,7 @@ export_resolved_topological_shared_sub_segment()
 				"  ::\n"
 				"\n"
 				"    points = sub_segment.get_resolved_geometry_points()\n"
-				"    velocities = sub_segment.get_resolved_geometry_point_velocities()\n"
+				"    point_velocities = sub_segment.get_resolved_geometry_point_velocities()\n"
 				"\n"
 				"    points_and_velocities = zip(points, point_velocities)\n"
 				"\n"
@@ -3798,6 +3994,30 @@ export_resolved_topological_shared_sub_segment()
 				"      ...\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
+		.def("get_resolved_geometry_point_features",
+				&GPlatesApi::resolved_topological_shared_sub_segment_get_resolved_geometry_point_features,
+				"get_resolved_geometry_point_features()\n"
+				"  Returns the source feature associated with each point in the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
+				"\n"
+				"  :rtype: list of :class:`Feature`\n"
+				"\n"
+				"  The motion of each point in the resolved geometry is determined by its source feature. "
+				"And the source features are the building blocks from which topologies are assembled and resolved.\n"
+				"\n"
+				"  To associate each source feature with its point (in a sub-segment):\n"
+				"  ::\n"
+				"\n"
+				"    points = sub_segment.get_resolved_geometry_points()\n"
+				"    point_features = sub_segment.get_resolved_geometry_point_features()\n"
+				"\n"
+				"    points_and_features = zip(points, point_features)\n"
+				"\n"
+				"    for point, feature in points_and_features:\n"
+				"      ...\n"
+				"\n"
+				"  .. seealso:: :meth:`get_resolved_geometry_point_velocities`\n"
+				"\n"
+				"  .. versionadded:: 1.0\n")
 		.def("get_geometry",
 				&GPlatesApi::resolved_topological_shared_sub_segment_get_resolved_geometry,
 				"get_geometry()\n"

@@ -148,9 +148,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Access the resolved topology polygon as a @a GeometryOnSphere.
 		 */
-		virtual
 		const resolved_topology_geometry_ptr_type
-		resolved_topology_geometry() const
+		resolved_topology_geometry() const override
 		{
 			return d_resolved_topology_boundary_ptr;
 		}
@@ -158,7 +157,6 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the resolved topology geometry points in @a resolved_topology_geometry.
 		 */
-		virtual
 		void
 		resolved_topology_geometry_points(
 				std::vector<GPlatesMaths::PointOnSphere> &resolved_topology_geometry_points_) const;
@@ -170,7 +168,6 @@ namespace GPlatesAppLogic
 		 *
 		 * Note: The number of velocities is guaranteed to match points in @a resolved_topology_geometry_points.
 		 */
-		virtual
 		void
 		resolved_topology_geometry_point_velocities(
 				std::vector<GPlatesMaths::Vector3D> &resolved_topology_geometry_point_velocities_,
