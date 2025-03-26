@@ -289,12 +289,12 @@ SET(CPACK_SOURCE_STRIP_FILES FALSE)
 #
 # Skip:
 #
-# Directories and files (in root directory) starting with '.' (eg, '.git/' directory or '.git' file, and '.gitattributes' and '.gitignore').
-LIST(APPEND CPACK_SOURCE_IGNORE_FILES "/\\.[^/]+")
-# Files in root directory ending with '.log'.
+# Directories and files starting with '.' (eg, '.git/' directory or '.git' file, and '.gitattributes' and '.gitignore').
+LIST(APPEND CPACK_SOURCE_IGNORE_FILES "^/\\.[^/]+")
+# Files ending with '.log'.
 LIST(APPEND CPACK_SOURCE_IGNORE_FILES "/[^/]+\\.log$")
-# Directories in root directory.
-LIST(APPEND CPACK_SOURCE_IGNORE_FILES "/__pycache__/" "/wheelhouse/" "/dist/")
+# Directories.
+LIST(APPEND CPACK_SOURCE_IGNORE_FILES "/__pycache__/" "/wheelhouse/" "/dist/" "/debug/")
 
 #   CPACK_VERBATIM_VARIABLES - If set to TRUE, values of variables prefixed with CPACK_ will be escaped before being written
 #                              to the configuration files, so that the cpack program receives them exactly as they were specified.
