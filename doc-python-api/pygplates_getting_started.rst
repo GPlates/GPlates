@@ -66,30 +66,19 @@ To install the latest stable version of pyGPlates type the following in a termin
 (on macOS and Ubuntu this is a *Terminal* window, and on Windows you'll need to open an *Anaconda prompt* from the Start menu):
 ::
 
-  conda install -c conda-forge/label/pygplates_rc -c conda-forge pygplates
-
-.. note:: Since the current release is a *pre-release* (release candidate ``1.0.0rc1``), it is in a special *release candidate*
-  channel ``conda-forge/label/pygplates_rc`` (which must be specified **before** the *main* channel ``conda-forge``).
-  If you don't do this then you'll install the older unofficial version ``0.39`` from the *main* channel.
+  conda install -c conda-forge pygplates
 
 We recommend installing pyGPlates into a new conda environment.
 For example, the following creates and activates a Python 3.12 environment named ``pygplates_py312`` containing pyGPlates and all its dependency libraries:
 ::
 
-  conda create -n pygplates_py312 -c conda-forge/label/pygplates_rc -c conda-forge python=3.12 pygplates
+  conda create -n pygplates_py312 -c conda-forge python=3.12 pygplates
   conda activate pygplates_py312
 
 Now you can use pyGPlates. For example, to see the pyGPlates version:
 ::
 
   python -c "import pygplates; print(pygplates.__version__)"
-
-And packages that *depend* on pyGPlates can still use the *release candidate* of pyGPlates.
-For example, if you want ``gplately`` to use ``pygplates-1.0.0rc1`` (instead of ``pygplates-0.39``):
-::
-
-  conda create -n gplately_env -c conda-forge/label/pygplates_rc -c conda-forge gplately
-  conda activate gplately_env
 
 .. _pygplates_getting_started_install_using_pip:
 
@@ -115,11 +104,7 @@ PyGPlates installed using ``pip`` supports (via our `binary wheels <https://pypi
 
 - NumPy:
 
-  - Version 1.24+ (for Python 3.8):
-
-    - Make sure your NumPy version is 1.24+ to avoid a binary incompatible error.
-    - This will be fixed in the final release `1.0.0`. The current release is a *pre-release* (`1.0.0rc1`).
-
+  - Version 1.x (for Python 3.8):
   - Version 2.x and 1.x (for Python 3.9 and later).
 
 On **macOS** or **Linux**, to install the latest stable version of pyGPlates type the following in a terminal:
