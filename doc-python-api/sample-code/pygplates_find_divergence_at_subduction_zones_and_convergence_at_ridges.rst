@@ -158,7 +158,7 @@ Details
             find_converging_points):
 
 | Within this function we first :meth:`calculate boundary statistics <pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics>`
-  along the requested boundary type. Only boundaries of the requested :class:`feature type <pygplates.FeatureType>` are look at.
+  along the requested boundary type. Only boundaries of the requested :class:`feature type <pygplates.FeatureType>` are looked at.
 | Also the sample points are spaced 1 degree apart along the plate boundaries.
   And velocities are calculated in cms/yr.
 

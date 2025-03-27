@@ -409,6 +409,7 @@ Plate boundary statistics
 .. note:: The following sample codes use plate boundary statistics:
 
    * :ref:`pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges`
+   * :ref:`pygplates_sample_intra-plate_strain_rates_at_subduction_zones`
 
 Statistics at uniformly spaced points along plate boundaries can be generated from a topological snapshot using
 :meth:`pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics`.
