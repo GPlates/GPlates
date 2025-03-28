@@ -176,20 +176,20 @@ Install from source code
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 The first step is to obtain the source code for the current pyGPlates release by checking out the
-``release/pygplates-1.0`` branch of the `GPlates GitHub repository <https://github.com/GPlates/GPlates>`_.
+``release-pygplates`` branch of the `GPlates GitHub repository <https://github.com/GPlates/GPlates>`_.
 Or you can check out the pyGPlates *development* branch ``pygplates`` (if you want the latest *unofficial* updates).
 
 .. note:: You'll first need to `install git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
   (if you don't already have it).
 
-In a terminal or command window, type the following to download the GPlates repository and switch to the ``release/pygplates-1.0`` branch
+In a terminal or command window, type the following to download the GPlates repository and switch to the ``release-pygplates`` branch
 (replacing ``<parent-of-source-code-dir>`` with the directory you want to download the repository into):
 ::
 
   cd <parent-of-source-code-dir>
   git clone https://github.com/GPlates/GPlates.git
   cd GPlates
-  git switch release/pygplates-1.0
+  git switch release-pygplates
 
 Then follow the instructions in ``DEPS.Linux`` (on Linux), ``DEPS.OSX`` (on macOS) or ``DEPS.Windows`` (on Windows) to install
 the dependency libraries required by pyGPlates (and to install the compilation tools).
