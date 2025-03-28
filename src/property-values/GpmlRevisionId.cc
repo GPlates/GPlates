@@ -29,6 +29,8 @@
 
 #include "GpmlRevisionId.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GpmlRevisionId::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("revisionId");
@@ -41,3 +43,51 @@ GPlatesPropertyValues::GpmlRevisionId::print_to(
 	return os << d_value.get();
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlRevisionId::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlRevisionId> &gpml_plate_id)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_plate_id->d_value, "value");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionId> value_ =
+				scribe.load<GPlatesModel::RevisionId>(TRANSCRIBE_SOURCE, "value");
+		if (!value_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gpml_plate_id.construct_object(value_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlRevisionId::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_value, "value"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlRevisionId>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

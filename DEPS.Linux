@@ -24,18 +24,20 @@ Program and library dependencies
 
 To compile GPlates/pyGPlates, you will need the following programs and libraries installed:
 
-  • cmake (3.16 or newer)
-  • g++ (4.8.1 or newer, required to support C++11) 
+  • cmake
+  • g++
   • GL library (the OpenGL shared library)
   • GLEW library (the OpenGL Extension Wrangler Library)
-  • Python library (3.8 or newer)
-  • Boost library headers (1.55 or newer, or 1.70 or newer if cmake >= 3.30)
-  • Qt library (5.6 - 5.15; note: 6.x will only be supported for GPlates 3.0)
-  • Geospatial Data Abstraction Library (GDAL) (2.0 or newer)
-  • Computational Geometry Algorithms Library (CGAL) (4.12 or newer)
-  • PROJ (4.6.0 or newer; preferably 6 or newer)
-  • Qwt (6.0.1 or newer; preferably 6.1 or newer)
+  • Python library
+  • Boost library headers
+  • Qt library
+  • Geospatial Data Abstraction Library (GDAL)
+  • Computational Geometry Algorithms Library (CGAL)
+  • PROJ
+  • Qwt
   • zlib
+
+Note: The required versions of the dependencies are documented in "README.md".
 
 Corresponding package dependencies
 

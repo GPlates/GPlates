@@ -33,6 +33,9 @@
 #include "model/PropertyValue.h"
 #include "model/XmlNode.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -169,9 +172,9 @@ namespace GPlatesPropertyValues
 		{
 			const UninterpretedPropertyValue &other_pv = dynamic_cast<const UninterpretedPropertyValue &>(other);
 
-			// TODO: Compare XML element nodes instead of pointers.
-			return d_value == other_pv.d_value &&
-				Revisionable::equality(other);
+			// Compare XML element nodes instead of pointers.
+			return *d_value == *other_pv.d_value &&
+					Revisionable::equality(other);
 		}
 
 	private:
@@ -203,6 +206,20 @@ namespace GPlatesPropertyValues
 
 		GPlatesModel::XmlElementNode::non_null_ptr_to_const_type d_value;
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<UninterpretedPropertyValue> &uninterpreted_property_value);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

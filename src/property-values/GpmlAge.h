@@ -36,7 +36,11 @@
 #include "TimescaleName.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -633,6 +637,20 @@ namespace GPlatesPropertyValues
 			boost::optional<TimescaleBand> uncertainty_oldest_named;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlAge> &gpml_age);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

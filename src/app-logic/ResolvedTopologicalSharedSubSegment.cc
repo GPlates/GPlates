@@ -90,11 +90,11 @@ GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_reversed_shared_sub_se
 {
 	// Get the points in the shared sub-segment.
 	std::vector<GPlatesMaths::PointOnSphere> geometry_points;
-	get_reversed_shared_sub_segment_points(geometry_points, include_rubber_band_points);
+	get_reversed_shared_sub_segment_points(geometry_points, use_reverse, include_rubber_band_points);
 
 	// Get the resolved source infos (one per point in the shared sub-segment).
 	resolved_vertex_source_info_seq_type geometry_point_source_infos;
-	get_reversed_shared_sub_segment_point_source_infos(geometry_point_source_infos, include_rubber_band_points);
+	get_reversed_shared_sub_segment_point_source_infos(geometry_point_source_infos, use_reverse, include_rubber_band_points);
 
 	// Number of resolved source infos should match number of points in the shared sub-segment.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -211,6 +211,99 @@ GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_reversed_shared_sub_se
 				src_point_source_infos_begin,
 				src_point_source_infos_end,
 				std::back_inserter(point_source_infos));
+	}
+}
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_shared_sub_segment_point_source_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &point_source_features,
+		bool include_rubber_band_points) const
+{
+	if (!d_point_source_features)
+	{
+		d_point_source_features = std::vector<GPlatesModel::FeatureHandle::weak_ref>();
+
+		// Get the point source features (including at the optional rubber band points).
+		ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_source_features(
+				d_point_source_features.get(),
+				d_shared_sub_segment,
+				d_shared_segment_reconstruction_geometry,
+				true/*include_rubber_band_points*/);
+	}
+
+	// Copy to caller's sequence.
+	//
+	// If the caller does not want rubber band points then avoid copying them (if they exist).
+	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator src_point_source_features_begin = d_point_source_features->begin();
+	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator src_point_source_features_end = d_point_source_features->end();
+	if (!include_rubber_band_points)
+	{
+		if (d_shared_sub_segment.get_start_rubber_band())
+		{
+			++src_point_source_features_begin;
+		}
+		if (d_shared_sub_segment.get_end_rubber_band())
+		{
+			--src_point_source_features_end;
+		}
+	}
+
+	std::copy(
+			src_point_source_features_begin,
+			src_point_source_features_end,
+			std::back_inserter(point_source_features));
+}
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_reversed_shared_sub_segment_point_source_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &point_source_features,
+		bool use_reverse,
+		bool include_rubber_band_points) const
+{
+	if (!d_point_source_features)
+	{
+		d_point_source_features = std::vector<GPlatesModel::FeatureHandle::weak_ref>();
+
+		// Get the point source features (including at the optional rubber band points).
+		ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_source_features(
+				d_point_source_features.get(),
+				d_shared_sub_segment,
+				d_shared_segment_reconstruction_geometry,
+				true/*include_rubber_band_points*/);
+	}
+
+	// Copy to caller's sequence.
+	//
+	// If the caller does not want rubber band points then avoid copying them (if they exist).
+	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator src_point_source_features_begin = d_point_source_features->begin();
+	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator src_point_source_features_end = d_point_source_features->end();
+	if (!include_rubber_band_points)
+	{
+		if (d_shared_sub_segment.get_start_rubber_band())
+		{
+			++src_point_source_features_begin;
+		}
+		if (d_shared_sub_segment.get_end_rubber_band())
+		{
+			--src_point_source_features_end;
+		}
+	}
+
+	if (use_reverse)
+	{
+		std::reverse_copy(
+				src_point_source_features_begin,
+				src_point_source_features_end,
+				std::back_inserter(point_source_features));
+	}
+	else
+	{
+		std::copy(
+				src_point_source_features_begin,
+				src_point_source_features_end,
+				std::back_inserter(point_source_features));
 	}
 }
 

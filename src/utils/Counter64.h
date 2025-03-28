@@ -26,7 +26,7 @@
 #ifndef GPLATES_UTILS_COUNTER64_H
 #define GPLATES_UTILS_COUNTER64_H
 
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include <boost/operators.hpp>
 
 
@@ -44,11 +44,6 @@ namespace GPlatesUtils
 	 * 64-bit simulation code for those systems that only support 32-bit integers -
 	 * which should be very few). Use of 32-bit integers brings this down from 195 years to
 	 * a couple of seconds so 64-bit must be used.
-	 */
-#ifndef BOOST_NO_INT64_T
-
-	/**
-	 * A 64-bit counter that delegates to boost::uint64_t.
 	 */
 	class Counter64 :
 			public boost::incrementable<Counter64>,
@@ -85,63 +80,8 @@ namespace GPlatesUtils
 		}
 
 	private:
-		// Use built-in 64-bit integers where available.
-		boost::uint64_t d_counter;
+		std::uint64_t d_counter;
 	};
-
-#else
-
-	/*
-	 * A 64-bit implementation just in case we happen to run into a compiler without 64-bit integers.
-	 *
-	 * Shouldn't really happen on any systems that Qt supports but better to be sure.
-	 */
-	class Counter64 :
-			public boost::incrementable<Counter64>,
-			public boost::equality_comparable<Counter64>,
-			public boost::less_than_comparable<Counter64>
-	{
-	public:
-		//! Constructor to instantiate from a 32-bit integer (defaults to zero).
-		explicit
-		Counter64(
-				boost::uint32_t low = 0) :
-			d_high(0),
-			d_low(low)
-		{  }
-
-		Counter64 &
-		operator++()
-		{
-			++d_low;
-			if (d_low == 0) // integer overflow
-			{
-				++d_high;
-			}
-			return *this;
-		}
-
-		bool
-		operator==(
-				const Counter64 &other) const
-		{
-			return d_low == other.d_low && d_high == other.d_high;
-		}
-
-		bool
-		operator<(
-				const Counter64 &other) const
-		{
-			return
-				(d_high < other.d_high) ||
-				((d_high == other.d_high) && (d_low < other.d_low));
-		}
-
-	private:
-		boost::uint32_t d_high, d_low; // This should be portable.
-	};
-
-#endif
 }
 
 #endif // GPLATES_UTILS_COUNTER64_H

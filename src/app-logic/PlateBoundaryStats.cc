@@ -343,7 +343,11 @@ namespace GPlatesAppLogic
 
 			// Each point of shared sub-segment has a resolved vertex source info (used to calculate velocity at a point).
 			resolved_vertex_source_info_seq_type shared_sub_segment_vertex_source_infos;
-			shared_sub_segment->get_shared_sub_segment_point_source_infos(shared_sub_segment_vertex_source_infos);
+			shared_sub_segment->get_shared_sub_segment_geometry_point_source_infos(shared_sub_segment_vertex_source_infos);
+
+			// Each point of shared sub-segment has a resolved vertex source feature (eg, used to obtain reconstruction plate ID).
+			std::vector<GPlatesModel::FeatureHandle::weak_ref> shared_sub_segment_vertex_source_features;
+			shared_sub_segment->get_shared_sub_segment_geometry_point_source_features(shared_sub_segment_vertex_source_features);
 
 			// The resolved topological boundaries/networks sharing the shared sub-segment.
 			std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> left_sharing_resolved_topological_boundaries;
@@ -380,8 +384,8 @@ namespace GPlatesAppLogic
 
 			// Avoid unnecessary re-calculations for uniform points on the same segment (arc) of shared sub-segment polyline.
 			boost::optional<unsigned int> last_segment_index;
-			GPlatesMaths::Vector3D segment_start_boundary_velocity;
-			GPlatesMaths::Vector3D segment_end_boundary_velocity;
+			GPlatesMaths::Vector3D segment_start_boundary_velocity, segment_end_boundary_velocity;
+			GPlatesModel::FeatureHandle::weak_ref segment_start_boundary_feature, segment_end_boundary_feature;
 			boost::optional<GPlatesMaths::UnitVector3D> boundary_normal;
 
 			// Avoid re-calculating stage rotations for resolved topological boundaries with the same plate ID.
@@ -443,12 +447,29 @@ namespace GPlatesAppLogic
 							segment_end_point,
 							reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms);
 
+					segment_start_boundary_feature = shared_sub_segment_vertex_source_features[segment_index];
+					segment_end_boundary_feature = shared_sub_segment_vertex_source_features[segment_index + 1];
+
 					last_segment_index = segment_index;
 				}
 
 				// Interpolate the segment start and end velocity vectors.
 				const GPlatesMaths::Vector3D boundary_velocity =
 						(1.0 - segment_interpolation) * segment_start_boundary_velocity + segment_interpolation * segment_end_boundary_velocity;
+
+				// Choose the boundary feature of the closest segment start/end point.
+				//
+				// If the shared sub-segment (containing all these boundary points) is from a ReconstructedFeatureGeometry then all the
+				// boundary points will have the same boundary feature. However, if it's from a ResolvedTopologicalLine then we're
+				// essentially determining which sub-segment of the ResolvedTopologicalLine the current point is on (since each sub-segment
+				// will be associated with a potentially different ReconstructedFeatureGeometry, and hence different boundary feature).
+				// If the ResolvedTopologicalLine (RTL) consists of *intersecting* ReconstructedFeatureGeometry's (RFGs) then it won't matter
+				// whether we choose the start or end point of the current segment (since both will have the same RFG).
+				// However, if the RTL consists of rubber-banded points, then the sub-segment of each point will consist of two lines,
+				// each proceeding *half-way* to the adjacent point RFG. This explains the '0.5' in the following.
+				const GPlatesModel::FeatureHandle::weak_ref boundary_feature = segment_interpolation < 0.5
+						? segment_start_boundary_feature
+						: segment_end_boundary_feature;
 
 				// Get the velocities on the plates to the left and right of the current point
 				// (when following the order or points in the shared sub-segment).
@@ -487,6 +508,8 @@ namespace GPlatesAppLogic
 				// Record the statistics for the current uniform point.
 				shared_sub_segment_plate_boundary_stats.push_back(
 						PlateBoundaryStat(
+								shared_sub_segment,
+								boundary_feature,
 								boundary_point,
 								point_boundary_length,
 								boundary_normal.get(),

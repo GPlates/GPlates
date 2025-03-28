@@ -33,6 +33,8 @@
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GpmlScalarField3DFile::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("ScalarField3DFile");
@@ -85,4 +87,69 @@ GPlatesPropertyValues::GpmlScalarField3DFile::bubble_up(
 			GPLATES_ASSERTION_SOURCE);
 
 	return revision.filename.clone_revision(transaction);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlScalarField3DFile::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlScalarField3DFile> &gpml_scalar_field_3D_file)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_scalar_field_3D_file->get_file_name(), "file_name");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<XsString::non_null_ptr_type> file_name_ =
+				scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "file_name");
+		if (!file_name_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_scalar_field_3D_file.construct_object(
+				boost::ref(transaction),  // non-const ref
+				file_name_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlScalarField3DFile::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_file_name(), "file_name");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<XsString::non_null_ptr_type> file_name_ =
+					scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "file_name");
+			if (!file_name_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_file_name(file_name_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlScalarField3DFile>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

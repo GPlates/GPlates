@@ -24,7 +24,7 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include <boost/shared_ptr.hpp>
 #include <boost/operators.hpp>
 #include <boost/bind/bind.hpp>
@@ -68,12 +68,12 @@ namespace
 	 * Stores platform-dependent tick count.
 	 * Time unit varies across platforms.
 	 */
-	typedef boost::uint64_t ticks_t;
+	typedef std::uint64_t ticks_t;
 
 	/**
 	 * Stores number of get_calls to a profiled section of code.
 	 */
-	typedef boost::uint64_t calls_t;
+	typedef std::uint64_t calls_t;
 
 	/**
 	 * Returns current time in units of @a ticks_t.
@@ -919,7 +919,7 @@ namespace
 		// 0.01 microseconds (from 0.1 microseconds).
 		//
 		const double accuracy = 1e-8/* 0.01 microseconds */;
-		seconds = accuracy * static_cast<boost::uint64_t>(seconds / accuracy  + 0.5);
+		seconds = accuracy * static_cast<std::uint64_t>(seconds / accuracy  + 0.5);
 
 		const char *time_suffix;
 		double time;

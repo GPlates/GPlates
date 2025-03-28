@@ -86,7 +86,7 @@ namespace GPlatesAppLogic
 					section_resolved_topological_line_opt.get();
 
 			const resolved_vertex_source_info_seq_type &section_vertex_source_infos =
-					section_resolved_topological_line->get_vertex_source_infos();
+					section_resolved_topological_line->get_resolved_topology_geometry_point_source_infos();
 
 			// Should have at least two vertices (since a resolved line is a polyline).
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -160,11 +160,8 @@ namespace GPlatesAppLogic
 		get_resolved_topological_line_intersection_vertex_source_info(
 				const ResolvedSubSegmentRangeInSection::Intersection &intersection,
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry,
-				ResolvedTopologicalLine::non_null_ptr_to_const_type section_resolved_topological_line)
+				const resolved_vertex_source_info_seq_type &resolved_topological_line_source_infos)
 		{
-			const resolved_vertex_source_info_seq_type &section_vertex_source_infos =
-					section_resolved_topological_line->get_vertex_source_infos();
-
 			if (intersection.on_segment_start)
 			{
 				// Since intersection is on start of segment it is also a vertex index.
@@ -172,7 +169,7 @@ namespace GPlatesAppLogic
 
 				// Note that this can be the fictitious one-past-the-last *segment* but we can
 				// dereference as a *vertex index* since that will be the last *vertex*.
-				return section_vertex_source_infos[vertex_index];
+				return resolved_topological_line_source_infos[vertex_index];
 			}
 			// else intersection is in middle of a segment...
 
@@ -186,10 +183,10 @@ namespace GPlatesAppLogic
 			// need to interpolate between them.
 			//
 			// Note that we're comparing ResolvedVertexSourceInfo objects, not 'non_null_intrusive_ptr's.
-			if (*section_vertex_source_infos[segment_start_vertex_index] ==
-				*section_vertex_source_infos[segment_end_vertex_index])
+			if (*resolved_topological_line_source_infos[segment_start_vertex_index] ==
+				*resolved_topological_line_source_infos[segment_end_vertex_index])
 			{
-				return section_vertex_source_infos[segment_start_vertex_index];
+				return resolved_topological_line_source_infos[segment_start_vertex_index];
 			}
 			// else vertex source infos are different for start and end points of intersected segment...
 
@@ -205,9 +202,49 @@ namespace GPlatesAppLogic
 			// it's unlikely the intersection will register on a zero-length segment.
 			//
 			return ResolvedVertexSourceInfo::create(
-					section_vertex_source_infos[segment_start_vertex_index],
-					section_vertex_source_infos[segment_end_vertex_index],
+					resolved_topological_line_source_infos[segment_start_vertex_index],
+					resolved_topological_line_source_infos[segment_end_vertex_index],
 					intersection.get_interpolate_ratio_in_segment(*section_geometry));
+		}
+
+
+		/**
+		 * Finds the vertex source feature corresponding to the specified intersection along the
+		 * section polyline of a resolved topological line.
+		 */
+		GPlatesModel::FeatureHandle::weak_ref
+		get_resolved_topological_line_intersection_vertex_source_feature(
+				const ResolvedSubSegmentRangeInSection::Intersection &intersection,
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &resolved_topological_line_source_features)
+		{
+			if (intersection.on_segment_start)
+			{
+				// Since intersection is on start of segment it is also a vertex index.
+				const unsigned int vertex_index = intersection.segment_index;
+
+				// Note that this can be the fictitious one-past-the-last *segment* but we can
+				// dereference as a *vertex index* since that will be the last *vertex*.
+				return resolved_topological_line_source_features[vertex_index];
+			}
+			// else intersection is in middle of a segment...
+
+			// Segment's start and end points.
+			// Note that the segment's *end* vertex is dereferenceable because we can't be in the middle
+			// of the fictitious *one-past-the-last* segment (since already tested not on segment start).
+			const unsigned int segment_start_vertex_index = intersection.segment_index;
+			const unsigned int segment_end_vertex_index = segment_start_vertex_index + 1;
+
+			// We need to essentially determine which sub-segment of the ResolvedTopologicalLine the intersection is on
+			// (since each sub-segment will be associated with a potentially different ReconstructedFeatureGeometry, and
+			// hence different boundary feature). If the ResolvedTopologicalLine (RTL) consists of *intersecting*
+			// ReconstructedFeatureGeometry's (RFGs) then it won't matter whether we choose the start or end vertex of
+			// the intersected segment (since both will have the same RFG). However, if the RTL consists of rubber-banded
+			// points, then the sub-segment of each point will consist of two lines, each proceeding *half-way* to the
+			// adjacent point RFG. This explains the '0.5' in the following.
+			return intersection.get_interpolate_ratio_in_segment(*section_geometry) < 0.5
+					? resolved_topological_line_source_features[segment_start_vertex_index]
+					: resolved_topological_line_source_features[segment_end_vertex_index];
 		}
 
 
@@ -221,6 +258,10 @@ namespace GPlatesAppLogic
 				ResolvedTopologicalLine::non_null_ptr_to_const_type section_resolved_topological_line,
 				bool include_rubber_band_points)
 		{
+			// Vertex sources of points in the unclipped section geometry.
+			const resolved_vertex_source_info_seq_type &resolved_topological_line_source_infos =
+					section_resolved_topological_line->get_resolved_topology_geometry_point_source_infos();
+
 			// Add the start intersection, if one.
 			if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &start_intersection =
 				sub_segment_range.get_start_intersection())
@@ -229,7 +270,7 @@ namespace GPlatesAppLogic
 						get_resolved_topological_line_intersection_vertex_source_info(
 								start_intersection.get(),
 								sub_segment_range.get_section_geometry(),
-								section_resolved_topological_line));
+								resolved_topological_line_source_infos));
 			}
 			// Else add the start rubber band, if one.
 			else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &start_rubber_band =
@@ -253,19 +294,15 @@ namespace GPlatesAppLogic
 			const unsigned int start_vertex_index = sub_segment_range.get_start_section_vertex_index();
 			const unsigned int end_vertex_index = sub_segment_range.get_end_section_vertex_index();
 
-			// Vertex sources of points in the unclipped section geometry.
-			const resolved_vertex_source_info_seq_type &resolved_vertex_source_infos =
-					section_resolved_topological_line->get_vertex_source_infos();
-
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					// Can be equal since end index is actually *one-past-the-last* vertex to include...
-					end_vertex_index <= resolved_vertex_source_infos.size(),
+					end_vertex_index <= resolved_topological_line_source_infos.size(),
 					GPLATES_ASSERTION_SOURCE);
 
 			// Copy the vertex source infos between the intersections (if any).
 			for (unsigned int vertex_index = start_vertex_index; vertex_index < end_vertex_index; ++vertex_index)
 			{
-				vertex_source_infos.push_back(resolved_vertex_source_infos[vertex_index]);
+				vertex_source_infos.push_back(resolved_topological_line_source_infos[vertex_index]);
 			}
 
 			// Add the end intersection, if one.
@@ -276,7 +313,7 @@ namespace GPlatesAppLogic
 						get_resolved_topological_line_intersection_vertex_source_info(
 								end_intersection.get(),
 								sub_segment_range.get_section_geometry(),
-								section_resolved_topological_line));
+								resolved_topological_line_source_infos));
 			}
 			// Else add the end rubber band, if one.
 			else if (const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &end_rubber_band =
@@ -286,6 +323,87 @@ namespace GPlatesAppLogic
 				{
 					vertex_source_infos.push_back(
 							get_rubber_band_vertex_source_info(end_rubber_band.get()));
+				}
+			}
+			// else no end intersection or end rubber band.
+		}
+
+
+		/**
+		 * Get vertex source features for a *ResolvedTopologicalLine* sub-segment.
+		 */
+		void
+		get_resolved_topological_line_sub_segment_vertex_source_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &vertex_source_features,
+				const ResolvedSubSegmentRangeInSection &sub_segment_range,
+				ResolvedTopologicalLine::non_null_ptr_to_const_type section_resolved_topological_line,
+				bool include_rubber_band_points)
+		{
+			// Vertex source features of points in the unclipped section geometry.
+			const std::vector<GPlatesModel::FeatureHandle::weak_ref> &resolved_topological_line_source_features =
+					section_resolved_topological_line->get_resolved_topology_geometry_point_source_features();
+
+			// Add the start intersection, if one.
+			if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &start_intersection =
+				sub_segment_range.get_start_intersection())
+			{
+				vertex_source_features.push_back(
+						get_resolved_topological_line_intersection_vertex_source_feature(
+								start_intersection.get(),
+								sub_segment_range.get_section_geometry(),
+								resolved_topological_line_source_features));
+			}
+			// Else add the start rubber band, if one.
+			else if (sub_segment_range.get_start_rubber_band())
+			{
+				if (include_rubber_band_points)
+				{
+					// Add the source feature from the *start* sub-segment.
+					vertex_source_features.push_back(
+							resolved_topological_line_source_features.front());
+				}
+			}
+			// else no start intersection or start rubber band.
+
+			// Add the source features for those section vertices contributing to the sub-segment.
+			// If there are start/end intersections then these are the vertices after/before those intersections.
+			//
+			// Determine which vertex source features in the unclipped resolved topological line correspond
+			// to the (potentially) clipped sub-segment of the resolved topological line.
+			//
+
+			const unsigned int start_vertex_index = sub_segment_range.get_start_section_vertex_index();
+			const unsigned int end_vertex_index = sub_segment_range.get_end_section_vertex_index();
+
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					// Can be equal since end index is actually *one-past-the-last* vertex to include...
+					end_vertex_index <= resolved_topological_line_source_features.size(),
+					GPLATES_ASSERTION_SOURCE);
+
+			// Copy the vertex source features between the intersections (if any).
+			for (unsigned int vertex_index = start_vertex_index; vertex_index < end_vertex_index; ++vertex_index)
+			{
+				vertex_source_features.push_back(resolved_topological_line_source_features[vertex_index]);
+			}
+
+			// Add the end intersection, if one.
+			if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &end_intersection =
+				sub_segment_range.get_end_intersection())
+			{
+				vertex_source_features.push_back(
+					get_resolved_topological_line_intersection_vertex_source_feature(
+								end_intersection.get(),
+								sub_segment_range.get_section_geometry(),
+								resolved_topological_line_source_features));
+			}
+			// Else add the end rubber band, if one.
+			else if (sub_segment_range.get_end_rubber_band())
+			{
+				if (include_rubber_band_points)
+				{
+					// Add the source feature from the *end* sub-segment.
+					vertex_source_features.push_back(
+							resolved_topological_line_source_features.back());
 				}
 			}
 			// else no end intersection or end rubber band.
@@ -352,6 +470,68 @@ namespace GPlatesAppLogic
 				{
 					vertex_source_infos.push_back(
 							get_rubber_band_vertex_source_info(end_rubber_band.get()));
+				}
+			}
+			// else no end intersection or end rubber band.
+		}
+
+
+		/**
+		 * Get vertex source features for a *ReconstructedFeatureGeometry* sub-segment.
+		 */
+		void
+		get_reconstructed_feature_geometry_sub_segment_vertex_source_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &vertex_source_features,
+				const ResolvedSubSegmentRangeInSection &sub_segment_range,
+				ReconstructedFeatureGeometry::non_null_ptr_to_const_type section_reconstructed_feature_geometry,
+				bool include_rubber_band_points)
+		{
+			// Share the same source feature across all points in this sub-segment.
+			const GPlatesModel::FeatureHandle::weak_ref section_source_feature =
+					section_reconstructed_feature_geometry->get_feature_ref();
+
+			// Add the start intersection, if one.
+			if (sub_segment_range.get_start_intersection())
+			{
+				vertex_source_features.push_back(section_source_feature);
+			}
+			// Else add the start rubber band, if one.
+			else if (sub_segment_range.get_start_rubber_band())
+			{
+				if (include_rubber_band_points)
+				{
+					vertex_source_features.push_back(section_source_feature);
+				}
+			}
+			// else no start intersection or start rubber band.
+
+			// Add the source features for those section vertices contributing to the sub-segment.
+			// If there are start/end intersections then these are the vertices after/before those intersections.
+
+			const unsigned int start_vertex_index = sub_segment_range.get_start_section_vertex_index();
+			const unsigned int end_vertex_index = sub_segment_range.get_end_section_vertex_index();
+
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					start_vertex_index <= end_vertex_index,
+					GPLATES_ASSERTION_SOURCE);
+			const unsigned int num_vertices_in_range = end_vertex_index - start_vertex_index;
+
+			vertex_source_features.insert(
+					vertex_source_features.end(),
+					num_vertices_in_range,
+					section_source_feature);
+
+			// Add the end intersection, if one.
+			if (sub_segment_range.get_end_intersection())
+			{
+				vertex_source_features.push_back(section_source_feature);
+			}
+			// Else add the end rubber band, if one.
+			else if (sub_segment_range.get_end_rubber_band())
+			{
+				if (include_rubber_band_points)
+				{
+					vertex_source_features.push_back(section_source_feature);
 				}
 			}
 			// else no end intersection or end rubber band.
@@ -948,6 +1128,49 @@ GPlatesAppLogic::ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_sourc
 
 		get_resolved_topological_line_sub_segment_vertex_source_infos(
 				vertex_source_infos,
+				sub_segment_range,
+				section_resolved_topological_line.get(),
+				include_rubber_band_points);
+	}
+}
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalSubSegmentImpl::get_sub_segment_vertex_source_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &vertex_source_features,
+		const ResolvedSubSegmentRangeInSection &sub_segment_range,
+		ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry,
+		bool include_rubber_band_points)
+{
+	// Allocate some space (to avoid re-allocations when adding).
+	vertex_source_features.reserve(
+			vertex_source_features.size() + sub_segment_range.get_num_points(include_rubber_band_points));
+
+	// 'section_reconstruction_geometry' is either be a ReconstructedFeatureGeometry or a ResolvedTopologicalLine.
+	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_to_const_type> section_reconstructed_feature_geometry =
+			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					ReconstructedFeatureGeometry::non_null_ptr_to_const_type>(section_reconstruction_geometry);
+	if (section_reconstructed_feature_geometry)
+	{
+		get_reconstructed_feature_geometry_sub_segment_vertex_source_features(
+				vertex_source_features,
+				sub_segment_range,
+				section_reconstructed_feature_geometry.get(),
+				include_rubber_band_points);
+	}
+	else // resolved topological line...
+	{
+		boost::optional<ResolvedTopologicalLine::non_null_ptr_to_const_type> section_resolved_topological_line =
+				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+						ResolvedTopologicalLine::non_null_ptr_to_const_type>(section_reconstruction_geometry);
+
+		// Section reconstruction geometry must either be a ReconstructedFeatureGeometry or a ResolvedTopologicalLine.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				section_resolved_topological_line,
+				GPLATES_ASSERTION_SOURCE);
+
+		get_resolved_topological_line_sub_segment_vertex_source_features(
+				vertex_source_features,
 				sub_segment_range,
 				section_resolved_topological_line.get(),
 				include_rubber_band_points);

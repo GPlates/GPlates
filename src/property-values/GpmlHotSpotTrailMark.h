@@ -34,11 +34,16 @@
 #include "GmlTimeInstant.h"
 #include "GmlTimePeriod.h"
 #include "GpmlMeasure.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_revisionable() to work with this property value.
@@ -127,7 +132,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_trail_width(
-				GpmlMeasure::non_null_ptr_type tw);
+				boost::optional<GpmlMeasure::non_null_ptr_type> tw);
 
 		/**
 		 * Returns the 'const' measured age.
@@ -146,7 +151,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_measured_age(
-				GmlTimeInstant::non_null_ptr_type ti);
+				boost::optional<GmlTimeInstant::non_null_ptr_type> ti);
 
 		/**
 		 * Returns the 'const' measured age range.
@@ -165,7 +170,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_measured_age_range(
-				GmlTimePeriod::non_null_ptr_type tp);
+				boost::optional<GmlTimePeriod::non_null_ptr_type> tp);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -313,6 +318,20 @@ namespace GPlatesPropertyValues
 			boost::optional<GPlatesModel::RevisionedReference<GmlTimePeriod> > measured_age_range;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlHotSpotTrailMark> &gpml_hot_spot_trail_mark);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

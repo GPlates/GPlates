@@ -46,6 +46,9 @@
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_revisionable() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -134,6 +137,21 @@ namespace GPlatesPropertyValues
 
 		private:
 			XsString::non_null_ptr_type d_name;
+
+		private: // Transcribe...
+
+			friend class GPlatesScribe::Access;
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject<Axis> &axis);
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
 		};
 
 		//! Typedef for a sequence of axes.
@@ -479,6 +497,20 @@ namespace GPlatesPropertyValues
 			mutable boost::optional<Georeferencing::non_null_ptr_to_const_type> cached_georeferencing;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GmlRectifiedGrid> &gml_rectified_grid);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

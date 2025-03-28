@@ -121,7 +121,7 @@ RUN ./configure --enable-shared --prefix ${PYTHON_313_INSTALL_DIR} && \
 WORKDIR ${DEPS_BASE_BUILD_DIR}
 ARG BOOST_VERSION=1.84.0
 ARG BOOST_VERSION_=1_84_0
-RUN curl -sSL -o boost_${BOOST_VERSION_}.tar.bz2 https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_}.tar.bz2 && \
+RUN curl -sSL -o boost_${BOOST_VERSION_}.tar.bz2 https://archives.boost.io/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_}.tar.bz2 && \
     tar xjf boost_${BOOST_VERSION_}.tar.bz2
 WORKDIR boost_${BOOST_VERSION_}
 RUN > ./user-config.jam && \
@@ -188,7 +188,7 @@ ENV CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${GMP_INSTALL_DIR}
 # MPFR
 WORKDIR ${DEPS_BASE_BUILD_DIR}
 ARG MPFR_VERSION=4.2.1
-RUN curl -sSL -o mpfr-${MPFR_VERSION}.tar.xz https://www.mpfr.org/mpfr-current/mpfr-${MPFR_VERSION}.tar.xz && \
+RUN curl -sSL -o mpfr-${MPFR_VERSION}.tar.xz https://www.mpfr.org/mpfr-${MPFR_VERSION}/mpfr-${MPFR_VERSION}.tar.xz && \
     tar xf mpfr-${MPFR_VERSION}.tar.xz
 WORKDIR mpfr-${MPFR_VERSION}
 ARG MPFR_INSTALL_DIR=${DEPS_BASE_INSTALL_DIR}/mpfr-${MPFR_VERSION}

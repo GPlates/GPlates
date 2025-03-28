@@ -1761,6 +1761,9 @@ export_topological_model()
 					"\n"
 					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_strain_rates` in the *Primer* documentation.\n"
 					"\n"
+					"  .. note:: Strain rates in deforming networks are calculated from the spatial gradients of velocity where the velocities are calculated over "
+					"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
+					"\n"
 					"  .. versionadded:: 0.46\n")
 			.def("get_velocities",
 					&GPlatesApi::reconstructed_geometry_time_span_get_velocities,

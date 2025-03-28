@@ -775,6 +775,27 @@ namespace GPlatesApi
 		}
 	}
 
+	/**
+	 * Returns the boundary feature.
+	 *
+	 * The feature reference could be invalid.
+	 * It should normally be valid though so we don't document that Py_None could be returned to the caller.
+	 */
+	boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
+	plate_boundary_statistic_get_boundary_feature(
+			const GPlatesAppLogic::PlateBoundaryStat &plate_boundary_statistic)
+	{
+		// The feature reference could be invalid. It should normally be valid though.
+		const GPlatesModel::FeatureHandle::weak_ref boundary_feature_ref =
+				plate_boundary_statistic.get_boundary_feature();
+		if (!boundary_feature_ref.is_valid())
+		{
+			return boost::none;
+		}
+
+		return GPlatesModel::FeatureHandle::non_null_ptr_type(boundary_feature_ref.handle_ptr());
+	}
+
 	// Convert UnitVector3D to Vector3D.
 	GPlatesMaths::Vector3D
 	plate_boundary_statistic_get_boundary_normal(
@@ -1643,6 +1664,36 @@ export_topological_snapshot()
 					"\n"
 					".. versionadded:: 0.47\n",
 					bp::no_init)
+		.add_property("shared_sub_segment",
+				&GPlatesAppLogic::PlateBoundaryStat::get_shared_sub_segment,
+				"Shared sub-segment containing the :attr:`boundary point <boundary_point>`.\n"
+				"\n"
+				"  :type: :class:`ResolvedTopologicalSharedSubSegment`\n"
+				"\n"
+				"  .. note:: Another way to get the shared sub-segment is to call :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics` "
+				"with ``return_shared_sub_segment_dict=True`` (which associates each shared sub-segment with a list of boundary point statistics).\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_feature`\n"
+				"\n"
+				".. versionadded:: 1.0\n")
+		.add_property("boundary_feature",
+				&GPlatesApi::plate_boundary_statistic_get_boundary_feature,
+				"Boundary feature associated with the :attr:`boundary point <boundary_point>`.\n"
+				"\n"
+				"  :type: :class:`Feature`\n"
+				"\n"
+				"  If the :attr:`shared sub-segment <shared_sub_segment>` containing the :attr:`boundary point <boundary_point>` "
+				"is from a :class:`ReconstructedFeatureGeometry` then the returned feature matches the shared sub-segment's feature. "
+				"However, if the shared sub-segment is from a :class:`ResolvedTopologicalLine` then the returned feature matches one of "
+				"the resolved topological line's :meth:`sub-segments <ResolvedTopologicalLine.get_line_sub_segments>` (the one containing the boundary point).\n"
+				"\n"
+				"  .. note:: An example where this is useful is along a deforming trench line when you need to know the reconstruction plate ID "
+				"associated with the sub-segment of the trench line that the :attr:`boundary point <boundary_point>` is on, since that plate ID "
+				"more accurately represents motion of the trench near the boundary point.\n"
+				"\n"
+				"  .. seealso:: :attr:`shared_sub_segment`\n"
+				"\n"
+				".. versionadded:: 1.0\n")
 		.add_property("boundary_point",
 				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_boundary_point, bp::return_value_policy<bp::copy_const_reference>()),
 				"Position of the point on a plate boundary.\n"
@@ -2011,6 +2062,9 @@ export_topological_snapshot()
 				"deforming network overlaid on top) or if :attr:`boundary point <boundary_point>` is inside an interior rigid block of the left deforming network. "
 				"See :attr:`left_plate` for details on how the left plate is determined.\n"
 				"\n"
+				"  .. note:: Strain rate in a deforming network is calculated from the spatial gradients of velocity where the velocities are calculated over "
+				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
+				"\n"
 				"  .. seealso:: :attr:`left_plate` and :attr:`left_plate_velocity`\n")
 		.add_property("right_plate_strain_rate",
 				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_strain_rate,
@@ -2021,6 +2075,9 @@ export_topological_snapshot()
 				"  Returns ``pygplates.StrainRate.zero`` (no deformation) if there's no right deforming network (eg, there's just a rigid plate with no "
 				"deforming network overlaid on top) or if :attr:`boundary point <boundary_point>` is inside an interior rigid block of the right deforming network. "
 				"See :attr:`right_plate` for details on how the right plate is determined.\n"
+				"\n"
+				"  .. note:: Strain rate in a deforming network is calculated from the spatial gradients of velocity where the velocities are calculated over "
+				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
 				"\n"
 				"  .. seealso:: :attr:`right_plate` and :attr:`right_plate_velocity`\n")
 		.add_property("convergence_velocity",
@@ -2571,7 +2628,8 @@ export_topological_snapshot()
 				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
 				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
-				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :param earth_radius_in_kms: The radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``). "
+				"This is only used to calculate velocities (strain rates always use ``pygplates.Earth.equatorial_radius_in_kms``).\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :param include_network_boundaries: Whether to calculate statistics along *network* boundaries "
 				"that are **not** also plate boundaries (defaults to ``False``). If a deforming network shares a "
@@ -2763,6 +2821,9 @@ export_topological_snapshot()
 				"\n"
 				"  .. note:: It is more efficient to call ``topological_snapshot.get_point_strain_rates(points, return_point_locations=True)`` to get both strain rates and "
 				"point locations than it is to call both ``topological_snapshot.get_point_strain_rates(points)`` and ``topological_snapshot.get_point_locations(points)``.\n"
+				"\n"
+				"  .. note:: Strain rates in deforming networks are calculated from the spatial gradients of velocity where the velocities are calculated over "
+				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
 		.def("get_rotation_model",

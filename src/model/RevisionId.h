@@ -30,6 +30,9 @@
 
 #include "global/unicode.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/UniqueId.h"
 #include "utils/UnicodeStringUtils.h" // For GPLATES_ICU_BOOL
 
@@ -94,6 +97,20 @@ namespace GPlatesModel {
 
 		GPlatesUtils::UnicodeString d_id;
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<RevisionId> &revision_id);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

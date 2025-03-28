@@ -71,6 +71,7 @@ set(srcs
     RevisionedReference.cc
     RevisionedReference.h
     RevisionedVector.h
+    RevisionId.cc
     RevisionId.h
     ScribeExportModel.h
     StringContentTypeGenerator.h

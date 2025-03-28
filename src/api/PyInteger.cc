@@ -166,6 +166,4 @@ export_integer()
 
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<long long>();
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<unsigned long long>();
-
-	// TODO: Perhaps might also need 64-bit integers (when supported) such as boost::uint64_t.
 }

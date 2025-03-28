@@ -31,7 +31,7 @@
 #ifndef GPLATES_MODEL_TOPLEVELPROPERTYINLINE_H
 #define GPLATES_MODEL_TOPLEVELPROPERTYINLINE_H
 
-#include <iterator>
+#include <iterator>  // std::bidirectional_iterator_tag
 #include <vector>
 #include <boost/function.hpp>
 #include <boost/mpl/if.hpp>
@@ -198,16 +198,6 @@ namespace GPlatesModel
 		 */
 		template <class PropertyValueQualifiedType>
 		class Iterator :
-				public std::iterator<
-						std::bidirectional_iterator_tag,
-						// Dereferencing returns a temporary property value pointer...
-						typename GPlatesGlobal::PointerTraits<PropertyValueQualifiedType>::non_null_ptr_type,
-						ptrdiff_t,
-						// The 'pointer' inner type is set to void, because the dereference operator
-						// returns a temporary, and it is not desirable to take a pointer to a temporary...
-						void,
-						// Reference type...
-						Reference<PropertyValueQualifiedType>>,
 				public boost::incrementable<
 						Iterator<PropertyValueQualifiedType>,
 						boost::decrementable<
@@ -215,6 +205,20 @@ namespace GPlatesModel
 								boost::equality_comparable<Iterator<PropertyValueQualifiedType> > > >
 		{
 		public:
+
+			//
+			// Iterator typedefs.
+			//
+			using iterator_category = std::bidirectional_iterator_tag;
+			using value_type = typename GPlatesGlobal::PointerTraits<PropertyValueQualifiedType>::non_null_ptr_type;
+			using difference_type = std::ptrdiff_t;
+			// The 'pointer' inner type is set to void, because the dereference operator
+			// returns a temporary, and it is not desirable to take a pointer to a temporary.
+			using pointer = void;
+			// The 'reference' inner type is not a reference, because the dereference operator
+			// returns a temporary, and it is not desirable to take a reference to a temporary.
+			using reference = Reference<PropertyValueQualifiedType>;
+
 
 			//! Typedef for the top level property pointer.
 			typedef typename boost::mpl::if_<

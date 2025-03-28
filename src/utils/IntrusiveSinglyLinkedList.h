@@ -26,7 +26,7 @@
 #ifndef GPLATES_UTILS_INTRUSIVESINGLYLINKEDLIST_H
 #define GPLATES_UTILS_INTRUSIVESINGLYLINKEDLIST_H
 
-#include <iterator>  // std::iterator
+#include <iterator>  // std::forward_iterator_tag
 #include <boost/operators.hpp>
 #include <boost/type_traits/add_const.hpp>
 

@@ -224,6 +224,34 @@ namespace GPlatesAppLogic
 					earth_radius_in_kms);
 		}
 
+		/**
+		 * Returns the shared per-point source infos at the points returned by @a get_shared_sub_segment_geometry_points.
+		 *
+		 * Note: Each source info maps to a point in @a get_shared_sub_segment_geometry_points.
+		 *
+		 * Note: The number of source infos is guaranteed to match points in @a get_shared_sub_segment_geometry_points.
+		 */
+		void
+		get_shared_sub_segment_geometry_point_source_infos(
+				resolved_vertex_source_info_seq_type &point_source_infos) const
+		{
+			get_shared_sub_segment_point_source_infos(point_source_infos, true/*include_rubber_band_points*/);
+		}
+
+		/**
+		 * Returns the shared per-point source features at the points returned by @a get_shared_sub_segment_geometry_points.
+		 *
+		 * Note: Each source feature maps to a point in @a get_shared_sub_segment_geometry_points.
+		 *
+		 * Note: The number of source features is guaranteed to match points in @a get_shared_sub_segment_geometry_points.
+		 */
+		void
+		get_shared_sub_segment_geometry_point_source_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &point_source_features) const
+		{
+			get_shared_sub_segment_point_source_features(point_source_features, true/*include_rubber_band_points*/);
+		}
+
 
 		/**
 		 * Returns the (unreversed) shared sub-segment points.
@@ -267,9 +295,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the velocities at the (unreversed) shared sub-segment points.
 		 *
-		 * Note: Each velocity maps to a point in @a get_sub_segment_points.
+		 * Note: Each velocity maps to a point in @a get_shared_sub_segment_points.
 		 *
-		 * Note: The number of velocities is guaranteed to match points in @a get_sub_segment_points
+		 * Note: The number of velocities is guaranteed to match points in @a get_shared_sub_segment_points
 		 *       (with the same value of @a include_rubber_band_points).
 		 */
 		void
@@ -329,6 +357,39 @@ namespace GPlatesAppLogic
 		void
 		get_reversed_shared_sub_segment_point_source_infos(
 				resolved_vertex_source_info_seq_type &point_source_infos,
+				bool use_reverse,
+				bool include_rubber_band_points = true) const;
+
+
+		/**
+		 * Returns the (unreversed) shared per-point source features.
+		 *
+		 * Each point in @a get_shared_sub_segment_points references a source feature.
+		 * This method returns the same number of point source features as points returned by @a get_shared_sub_segment_points.
+		 *
+		 * Does not clear @a point_source_features - just appends point source features.
+		 *
+		 * @throws PreconditionViolationError if the section reconstruction geometry passed into @a create
+		 * is neither a @a ReconstructedFeatureGeometry nor a @a ResolvedTopologicalLine.
+		 */
+		void
+		get_shared_sub_segment_point_source_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &point_source_features,
+				bool include_rubber_band_points = true) const;
+
+		/**
+		 * Same as @a get_shared_sub_segment_point_source_features but reverses them if necessary such that
+		 * they are in the same order as @a get_reversed_shared_sub_segment_points.
+		 *
+		 * The @a use_reverse flag should be associated with the desired sharing resolved topology.
+		 * For example, it can be obtained from the relevant @a ResolvedTopologyInfo.
+		 *
+		 * These are @a get_shared_sub_segment_point_source_features if @a use_reverse is false,
+		 * otherwise they are a reversed version of @a get_shared_sub_segment_point_source_features.
+		 */
+		void
+		get_reversed_shared_sub_segment_point_source_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &point_source_features,
 				bool use_reverse,
 				bool include_rubber_band_points = true) const;
 
@@ -397,6 +458,13 @@ namespace GPlatesAppLogic
 		 * As an optimisation, this is only created when first requested.
 		 */
 		mutable boost::optional<resolved_vertex_source_info_seq_type> d_point_source_infos;
+
+		/**
+		 * Each point in the shared subsegment geometry can potentially reference a different source feature.
+		 *
+		 * As an optimisation, this is only created when first requested.
+		 */
+		mutable boost::optional<std::vector<GPlatesModel::FeatureHandle::weak_ref>> d_point_source_features;
 
 		/**
 		* Sub-segments of our ResolvedTopologicalLine topological section (if one) than contribute to this shared sub-segment.

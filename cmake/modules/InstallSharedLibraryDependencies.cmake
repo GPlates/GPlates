@@ -75,6 +75,11 @@ if (WIN32)
     list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*api-ms-win-.*]])
     list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*[/\\][Ss]ystem32[/\\].*]])
     list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*[/\\][Ss]ys[Ww][Oo][Ww]64[/\\].*]])
+    # Exclude the Python DLL when installing pyGPlates.
+    # The Python interpreter (that will 'import pygplates' on the user's system) will load the Python DLL.
+    if (NOT GPLATES_BUILD_GPLATES)  # pyGPlates ...
+        list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[^[Pp]ython[0-9]+\.[Dd][Ll][Ll]$]])
+    endif()
     # On Windows search for DLLs using the PATH environment variable.
     set(GET_RUNTIME_DEPENDENCIES_DIRECTORIES $ENV{PATH})
 elseif (APPLE)

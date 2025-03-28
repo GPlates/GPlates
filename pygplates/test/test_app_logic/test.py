@@ -3171,13 +3171,17 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         resolved_topological_lines = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.line)
         self.assertTrue(len(resolved_topological_lines) == 1)
 
-        # Test geometry points and velocities.
+        # Test geometry points, velocities and source features.
         resolved_topological_line = resolved_topological_lines[0]
         resolved_geometry_points = resolved_topological_line.get_resolved_geometry_points()
         resolved_geometry_point_velocities = resolved_topological_line.get_resolved_geometry_point_velocities()
+        resolved_geometry_point_features = resolved_topological_line.get_resolved_geometry_point_features()
         self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+        self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_features))
         self.assertTrue(resolved_topological_line.get_resolved_geometry() == pygplates.PolylineOnSphere(resolved_geometry_points))
         self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+        for point_feature in resolved_geometry_point_features:
+            self.assertTrue(point_feature.get_name().startswith('section'))
 
     def test_resolved_topological_boundaries(self):
         snapshot = pygplates.TopologicalSnapshot(
@@ -3187,13 +3191,19 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         resolved_topological_boundaries = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.boundary)
         self.assertTrue(len(resolved_topological_boundaries) >= 1)
 
-        # Test geometry points and velocities.
+        # Test geometry points, velocities and source features.
         for resolved_topological_boundary in resolved_topological_boundaries:
             resolved_geometry_points = resolved_topological_boundary.get_resolved_geometry_points()
             resolved_geometry_point_velocities = resolved_topological_boundary.get_resolved_geometry_point_velocities()
+            resolved_geometry_point_features = resolved_topological_boundary.get_resolved_geometry_point_features()
             self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+            self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_features))
             self.assertTrue(resolved_topological_boundary.get_resolved_geometry() == pygplates.PolygonOnSphere(resolved_geometry_points))
             self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+            for point_feature in resolved_geometry_point_features:
+                point_feature_name = point_feature.get_name()
+                # Source feature should be a topological section but not a topological line (ie, not 'section14' which is the only topological line).
+                self.assertTrue(point_feature_name.startswith('section') and point_feature_name != 'section14')
 
         # Test point location/velocity/strain-rate and reconstructed point.
         for resolved_topological_boundary in resolved_topological_boundaries:
@@ -3226,14 +3236,20 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         self.assertTrue(len(resolved_topological_networks) == 1)
         resolved_topological_network = resolved_topological_networks[0]
 
-        # Test geometry points and velocities.
+        # Test geometry points, velocities and source features.
         for include_rigid_blocks_as_interior_holes in (True, False):
             resolved_geometry_points = resolved_topological_network.get_resolved_geometry_points(include_rigid_blocks_as_interior_holes)
             resolved_geometry_point_velocities = resolved_topological_network.get_resolved_geometry_point_velocities(include_rigid_blocks_as_interior_holes)
+            resolved_geometry_point_features = resolved_topological_network.get_resolved_geometry_point_features(include_rigid_blocks_as_interior_holes)
             self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+            self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_features))
             self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
             # Note: The network has NO interior holes. If it did then this would fail.
             self.assertTrue(resolved_topological_network.get_resolved_geometry() == pygplates.PolygonOnSphere(resolved_geometry_points))
+            for point_feature in resolved_geometry_point_features:
+                point_feature_name = point_feature.get_name()
+                # Source feature should be a topological section but not a topological line (ie, not 'section14' which is the only topological line).
+                self.assertTrue(point_feature_name.startswith('section') and point_feature_name != 'section14')
 
         # Test interior rigid blocks.
         boundary_with_holes = resolved_topological_network.get_resolved_boundary(True)
@@ -3346,14 +3362,18 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         resolved_topological_boundaries = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.boundary)
         self.assertTrue(len(resolved_topological_boundaries) >= 1)
 
-        # Test geometry points and velocities.
+        # Test geometry points, velocities and source features.
         for resolved_topological_boundary in resolved_topological_boundaries:
             for boundary_sub_segment in resolved_topological_boundary.get_boundary_sub_segments():
                 resolved_geometry_points = boundary_sub_segment.get_resolved_geometry_points()
                 resolved_geometry_point_velocities = boundary_sub_segment.get_resolved_geometry_point_velocities()
+                resolved_geometry_point_features = boundary_sub_segment.get_resolved_geometry_point_features()
                 self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+                self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_features))
                 self.assertTrue(boundary_sub_segment.get_resolved_geometry() == pygplates.PolylineOnSphere(resolved_geometry_points))
                 self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+                for point_feature in resolved_geometry_point_features:
+                    self.assertTrue(point_feature.get_name().startswith('section'))
 
     def test_resolved_topological_shared_sub_segments(self):
         snapshot = pygplates.TopologicalSnapshot(
@@ -3363,14 +3383,18 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         resolved_topological_sections = snapshot.get_resolved_topological_sections()
         self.assertTrue(len(resolved_topological_sections) >= 1)
 
-        # Test geometry points and velocities.
+        # Test geometry points, velocities and source features.
         for resolved_topological_section in resolved_topological_sections:
             for shared_sub_segment in resolved_topological_section.get_shared_sub_segments():
                 resolved_geometry_points = shared_sub_segment.get_resolved_geometry_points()
                 resolved_geometry_point_velocities = shared_sub_segment.get_resolved_geometry_point_velocities()
+                resolved_geometry_point_features = shared_sub_segment.get_resolved_geometry_point_features()
                 self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_velocities))
+                self.assertTrue(len(resolved_geometry_points) == len(resolved_geometry_point_features))
                 self.assertTrue(shared_sub_segment.get_resolved_geometry() == pygplates.PolylineOnSphere(resolved_geometry_points))
                 self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
+                for point_feature in resolved_geometry_point_features:
+                    self.assertTrue(point_feature.get_name().startswith('section'))
     
     def test_point_locations_velocities_strain_rates(self):
         snapshot = pygplates.TopologicalSnapshot(
@@ -3658,6 +3682,16 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                                                                                  return_shared_sub_segment_dict=True)
         self.assertTrue(len(plate_boundary_stats_dict) == 26)
         self.assertTrue(sum(len(shared_sub_segment_stats) for _, shared_sub_segment_stats in plate_boundary_stats_dict.items()) == 47)
+        for shared_sub, shared_sub_segment_stats in plate_boundary_stats_dict.items():
+            shared_sub_feature_name = shared_sub.get_feature().get_name()
+            for shared_sub_segment_stat in shared_sub_segment_stats:
+                self.assertTrue(shared_sub_segment_stat.shared_sub_segment == shared_sub)
+                # Boundary feature matches shared sub-segment if it's an RFG, otherwise matches sub-segments of shared sub-segment if it's an RTL.
+                if shared_sub_feature_name == 'section14':  # the only topological line
+                    shared_sub_sub_feature_names = [shared_sub_sub_segment.get_feature().get_name() for shared_sub_sub_segment in shared_sub.get_sub_segments()]
+                    self.assertTrue(shared_sub_segment_stat.boundary_feature.get_name() in shared_sub_sub_feature_names)
+                else:
+                    self.assertTrue(shared_sub_segment_stat.boundary_feature.get_name() == shared_sub_feature_name)
 
         # Filter boundary sections by feature type.
         plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),

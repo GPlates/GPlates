@@ -54,7 +54,7 @@ GPlatesAppLogic::ResolvedTopologicalLine::resolved_topology_geometry_point_veloc
 	const resolved_topology_line_ptr_type resolved_topology_line_ = resolved_topology_line();
 
 	// Get the resolved source infos (one per point in the resolved line).
-	const resolved_vertex_source_info_seq_type &resolved_source_infos = get_vertex_source_infos();
+	const resolved_vertex_source_info_seq_type &resolved_source_infos = get_resolved_topology_geometry_point_source_infos();
 
 	// Number of resolved source infos should match number of points in the resolved line.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -83,7 +83,7 @@ GPlatesAppLogic::ResolvedTopologicalLine::resolved_topology_geometry_point_veloc
 
 
 const GPlatesAppLogic::resolved_vertex_source_info_seq_type &
-GPlatesAppLogic::ResolvedTopologicalLine::get_vertex_source_infos() const
+GPlatesAppLogic::ResolvedTopologicalLine::get_resolved_topology_geometry_point_source_infos() const
 {
 	// Cache all vertex source infos on first call.
 	if (!d_vertex_source_infos)
@@ -95,6 +95,19 @@ GPlatesAppLogic::ResolvedTopologicalLine::get_vertex_source_infos() const
 }
 
 
+const std::vector<GPlatesModel::FeatureHandle::weak_ref> &
+GPlatesAppLogic::ResolvedTopologicalLine::get_resolved_topology_geometry_point_source_features() const
+{
+	// Cache all vertex source features on first call.
+	if (!d_vertex_source_features)
+	{
+		calc_vertex_source_features();
+	}
+
+	return d_vertex_source_features.get();
+}
+
+
 void
 GPlatesAppLogic::ResolvedTopologicalLine::calc_vertex_source_infos() const
 {
@@ -102,14 +115,28 @@ GPlatesAppLogic::ResolvedTopologicalLine::calc_vertex_source_infos() const
 	resolved_vertex_source_info_seq_type &vertex_source_infos = d_vertex_source_infos.get();
 
 	// Copy source infos from points in each subsegment.
-	sub_segment_seq_type::const_iterator sub_segments_iter = d_sub_segment_seq.begin();
-	sub_segment_seq_type::const_iterator sub_segments_end = d_sub_segment_seq.end();
-	for ( ; sub_segments_iter != sub_segments_end; ++sub_segments_iter)
+	for (const auto &sub_segment : d_sub_segment_seq)
 	{
-		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment = *sub_segments_iter;
 		// Subsegment should be reversed if that's how it contributed to this resolved topological line...
 		sub_segment->get_reversed_sub_segment_point_source_infos(
 				vertex_source_infos,
+				INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE/*include_rubber_band_points*/);
+	}
+}
+
+
+void
+GPlatesAppLogic::ResolvedTopologicalLine::calc_vertex_source_features() const
+{
+	d_vertex_source_features = std::vector<GPlatesModel::FeatureHandle::weak_ref>();
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> &vertex_source_features = d_vertex_source_features.get();
+
+	// Copy source features from points in each subsegment.
+	for (const auto &sub_segment : d_sub_segment_seq)
+	{
+		// Subsegment should be reversed if that's how it contributed to this resolved topological line...
+		sub_segment->get_reversed_sub_segment_point_source_features(
+				vertex_source_features,
 				INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE/*include_rubber_band_points*/);
 	}
 }

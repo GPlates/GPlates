@@ -382,7 +382,10 @@ export_network_triangulation()
 					"\n"
 					"  :type: :class:`StrainRate`\n"
 					"\n"
-					"  .. note:: This will be ``pygplates.StrainRate.zero`` if this triangle is *not* :attr:`deforming <is_in_deforming_region>`.\n")
+					"  .. note:: This will be ``pygplates.StrainRate.zero`` if this triangle is *not* :attr:`deforming <is_in_deforming_region>`.\n"
+					"\n"
+					"  .. note:: Strain rate is calculated from the spatial gradients of velocity where the velocities are calculated over "
+					"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n")
 			// Make hashable based on the Delaunay face handle.
 			.def("__hash__", &GPlatesApi::NetworkTriangulation::Triangle::hash)
 			.def(bp::self == bp::self)
