@@ -174,6 +174,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_mesh(
 
 
 //for boost assert
+PUSH_GCC_WARNINGS
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::mesh_cube_quad_tree_type::node_type::ptr_type
@@ -301,7 +302,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
 	return cube_face_root_quad_tree_node;
 }
 
-ENABLE_GCC_WARNING("-Wold-style-cast")
+POP_GCC_WARNINGS
 
 
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::mesh_cube_quad_tree_type::node_type::ptr_type

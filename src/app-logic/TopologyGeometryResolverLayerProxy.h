@@ -240,7 +240,7 @@ namespace GPlatesAppLogic
 		void
 		get_resolved_topological_geometry_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_velocities,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 				const double &velocity_delta_time = 1.0,
 				boost::optional<std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none)
 		{
@@ -263,7 +263,7 @@ namespace GPlatesAppLogic
 		get_resolved_topological_geometry_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_velocities,
 				const double &reconstruction_time,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 				const double &velocity_delta_time = 1.0,
 				boost::optional<std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
@@ -275,40 +275,11 @@ namespace GPlatesAppLogic
 		ReconstructHandle::type
 		get_resolved_topological_line_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_line_velocities,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 				const double &velocity_delta_time = 1.0)
 		{
 			return get_resolved_topological_line_velocities(
 					resolved_topological_line_velocities,
-					d_current_reconstruction_time,
-					velocity_delta_time_type,
-					velocity_delta_time);
-		}
-
-		/**
-		 * Returns the velocities associated with the resolved topological boundaries (polygons),
-		 * for the specified reconstruction time, by appending them to @a resolved_topological_boundary_velocities.
-		 */
-		ReconstructHandle::type
-		get_resolved_topological_boundary_velocities(
-				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_boundary_velocities,
-				const double &reconstruction_time,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
-				const double &velocity_delta_time = 1.0);
-
-
-		/**
-		 * Returns the velocities associated with the resolved topological boundaries (polygons),
-		 * for the current reconstruction time, by appending them to them to @a resolved_topological_boundary_velocities.
-		 */
-		ReconstructHandle::type
-		get_resolved_topological_boundary_velocities(
-				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_boundary_velocities,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
-				const double &velocity_delta_time = 1.0)
-		{
-			return get_resolved_topological_boundary_velocities(
-					resolved_topological_boundary_velocities,
 					d_current_reconstruction_time,
 					velocity_delta_time_type,
 					velocity_delta_time);
@@ -322,8 +293,37 @@ namespace GPlatesAppLogic
 		get_resolved_topological_line_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_line_velocities,
 				const double &reconstruction_time,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 				const double &velocity_delta_time = 1.0);
+
+		/**
+		 * Returns the velocities associated with the resolved topological boundaries (polygons),
+		 * for the specified reconstruction time, by appending them to @a resolved_topological_boundary_velocities.
+		 */
+		ReconstructHandle::type
+		get_resolved_topological_boundary_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_boundary_velocities,
+				const double &reconstruction_time,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				const double &velocity_delta_time = 1.0);
+
+
+		/**
+		 * Returns the velocities associated with the resolved topological boundaries (polygons),
+		 * for the current reconstruction time, by appending them to them to @a resolved_topological_boundary_velocities.
+		 */
+		ReconstructHandle::type
+		get_resolved_topological_boundary_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_boundary_velocities,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				const double &velocity_delta_time = 1.0)
+		{
+			return get_resolved_topological_boundary_velocities(
+					resolved_topological_boundary_velocities,
+					d_current_reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time);
+		}
 
 
 		/**

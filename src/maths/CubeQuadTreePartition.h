@@ -258,7 +258,6 @@ namespace GPlatesMaths
 		 */
 		template <class ElementQualifiedType>
 		class ElementIterator :
-				public std::iterator<std::forward_iterator_tag, ElementQualifiedType>,
 				public boost::forward_iteratable<ElementIterator<ElementQualifiedType>, ElementQualifiedType *>
 		{
 		public:
@@ -268,6 +267,13 @@ namespace GPlatesMaths
 								typename ElementList::const_iterator,
 								typename ElementList::iterator>::type
 										element_list_iterator_type;
+
+			// Iterator typedefs.
+			using iterator_category = std::forward_iterator_tag;
+			using value_type = ElementQualifiedType;
+			using difference_type = std::ptrdiff_t;
+			using pointer = ElementQualifiedType *;
+			using reference = ElementQualifiedType &;
 
 			explicit
 			ElementIterator(

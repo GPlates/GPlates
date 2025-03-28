@@ -228,7 +228,7 @@ namespace GPlatesApi
 		 *
 		 * Returns true if any feature collections are associated with a @a ResolveTopologyParameters.
 		 *
-		 * Note: The returned size is equal to the size returned by @a get_feature_collections and @a get_files.
+		 * Note: The returned size of @a resolve_topology_parameters will be increased by the size of @a get_feature_collections (and @a get_files).
 		 */
 		bool
 		get_resolve_topology_parameters(

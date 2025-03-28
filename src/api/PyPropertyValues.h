@@ -88,7 +88,7 @@ namespace GPlatesApi
 			const GPlatesPropertyValues::GmlDataBlock &gml_data_block);
 
 	/**
-	 * Create a Python 'dict' from a sequene of 'GmlDataBlockCoordinateList::non_null_ptr_to_const_type'.
+	 * Create a Python 'dict' from a sequence of 'GmlDataBlockCoordinateList::non_null_ptr_to_const_type'.
 	 *
 	 * The returned dictionary maps each 'ScalarType' to a list of floating-point scalar values.
 	 */
@@ -114,9 +114,7 @@ namespace GPlatesApi
 		boost::python::dict scalar_values_dict;
 
 		// Iterate over the 'GmlDataBlockCoordinateList::non_null_ptr_to_const_type's.
-		GmlDataBlockCoordinateListsIterType gml_data_block_coordinate_lists_iter =
-				gml_data_block_coordinate_lists_begin;
-		for ( ;
+		for (auto gml_data_block_coordinate_lists_iter = gml_data_block_coordinate_lists_begin;
 			gml_data_block_coordinate_lists_iter != gml_data_block_coordinate_lists_end;
 			++gml_data_block_coordinate_lists_iter)
 		{

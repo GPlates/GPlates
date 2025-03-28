@@ -34,9 +34,12 @@
 #include "FiniteRotation.h"
 #include "IndeterminateResultException.h"
 #include "IndeterminateArcRotationAxisException.h"
+#include "MathsUtils.h"
 #include "PolylineOnSphere.h"
 #include "Rotation.h"
 #include "Vector3D.h"
+
+#include "scribe/Scribe.h"
 
 
 namespace GPlatesMaths
@@ -384,35 +387,6 @@ GPlatesMaths::GreatCircleArc::create(
 
 
 const GPlatesMaths::GreatCircleArc
-GPlatesMaths::GreatCircleArc::create_rotated_arc(
-		const FiniteRotation &rotation,
-		const GreatCircleArc &arc)
-{
-	// Copy the arc (and any cached-on-demand quantities).
-	GreatCircleArc rotated_arc(arc);
-
-	// Rotate the start/end points.
-	rotated_arc.d_start_point = rotation * rotated_arc.d_start_point;
-	rotated_arc.d_end_point = rotation * rotated_arc.d_end_point;
-
-	// Note: The dot product of the start/end points remains unchanged by rotation.
-	//       As does the arc length (if it was calculated/cached).
-
-	// If the rotation axis has been cached (ie, rotation info calculated and not zero length)
-	// then rotate the cached rotation axis.
-	if (rotated_arc.d_cached_on_demand.d_have_calculated_rotation_info)
-	{
-		if (!rotated_arc.d_cached_on_demand.d_is_zero_length)
-		{
-			rotated_arc.d_cached_on_demand.d_rotation_axis = rotation * rotated_arc.d_cached_on_demand.d_rotation_axis;
-		}
-	}
-
-	return rotated_arc;
-}
-
-
-const GPlatesMaths::GreatCircleArc
 GPlatesMaths::GreatCircleArc::create_antipodal_arc(
 		const GreatCircleArc &arc)
 {
@@ -503,7 +477,7 @@ GPlatesMaths::GreatCircleArc::point_on_arc(
 }
 
 
-GPlatesMaths::Vector3D
+GPlatesMaths::UnitVector3D
 GPlatesMaths::GreatCircleArc::direction_on_arc(
 		const real_t &normalised_distance_from_start_point) const
 {
@@ -512,7 +486,7 @@ GPlatesMaths::GreatCircleArc::direction_on_arc(
 	// Get unit-magnitude direction at the arc point towards the end point (from start point).
 	//
 	// NOTE: 'rotation_axis()' will throw 'IndeterminateArcRotationAxisException' if arc is zero length.
-	return Vector3D(cross(rotation_axis(), arc_point.position_vector()).get_normalisation());
+	return cross(rotation_axis(), arc_point.position_vector()).get_normalisation();
 }
 
 
@@ -620,6 +594,61 @@ GPlatesMaths::GreatCircleArc::evaluate_construction_parameter_validity(
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesMaths::GreatCircleArc::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GreatCircleArc> &great_circle_arc)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, great_circle_arc->start_point(), "start_point");
+		scribe.save(TRANSCRIBE_SOURCE, great_circle_arc->end_point(), "end_point");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<PointOnSphere> start_point_ = scribe.load<PointOnSphere>(TRANSCRIBE_SOURCE, "start_point");
+		GPlatesScribe::LoadRef<PointOnSphere> end_point_ = scribe.load<PointOnSphere>(TRANSCRIBE_SOURCE, "end_point");
+		if (!start_point_.is_valid() ||
+			!end_point_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the great circle arc.
+		great_circle_arc.construct_object(
+				start_point_,
+				end_point_,
+				dot(start_point_->position_vector(), end_point_->position_vector()));
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::GreatCircleArc::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_start_point, "start_point") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_end_point, "end_point"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (scribe.is_loading())
+		{
+			d_dot_of_endpoints = dot(d_start_point.position_vector(), d_end_point.position_vector());
+			d_cached_on_demand = CachedOnDemand();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 void
 GPlatesMaths::GreatCircleArc::CachedOnDemand::calculate_rotation_info(
 		const PointOnSphere &start_point,
@@ -701,6 +730,64 @@ GPlatesMaths::tessellate(
 	// This avoids numerical error in the final point due to accumulated rotations.
 	tessellation_points.push_back(end_point);
 }
+
+
+void
+GPlatesMaths::uniformly_spaced_points(
+		std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+		const GreatCircleArc &great_circle_arc,
+		const double &uniform_point_spacing,
+		const double &first_uniform_point_spacing,
+		boost::optional<std::vector<double> &> segment_interpolations)
+{
+	// If it's a zero length arc then we can generate a single uniform point if 'first_uniform_point_spacing' is zero.
+	if (great_circle_arc.is_zero_length())
+	{
+		if (are_almost_exactly_equal(first_uniform_point_spacing, 0))
+		{
+			uniform_points.push_back(great_circle_arc.start_point());
+			if (segment_interpolations)
+			{
+				segment_interpolations->push_back(0.0);
+			}
+		}
+
+		return;
+	}
+
+	// Length of arc is non-zero, so can divide by arc length, and also calculate arc's rotation axis.
+	const double length_of_arc = great_circle_arc.arc_length().dval();
+
+	// Distance from start of the arc to the first uniform point.
+	double distance_from_start_to_next_uniform_point = first_uniform_point_spacing;
+
+	// Generate points at uniform spacings along the arc while the distance from start of arc to
+	// the next uniform point does not exceed the arc's length.
+	//
+	// Note: This works for a zero-length arc. For example, a zero-length arc will emit a single uniform point
+	//       (if 'first_uniform_point_spacing' is zero). If we had instead skipped zero-length arcs then the arc
+	//       would not have generated any uniform points.
+	while (distance_from_start_to_next_uniform_point <= length_of_arc)
+	{
+		// Rotate the current the arc's start point (towards its end point) to get the uniform point position.
+		const GPlatesMaths::Rotation uniform_point_rotation = GPlatesMaths::Rotation::create(
+				great_circle_arc.rotation_axis(),
+				distance_from_start_to_next_uniform_point);
+
+		const GPlatesMaths::PointOnSphere uniform_point(uniform_point_rotation * great_circle_arc.start_point().position_vector());
+		uniform_points.push_back(uniform_point);
+
+		if (segment_interpolations)
+		{
+			// Interpolation factor in range [0,1] (where 0.0 means arc start point and 1.0 means arc end point).
+			const double segment_interpolation = distance_from_start_to_next_uniform_point / length_of_arc;
+			segment_interpolations->push_back(segment_interpolation);
+		}
+
+		distance_from_start_to_next_uniform_point += uniform_point_spacing;
+	}
+}
+
 
 bool
 GPlatesMaths::arcs_are_near_each_other(

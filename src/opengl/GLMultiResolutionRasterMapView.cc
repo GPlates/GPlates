@@ -213,7 +213,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 	//
 	// NOTE: If the projection *type* changes then we don't need to change our world transform.
 	const double updated_map_projection_central_meridian_longitude =
-			d_multi_resolution_map_cube_mesh->get_current_map_projection_settings().get_central_llp().longitude();
+			d_multi_resolution_map_cube_mesh->get_current_map_projection_settings().get_central_meridian();
 	if (!GPlatesMaths::are_almost_exactly_equal(
 			d_map_projection_central_meridian_longitude, updated_map_projection_central_meridian_longitude))
 	{

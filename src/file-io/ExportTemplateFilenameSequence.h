@@ -27,7 +27,7 @@
 #define GPLATES_FILE_IO_EXPORTTEMPLATEFILENAMESEQUENCE_H
 
 #include <cstddef>
-#include <iterator>  // std::iterator
+#include <iterator>  // std::forward_iterator_tag
 #include <boost/operators.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QDateTime>
@@ -219,11 +219,19 @@ namespace GPlatesFileIO
 	 * Dereferencing iterator returns a 'const QString'.
 	 */
 	class ExportTemplateFilenameSequenceIterator :
-			public std::iterator<std::forward_iterator_tag, const QString>,
 			public boost::equality_comparable<ExportTemplateFilenameSequenceIterator>,
 			public boost::incrementable<ExportTemplateFilenameSequenceIterator>
 	{
 	public:
+
+		// Iterator typedefs.
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = const QString;
+		using difference_type = std::ptrdiff_t;
+		using pointer = const QString *;
+		using reference = const QString &;
+
+
 		ExportTemplateFilenameSequenceIterator() :
 			d_sequence_impl(NULL),
 			d_sequence_index(0)

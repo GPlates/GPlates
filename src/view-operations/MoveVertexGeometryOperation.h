@@ -41,6 +41,7 @@
 #include "RenderedGeometryFactory.h"
 #include "RenderedGeometryParameters.h"
 #include "RenderedGeometryVisitor.h"
+#include "RenderedMultiReconstructionGeometry.h"
 #include "RenderedReconstructionGeometry.h"
 #include "UndoRedo.h"
 
@@ -100,6 +101,15 @@ namespace GPlatesViewOperations
 			{
 				d_rendered_reconstruction_geometry.reset(
 					rendered_reconstruction_geometry.get_reconstruction_geometry());
+			}
+
+			virtual
+			void
+			visit_rendered_multi_reconstruction_geometry(
+				const RenderedMultiReconstructionGeometry &rendered_multi_reconstruction_geometry)
+			{
+				d_rendered_reconstruction_geometry.reset(
+					rendered_multi_reconstruction_geometry.get_reconstruction_geometries().front());
 			}
 
 			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>

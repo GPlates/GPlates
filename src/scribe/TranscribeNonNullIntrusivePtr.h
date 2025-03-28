@@ -80,11 +80,9 @@ namespace GPlatesScribe
 				raw_ptr = intrusive_ptr_object.get();
 			}
 
-			TranscribeResult transcribe_result =
-					transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/);
-			if (transcribe_result != TRANSCRIBE_SUCCESS)
+			if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/))
 			{
-				return transcribe_result;
+				return scribe.get_transcribe_result();
 			}
 
 			if (scribe.is_loading())
@@ -110,11 +108,9 @@ namespace GPlatesScribe
 			raw_ptr = intrusive_ptr_object->get();
 		}
 
-		TranscribeResult transcribe_result =
-				transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/);
-		if (transcribe_result != TRANSCRIBE_SUCCESS)
+		if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/))
 		{
-			return transcribe_result;
+			return scribe.get_transcribe_result();
 		}
 
 		if (scribe.is_loading())

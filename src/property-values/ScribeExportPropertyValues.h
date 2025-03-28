@@ -1,0 +1,248 @@
+/**
+ * Copyright (C) 2023 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#ifndef GPLATES_DATA_MINING_SCRIBEEXPORTPROPERTYVALUES_H
+#define GPLATES_DATA_MINING_SCRIBEEXPORTPROPERTYVALUES_H
+
+#include "Enumeration.h"
+#include "GmlDataBlock.h"
+#include "GmlDataBlockCoordinateList.h"
+#include "GmlFile.h"
+#include "GmlGridEnvelope.h"
+#include "GmlLineString.h"
+#include "GmlMultiPoint.h"
+#include "GmlOrientableCurve.h"
+#include "GmlPoint.h"
+#include "GmlPolygon.h"
+#include "GmlRectifiedGrid.h"
+#include "GmlTimeInstant.h"
+#include "GmlTimePeriod.h"
+#include "GpmlAge.h"
+#include "GpmlArray.h"
+#include "GpmlConstantValue.h"
+#include "GpmlFeatureReference.h"
+#include "GpmlFeatureSnapshotReference.h"
+#include "GpmlFiniteRotation.h"
+#include "GpmlFiniteRotationSlerp.h"
+#include "GpmlHotSpotTrailMark.h"
+#include "GpmlIrregularSampling.h"
+#include "GpmlKeyValueDictionary.h"
+#include "GpmlKeyValueDictionaryElement.h"
+#include "GpmlMeasure.h"
+#include "GpmlMetadata.h"
+#include "GpmlOldPlatesHeader.h"
+#include "GpmlPiecewiseAggregation.h"
+#include "GpmlPlateId.h"
+#include "GpmlPolarityChronId.h"
+#include "GpmlPropertyDelegate.h"
+#include "GpmlRasterBandNames.h"
+#include "GpmlScalarField3DFile.h"
+#include "GpmlStringList.h"
+#include "GpmlTimeSample.h"
+#include "GpmlTimeWindow.h"
+#include "GpmlTopologicalLine.h"
+#include "GpmlTopologicalLineSection.h"
+#include "GpmlTopologicalNetwork.h"
+#include "GpmlTopologicalPoint.h"
+#include "GpmlTopologicalPolygon.h"
+#include "GpmlTopologicalSection.h"
+#include "UninterpretedPropertyValue.h"
+#include "XsBoolean.h"
+#include "XsDouble.h"
+#include "XsInteger.h"
+#include "XsString.h"
+
+#include "model/PropertyValue.h"
+#include "model/RevisionedVector.h"
+#include "model/TranscribeRevisionedVector.h"
+
+
+/**
+ * Scribe export registered classes/types in the 'property-values' source sub-directory.
+ *
+ * See "ScribeExportRegistration.h" for more details.
+ *
+ *******************************************************************************
+ * WARNING: Changing the string ids will break backward/forward compatibility. *
+ *******************************************************************************
+ */
+#define SCRIBE_EXPORT_PROPERTY_VALUES \
+		\
+		(((GPlatesPropertyValues::Enumeration), \
+			"GPlatesPropertyValues::Enumeration")) \
+		\
+		(((GPlatesPropertyValues::GmlDataBlock), \
+			"GPlatesPropertyValues::GmlDataBlock")) \
+		\
+		(((GPlatesPropertyValues::GmlDataBlockCoordinateList), \
+			"GPlatesPropertyValues::GmlDataBlockCoordinateList")) \
+		\
+		(((GPlatesPropertyValues::GmlFile), \
+			"GPlatesPropertyValues::GmlFile")) \
+		\
+		(((GPlatesPropertyValues::GmlGridEnvelope), \
+			"GPlatesPropertyValues::GmlGridEnvelope")) \
+		\
+		(((GPlatesPropertyValues::GmlLineString), \
+			"GPlatesPropertyValues::GmlLineString")) \
+		\
+		(((GPlatesPropertyValues::GmlMultiPoint), \
+			"GPlatesPropertyValues::GmlMultiPoint")) \
+		\
+		(((GPlatesPropertyValues::GmlOrientableCurve), \
+			"GPlatesPropertyValues::GmlOrientableCurve")) \
+		\
+		(((GPlatesPropertyValues::GmlPoint), \
+			"GPlatesPropertyValues::GmlPoint")) \
+		\
+		(((GPlatesPropertyValues::GmlPolygon), \
+			"GPlatesPropertyValues::GmlPolygon")) \
+		\
+		(((GPlatesPropertyValues::GmlRectifiedGrid), \
+			"GPlatesPropertyValues::GmlRectifiedGrid")) \
+		\
+		(((GPlatesPropertyValues::GmlTimeInstant), \
+			"GPlatesPropertyValues::GmlTimeInstant")) \
+		\
+		(((GPlatesPropertyValues::GmlTimePeriod), \
+			"GPlatesPropertyValues::GmlTimePeriod")) \
+		\
+		(((GPlatesPropertyValues::GpmlAge), \
+			"GPlatesPropertyValues::GpmlAge")) \
+		\
+		(((GPlatesPropertyValues::GpmlArray), \
+			"GPlatesPropertyValues::GpmlArray")) \
+		\
+		(((GPlatesPropertyValues::GpmlConstantValue), \
+			"GPlatesPropertyValues::GpmlConstantValue")) \
+		\
+		(((GPlatesPropertyValues::GpmlFeatureReference), \
+			"GPlatesPropertyValues::GpmlFeatureReference")) \
+		\
+		(((GPlatesPropertyValues::GpmlFeatureSnapshotReference), \
+			"GPlatesPropertyValues::GpmlFeatureSnapshotReference")) \
+		\
+		(((GPlatesPropertyValues::GpmlFiniteRotation), \
+			"GPlatesPropertyValues::GpmlFiniteRotation")) \
+		\
+		(((GPlatesPropertyValues::GpmlFiniteRotationSlerp), \
+			"GPlatesPropertyValues::GpmlFiniteRotationSlerp")) \
+		\
+		(((GPlatesPropertyValues::GpmlHotSpotTrailMark), \
+			"GPlatesPropertyValues::GpmlHotSpotTrailMark")) \
+		\
+		(((GPlatesPropertyValues::GpmlIrregularSampling), \
+			"GPlatesPropertyValues::GpmlIrregularSampling")) \
+		\
+		(((GPlatesPropertyValues::GpmlKeyValueDictionary), \
+			"GPlatesPropertyValues::GpmlKeyValueDictionary")) \
+		\
+		(((GPlatesPropertyValues::GpmlKeyValueDictionaryElement), \
+			"GPlatesPropertyValues::GpmlKeyValueDictionaryElement")) \
+		\
+		(((GPlatesPropertyValues::GpmlMeasure), \
+			"GPlatesPropertyValues::GpmlMeasure")) \
+		\
+		(((GPlatesPropertyValues::GpmlMetadata), \
+			"GPlatesPropertyValues::GpmlMetadata")) \
+		\
+		(((GPlatesPropertyValues::GpmlOldPlatesHeader), \
+			"GPlatesPropertyValues::GpmlOldPlatesHeader")) \
+		\
+		(((GPlatesPropertyValues::GpmlPiecewiseAggregation), \
+			"GPlatesPropertyValues::GpmlPiecewiseAggregation")) \
+		\
+		(((GPlatesPropertyValues::GpmlPlateId), \
+			"GPlatesPropertyValues::GpmlPlateId")) \
+		\
+		(((GPlatesPropertyValues::GpmlPolarityChronId), \
+			"GPlatesPropertyValues::GpmlPolarityChronId")) \
+		\
+		(((GPlatesPropertyValues::GpmlPropertyDelegate), \
+			"GPlatesPropertyValues::GpmlPropertyDelegate")) \
+		\
+		(((GPlatesPropertyValues::GpmlRasterBandNames), \
+			"GPlatesPropertyValues::GpmlRasterBandNames")) \
+		\
+		(((GPlatesPropertyValues::GpmlScalarField3DFile), \
+			"GPlatesPropertyValues::GpmlScalarField3DFile")) \
+		\
+		(((GPlatesPropertyValues::GpmlStringList), \
+			"GPlatesPropertyValues::GpmlStringList")) \
+		\
+		(((GPlatesPropertyValues::GpmlTimeSample), \
+			"GPlatesPropertyValues::GpmlTimeSample")) \
+		\
+		(((GPlatesPropertyValues::GpmlTimeWindow), \
+			"GPlatesPropertyValues::GpmlTimeWindow")) \
+		\
+		(((GPlatesPropertyValues::GpmlTopologicalLine), \
+			"GPlatesPropertyValues::GpmlTopologicalLine")) \
+		\
+		(((GPlatesPropertyValues::GpmlTopologicalLineSection), \
+			"GPlatesPropertyValues::GpmlTopologicalLineSection")) \
+		\
+		(((GPlatesPropertyValues::GpmlTopologicalNetwork), \
+			"GPlatesPropertyValues::GpmlTopologicalNetwork")) \
+		\
+		(((GPlatesPropertyValues::GpmlTopologicalPoint), \
+			"GPlatesPropertyValues::GpmlTopologicalPoint")) \
+		\
+		(((GPlatesPropertyValues::GpmlTopologicalPolygon), \
+			"GPlatesPropertyValues::GpmlTopologicalPolygon")) \
+		\
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>), \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>")) \
+		\
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>), \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>")) \
+		\
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>), \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>")) \
+		\
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>), \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>")) \
+		\
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>), \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>")) \
+		\
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>), \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>")) \
+		\
+		(((GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>), \
+			"GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>")) \
+		\
+		(((GPlatesPropertyValues::UninterpretedPropertyValue), \
+			"GPlatesPropertyValues::UninterpretedPropertyValue")) \
+		\
+		(((GPlatesPropertyValues::XsBoolean), \
+			"GPlatesPropertyValues::XsBoolean")) \
+		\
+		(((GPlatesPropertyValues::XsDouble), \
+			"GPlatesPropertyValues::XsDouble")) \
+		\
+		(((GPlatesPropertyValues::XsInteger), \
+			"GPlatesPropertyValues::XsInteger")) \
+		\
+		(((GPlatesPropertyValues::XsString), \
+			"GPlatesPropertyValues::XsString")) \
+		\
+
+
+#endif // GPLATES_DATA_MINING_SCRIBEEXPORTPROPERTYVALUES_H

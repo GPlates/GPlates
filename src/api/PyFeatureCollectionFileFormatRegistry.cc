@@ -26,7 +26,6 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QString>
@@ -52,9 +51,9 @@ namespace GPlatesApi
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 	read_feature_collection(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
-			const QString &filename)
+			const FilePathFunctionArgument &filename)
 	{
-		const GPlatesFileIO::FileInfo file_info(filename);
+		const GPlatesFileIO::FileInfo file_info(filename.get_file_path());
 
 		// Create a file with an empty feature collection.
 		GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file(file_info);
@@ -72,9 +71,9 @@ namespace GPlatesApi
 	read_feature_collections(
 			std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
-			const std::vector<QString> &filenames)
+			const std::vector<FilePathFunctionArgument> &filenames)
 	{
-		BOOST_FOREACH(const QString &filename, filenames)
+		for (const auto &filename : filenames)
 		{
 			feature_collections.push_back(
 					read_feature_collection(registry, filename));
@@ -87,16 +86,16 @@ namespace GPlatesApi
 			bp::object filename_object)
 	{
 		// See if a single filename.
-		bp::extract<QString> extract_filename(filename_object);
+		bp::extract<FilePathFunctionArgument> extract_filename(filename_object);
 		if (extract_filename.check())
 		{
-			const QString filename = extract_filename();
+			const FilePathFunctionArgument filename = extract_filename();
 
 			return bp::object(read_feature_collection(registry, filename));
 		}
 
 		// Try a sequence of filenames next.
-		std::vector<QString> filenames;
+		std::vector<FilePathFunctionArgument> filenames;
 		PythonExtractUtils::extract_iterable(
 				filenames,
 				filename_object,
@@ -107,9 +106,7 @@ namespace GPlatesApi
 
 		bp::list feature_collections_list;
 
-		BOOST_FOREACH(
-				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
-				feature_collections)
+		for (auto feature_collection : feature_collections)
 		{
 			feature_collections_list.append(feature_collection);
 		}
@@ -121,9 +118,9 @@ namespace GPlatesApi
 	write_feature_collection(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
 			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
-			const QString &filename)
+			const FilePathFunctionArgument &filename)
 	{
-		const GPlatesFileIO::FileInfo file_info(filename);
+		const GPlatesFileIO::FileInfo file_info(filename.get_file_path());
 
 		// Create an output file to write out the feature collection.
 		GPlatesFileIO::File::non_null_ptr_type file =

@@ -31,7 +31,6 @@
 #include <new>
 #include <vector>
 #include <list>
-#include <iterator>  // std::iterator
 #include <boost/cstdint.hpp>
 #include <boost/operators.hpp>
 #include <boost/numeric/conversion/cast.hpp>

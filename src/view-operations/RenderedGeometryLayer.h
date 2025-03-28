@@ -100,7 +100,6 @@ namespace GPlatesViewOperations
 		 * Iterator over rendered geometries.
 		 */
 		class RenderedGeometryIterator :
-				public std::iterator<std::forward_iterator_tag, RenderedGeometry>,
 				public boost::forward_iteratable<RenderedGeometryIterator, RenderedGeometry *>
 		{
 		public:
@@ -112,6 +111,14 @@ namespace GPlatesViewOperations
 					const RenderedGeometryIterator &rhs);
 
 			~RenderedGeometryIterator();
+
+			// Iterator typedefs.
+			using iterator_category = std::forward_iterator_tag;
+			using value_type = RenderedGeometry;
+			using difference_type = std::ptrdiff_t;
+			using pointer = RenderedGeometry *;
+			using reference = RenderedGeometry &;
+
 
 			/**
 			 * Dereference operator.

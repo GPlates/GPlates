@@ -45,6 +45,9 @@
 
 #include "property-values/GeoTimeInstant.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -88,48 +91,6 @@ namespace GPlatesApi
 		non_null_ptr_type
 		create(
 				const FeatureCollectionSequenceFunctionArgument &rotation_features,
-				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-				bool extend_total_reconstruction_poles_to_distant_past = false,
-				GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
-
-
-		/**
-		 * Create a rotation model (from a sequence of rotation feature collection files) that will cache
-		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
-		 *
-		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
-		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
-		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
-		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
-		 *
-		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
-		 * do not specify their 'anchor_plate_id' parameter.
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &rotation_features,
-				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-				bool extend_total_reconstruction_poles_to_distant_past = false,
-				GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
-
-
-		/**
-		 * Create a rotation model (from a sequence of rotation feature collections) that will cache
-		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
-		 *
-		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
-		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
-		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
-		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
-		 *
-		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
-		 * do not specify their 'anchor_plate_id' parameter.
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &rotation_features,
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
 				bool extend_total_reconstruction_poles_to_distant_past = false,
 				GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
@@ -232,10 +193,18 @@ namespace GPlatesApi
 
 		RotationModel(
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
-				GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type cached_reconstruction_tree_creator_impl) :
+				GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type cached_reconstruction_tree_creator_impl,
+				// Only needed to assist with transcribing...
+				unsigned int reconstruction_tree_cache_size,
+				bool extend_total_reconstruction_poles_to_distant_past,
+				GPlatesModel::integer_plate_id_type default_anchor_plate_id) :
 			d_feature_collection_files(feature_collection_files),
 			d_cached_reconstruction_tree_creator_impl(cached_reconstruction_tree_creator_impl),
-			d_reconstruction_tree_creator(cached_reconstruction_tree_creator_impl)
+			d_reconstruction_tree_creator(cached_reconstruction_tree_creator_impl),
+			// Only needed to assist with transcribing...
+			d_reconstruction_tree_cache_size(reconstruction_tree_cache_size),
+			d_extend_total_reconstruction_poles_to_distant_past(extend_total_reconstruction_poles_to_distant_past),
+			d_default_anchor_plate_id(default_anchor_plate_id)
 		{  }
 
 
@@ -258,6 +227,40 @@ namespace GPlatesApi
 		 */
 		GPlatesAppLogic::ReconstructionTreeCreator d_reconstruction_tree_creator;
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<RotationModel> &rotation_model);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const RotationModel &rotation_model);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
+				unsigned int &reconstruction_tree_cache_size,
+				bool &extend_total_reconstruction_poles_to_distant_past,
+				GPlatesModel::integer_plate_id_type &default_anchor_plate_id);
+
+		// These data members are only needed to assist with transcribing.
+		unsigned int d_reconstruction_tree_cache_size;
+		bool d_extend_total_reconstruction_poles_to_distant_past;
+		GPlatesModel::integer_plate_id_type d_default_anchor_plate_id;
 	};
 
 

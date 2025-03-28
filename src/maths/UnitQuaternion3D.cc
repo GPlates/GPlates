@@ -35,6 +35,8 @@
 #include "IndeterminateResultException.h"
 #include "ViolatedClassInvariantException.h"
 
+#include "scribe/Scribe.h"
+
 
 void
 GPlatesMaths::UnitQuaternion3D::renormalise_if_necessary() {
@@ -271,6 +273,59 @@ GPlatesMaths::UnitQuaternion3D::assert_invariant() const {
 		throw ViolatedClassInvariantException(GPLATES_EXCEPTION_SOURCE,
 				oss.str().c_str());
 	}
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::UnitQuaternion3D::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<UnitQuaternion3D> &unit_quaternion)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, unit_quaternion->m_scalar_part, "scalar_part");
+		scribe.save(TRANSCRIBE_SOURCE, unit_quaternion->m_vector_part, "vector_part");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<real_t> scalar_part_ = scribe.load<real_t>(TRANSCRIBE_SOURCE, "scalar_part");
+		if (!scalar_part_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<Vector3D> vector_part_ = scribe.load<Vector3D>(TRANSCRIBE_SOURCE, "vector_part");
+		if (!vector_part_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		unit_quaternion.construct_object(scalar_part_, vector_part_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::UnitQuaternion3D::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, m_scalar_part, "scalar_part"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, m_vector_part, "vector_part"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

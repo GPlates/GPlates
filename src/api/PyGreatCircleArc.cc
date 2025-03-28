@@ -31,6 +31,7 @@
 
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
@@ -125,7 +126,7 @@ namespace GPlatesApi
 				!great_circle_arc.is_zero_length(),
 				GPLATES_ASSERTION_SOURCE);
 
-		return great_circle_arc.direction_on_arc(normalised_distance_from_start_point);
+		return GPlatesMaths::Vector3D(great_circle_arc.direction_on_arc(normalised_distance_from_start_point));
 	}
 
 	bp::list
@@ -133,6 +134,12 @@ namespace GPlatesApi
 			const GPlatesMaths::GreatCircleArc &great_circle_arc,
 			const double &tessellate_radians)
 	{
+		if (tessellate_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
 		std::vector<GPlatesMaths::PointOnSphere> tessellation_points;
 		tessellate(tessellation_points, great_circle_arc, tessellate_radians);
 
@@ -144,6 +151,57 @@ namespace GPlatesApi
 		}
 
 		return tessellation_points_list;
+	}
+
+	bp::object
+	great_circle_arc_to_uniform_points(
+			const GPlatesMaths::GreatCircleArc &great_circle_arc,
+			const double &point_spacing_radians,
+			const double &first_point_spacing_radians,
+			bool return_segment_interpolations)
+	{
+		if (point_spacing_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
+		// Whether to query the segment interpolation for each uniform point, or not.
+		boost::optional<std::vector<double> &> segment_interpolations_ref;
+		std::vector<double> segment_interpolations;
+		if (return_segment_interpolations)
+		{
+			segment_interpolations_ref = segment_interpolations;
+		}
+
+		std::vector<GPlatesMaths::PointOnSphere> uniform_points;
+		uniformly_spaced_points(
+				uniform_points,
+				great_circle_arc,
+				point_spacing_radians,
+				first_point_spacing_radians,
+				segment_interpolations_ref);
+
+		bp::list uniform_points_list;
+		for (const auto &point : uniform_points)
+		{
+			uniform_points_list.append(point);
+		}
+
+		if (return_segment_interpolations)
+		{
+			// List of segment interpolations.
+			// One for each uniform point.
+			bp::list segment_interpolations_list;
+			for (const auto &segment_interpolation : segment_interpolations)
+			{
+				segment_interpolations_list.append(segment_interpolation);
+			}
+
+			return bp::make_tuple(uniform_points_list, segment_interpolations_list);
+		}
+
+		return uniform_points_list;
 	}
 }
 
@@ -172,7 +230,12 @@ export_great_circle_arc()
 					"A great-circle arc on the surface of the unit globe.\n"
 					"\n"
 					"Great circle arcs are equality (``==``, ``!=``) comparable (but not hashable "
-					"- cannot be used as a key in a ``dict``).\n",
+					"- cannot be used as a key in a ``dict``).\n"
+					"\n"
+					"A *GreatCircleArc* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -201,6 +264,12 @@ export_great_circle_arc()
 				"  ::\n"
 				"\n"
 				"    great_circle_arc = pygplates.GreatCircleArc(start_point, end_point)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::GreatCircleArc>>())
 		.def("get_start_point",
 				&GPlatesMaths::GreatCircleArc::start_point,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -342,6 +411,7 @@ export_great_circle_arc()
 				"zero is the start point, one is the end point and between zero and one are points "
 				"along the arc\n"
 				"  :type normalised_distance_from_start_point: float\n"
+				"  :returns: the unit-length 3D vector\n"
 				"  :rtype: :class:`Vector3D`\n"
 				"  :raises: ValueError if arc *normalised_distance_from_start_point* is not in the "
 				"range [0,1]\n"
@@ -367,14 +437,18 @@ export_great_circle_arc()
 				&GPlatesApi::great_circle_arc_to_tessellated,
 				(bp::arg("tessellate_radians")),
 				"to_tessellated(tessellate_radians)\n"
-				"  Returns a list of :class:`points<PointOnSphere>` new polyline that is tessellated version of this polyline.\n"
+				"  Returns a list of :class:`points<PointOnSphere>` tessellated from this great circle arc such that "
+				"adjacent points are separated by no more than *tessellate_radians* on the globe.\n"
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: list :class:`points<PointOnSphere>`\n"
+				"  :raises: ValueError if *tessellate_radians* is negative or zero\n"
 				"\n"
-				"  Adjacent points (in the returned list of points) are separated by no more than "
-				"*tessellate_radians* on the globe.\n"
+				"  .. note:: If this great circle arc subtends an angle less than *tessellate_radians* then "
+				"only its :meth:`start point <get_start_point>` and :meth:`end point <get_end_point>` are returned. "
+				"For example, this applies to a :meth:`zero length <is_zero_length>` arc. Otherwise tessellated "
+				"points *within* this arc are *also* returned.\n"
 				"\n"
 				"  Tessellate a great circle arc to 2 degrees:\n"
 				"  ::\n"
@@ -384,7 +458,58 @@ export_great_circle_arc()
 				"  .. note:: Since a *GreatCircleArc* is immutable it cannot be modified. Which is why a "
 				"tessellated list of *PointOnSphere* is returned.\n"
 				"\n"
-				"  .. seealso:: :meth:`PolylineOnSphere.to_tessellated` and :meth:`PolygonOnSphere.to_tessellated`\n")
+				"  .. seealso:: :meth:`to_uniform_points`\n")
+		.def("to_uniform_points",
+				&GPlatesApi::great_circle_arc_to_uniform_points,
+				(bp::arg("point_spacing_radians"),
+						bp::arg("first_point_spacing_radians") = 0.0,
+						bp::arg("return_segment_interpolations") = false),
+				"to_uniform_points(point_spacing_radians, [first_point_spacing_radians=0.0], [return_segment_interpolations=False])\n"
+				"  Returns a sequence of points uniformly spaced along this great circle arc.\n"
+				"\n"
+				"  :param point_spacing_radians: spacing between points (in radians)\n"
+				"  :type point_spacing_radians: float\n"
+				"  :param first_point_spacing_radians: Spacing of first uniform point from this arc's start point (in radians). "
+				"By default the first uniform point *coincides* with this arc's start point. "
+				"Ideally this is non-negative (but, for example, if it's slightly negative then the first uniform point will be slightly off "
+				"this arc near its start point but still on its great circle).\n"
+				"  :type first_point_spacing_radians: float\n"
+				"  :param return_segment_interpolations: whether to also return information about the polyline segment that each uniform point is on - default is ``False``\n"
+				"  :type return_segment_interpolations: bool\n"
+				"  :returns: list of points, or (if *return_segment_interpolations* is ``True``) a 2-tuple containing a list of points and "
+				"a list of segment interpolations (where each uniform point is located, *on* this great circle arc, in the range [0,1])\n"
+				"  :rtype: list of :class:`PointOnSphere`, or tuple (list of :class:`PointOnSphere`, list of float) if *return_segment_interpolations* is ``True``\n"
+				"  :raises: ValueError if *point_spacing_radians* is negative or zero\n"
+				"\n"
+				"  .. note:: The distance (along the arc) between the last uniform point and the arc's end point "
+				"can be less than *point_spacing_radians* (since the length of the arc minus *first_point_spacing_radians* "
+				"might not be an integer multiple of *point_spacing_radians*).\n"
+				"\n"
+				"  .. note:: | If *first_point_spacing_radians* is greater than the :meth:`arc's length <get_arc_length>` then no uniform points will be generated.\n"
+				"            | And if the arc is :meth:`zero length <is_zero_length>` and *first_point_spacing_radians* is zero then a single uniform point will be generated.\n"
+				"\n"
+				"  Create points uniformly spaced by 1 degree along a great circle arc starting 0.5 degrees from its start point:\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points = arc.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5))\n"
+				"\n"
+				"  Next, we extend the above example by associating an arc direction, tangential to the globe, at each uniform point:\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points, uniform_point_segment_interpolations = arc.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5))\n"
+				"        return_segment_interpolations = True)\n"
+				"\n"
+				"    # We end up with a list of 3D direction vectors (with a list length equal to the number of uniform points).\n"
+				"    uniform_point_arc_directions = [arc.get_arc_direction(segment_interpolation)\n"
+				"        for segment_interpolation in uniform_point_segment_interpolations]\n"
+				"\n"
+				"  .. seealso:: :meth:`to_tessellated`\n"
+				"\n"
+				"  .. versionadded:: 0.47\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))

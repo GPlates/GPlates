@@ -740,7 +740,8 @@ GPlatesQtWidgets::ColouringDialog::handle_repaint(
 	//       In which case the actual pixel dimensions of the image will be larger than requested
 	//       (by the pixel device ratio) but it should still occupy the requested *icon* dimensions.
 	QImage icon_image = d_globe_and_map_widget_ptr->render_to_qimage(
-			d_globe_and_map_widget_ptr->get_viewport_size());
+			d_globe_and_map_widget_ptr->get_viewport_size(),
+			GPlatesGui::Colour(0, 0, 0, 1));  // Opaque black clear colour
 
 	colour_schemes_list->item(d_next_icon_to_render)->setIcon(
 			QIcon(QPixmap::fromImage(icon_image)));

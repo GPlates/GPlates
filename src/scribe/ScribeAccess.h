@@ -45,7 +45,7 @@
 /**
  * The maximum number of object constructor arguments supported in Access::construct_object().
  */
-#define GPLATES_SCRIBE_ACCESS_CONSTRUCT_MAX_CONSTRUCTOR_ARGS 10
+#define GPLATES_SCRIBE_ACCESS_CONSTRUCT_MAX_CONSTRUCTOR_ARGS 15
 
 
 namespace GPlatesScribe

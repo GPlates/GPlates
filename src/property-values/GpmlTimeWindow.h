@@ -39,6 +39,9 @@
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/QtStreamable.h"
 
 
@@ -244,6 +247,21 @@ namespace GPlatesPropertyValues
 
 
 		StructuralType d_value_type;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlTimeWindow> &gpml_time_window);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 	// operator<< for GpmlTimeWindow.

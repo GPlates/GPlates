@@ -30,6 +30,7 @@
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 
@@ -38,6 +39,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "app-logic/GeometryUtils.h"
 
@@ -63,6 +65,8 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
+
+#include "scribe/Scribe.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 
@@ -249,6 +253,16 @@ namespace GPlatesApi
 		GPlatesMaths::AngularExtent threshold_storage = GPlatesMaths::AngularExtent::PI/*dummy value*/;
 		if (distance_threshold_radians)
 		{
+			// Clamp to the range [0, PI].
+			if (distance_threshold_radians->is_precisely_less_than(0))
+			{
+				distance_threshold_radians.get() = 0;
+			}
+			else if (distance_threshold_radians->is_precisely_greater_than(GPlatesMaths::PI))
+			{
+				distance_threshold_radians.get() = GPlatesMaths::PI;
+			}
+
 			threshold_storage = GPlatesMaths::AngularExtent::create_from_angle(distance_threshold_radians.get());
 			minimum_distance_threshold = threshold_storage;
 		}
@@ -402,7 +416,7 @@ export_geometry_on_sphere()
 				"  :param geometry2: the second geometry\n"
 				"  :type geometry2: :class:`GeometryOnSphere`\n"
 				"  :param distance_threshold_radians: optional distance threshold in radians - "
-				"threshold should be in the range [0,PI] if specified\n"
+				"threshold is clamped to the range [0, PI] if specified\n"
 				"  :type distance_threshold_radians: float or None\n"
 				"  :param return_closest_positions: whether to also return the closest point on each "
 				"geometry - default is ``False``\n"
@@ -534,7 +548,10 @@ export_geometry_on_sphere()
 				"            polygon,\n"
 				"            return_closest_positions=True,\n"
 				"            return_closest_indices=True,\n"
-				"            geometry2_is_solid=True)\n")
+				"            geometry2_is_solid=True)\n"
+				"\n"
+				".. versionchanged:: 0.41\n"
+				"   distance threshold is clamped to the range [0, PI] to avoid an exception.\n")
 		.staticmethod("distance")
 	;
 
@@ -943,7 +960,12 @@ export_point_on_sphere()
 					"Convenience class static data are available for the North and South poles:\n"
 					"\n"
 					"* ``pygplates.PointOnSphere.north_pole``\n"
-					"* ``pygplates.PointOnSphere.south_pole``\n",
+					"* ``pygplates.PointOnSphere.south_pole``\n"
+					"\n"
+					"A *PointOnSphere* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1034,6 +1056,12 @@ export_point_on_sphere()
 				"\n"
 				"    # If (x,y,z) might not be on the unit globe.\n"
 				"    point = pygplates.PointOnSphere(x, y, z, normalise=True)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>>())
 		// Static property 'pygplates.PointOnSphere.north_pole'...
 		.def_readonly("north_pole", GPlatesApi::point_on_sphere_north_pole.get())
 		// Static property 'pygplates.PointOnSphere.south_pole'...
@@ -1320,7 +1348,12 @@ export_multi_point_on_sphere()
 					"There are also methods that return the sequence of points as (latitude,longitude) "
 					"values and (x,y,z) values contained in lists and numpy arrays "
 					"(:meth:`GeometryOnSphere.to_lat_lon_list`, :meth:`GeometryOnSphere.to_lat_lon_array`, "
-					":meth:`GeometryOnSphere.to_xyz_list` and :meth:`GeometryOnSphere.to_xyz_array`).\n",
+					":meth:`GeometryOnSphere.to_xyz_list` and :meth:`GeometryOnSphere.to_xyz_array`).\n"
+					"\n"
+					"A *MultiPointOnSphere* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1338,7 +1371,7 @@ export_multi_point_on_sphere()
 				"  Create a multi-point from a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
 				"  :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type points: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
 				"tuple (float,float,float) or tuple (float,float)\n"
 				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
@@ -1408,6 +1441,12 @@ export_multi_point_on_sphere()
 				"\n"
 				"  .. note:: If *geometry* is a polygon then points from both its exterior and "
 				"interior rings are added to the multipoint.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>>())
 		.def("get_centroid",
 				&GPlatesApi::multi_point_on_sphere_get_centroid,
 				"get_centroid()\n"
@@ -1435,262 +1474,132 @@ export_multi_point_on_sphere()
 
 namespace GPlatesApi
 {
-	/**
-	 * Wrapper class for functions accessing the *points* of a PolylineOnSphere or PolygonOnSphere.
-	 *
-	 * This is a view into the internal points in a PolylineOnSphere/PolygonOnSphere in that an
-	 * iterator can be obtained from the view and the view supports indexing.
-	 */
-	template <class PolyGeometryOnSphereType, typename PolyGeometryOnSphereVertexConstIteratorType>
-	class PolyGeometryOnSpherePointsView
+	//
+	// Function to support "__getitem__" for a view into the internal points/arcs of a PolylineOnSphere/PolygonOnSphere.
+	//
+	template <typename ItemIteratorType>
+	boost::python::object
+	poly_geometry_view_get_item(
+			boost::python::object i,
+			ItemIteratorType item_begin,
+			ItemIteratorType item_end,
+			unsigned int number_of_items)
 	{
-	public:
-		PolyGeometryOnSpherePointsView(
-				typename PolyGeometryOnSphereType::non_null_ptr_to_const_type poly_geometry_on_sphere,
-				PolyGeometryOnSphereVertexConstIteratorType vertex_begin,
-				PolyGeometryOnSphereVertexConstIteratorType vertex_end,
-				unsigned int number_of_vertices) :
-			d_poly_geometry_on_sphere(poly_geometry_on_sphere),
-			d_vertex_begin(vertex_begin),
-			d_vertex_end(vertex_end),
-			d_number_of_vertices(number_of_vertices)
-		{  }
+		namespace bp = boost::python;
 
-		typedef PolyGeometryOnSphereVertexConstIteratorType const_iterator;
-
-		const_iterator
-		begin() const
+		// Set if the index is a slice object.
+		bp::extract<bp::slice> extract_slice(i);
+		if (extract_slice.check())
 		{
-			return d_vertex_begin;
-		}
+			bp::list slice_list;
 
-		const_iterator
-		end() const
-		{
-			return d_vertex_end;
-		}
-
-		unsigned int
-		get_number_of_points() const
-		{
-			return d_number_of_vertices;
-		}
-
-		bool
-		contains_point(
-				const GPlatesMaths::PointOnSphere &point_on_sphere) const
-		{
-			return std::find(d_vertex_begin, d_vertex_end, point_on_sphere) != d_vertex_end;
-		}
-
-		//
-		// Support for "__getitem__".
-		//
-		boost::python::object
-		get_item(
-				boost::python::object i) const
-		{
-			namespace bp = boost::python;
-
-			// Set if the index is a slice object.
-			bp::extract<bp::slice> extract_slice(i);
-			if (extract_slice.check())
+			try
 			{
-				bp::list slice_list;
+				// Use boost::python::slice to manage index variations such as negative indices or
+				// indices that are None.
+				bp::slice slice = extract_slice();
+				bp::slice::range<ItemIteratorType> slice_range = slice.get_indicies(item_begin, item_end);
 
-				try
+				ItemIteratorType iter = slice_range.start;
+				for ( ; iter != slice_range.stop; std::advance(iter, slice_range.step))
 				{
-					// Use boost::python::slice to manage index variations such as negative indices or
-					// indices that are None.
-					bp::slice slice = extract_slice();
-					bp::slice::range<const_iterator> slice_range =
-							slice.get_indicies(d_vertex_begin, d_vertex_end);
-
-					const_iterator iter = slice_range.start;
-					for ( ; iter != slice_range.stop; std::advance(iter, slice_range.step))
-					{
-						slice_list.append(*iter);
-					}
 					slice_list.append(*iter);
 				}
-				catch (const std::invalid_argument &)
-				{
-					// Invalid slice - return empty list.
-					return bp::list();
-				}
-
-				return slice_list;
+				slice_list.append(*iter);
 			}
-
-			// See if the index is an integer.
-			bp::extract<long> extract_index(i);
-			if (extract_index.check())
+			catch (const std::invalid_argument &)
 			{
-				long index = extract_index();
-				if (index < 0)
-				{
-					index += d_number_of_vertices;
-				}
-
-				if (index >= boost::numeric_cast<long>(d_number_of_vertices) ||
-					index < 0)
-				{
-					PyErr_SetString(PyExc_IndexError, "Index out of range");
-					bp::throw_error_already_set();
-				}
-
-				const_iterator iter = d_vertex_begin;
-				std::advance(iter, index); // Should be fast since 'iter' is random access.
-				const GPlatesMaths::PointOnSphere &point = *iter;
-
-				return bp::object(point);
+				// Invalid slice - return empty list.
+				return bp::list();
 			}
 
-			PyErr_SetString(PyExc_TypeError, "Invalid index type");
-			bp::throw_error_already_set();
-
-			return bp::object();
+			return slice_list;
 		}
 
-	private:
-		// Share ownership of polyline/polygon itself to ensure iterators remain valid.
-		typename PolyGeometryOnSphereType::non_null_ptr_to_const_type d_poly_geometry_on_sphere;
+		// See if the index is an integer.
+		bp::extract<long> extract_index(i);
+		if (extract_index.check())
+		{
+			long index = extract_index();
+			if (index < 0)
+			{
+				index += number_of_items;
+			}
 
-		// Iterator don't change since polyline/polygon is immutable.
-		const_iterator d_vertex_begin;
-		const_iterator d_vertex_end;
+			if (index >= boost::numeric_cast<long>(number_of_items) ||
+				index < 0)
+			{
+				PyErr_SetString(PyExc_IndexError, "Index out of range");
+				bp::throw_error_already_set();
+			}
 
-		unsigned int d_number_of_vertices;
-	};
+			ItemIteratorType iter = item_begin;
+			std::advance(iter, index); // Should be fast since 'iter' is random access.
+
+			return bp::object(*iter);
+		}
+
+		PyErr_SetString(PyExc_TypeError, "Invalid index type");
+		bp::throw_error_already_set();
+
+		return bp::object();
+	}
 
 
 	/**
-	 * Wrapper class for functions accessing the *great circle arcs* of a PolylineOnSphere or PolygonOnSphere.
-	 *
-	 * This is a view into the internal arcs in a PolylineOnSphere/PolygonOnSphere in that an
-	 * iterator can be obtained from the view and the view supports indexing.
+	 * 'transcribe_construct_data()' helper function for views of PolylineOnSphere/PolygonOnSphere.
 	 */
-	template <class PolyGeometryOnSphereType, typename PolyGeometryOnSphereConstIteratorType>
-	class PolyGeometryOnSphereArcsView
+	template <
+			class PolyGeometryViewType,
+			class PolyGeometryType,
+			PolyGeometryType (PolyGeometryViewType::*poly_geometry)>
+	GPlatesScribe::TranscribeResult
+	poly_geometry_view_transcribe_construct_data(
+			GPlatesScribe::Scribe &scribe,
+			GPlatesScribe::ConstructObject<PolyGeometryViewType> &poly_geometry_view)
 	{
-	public:
-		explicit
-		PolyGeometryOnSphereArcsView(
-				typename PolyGeometryOnSphereType::non_null_ptr_to_const_type poly_geometry_on_sphere,
-				PolyGeometryOnSphereConstIteratorType begin_,
-				PolyGeometryOnSphereConstIteratorType end_,
-				unsigned int number_of_segments) :
-			d_poly_geometry_on_sphere(poly_geometry_on_sphere),
-			d_begin(begin_),
-			d_end(end_),
-			d_number_of_segments(number_of_segments)
-		{  }
-
-		typedef PolyGeometryOnSphereConstIteratorType const_iterator;
-
-		const_iterator
-		begin() const
+		if (scribe.is_saving())
 		{
-			return d_begin;
+			scribe.save(TRANSCRIBE_SOURCE, poly_geometry_view.get_object().*poly_geometry, "poly_geometry");
 		}
-
-		const_iterator
-		end() const
+		else // loading
 		{
-			return d_end;
-		}
-
-		unsigned int
-		get_number_of_arcs() const
-		{
-			return d_number_of_segments;
-		}
-
-		bool
-		contains_arc(
-				const GPlatesMaths::GreatCircleArc &gca) const
-		{
-			return std::find(d_begin, d_end, gca) != d_end;
-		}
-
-		//
-		// Support for "__getitem__".
-		//
-		boost::python::object
-		get_item(
-				boost::python::object i) const
-		{
-			namespace bp = boost::python;
-
-			// Set if the index is a slice object.
-			bp::extract<bp::slice> extract_slice(i);
-			if (extract_slice.check())
+			GPlatesScribe::LoadRef<PolyGeometryType> poly_geometry_ =
+					scribe.load<PolyGeometryType>(TRANSCRIBE_SOURCE, "poly_geometry");
+			if (!poly_geometry_.is_valid())
 			{
-				bp::list slice_list;
-
-				try
-				{
-					// Use boost::python::slice to manage index variations such as negative indices or
-					// indices that are None.
-					bp::slice slice = extract_slice();
-					bp::slice::range<const_iterator> slice_range = slice.get_indicies(d_begin, d_end);
-
-					const_iterator iter = slice_range.start;
-					for ( ; iter != slice_range.stop; std::advance(iter, slice_range.step))
-					{
-						slice_list.append(*iter);
-					}
-					slice_list.append(*iter);
-				}
-				catch (const std::invalid_argument &)
-				{
-					// Invalid slice - return empty list.
-					return bp::list();
-				}
-
-				return slice_list;
+				return scribe.get_transcribe_result();
 			}
 
-			// See if the index is an integer.
-			bp::extract<long> extract_index(i);
-			if (extract_index.check())
-			{
-				long index = extract_index();
-				if (index < 0)
-				{
-					index += d_number_of_segments;
-				}
-
-				if (index >= boost::numeric_cast<long>(d_number_of_segments) ||
-					index < 0)
-				{
-					PyErr_SetString(PyExc_IndexError, "Index out of range");
-					bp::throw_error_already_set();
-				}
-
-				const_iterator iter = d_begin;
-				std::advance(iter, index); // Should be fast since 'iter' is random access.
-				const GPlatesMaths::GreatCircleArc &gca = *iter;
-
-				return bp::object(gca);
-			}
-
-			PyErr_SetString(PyExc_TypeError, "Invalid index type");
-			bp::throw_error_already_set();
-
-			return bp::object();
+			poly_geometry_view.construct_object(poly_geometry_);
 		}
 
-	private:
-		// Share ownership of polyline/polygon itself to ensure iterators remain valid.
-		typename PolyGeometryOnSphereType::non_null_ptr_to_const_type d_poly_geometry_on_sphere;
+		return GPlatesScribe::TRANSCRIBE_SUCCESS;
+	}
 
-		// Iterator don't change since polyline/polygon is immutable.
-		const_iterator d_begin;
-		const_iterator d_end;
+	/**
+	 * 'transcribe()' helper function for views of PolylineOnSphere/PolygonOnSphere.
+	 */
+	template <
+			class PolyGeometryViewType,
+			class PolyGeometryType,
+			PolyGeometryType (PolyGeometryViewType::*poly_geometry)>
+	GPlatesScribe::TranscribeResult
+	poly_geometry_view_transcribe(
+			GPlatesScribe::Scribe &scribe,
+			bool transcribed_construct_data,
+			PolyGeometryViewType &poly_geometry_view)
+	{
+		if (!transcribed_construct_data)
+		{
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, poly_geometry_view.*poly_geometry, "poly_geometry"))
+			{
+				return scribe.get_transcribe_result();
+			}
+		}
 
-		unsigned int d_number_of_segments;
-	};
+		return GPlatesScribe::TRANSCRIBE_SUCCESS;
+	}
 }
 
 
@@ -1768,21 +1677,115 @@ namespace GPlatesApi
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(polyline.get());
 	}
 
-	//! Typedef for PolylineOnSphere points view.
-	typedef PolyGeometryOnSpherePointsView<
-					GPlatesMaths::PolylineOnSphere,
-					GPlatesMaths::PolylineOnSphere::vertex_const_iterator>
-							polyline_on_sphere_points_view_type;
 
-	polyline_on_sphere_points_view_type
+	/**
+	 * Wrapper class for functions accessing the *points* of a PolylineOnSphere.
+	 *
+	 * This is a view into the internal points in a PolylineOnSphere in that an
+	 * iterator can be obtained from the view and the view supports indexing.
+	 */
+	class PolylineOnSpherePointsView
+	{
+	public:
+
+		typedef GPlatesMaths::PolylineOnSphere::vertex_const_iterator const_iterator;
+
+		explicit
+		PolylineOnSpherePointsView(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere) :
+			d_polyline_on_sphere(polyline_on_sphere)
+		{  }
+
+		const_iterator
+		begin() const
+		{
+			return d_polyline_on_sphere->vertex_begin();
+		}
+
+		const_iterator
+		end() const
+		{
+			return d_polyline_on_sphere->vertex_end();
+		}
+
+		unsigned int
+		get_number_of_points() const
+		{
+			return d_polyline_on_sphere->number_of_vertices();
+		}
+
+		bool
+		contains_point(
+				const GPlatesMaths::PointOnSphere &point_on_sphere) const
+		{
+			return std::find(begin(), end(), point_on_sphere) != end();
+		}
+
+		//
+		// Support for "__getitem__".
+		//
+		boost::python::object
+		get_item(
+				boost::python::object i) const
+		{
+			return poly_geometry_view_get_item(i, begin(), end(), get_number_of_points());
+		}
+
+		bool
+		operator==(
+				const PolylineOnSpherePointsView &other) const
+		{
+			return get_number_of_points() == other.get_number_of_points() &&
+					std::equal(begin(), end(), other.begin());
+		}
+
+		bool
+		operator!=(
+				const PolylineOnSpherePointsView &other) const
+		{
+			return !operator==(other);
+		}
+
+	private:
+
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_polyline_on_sphere;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<PolylineOnSpherePointsView> &points_view)
+		{
+			return poly_geometry_view_transcribe_construct_data<
+					PolylineOnSpherePointsView,
+					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+					&PolylineOnSpherePointsView::d_polyline_on_sphere>(
+							scribe, points_view);
+		}
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data)
+		{
+			return poly_geometry_view_transcribe<
+					PolylineOnSpherePointsView,
+					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+					&PolylineOnSpherePointsView::d_polyline_on_sphere>(
+							scribe, transcribed_construct_data, *this);
+		}
+	};
+
+
+	PolylineOnSpherePointsView
 	polyline_on_sphere_get_points_view(
 			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 	{
-		return polyline_on_sphere_points_view_type(
-				polyline_on_sphere,
-				polyline_on_sphere->vertex_begin(),
-				polyline_on_sphere->vertex_end(),
-				polyline_on_sphere->number_of_vertices());
+		return PolylineOnSpherePointsView(polyline_on_sphere);
 	}
 
 	bool
@@ -1804,21 +1807,114 @@ namespace GPlatesApi
 	}
 
 
-	//! Typedef for PolylineOnSphere arcs view.
-	typedef PolyGeometryOnSphereArcsView<
-					GPlatesMaths::PolylineOnSphere,
-					GPlatesMaths::PolylineOnSphere::const_iterator>
-							polyline_on_sphere_arcs_view_type;
+	/**
+	 * Wrapper class for functions accessing the *great circle arcs* of a PolylineOnSphere.
+	 *
+	 * This is a view into the internal arcs in a PolylineOnSphere in that an
+	 * iterator can be obtained from the view and the view supports indexing.
+	 */
+	class PolylineOnSphereArcsView
+	{
+	public:
 
-	polyline_on_sphere_arcs_view_type
+		typedef GPlatesMaths::PolylineOnSphere::const_iterator const_iterator;
+
+		explicit
+		PolylineOnSphereArcsView(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere) :
+			d_polyline_on_sphere(polyline_on_sphere)
+		{  }
+
+		const_iterator
+		begin() const
+		{
+			return d_polyline_on_sphere->begin();
+		}
+
+		const_iterator
+		end() const
+		{
+			return d_polyline_on_sphere->end();
+		}
+
+		unsigned int
+		get_number_of_arcs() const
+		{
+			return d_polyline_on_sphere->number_of_segments();
+		}
+
+		bool
+		contains_arc(
+				const GPlatesMaths::GreatCircleArc &gca) const
+		{
+			return std::find(begin(), end(), gca) != end();
+		}
+
+		//
+		// Support for "__getitem__".
+		//
+		boost::python::object
+		get_item(
+				boost::python::object i) const
+		{
+			return poly_geometry_view_get_item(i, begin(), end(), get_number_of_arcs());
+		}
+
+		bool
+		operator==(
+				const PolylineOnSphereArcsView &other) const
+		{
+			return get_number_of_arcs() == other.get_number_of_arcs() &&
+					std::equal(begin(), end(), other.begin());
+		}
+
+		bool
+		operator!=(
+				const PolylineOnSphereArcsView &other) const
+		{
+			return !operator==(other);
+		}
+
+	private:
+
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_polyline_on_sphere;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<PolylineOnSphereArcsView> &arcs_view)
+		{
+			return poly_geometry_view_transcribe_construct_data<
+					PolylineOnSphereArcsView,
+					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+					&PolylineOnSphereArcsView::d_polyline_on_sphere>(
+							scribe, arcs_view);
+		}
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data)
+		{
+			return poly_geometry_view_transcribe<
+					PolylineOnSphereArcsView,
+					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+					&PolylineOnSphereArcsView::d_polyline_on_sphere>(
+							scribe, transcribed_construct_data, *this);
+		}
+	};
+
+
+	PolylineOnSphereArcsView
 	polyline_on_sphere_get_arcs_view(
 			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 	{
-		return polyline_on_sphere_arcs_view_type(
-				polyline_on_sphere,
-				polyline_on_sphere->begin(),
-				polyline_on_sphere->end(),
-				polyline_on_sphere->number_of_segments());
+		return PolylineOnSphereArcsView(polyline_on_sphere);
 	}
 
 
@@ -1834,6 +1930,12 @@ namespace GPlatesApi
 			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere,
 			const double &tessellate_radians)
 	{
+		if (tessellate_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type' and rely on
@@ -1844,6 +1946,60 @@ namespace GPlatesApi
 		// So we avoid it by using returning a pointer to 'non-const' GPlatesMaths::PolylineOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(
 				tessellate(polyline_on_sphere, tessellate_radians));
+	}
+
+	bp::object
+	polyline_on_sphere_to_uniform_points(
+			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere,
+			const double &point_spacing_radians,
+			const double &first_point_spacing_radians,
+			bool return_segment_informations)
+	{
+		if (point_spacing_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
+		// Whether to query the segment information for each uniform point, or not.
+		boost::optional<std::vector<std::pair<unsigned int, double>> &> segment_informations_ref;
+		std::vector<std::pair<unsigned int, double>> segment_informations;
+		if (return_segment_informations)
+		{
+			segment_informations_ref = segment_informations;
+		}
+
+		std::vector<GPlatesMaths::PointOnSphere> uniform_points;
+		uniformly_spaced_points(
+				uniform_points,
+				polyline_on_sphere,
+				point_spacing_radians,
+				first_point_spacing_radians,
+				segment_informations_ref);
+
+		bp::list uniform_points_list;
+		for (const auto &point : uniform_points)
+		{
+			uniform_points_list.append(point);
+		}
+
+		if (return_segment_informations)
+		{
+			// List of 2-tuples (segment index, segment interpolation).
+			// One tuple for each uniform point.
+			bp::list segment_informations_list;
+			for (const auto &segment_information : segment_informations)
+			{
+				segment_informations_list.append(
+						bp::make_tuple(
+								segment_information.first,    // segment index
+								segment_information.second)); // segment interpolation
+			}
+
+			return bp::make_tuple(uniform_points_list, segment_informations_list);
+		}
+
+		return uniform_points_list;
 	}
 
 	bp::object
@@ -1979,36 +2135,50 @@ export_polyline_on_sphere()
 	// A wrapper around view access to the *points* of a PolylineOnSphere.
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolylineOnSphere".
-	bp::class_<GPlatesApi::polyline_on_sphere_points_view_type>(
+	bp::class_<GPlatesApi::PolylineOnSpherePointsView>(
 			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 			"_PolylineOnSpherePointsView",
 			bp::no_init)
 		.def("__iter__",
-				bp::iterator< const GPlatesApi::polyline_on_sphere_points_view_type >())
+				bp::iterator< const GPlatesApi::PolylineOnSpherePointsView >())
 		.def("__len__",
-				&GPlatesApi::polyline_on_sphere_points_view_type::get_number_of_points)
+				&GPlatesApi::PolylineOnSpherePointsView::get_number_of_points)
 		.def("__contains__",
-				&GPlatesApi::polyline_on_sphere_points_view_type::contains_point)
+				&GPlatesApi::PolylineOnSpherePointsView::contains_point)
 		.def("__getitem__",
-				&GPlatesApi::polyline_on_sphere_points_view_type::get_item)
+				&GPlatesApi::PolylineOnSpherePointsView::get_item)
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::PolylineOnSpherePointsView>>())
 	;
 
 	//
 	// A wrapper around view access to the *great circle arcs* of a PolylineOnSphere.
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolylineOnSphere".
-	bp::class_< GPlatesApi::polyline_on_sphere_arcs_view_type >(
+	bp::class_<GPlatesApi::PolylineOnSphereArcsView>(
 			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 			"_PolylineOnSphereArcsView",
 			bp::no_init)
 		.def("__iter__",
-				bp::iterator< const GPlatesApi::polyline_on_sphere_arcs_view_type >())
+				bp::iterator< const GPlatesApi::PolylineOnSphereArcsView >())
 		.def("__len__",
-				&GPlatesApi::polyline_on_sphere_arcs_view_type::get_number_of_arcs)
+				&GPlatesApi::PolylineOnSphereArcsView::get_number_of_arcs)
 		.def("__contains__",
-				&GPlatesApi::polyline_on_sphere_arcs_view_type::contains_arc)
+				&GPlatesApi::PolylineOnSphereArcsView::contains_arc)
 		.def("__getitem__",
-				&GPlatesApi::polyline_on_sphere_arcs_view_type::get_item)
+				&GPlatesApi::PolylineOnSphereArcsView::get_item)
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::PolylineOnSphereArcsView>>())
 	;
 
 	//
@@ -2077,7 +2247,12 @@ export_polyline_on_sphere()
 					"  points.append(pygplates.PointOnSphere(...))\n"
 					"\n"
 					"  # 'polyline' now references a new PolylineOnSphere instance.\n"
-					"  polyline = pygplates.PolylineOnSphere(points)\n",
+					"  polyline = pygplates.PolylineOnSphere(points)\n"
+					"\n"
+					"A *PolylineOnSphere* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -2095,7 +2270,7 @@ export_polyline_on_sphere()
 				"  Create a polyline from a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
 				"  :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type points: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
 				"tuple (float,float,float) or tuple (float,float)\n"
 				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
@@ -2210,8 +2385,16 @@ export_polyline_on_sphere()
 				"    except pygplates.InvalidPointsForPolylineConstructionError:\n"
 				"        ... # Handle failure to convert 'geometry' to a PolylineOnSphere.\n"
 				"\n"
-				"  .. note:: If *geometry* is a polygon then only its exterior ring is converted "
-				"(interior rings are ignored).\n")
+				"  .. note:: | If *geometry* is a polygon then only its exterior ring is converted "
+				"(interior rings are ignored).\n"
+				"            | And the last point in the created polyline matches the first point to "
+				"ensure the polyline forms a closed ring.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>>())
 		.def("rotation_interpolate",
 				&GPlatesApi::polyline_on_sphere_rotation_interpolate,
 				(bp::arg("from_polyline"), bp::arg("to_polyline"),
@@ -2521,11 +2704,12 @@ export_polyline_on_sphere()
 				&GPlatesApi::polyline_on_sphere_to_tessellated,
 				(bp::arg("tessellate_radians")),
 				"to_tessellated(tessellate_radians)\n"
-				"  Returns a new polyline that is tessellated version of this polyline.\n"
+				"  Returns a new polyline that is a tessellated version of this polyline.\n"
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: :class:`PolylineOnSphere`\n"
+				"  :raises: ValueError if *tessellate_radians* is negative or zero\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polyline) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"
@@ -2543,7 +2727,61 @@ export_polyline_on_sphere()
 				"tessellated to the nearest integer number of points (that keeps that segment under the threshold) "
 				"and hence each original *segment* will have a slightly different tessellation angle.\n"
 				"\n"
-				"  .. seealso:: :meth:`GreatCircleArc.to_tessellated`\n")
+				"  .. seealso:: :meth:`to_uniform_points`\n")
+		.def("to_uniform_points",
+				&GPlatesApi::polyline_on_sphere_to_uniform_points,
+				(bp::arg("point_spacing_radians"),
+						bp::arg("first_point_spacing_radians") = 0.0,
+						bp::arg("return_segment_informations") = false),
+				"to_uniform_points(point_spacing_radians, [first_point_spacing_radians=0.0], [return_segment_informations=False])\n"
+				"  Returns a sequence of points uniformly spaced along this polyline.\n"
+				"\n"
+				"  :param point_spacing_radians: spacing between points (in radians)\n"
+				"  :type point_spacing_radians: float\n"
+				"  :param first_point_spacing_radians: Spacing of first uniform point from this polyline's first vertex (in radians). "
+				"By default the first uniform point *coincides* with this polyline's first vertex. "
+				"Ideally this is non-negative (but, for example, if it's slightly negative then the first uniform point will be slightly off "
+				"the first arc near its start point but still on its great circle).\n"
+				"  :type first_point_spacing_radians: float\n"
+				"  :param return_segment_informations: whether to also return information about the polyline segment that each uniform point is on - default is ``False``\n"
+				"  :type return_segment_informations: bool\n"
+				"  :returns: list of points, or (if *return_segment_informations* is ``True``) a 2-tuple containing a list of points and "
+				"a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, "
+				"and where the point is located *on* that segment in the range [0,1])\n"
+				"  :rtype: list of :class:`PointOnSphere`, or tuple (list of :class:`PointOnSphere`, list of tuple (int, float)) if *return_segment_informations* is ``True``\n"
+				"  :raises: ValueError if *point_spacing_radians* is negative or zero\n"
+				"\n"
+				"  .. note:: The distance (along the polyline) between the last uniform point and the last vertex "
+				"of the polyline can be less than *point_spacing_radians* (since the length of the polyline "
+				"minus *first_point_spacing_radians* might not be an integer multiple of *point_spacing_radians*).\n"
+				"\n"
+				"  .. note:: | If *first_point_spacing_radians* is greater than the :meth:`polyline's length <get_arc_length>` then no uniform points will be generated.\n"
+				"            | And if the polyline length is zero and *first_point_spacing_radians* is zero then a single uniform point will be generated.\n"
+				"\n"
+				"  Create points uniformly spaced by 1 degree along a polyline starting 0.5 degrees from the first polyline vertex:\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points = polyline.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5))\n"
+				"\n"
+				"  Next, we extend the above example by associating a segment normal (from great circle arc) with each uniform point:\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points, uniform_point_segment_informations = polyline.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5),\n"
+				"        return_segment_informations = True)\n"
+				"\n"
+				"    # Each uniform point is on a segment, so retrieve a segment normal for each point.\n"
+				"    # We end up with a list of normals (with a list length equal to the number of uniform points).\n"
+				"    polyline_segments = polyline.get_segments()\n"
+				"    uniform_point_normals = [polyline_segments[segment_index].get_great_circle_normal()\n"
+				"        for segment_index, _ in uniform_point_segment_informations]\n"
+				"\n"
+				"  .. seealso:: :meth:`to_tessellated`\n"
+				"\n"
+				"  .. versionadded:: 0.47\n")
 		.def("__iter__",
 				bp::range(
 						&GPlatesMaths::PolylineOnSphere::vertex_begin,
@@ -2686,41 +2924,249 @@ namespace GPlatesApi
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(polygon.get());
 	}
 
-	//! Typedef for PolygonOnSphere (all) points view.
-	typedef PolyGeometryOnSpherePointsView<
-					GPlatesMaths::PolygonOnSphere,
-					GPlatesMaths::PolygonOnSphere::vertex_const_iterator>
-							polygon_on_sphere_points_view_type;
 
-	polygon_on_sphere_points_view_type
+	/**
+	 * Wrapper class for functions accessing the *points* of a PolygonOnSphere.
+	 *
+	 * This is a view into the internal points in a PolygonOnSphere in that an
+	 * iterator can be obtained from the view and the view supports indexing.
+	 */
+	class PolygonOnSpherePointsView
+	{
+	public:
+
+		typedef GPlatesMaths::PolygonOnSphere::vertex_const_iterator const_iterator;
+
+		explicit
+		PolygonOnSpherePointsView(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere) :
+			d_polygon_on_sphere(polygon_on_sphere)
+		{  }
+
+		const_iterator
+		begin() const
+		{
+			return d_polygon_on_sphere->vertex_begin();
+		}
+
+		const_iterator
+		end() const
+		{
+			return d_polygon_on_sphere->vertex_end();
+		}
+
+		unsigned int
+		get_number_of_points() const
+		{
+			return d_polygon_on_sphere->number_of_vertices();
+		}
+
+		bool
+		contains_point(
+				const GPlatesMaths::PointOnSphere &point_on_sphere) const
+		{
+			return std::find(begin(), end(), point_on_sphere) != end();
+		}
+
+		//
+		// Support for "__getitem__".
+		//
+		boost::python::object
+		get_item(
+				boost::python::object i) const
+		{
+			return poly_geometry_view_get_item(i, begin(), end(), get_number_of_points());
+		}
+
+		bool
+		operator==(
+				const PolygonOnSpherePointsView &other) const
+		{
+			return get_number_of_points() == other.get_number_of_points() &&
+					std::equal(begin(), end(), other.begin());
+		}
+
+		bool
+		operator!=(
+				const PolygonOnSpherePointsView &other) const
+		{
+			return !operator==(other);
+		}
+
+	private:
+
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type d_polygon_on_sphere;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<PolygonOnSpherePointsView> &points_view)
+		{
+			return poly_geometry_view_transcribe_construct_data<
+					PolygonOnSpherePointsView,
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+					&PolygonOnSpherePointsView::d_polygon_on_sphere>(
+							scribe, points_view);
+		}
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data)
+		{
+			return poly_geometry_view_transcribe<
+					PolygonOnSpherePointsView,
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+					&PolygonOnSpherePointsView::d_polygon_on_sphere>(
+							scribe, transcribed_construct_data, *this);
+		}
+	};
+
+
+	PolygonOnSpherePointsView
 	polygon_on_sphere_get_points_view(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 	{
-		return polygon_on_sphere_points_view_type(
-				polygon_on_sphere,
-				polygon_on_sphere->vertex_begin(),
-				polygon_on_sphere->vertex_end(),
-				polygon_on_sphere->number_of_vertices());
+		return PolygonOnSpherePointsView(polygon_on_sphere);
 	}
 
-	//! Typedef for PolygonOnSphere ring points view.
-	typedef PolyGeometryOnSpherePointsView<
-					GPlatesMaths::PolygonOnSphere,
-					GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator>
-							polygon_on_sphere_ring_points_view_type;
 
-	polygon_on_sphere_ring_points_view_type
+	/**
+	 * Wrapper class for functions accessing the *ring points* of a PolygonOnSphere.
+	 *
+	 * This is a view into the internal points in a PolygonOnSphere in that an
+	 * iterator can be obtained from the view and the view supports indexing.
+	 */
+	class PolygonOnSphereRingPointsView
+	{
+	public:
+
+		typedef GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator const_iterator;
+
+		explicit
+		PolygonOnSphereRingPointsView(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+				boost::optional<unsigned int> interior_ring = boost::none) :
+			d_polygon_on_sphere(polygon_on_sphere),
+			d_interior_ring(interior_ring)
+		{  }
+
+		const_iterator
+		begin() const
+		{
+			return d_interior_ring
+					? d_polygon_on_sphere->interior_ring_vertex_begin(d_interior_ring.get())
+					: d_polygon_on_sphere->exterior_ring_vertex_begin();
+		}
+
+		const_iterator
+		end() const
+		{
+			return d_interior_ring
+					? d_polygon_on_sphere->interior_ring_vertex_end(d_interior_ring.get())
+					: d_polygon_on_sphere->exterior_ring_vertex_end();
+		}
+
+		unsigned int
+		get_number_of_points() const
+		{
+			return d_interior_ring
+					? d_polygon_on_sphere->number_of_vertices_in_interior_ring(d_interior_ring.get())
+					: d_polygon_on_sphere->number_of_vertices_in_exterior_ring();
+		}
+
+		bool
+		contains_point(
+				const GPlatesMaths::PointOnSphere &point_on_sphere) const
+		{
+			return std::find(begin(), end(), point_on_sphere) != end();
+		}
+
+		//
+		// Support for "__getitem__".
+		//
+		boost::python::object
+		get_item(
+				boost::python::object i) const
+		{
+			return poly_geometry_view_get_item(i, begin(), end(), get_number_of_points());
+		}
+
+		bool
+		operator==(
+				const PolygonOnSphereRingPointsView &other) const
+		{
+			return get_number_of_points() == other.get_number_of_points() &&
+					std::equal(begin(), end(), other.begin());
+		}
+
+		bool
+		operator!=(
+				const PolygonOnSphereRingPointsView &other) const
+		{
+			return !operator==(other);
+		}
+
+	private:
+
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type d_polygon_on_sphere;
+		boost::optional<unsigned int> d_interior_ring;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<PolygonOnSphereRingPointsView> &ring_points_view)
+		{
+			return poly_geometry_view_transcribe_construct_data<
+					PolygonOnSphereRingPointsView,
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+					&PolygonOnSphereRingPointsView::d_polygon_on_sphere>(
+							scribe, ring_points_view);
+		}
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data)
+		{
+			GPlatesScribe::TranscribeResult result = poly_geometry_view_transcribe<
+					PolygonOnSphereRingPointsView,
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+					&PolygonOnSphereRingPointsView::d_polygon_on_sphere>(
+							scribe, transcribed_construct_data, *this);
+			if (result != GPlatesScribe::TRANSCRIBE_SUCCESS)
+			{
+				return result;
+			}
+
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_interior_ring, "interior_ring"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
+	};
+
+
+	PolygonOnSphereRingPointsView
 	polygon_on_sphere_get_exterior_ring_points_view(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 	{
-		return polygon_on_sphere_ring_points_view_type(
-				polygon_on_sphere,
-				polygon_on_sphere->exterior_ring_vertex_begin(),
-				polygon_on_sphere->exterior_ring_vertex_end(),
-				polygon_on_sphere->number_of_vertices_in_exterior_ring());
+		return PolygonOnSphereRingPointsView(polygon_on_sphere);
 	}
 
-	polygon_on_sphere_ring_points_view_type
+	PolygonOnSphereRingPointsView
 	polygon_on_sphere_get_interior_ring_points_view(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
 			unsigned int interior_ring_index)
@@ -2731,48 +3177,252 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		return polygon_on_sphere_ring_points_view_type(
-				polygon_on_sphere,
-				polygon_on_sphere->interior_ring_vertex_begin(interior_ring_index),
-				polygon_on_sphere->interior_ring_vertex_end(interior_ring_index),
-				polygon_on_sphere->number_of_vertices_in_interior_ring(interior_ring_index));
+		return PolygonOnSphereRingPointsView(polygon_on_sphere, interior_ring_index);
 	}
 
-	//! Typedef for PolygonOnSphere (all) arcs view.
-	typedef PolyGeometryOnSphereArcsView<
-					GPlatesMaths::PolygonOnSphere,
-					GPlatesMaths::PolygonOnSphere::const_iterator>
-							polygon_on_sphere_arcs_view_type;
 
-	polygon_on_sphere_arcs_view_type
+	/**
+	 * Wrapper class for functions accessing the *great circle arcs* of a PolygonOnSphere.
+	 *
+	 * This is a view into the internal arcs in a PolygonOnSphere in that an
+	 * iterator can be obtained from the view and the view supports indexing.
+	 */
+	class PolygonOnSphereArcsView
+	{
+	public:
+
+		typedef GPlatesMaths::PolygonOnSphere::const_iterator const_iterator;
+
+		explicit
+		PolygonOnSphereArcsView(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere) :
+			d_polygon_on_sphere(polygon_on_sphere)
+		{  }
+
+		const_iterator
+		begin() const
+		{
+			return d_polygon_on_sphere->begin();
+		}
+
+		const_iterator
+		end() const
+		{
+			return d_polygon_on_sphere->end();
+		}
+
+		unsigned int
+		get_number_of_arcs() const
+		{
+			return d_polygon_on_sphere->number_of_segments();
+		}
+
+		bool
+		contains_arc(
+				const GPlatesMaths::GreatCircleArc &gca) const
+		{
+			return std::find(begin(), end(), gca) != end();
+		}
+
+		//
+		// Support for "__getitem__".
+		//
+		boost::python::object
+		get_item(
+				boost::python::object i) const
+		{
+			return poly_geometry_view_get_item(i, begin(), end(), get_number_of_arcs());
+		}
+
+		bool
+		operator==(
+				const PolygonOnSphereArcsView &other) const
+		{
+			return get_number_of_arcs() == other.get_number_of_arcs() &&
+					std::equal(begin(), end(), other.begin());
+		}
+
+		bool
+		operator!=(
+				const PolygonOnSphereArcsView &other) const
+		{
+			return !operator==(other);
+		}
+
+	private:
+
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type d_polygon_on_sphere;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<PolygonOnSphereArcsView> &arcs_view)
+		{
+			return poly_geometry_view_transcribe_construct_data<
+					PolygonOnSphereArcsView,
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+					&PolygonOnSphereArcsView::d_polygon_on_sphere>(
+							scribe, arcs_view);
+		}
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data)
+		{
+			return poly_geometry_view_transcribe<
+					PolygonOnSphereArcsView,
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+					&PolygonOnSphereArcsView::d_polygon_on_sphere>(
+							scribe, transcribed_construct_data, *this);
+		}
+	};
+
+
+	PolygonOnSphereArcsView
 	polygon_on_sphere_get_arcs_view(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 	{
-		return polygon_on_sphere_arcs_view_type(
-				polygon_on_sphere,
-				polygon_on_sphere->begin(),
-				polygon_on_sphere->end(),
-				polygon_on_sphere->number_of_segments());
+		return PolygonOnSphereArcsView(polygon_on_sphere);
 	}
 
-	//! Typedef for PolygonOnSphere ring arcs view.
-	typedef PolyGeometryOnSphereArcsView<
-					GPlatesMaths::PolygonOnSphere,
-					GPlatesMaths::PolygonOnSphere::ring_const_iterator>
-							polygon_on_sphere_ring_arcs_view_type;
 
-	polygon_on_sphere_ring_arcs_view_type
+	/**
+	 * Wrapper class for functions accessing the *ring great circle arcs* of a PolygonOnSphere.
+	 *
+	 * This is a view into the internal arcs in a PolygonOnSphere in that an
+	 * iterator can be obtained from the view and the view supports indexing.
+	 */
+	class PolygonOnSphereRingArcsView
+	{
+	public:
+
+		typedef GPlatesMaths::PolygonOnSphere::ring_const_iterator const_iterator;
+
+		explicit
+		PolygonOnSphereRingArcsView(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+				boost::optional<unsigned int> interior_ring = boost::none) :
+			d_polygon_on_sphere(polygon_on_sphere),
+			d_interior_ring(interior_ring)
+		{  }
+
+		const_iterator
+		begin() const
+		{
+			return d_interior_ring
+					? d_polygon_on_sphere->interior_ring_begin(d_interior_ring.get())
+					: d_polygon_on_sphere->exterior_ring_begin();
+		}
+
+		const_iterator
+		end() const
+		{
+			return d_interior_ring
+					? d_polygon_on_sphere->interior_ring_end(d_interior_ring.get())
+					: d_polygon_on_sphere->exterior_ring_end();
+		}
+
+		unsigned int
+		get_number_of_arcs() const
+		{
+			return d_interior_ring
+					? d_polygon_on_sphere->number_of_segments_in_interior_ring(d_interior_ring.get())
+					: d_polygon_on_sphere->number_of_segments_in_exterior_ring();
+		}
+
+		bool
+		contains_arc(
+				const GPlatesMaths::GreatCircleArc &gca) const
+		{
+			return std::find(begin(), end(), gca) != end();
+		}
+
+		//
+		// Support for "__getitem__".
+		//
+		boost::python::object
+		get_item(
+				boost::python::object i) const
+		{
+			return poly_geometry_view_get_item(i, begin(), end(), get_number_of_arcs());
+		}
+
+		bool
+		operator==(
+				const PolygonOnSphereRingArcsView &other) const
+		{
+			return get_number_of_arcs() == other.get_number_of_arcs() &&
+					std::equal(begin(), end(), other.begin());
+		}
+
+		bool
+		operator!=(
+				const PolygonOnSphereRingArcsView &other) const
+		{
+			return !operator==(other);
+		}
+
+	private:
+
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type d_polygon_on_sphere;
+		boost::optional<unsigned int> d_interior_ring;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<PolygonOnSphereRingArcsView> &ring_arcs_view)
+		{
+			return poly_geometry_view_transcribe_construct_data<
+					PolygonOnSphereRingArcsView,
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+					&PolygonOnSphereRingArcsView::d_polygon_on_sphere>(
+							scribe, ring_arcs_view);
+		}
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data)
+		{
+			GPlatesScribe::TranscribeResult result = poly_geometry_view_transcribe<
+					PolygonOnSphereRingArcsView,
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+					&PolygonOnSphereRingArcsView::d_polygon_on_sphere>(
+							scribe, transcribed_construct_data, *this);
+			if (result != GPlatesScribe::TRANSCRIBE_SUCCESS)
+			{
+				return result;
+			}
+
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_interior_ring, "interior_ring"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
+	};
+
+
+	PolygonOnSphereRingArcsView
 	polygon_on_sphere_get_exterior_ring_arcs_view(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 	{
-		return polygon_on_sphere_ring_arcs_view_type(
-				polygon_on_sphere,
-				polygon_on_sphere->exterior_ring_begin(),
-				polygon_on_sphere->exterior_ring_end(),
-				polygon_on_sphere->number_of_segments_in_exterior_ring());
+		return PolygonOnSphereRingArcsView(polygon_on_sphere);
 	}
 
-	polygon_on_sphere_ring_arcs_view_type
+	PolygonOnSphereRingArcsView
 	polygon_on_sphere_get_interior_ring_arcs_view(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
 			unsigned int interior_ring_index)
@@ -2783,11 +3433,7 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		return polygon_on_sphere_ring_arcs_view_type(
-				polygon_on_sphere,
-				polygon_on_sphere->interior_ring_begin(interior_ring_index),
-				polygon_on_sphere->interior_ring_end(interior_ring_index),
-				polygon_on_sphere->number_of_segments_in_interior_ring(interior_ring_index));
+		return PolygonOnSphereRingArcsView(polygon_on_sphere, interior_ring_index);
 	}
 
 
@@ -2838,6 +3484,12 @@ namespace GPlatesApi
 			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
 			const double &tessellate_radians)
 	{
+		if (tessellate_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 		// ...if we return 'GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type' and rely on
@@ -2848,6 +3500,60 @@ namespace GPlatesApi
 		// So we avoid it by using returning a pointer to 'non-const' GPlatesMaths::PolygonOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(
 				tessellate(polygon_on_sphere, tessellate_radians));
+	}
+
+	bp::object
+	polygon_on_sphere_to_uniform_points(
+			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
+			const double &point_spacing_radians,
+			const double &first_point_spacing_radians,
+			bool return_segment_informations)
+	{
+		if (point_spacing_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
+		// Whether to query the segment information for each uniform point, or not.
+		boost::optional<std::vector<std::pair<unsigned int, double>> &> segment_informations_ref;
+		std::vector<std::pair<unsigned int, double>> segment_informations;
+		if (return_segment_informations)
+		{
+			segment_informations_ref = segment_informations;
+		}
+
+		std::vector<GPlatesMaths::PointOnSphere> uniform_points;
+		uniformly_spaced_points(
+				uniform_points,
+				polygon_on_sphere,
+				point_spacing_radians,
+				first_point_spacing_radians,
+				segment_informations_ref);
+
+		bp::list uniform_points_list;
+		for (const auto &point : uniform_points)
+		{
+			uniform_points_list.append(point);
+		}
+
+		if (return_segment_informations)
+		{
+			// List of 2-tuples (segment index, segment interpolation).
+			// One tuple for each uniform point.
+			bp::list segment_informations_list;
+			for (const auto &segment_information : segment_informations)
+			{
+				segment_informations_list.append(
+						bp::make_tuple(
+								segment_information.first,    // segment index
+								segment_information.second)); // segment interpolation
+			}
+
+			return bp::make_tuple(uniform_points_list, segment_informations_list);
+		}
+
+		return uniform_points_list;
 	}
 
 	GPlatesMaths::PolygonPartitioner::Result
@@ -2939,78 +3645,107 @@ export_polygon_on_sphere()
 	// A wrapper around view access to all *points* (exterior and interior rings combined) of a PolygonOnSphere.
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
-	bp::class_< GPlatesApi::polygon_on_sphere_points_view_type >(
+	bp::class_< GPlatesApi::PolygonOnSpherePointsView >(
 			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 			"_PolygonOnSpherePointsView",
 			bp::no_init)
 		.def("__iter__",
-				bp::iterator< const GPlatesApi::polygon_on_sphere_points_view_type >())
+				bp::iterator< const GPlatesApi::PolygonOnSpherePointsView >())
 		.def("__len__",
-				&GPlatesApi::polygon_on_sphere_points_view_type::get_number_of_points)
+				&GPlatesApi::PolygonOnSpherePointsView::get_number_of_points)
 		.def("__contains__",
-				&GPlatesApi::polygon_on_sphere_points_view_type::contains_point)
+				&GPlatesApi::PolygonOnSpherePointsView::contains_point)
 		.def("__getitem__",
-				&GPlatesApi::polygon_on_sphere_points_view_type::get_item)
+				&GPlatesApi::PolygonOnSpherePointsView::get_item)
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::PolygonOnSpherePointsView>>())
 	;
 
 	//
 	// A wrapper around view access to the *points* of an exterior/interior ring of a PolygonOnSphere.
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
-	bp::class_< GPlatesApi::polygon_on_sphere_ring_points_view_type >(
+	bp::class_< GPlatesApi::PolygonOnSphereRingPointsView >(
 			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 			"_PolygonOnSphereRingPointsView",
 			bp::no_init)
 		.def("__iter__",
-				bp::iterator< const GPlatesApi::polygon_on_sphere_ring_points_view_type >())
+				bp::iterator< const GPlatesApi::PolygonOnSphereRingPointsView >())
 		.def("__len__",
-				&GPlatesApi::polygon_on_sphere_ring_points_view_type::get_number_of_points)
+				&GPlatesApi::PolygonOnSphereRingPointsView::get_number_of_points)
 		.def("__contains__",
-				&GPlatesApi::polygon_on_sphere_ring_points_view_type::contains_point)
+				&GPlatesApi::PolygonOnSphereRingPointsView::contains_point)
 		.def("__getitem__",
-				&GPlatesApi::polygon_on_sphere_ring_points_view_type::get_item)
+				&GPlatesApi::PolygonOnSphereRingPointsView::get_item)
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::PolygonOnSphereRingPointsView>>())
 	;
 
 	//
 	// A wrapper around view access to all *great circle arcs* (exterior and interior rings combined) of a PolygonOnSphere.
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
-	bp::class_< GPlatesApi::polygon_on_sphere_arcs_view_type >(
+	bp::class_< GPlatesApi::PolygonOnSphereArcsView >(
 			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 			"_PolygonOnSphereArcsView",
 			bp::no_init)
 		.def("__iter__",
-				bp::iterator< const GPlatesApi::polygon_on_sphere_arcs_view_type >())
+				bp::iterator< const GPlatesApi::PolygonOnSphereArcsView >())
 		.def("__len__",
-				&GPlatesApi::polygon_on_sphere_arcs_view_type::get_number_of_arcs)
+				&GPlatesApi::PolygonOnSphereArcsView::get_number_of_arcs)
 		.def("__contains__",
-				&GPlatesApi::polygon_on_sphere_arcs_view_type::contains_arc)
+				&GPlatesApi::PolygonOnSphereArcsView::contains_arc)
 		.def("__getitem__",
-				&GPlatesApi::polygon_on_sphere_arcs_view_type::get_item)
+				&GPlatesApi::PolygonOnSphereArcsView::get_item)
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::PolygonOnSphereArcsView>>())
 	;
 
 	//
 	// A wrapper around view access to the *great circle arcs* of an exterior/interior ring of a PolygonOnSphere.
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
-	bp::class_< GPlatesApi::polygon_on_sphere_ring_arcs_view_type >(
+	bp::class_< GPlatesApi::PolygonOnSphereRingArcsView >(
 			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 			"_PolygonOnSphereRingArcsView",
 			bp::no_init)
 		.def("__iter__",
-				bp::iterator< const GPlatesApi::polygon_on_sphere_ring_arcs_view_type >())
+				bp::iterator< const GPlatesApi::PolygonOnSphereRingArcsView >())
 		.def("__len__",
-				&GPlatesApi::polygon_on_sphere_ring_arcs_view_type::get_number_of_arcs)
+				&GPlatesApi::PolygonOnSphereRingArcsView::get_number_of_arcs)
 		.def("__contains__",
-				&GPlatesApi::polygon_on_sphere_ring_arcs_view_type::contains_arc)
+				&GPlatesApi::PolygonOnSphereRingArcsView::contains_arc)
 		.def("__getitem__",
-				&GPlatesApi::polygon_on_sphere_ring_arcs_view_type::get_item)
+				&GPlatesApi::PolygonOnSphereRingArcsView::get_item)
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::PolygonOnSphereRingArcsView>>())
 	;
+
 
 	//
 	// PolygonOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	bp::scope polygon_on_sphere_class = bp::class_<
+	bp::class_<
 			GPlatesMaths::PolygonOnSphere,
 			// This wrapped type is immutable so it's desireable to wrap it as a *const* object.
 			// However boost-python currently does not compile when wrapping *const* objects
@@ -3094,9 +3829,14 @@ export_polygon_on_sphere()
 					".. note:: A polygon closes the loop between the last and first points in its exterior ring "
 					"(created from the polyline) so there's no need to make the first and last points equal.\n"
 					"\n"
+					"A *PolygonOnSphere* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
 					".. versionchanged:: 0.36\n"
 					"   :meth:`get_points<GeometryOnSphere.get_points>` and :meth:`get_segments` now include "
-					"points and segments from interior rings (as do the operations listed in the table above).\n",
+					"points and segments from interior rings (as do the operations listed in the table above).\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3126,7 +3866,7 @@ export_polygon_on_sphere()
 				"is a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
 				"  :param exterior_ring: Exterior ring sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type exterior_ring: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"  :type exterior_ring: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
 				"tuple (float,float,float) or tuple (float,float).\n"
 				"  :param interior_rings: Optional sequence of interior rings where each ring is a sequence of "
 				"(x,y,z) points, or (latitude,longitude) points (in degrees).\n"
@@ -3268,6 +4008,12 @@ export_polygon_on_sphere()
 				"\n"
 				"  .. note:: The created polygon will have no interior rings unless *geometry* is also a "
 				":class:`PolygonOnSphere` and has interior rings.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>>())
 		.def("get_segments",
 				&GPlatesApi::polygon_on_sphere_get_arcs_view,
 				"get_segments()\n"
@@ -3492,14 +4238,16 @@ export_polygon_on_sphere()
 		.def("get_area",
 				&GPlatesMaths::PolygonOnSphere::get_area,
 				"get_area()\n"
-				"  Returns the area of this polygon (on a sphere of unit radius).\n"
+				"  Returns the area of this polygon on a sphere of unit radius (steradians, or square radians).\n"
 				"\n"
 				"  :rtype: float\n"
 				"\n"
 				"  The area is essentially the absolute value of the :meth:`signed area<get_signed_area>`.\n"
 				"\n"
-				"  To convert to area on the Earth's surface, multiply the result by the Earth radius squared "
-				"(see :class:`Earth`).\n"
+				"  To convert the area from steradians (square radians) to square kms, multiply by the square of the :class:`Earth's radius<Earth>`:\n"
+				"  ::\n"
+				"\n"
+				"    area_in_square_kms = polygon.get_area() * pygplates.Earth.mean_radius_in_kms**2\n"
 				"\n"
 				"  .. note:: The interior rings reduce the absolute area of the exterior ring "
 				"(regardless of their orientation) because they are holes in the polygon.\n")
@@ -3552,8 +4300,8 @@ export_polygon_on_sphere()
 				"  Determines whether the specified point lies within the interior of this polygon.\n"
 				"\n"
 				"  :param point: the point to be tested\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
-				", in degrees, or (x,y,z)\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
 				"  :rtype: bool\n"
 				"\n"
 				"  Test if a (latitude, longitude) point is inside a polygon:\n"
@@ -3683,11 +4431,12 @@ export_polygon_on_sphere()
 				&GPlatesApi::polygon_on_sphere_to_tessellated,
 				(bp::arg("tessellate_radians")),
 				"to_tessellated(tessellate_radians)\n"
-				"  Returns a new polygon that is tessellated version of this polygon.\n"
+				"  Returns a new polygon that is a tessellated version of this polygon.\n"
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: :class:`PolygonOnSphere`\n"
+				"  :raises: ValueError if *tessellate_radians* is negative or zero\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polygon) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"
@@ -3705,7 +4454,65 @@ export_polygon_on_sphere()
 				"tessellated to the nearest integer number of points (that keeps that segment under the threshold) "
 				"and hence each original *segment* will have a slightly different tessellation angle.\n"
 				"\n"
-				"  .. seealso:: :meth:`GreatCircleArc.to_tessellated`\n")
+				"  .. seealso:: :meth:`to_uniform_points`\n")
+		.def("to_uniform_points",
+				&GPlatesApi::polygon_on_sphere_to_uniform_points,
+				(bp::arg("point_spacing_radians"),
+						bp::arg("first_point_spacing_radians") = 0.0,
+						bp::arg("return_segment_informations") = false),
+				"to_uniform_points(point_spacing_radians, [first_point_spacing_radians=0.0], [return_segment_informations=False])\n"
+				"  Returns a sequence of points uniformly spaced along each ring of this polygon.\n"
+				"\n"
+				"  :param point_spacing_radians: spacing between points within a ring (in radians)\n"
+				"  :type point_spacing_radians: float\n"
+				"  :param first_point_spacing_radians: Spacing of first uniform point in each ring from the ring's first vertex (in radians). "
+				"By default the first uniform point in each ring *coincides* with the ring's first vertex. "
+				"Ideally this is non-negative (but, for example, if it's slightly negative then the first uniform point in each ring will be slightly off "
+				"its first arc near its start point but still on its great circle).\n"
+				"  :type first_point_spacing_radians: float\n"
+				"  :param return_segment_informations: whether to also return information about the polygon segment that each uniform point is on - default is ``False``\n"
+				"  :type return_segment_informations: bool\n"
+				"  :returns: list of points, or (if *return_segment_informations* is ``True``) a 2-tuple containing a list of points and "
+				"a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, "
+				"and where the point is located *on* that segment in the range [0,1])\n"
+				"  :rtype: list of :class:`PointOnSphere`, or tuple (list of :class:`PointOnSphere`, list of tuple (int, float)) if *return_segment_informations* is ``True``\n"
+				"  :raises: ValueError if *point_spacing_radians* is negative or zero\n"
+				"\n"
+				"  .. note:: | The distance (along a polygon ring) between the last uniform point of a ring and the last vertex "
+				"of the ring (also its first vertex) can be less than *point_spacing_radians* (since the length of the ring "
+				"minus *first_point_spacing_radians* might not be an integer multiple of *point_spacing_radians*).\n"
+				"            | And if the first uniform point of a ring was added at the ring's first vertex location (ie, *first_point_spacing_radians* is zero) and "
+				"the last uniform point of the ring is at the same location (ie, the ring's first/last vertex location), due to the ring's length being an "
+				"integer multiple of *point_spacing_radians*, then the last uniform point is not added.\n"
+				"\n"
+				"  .. note:: | If *first_point_spacing_radians* is greater than a ring's length then no uniform points will be generated for that ring.\n"
+				"            | And if the ring's length is zero and *first_point_spacing_radians* is zero then a single uniform point will be generated for that ring.\n"
+				"\n"
+				"  Create points uniformly spaced by 1 degree along a polygon starting 0.5 degrees from the first vertex of each ring:\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points = polygon.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5))\n"
+				"\n"
+				"  Next, we extend the above example by associating a segment normal (from great circle arc) with each uniform point "
+				"(noting that segments come from the exterior ring and any interior rings since :meth:`get_segments` includes all segments):\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points, uniform_point_segment_informations = polygon.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5),\n"
+				"        return_segment_informations = True)\n"
+				"\n"
+				"    # Each uniform point is on a segment, so retrieve a segment normal for each point.\n"
+				"    # We end up with a list of normals (with a list length equal to the number of uniform points).\n"
+				"    polygon_segments = polygon.get_segments()\n"
+				"    uniform_point_normals = [polygon_segments[segment_index].get_great_circle_normal()\n"
+				"        for segment_index, _ in uniform_point_segment_informations]\n"
+				"\n"
+				"  .. seealso:: :meth:`to_tessellated`\n"
+				"\n"
+				"  .. versionadded:: 0.47\n")
 		.def("__iter__",
 				bp::range(
 						&GPlatesMaths::PolygonOnSphere::vertex_begin,
@@ -3720,26 +4527,40 @@ export_polygon_on_sphere()
 		.def(bp::self != bp::self)
 	;
 
-	// An enumeration nested within python class PolygonOnSphere (due to above 'bp::scope').
-	bp::enum_<GPlatesMaths::PolygonOrientation::Orientation>("Orientation")
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>();
+
+
+	// An enumeration for use with python class PolygonOnSphere.
+	//
+	// Note: We used to nest this inside class PolygonOnSphere by 'bp::scope'ing PolygonOnSphere's bp::class_.
+	//       However pickle was then unable to find it because the type was still recorded as 'pygplates.Orientation'
+	//       instead of 'pygplates.PolygonOnSphere.Orientation'. So now we define it at the module level, so pickle
+	//       can find it, and explicitly add a 'Orientation' attribute to 'PolygonOnSphere' for pygplates users.
+	bp::enum_<GPlatesMaths::PolygonOrientation::Orientation>("PolygonOnSphereOrientation")
 			.value("clockwise", GPlatesMaths::PolygonOrientation::CLOCKWISE)
 			.value("counter_clockwise", GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE);
+	// Nest enumeration within python class PolygonOnSphere (as 'PolygonOnSphere.Orientation').
+	bp::scope().attr("PolygonOnSphere").attr("Orientation") = bp::scope().attr("PolygonOnSphereOrientation");
 
 	// Enable boost::optional<GPlatesMaths::PolygonOrientation::Orientation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonOrientation::Orientation>();
 
-	// An enumeration nested within python class PolygonOnSphere (due to above 'bp::scope').
-	bp::enum_<GPlatesMaths::PolygonPartitioner::Result>("PartitionResult")
+	// An enumeration for use with python class PolygonOnSphere.
+	//
+	// Note: We used to nest this inside class PolygonOnSphere by 'bp::scope'ing PolygonOnSphere's bp::class_.
+	//       However pickle was then unable to find it because the type was still recorded as 'pygplates.PartitionResult'
+	//       instead of 'pygplates.PolygonOnSphere.PartitionResult'. So now we define it at the module level, so pickle
+	//       can find it, and explicitly add a 'PartitionResult' attribute to 'PolygonOnSphere' for pygplates users.
+	bp::enum_<GPlatesMaths::PolygonPartitioner::Result>("PolygonOnSpherePartitionResult")
 			.value("inside", GPlatesMaths::PolygonPartitioner::GEOMETRY_INSIDE)
 			.value("outside", GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
 			.value("intersecting", GPlatesMaths::PolygonPartitioner::GEOMETRY_INTERSECTING);
+	// Nest enumeration within python class PolygonOnSphere (as 'PolygonOnSphere.PartitionResult').
+	bp::scope().attr("PolygonOnSphere").attr("PartitionResult") = bp::scope().attr("PolygonOnSpherePartitionResult");
 
 	// Enable boost::optional<GPlatesMaths::PolygonPartitioner::Result> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonPartitioner::Result>();
-
-
-	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
-	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>();
 }
 
 

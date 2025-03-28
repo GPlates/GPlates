@@ -33,6 +33,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -262,7 +263,12 @@ export_vector_3d()
 					"  vector = (\n"
 					"      x_weight * pygplates.Vector3D.x_axis +\n"
 					"      y_weight * pygplates.Vector3D.y_axis +\n"
-					"      z_weight * pygplates.Vector3D.z_axis)\n",
+					"      z_weight * pygplates.Vector3D.z_axis)\n"
+					"\n"
+					"A *Vector3D* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					bp::init<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real>(
 							(bp::arg("x"), bp::arg("y"), bp::arg("z")),
 							// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
@@ -303,6 +309,24 @@ export_vector_3d()
 				"    vector = pygplates.Vector3D([x,y,z])\n"
 				"    vector = pygplates.Vector3D(numpy.array([x,y,z]))\n"
 				"    vector = pygplates.Vector3D(pygplates.Vector3D(x,y,z))\n")
+		.def(bp::init<>(
+				// Specific overload signature...
+				"__init__()\n"
+				"  Construct a zero *Vector3D*.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    vector = pygplates.Vector3D()\n"
+				"\n"
+				"  .. note:: Alternatively you can use ``vector = pygplates.Vector3D.zero``.\n"
+				"\n"
+				"  .. versionadded:: 0.43\n"))
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::Vector3D>>())
 		// Static property 'pygplates.Vector3D.zero'...
 		.def_readonly("zero", GPlatesApi::vector_zero)
 		// Static property 'pygplates.Vector3D.x_axis'...

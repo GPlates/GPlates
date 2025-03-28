@@ -40,6 +40,7 @@ namespace GPlatesViewOperations
 	class RenderedCrossSymbol;
 	class RenderedEllipse;
 	class RenderedMultiPointOnSphere;
+	class RenderedMultiReconstructionGeometry;
 	class RenderedPointOnSphere;
 	class RenderedPolygonOnSphere;
 	class RenderedPolylineOnSphere;
@@ -48,10 +49,11 @@ namespace GPlatesViewOperations
 	class RenderedResolvedRaster;
 	class RenderedResolvedScalarField3D;
 	class RenderedSmallCircle;
-	class RenderedSmallCircleArc;	
+	class RenderedSmallCircleArc;
 	class RenderedSquareSymbol;
 	class RenderedStrainMarkerSymbol;
 	class RenderedString;
+	class RenderedSubductionTeethPolyline;
 	class RenderedTangentialArrow;
 	class RenderedTriangleSymbol;
 
@@ -164,6 +166,17 @@ namespace GPlatesViewOperations
 				const RenderedReconstructionGeometry &)
 		{  }
 
+		/**
+		 * This rendered geometry is a composite object as opposed to the others.
+		 *
+		 * It wraps/associates multiple @a GPlatesAppLogic::ReconstructionGeometry objects with a single rendered geometry.
+		 */
+		virtual
+		void
+		visit_rendered_multi_reconstruction_geometry(
+				const RenderedMultiReconstructionGeometry &)
+		{  }
+
 		virtual
 		void
 		visit_rendered_resolved_raster(
@@ -204,6 +217,12 @@ namespace GPlatesViewOperations
 		void
 		visit_rendered_string(
 				const RenderedString &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_subduction_teeth_polyline(
+				const RenderedSubductionTeethPolyline &)
 		{  }
 
 		/**

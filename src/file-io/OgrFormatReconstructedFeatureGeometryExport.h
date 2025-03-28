@@ -26,11 +26,15 @@
 #ifndef GPLATES_FILEIO_SHAPEFILEFORMATRECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
 #define GPLATES_FILEIO_SHAPEFILEFORMATRECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
 
+#include <boost/optional.hpp>
 #include <QFileInfo>
 
 #include "ReconstructionGeometryExportImpl.h"
 
+#include "maths/PolygonOrientation.h"
+
 #include "model/types.h"
+
 #include "property-values/GpmlKeyValueDictionary.h"
 
 
@@ -58,6 +62,9 @@ namespace GPlatesFileIO
 
 		/**
 		* Exports @a ReconstructedFeatureGeometry objects to ESRI Shapefile format.
+		 *
+		 * @param force_polygon_orientation optionally force polygon orientation (clockwise or counter-clockwise)
+		 * for those geometries that are polygons.
 		*
 		* If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
 		*/
@@ -69,10 +76,14 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 				bool wrap_to_dateline);
 
 		/**
 		* Exports @a ReconstructedFeatureGeometry objects to ESRI Shapefile format.
+		 *
+		 * @param force_polygon_orientation optionally force polygon orientation (clockwise or counter-clockwise)
+		 * for those geometries that are polygons.
 		*
 		* If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
 		*/
@@ -84,6 +95,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 				bool wrap_to_dateline);
 	}
 }

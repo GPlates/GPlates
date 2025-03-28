@@ -36,10 +36,13 @@
 #include "OgrGeometryExporter.h"
 #include "OgrUtils.h"
 
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
+
 #include "feature-visitors/GeometryTypeFinder.h"
 #include "feature-visitors/KeyValueDictionaryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsDouble.h"
@@ -107,6 +110,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
 
@@ -200,7 +204,25 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 
-			reconstructed_geometries.push_back(rfg->reconstructed_geometry());
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+					reconstructed_geometry = rfg->reconstructed_geometry();
+
+			// Orient polygon if forcing orientation and geometry is a polygon.
+			//
+			// NOTE: This only works for non-Shapefile OGR formats because the OGR Shapefile
+			// driver stores exterior rings as clockwise and interior as counter-clockwise -
+			// so whatever we do here could just get undone by the Shapefile driver.
+			// The Shapefile OGR driver will also combine two polygons into a single polygon with
+			// an exterior and interior ring (provided one polygon is fully contained inside
+			// the other - ie, if they don't intersect) and orient the rings as mentioned above.
+			if (force_polygon_orientation)
+			{
+				reconstructed_geometry = GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
+						reconstructed_geometry,
+						force_polygon_orientation.get());
+			}
+
+			reconstructed_geometries.push_back(reconstructed_geometry);
 		}
 
 		// Write the reconstructed geometries as a single feature.
@@ -220,6 +242,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
 	// Iterate through the reconstructed geometries and check which geometry types we have.
@@ -334,7 +357,25 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		{
 			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 
-			reconstructed_geometries.push_back(rfg->reconstructed_geometry());
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+					reconstructed_geometry = rfg->reconstructed_geometry();
+
+			// Orient polygon if forcing orientation and geometry is a polygon.
+			//
+			// NOTE: This only works for non-Shapefile OGR formats because the OGR Shapefile
+			// driver stores exterior rings as clockwise and interior as counter-clockwise -
+			// so whatever we do here could just get undone by the Shapefile driver.
+			// The Shapefile OGR driver will also combine two polygons into a single polygon with
+			// an exterior and interior ring (provided one polygon is fully contained inside
+			// the other - ie, if they don't intersect) and orient the rings as mentioned above.
+			if (force_polygon_orientation)
+			{
+				reconstructed_geometry = GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
+						reconstructed_geometry,
+						force_polygon_orientation.get());
+			}
+
+			reconstructed_geometries.push_back(reconstructed_geometry);
 		}
 
 		// Write the reconstructed geometries as a single feature.

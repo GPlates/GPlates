@@ -71,7 +71,9 @@ set(srcs
     RevisionedReference.cc
     RevisionedReference.h
     RevisionedVector.h
+    RevisionId.cc
     RevisionId.h
+    ScribeExportModel.h
     StringContentTypeGenerator.h
     StringSetSingletons.cc
     StringSetSingletons.h
@@ -79,7 +81,9 @@ set(srcs
     TopLevelProperty.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h
+    TranscribeIdTypeGenerator.h
     TranscribeQualifiedXmlName.h
+    TranscribeRevisionedVector.h
     TranscribeStringContentTypeGenerator.h
     types.h
     WeakObserver.h

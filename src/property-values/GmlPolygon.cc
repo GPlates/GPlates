@@ -32,6 +32,8 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GmlPolygon::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("Polygon");
@@ -53,6 +55,67 @@ GPlatesPropertyValues::GmlPolygon::print_to(
 {
 	// FIXME: Implement properly when actually needed for debugging.
 	return os << "{ GmlPolygon }";
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlPolygon::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlPolygon> &gml_polygon)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_polygon->get_polygon(), "polygon");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon_ =
+				scribe.load<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>(TRANSCRIBE_SOURCE, "polygon");
+		if (!polygon_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gml_polygon.construct_object(polygon_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlPolygon::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_polygon(), "polygon");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon_ =
+					scribe.load<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>(TRANSCRIBE_SOURCE, "polygon");
+			if (!polygon_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_polygon(polygon_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlPolygon>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

@@ -24,6 +24,7 @@
  */
 
 #include <iostream>
+#include <boost/ref.hpp>
 
 #include "GmlDataBlockCoordinateList.h"
 
@@ -33,6 +34,10 @@
 #include "maths/types.h"
 
 #include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeQualifiedXmlName.h"
+#include "model/TranscribeStringContentTypeGenerator.h"
+
+#include "scribe/Scribe.h"
 
 
 namespace
@@ -81,6 +86,86 @@ GPlatesPropertyValues::GmlDataBlockCoordinateList::bubble_up(
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlDataBlockCoordinateList::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlDataBlockCoordinateList> &gml_data_block_coord_list)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_data_block_coord_list->get_value_object_type(), "value_object_type");
+		scribe.save(TRANSCRIBE_SOURCE, gml_data_block_coord_list->get_value_object_xml_attributes(), "value_object_xml_attributes");
+		scribe.save(TRANSCRIBE_SOURCE, gml_data_block_coord_list->get_coordinates(), "coordinates");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<ValueObjectType> value_object_type_ = scribe.load<ValueObjectType>(TRANSCRIBE_SOURCE, "value_object_type");
+		if (!value_object_type_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		xml_attributes_type value_object_xml_attributes_;
+		coordinates_type coordinates_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, value_object_xml_attributes_, "value_object_xml_attributes") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, coordinates_, "coordinates"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gml_data_block_coord_list.construct_object(
+				boost::ref(transaction),  // non-const ref
+				value_object_type_,
+				value_object_xml_attributes_,
+				coordinates_.begin(),
+				coordinates_.end());
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlDataBlockCoordinateList::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_value_object_type(), "value_object_type");
+			scribe.save(TRANSCRIBE_SOURCE, get_value_object_xml_attributes(), "value_object_xml_attributes");
+			scribe.save(TRANSCRIBE_SOURCE, get_coordinates(), "coordinates");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<ValueObjectType> value_object_type_ = scribe.load<ValueObjectType>(TRANSCRIBE_SOURCE, "value_object_type");
+			if (!value_object_type_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+			d_value_object_type = value_object_type_;
+
+			xml_attributes_type value_object_xml_attributes_;
+			coordinates_type coordinates_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, value_object_xml_attributes_, "value_object_xml_attributes") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, coordinates_, "coordinates"))
+			{
+				return scribe.get_transcribe_result();
+			}
+			set_value_object_xml_attributes(value_object_xml_attributes_);
+			set_coordinates(coordinates_);
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 bool
 GPlatesPropertyValues::GmlDataBlockCoordinateList::Revision::equality(
 		const GPlatesModel::Revision &other) const
@@ -110,12 +195,21 @@ GPlatesPropertyValues::operator<<(
 	const GmlDataBlockCoordinateList::coordinates_type &coordinates =
 			gml_data_block_coordinate_list.get_coordinates();
 
-	os << ", [ ";
+	os << " : [ ";
 
+	bool first = true;
 	GmlDataBlockCoordinateList::coordinates_type::const_iterator coordinates_iter = coordinates.begin();
 	GmlDataBlockCoordinateList::coordinates_type::const_iterator coordinates_end = coordinates.end();
 	for ( ; coordinates_iter != coordinates_end; ++coordinates_iter)
 	{
+		if (first)
+		{
+			first = false;
+		}
+		else
+		{
+			os << " , ";
+		}
 		os << *coordinates_iter;
 	}
 

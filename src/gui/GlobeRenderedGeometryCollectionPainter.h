@@ -114,6 +114,7 @@ namespace GPlatesGui
 		paint_surface(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
+				const double &device_independent_pixel_to_world_space_ratio,
 				boost::optional<Colour> vector_geometries_override_colour = boost::none);
 
 		/**
@@ -131,6 +132,7 @@ namespace GPlatesGui
 		paint_sub_surface(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
+				const double &device_independent_pixel_to_world_space_ratio,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
 				bool improve_performance_reduce_quality_hint = false);
 
@@ -174,6 +176,7 @@ namespace GPlatesGui
 			PaintParams(
 					GPlatesOpenGL::GLRenderer &renderer,
 					const double &viewport_zoom_factor,
+					const double &device_independent_pixel_to_world_space_ratio,
 					GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
 					// Used for PAINT_SURFACE...
 					boost::optional<Colour> vector_geometries_override_colour = boost::none,
@@ -184,6 +187,7 @@ namespace GPlatesGui
 
 			GPlatesOpenGL::GLRenderer *d_renderer;
 			double d_inverse_viewport_zoom_factor;
+			double d_device_independent_pixel_to_world_space_ratio;
 			GlobeRenderedGeometryLayerPainter::PaintRegionType d_paint_region;
 
 			// Used for PAINT_SURFACE...

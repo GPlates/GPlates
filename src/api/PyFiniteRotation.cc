@@ -31,6 +31,7 @@
 #include "PyInterpolationException.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/python.h"
 
@@ -383,7 +384,7 @@ export_finite_rotation()
 					"Represents the motion of plates on the surface of the globe.\n"
 					"\n"
 					".. note:: For general information on composing finite rotations in various plate tectonic scenarios "
-					"see :ref:`pygplates_foundations_working_with_finite_rotations`.\n"
+					"see :ref:`pygplates_primer_working_with_finite_rotations`.\n"
 					"\n"
 					"A finite rotation is a rotation about an *Euler pole* by an angular distance. "
 					"An Euler pole is represented by a point on the surface of the globe where a "
@@ -450,12 +451,16 @@ export_finite_rotation()
 					"finite_rotation1, finite_rotation2, time1, time2, target_time)\n"
 					"\n"
 					"Finite rotations are equality (``==``, ``!=``) comparable (but not hashable "
-					"- cannot be used as a key in a ``dict``).\n"
-					"\n"
+					"- cannot be used as a key in a ``dict``). "
 					"Finite rotations can also be compared using :meth:`are_equivalent` to detect "
 					"equivalent rotations (that rotate a geometry to the same final position but might rotate "
 					"in opposite directions around the globe). A finite rotation can be tested to see if "
-					"it is an :meth:`identity<represents_identity_rotation>` rotation (no rotation).\n",
+					"it is an :meth:`identity<represents_identity_rotation>` rotation (no rotation).\n"
+					"\n"
+					"A *FiniteRotation* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -532,6 +537,12 @@ export_finite_rotation()
 				"  ::\n"
 				"\n"
 				"    identity_finite_rotation = pygplates.FiniteRotation()\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::FiniteRotation>>())
 		.def("create_identity_rotation",
 				&GPlatesApi::finite_rotation_create_identity_rotation,
 				"create_identity_rotation()\n"
@@ -763,7 +774,7 @@ export_finite_rotation()
 				"\n"
 				"  This method does the same as ``finite_rotation1 * finite_rotation2``.\n"
 				"\n"
-				"  See :ref:`pygplates_foundations_working_with_finite_rotations` for more details on composing finite rotations.\n"
+				"  See :ref:`pygplates_primer_working_with_finite_rotations` for more details on composing finite rotations.\n"
 				"\n"
 				"  ::\n"
 				"\n"

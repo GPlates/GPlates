@@ -42,6 +42,9 @@
 #include "model/RevisionedReference.h"
 #include "model/RevisionedVector.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -292,6 +295,20 @@ namespace GPlatesPropertyValues
 			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement> > elements;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlKeyValueDictionary> &gpml_key_value_dictionary);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

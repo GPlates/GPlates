@@ -40,6 +40,9 @@
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_revisionable() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -69,6 +72,8 @@ namespace GPlatesPropertyValues
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlOrientableCurve> non_null_ptr_to_const_type;
 
+		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes_type;
+
 
 		virtual
 		~GmlOrientableCurve()
@@ -87,7 +92,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				GmlLineString::non_null_ptr_type base_curve_,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes_);
+				const xml_attributes_type &xml_attributes_);
 
 		const non_null_ptr_type
 		clone() const
@@ -127,7 +132,7 @@ namespace GPlatesPropertyValues
 		 * it returns a reference to a const map, which in turn will only allow const
 		 * access to its elements.
 		 */
-		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
+		const xml_attributes_type &
 		get_xml_attributes() const
 		{
 			return get_current_revision<Revision>().xml_attributes;
@@ -138,7 +143,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_xml_attributes(
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes);
+				const xml_attributes_type &xml_attributes);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -196,7 +201,7 @@ namespace GPlatesPropertyValues
 		GmlOrientableCurve(
 				GPlatesModel::ModelTransaction &transaction_,
 				GmlLineString::non_null_ptr_type base_curve_,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes_) :
+				const xml_attributes_type &xml_attributes_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							new Revision(transaction_, *this, base_curve_, xml_attributes_)))
@@ -253,7 +258,7 @@ namespace GPlatesPropertyValues
 					GPlatesModel::ModelTransaction &transaction_,
 					RevisionContext &child_context_,
 					GmlLineString::non_null_ptr_type base_curve_,
-					const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes_):
+					const xml_attributes_type &xml_attributes_):
 				base_curve(
 						GPlatesModel::RevisionedReference<GmlLineString>::attach(
 								transaction_, child_context_, base_curve_)),
@@ -304,9 +309,23 @@ namespace GPlatesPropertyValues
 			}
 
 			GPlatesModel::RevisionedReference<GmlLineString> base_curve;
-			std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
+			xml_attributes_type xml_attributes;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GmlOrientableCurve> &gml_orientable_curve);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

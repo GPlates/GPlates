@@ -26,7 +26,7 @@
 #include <boost/shared_ptr.hpp>
 #include <QString>
 
-#include "global/config.h"  // For GPLATES_INSTALL_STANDALONE
+#include "global/config.h"  // GPLATES_HAVE_NUMPY_C_API, etc
 
 // We are going to import the numpy C-API in this file.
 // This tells 'global/python.h' not to define NO_IMPORT_ARRAY.
@@ -42,6 +42,9 @@
 
 // Exceptions
 void export_exceptions();
+
+// Pickle
+void export_pickle();
 
 // utils namespace
 void export_earth();
@@ -66,6 +69,7 @@ void export_feature_collection_file_format_registry();
 void export_feature();
 void export_feature_collection();
 void export_feature_collection_function_argument();
+void export_file_path_function_argument();
 void export_topological_feature_collection_function_argument();
 void export_geo_time_instant();
 void export_ids();
@@ -79,8 +83,13 @@ void export_top_level_property();
 
 // app-logic namespace
 void export_calculate_velocities();
+void export_strain();
+void export_net_rotation();
+void export_network_triangulation();
 void export_plate_partitioner();
 void export_reconstruct();
+void export_reconstruct_model();
+void export_reconstruct_snapshot();
 void export_reconstruction_geometries();
 void export_reconstruction_tree();
 void export_resolve_topologies();
@@ -134,6 +143,8 @@ export_cpp_python_api()
 	//
 	export_exceptions();
 
+	export_pickle();
+
 
 #ifdef GPLATES_PYTHON_EMBEDDING
 	// api directory.
@@ -182,6 +193,7 @@ export_cpp_python_api()
 	export_feature();
 	export_feature_collection();
 	export_feature_collection_function_argument();
+	export_file_path_function_argument();
 	export_topological_feature_collection_function_argument();
 	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 	export_old_feature_collection();
@@ -190,9 +202,13 @@ export_cpp_python_api()
 	export_top_level_property();
 
 	// app-logic namespace
-	export_calculate_velocities();
+	export_calculate_velocities();  // Must be called before 'export_topological_model', 'export_topological_snapshot' and 'export_net_rotation'.
+	export_strain();
 	export_plate_partitioner();
 	export_reconstruct();
+	export_reconstruct_model();
+	export_reconstruct_snapshot();
+	export_network_triangulation();  // Must be called for 'export_reconstruction_geometries'.
 	export_reconstruction_geometries();
 	export_reconstruction_tree();
 	export_resolve_topologies();
@@ -200,6 +216,7 @@ export_cpp_python_api()
 	export_rotation_model();
 	export_topological_model();
 	export_topological_snapshot();
+	export_net_rotation(); // Must be called after 'export_reconstruction_geometries()'.
 
 	//export_co_registration();
 	export_colour();
@@ -261,7 +278,7 @@ namespace
 	}
 }
 
-#if defined (GPLATES_INSTALL_STANDALONE) && !defined(GPLATES_PYTHON_EMBEDDING)
+#if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
 	namespace
 	{
 		/**
@@ -289,6 +306,16 @@ namespace
 BOOST_PYTHON_MODULE(pygplates)
 {
 	namespace bp = boost::python;
+
+	//
+	// Note: Unlike GPlates, pyGPlates does not need to initialize Qt resources that exist in 'src/qt-resources'.
+	//       According to the QtResources documentation, calls to Q_INIT_RESOURCE are not needed if
+	//       the resources are compiled into a shared library. Further, if resources only accessed from
+	//       within shared library then there's also no issue with the shared library not being loaded yet.
+	//       So Q_INIT_RESOURCE is not called for the python (API) shared library, but that's no problem since
+	//       the python shared library is used externally (ie, used by an external python interpreter, not the
+	//       GPlates embedded interpreter) and so the resources are only accessed internally by the shared library.
+	//
 
 	//
 	// Apparently Py_Initialize should be called before initialising numpy.
@@ -345,19 +372,6 @@ BOOST_PYTHON_MODULE(pygplates)
 	// Sphinx is used to generate API documentation (see http://sphinx-doc.org) and it
 	// uses the first docstring line as the function signature (if it looks like a signature).
 	//
-	// The following limitations apply to using ReStructuredText in Sphinx's autodoc extension
-	// (autodoc imports modules and looks up their docstrings):
-	//  - '::' to indicate end-of-paragraph must be on a separate line,
-	//  - the docstrings on special methods such as '__init__', '__str__', '__lt__' are ignored
-	//    by Sphinx (by default). However we use the :special-members: Sphinx directive which includes
-	//    all special members. Normally this is too much, but we ask Sphinx not to document classes
-	//    or methods that have no docstring - and our current policy is not to have docstrings for
-	//    special members other than '__init__'.
-	//    We could have used the "autoclass_content='both'" setting in the 'conf.py' file to only
-	//    include the '__init__' special method, but it concatenates '__init__'s docstring into
-	//    the class docstring and we'd rather keep it separate since ':param:', ':type:' and ':rtype:'
-	//    directives (in docstrings) only work when applied within a *method* docstring (ie, no class docstring).
-	//
 	bp::docstring_options module_docstring_options(
 			true/*show_user_defined*/,
 			false/*show_py_signatures*/,
@@ -408,7 +422,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	bp::import("atexit").attr("register")(bp::make_function(&pygplates_profile_report_to_file));
 #endif
 
-#if defined (GPLATES_INSTALL_STANDALONE) && !defined(GPLATES_PYTHON_EMBEDDING)
+#if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
 	// Wrap the 'pygplates_post_import()' function so it can be called by the pygplates "Python package" '__init__.py'
 	// just after it imports this pygplates shared library to let us know our runtime import location.
 	//

@@ -77,9 +77,6 @@ GPlatesAppLogic::VelocityDeltaTime::get_time_range(
 		// Shouldn't get here.
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 	}
-
-	// Return a dummy value to keep compiler happy - shouldn't get here though.
-	return std::make_pair(0.0, 0.0);
 }
 
 

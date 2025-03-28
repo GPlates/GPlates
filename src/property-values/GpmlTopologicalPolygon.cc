@@ -37,6 +37,8 @@
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GpmlTopologicalPolygon::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPolygon");
@@ -80,4 +82,75 @@ GPlatesPropertyValues::GpmlTopologicalPolygon::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalPolygon::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlTopologicalPolygon> &gpml_topological_polygon)
+{
+	if (scribe.is_saving())
+	{
+		GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type exterior_sections_ =
+				&gpml_topological_polygon->exterior_sections();
+		scribe.save(TRANSCRIBE_SOURCE, exterior_sections_, "exterior_sections");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> exterior_sections_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "exterior_sections");
+		if (!exterior_sections_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_topological_polygon.construct_object(
+				boost::ref(transaction),  // non-const ref
+				exterior_sections_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalPolygon::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type exterior_sections_ = &exterior_sections();
+			scribe.save(TRANSCRIBE_SOURCE, exterior_sections_, "exterior_sections");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> exterior_sections_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "exterior_sections");
+			if (!exterior_sections_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+			revision.exterior_sections.change(revision_handler.get_model_transaction(), exterior_sections_);
+			revision_handler.commit();
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlTopologicalPolygon>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

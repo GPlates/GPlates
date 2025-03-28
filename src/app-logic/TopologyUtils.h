@@ -29,6 +29,7 @@
 #define GPLATES_APP_LOGIC_TOPOLOGYUTILS_H
 
 #include <list>
+#include <map>
 #include <set>
 #include <utility>
 #include <vector>
@@ -52,6 +53,7 @@
 #include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
 
 #include "utils/ReferenceCount.h"
@@ -203,10 +205,6 @@ namespace GPlatesAppLogic
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
 
 
-		//! Typedef for a sequence of resolved topological boundaries.
-		typedef std::vector<const ResolvedTopologicalBoundary *> resolved_topological_boundary_seq_type;
-
-
 		/**
 		 * Returns true if @a feature is a topological network feature.
 		 */
@@ -266,18 +264,51 @@ namespace GPlatesAppLogic
 		 * Finds all sub-segments shared by resolved topology boundaries and network boundaries.
 		 *
 		 * These sub-segments are separated into non-overlapping sections.
-		 * This is in contrast to simply gathering all sub-segments of these resolved boundaries/networks
-		 * which will overlap each other (eg, two plate polygons share parts of their boundary
-		 * leading to duplication).
+		 * This is in contrast to simply gathering all sub-segments of these resolved boundaries/networks which
+		 * will overlap each other (eg, two plate polygons share parts of their boundary leading to duplication).
 		 *
-		 * Each @a ResolvedTopologicalSection gathers the shared sub-segments associated with a
-		 * single topological section.
+		 * Each @a ResolvedTopologicalSection gathers the shared sub-segments associated with a single topological section.
+		 *
+		 * Note: The order of shared sub-segments within a resolved topological section is from its *start* to its *end*
+		 *       In other words, the *first* sub-segment will be at (or near) the *start* of the section geometry and
+		 *       the *last* sub-segment will be at (or near) the *end* of the section geometry.
 		 */
 		void
 		find_resolved_topological_sections(
 				std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
 				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
 				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks);
+
+
+		/**
+		 * Typedef for a mapping from resolved topological boundaries and networks to their shared boundary sub-segments.
+		 *
+		 * Note: The map key is a feature property iterator instead of a resolved topology (ReconstructionGeometry) because
+		 *       it's possible to have many reconstruction geometries referencing the same feature property since the
+		 *       topological features could have been resolved again (generating different reconstruction geometries) between
+		 *       when this map was created and when it is used to look up shared sub-segments.
+		 */
+		typedef std::map<
+				// The geometry property referenced by a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork...
+				GPlatesModel::FeatureHandle::iterator,
+				// The shared sub-segment and whether the sub-segment geometry is reversed with respect to the section geometry
+				// (when it contributes to the ResolvedTopologicalBoundary or ResolvedTopologicalNetwork being mapped)...
+				std::vector<
+						std::pair<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type, bool/*is_sub_segment_geometry_reversed*/>>>
+								resolved_topological_boundaries_networks_to_shared_sub_segments_map_type;
+		
+		/**
+		 * Takes a sequence of resolved topological sections and creates a mapping from
+		 * resolved topological boundaries and networks to their shared boundary sub-segments.
+		 *
+		 * This is just a different representation of @a find_resolved_topological_sections.
+		 * Instead of shared sub-segments referencing resolved topological boundaries and networks,
+		 * it's the other way around.
+		 */
+		void
+		map_resolved_topological_boundaries_networks_to_shared_sub_segments(
+				resolved_topological_boundaries_networks_to_shared_sub_segments_map_type &resolved_topological_shared_sub_segments_map,
+				const std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections);
 	}
 }
 

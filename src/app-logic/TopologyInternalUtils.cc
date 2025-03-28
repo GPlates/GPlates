@@ -51,6 +51,7 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/FiniteRotation.h"
@@ -1357,4 +1358,31 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_
 	}
 
 	return false;
+}
+
+
+bool
+GPlatesAppLogic::TopologyInternalUtils::is_resolved_topology_on_left_of_boundary_sub_segment(
+		const ReconstructionGeometry::non_null_ptr_to_const_type &resolved_topology_boundary_or_network,
+		bool is_sub_segment_geometry_reversed)
+{
+	const boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
+			ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(resolved_topology_boundary_or_network);
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			boundary_polygon,
+			GPLATES_ASSERTION_SOURCE);
+
+	const GPlatesMaths::PolygonOrientation::Orientation boundary_orientation = boundary_polygon.get()->get_orientation();
+	if (boundary_orientation == GPlatesMaths::PolygonOrientation::CLOCKWISE)
+	{
+		// The resolved topology has a clockwise orientation (when viewed from above the Earth).
+		// So it's on the left of the sub-segment if the sub-segment is reversed (when contributing to the resolved topology).
+		return is_sub_segment_geometry_reversed;
+	}
+	else
+	{
+		// The resolved topology has a counter-clockwise orientation (when viewed from above the Earth).
+		// So it's on the left of the sub-segment if the sub-segment is NOT reversed (when contributing to the resolved topology).
+		return !is_sub_segment_geometry_reversed;
+	}
 }

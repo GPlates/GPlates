@@ -41,6 +41,7 @@
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
@@ -51,6 +52,8 @@
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
+
+#include "scribe/Scribe.h"
 
 
 namespace bp = boost::python;
@@ -254,32 +257,12 @@ GPlatesApi::RotationModel::create(
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
 	rotation_features.get_files(feature_collection_files);
 
-	return create(
-			feature_collection_files,
-			reconstruction_tree_cache_size,
-			extend_total_reconstruction_poles_to_distant_past,
-			default_anchor_plate_id);
-}
-
-
-GPlatesApi::RotationModel::non_null_ptr_type
-GPlatesApi::RotationModel::create(
-		const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
-		unsigned int reconstruction_tree_cache_size,
-		bool extend_total_reconstruction_poles_to_distant_past,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id)
-{
-	// Convert the feature collections (in the files) to weak refs (for ReconstructionTreeCreator).
+	// Extract the feature collections to weak refs (in the files) for ReconstructionTreeCreator.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
-	BOOST_FOREACH(
-			GPlatesFileIO::File::non_null_ptr_type feature_collection_file,
-			feature_collection_files)
+	for (GPlatesFileIO::File::non_null_ptr_type feature_collection_file : feature_collection_files)
 	{
-		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-				GPlatesUtils::get_non_null_pointer(
-						feature_collection_file->get_reference().get_feature_collection().handle_ptr());
-
-		feature_collection_refs.push_back(feature_collection->reference());
+		feature_collection_refs.push_back(
+				feature_collection_file->get_reference().get_feature_collection());
 	}
 
 	// Create a cached reconstruction tree creator.
@@ -294,36 +277,11 @@ GPlatesApi::RotationModel::create(
 	return non_null_ptr_type(
 			new RotationModel(
 					feature_collection_files,
-					cached_reconstruction_tree_creator_impl));
-}
-
-
-GPlatesApi::RotationModel::non_null_ptr_type
-GPlatesApi::RotationModel::create(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
-		unsigned int reconstruction_tree_cache_size,
-		bool extend_total_reconstruction_poles_to_distant_past,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id)
-{
-	// Create feature collection files with empty filenames.
-	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
-	BOOST_FOREACH(
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
-			feature_collections)
-	{
-		// Create a file with an empty filename - since we don't know if feature collection
-		// came from a file or not.
-		GPlatesFileIO::File::non_null_ptr_type feature_collection_file =
-				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), feature_collection);
-
-		feature_collection_files.push_back(feature_collection_file);
-	}
-
-	return create(
-			feature_collection_files,
-			reconstruction_tree_cache_size,
-			extend_total_reconstruction_poles_to_distant_past,
-			default_anchor_plate_id);
+					cached_reconstruction_tree_creator_impl,
+					// Only needed to assist with transcribing...
+					reconstruction_tree_cache_size,
+					extend_total_reconstruction_poles_to_distant_past,
+					default_anchor_plate_id));
 }
 
 
@@ -350,7 +308,11 @@ GPlatesApi::RotationModel::create(
 	return non_null_ptr_type(
 			new RotationModel(
 					feature_collection_files,
-					cached_reconstruction_tree_adaptor_impl));
+					cached_reconstruction_tree_adaptor_impl,
+					// Only needed to assist with transcribing...
+					reconstruction_tree_cache_size,
+					rotation_model->d_extend_total_reconstruction_poles_to_distant_past,
+					default_anchor_plate_id ? default_anchor_plate_id.get() : rotation_model->d_default_anchor_plate_id));
 }
 
 
@@ -458,6 +420,195 @@ GPlatesApi::RotationModel::get_files(
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesApi::RotationModel::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<RotationModel> &rotation_model)
+{
+	if (scribe.is_saving())
+	{
+		save_construct_data(scribe, rotation_model.get_object());
+	}
+	else // loading
+	{
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
+		unsigned int reconstruction_tree_cache_size;
+		bool extend_total_reconstruction_poles_to_distant_past;
+		GPlatesModel::integer_plate_id_type default_anchor_plate_id;
+		if (!load_construct_data(
+				scribe,
+				feature_collection_files,
+				reconstruction_tree_cache_size,
+				extend_total_reconstruction_poles_to_distant_past,
+				default_anchor_plate_id))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Extract the feature collections to weak refs (in the files) for ReconstructionTreeCreator.
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
+		for (auto feature_collection_file : feature_collection_files)
+		{
+			feature_collection_refs.push_back(
+					feature_collection_file->get_reference().get_feature_collection());
+		}
+
+		// Create a cached reconstruction tree creator.
+		const GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type
+				cached_reconstruction_tree_creator_impl =
+						GPlatesAppLogic::create_cached_reconstruction_tree_creator_impl(
+								feature_collection_refs,
+								extend_total_reconstruction_poles_to_distant_past,
+								default_anchor_plate_id,
+								reconstruction_tree_cache_size);
+
+		// Create the rotation model.
+		rotation_model.construct_object(
+				feature_collection_files,
+				cached_reconstruction_tree_creator_impl,
+				reconstruction_tree_cache_size,
+				extend_total_reconstruction_poles_to_distant_past,
+				default_anchor_plate_id);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesApi::RotationModel::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			save_construct_data(scribe, *this);
+		}
+		else // loading
+		{
+			if (!load_construct_data(
+					scribe,
+					d_feature_collection_files,
+					d_reconstruction_tree_cache_size,
+					d_extend_total_reconstruction_poles_to_distant_past,
+					d_default_anchor_plate_id))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Extract the feature collections to weak refs (in the files) for ReconstructionTreeCreator.
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
+			for (auto feature_collection_file : d_feature_collection_files)
+			{
+				feature_collection_refs.push_back(
+						feature_collection_file->get_reference().get_feature_collection());
+			}
+
+			// Create a cached reconstruction tree creator.
+			//
+			// Note: The existing cached reconstruction tree creator in 'this' rotation model must be old data
+			//       because 'transcribed_construct_data' is false (ie, it was not transcribed) and so 'this'
+			//       object must've been created first (using unknown constructor arguments) and *then* transcribed.
+			d_cached_reconstruction_tree_creator_impl =
+					GPlatesAppLogic::create_cached_reconstruction_tree_creator_impl(
+							feature_collection_refs,
+							d_extend_total_reconstruction_poles_to_distant_past,
+							d_default_anchor_plate_id,
+							d_reconstruction_tree_cache_size);
+			d_reconstruction_tree_creator = GPlatesAppLogic::ReconstructionTreeCreator(
+					d_cached_reconstruction_tree_creator_impl);
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+void
+GPlatesApi::RotationModel::save_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		const RotationModel &rotation_model)
+{
+	const GPlatesScribe::ObjectTag files_tag("files");
+
+	// Save number of feature collection files.
+	const unsigned int num_files = rotation_model.d_feature_collection_files.size();
+	scribe.save(TRANSCRIBE_SOURCE, num_files, files_tag.sequence_size());
+
+	// Save the feature collection files (feature collections and their filenames).
+	for (unsigned int file_index = 0; file_index < num_files; ++file_index)
+	{
+		const auto feature_collection_file = rotation_model.d_feature_collection_files[file_index];
+
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection(
+				feature_collection_file->get_reference().get_feature_collection().handle_ptr());
+		const QString filename =
+				feature_collection_file->get_reference().get_file_info().get_qfileinfo().absoluteFilePath();
+
+		scribe.save(TRANSCRIBE_SOURCE, feature_collection, files_tag[file_index]("feature_collection"));
+		scribe.save(TRANSCRIBE_SOURCE, filename, files_tag[file_index]("filename"));
+	}
+
+	// Save data members are only needed to assist with transcribing.
+	scribe.save(TRANSCRIBE_SOURCE, rotation_model.d_reconstruction_tree_cache_size, "reconstruction_tree_cache_size");
+	scribe.save(TRANSCRIBE_SOURCE, rotation_model.d_extend_total_reconstruction_poles_to_distant_past, "extend_total_reconstruction_poles_to_distant_past");
+	scribe.save(TRANSCRIBE_SOURCE, rotation_model.d_default_anchor_plate_id, "default_anchor_plate_id");
+}
+
+
+bool
+GPlatesApi::RotationModel::load_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
+		unsigned int &reconstruction_tree_cache_size,
+		bool &extend_total_reconstruction_poles_to_distant_past,
+		GPlatesModel::integer_plate_id_type &default_anchor_plate_id)
+{
+	const GPlatesScribe::ObjectTag files_tag("files");
+
+	// Number of feature collection files.
+	unsigned int num_files;
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, num_files, files_tag.sequence_size()))
+	{
+		return false;
+	}
+
+	// Load the feature collection files (feature collections and their filenames).
+	for (unsigned int file_index = 0; file_index < num_files; ++file_index)
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collection =
+				scribe.load<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(
+						TRANSCRIBE_SOURCE,
+						files_tag[file_index]("feature_collection"));
+		if (!feature_collection.is_valid())
+		{
+			return false;
+		}
+
+		QString filename;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, filename, files_tag[file_index]("filename")))
+		{
+			return false;
+		}
+
+		feature_collection_files.push_back(
+				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(filename), feature_collection));
+	}
+
+	// Load data members are only needed to assist with transcribing.
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, reconstruction_tree_cache_size, "reconstruction_tree_cache_size") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, extend_total_reconstruction_poles_to_distant_past, "extend_total_reconstruction_poles_to_distant_past") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, default_anchor_plate_id, "default_anchor_plate_id"))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+
 bool
 GPlatesApi::RotationModelFunctionArgument::is_convertible(
 		bp::object python_function_argument)
@@ -527,7 +678,7 @@ export_rotation_model()
 			"  :param rotation_features: A rotation feature collection, or rotation filename, or "
 			"rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) "
 			"of any combination of those four types\n"
-			"  :type rotation_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"  :type rotation_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. "
 			"Defaults to " << GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE << ".\n"
@@ -566,6 +717,10 @@ export_rotation_model()
 			"\n"
 			"  .. versionchanged:: 0.26\n"
 			"     Added *default_anchor_plate_id* argument.\n"
+			"\n"
+			"  .. versionchanged:: 0.44\n"
+			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
 			;
 
 	//
@@ -579,21 +734,25 @@ export_rotation_model()
 					"Query a finite rotation of a moving plate relative to any other plate, optionally "
 					"between two instants in geological time.\n"
 					"\n"
-					"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy`.\n"
+					".. seealso:: :ref:`pygplates_primer_plate_reconstruction_hierarchy` in the *Primer* documentation.\n"
 					"\n"
 					"This class provides an easy way to query rotations in any of the four combinations of "
 					"total/stage and equivalent/relative rotations using :meth:`get_rotation`. "
 					":class:`Reconstruction trees<ReconstructionTree>` can also be created at any instant "
-					"of geological time and these are cached internally depending on a user-specified "
-					"cache size parameter pass to :meth:`__init__`. "
-					"The *reconstruction_tree_cache_size* parameter of those "
-					"methods controls the size of an internal least-recently-used cache of reconstruction "
-					"trees (evicts least recently requested reconstruction tree when a new reconstruction "
-					"time is requested that does not currently exist in the cache). This enables "
+					"of geological time and these are cached internally depending the "
+					"*reconstruction_tree_cache_size* parameter passed to :meth:`__init__`. "
+					"This cache size parameter controls the size of an internal least-recently-used cache of "
+					"reconstruction trees (evicts least recently requested reconstruction tree when a new "
+					"reconstruction time is requested that does not currently exist in the cache). This enables "
 					"reconstruction trees associated with different reconstruction times to be re-used "
 					"instead of re-creating them, provided they have not been evicted from the cache. "
 					"This benefit also applies when querying rotations with :meth:`get_rotation` since "
-					"it, in turn, requests reconstruction trees.\n",
+					"it, in turn, requests reconstruction trees.\n"
+					"\n"
+					"A *RotationModel* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -690,6 +849,12 @@ export_rotation_model()
 			"  .. note:: This :meth:`constructor<__init__>` just returns a reference to the existing *rotation_model* "
 			"because a *RotationModel* object is immutable (contains no operations or methods that modify its state) and "
 			"hence a deep copy of *rotation_model* is not needed.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::RotationModel::non_null_ptr_type>())
 		.def("get_rotation",
 				&GPlatesApi::RotationModel::get_rotation,
 				(bp::arg("to_time"),
@@ -728,13 +893,13 @@ export_rotation_model()
 				"equivalent/relative rotations normally handled by:\n"
 				"\n"
 				"  * :meth:`ReconstructionTree.get_equivalent_total_rotation` - "
-				"see :ref:`pygplates_foundations_equivalent_total_rotation` for rotation math derivation\n"
+				"see :ref:`pygplates_primer_equivalent_total_rotation` for rotation math derivation\n"
 				"  * :meth:`ReconstructionTree.get_relative_total_rotation` - "
-				"see :ref:`pygplates_foundations_relative_total_rotation` for rotation math derivation\n"
+				"see :ref:`pygplates_primer_relative_total_rotation` for rotation math derivation\n"
 				"  * :meth:`ReconstructionTree.get_equivalent_stage_rotation` - "
-				"see :ref:`pygplates_foundations_equivalent_stage_rotation` for rotation math derivation\n"
+				"see :ref:`pygplates_primer_equivalent_stage_rotation` for rotation math derivation\n"
 				"  * :meth:`ReconstructionTree.get_relative_stage_rotation` - "
-				"see :ref:`pygplates_foundations_relative_stage_rotation` for rotation math derivation\n"
+				"see :ref:`pygplates_primer_relative_stage_rotation` for rotation math derivation\n"
 				"\n"
 				"  If *fixed_plate_id* is not specified then it defaults to *anchor_plate_id* (which "
 				"itself defaults to the *default* anchor plate id specified in :meth:`constructor<__init__>`). "
@@ -742,14 +907,14 @@ export_rotation_model()
 				"*anchor_plate_id* as its default. However if there is no plate circuit path from the default "
 				"anchor plate to either *moving_plate_id* or *fixed_plate_id*, but there is a path from *fixed_plate_id* "
 				"to *moving_plate_id*, then the correct result will require setting *anchor_plate_id* to "
-				"*fixed_plate_id*. See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for "
+				"*fixed_plate_id*. See :ref:`pygplates_primer_plate_reconstruction_hierarchy` for "
 				"an overview of plate circuit paths.\n"
 				"\n"
 				"  If there is no plate circuit path from *moving_plate_id* (and optionally *fixed_plate_id*) "
 				"to the anchor plate (at times *to_time* and optionally *from_time*) then an "
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` is returned if "
 				"*use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
-				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a "
+				"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` for details on how a "
 				"plate id can go missing and how to work around it.\n"
 				"\n"
 				"  This method essentially does the following:\n"

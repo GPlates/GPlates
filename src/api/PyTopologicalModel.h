@@ -57,6 +57,11 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/ValueObjectType.h"
 
+#include "scribe/ScribeLoadRef.h"
+ // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
+#include "utils/KeyValueCache.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -228,13 +233,12 @@ namespace GPlatesApi
 				// just 'RotationModelFunctionArgument' since we want to know if it's an existing RotationModel...
 				const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
-				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters);
+				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters,
+				boost::optional<unsigned int> topological_snapshot_cache_size);
 
 
 		/**
 		 * Returns the topological snapshot (resolved topologies) for the specified time (creating and caching them if necessary).
-		 *
-		 * Raises ValueError if @a reconstruction_time is not an integral value.
 		 */
 		TopologicalSnapshot::non_null_ptr_type
 		get_topological_snapshot(
@@ -272,7 +276,8 @@ namespace GPlatesApi
 				boost::python::object scalar_type_to_values_mapping_object = boost::python::object()/*Py_None*/,
 				boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points =
 						GPlatesUtils::static_pointer_cast<const GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>(
-								GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create()));
+								GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create()),
+				bool deformation_uses_natural_neighbour_interpolation = true);
 
 
 		/**
@@ -317,8 +322,8 @@ namespace GPlatesApi
 
 	private:
 
-		//! Typedef for a mapping of (integral) times to topological snapshots (resolved topologies).
-		typedef std::map<GPlatesMaths::real_t/*time*/, TopologicalSnapshot::non_null_ptr_type> topological_snapshots_type;
+		//! Typedef for a least-recently used cache mapping reconstruction times to topological snapshots (resolved topologies).
+		typedef GPlatesUtils::KeyValueCache<GPlatesMaths::real_t/*time*/, TopologicalSnapshot::non_null_ptr_type> topological_snapshots_type;
 
 		//! Typedef for a sequence of topological features.
 		typedef std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_features_seq_type;
@@ -342,6 +347,14 @@ namespace GPlatesApi
 		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_topological_feature_collections;
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_topological_files;
 
+		/**
+		 * Optional resolved topology parameters for each topological feature collection/file.
+		 */
+		std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> d_resolve_topology_parameters;
+
+		//! Default resolved topology parameters for those topological feature collections/files with no parameters.
+		ResolveTopologyParameters::non_null_ptr_to_const_type d_default_resolve_topology_parameters;
+
 		// Separate the topological features into regular features (used as topological sections for
 		// topological lines/boundaries/networks), topological lines (can also be used as topological
 		// sections for topological boundaries/networks), topological boundaries and topological networks.
@@ -362,24 +375,66 @@ namespace GPlatesApi
 		GPlatesAppLogic::ReconstructContext::context_state_reference_type d_topological_section_reconstruct_context_state;
 
 		/**
-		 * Cache of topological snapshots (resolved topologies) at various (integer) time instants.
+		 * Number of topological snapshots to cache (at different time instants) - none means unlimited.
 		 */
-		topological_snapshots_type d_cached_topological_snapshots;
+		boost::optional<unsigned int> d_topological_snapshot_cache_size;
+
+		/**
+		 * Cache of topological snapshots (resolved topologies) at various time instants.
+		 */
+		topological_snapshots_type d_topological_snapshot_cache;
 
 
 		TopologicalModel(
-				const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 				const RotationModel::non_null_ptr_type &rotation_model,
-				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters);
+				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+				const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters,
+				boost::optional<unsigned int> topological_snapshot_cache_size);
+
+		/**
+		 * Set up for topological reconstruction once the topological files/parameters have been constructed.
+		 */
+		void
+		initialise_topological_reconstruction();
 
 		/**
 		 * Resolves topologies for the specified time and returns them as a topological snapshot.
-		 *
-		 * @a reconstruction_time should be an integral value.
 		 */
 		TopologicalSnapshot::non_null_ptr_type
 		create_topological_snapshot(
-				const double &reconstruction_time);
+				const GPlatesMaths::real_t &reconstruction_time);
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<TopologicalModel> &topological_model);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const TopologicalModel &topological_model);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> &rotation_model,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+				const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+				GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> &default_resolve_topology_parameters,
+				boost::optional<unsigned int> &topological_snapshot_cache_size);
 	};
 }
 

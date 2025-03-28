@@ -47,6 +47,29 @@ GPlatesAppLogic::TopologyReconstructedFeatureGeometry::reconstructed_geometry() 
 
 
 void
+GPlatesAppLogic::TopologyReconstructedFeatureGeometry::reconstructed_geometry_point_velocities(
+		velocity_seq_type &reconstructed_geometry_point_velocities_,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
+{
+	const bool geometry_data_is_valid = d_topology_reconstruct_geometry_time_span->get_velocities(
+			reconstructed_geometry_point_velocities_,
+			get_reconstruction_time(),
+			velocity_delta_time,
+			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms);
+
+	// We should not have been created if the geometry time span was not valid at the current reconstruction time.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			geometry_data_is_valid,
+			GPLATES_ASSERTION_SOURCE);
+}
+
+
+void
 GPlatesAppLogic::TopologyReconstructedFeatureGeometry::get_geometry_data(
 		boost::optional<point_seq_type &> reconstructed_points,
 		boost::optional<point_location_seq_type&> reconstructed_point_locations,

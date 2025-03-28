@@ -27,15 +27,19 @@
 #include <sstream>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "PyQualifiedXmlNames.h"
 
+#include "PyFeature.h"
 #include "PythonConverterUtils.h"
+#include "PythonPickle.h"
 
 #include "global/python.h"
 
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
+#include "model/TranscribeQualifiedXmlName.h"
 
 #include "property-values/EnumerationType.h"
 #include "property-values/StructuralType.h"
@@ -152,6 +156,11 @@ export_qualified_xml_name(
 		.def(bp::self >= bp::self)
 		// For '__str__' convert to a qualified XML string...
 		.def("__str__", &GPlatesModel::convert_qualified_xml_name_to_qstring<qualified_xml_name_type>)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<qualified_xml_name_type>>(
+				// Since we are providing the only constructor (__init__ for pickling) we need its
+				// docstring to document that this class cannot be instantiated from Python...
+				true/*document_class_as_non_instantiable*/))
 	;
 
 
@@ -235,7 +244,12 @@ export_enumeration_type()
 			"The namespace-qualified type of an enumeration.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. EnumerationType is "
-			"hashable (can be used as a key in a ``dict``).\n",
+			"hashable (can be used as a key in a ``dict``).\n"
+			"\n"
+			"An *EnumerationType* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	enumeration_type_class.def("create_gpml",
@@ -390,7 +404,12 @@ export_feature_type()
 			"* `pygplates.FeatureType.gpml_unconformity <http://www.gplates.org/docs/gpgim/#gpml:Unconformity>`_\n"
 			"* `pygplates.FeatureType.gpml_unknown_contact <http://www.gplates.org/docs/gpgim/#gpml:UnknownContact>`_\n"
 			"* `pygplates.FeatureType.gpml_virtual_geomagnetic_pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_\n"
-			"* `pygplates.FeatureType.gpml_volcano <http://www.gplates.org/docs/gpgim/#gpml:Volcano>`_\n",
+			"* `pygplates.FeatureType.gpml_volcano <http://www.gplates.org/docs/gpgim/#gpml:Volcano>`_\n"
+			"\n"
+			"A *FeatureType* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common feature types...
@@ -464,6 +483,26 @@ export_feature_type()
 			"    gpml_coastline_feature_type = pygplates.FeatureType.create_gpml('Coastline')\n");
 	feature_type_class.staticmethod("create_gpml");
 
+	feature_type_class.def("get_default_geometry_property_name",
+			&GPlatesApi::get_default_geometry_property_name,
+			"get_default_geometry_property_name()\n"
+			"  Returns the default geometry property name associated with this feature type.\n"
+			"\n"
+			"  Usually a feature type supports *geometry* properties with more than one property name. "
+			"For example, a `coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_ feature supports both a "
+			"`pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_ geometry and a "
+			"`pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_) geometry. "
+			"But only one of them is the default (the default property that geometry data is imported into the feature). "
+			"You can see which is the default by reading the ``Default Geometry Property`` label in the "
+			"`coastline feature model <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_.\n"
+			"\n"
+			"  :rtype: :class:`PropertyName` or None\n"
+			"\n"
+			"  .. note:: This can return `None` if this feature type represents an abstract feature class "
+			"(ie, those feature classes tagged \"*Class Type: abstract*\" in the `GPGIM <http://www.gplates.org/docs/gpgim>`_).\n"
+			"\n"
+			"  .. versionadded:: 0.43\n");
+
 	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
 	export_qualified_xml_name(
 			feature_type_class,
@@ -498,6 +537,11 @@ namespace GPlatesApi
 	const GPlatesModel::PropertyName gpml_reconstruction_method = GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 	const GPlatesModel::PropertyName gpml_reconstruction_plate_id = GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 	const GPlatesModel::PropertyName gpml_relative_plate = GPlatesModel::PropertyName::create_gpml("relativePlate");
+	const GPlatesModel::PropertyName gpml_rift_edgeLength_threshold_degrees = GPlatesModel::PropertyName::create_gpml("riftEdgeLengthThresholdDegrees");
+	const GPlatesModel::PropertyName gpml_rift_exponential_stretching_constant = GPlatesModel::PropertyName::create_gpml("riftExponentialStretchingConstant");
+	const GPlatesModel::PropertyName gpml_rift_left_plate = GPlatesModel::PropertyName::create_gpml("riftLeftPlate");
+	const GPlatesModel::PropertyName gpml_rift_right_plate = GPlatesModel::PropertyName::create_gpml("riftRightPlate");
+	const GPlatesModel::PropertyName gpml_rift_strain_rate_resolution_log10 = GPlatesModel::PropertyName::create_gpml("riftStrainRateResolutionLog10");
 	const GPlatesModel::PropertyName gpml_right_plate = GPlatesModel::PropertyName::create_gpml("rightPlate");
 	const GPlatesModel::PropertyName gpml_shapefile_attributes = GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
 	const GPlatesModel::PropertyName gpml_times = GPlatesModel::PropertyName::create_gpml("times");
@@ -570,6 +614,11 @@ export_property_name()
 			"* `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_\n"
 			"* `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_\n"
 			"* `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_\n"
+			"* `pygplates.PropertyName.gpml_rift_edgeLength_threshold_degrees <http://www.gplates.org/docs/gpgim/#gpml:rift_edgeLength_threshold_degrees>`_\n"
+			"* `pygplates.PropertyName.gpml_rift_exponential_stretching_constant <http://www.gplates.org/docs/gpgim/#gpml:rift_exponential_stretching_constant>`_\n"
+			"* `pygplates.PropertyName.gpml_rift_left_plate <http://www.gplates.org/docs/gpgim/#gpml:rift_left_plate>`_\n"
+			"* `pygplates.PropertyName.gpml_rift_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rift_right_plate>`_\n"
+			"* `pygplates.PropertyName.gpml_rift_strain_rate_resolution_log10 <http://www.gplates.org/docs/gpgim/#gpml:rift_strain_rate_resolution_log10>`_\n"
 			"* `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_\n"
 			"* `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_\n"
 			"* `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_\n"
@@ -603,7 +652,16 @@ export_property_name()
 			"* `pygplates.PropertyName.gpml_pole_position <http://www.gplates.org/docs/gpgim/#gpml:polePosition>`_\n"
 			"* `pygplates.PropertyName.gpml_position <http://www.gplates.org/docs/gpgim/#gpml:position>`_\n"
 			"* `pygplates.PropertyName.gpml_seed_points <http://www.gplates.org/docs/gpgim/#gpml:seedPoints>`_\n"
-			"* `pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_\n",
+			"* `pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_\n"
+			"\n"
+			"A *PropertyName* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n"
+			"\n"
+			".. versionchanged:: 0.49\n"
+			"   Added attributes *gpml_rift_edgeLength_threshold_degrees*, *gpml_rift_exponential_stretching_constant*, "
+			"*gpml_rift_left_plate*, *gpml_rift_right_plate* and *gpml_rift_strain_rate_resolution_log10*.\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common property names...
@@ -627,6 +685,11 @@ export_property_name()
 	property_name_class.def_readonly("gpml_reconstruction_plate_id", GPlatesApi::gpml_reconstruction_plate_id);
 	property_name_class.def_readonly("gpml_right_plate", GPlatesApi::gpml_right_plate);
 	property_name_class.def_readonly("gpml_relative_plate", GPlatesApi::gpml_relative_plate);
+	property_name_class.def_readonly("gpml_rift_edgeLength_threshold_degrees", GPlatesApi::gpml_rift_edgeLength_threshold_degrees);
+	property_name_class.def_readonly("gpml_rift_exponential_stretching_constant", GPlatesApi::gpml_rift_exponential_stretching_constant);
+	property_name_class.def_readonly("gpml_rift_left_plate", GPlatesApi::gpml_rift_left_plate);
+	property_name_class.def_readonly("gpml_rift_right_plate", GPlatesApi::gpml_rift_right_plate);
+	property_name_class.def_readonly("gpml_rift_strain_rate_resolution_log10", GPlatesApi::gpml_rift_strain_rate_resolution_log10);
 	property_name_class.def_readonly("gpml_shapefile_attributes", GPlatesApi::gpml_shapefile_attributes);
 	property_name_class.def_readonly("gpml_times", GPlatesApi::gpml_times);
 	property_name_class.def_readonly("gpml_total_reconstruction_pole", GPlatesApi::gpml_total_reconstruction_pole);
@@ -753,7 +816,12 @@ export_scalar_type()
 			"* pygplates.ScalarType.gpml_crustal_thickness\n"
 			"* pygplates.ScalarType.gpml_crustal_stretching_factor\n"
 			"* pygplates.ScalarType.gpml_crustal_thinning_factor\n"
-			"* pygplates.ScalarType.gpml_tectonic_subsidence\n",
+			"* pygplates.ScalarType.gpml_tectonic_subsidence\n"
+			"\n"
+			"A *ScalarType* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common scalar types...
@@ -999,7 +1067,12 @@ export_structural_type()
 			"The namespace-qualified structural type.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. StructuralType is "
-			"hashable (can be used as a key in a ``dict``).\n",
+			"hashable (can be used as a key in a ``dict``).\n"
+			"\n"
+			"A *StructuralType* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	structural_type_class.def("create_gpml",

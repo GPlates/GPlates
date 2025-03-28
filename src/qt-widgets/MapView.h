@@ -198,6 +198,15 @@ namespace GPlatesQtWidgets
 		get_viewport_size() const;
 
 		/**
+		 * Calculate the size of one device-independent pixel in (post projection) map space coordinates.
+		 */
+		double
+		get_device_independent_pixel_to_map_space_ratio(
+				int paint_device_width_in_device_independent_pixels,
+				int paint_device_height_in_device_independent_pixels,
+				const double &zoom_factor);
+
+		/**
 		 * Renders the scene to a QImage of the dimensions specified by @a image_size.
 		 *
 		 * The specified image size should be in device *independent* pixels (eg, widget dimensions).
@@ -209,7 +218,8 @@ namespace GPlatesQtWidgets
 		virtual
 		QImage
 		render_to_qimage(
-				const QSize &image_size_in_device_independent_pixels);
+				const QSize &image_size_in_device_independent_pixels,
+				const GPlatesGui::Colour &image_clear_colour);
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.

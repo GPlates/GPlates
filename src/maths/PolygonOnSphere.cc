@@ -34,6 +34,7 @@
 #include "Centroid.h"
 #include "ConstGeometryOnSphereVisitor.h"
 #include "HighPrecision.h"
+#include "MathsUtils.h"
 #include "PointInPolygon.h"
 #include "PolygonOnSphere.h"
 #include "PolygonProximityHitDetail.h"
@@ -46,6 +47,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/InvalidParametersException.h"
 #include "global/UninitialisedIteratorException.h"
+
+#include "scribe/Scribe.h"
 
 #include "utils/ReferenceCount.h"
 
@@ -185,6 +188,7 @@ namespace GPlatesMaths
 				const PolygonOnSphere::ring_const_iterator &ring_end,
 				const real_t &max_angular_extent)
 		{
+			// Iterate over the arcs in the ring.
 			PolygonOnSphere::ring_const_iterator ring_iter = ring_begin;
 			for ( ; ring_iter != ring_end; ++ring_iter)
 			{
@@ -202,6 +206,83 @@ namespace GPlatesMaths
 				// Tessellating a great circle arc should always add at least two points.
 				// So we should always be able to remove one point (the arc end point).
 				tessellated_ring_points.pop_back();
+			}
+		}
+
+
+		void
+		uniformly_spaced_points_in_ring(
+				std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+				const PolygonOnSphere::ring_const_iterator &ring_begin,
+				const PolygonOnSphere::ring_const_iterator &ring_end,
+				const double &uniform_point_spacing,
+				const double &first_uniform_point_spacing,
+				boost::optional<
+						std::vector<std::pair<unsigned int/*segment index*/, double/*segment interpolation*/>> &
+					> segment_informations)
+		{
+			const unsigned int num_initial_uniform_points = uniform_points.size();
+
+			// Distance from start of first arc in ring to the first uniform point.
+			double first_uniform_point_spacing_in_arc = first_uniform_point_spacing;
+
+			// Iterate over the arcs in the ring.
+			PolygonOnSphere::ring_const_iterator ring_iter = ring_begin;
+			for (unsigned int segment_index = 0; ring_iter != ring_end; ++ring_iter, ++segment_index)
+			{
+				const GreatCircleArc &gca = *ring_iter;
+
+				// Get a segment interpolation factor for each uniform point (if requested).
+				boost::optional<std::vector<double> &> current_segment_interpolations_ref;
+				std::vector<double> current_segment_interpolations;
+				if (segment_informations)
+				{
+					current_segment_interpolations_ref = current_segment_interpolations;
+				}
+
+				// Generate points at uniform spacings along the current arc starting at
+				// an offset of 'first_uniform_point_spacing_in_arc' from the arc's start point.
+				const unsigned int num_uniform_points_before_arc = uniform_points.size();
+				uniformly_spaced_points(
+						uniform_points,
+						gca,
+						uniform_point_spacing,
+						first_uniform_point_spacing_in_arc,
+						current_segment_interpolations_ref);
+				const unsigned int num_uniform_points_in_arc = uniform_points.size() - num_uniform_points_before_arc;
+
+				// The first uniform point offset in the *next* arc (if any) depends on the offset of the first point
+				// in the *current* arc and the number of uniform points added to the *current* arc (and its length).
+				//
+				// Note: If the *current* arc is zero-length then it could have generated a single uniform point if
+				//       its 'first_uniform_point_spacing_in_arc' was zero (or slightly negative).
+				//       This can happen if that uniform point just missed the end of the previous arc (due to numerical tolerance).
+				//       In this case the next arc will not generate a uniform point at its start point
+				//       (because its 'first_uniform_point_spacing_in_arc' will be 'point_spacing', not zero).
+				first_uniform_point_spacing_in_arc += num_uniform_points_in_arc * uniform_point_spacing - gca.arc_length().dval();
+
+				// If segment information was requested (one for each uniform point on the current segment).
+				if (segment_informations)
+				{
+					for (auto segment_interpolation : current_segment_interpolations)
+					{
+						// Segment information is segment index and interpolation within segment (of uniform point).
+						segment_informations->push_back({segment_index, segment_interpolation});
+					}
+				}
+			}
+
+			// If we added the first uniform point at the ring's first vertex location and we added the last uniform point
+			// at the same location (ie, the ring's first/last vertex location) then remove the duplicate.
+			if (uniform_points.size() - num_initial_uniform_points >= 2 &&
+				are_almost_exactly_equal(first_uniform_point_spacing, 0.0) &&
+				uniform_points.back() == uniform_points[num_initial_uniform_points])
+			{
+				uniform_points.pop_back();
+				if (segment_informations)
+				{
+					segment_informations->pop_back();
+				}
 			}
 		}
 	}
@@ -805,6 +886,91 @@ GPlatesMaths::PolygonOnSphere::get_interior_ring_bounding_tree(
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesMaths::PolygonOnSphere::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Transcribe the vertices of each ring instead of segments because the segments (great circle arcs)
+	// contain duplicate vertices (end of segment contains same vertex as start of next segment).
+	if (scribe.is_saving())
+	{
+		// Exterior ring.
+		const std::vector<PointOnSphere> exterior_ring_vertices_(exterior_ring_vertex_begin(), exterior_ring_vertex_end());
+		scribe.save(TRANSCRIBE_SOURCE, exterior_ring_vertices_, "exterior_ring");
+
+		const GPlatesScribe::ObjectTag interior_rings_tag("interior_rings");
+
+		// Number of interior rings.
+		const unsigned int num_interior_rings = number_of_interior_rings();
+		scribe.save(TRANSCRIBE_SOURCE, num_interior_rings, interior_rings_tag.sequence_size());
+
+		// Interior rings.
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			const std::vector<PointOnSphere> interior_vertices_(
+					interior_ring_vertex_begin(interior_ring_index),
+					interior_ring_vertex_end(interior_ring_index));
+			scribe.save(TRANSCRIBE_SOURCE, interior_vertices_, interior_rings_tag[interior_ring_index]);
+		}
+	}
+	else // loading
+	{
+		// Exterior ring.
+		std::vector<PointOnSphere> exterior_ring_vertices_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, exterior_ring_vertices_, "exterior_ring"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		const GPlatesScribe::ObjectTag interior_rings_tag("interior_rings");
+
+		// Number of interior rings.
+		unsigned int num_interior_rings;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, num_interior_rings, interior_rings_tag.sequence_size()))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (num_interior_rings > 0)
+		{
+			// Interior rings.
+			std::vector<std::vector<PointOnSphere>> interior_rings;
+			interior_rings.resize(num_interior_rings);
+
+			for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+			{
+				if (!scribe.transcribe(TRANSCRIBE_SOURCE, interior_rings[interior_ring_index], interior_rings_tag[interior_ring_index]))
+				{
+					return scribe.get_transcribe_result();
+				}
+			}
+
+			// Add the exterior and interior rings (as great circle arc segments).
+			generate_rings_and_swap(
+					*this,
+					exterior_ring_vertices_.begin(), exterior_ring_vertices_.end(),
+					interior_rings.begin(), interior_rings.end());
+		}
+		else // num_interior_rings == 0 ...
+		{
+			// Add the exterior ring only (as great circle arc segments).
+			generate_rings_and_swap(
+					*this,
+					exterior_ring_vertices_.begin(), exterior_ring_vertices_.end());
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GeometryOnSphere, PolygonOnSphere>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 const GPlatesMaths::GreatCircleArc &
 GPlatesMaths::PolygonOnSphere::ConstIterator::dereference() const
 {
@@ -1096,6 +1262,44 @@ GPlatesMaths::tessellate(
 			tessellated_exterior_ring,
 			tessellated_interior_rings.begin(),
 			tessellated_interior_rings.end());
+}
+
+
+void
+GPlatesMaths::uniformly_spaced_points(
+		std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+		const PolygonOnSphere &polygon,
+		const double &uniform_point_spacing,
+		const double &first_uniform_point_spacing,
+		boost::optional<
+				std::vector<std::pair<unsigned int/*segment index*/, double/*segment interpolation*/>> &
+			> segment_informations)
+{
+	// Generate uniform points for the exterior ring.
+	uniformly_spaced_points_in_ring(
+			uniform_points,
+			polygon.exterior_ring_begin(),
+			polygon.exterior_ring_end(),
+			uniform_point_spacing,
+			first_uniform_point_spacing,
+			segment_informations);
+
+	// Generate uniform points for each interior ring (if any).
+	//
+	// These just get appended to the uniform points from the exterior ring.
+	unsigned int interior_ring_index = 0;
+	PolygonOnSphere::ring_sequence_const_iterator interior_rings_iter = polygon.interior_rings_begin();
+	PolygonOnSphere::ring_sequence_const_iterator interior_rings_end = polygon.interior_rings_end();
+	for ( ; interior_rings_iter != interior_rings_end; ++interior_rings_iter, ++interior_ring_index)
+	{
+		uniformly_spaced_points_in_ring(
+				uniform_points,
+				interior_rings_iter->begin(),
+				interior_rings_iter->end(),
+				uniform_point_spacing,
+				first_uniform_point_spacing,
+				segment_informations);
+	}
 }
 
 

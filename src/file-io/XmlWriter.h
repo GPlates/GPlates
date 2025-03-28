@@ -215,9 +215,10 @@ namespace GPlatesFileIO
 				double val2);
 
 
+		template <typename IntegerType>
 		void
 		writeInteger(
-				const int &val) {
+				const IntegerType &val) {
 			d_writer.writeCharacters(QString::number(val));
 		}
 

@@ -298,12 +298,7 @@ GPlatesViewOperations::MovePoleOperation::test_proximity_to_pole_on_map(
 	}
 
 	// Find the pole location in map *scene* coordinates.
-	double pole_on_scene_x, pole_on_scene_y;
-	map_projection.forward_transform(
-			d_move_pole_widget.get_pole().get(),
-			pole_on_scene_x,
-			pole_on_scene_y);
-	const QPointF pole_on_scene(pole_on_scene_x, pole_on_scene_y);
+	const QPointF pole_on_scene = map_projection.forward_transform(d_move_pole_widget.get_pole().get());
 
 	// Calculate distance between pole and point in scene coordinates.
 	const QPointF difference = point_on_scene - pole_on_scene;

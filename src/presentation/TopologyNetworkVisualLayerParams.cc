@@ -305,7 +305,9 @@ GPlatesPresentation::transcribe(
 	//          So don't change the string ids even if the enum name changes.
 	static const GPlatesScribe::EnumValue enum_values[] =
 	{
-		GPlatesScribe::EnumValue("DRAW_BOUNDARY", TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY),
+		// Note: Changed enum from TRIANGULATION_DRAW_BOUNDARY to TRIANGULATION_DRAW_NONE,
+		//       but we keep the string id "DRAW_BOUNDARY" for compatibility...
+		GPlatesScribe::EnumValue("DRAW_BOUNDARY", TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_NONE),
 		GPlatesScribe::EnumValue("DRAW_MESH", TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH),
 		GPlatesScribe::EnumValue("DRAW_FILL", TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL)
 	};

@@ -30,6 +30,10 @@
 #include "GpmlMeasure.h"
 
 #include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeQualifiedXmlName.h"
+#include "model/TranscribeStringContentTypeGenerator.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -63,3 +67,68 @@ GPlatesPropertyValues::GpmlMeasure::print_to(
 	return os << get_current_revision<Revision>().quantity;
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlMeasure::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlMeasure> &gpml_hot_spot_trail_mark)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_hot_spot_trail_mark->get_quantity(), "quantity");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_hot_spot_trail_mark->get_quantity_xml_attributes(), "quantity_xml_attributes");
+	}
+	else // loading
+	{
+		double quantity_;
+		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> quantity_xml_attributes_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, quantity_, "quantity") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, quantity_xml_attributes_, "quantity_xml_attributes"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gpml_hot_spot_trail_mark.construct_object(quantity_, quantity_xml_attributes_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlMeasure::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_quantity(), "quantity");
+			scribe.save(TRANSCRIBE_SOURCE, get_quantity_xml_attributes(), "quantity_xml_attributes");
+		}
+		else // loading
+		{
+			double quantity_;
+			std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> quantity_xml_attributes_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, quantity_, "quantity") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, quantity_xml_attributes_, "quantity_xml_attributes"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_quantity(quantity_);
+			set_quantity_xml_attributes(quantity_xml_attributes_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlMeasure>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

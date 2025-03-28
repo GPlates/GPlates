@@ -79,6 +79,7 @@
 #include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedStrainMarkerSymbol.h"
 #include "view-operations/RenderedString.h"
+#include "view-operations/RenderedSubductionTeethPolyline.h"
 #include "view-operations/RenderedTangentialArrow.h"
 #include "view-operations/RenderedTriangleSymbol.h"
 
@@ -99,6 +100,14 @@ namespace
 	const double SMALL_CIRCLE_ANGULAR_INCREMENT = GPlatesMaths::convert_deg_to_rad(1);
 
 	const double TWO_PI = 2. * GPlatesMaths::PI;
+
+	/**
+	 * Max arrowhead size for arrowed polylines (in world space).
+	 *
+	 * Ensures the arrowheads don't get too big when the globe is small in the viewport resulting
+	 * in the vertices of polyline being close together (and causing arrowheads, at each vertex, to clump).
+	 */
+	const double MAX_ARROWED_POLYLINE_ARROWHEAD_SIZE = 0.005;
 
 	const double ARROWHEAD_BASE_HEIGHT_RATIO = 0.5;
 	const double COSINE_ARROWHEAD_BASE_HEIGHT_RATIO = std::cos(std::atan(ARROWHEAD_BASE_HEIGHT_RATIO));
@@ -127,6 +136,7 @@ const float GPlatesGui::GlobeRenderedGeometryLayerPainter::LINE_WIDTH_ADJUSTMENT
 GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const double &inverse_viewport_zoom_factor,
+		const double &device_independent_pixel_to_world_space_ratio,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme,
 		PaintRegionType paint_region,
@@ -135,6 +145,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 		bool improve_performance_reduce_quality_hint) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
+	d_device_independent_pixel_to_world_space_ratio(device_independent_pixel_to_world_space_ratio),
 	d_visibility_tester(visibility_tester),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
@@ -471,6 +482,104 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_polyline_
 			vertex_colours.begin(),
 			vertex_colours.end(),
 			stream);
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_subduction_teeth_polyline(
+		const GPlatesViewOperations::RenderedSubductionTeethPolyline &rendered_subduction_teeth_polyline)
+{
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_subduction_teeth_polyline.get_colour());
+	if (!colour)
+	{
+		return;
+	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline = rendered_subduction_teeth_polyline.get_polyline_on_sphere();
+
+	// Get the stream for lines of the current line width.
+	const float line_width = rendered_subduction_teeth_polyline.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+	stream_primitives_type &lines_stream = d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+	// Paint the polyline.
+	paint_great_circle_arcs(
+			polyline->begin(),
+			polyline->end(),
+			rgba8_colour,
+			lines_stream);
+
+
+	const double teeth_width = d_device_independent_pixel_to_world_space_ratio * d_scale * rendered_subduction_teeth_polyline.get_teeth_width_in_pixels();
+	const double teeth_spacing = teeth_width * rendered_subduction_teeth_polyline.get_teeth_spacing_to_width_ratio();
+	const double teeth_height = teeth_width * rendered_subduction_teeth_polyline.get_teeth_height_to_width_ratio();
+	// Wide lines push the teeth further from the centre of the line by half the line's width
+	// (reduced by half a pixel since the line is typically anti-aliased, so we don't want a tiny gap between the line and teeth).
+	const double teeth_offset = (0.5 * line_width - 0.5) * d_device_independent_pixel_to_world_space_ratio;
+	// If overriding plate is on the right side then need to invert great circle arc normal (which is on the left).
+	const double overriding_normal_factor =
+			(rendered_subduction_teeth_polyline.get_subduction_polarity() == GPlatesViewOperations::RenderedSubductionTeethPolyline::SubductionPolarity::LEFT)
+			? 1.0
+			: -1.0;
+
+	// Get the stream for triangles (for the subduction teeth).
+	stream_primitives_type &teeth_stream = d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream();
+	stream_primitives_type::Triangles stream_teeth(teeth_stream);
+	stream_teeth.begin_triangles();
+
+	// Iterate over the segments of the polyline.
+	double arc_length_since_last_tooth = 0;
+	for (const auto &gca : *polyline)
+	{
+		if (gca.is_zero_length())
+		{
+			continue;
+		}
+
+		arc_length_since_last_tooth += gca.arc_length().dval();
+
+		// Paint the teeth at uniform spacings along the polyline.
+		while (arc_length_since_last_tooth > teeth_spacing)
+		{
+			// Rotate the current segment's end point back along segment (towards the start point) to get the tooth position.
+			const GPlatesMaths::Rotation tooth_rotation = GPlatesMaths::Rotation::create(
+					gca.rotation_axis(),
+					-(arc_length_since_last_tooth - teeth_spacing));
+			const GPlatesMaths::Vector3D tooth_base_midpoint(tooth_rotation * gca.end_point().position_vector());
+
+			// Direction along the current segment's line.
+			const GPlatesMaths::UnitVector3D tooth_base_direction =
+					GPlatesMaths::cross(gca.rotation_axis(), tooth_base_midpoint).get_normalisation();
+
+			// Unit normal to the current segment.
+			const GPlatesMaths::Vector3D tooth_normal = overriding_normal_factor * gca.rotation_axis();
+
+			// Wide lines push the teeth further from the centre of the line.
+			const GPlatesMaths::Vector3D tooth_offset = teeth_offset * tooth_normal;
+
+			const GPlatesMaths::Vector3D tooth_triangle_vertices[3] =
+			{
+				tooth_base_midpoint + tooth_offset + teeth_height * tooth_normal,
+				tooth_base_midpoint + tooth_offset - 0.5 * teeth_width * tooth_base_direction,
+				tooth_base_midpoint + tooth_offset + 0.5 * teeth_width * tooth_base_direction,
+			};
+
+			stream_teeth.add_vertex(coloured_vertex_type(tooth_triangle_vertices[0], rgba8_colour));
+			stream_teeth.add_vertex(coloured_vertex_type(tooth_triangle_vertices[1], rgba8_colour));
+			stream_teeth.add_vertex(coloured_vertex_type(tooth_triangle_vertices[2], rgba8_colour));
+
+			arc_length_since_last_tooth -= teeth_spacing;
+		}
+	}
+
+	stream_teeth.end_triangles();
 }
 
 
@@ -1388,55 +1497,58 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 	// Convert colour from floats to bytes to use less vertex memory.
 	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
 
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-			rendered_arrowed_polyline.get_polyline_on_sphere();
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline = rendered_arrowed_polyline.get_polyline_on_sphere();
 
-	GPlatesMaths::PolylineOnSphere::const_iterator 
-			polyline_points_iter = polyline->begin(),
-			polyline_points_end = polyline->end();
-	for (; polyline_points_iter != polyline_points_end ; ++polyline_points_iter)
-	{	
-		const GPlatesMaths::GreatCircleArc &gca = *polyline_points_iter;
+	//
+	// Paint flat triangles tangential to the globe for the arrowheads.
+	//
+	// A triangle is actually 3D but it appears 2D in that it pretty much stays on the
+	// 2D (spherical) surface of the globe.
+	//
 
-		GPlatesMaths::real_t arrowhead_size =
-				d_inverse_zoom_factor * rendered_arrowed_polyline.get_arrowhead_projected_size();
-		if (arrowhead_size > rendered_arrowed_polyline.get_max_arrowhead_size())
+	GPlatesMaths::real_t arrowhead_size = d_device_independent_pixel_to_world_space_ratio * d_scale * rendered_arrowed_polyline.get_arrowhead_size_in_pixels();
+	if (arrowhead_size.dval() > MAX_ARROWED_POLYLINE_ARROWHEAD_SIZE)
+	{
+		arrowhead_size = MAX_ARROWED_POLYLINE_ARROWHEAD_SIZE;
+	}
+
+	// Get the stream for triangles (for the arrowheads).
+	stream_primitives_type &triangles_stream = d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream();
+
+	for (const auto &gca : *polyline)
+	{
+		if (gca.is_zero_length())
 		{
-			arrowhead_size = rendered_arrowed_polyline.get_max_arrowhead_size();
+			continue;
 		}
 
 		// For the direction of the arrow, we really want the tangent to the curve at
 		// the end of the curve. The curve will ultimately be a small circle arc; the 
 		// current implementation uses a great circle arc. 
-		if (!gca.is_zero_length())
-		{
-			const GPlatesMaths::Vector3D tangent_direction =
-					GPlatesMaths::cross(
-							gca.rotation_axis(),
-							gca.end_point().position_vector());
-			const GPlatesMaths::UnitVector3D arrowline_unit_vector(tangent_direction);
+		const GPlatesMaths::UnitVector3D &apex = gca.end_point().position_vector();
+		const GPlatesMaths::Vector3D tangent_direction = GPlatesMaths::cross(gca.rotation_axis(), apex);
+		const GPlatesMaths::UnitVector3D arrowline_unit_vector(tangent_direction);
 
-			paint_arrow_head_2D(
-					gca.end_point().position_vector(),
-					arrowline_unit_vector,
-					arrowhead_size,
-					rgba8_colour,
-					d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream());
-		}
+		paint_arrow_head_2D(
+				apex,
+				arrowline_unit_vector,
+				arrowhead_size,
+				rgba8_colour,
+				triangles_stream);
 	}
 
-	const float line_width =
-		rendered_arrowed_polyline.get_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+	//
+	// Paint the line segments of the polyline.
+	//
 
-	stream_primitives_type &lines_stream =
-		d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
-
+	const float line_width = rendered_arrowed_polyline.get_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+	stream_primitives_type &lines_stream = d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
 	paint_great_circle_arcs(
-		polyline->begin(),
-		polyline->end(),
-		rgba8_colour,
-		lines_stream);
+			polyline->begin(),
+			polyline->end(),
+			rgba8_colour,
+			lines_stream);
 }
 
 

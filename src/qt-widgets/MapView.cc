@@ -65,19 +65,37 @@ namespace
 
 
 	/**
+	 * Calculate the scale factor to map one unit in (post projection) map space coordinates to device-independent pixels.
+	 */
+	double
+	calc_world_transform_scale_factor(
+			const GPlatesGui::MapTransform &map_transform,
+			int paint_device_width_in_device_independent_pixels,
+			int paint_device_height_in_device_independent_pixels,
+			const double &zoom_factor)
+	{
+		static const double FRAMING_RATIO = 1.07;
+		return map_transform.get_zoom_factor() * paint_device_width_in_device_independent_pixels /
+				(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X -
+				 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) / FRAMING_RATIO;
+	}
+
+
+	/**
 	 * Given the scene view's dimensions (eg, canvas dimensions) generate a world transform
 	 * needed to display the scene.
 	 */
 	QTransform
 	calc_world_transform(
 			const GPlatesGui::MapTransform &map_transform,
-			unsigned int scene_view_width,
-			unsigned int scene_view_height)
+			unsigned int paint_device_width_in_device_independent_pixels,
+			unsigned int paint_device_height_in_device_independent_pixels)
 	{
-		static const double FRAMING_RATIO = 1.07;
-		const double scale_factor = map_transform.get_zoom_factor() * scene_view_width /
-			(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X -
-			 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) / FRAMING_RATIO;
+		const double scale_factor = calc_world_transform_scale_factor(
+				map_transform,
+				paint_device_width_in_device_independent_pixels,
+				paint_device_height_in_device_independent_pixels,
+				map_transform.get_zoom_factor());
 
 		QTransform m;
 		// Invert 'y' coordinate to transform from OpenGL frame to Qt frame.
@@ -93,8 +111,8 @@ namespace
 		const GPlatesGui::MapTransform::point_type &centre = map_transform.get_centre_of_viewport();
 		double transformed_centre_x, transformed_centre_y;
 		m.map(centre.x(), centre.y(), &transformed_centre_x, &transformed_centre_y);
-		double offset_x = static_cast<double>(scene_view_width) / 2.0 - transformed_centre_x;
-		double offset_y = static_cast<double>(scene_view_height) / 2.0 - transformed_centre_y;
+		double offset_x = static_cast<double>(paint_device_width_in_device_independent_pixels) / 2.0 - transformed_centre_x;
+		double offset_y = static_cast<double>(paint_device_height_in_device_independent_pixels) / 2.0 - transformed_centre_y;
 
 		return QTransform(
 				m.m11(), m.m12(), m.m21(), m.m22(),
@@ -397,9 +415,6 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 
 	QPointF canvas_pos = mapToScene(d_mouse_pointer_screen_pos);
 
-	double x_mouse_pos = canvas_pos.x();
-	double y_mouse_pos = canvas_pos.y();
-
 	// The proj library returns valid longitudes even when the screen coordinates are 
 	// far to the right, or left, of the map itself. To determine if the mouse position is off
 	// the map, I'm transforming the returned lat-lon back into screen coordinates. 
@@ -407,7 +422,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 	// I'm going to use the longitude value for comparison. 
 
 	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
-	double screen_x = x_mouse_pos;
+	double screen_x = canvas_pos.x();
 
 	// I haven't put any great deal of thought into a suitable tolerance here. 
 	double tolerance = 1.;
@@ -415,7 +430,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 	boost::optional<GPlatesMaths::LatLonPoint> llp;
 
 
-	llp = d_map_canvas_ptr->map().projection().inverse_transform(x_mouse_pos,y_mouse_pos);
+	llp = d_map_canvas_ptr->map().projection().inverse_transform(canvas_pos);
 
 	if (!llp)
 	{
@@ -492,9 +507,26 @@ GPlatesQtWidgets::MapView::get_viewport_size() const
 }
 
 
+double
+GPlatesQtWidgets::MapView::get_device_independent_pixel_to_map_space_ratio(
+		int paint_device_width_in_device_independent_pixels,
+		int paint_device_height_in_device_independent_pixels,
+		const double &zoom_factor)
+{
+	// The size of one device-independent pixel in map space coordinates
+	// (inverse of scale factor which maps one unit in map space coordinates to device-independent pixels).
+	return 1.0 / calc_world_transform_scale_factor(
+			d_map_transform,
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels,
+			zoom_factor);
+}
+
+
 QImage
 GPlatesQtWidgets::MapView::render_to_qimage(
-		const QSize &image_size_in_device_independent_pixels)
+		const QSize &image_size_in_device_independent_pixels,
+		const GPlatesGui::Colour &image_clear_colour)
 {
 	// Calculate the world matrix to position the scene appropriately according to the image dimensions.
 	//
@@ -505,7 +537,8 @@ GPlatesQtWidgets::MapView::render_to_qimage(
 			image_size_in_device_independent_pixels.width(),
 			image_size_in_device_independent_pixels.height());
 
-	return map_canvas().render_to_qimage(*d_gl_widget_ptr, world_matrix, image_size_in_device_independent_pixels);
+	return map_canvas().render_to_qimage(
+			*d_gl_widget_ptr, world_matrix, image_size_in_device_independent_pixels, image_clear_colour);
 }
 
 
@@ -569,17 +602,15 @@ boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::MapView::camera_llp() const
 {
 	const GPlatesGui::MapTransform::point_type &centre_of_viewport = d_map_transform.get_centre_of_viewport();
-	double x_pos = centre_of_viewport.x();
-	double y_pos = centre_of_viewport.y();
 
 	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
-	double screen_x = x_pos;
+	double screen_x = centre_of_viewport.x();
 
 	// Tolerance for comparing forward transformed longitude with screen longitude. 
 	double tolerance = 1.;
 
 	boost::optional<GPlatesMaths::LatLonPoint> llp =
-		d_map_canvas_ptr->map().projection().inverse_transform(x_pos,y_pos);
+		d_map_canvas_ptr->map().projection().inverse_transform(centre_of_viewport);
 		
 	if (!llp)
 	{
@@ -762,11 +793,9 @@ GPlatesQtWidgets::MapView::current_proximity_inclusion_threshold(
 #else
 	threshold_point.setY(scene_mouse_position.y());
 #endif
-	double x_ = threshold_point.x();
-	double y_ = threshold_point.y();
 
 	boost::optional<GPlatesMaths::LatLonPoint> llp = 
-		map_canvas().map().projection().inverse_transform(x_, y_);
+		map_canvas().map().projection().inverse_transform(threshold_point);
 
 	if (!llp)
 	{

@@ -23,6 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "maths/ScribeExportMaths.h"
+
+#include "model/ScribeExportModel.h"
+
+#include "property-values/ScribeExportPropertyValues.h"
+
 #include "scribe/ScribeExportExternal.h"
 #include "scribe/ScribeExportRegistration.h"
 
@@ -33,6 +39,9 @@
  * See "ScribeExportRegistration.h" for more details.
  */
 #define SCRIBE_EXPORT_PYGPLATES \
+		SCRIBE_EXPORT_MATHS \
+		SCRIBE_EXPORT_MODEL \
+		SCRIBE_EXPORT_PROPERTY_VALUES \
 		SCRIBE_EXPORT_EXTERNAL
 
 

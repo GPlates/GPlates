@@ -36,6 +36,8 @@ set(srcs
     PyFeatureCollectionFileFormatRegistry.h
     PyFeatureCollectionFunctionArgument.cc
     PyFeatureCollectionFunctionArgument.h
+    PyFilePathFunctionArgument.cc
+    PyFilePathFunctionArgument.h
     PyFiniteRotation.cc
     PyGeometriesOnSphere.cc
     PyGeometriesOnSphere.h
@@ -50,6 +52,10 @@ set(srcs
     PyInterpolationException.h
     PyLatLonPoint.cc
     PyLocalCartesian.cc
+    PyNetRotation.cc
+    PyNetRotation.h
+    PyNetworkTriangulation.cc
+    PyNetworkTriangulation.h
     PyOldFeature.cc
     PyOldFeature.h
     PyOldFeatureCollection.cc
@@ -65,10 +71,14 @@ set(srcs
     PyQualifiedXmlNames.h
     PyReal.cc
     PyReconstruct.cc
+    PyReconstructModel.cc
+    PyReconstructModel.h
     PyReconstructionGeometries.cc
     PyReconstructionGeometries.h
     PyReconstructionTree.cc
     PyReconstructionTree.h
+    PyReconstructSnapshot.cc
+    PyReconstructSnapshot.h
     PyResolveTopologies.cc
     PyResolveTopologyParameters.h
     PyResolveTopologyParameters.cc
@@ -76,6 +86,7 @@ set(srcs
     PyRevisionedVector.h
     PyRotationModel.cc
     PyRotationModel.h
+    PyStrain.cc
     PyStrings.cc
     PythonConverterUtils.h
     PythonExecutionMonitor.cc
@@ -89,6 +100,8 @@ set(srcs
     PythonInterpreterLocker.h
     PythonInterpreterUnlocker.cc
     PythonInterpreterUnlocker.h
+    PythonPickle.cc
+    PythonPickle.h
     PythonRunner.cc
     PythonRunner.h
     PythonUtils.cc

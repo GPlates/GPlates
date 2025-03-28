@@ -34,6 +34,7 @@
 
 #include "DeformationStrain.h"
 #include "DeformationStrainRate.h"
+#include "PlateVelocityUtils.h"
 #include "ReconstructionTreeCreator.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
@@ -41,6 +42,7 @@
 #include "TopologyPointLocation.h"
 #include "TopologyReconstruct.h"
 #include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -59,6 +61,7 @@
 
 #include "property-values/GeoTimeInstant.h"
 
+#include "utils/Earth.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -185,7 +188,7 @@ namespace GPlatesAppLogic
 			// Keep track of the stage rotations of resolved boundaries as we encounter them.
 			// This is an optimisation that saves a few seconds (for a large number of points in geometry)
 			// since many points will be inside the same resolved boundary.
-			mutable plate_id_to_stage_rotation_map_type d_velocity_stage_rotation_map;
+			mutable boost::optional<PlateVelocityUtils::StageRotationCalculator> d_velocity_stage_rotation_calculator;
 			// Only cache stage rotations for a specific reconstruction time.
 			// We clear it when we move onto a different reconstruction time.
 			mutable GPlatesMaths::real_t d_velocity_stage_rotation_time;
@@ -217,7 +220,7 @@ namespace GPlatesAppLogic
 			 *
 			 * This avoids re-calculating the stage rotation for the same plate ID.
 			 */
-			const GPlatesMaths::FiniteRotation &
+			GPlatesMaths::FiniteRotation
 			get_or_create_velocity_stage_rotation(
 					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 					const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -467,8 +470,29 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
 					VelocityDeltaTime::Type velocity_delta_time_type,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points = boost::none,
 					boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations = boost::none) const;
+
+			/**
+			 * Same as @a get_velocities but includes inactive points (which have null velocity).
+			 *
+			 * The sizes of @a velocities, @a domain_points and @a domain_point_locations are the same and match the number
+			 * of original geometry points.
+			 *
+			 * Returns false if @a is_valid returns false.
+			 */
+			bool
+			get_all_velocities(
+					std::vector< boost::optional<GPlatesMaths::Vector3D> > &velocities,
+					const double &reconstruction_time,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
+					boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points = boost::none,
+					boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations = boost::none) const;
 
 
 			//
@@ -1017,21 +1041,6 @@ namespace GPlatesAppLogic
 					plate_id_to_stage_rotation_map_type &stage_rotation_map) const;
 
 			/**
-			 * Similar to @a get_or_create_stage_rotation except returns a *forward* rotation
-			 * used for velocity calculations.
-			 *
-			 * Note that the stage rotation is going forward in time (old to young).
-			 */
-			const GPlatesMaths::FiniteRotation &
-			get_or_create_velocity_stage_rotation(
-					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-					const ReconstructionTreeCreator &reconstruction_tree_creator,
-					const double &reconstruction_time,
-					const double &velocity_delta_time,
-					VelocityDeltaTime::Type velocity_delta_time_type,
-					plate_id_to_stage_rotation_map_type &stage_rotation_map) const;
-
-			/**
 			 * Rigidly rotates the internal geometry points from present day to @a reconstruction_time, or
 			 * vice versa if @a reverse_reconstruct is true.
 			 *
@@ -1079,12 +1088,14 @@ namespace GPlatesAppLogic
 			void
 			calc_velocities(
 					const GeometrySample::non_null_ptr_type &domain_geometry_sample,
-					std::vector<GPlatesMaths::Vector3D> &velocities,
+					std::vector< boost::optional<GPlatesMaths::Vector3D> > &velocities,
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
 					VelocityDeltaTime::Type velocity_delta_time_type,
-					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points,
-					boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations) const;
+					VelocityUnits::Value velocity_units,
+					const double &earth_radius_in_kms,
+					boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points,
+					boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations) const;
 
 			/**
 			 * Returns the geometry sample at the specified time (which can be any time).

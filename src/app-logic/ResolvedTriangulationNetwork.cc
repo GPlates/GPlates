@@ -166,6 +166,8 @@ namespace GPlatesAppLogic
 
 	/**
 	 * Calculate the velocity at a delaunay vertex.
+	 *
+	 * Note: Velocity units are cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
 	 */
 	GPlatesMaths::Vector3D
 	calc_delaunay_vertex_velocity(
@@ -212,56 +214,75 @@ namespace GPlatesAppLogic
 
 
 GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::ResolvedTriangulation::Network::get_boundary_polygon_with_rigid_block_holes() const
+GPlatesAppLogic::ResolvedTriangulation::Network::get_boundary_polygon(
+	bool include_rigid_blocks_as_interior_holes) const
 {
-	// Create polygon if not already done so.
-	if (!d_network_boundary_polygon_with_rigid_block_holes)
+	if (include_rigid_blocks_as_interior_holes)
 	{
-		// Create a donut polygon version of the network boundary that includes rigid blocks as
-		// interior holes if there are any.
-		if (d_rigid_blocks.empty())
+		// Create polygon (with interior rigid holes) if not already done so.
+		if (!d_network_boundary_polygon_with_rigid_block_holes)
 		{
-			// No interior holes - so is the same as the boundary polygon without holes.
-			d_network_boundary_polygon_with_rigid_block_holes = d_network_boundary_polygon;
+			create_boundary_polygon_with_rigid_block_holes();
 		}
-		else
+
+		return d_network_boundary_polygon_with_rigid_block_holes.get();
+	}
+	else
+	{
+		return d_network_boundary_polygon;
+	}
+}
+
+
+void
+GPlatesAppLogic::ResolvedTriangulation::Network::create_boundary_polygon_with_rigid_block_holes() const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_network_boundary_polygon_with_rigid_block_holes,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Create a donut polygon version of the network boundary that includes rigid blocks as
+	// interior holes if there are any.
+	if (d_rigid_blocks.empty())
+	{
+		// No interior holes - so is the same as the boundary polygon without holes.
+		d_network_boundary_polygon_with_rigid_block_holes = d_network_boundary_polygon;
+	}
+	else
+	{
+		std::vector< std::vector<GPlatesMaths::PointOnSphere> > rigid_block_interior_rings;
+		rigid_block_interior_rings.reserve(d_rigid_blocks.size());
+
+		// Iterate over the interior rigid blocks.
+		rigid_block_seq_type::const_iterator rigid_blocks_iter = d_rigid_blocks.begin();
+		rigid_block_seq_type::const_iterator rigid_blocks_end = d_rigid_blocks.end();
+		for ( ; rigid_blocks_iter != rigid_blocks_end; ++rigid_blocks_iter)
 		{
-			std::vector< std::vector<GPlatesMaths::PointOnSphere> > rigid_block_interior_rings;
-			rigid_block_interior_rings.reserve(d_rigid_blocks.size());
+			const RigidBlock &rigid_block = *rigid_blocks_iter;
 
-			// Iterate over the interior rigid blocks.
-			rigid_block_seq_type::const_iterator rigid_blocks_iter = d_rigid_blocks.begin();
-			rigid_block_seq_type::const_iterator rigid_blocks_end = d_rigid_blocks.end();
-			for ( ; rigid_blocks_iter != rigid_blocks_end; ++rigid_blocks_iter)
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> rigid_block_interior_polygon =
+					GeometryUtils::get_polygon_on_sphere(
+							*rigid_block.get_reconstructed_feature_geometry()->reconstructed_geometry());
+			if (!rigid_block_interior_polygon)
 			{
-				const RigidBlock &rigid_block = *rigid_blocks_iter;
-
-				boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> rigid_block_interior_polygon =
-						GeometryUtils::get_polygon_on_sphere(
-								*rigid_block.get_reconstructed_feature_geometry()->reconstructed_geometry());
-				if (!rigid_block_interior_polygon)
-				{
-					continue;
-				}
-
-				rigid_block_interior_rings.push_back(std::vector<GPlatesMaths::PointOnSphere>());
-				std::vector<GPlatesMaths::PointOnSphere> &rigid_block_interior_ring = rigid_block_interior_rings.back();
-				rigid_block_interior_ring.insert(
-						rigid_block_interior_ring.end(),
-						rigid_block_interior_polygon.get()->exterior_ring_vertex_begin(),
-						rigid_block_interior_polygon.get()->exterior_ring_vertex_end());
+				continue;
 			}
 
-			d_network_boundary_polygon_with_rigid_block_holes =
-					GPlatesMaths::PolygonOnSphere::create(
-							d_network_boundary_polygon->exterior_ring_vertex_begin(),
-							d_network_boundary_polygon->exterior_ring_vertex_end(),
-							rigid_block_interior_rings.begin(),
-							rigid_block_interior_rings.end());
+			rigid_block_interior_rings.push_back(std::vector<GPlatesMaths::PointOnSphere>());
+			std::vector<GPlatesMaths::PointOnSphere> &rigid_block_interior_ring = rigid_block_interior_rings.back();
+			rigid_block_interior_ring.insert(
+					rigid_block_interior_ring.end(),
+					rigid_block_interior_polygon.get()->exterior_ring_vertex_begin(),
+					rigid_block_interior_polygon.get()->exterior_ring_vertex_end());
 		}
-	}
 
-	return d_network_boundary_polygon_with_rigid_block_holes.get();
+		d_network_boundary_polygon_with_rigid_block_holes =
+				GPlatesMaths::PolygonOnSphere::create(
+						d_network_boundary_polygon->exterior_ring_vertex_begin(),
+						d_network_boundary_polygon->exterior_ring_vertex_end(),
+						rigid_block_interior_rings.begin(),
+						rigid_block_interior_rings.end());
+	}
 }
 
 
@@ -420,39 +441,56 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calc_delaunay_barycentric_coord
 }
 
 
-boost::optional<GPlatesAppLogic::ResolvedTriangulation::DeformationInfo>
+boost::optional<
+		std::pair<GPlatesAppLogic::ResolvedTriangulation::DeformationInfo,
+		GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
 GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformation(
 		const GPlatesMaths::PointOnSphere &point,
 		boost::optional<PointLocation> point_location) const
 {
-	// If already know the location of point.
-	if (point_location)
-	{
-		boost::optional<Delaunay_2::Face_handle> delaunay_face = point_location->located_in_deforming_region();
-		if (!delaunay_face)
-		{
-			return boost::none;
-		}
-
-		// Return zero strain rates for interior rigid blocks since no deformation there.
-		return calculate_deformation_in_deforming_region(point, delaunay_face.get());
-	}
-
-	// We always classify points using 3D on-sphere tests.
-	// This makes the boundary line up much better with adjacent topological polygons and also is a
-	// faster test and can also prevent creation of triangulation if the point is outside the network.
-	if (!is_point_in_network(point))
+	if (!point_location &&
+		!is_point_in_network(point))
 	{
 		return boost::none;
 	}
 
-	if (is_point_in_a_rigid_block(point))
+	// See if the point is inside any interior rigid blocks.
+	boost::optional<const RigidBlock &> rigid_block;
+	if (point_location)
+	{
+		rigid_block = point_location->located_in_rigid_block();
+	}
+	else
+	{
+		rigid_block = is_point_in_a_rigid_block(point);
+	}
+	if (rigid_block)
 	{
 		// Return zero strain rates for interior rigid blocks since no deformation there.
-		return DeformationInfo();
+		return std::make_pair(DeformationInfo(), PointLocation(rigid_block.get()));
 	}
 
-	return calculate_deformation_in_deforming_region(point);
+	// If we get here then the point must be in the deforming region.
+
+	// Project into the 2D triangulation space.
+	const Delaunay_2::Point point_2 = d_projection.project_from_point_on_sphere<Delaunay_2::Point>(point);
+
+	Delaunay_2::Face_handle delaunay_face;
+	if (point_location)
+	{
+		delaunay_face = point_location->located_in_deforming_region().get();
+	}
+	else
+	{
+		// Find the delaunay face containing the point.
+		// We need to return a network position (delaunay face) and the natural neighbour interpolation
+		// doesn't provide that. However it can use our delaunay face to find the coordinates faster.
+		delaunay_face = get_delaunay_face_in_deforming_region(point_2);
+	}
+
+	return std::make_pair(
+			calculate_deformation_in_deforming_region(point_2, delaunay_face),
+			PointLocation(delaunay_face));
 }
 
 
@@ -857,6 +895,8 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 		const GPlatesMaths::PointOnSphere &point,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms,
 		boost::optional<PointLocation> point_location) const
 {
 	if (!point_location &&
@@ -882,7 +922,9 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 						point,
 						rigid_block.get(),
 						velocity_delta_time,
-						velocity_delta_time_type);
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms);
 
 		return std::make_pair(rigid_block_velocity, PointLocation(rigid_block.get()));
 	}
@@ -917,7 +959,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 
 	// Interpolate the 3D velocity vectors in the triangulation using the interpolation coordinates.
 	// Velocity 3D vectors must be interpolated (cannot interpolate velocity colat/lon).
-	const GPlatesMaths::Vector3D interpolated_velocity =
+	GPlatesMaths::Vector3D interpolated_velocity =
 			linear_interpolation_2(
 					natural_neighbor_coordinates,
 					CachedDataAccess<DelaunayVertexHandleToVelocityMapType>(
@@ -927,6 +969,19 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 									boost::placeholders::_1,
 									velocity_delta_time,
 									velocity_delta_time_type)));
+
+	// Velocity has units cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
+	//
+	// Convert to kms/myr if requested.
+	if (velocity_units == VelocityUnits::KMS_PER_MY)
+	{
+		interpolated_velocity = 10/*cms/yr -> kms/myr*/ * interpolated_velocity;
+	}
+	// Convert from GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS to requested Earth radius (if necessary).
+	if (!GPlatesMaths::are_almost_exactly_equal(earth_radius_in_kms, GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS))
+	{
+		interpolated_velocity = (earth_radius_in_kms / GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) * interpolated_velocity;
+	}
 
 	return std::make_pair(interpolated_velocity, PointLocation(delaunay_face));
 }
@@ -1053,12 +1108,6 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 		// The next insert vertex will start searching at the face of the last inserted vertex.
 		insert_start_face = vertex_handle->face();
 	}
-
-	//
-	// Note that we don't need to initialise the faces.
-	//
-	// They get initialised when/if they are first accessed.
-	//
 
 	// If this deforming network represents a rift then adaptively refine the
 	// Delaunay triangulation by inserting new vertices along subdivided edges with
@@ -2380,7 +2429,9 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_rigid_block_velocity(
 		const GPlatesMaths::PointOnSphere &point,
 		const RigidBlock &rigid_block,
 		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type) const
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
 {
 	ReconstructedFeatureGeometry::non_null_ptr_type rigid_block_rfg =
 			rigid_block.get_reconstructed_feature_geometry();
@@ -2402,5 +2453,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_rigid_block_velocity(
 			rigid_block_rfg->get_reconstruction_tree_creator(),
 			rigid_block_rfg->get_reconstruction_time(),
 			velocity_delta_time,
-			velocity_delta_time_type);
+			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms);
 }

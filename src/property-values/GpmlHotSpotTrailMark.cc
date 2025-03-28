@@ -36,6 +36,8 @@
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
 
+#include "scribe/Scribe.h"
+
 
 namespace
 {
@@ -124,19 +126,33 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::trail_width()
 
 void
 GPlatesPropertyValues::GpmlHotSpotTrailMark::set_trail_width(
-		GpmlMeasure::non_null_ptr_type tw)
+		boost::optional<GpmlMeasure::non_null_ptr_type> tw)
 {
 	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
 	if (revision.trail_width)
 	{
-		revision.trail_width->change(revision_handler.get_model_transaction(), tw);
+		if (tw)
+		{
+			revision.trail_width->change(revision_handler.get_model_transaction(), tw.get());
+		}
+		else
+		{
+			revision.trail_width->detach(revision_handler.get_model_transaction());
+		}
 	}
 	else
 	{
-		revision.trail_width = GPlatesModel::RevisionedReference<GpmlMeasure>::attach(
-				revision_handler.get_model_transaction(), *this, tw);
+		if (tw)
+		{
+			revision.trail_width = GPlatesModel::RevisionedReference<GpmlMeasure>::attach(
+					revision_handler.get_model_transaction(), *this, tw.get());
+		}
+		else
+		{
+			// Nothing to do.
+		}
 	}
 
 	revision_handler.commit();
@@ -174,19 +190,33 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::measured_age()
 
 void
 GPlatesPropertyValues::GpmlHotSpotTrailMark::set_measured_age(
-		GmlTimeInstant::non_null_ptr_type ti)
+		boost::optional<GmlTimeInstant::non_null_ptr_type> ti)
 {
 	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
 	if (revision.measured_age)
 	{
-		revision.measured_age->change(revision_handler.get_model_transaction(), ti);
+		if (ti)
+		{
+			revision.measured_age->change(revision_handler.get_model_transaction(), ti.get());
+		}
+		else
+		{
+			revision.measured_age->detach(revision_handler.get_model_transaction());
+		}
 	}
 	else
 	{
-		revision.measured_age = GPlatesModel::RevisionedReference<GmlTimeInstant>::attach(
-				revision_handler.get_model_transaction(), *this, ti);
+		if (ti)
+		{
+			revision.measured_age = GPlatesModel::RevisionedReference<GmlTimeInstant>::attach(
+					revision_handler.get_model_transaction(), *this, ti.get());
+		}
+		else
+		{
+			// Nothing to do.
+		}
 	}
 
 	revision_handler.commit();
@@ -224,19 +254,33 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::measured_age_range()
 
 void
 GPlatesPropertyValues::GpmlHotSpotTrailMark::set_measured_age_range(
-		GmlTimePeriod::non_null_ptr_type tp)
+		boost::optional<GmlTimePeriod::non_null_ptr_type> tp)
 {
 	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
 	if (revision.measured_age_range)
 	{
-		revision.measured_age_range->change(revision_handler.get_model_transaction(), tp);
+		if (tp)
+		{
+			revision.measured_age_range->change(revision_handler.get_model_transaction(), tp.get());
+		}
+		else
+		{
+			revision.measured_age_range->detach(revision_handler.get_model_transaction());
+		}
 	}
 	else
 	{
-		revision.measured_age_range = GPlatesModel::RevisionedReference<GmlTimePeriod>::attach(
-				revision_handler.get_model_transaction(), *this, tp);
+		if (tp)
+		{
+			revision.measured_age_range = GPlatesModel::RevisionedReference<GmlTimePeriod>::attach(
+					revision_handler.get_model_transaction(), *this, tp.get());
+		}
+		else
+		{
+			// Nothing to do.
+		}
 	}
 
 	revision_handler.commit();
@@ -303,6 +347,103 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlHotSpotTrailMark::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlHotSpotTrailMark> &gpml_hot_spot_trail_mark)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_hot_spot_trail_mark->position(), "position");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_hot_spot_trail_mark->trail_width(), "trail_width");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_hot_spot_trail_mark->measured_age(), "measured_age");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_hot_spot_trail_mark->measured_age_range(), "measured_age_range");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GmlPoint::non_null_ptr_type> position_ =
+				scribe.load<GmlPoint::non_null_ptr_type>(TRANSCRIBE_SOURCE, "position");
+		if (!position_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		boost::optional<GpmlMeasure::non_null_ptr_type> trail_width_;
+		boost::optional<GmlTimeInstant::non_null_ptr_type> measured_age_;
+		boost::optional<GmlTimePeriod::non_null_ptr_type> measured_age_range_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, trail_width_, "trail_width") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, measured_age_, "measured_age") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, measured_age_range_, "measured_age_range"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_hot_spot_trail_mark.construct_object(
+				boost::ref(transaction),  // non-const ref
+				position_,
+				trail_width_,
+				measured_age_,
+				measured_age_range_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlHotSpotTrailMark::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, position(), "position");
+			scribe.save(TRANSCRIBE_SOURCE, trail_width(), "trail_width");
+			scribe.save(TRANSCRIBE_SOURCE, measured_age(), "measured_age");
+			scribe.save(TRANSCRIBE_SOURCE, measured_age_range(), "measured_age_range");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GmlPoint::non_null_ptr_type> position_ =
+					scribe.load<GmlPoint::non_null_ptr_type>(TRANSCRIBE_SOURCE, "position");
+			if (!position_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			boost::optional<GpmlMeasure::non_null_ptr_type> trail_width_;
+			boost::optional<GmlTimeInstant::non_null_ptr_type> measured_age_;
+			boost::optional<GmlTimePeriod::non_null_ptr_type> measured_age_range_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, trail_width_, "trail_width") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, measured_age_, "measured_age") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, measured_age_range_, "measured_age_range"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_position(position_);
+			set_trail_width(trail_width_);
+			set_measured_age(measured_age_);
+			set_measured_age_range(measured_age_range_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlHotSpotTrailMark>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

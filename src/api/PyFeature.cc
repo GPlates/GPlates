@@ -24,12 +24,14 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <iterator>
 #include <ostream>
 #include <set>
 #include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
+#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <QString>
@@ -42,6 +44,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructionTreeCreator.h"
@@ -74,6 +77,7 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalPolygon.h"
@@ -726,6 +730,141 @@ namespace GPlatesApi
 		}
 
 		/**
+		 * Extract the rift parameters from a tuple and set them on the specified network feature.
+		 */
+		void
+		set_rift_parameters_from_tuple(
+				GPlatesModel::FeatureHandle &network_feature_handle,
+				bp::object rift_parameters,
+				VerifyInformationModel::Value verify_information_model)
+		{
+			bp::extract<bp::tuple> extract_tuple(rift_parameters);
+			if (!extract_tuple.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a tuple for 'rift_parameters'");
+				bp::throw_error_already_set();
+			}
+
+			bp::tuple rift_parameters_tuple = extract_tuple();
+			const unsigned int num_rift_parameters = bp::len(rift_parameters_tuple);
+			if (!(num_rift_parameters >= 2 && num_rift_parameters <= 5))
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting between 2 and 5 parameters in 'rift_parameters' tuple");
+				bp::throw_error_already_set();
+			}
+
+			// Check left/right rift plate IDs (first and second parameters).
+			bp::extract<GPlatesModel::integer_plate_id_type> extract_rift_left_plate(rift_parameters[0]);
+			bp::extract<GPlatesModel::integer_plate_id_type> extract_rift_right_plate(rift_parameters[1]);
+			if (!extract_rift_left_plate.check() ||
+				!extract_rift_right_plate.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting int for rift left/right plate IDs in 'rift_parameters'");
+				bp::throw_error_already_set();
+			}
+
+			// Set left rift plate ID.
+			feature_handle_set_property(
+					network_feature_handle,
+					GPlatesModel::PropertyName::create_gpml("riftLeftPlate"),
+					bp::object(GPlatesPropertyValues::GpmlPlateId::create(extract_rift_left_plate())),
+					verify_information_model);
+
+			// Set right rift plate ID.
+			feature_handle_set_property(
+					network_feature_handle,
+					GPlatesModel::PropertyName::create_gpml("riftRightPlate"),
+					bp::object(GPlatesPropertyValues::GpmlPlateId::create(extract_rift_right_plate())),
+					verify_information_model);
+
+			//
+			// The remaining 3 parameters are optional.
+			//
+
+			if (num_rift_parameters >= 3)
+			{
+				// Rift exponential stretching constant (it's optional since user can specify None).
+				bp::object rift_exponential_stretching_constant_object = rift_parameters[2];
+				if (rift_exponential_stretching_constant_object != bp::object()/*Py_None*/)
+				{
+					bp::extract<double> extract_rift_exponential_stretching_constant(rift_exponential_stretching_constant_object);
+					if (!extract_rift_exponential_stretching_constant.check())
+					{
+						PyErr_SetString(PyExc_TypeError, "Expecting float for rift exponential stretching constant in 'rift_parameters'");
+						bp::throw_error_already_set();
+					}
+
+					feature_handle_set_property(
+							network_feature_handle,
+							GPlatesModel::PropertyName::create_gpml("riftExponentialStretchingConstant"),
+							bp::object(GPlatesPropertyValues::XsDouble::create(extract_rift_exponential_stretching_constant())),
+							verify_information_model);
+				}
+			}
+
+			if (num_rift_parameters >= 4)
+			{
+				// Rift strain rate resolution (it's optional since user can specify None).
+				bp::object rift_strain_rate_resolution_object = rift_parameters[3];
+				if (rift_strain_rate_resolution_object != bp::object()/*Py_None*/)
+				{
+					bp::extract<double> extract_rift_strain_rate_resolution(rift_strain_rate_resolution_object);
+					if (!extract_rift_strain_rate_resolution.check())
+					{
+						PyErr_SetString(PyExc_TypeError, "Expecting float for rift strain rate resolution in 'rift_parameters'");
+						bp::throw_error_already_set();
+					}
+
+					// Rift strain rate resolution must be positive.
+					const double rift_strain_rate_resolution = extract_rift_strain_rate_resolution();
+					if (rift_strain_rate_resolution <= 0)
+					{
+						PyErr_SetString(PyExc_ValueError, "rift strain rate resolution, in 'rift_parameters', must be positive");
+						bp::throw_error_already_set();
+					}
+
+					// Convert to log10 since feature property stores strain rate resolution as log10.
+					const double rift_strain_rate_resolution_log10 = std::log10(rift_strain_rate_resolution);
+
+					feature_handle_set_property(
+							network_feature_handle,
+							GPlatesModel::PropertyName::create_gpml("riftStrainRateResolutionLog10"),
+							bp::object(GPlatesPropertyValues::XsDouble::create(rift_strain_rate_resolution_log10)),
+							verify_information_model);
+				}
+			}
+
+			if (num_rift_parameters == 5)
+			{
+				// Rift edge length threshold degrees (it's optional since user can specify None).
+				bp::object rift_edge_length_threshold_degrees_object = rift_parameters[4];
+				if (rift_edge_length_threshold_degrees_object != bp::object()/*Py_None*/)
+				{
+					bp::extract<double> extract_rift_edge_length_threshold_degrees(rift_edge_length_threshold_degrees_object);
+					if (!extract_rift_edge_length_threshold_degrees.check())
+					{
+						PyErr_SetString(PyExc_TypeError, "Expecting float for rift edge length threshold in 'rift_parameters'");
+						bp::throw_error_already_set();
+					}
+
+					// Rift edge length threshold degrees must be positive.
+					const double rift_edge_length_threshold_degrees = extract_rift_edge_length_threshold_degrees();
+					if (rift_edge_length_threshold_degrees <= 0)
+					{
+						PyErr_SetString(PyExc_ValueError, "rift rift edge length threshold, in 'rift_parameters', must be positive");
+						bp::throw_error_already_set();
+					}
+
+					feature_handle_set_property(
+							network_feature_handle,
+							GPlatesModel::PropertyName::create_gpml("riftEdgeLengthThresholdDegrees"),
+							bp::object(GPlatesPropertyValues::XsDouble::create(rift_edge_length_threshold_degrees)),
+							verify_information_model);
+				}
+			}
+		}
+
+		/**
 		 * Get the reverse-reconstruct rotation model (and reconstruction and anchor plate id).
 		 */
 		std::pair<
@@ -1339,6 +1478,91 @@ namespace GPlatesApi
 		return cloned_feature;
 	}
 
+	//
+	// Support for "__getitem__".
+	//
+	// But we only allowing indexing with an index. We don't allow slices because it makes less
+	// sense (since indexing properties is really just an alternative to iterating in a 'for' loop).
+	//
+	bp::object
+	feature_handle_get_item(
+			GPlatesModel::FeatureHandle &feature_handle,
+			boost::python::object property_index_object)
+	{
+		// The property index should be an integer.
+		bp::extract<long> extract_property_index(property_index_object);
+		if (!extract_property_index.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Invalid property index type, must be an integer (slices not allowed)");
+			bp::throw_error_already_set();
+
+			return bp::object();  // Cannot get here.
+		}
+
+		long property_index = extract_property_index();
+		if (property_index < 0)
+		{
+			property_index += feature_handle.size();
+		}
+
+		if (property_index >= boost::numeric_cast<long>(feature_handle.size()) ||
+			property_index < 0)
+		{
+			PyErr_SetString(PyExc_IndexError, "Property index out of range");
+			bp::throw_error_already_set();
+		}
+
+		GPlatesModel::FeatureHandle::iterator property_iter = feature_handle.begin();
+		// NOTE: 'property_iter' is not random access, so must increment 'property_index' times...
+		std::advance(property_iter, property_index);
+		GPlatesModel::TopLevelProperty::non_null_ptr_type property = *property_iter;
+
+		return bp::object(property);
+	}
+
+	// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch.
+#if 0
+	//
+	// Support for "__setitem__".
+	//
+	// But we only allowing indexing with an index. We don't allow slices because it makes less
+	// sense (since indexing properties is really just an alternative to iterating in a 'for' loop
+	// to get a property, modify it and then set it back in the feature at same index).
+	//
+	void
+	feature_handle_set_item(
+			GPlatesModel::FeatureHandle &feature_handle,
+			boost::python::object property_index_object,
+			GPlatesModel::TopLevelProperty::non_null_ptr_type property)
+	{
+		// Property index should be an integer.
+		bp::extract<long> extract_property_index(property_index_object);
+		if (!extract_property_index.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Invalid property index type, must be an integer (slices not allowed)");
+			bp::throw_error_already_set();
+		}
+
+		long property_index = extract_property_index();
+		if (property_index < 0)
+		{
+			property_index += feature_handle.size();
+		}
+
+		if (property_index >= boost::numeric_cast<long>(feature_handle.size()) ||
+			property_index < 0)
+		{
+			PyErr_SetString(PyExc_IndexError, "Property index out of range");
+			bp::throw_error_already_set();
+		}
+
+		GPlatesModel::FeatureHandle::iterator property_iter = feature_handle.begin();
+		// NOTE: 'property_iter' is not random access, so must increment 'index' times...
+		std::advance(property_iter, property_index);
+		*property_iter = property;
+	}
+#endif
+
 	bp::object
 	feature_handle_add_property_internal(
 			GPlatesModel::FeatureHandle &feature_handle,
@@ -1940,12 +2164,37 @@ namespace GPlatesApi
 			bp::object property_query_object,
 			PropertyReturn::Value property_return)
 	{
+		// Wrap the property query object in a function.
+		boost::function<bool (GPlatesModel::TopLevelProperty::non_null_ptr_type)> property_query;
+		//
 		// See if property query is a property name.
 		boost::optional<GPlatesModel::PropertyName> property_name;
 		bp::extract<GPlatesModel::PropertyName> extract_property_name(property_query_object);
 		if (extract_property_name.check())
 		{
 			property_name = extract_property_name();
+
+			// Property query is a property name.
+			property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
+			{
+				return feature_property->get_property_name() == property_name.get();
+			};
+		}
+		else if (property_query_object != bp::object()/*Py_None*/)
+		{
+			// Property query is a callable predicate.
+			property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
+			{
+				return static_cast<bool>(bp::extract<bool>(property_query_object(feature_property)));
+			};
+		}
+		else  // 'property_query_object' is None ...
+		{
+			// Accept all properties.
+			property_query = [](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
+			{
+				return true;
+			};
 		}
 
 		if (property_return == PropertyReturn::EXACTLY_ONE)
@@ -1953,19 +2202,10 @@ namespace GPlatesApi
 			boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> property;
 
 			// Search for the property.
-			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
-			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
-			for ( ; properties_iter != properties_end; ++properties_iter)
+			for (GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property : feature_handle)
 			{
-				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
-
 				// See if current property matches the query.
-				const bool property_query_result = property_name
-					? (property_name.get() == feature_property->get_property_name())
-					// Property query is a callable predicate...
-					: bp::extract<bool>(property_query_object(feature_property));
-
-				if (property_query_result)
+				if (property_query(feature_property))
 				{
 					if (property)
 					{
@@ -1986,26 +2226,17 @@ namespace GPlatesApi
 		else if (property_return == PropertyReturn::FIRST)
 		{
 			// Search for the property.
-			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
-			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
-			for ( ; properties_iter != properties_end; ++properties_iter)
+			for (GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property : feature_handle)
 			{
-				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
-
 				// See if current property matches the query.
-				const bool property_query_result = property_name
-					? (property_name.get() == feature_property->get_property_name())
-					// Property query is a callable predicate...
-					: bp::extract<bool>(property_query_object(feature_property));
-
-				if (property_query_result)
+				if (property_query(feature_property))
 				{
 					// Return first found.
 					return bp::object(feature_property);
 				}
 			}
 		}
-		else
+		else  // PropertyReturn::ALL ...
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					property_return == PropertyReturn::ALL,
@@ -2014,19 +2245,10 @@ namespace GPlatesApi
 			bp::list properties;
 
 			// Search for the properties.
-			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
-			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
-			for ( ; properties_iter != properties_end; ++properties_iter)
+			for (GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property : feature_handle)
 			{
-				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
-
 				// See if current property matches the query.
-				const bool property_query_result = property_name
-					? (property_name.get() == feature_property->get_property_name())
-					// Property query is a callable predicate...
-					: bp::extract<bool>(property_query_object(feature_property));
-
-				if (property_query_result)
+				if (property_query(feature_property))
 				{
 					properties.append(feature_property);
 				}
@@ -2161,106 +2383,86 @@ namespace GPlatesApi
 				coverage_ranges);
 	}
 
-	bp::object
-	feature_handle_get_geometry(
+	/**
+	 * Get the geometry(s) satisfying the property query (returned in @a geometry_object).
+	 *
+	 * Returns false if no matching geometries were found
+	 * (but still stores Python None or an empty Python list in @a geometry_object, depending on 'property_return').
+	 *
+	 * Note: We can return true and a 'None' geometry object (when PropertyReturn::EXACTLY_ONE is specified).
+	 *       This can happen when there are 2 or more matching geometries/coverages. In this case, the 'true'
+	 *       means geometries/coverages were found and the 'None' means not exactly one geometry/coverage was found.
+	 */
+	bool
+	feature_handle_get_geometry_internal(
+			bp::object &geometry_object,
 			GPlatesModel::FeatureHandle &feature_handle,
-			bp::object property_query_object,
+			const boost::function<bool (GPlatesModel::TopLevelProperty::non_null_ptr_type)> &property_query,
 			PropertyReturn::Value property_return,
 			GPlatesApi::CoverageReturn::Value coverage_return)
 	{
-		// If a property name or predicate wasn't specified then determine the
-		// default geometry property name via the GPGIM.
-		if (property_query_object == bp::object()/*Py_None*/)
-		{
-			boost::optional<GPlatesModel::PropertyName> default_geometry_property_name =
-					get_default_geometry_property_name(feature_handle.feature_type());
-			if (!default_geometry_property_name)
-			{
-				return (property_return == PropertyReturn::ALL)
-						? bp::list() /*empty list*/
-						: bp::object()/*Py_None*/;
-			}
-
-			property_query_object = bp::object(default_geometry_property_name.get());
-		}
-
-		// Get the geometry property(s).
-		//
-		// Note that we're querying all matching properties, not the number of (geometry)
-		// properties requested by our caller, because the property query might match non-geometry
-		// properties (which we'll later filter out the geometry properties and test the number of those).
-		bp::object property_list_object =
-				feature_handle_get_property(
-						feature_handle,
-						property_query_object,
-						// Query all matching property values (ie, not what user requested)...
-						PropertyReturn::ALL);
-
 		// If caller is only interested in geometries (not coverages).
 		if (coverage_return == CoverageReturn::GEOMETRY_ONLY)
 		{
+			// Get the geometries satisfying the property query.
 			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
-
-			const unsigned int num_properties = bp::len(property_list_object);
-			for (unsigned int n = 0; n < num_properties; ++n)
+			for (GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property : feature_handle)
 			{
-				// Call python since Property.get_value is implemented in python code...
-				bp::object property_value_object = property_list_object[n].attr("get_value")(0.0/*time*/);
-				// Ignore property values that are Py_None.
-				if (property_value_object == bp::object()/*Py_None*/)
+				// See if current property matches the query.
+				if (!property_query(feature_property))
 				{
+					// Ignore properties that don't match.
 					continue;
 				}
 
-				// Get the current property value.
-				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
-						bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type>(property_value_object);
-
-				// Extract the geometry from the property value.
+				// Extract the geometry from the property.
 				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry =
-						GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
+						GPlatesAppLogic::GeometryUtils::get_geometry_from_property(feature_property);
 				if (!geometry)
 				{
+					// Ignore properties that do not contain a geometry.
 					continue;
-				}
-
-				// Optimisations - to return early.
-				if (property_return == PropertyReturn::FIRST)
-				{
-					// Return first object immediately.
-					return bp::object(geometry.get());
-				}
-				else if (property_return == PropertyReturn::EXACTLY_ONE)
-				{
-					// If we've already found one geometry (and now we'll have two) then return Py_None.
-					if (geometries.size() == 1)
-					{
-						return bp::object()/*Py_None*/;
-					}
 				}
 
 				geometries.push_back(geometry.get());
 			}
 
-			if (property_return == PropertyReturn::ALL)
+			if (property_return == PropertyReturn::EXACTLY_ONE)
 			{
+				if (geometries.size() == 1)
+				{
+					// Return the sole geometry.
+					geometry_object = bp::object(geometries.front());
+				}
+				else
+				{
+					// There's not exactly one matching geometry property.
+					geometry_object = bp::object()/*Py_None*/;
+				}
+			}
+			else if (property_return == PropertyReturn::FIRST)
+			{
+				// Return the first geometry.
+				geometry_object = bp::object(geometries.front());
+			}
+			else if (property_return == PropertyReturn::ALL)
+			{
+				// Return all the geometries.
 				bp::list geometries_list;
-
-				BOOST_FOREACH(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry, geometries)
+				for (const auto &geometry : geometries)
 				{
 					geometries_list.append(geometry);
 				}
 
-				return geometries_list;
+				geometry_object = geometries_list;
 			}
 
-			if (property_return == PropertyReturn::EXACTLY_ONE)
-			{
-				return (geometries.size() == 1) ? bp::object(geometries.front()) : bp::object()/*Py_None*/;
-			}
-
-			// ...else PropertyReturn::FIRST
-			return !geometries.empty() ? bp::object(geometries.front()) : bp::object()/*Py_None*/;
+			// Return true if any matching geometries were found.
+			//
+			// Note: We can return true and a 'None' geometry object (when PropertyReturn::EXACTLY_ONE is specified).
+			//       This can happen when there are 2 or more matching geometries - the 'true' means geometries were
+			//       found and the 'None' means not exactly one geometry was found.
+			return !geometries.empty();
 		}
 
 		//
@@ -2275,63 +2477,65 @@ namespace GPlatesApi
 				feature_handle.reference(),
 				0.0/*reconstruction_time*/);
 
-		// The coverages with domains that match 'property_query_object'.
-		coverage_seq_type coverages;
-
-		const unsigned int num_properties = bp::len(property_list_object);
-		for (unsigned int n = 0; n < num_properties; ++n)
+		// Get the properties satisfying the property query.
+		std::vector<GPlatesModel::TopLevelProperty::non_null_ptr_type> feature_properties;
+		for (GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property : feature_handle)
 		{
-			GPlatesModel::TopLevelProperty::non_null_ptr_type property =
-					bp::extract<GPlatesModel::TopLevelProperty::non_null_ptr_type>(
-							property_list_object[n]);
-
-			// Iterate over all coverages to see if the current property is a coverage 'domain'.
-			coverage_seq_type::const_iterator coverage_iter = all_coverages.begin();
-			const coverage_seq_type::const_iterator coverage_end = all_coverages.end();
-			for ( ; coverage_iter != coverage_end; ++coverage_iter)
+			// See if current property matches the query.
+			if (property_query(feature_property))
 			{
-				if (property == *coverage_iter->domain_property)
+				feature_properties.push_back(feature_property);
+			}
+		}
+
+		// Get the coverages with domains that match 'property_query'.
+		coverage_seq_type coverages;
+		for (GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property : feature_properties)
+		{
+			// Iterate over all coverages to see if the current property is a coverage 'domain'.
+			for (const auto &coverage : all_coverages)
+			{
+				if (feature_property == *coverage.domain_property)
 				{
+					coverages.push_back(coverage);
 					break;
 				}
 			}
+		}
 
-			// Skip current property if it's not the domain of a coverage.
-			if (coverage_iter == coverage_end)
+		if (property_return == PropertyReturn::EXACTLY_ONE)
+		{
+			if (coverages.size() == 1)
 			{
-				continue;
-			}
-			const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = *coverage_iter;
-
-			// Optimisations - to return early.
-			if (property_return == PropertyReturn::FIRST)
-			{
-				// Return first coverage (domain, range) object immediately.
-				return bp::make_tuple(
+				// Return the sole coverage (domain, range) object.
+				const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = coverages.front();
+				geometry_object = bp::make_tuple(
 						bp::object(coverage.domain),
 						create_dict_from_gml_data_block_coordinate_lists(
 								coverage.range.begin(),
 								coverage.range.end()));
 			}
-			else if (property_return == PropertyReturn::EXACTLY_ONE)
+			else
 			{
-				// If we've already found one coverage (and now we'll have two) then return Py_None.
-				if (coverages.size() == 1)
-				{
-					return bp::object()/*Py_None*/;
-				}
+				// There's not exactly one matching coverage.
+				geometry_object = bp::object()/*Py_None*/;
 			}
-
-			coverages.push_back(coverage);
 		}
-
-		if (property_return == PropertyReturn::ALL)
+		else if (property_return == PropertyReturn::FIRST)
 		{
+			// Return the first coverage (domain, range) object.
+			const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = coverages.front();
+			geometry_object = bp::make_tuple(
+					bp::object(coverage.domain),
+					create_dict_from_gml_data_block_coordinate_lists(
+							coverage.range.begin(),
+							coverage.range.end()));
+		}
+		else if (property_return == PropertyReturn::ALL)
+		{
+			// Return all the coverages.
 			bp::list coverages_list;
-
-			BOOST_FOREACH(
-					const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage,
-					coverages)
+			for (const auto &coverage : coverages)
 			{
 				const bp::object coverage_object =
 						bp::make_tuple(
@@ -2343,39 +2547,120 @@ namespace GPlatesApi
 				coverages_list.append(coverage_object);
 			}
 
-			return coverages_list;
+			geometry_object = coverages_list;
 		}
 
-		if (property_return == PropertyReturn::EXACTLY_ONE)
-		{
-			if (coverages.size() != 1)
+		// Return true if any matching coverages were found.
+		//
+		// Note: We can return true and a 'None' geometry object (when PropertyReturn::EXACTLY_ONE is specified).
+		//       This can happen when there are 2 or more matching coverages - the 'true' means coverages were
+		//       found and the 'None' means not exactly one coverage was found.
+		return !coverages.empty();
+	}
+
+	bp::object
+	feature_handle_get_geometry(
+			GPlatesModel::FeatureHandle &feature_handle,
+			bp::object property_query_object,
+			PropertyReturn::Value property_return,
+			GPlatesApi::CoverageReturn::Value coverage_return)
+	{
+		bp::object geometry_object;
+
+		//
+		// If a property name or predicate was specified.
+		//
+        if (!property_query_object.is_none())
+        {
+			// Wrap the property query object in a function.
+			boost::function<bool (GPlatesModel::TopLevelProperty::non_null_ptr_type)> property_query;
+			//
+			// See if property query is a property name.
+			boost::optional<GPlatesModel::PropertyName> property_name;
+			bp::extract<GPlatesModel::PropertyName> extract_property_name(property_query_object);
+			if (extract_property_name.check())
 			{
-				return bp::object()/*Py_None*/;
+				property_name = extract_property_name();
+
+				// Property query is a property name.
+				property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
+				{
+					return feature_property->get_property_name() == property_name.get();
+				};
+			}
+			else  // property query is a callable predicate...
+			{
+				property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
+				{
+					return static_cast<bool>(bp::extract<bool>(property_query_object(feature_property)));
+				};
 			}
 
-			// Return coverage (domain, range) object.
-			const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = coverages.front();
-			return bp::make_tuple(
-					bp::object(coverage.domain),
-					create_dict_from_gml_data_block_coordinate_lists(
-							coverage.range.begin(),
-							coverage.range.end()));
+			feature_handle_get_geometry_internal(
+					geometry_object,
+					feature_handle,
+					property_query,
+					property_return,
+					coverage_return);
+
+			return geometry_object;
 		}
 
-		// ...else PropertyReturn::FIRST
+		//
+		// A property name or predicate was not specified, so determine the default geometry property name via the GPGIM.
+		//
+        boost::optional<GPlatesModel::PropertyName> default_geometry_property_name =
+                get_default_geometry_property_name(feature_handle.feature_type());
+        if (default_geometry_property_name)
+        {
+			auto is_default_geometry_property = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
+			{
+				return feature_property->get_property_name() == default_geometry_property_name.get();
+			};
+ 
+			// If we found any default geometry property(s) then return their geometry(s).
+			if (feature_handle_get_geometry_internal(
+					geometry_object,
+					feature_handle,
+					is_default_geometry_property/*property_query*/,
+					property_return,
+					coverage_return))
+			{
+                return geometry_object;
+			}
 
-		if (coverages.empty())
+			// We didn't find any geometries with the default geometry property name.
+			// So just fall through and look for any geometries.
+			//
+			// Note: We used to only query the default geometry property name. However if 'property_return'
+			//       was 'PropertyReturn::EXACTLY_ONE' and the sole geometry had a non-default property name
+			//       then it was never returned (even though there was exactly one geometry in the feature).
+			//       However, when users do not specify the geometry property name it usually means they
+			//       don't care what it is, they only want to retrieve the sole geometry (without having to
+			//       resort to using 'get_all_geometries()' just to deal with this possibility).
+			//       So we now have a fallback (when no default geometry properties are found) that then
+			//       searches all geometry properties and re-applies the same 'property_return' rule.
+		}
+
+		//
+		// Either no default geometry properties could be found or the default geometry property name
+		// could not be found in the GPGIM.
+		//
+		// So accept all geometry properties.
+		//
+		auto all_properties = [](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
 		{
-			return bp::object()/*Py_None*/;
-		}
+			return true;
+		};
 
-		// Return coverage (domain, range) object.
-		const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = coverages.front();
-		return bp::make_tuple(
-				bp::object(coverage.domain),
-				create_dict_from_gml_data_block_coordinate_lists(
-						coverage.range.begin(),
-						coverage.range.end()));
+		feature_handle_get_geometry_internal(
+				geometry_object,
+				feature_handle,
+				all_properties,
+				property_return,
+				coverage_return);
+
+		return geometry_object;
 	}
 
 	bp::object
@@ -2399,26 +2684,22 @@ namespace GPlatesApi
 	{
 		if (coverage_return == CoverageReturn::GEOMETRY_ONLY)
 		{
-			bp::list geometry_properties;
+			bp::list geometries_list;
 
 			// Search for the geometry properties.
-			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
-			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
-			for ( ; properties_iter != properties_end; ++properties_iter)
+			for (GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property : feature_handle)
 			{
-				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
-
 				// Extract the geometry from the property value.
 				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry =
 						GPlatesAppLogic::GeometryUtils::get_geometry_from_property(feature_property);
 				if (geometry)
 				{
-					geometry_properties.append(geometry.get());
+					geometries_list.append(geometry.get());
 				}
 			}
 
 			// Returned list could be empty if there were no geometry properties for some reason.
-			return geometry_properties;
+			return geometries_list;
 		}
 
 		//
@@ -2434,9 +2715,7 @@ namespace GPlatesApi
 
 		bp::list coverages_list;
 
-		BOOST_FOREACH(
-				const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage,
-				all_coverages)
+		for (const auto &coverage : all_coverages)
 		{
 			const bp::object coverage_object =
 					bp::make_tuple(
@@ -2542,100 +2821,185 @@ namespace GPlatesApi
 				verify_information_model);
 	}
 
-	bp::object
-	feature_handle_get_topological_geometry(
+	/**
+	 * Get the topological geometry(s) satisfying the property query (returned in @a topological_geometry_object).
+	 *
+	 * Returns false if no matching topological geometries were found
+	 * (but still stores Python None or an empty Python list in @a topological_geometry_object, depending on 'property_return').
+	 *
+	 * Note: We can return true and a 'None' topological geometry object (when PropertyReturn::EXACTLY_ONE is specified).
+	 *       This can happen when there are 2 or more matching topological geometries. In this case, the 'true'
+	 *       means topological geometries were found and the 'None' means not exactly one topological geometry was found.
+	 */
+	bool
+	feature_handle_get_topological_geometry_internal(
+			bp::object &topological_geometry_object,
 			GPlatesModel::FeatureHandle &feature_handle,
-			bp::object property_query_object,
+			const boost::function<bool (GPlatesModel::TopLevelProperty::non_null_ptr_type)> &property_query,
 			PropertyReturn::Value property_return)
 	{
-		// If a property name or predicate wasn't specified then determine the
-		// default geometry property name via the GPGIM.
-		if (property_query_object == bp::object()/*Py_None*/)
-		{
-			boost::optional<GPlatesModel::PropertyName> default_geometry_property_name =
-					get_default_geometry_property_name(feature_handle.feature_type());
-			if (!default_geometry_property_name)
-			{
-				return (property_return == PropertyReturn::ALL)
-						? bp::list() /*empty list*/
-						: bp::object()/*Py_None*/;
-			}
-
-			property_query_object = bp::object(default_geometry_property_name.get());
-		}
-
-		// Get the topological geometry property(s).
-		//
-		// Note that we're querying all matching properties, not the number of (topological geometry)
-		// properties requested by our caller, because the property query might match non-topological-geometry
-		// properties (which we'll later filter out the topological geometry properties and test the number of those).
-		bp::object property_list_object =
-				feature_handle_get_property(
-						feature_handle,
-						property_query_object,
-						// Query all matching property values (ie, not what user requested)...
-						PropertyReturn::ALL);
-
+		// Get the topological geometries satisfying the property query.
 		std::vector<topological_geometry_property_value_type> topological_geometries;
-
-		const unsigned int num_properties = bp::len(property_list_object);
-		for (unsigned int n = 0; n < num_properties; ++n)
+		for (GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property : feature_handle)
 		{
-			// Extract the feature property.
-			bp::extract<GPlatesModel::TopLevelProperty::non_null_ptr_type> extract_feature_property(property_list_object[n]);
-			if (!extract_feature_property.check())
+			// See if current property matches the query.
+			if (!property_query(feature_property))
 			{
+				// Ignore properties that don't match.
 				continue;
 			}
-			GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = extract_feature_property();
 
-			// Get the topological geometry property value.
+			// Extract the topological geometry from the property.
 			boost::optional<topological_geometry_property_value_type> topological_geometry =
 					GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value(
 							*feature_property,
 							0.0/*reconstruction_time*/);
 			if (!topological_geometry)
 			{
+				// Ignore properties that do not contain a topological geometry.
 				continue;
-			}
-
-			// Optimisations - to return early.
-			if (property_return == PropertyReturn::FIRST)
-			{
-				// Return first object immediately.
-				return bp::object(topological_geometry.get());
-			}
-			else if (property_return == PropertyReturn::EXACTLY_ONE)
-			{
-				// If we've already found one geometry (and now we'll have two) then return Py_None.
-				if (topological_geometries.size() == 1)
-				{
-					return bp::object()/*Py_None*/;
-				}
 			}
 
 			topological_geometries.push_back(topological_geometry.get());
 		}
 
-		if (property_return == PropertyReturn::ALL)
+		if (property_return == PropertyReturn::EXACTLY_ONE)
 		{
+			if (topological_geometries.size() == 1)
+			{
+				// Return the sole topological geometry.
+				topological_geometry_object = bp::object(topological_geometries.front());
+			}
+			else
+			{
+				// There's not exactly one matching topological geometry property.
+				topological_geometry_object = bp::object()/*Py_None*/;
+			}
+		}
+		else if (property_return == PropertyReturn::FIRST)
+		{
+			// Return the first topological geometry.
+			topological_geometry_object = bp::object(topological_geometries.front());
+		}
+		else if (property_return == PropertyReturn::ALL)
+		{
+			// Return all the topological geometries.
 			bp::list topological_geometries_list;
-
-			BOOST_FOREACH(topological_geometry_property_value_type topological_geometry, topological_geometries)
+			for (const auto &topological_geometry : topological_geometries)
 			{
 				topological_geometries_list.append(topological_geometry);
 			}
 
-			return topological_geometries_list;
+			topological_geometry_object = topological_geometries_list;
 		}
 
-		if (property_return == PropertyReturn::EXACTLY_ONE)
+		// Return true if any matching topological geometries were found.
+		//
+		// Note: We can return true and a 'None' topological geometry object (when PropertyReturn::EXACTLY_ONE is specified).
+		//       This can happen when there are 2 or more matching topological geometries - the 'true' means
+		//       topological geometries were found and the 'None' means not exactly one topological geometry was found.
+		return !topological_geometries.empty();
+	}
+
+	bp::object
+	feature_handle_get_topological_geometry(
+			GPlatesModel::FeatureHandle &feature_handle,
+			bp::object property_query_object,
+			PropertyReturn::Value property_return)
+	{
+		bp::object topological_geometry_object;
+
+		//
+		// If a property name or predicate was specified.
+		//
+        if (!property_query_object.is_none())
+        {
+			// Wrap the property query object in a function.
+			boost::function<bool (GPlatesModel::TopLevelProperty::non_null_ptr_type)> property_query;
+			//
+			// See if property query is a property name.
+			boost::optional<GPlatesModel::PropertyName> property_name;
+			bp::extract<GPlatesModel::PropertyName> extract_property_name(property_query_object);
+			if (extract_property_name.check())
+			{
+				property_name = extract_property_name();
+
+				// Property query is a property name.
+				property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
+				{
+					return feature_property->get_property_name() == property_name.get();
+				};
+			}
+			else  // property query is a callable predicate...
+			{
+				property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
+				{
+					return static_cast<bool>(bp::extract<bool>(property_query_object(feature_property)));
+				};
+			}
+
+			feature_handle_get_topological_geometry_internal(
+					topological_geometry_object,
+					feature_handle,
+					property_query,
+					property_return);
+
+			return topological_geometry_object;
+		}
+
+		//
+		// A property name or predicate was not specified, so determine the default geometry property name via the GPGIM.
+		//
+        boost::optional<GPlatesModel::PropertyName> default_geometry_property_name =
+                get_default_geometry_property_name(feature_handle.feature_type());
+        if (default_geometry_property_name)
+        {
+			auto is_default_geometry_property = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
+			{
+				return feature_property->get_property_name() == default_geometry_property_name.get();
+			};
+ 
+			// If we found any default topological geometry property(s) then return their topological geometry(s).
+			if (feature_handle_get_topological_geometry_internal(
+					topological_geometry_object,
+					feature_handle,
+					is_default_geometry_property/*property_query*/,
+					property_return))
+			{
+                return topological_geometry_object;
+			}
+
+			// We didn't find any topological geometries with the default geometry property name.
+			// So just fall through and look for any topological geometries.
+			//
+			// Note: We used to only query the default geometry property name. However if 'property_return'
+			//       was 'PropertyReturn::EXACTLY_ONE' and the sole topological geometry had a non-default property name
+			//       then it was never returned (even though there was exactly one topological geometry in the feature).
+			//       However, when users do not specify the topological geometry property name it usually means they
+			//       don't care what it is, they only want to retrieve the sole topological geometry (without having to
+			//       resort to using 'get_all_topological_geometries()' just to deal with this possibility).
+			//       So we now have a fallback (when no default topological geometry properties are found) that then
+			//       searches all topological geometry properties and re-applies the same 'property_return' rule.
+		}
+
+		//
+		// Either no default topological geometry properties could be found or the default geometry property name
+		// could not be found in the GPGIM.
+		//
+		// So accept all topological geometry properties.
+		//
+		auto all_properties = [](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
 		{
-			return (topological_geometries.size() == 1) ? bp::object(topological_geometries.front()) : bp::object()/*Py_None*/;
-		}
+			return true;
+		};
 
-		// ...else PropertyReturn::FIRST
-		return !topological_geometries.empty() ? bp::object(topological_geometries.front()) : bp::object()/*Py_None*/;
+		feature_handle_get_topological_geometry_internal(
+				topological_geometry_object,
+				feature_handle,
+				all_properties,
+				property_return);
+
+		return topological_geometry_object;
 	}
 
 	bp::object
@@ -2657,12 +3021,8 @@ namespace GPlatesApi
 		bp::list topological_geometry_properties;
 
 		// Search for the topological geometry properties.
-		GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
-		GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
-		for ( ; properties_iter != properties_end; ++properties_iter)
+		for (GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property : feature_handle)
 		{
-			GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
-
 			// Get the topological geometry property value.
 			boost::optional<topological_geometry_property_value_type> topological_geometry =
 					GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value(
@@ -3211,6 +3571,36 @@ namespace GPlatesApi
 	}
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
+	feature_handle_create_topological_network_feature(
+			GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type topological_network_geometry,
+			const GPlatesModel::FeatureType &network_feature_type,
+			bp::object name,
+			boost::optional<QString> description,
+			bp::object valid_time,
+			bp::object rift_parameters,
+			bp::object other_properties,
+			boost::optional<GPlatesModel::FeatureId> feature_id,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		GPlatesModel::FeatureHandle::non_null_ptr_type network_feature = feature_handle_create_topological_feature(
+				network_feature_type,
+				bp::object(topological_network_geometry),
+				name,
+				description,
+				valid_time,
+				other_properties,
+				feature_id,
+				verify_information_model);
+
+		if (rift_parameters != bp::object()/*Py_None*/)
+		{
+			set_rift_parameters_from_tuple(*network_feature, rift_parameters, verify_information_model);
+		}
+
+		return network_feature;
+	}
+
+	const GPlatesModel::FeatureHandle::non_null_ptr_type
 	feature_handle_create_tectonic_section(
 			const GPlatesModel::FeatureType &feature_type,
 			bp::object geometry,
@@ -3518,6 +3908,7 @@ export_feature()
 					"=========================== ==========================================================\n"
 					"``len(f)``                  number of properties in feature *f*\n"
 					"``for p in f``              iterates over the properties *p* in feature *f*\n"
+					"``f[i]``                    the property of *f* at index *i*\n"
 					"=========================== ==========================================================\n"
 					"\n"
 					"For example:\n"
@@ -3531,6 +3922,7 @@ export_feature()
 					"\n"
 					"* :meth:`create_reconstructable_feature`\n"
 					"* :meth:`create_topological_feature`\n"
+					"* :meth:`create_topological_network_feature`\n"
 					"* :meth:`create_tectonic_section`\n"
 					"* :meth:`create_flowline`\n"
 					"* :meth:`create_motion_path`\n"
@@ -3621,7 +4013,15 @@ export_feature()
 					"For other properties the generic :meth:`set`, :meth:`get` and :meth:`get_value` "
 					"methods will still need to be used.\n"
 					"\n"
-					"A feature can be deep copied using :meth:`clone`.\n",
+					"A feature can be deep copied using :meth:`clone`.\n"
+					"\n"
+					"A *Feature* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.40\n"
+					"   Can index a property in feature *f* with ``f[i]``.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3666,8 +4066,19 @@ export_feature()
 				"    # This does the same thing as the code above.\n"
 				"    unclassified_feature = pygplates.Feature(\n"
 				"        pygplates.FeatureType.gpml_unclassified_feature)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::FeatureHandle::non_null_ptr_type>())
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 		.def("__len__", &GPlatesModel::FeatureHandle::size)
+		.def("__getitem__", &GPlatesApi::feature_handle_get_item)
+		// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch.
+#if 0
+		.def("__setitem__", &GPlatesApi::feature_handle_set_item)
+#endif
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 
@@ -4010,6 +4421,101 @@ export_feature()
 				"\n"
 				"  .. versionadded:: 0.24\n")
 		.staticmethod("create_topological_feature")
+		.def("create_topological_network_feature",
+				&GPlatesApi::feature_handle_create_topological_network_feature,
+				(bp::arg("topological_network_geometry"),
+						bp::arg("network_feature_type") = GPlatesModel::FeatureType::create_gpml("TopologicalNetwork"),
+						bp::arg("name") = bp::object()/*Py_None*/,
+						bp::arg("description") = boost::optional<QString>(),
+						bp::arg("valid_time") = bp::object()/*Py_None*/,
+						bp::arg("rift_parameters") = bp::object()/*Py_None*/,
+						bp::arg("other_properties") = bp::object()/*Py_None*/,
+						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"create_topological_network_feature(topological_network_geometry, [network_feature_type=pygplates.FeatureType.gpml_topological_network], "
+				"[name], [description], [valid_time], [rift_parameters], [other_properties], [feature_id], [verify_information_model=VerifyInformationModel.yes])\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a topological *network* feature.\n"
+				"\n"
+				"  :param topological_network_geometry: the topological *network* geometry\n"
+				"  :type topological_network_geometry: :class:`GpmlTopologicalNetwork`\n"
+				"  :param network_feature_type: The type of *network* feature to create. Defaults to ``pygplates.FeatureType.gpml_topological_network``.\n"
+				"  :type network_feature_type: :class:`FeatureType`\n"
+				"  :param name: the name or names, if not specified then no "
+				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
+				"  :type name: string, or sequence of string\n"
+				"  :param description: the description, if not specified then a "
+				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
+				"  :type description: string\n"
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
+				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
+				"property is not added\n"
+				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :param rift_parameters: An optional tuple containing between 2 and 5 rift parameters. If a tuple is specified, then the first two parameters must be specified, and "
+				"are the rift's conjugate left/right plate IDs (it doesn't matter which is left or right; can swap them). These 2 parameters will add the feature properties "
+				"``gpml:riftLeftPlate``/``gpml:riftRightPlate``. The remaining 3 rift parameters are optional and are equivalent to the 3 rift parameters in "
+				":class:`ResolveTopologyParameters`. If any of these 3 parameters are specified then they'll override those in :class:`ResolveTopologyParameters` "
+				"(for the returned network feature only). Any of these 3 parameters can be ``None``. Those that are *not* ``None`` will add an associated "
+				"feature property to the returned network feature. The first optional parameter is the rift exponential stretching constant "
+				"(see :attr:`ResolveTopologyParameters.rift_exponential_stretching_constant`) which adds the feature property ``gpml:riftExponentialStretchingConstant``. "
+				"The second optional parameter is the rift strain rate resolution (see :attr:`ResolveTopologyParameters.rift_strain_rate_resolution`) which adds the feature property "
+				"``gpml::riftStrainRateResolutionLog10`` (with the property name indicating that :math:`\\log_{10}(param)` is stored in the property). "
+				"The third optional parameter is the rift edge length threshold in degrees (see :attr:`ResolveTopologyParameters.rift_edge_length_threshold_degrees`) which adds "
+				"the feature property ``gpml:riftEdgeLengthThresholdDegrees``.\n"
+				"\n"
+				"  :type rift_parameters: tuple\n"
+				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
+				"be added later with :meth:`add`\n"
+				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
+				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param verify_information_model: whether to check the information model (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :rtype: :class:`Feature`\n"
+				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
+				"\n"
+				"  This function is a specialised version of :meth:`create_topological_feature` designed for topological *network* features. "
+				"Whereas :meth:`create_topological_feature` can be used for topological lines, boundaries or networks.\n"
+				"\n"
+				"  To create a topological network feature:\n"
+				"  ::\n"
+				"\n"
+				"    topological_network = pygplates.GpmlTopologicalNetwork([...])\n"
+				"    Andes_network_feature = pygplates.Feature.create_topological_network_feature(\n"
+				"        topological_network,\n"
+				"        name='Andes',\n"
+				"        valid_time=(10, pygplates.GeoTimeInstant.create_distant_future()))\n"
+				"    \n"
+				"    Andes_network_feature.set_reconstruction_plate_id(201)\n"
+				"\n"
+				"  To create a rift between Africa and South America with an exponential strain rate curve accurate to 1e-16 :math:`second^{-1}`:\n"
+				"  ::\n"
+				"\n"
+				"    SAM_rift_network = pygplates.GpmlTopologicalNetwork([...])\n"
+				"    SAM_rift_feature = pygplates.Feature.create_topological_network_feature(\n"
+				"        SAM_rift_network,\n"
+				"        name='SAM rift',\n"
+				"        valid_time=(145, 115),\n"
+				"        rift_parameters=(201, 701, None, 1e-16))\n"
+				"    SAM_rift_feature.set_reconstruction_plate_id(201)\n"
+				"\n"
+				"    AFR_rift_network = pygplates.GpmlTopologicalNetwork([...])\n"
+				"    AFR_rift_feature = pygplates.Feature.create_topological_network_feature(\n"
+				"        AFR_rift_network,\n"
+				"        name='AFR rift',\n"
+				"        valid_time=(145, 115),\n"
+				"        rift_parameters=(201, 701, None, 1e-16))\n"
+				"    AFR_rift_feature.set_reconstruction_plate_id(701)\n"
+				"\n"
+				"  .. seealso:: :ref:`pygplates_primer_exponential_rift_stretching_profile` in the *Primer* documentation."
+				"\n"
+				"  .. seealso:: :meth:`create_topological_feature`\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
+		.staticmethod("create_topological_network_feature")
 		.def("create_tectonic_section",
 				&GPlatesApi::feature_handle_create_tectonic_section,
 				(bp::arg("feature_type"),
@@ -4716,8 +5222,8 @@ export_feature()
 				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
 				"of :class:`GeometryOnSphere` (or a coverage or a sequence of coverages - see below)\n"
 				"  :param property_name: the optional property name of the geometry property or properties to set, "
-				"if not specified then the default geometry property name associated with this feature's "
-				":class:`type<FeatureType>` is used instead\n"
+				"if not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` "
+				"associated with this feature's :class:`type<FeatureType>` is used instead\n"
 				"  :type property_name: :class:`PropertyName`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
 				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
@@ -4737,10 +5243,10 @@ export_feature()
 				"this feature's :class:`type<FeatureType>`\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and multiple geometries (if specified in *geometry*) are not supported by *property_name* "
-				"(or the default geometry property name if *property_name* not specified)\n"
+				"(or the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` if *property_name* not specified)\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and any :class:`geometry type<GeometryOnSphere>` in *geometry* is not supported for "
-				"*property_name* (or the default geometry property name if *property_name* not specified)\n"
+				"*property_name* (or the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` if *property_name* not specified)\n"
 				"  :raises: InformationModelError if *property_name* is not specified and a default geometry property "
 				"is not associated with this feature's :class:`type<FeatureType>` (this normally should not happen)\n"
 				"  :raises: AmbiguousGeometryCoverageError if multiple coverages are specified (in *geometry*) "
@@ -4756,14 +5262,13 @@ export_feature()
 				"  Usually a :class:`feature type<FeatureType>` supports *geometry* properties with more than "
 				"one property name. For example, a `coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_ feature supports both a "
 				"`pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_ geometry and a "
-				"`pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_) geometry. "
+				"`pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_ geometry. "
 				"But only one of them is the default (the default property that geometry data is imported into). "
 				"You can see which is the default by reading the ``Default Geometry Property`` label in the "
 				"`coastline feature model <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_.\n"
 				"\n"
-				"  If *property_name* is not specified then the default property name is determined "
-				"from this feature's :class:`type<FeatureType>` and the geometry is set in one or more "
-				"properties of that :class:`PropertyName`.\n"
+				"  If *property_name* is not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` "
+				"is determined from this feature's :class:`type<FeatureType>` and the geometry is set in one or more properties of that :class:`PropertyName`.\n"
 				"\n"
 				"  The question of how many distinct geometries are allowed per feature is a little more tricky. "
 				"Some geometry properties, such as "
@@ -4874,9 +5379,11 @@ export_feature()
 				"[coverage_return=CoverageReturn.geometry_only])\n"
 				"  Return the *present day* geometry (or geometries) of this feature.\n"
 				"\n"
-				"  :param property_query: the optional property name or predicate function used to find "
-				"the geometry property or properties, if not specified then the default geometry property "
-				"name associated with this feature's :class:`type<FeatureType>` is used instead\n"
+				"  :param property_query: The optional property name or predicate function used to find "
+				"the geometry property or properties. If not specified then the "
+				":meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this "
+				"feature's :class:`type<FeatureType>` is used instead. And if there are no default geometry properties then "
+				"non-default geometry properties are queried instead.\n"
 				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
 				"  :param property_return: whether to return exactly one geometry, the first geometry or all geometries\n"
 				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
@@ -4892,14 +5399,15 @@ export_feature()
 				"  Usually a :class:`feature type<FeatureType>` supports *geometry* properties with more than "
 				"one property name. For example, a `coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_ feature supports both a "
 				"`pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_ geometry and a "
-				"`pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_) geometry. "
+				"`pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_ geometry. "
 				"But only one of them is the default (the default property that geometry data is imported into). "
 				"You can see which is the default by reading the ``Default Geometry Property`` label in the "
 				"`coastline feature model <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_.\n"
 				"\n"
-				"  If *property_query* is not specified then the default property name is determined "
-				"from this feature's :class:`type<FeatureType>` and the geometry is retrieved from one or more "
-				"properties of that :class:`PropertyName`.\n"
+				"  If *property_query* is not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` "
+				"is determined from this feature's :class:`type<FeatureType>` and the geometry is retrieved from one or more "
+				"properties of that :class:`PropertyName`. And, **starting with version 0.43**, if there are *no* default geometry properties then "
+				"non-default geometry properties are retrieved. \n"
 				"\n"
 				"  The question of how many distinct geometries are allowed per feature is a little more tricky. "
 				"Some geometry properties, such as `pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_, "
@@ -4928,21 +5436,31 @@ export_feature()
 				"Returns an empty list if there are no matching geometry properties.\n"
 				"  ===================== ==============\n"
 				"\n"
-				"  Return the default geometry (returns ``None`` if not exactly one default geometry property found):\n"
+				"  Return the sole default geometry (returns ``None`` if not exactly one *default* geometry property found and "
+				"not exactly one *non-default* geometry property found):\n"
 				"  ::\n"
 				"\n"
-				"    default_geometry = feature.get_geometry()\n"
-				"    if default_geometry:\n"
+				"    geometry = feature.get_geometry()\n"
+				"    if geometry:\n"
 				"        ...\n"
 				"\n"
-				"  Return the list of default geometries (defaults to an empty list if no default geometry properties are found):\n"
+				"  .. note:: **Starting with version 0.43**, if a sole *default* geometry is not found then a sole *non-default* geometry "
+				"is returned instead (or `None` if neither is found). This is more useful when you are expecting a single geometry "
+				"but don't know which property name it's under. Previously only the *default* geometry property name was queried.\n"
+				"\n"
+				"  Return the list of default geometries (defaults to an empty list if no *default* geometry properties are found "
+				"and no *non-default* geometry properties are found):\n"
 				"  ::\n"
 				"\n"
-				"    default_geometries = feature.get_geometry(property_return=pygplates.PropertyReturn.all)\n"
+				"    geometries = feature.get_geometry(property_return=pygplates.PropertyReturn.all)\n"
 				"\n"
 				"    # ...or more conveniently...\n"
 				"\n"
-				"    default_geometries = feature.get_geometries()\n"
+				"    geometries = feature.get_geometries()\n"
+				"\n"
+				"  .. note:: **Starting with version 0.43**, if no *default* geometries are found then the *non-default* geometries are "
+				"returned instead (or an empty list if neither are found). This is more useful when you are expecting a sequence of "
+				"geometries but don't know which property name they're under. Previously only the *default* geometry property name was queried.\n"
 				"\n"
 				"  Return the geometry associated with the property named 'gpml:averageSampleSitePosition':\n"
 				"  ::\n"
@@ -4969,6 +5487,11 @@ export_feature()
 				"    if geometry:\n"
 				"        ...\n"
 				"\n"
+				"  This differs from ``feature.get_geometry()`` because the feature could have two geometries, "
+				"one *default* and one *non-default*, and ``feature.get_geometry(lambda property: True)`` would "
+				"return ``None`` (because there's not exactly one geometry) whereas ``feature.get_geometry()`` "
+				"would return the sole *default* geometry.\n"
+				"\n"
 				"  .. note:: If *CoverageReturn.geometry_and_scalars* is specified for *coverage_return* "
 				"then a coverage (or sequence of coverages) is returned - where a coverage essentially "
 				"maps each point in a geometry to one or more scalar values. A coverage is returned "
@@ -4978,21 +5501,30 @@ export_feature()
 				"The number of scalar values, associated with each :class:`ScalarType` should be equal to the "
 				"number of points in the geometry.\n"
 				"\n"
-				"     Get the velocity coverage on the default geometry:\n"
+				"     Get the velocity coverage on the default geometry (returns ``None`` if not exactly one *default* "
+				"geometry property containing a coverage was found and not exactly one *non-default* geometry property "
+				"containing a coverage was found):\n"
 				"     ::\n"
 				"\n"
-				"       default_coverage = feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars)\n"
-				"       if default_coverage:\n"
-				"           coverage_geometry, coverage_scalars = default_coverage\n"
+				"       coverage = feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars)\n"
+				"       if coverage:\n"
+				"           coverage_geometry, coverage_scalars = coverage\n"
 				"           coverage_points = coverage_geometry.get_points()\n"
 				"           velocity_colat_scalars = coverage_scalars.get(\n"
 				"               pygplates.ScalarType.create_gpml('VelocityColat'))\n"
 				"           velocity_lon_scalars = coverage_scalars.get(\n"
 				"               pygplates.ScalarType.create_gpml('VelocityLon'))\n"
 				"\n"
+				"     **Starting with version 0.43**, if a sole *default* geometry/coverage is not found then a sole *non-default* "
+				"geometry/coverage is returned instead (or `None` if neither is found). This is more useful when you are expecting a single "
+				"geometry/coverage but don't know which property name it's under. Previously only the *default* geometry property name was queried.\n"
+				"\n"
 				"  .. seealso:: :meth:`get_geometries` and :meth:`get_all_geometries`\n"
 				"\n"
-				"  .. seealso:: :meth:`set_geometry`\n")
+				"  .. seealso:: :meth:`set_geometry`\n"
+				"\n"
+				"  .. versionchanged:: 0.43\n"
+				"     When *property_query* not specified and no *default* geometry(s) found then *non-default* geometry(s) are returned.\n")
 		.def("get_geometries",
 				&GPlatesApi::feature_handle_get_geometries,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
@@ -5000,9 +5532,11 @@ export_feature()
 				"get_geometries([property_query], [coverage_return=CoverageReturn.geometry_only])\n"
 				"  Return a list of the *present day* geometries of this feature.\n"
 				"\n"
-				"  :param property_query: the optional property name or predicate function used to find "
-				"the geometry properties, if not specified then the default geometry property "
-				"name associated with this feature's :class:`type<FeatureType>` is used instead\n"
+				"  :param property_query: The optional property name or predicate function used to find "
+				"the geometry properties. If not specified then the "
+				":meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this "
+				"feature's :class:`type<FeatureType>` is used instead. And if there are no default geometry properties then "
+				"non-default geometry properties are queried instead.\n"
 				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
 				"  :param coverage_return: whether to return geometries only (the default), or coverages "
 				"(where a coverage is a geometry and associated per-point scalar values)\n"
@@ -5019,11 +5553,18 @@ export_feature()
 				"    def get_geometries(feature, property_query, coverage_return):\n"
 				"        return feature.get_geometry(property_query, pygplates.PropertyReturn.all, coverage_return)\n"
 				"\n"
+				"  .. note:: **Starting with version 0.43**, if *property_query* is not specified and no *default* geometries are found then the "
+				"*non-default* geometries are returned instead (or an empty list if neither are found). This is more useful when you are expecting a "
+				"sequence of geometries but don't know which property name they're under. Previously only the *default* geometry property name was queried.\n"
+				"\n"
 				"  See :meth:`get_geometry` for more details.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_all_geometries`\n"
 				"\n"
-				"  .. seealso:: :meth:`set_geometry`\n")
+				"  .. seealso:: :meth:`set_geometry`\n"
+				"\n"
+				"  .. versionchanged:: 0.43\n"
+				"     When *property_query* not specified and no *default* geometries found then *non-default* geometries are returned.\n")
 		.def("get_all_geometries",
 				&GPlatesApi::feature_handle_get_all_geometries,
 				(bp::arg("coverage_return") = GPlatesApi::CoverageReturn::GEOMETRY_ONLY),
@@ -5062,8 +5603,8 @@ export_feature()
 				"  :type topological_geometry: :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or "
 				":class:`GpmlTopologicalNetwork`, or a sequence (eg, ``list`` or ``tuple``) of them\n"
 				"  :param property_name: the optional property name of the topological geometry property or properties to set, "
-				"if not specified then the default geometry property name associated with this feature's "
-				":class:`type<FeatureType>` is used instead\n"
+				"if not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` "
+				"associated with this feature's :class:`type<FeatureType>` is used instead\n"
 				"  :type property_name: :class:`PropertyName`\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
@@ -5126,9 +5667,11 @@ export_feature()
 				"get_topological_geometry([property_query], [property_return=PropertyReturn.exactly_one])\n"
 				"  Return the topological geometry (or geometries) of this feature.\n"
 				"\n"
-				"  :param property_query: the optional property name or predicate function used to find "
-				"the topological geometry property or properties, if not specified then the default geometry property "
-				"name associated with this feature's :class:`type<FeatureType>` is used instead\n"
+				"  :param property_query: The optional property name or predicate function used to find "
+				"the topological geometry property or properties. If not specified then the "
+				":meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this "
+				"feature's :class:`type<FeatureType>` is used instead. And if there are no default topological geometry properties then "
+				"non-default topological geometry properties are queried instead.\n"
 				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
 				"  :param property_return: whether to return exactly one topological geometry, the first geometry or all topological geometries\n"
 				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
@@ -5139,8 +5682,10 @@ export_feature()
 				"  Usually a :class:`feature type<FeatureType>` supports *geometry* properties with more than one property name - see :meth:`get_geometry`. "
 				"Those geometry properties can also be *topological* geometry properties - the same principle applies here - see :meth:`get_geometry` for more details.\n"
 				"\n"
-				"  If *property_query* is not specified then the default property name is determined from this feature's :class:`type<FeatureType>` "
-				"and the topological geometry is retrieved from one or more properties of that :class:`PropertyName`. "
+				"  If *property_query* is not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` "
+				"is determined from this feature's :class:`type<FeatureType>` and the topological geometry is retrieved from one or more "
+				"properties of that :class:`PropertyName`. And, **starting with version 0.43**, if there are *no* default topological geometry properties then "
+				"non-default topological geometry properties are retrieved. "
 				"See :meth:`get_geometry` for details on how many distinct geometries (topological or non-topological) are allowed per feature.\n"
 				"\n"
 				"  The following table maps *property_return* values to return values:\n"
@@ -5157,14 +5702,19 @@ export_feature()
 				"Returns an empty list if there are no matching topological geometry properties.\n"
 				"  ===================== ==============\n"
 				"\n"
-				"  Return the default topological geometry, in this case a :class:`GpmlTopologicalPolygon` from a "
-				"'gpml:TopologicalClosedPlateBoundary' feature. Returns ``None`` if not exactly one default topological geometry property found:\n"
+				"  Return the sole default topological geometry, in this case a :class:`GpmlTopologicalPolygon` from a "
+				"'gpml:TopologicalClosedPlateBoundary' feature. Returns ``None`` if not exactly one *default* topological geometry property found and "
+				"not exactly one *non-default* topological geometry property found:\n"
 				"  ::\n"
 				"\n"
 				"    topological_polygon = topological_closed_plate_boundary_feature.get_topological_geometry()\n"
 				"    if topological_polygon:\n"
 				"        topological_boundary_sections = topological_polygon.get_boundary_sections()\n"
 				"        ...\n"
+				"\n"
+				"  .. note:: **Starting with version 0.43**, if a sole *default* topological geometry is not found then a sole *non-default* "
+				"topological geometry is returned instead (or `None` if neither is found). This is more useful when you are expecting a single "
+				"topological geometry but don't know which property name it's under. Previously only the *default* geometry property name was queried.\n"
 				"\n"
 				"  Return the :class:`GpmlTopologicalNetwork` from a 'gpml:TopologicalNetwork' feature:\n"
 				"  ::\n"
@@ -5179,16 +5729,21 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`set_topological_geometry`\n"
 				"\n"
-				"  .. versionadded:: 0.24\n")
+				"  .. versionadded:: 0.24\n"
+				"\n"
+				"  .. versionchanged:: 0.43\n"
+				"     When *property_query* not specified and no *default* topological geometry(s) found then *non-default* topological geometry(s) are returned.\n")
 		.def("get_topological_geometries",
 				&GPlatesApi::feature_handle_get_topological_geometries,
 				(bp::arg("property_query") = bp::object()/*Py_None*/),
 				"get_topological_geometries([property_query])\n"
 				"  Return a list of topological geometries of this feature.\n"
 				"\n"
-				"  :param property_query: the optional property name or predicate function used to find "
-				"the topological geometry properties, if not specified then the default geometry property "
-				"name associated with this feature's :class:`type<FeatureType>` is used instead\n"
+				"  :param property_query: The optional property name or predicate function used to find "
+				"the topological geometry properties. If not specified then the "
+				":meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this "
+				"feature's :class:`type<FeatureType>` is used instead. And if there are no default topological geometry properties then "
+				"non-default topological geometry properties are queried instead.\n"
 				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
 				"  :rtype: list of :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`\n"
 				"\n"
@@ -5201,13 +5756,20 @@ export_feature()
 				"    def get_topological_geometries(feature, property_query):\n"
 				"        return feature.get_topological_geometry(property_query, pygplates.PropertyReturn.all)\n"
 				"\n"
+				"  .. note:: **Starting with version 0.43**, if *property_query* is not specified and no *default* topological geometries are found then the "
+				"*non-default* topological geometries are returned instead (or an empty list if neither are found). This is more useful when you are expecting a "
+				"sequence of topological geometries but don't know which property name they're under. Previously only the *default* geometry property name was queried.\n"
+				"\n"
 				"  See :meth:`get_topological_geometry` for more details.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_all_topological_geometries`\n"
 				"\n"
 				"  .. seealso:: :meth:`set_topological_geometry`\n"
 				"\n"
-				"  .. versionadded:: 0.24\n")
+				"  .. versionadded:: 0.24\n"
+				"\n"
+				"  .. versionchanged:: 0.43\n"
+				"     When *property_query* not specified and no *default* topological geometries found then *non-default* topological geometries are returned.\n")
 		.def("get_all_topological_geometries",
 				&GPlatesApi::feature_handle_get_all_topological_geometries,
 				"get_all_topological_geometries()\n"

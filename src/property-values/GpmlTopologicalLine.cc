@@ -37,6 +37,8 @@
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GpmlTopologicalLine::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalLine");
@@ -80,4 +82,74 @@ GPlatesPropertyValues::GpmlTopologicalLine::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalLine::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlTopologicalLine> &gpml_topological_line)
+{
+	if (scribe.is_saving())
+	{
+		GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type sections_ = &gpml_topological_line->sections();
+		scribe.save(TRANSCRIBE_SOURCE, sections_, "sections");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> sections_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "sections");
+		if (!sections_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_topological_line.construct_object(
+				boost::ref(transaction),  // non-const ref
+				sections_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalLine::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type sections_ = &sections();
+			scribe.save(TRANSCRIBE_SOURCE, sections_, "sections");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> sections_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "sections");
+			if (!sections_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+			revision.sections.change(revision_handler.get_model_transaction(), sections_);
+			revision_handler.commit();
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlTopologicalLine>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

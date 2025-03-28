@@ -32,6 +32,7 @@
 #include <QObject>
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/TopologyUtils.h"
 
 #include "gui/Symbol.h"
 
@@ -71,6 +72,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
 				const GPlatesGui::RenderSettings &render_settings,
 				const std::set<GPlatesModel::FeatureId> &topological_sections,
+				const GPlatesAppLogic::TopologyUtils::resolved_topological_boundaries_networks_to_shared_sub_segments_map_type &resolved_topological_shared_sub_segments_map,
 				const symbol_map_type &symbol_map);
 	}
 }

@@ -33,6 +33,8 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GmlLineString::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("LineString");
@@ -56,3 +58,63 @@ GPlatesPropertyValues::GmlLineString::print_to(
 	return os << "{ GmlLineString }";
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlLineString::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlLineString> &gml_line_string)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_line_string->get_polyline(), "polyline");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline_ =
+				scribe.load<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>(TRANSCRIBE_SOURCE, "polyline");
+		if (!polyline_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gml_line_string.construct_object(polyline_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlLineString::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_polyline(), "polyline");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline_ =
+					scribe.load<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>(TRANSCRIBE_SOURCE, "polyline");
+			if (!polyline_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_polyline(polyline_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlLineString>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

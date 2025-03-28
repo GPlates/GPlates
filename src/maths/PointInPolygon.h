@@ -175,6 +175,25 @@ namespace GPlatesMaths
 			 */
 			boost::shared_ptr<SphericalLuneTree> d_spherical_lune_tree;
 		};
+
+
+		/**
+		 * Return the cosine (dot product of two points) used for the point-ON-polygon threshold.
+		 *
+		 * This is only provided in case a client wants to know the threshold. For example, to move
+		 * a point OFF a polygon outline such that it won't get tested as *inside* the polygon.
+		 */
+		double
+		get_point_on_polygon_threshold_cosine();
+
+		/**
+		 * Return the sine (dot product of point and GCA plane) used for the point-ON-polygon threshold.
+		 *
+		 * This is only provided in case a client wants to know the threshold. For example, to move
+		 * a point OFF a polygon outline such that it won't get tested as *inside* the polygon.
+		 */
+		double
+		get_point_on_polygon_threshold_sine();
 	}
 }
 

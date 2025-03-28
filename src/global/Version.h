@@ -90,12 +90,12 @@ namespace GPlatesGlobal
 		///////////////
 
 		/**
-		 * The MAJOR.MINOR.PATCH[PRERELEASE] version of pyGPlates formatted in the PEP440 versioning scheme
+		 * The MAJOR.MINOR.PATCH[RELEASE_SUFFIX] version of pyGPlates formatted in the PEP440 versioning scheme
 		 * (https://www.python.org/dev/peps/pep-0440/).
 		 *
-		 * Where 'PRERELEASE' is optional and only used for pre-releases.
+		 * Where 'RELEASE_SUFFIX' is empty for *final* releases.
 		 *
-		 * For example "1.0.0.dev1" for first development pre-release leading up to official "1.0.0", or
+		 * For example "1.0.0.dev1" for first development release leading up to final release "1.0.0", or
 		 * "1.0.0rc1" for first release candidate.
 		 */
 		QString
@@ -120,15 +120,15 @@ namespace GPlatesGlobal
 		get_pyGPlates_version_patch();
 
 		/**
-		 * The optional PRERELEASE version suffix of pyGPlates formatted in the PEP440 versioning scheme
+		 * The optional version suffix of pyGPlates formatted in the PEP440 versioning scheme
 		 * (https://www.python.org/dev/peps/pep-0440/).
 		 *
-		 * For example ".dev1" for first development pre-release, or "rc1" for first release candidate.
+		 * For example ".dev1" for first development release, or "rc1" for first release candidate.
 		 *
-		 * Returns none if pyGPlates is not a pre-release.
+		 * Returns none if pyGPlates is a final release.
 		 */
 		boost::optional<QString>
-		get_pyGPlates_version_prerelease_suffix();
+		get_pyGPlates_version_release_suffix();
 	}
 }
 

@@ -24,7 +24,7 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include <boost/shared_ptr.hpp>
 #include <boost/operators.hpp>
 #include <boost/bind/bind.hpp>
@@ -43,6 +43,12 @@
 #include <functional>
 
 #if defined(_WIN32)
+// Note: Prevent windows.h from defining min/max macros since these
+//       interfere with things like 'std::numeric_limits<int>::max()' which
+//       is used in boost::pool (via ObjectPool) starting with Boost 1.80.
+#ifndef NOMINMAX
+#	define NOMINMAX
+#endif
 // Including up top (instead of just including below, when needed) somehow avoids compile error:
 //    qatomic_msvc.h(320): error C2668: '_InterlockedCompareExchange': ambiguous call to overloaded function
 #include <windows.h>
@@ -62,12 +68,12 @@ namespace
 	 * Stores platform-dependent tick count.
 	 * Time unit varies across platforms.
 	 */
-	typedef boost::uint64_t ticks_t;
+	typedef std::uint64_t ticks_t;
 
 	/**
 	 * Stores number of get_calls to a profiled section of code.
 	 */
-	typedef boost::uint64_t calls_t;
+	typedef std::uint64_t calls_t;
 
 	/**
 	 * Returns current time in units of @a ticks_t.
@@ -296,12 +302,18 @@ namespace
 		 * Links are either the child links or the parent links.
 		 */
 		class ProfileLinkIterator :
-				public std::iterator<
-						std::iterator_traits<profile_link_map_const_iterator>::iterator_category,
-						ProfileLink>,
 				public boost::equality_comparable<ProfileLinkIterator>
 		{
 		public:
+
+			// Iterator typedefs.
+			using iterator_category = std::iterator_traits<profile_link_map_const_iterator>::iterator_category;
+			using value_type = ProfileLink;
+			using difference_type = std::ptrdiff_t;
+			using pointer = ProfileLink *;
+			using reference = ProfileLink &;
+
+
 			ProfileLinkIterator(
 					const profile_link_map_type &profile_link_map,
 					const profile_link_map_const_iterator &profile_link_map_const_iter) :
@@ -907,7 +919,7 @@ namespace
 		// 0.01 microseconds (from 0.1 microseconds).
 		//
 		const double accuracy = 1e-8/* 0.01 microseconds */;
-		seconds = accuracy * static_cast<boost::uint64_t>(seconds / accuracy  + 0.5);
+		seconds = accuracy * static_cast<std::uint64_t>(seconds / accuracy  + 0.5);
 
 		const char *time_suffix;
 		double time;

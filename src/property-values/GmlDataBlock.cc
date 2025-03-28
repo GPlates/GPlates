@@ -26,6 +26,7 @@
  */
 
 #include <iostream>
+#include <boost/ref.hpp>
 
 #include "GmlDataBlock.h"
 
@@ -33,6 +34,9 @@
 #include "global/GPlatesAssert.h"
 
 #include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeRevisionedVector.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -43,15 +47,20 @@ std::ostream &
 GPlatesPropertyValues::GmlDataBlock::print_to(
 		std::ostream &os) const
 {
-	const GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> &tuple_list_ = tuple_list();
-
 	os << "[ ";
 
-	GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::const_iterator tuple_list_iter = tuple_list_.begin();
-	GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::const_iterator tuple_list_end = tuple_list_.end();
-	for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter)
+	bool first = true;
+	for (GmlDataBlockCoordinateList::non_null_ptr_to_const_type coord_list : tuple_list())
 	{
-		os << **tuple_list_iter;
+		if (first)
+		{
+			first = false;
+		}
+		else
+		{
+			os << " , ";
+		}
+		os << *coord_list;
 	}
 
 	return os << " ]";
@@ -77,4 +86,78 @@ GPlatesPropertyValues::GmlDataBlock::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlDataBlock::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlDataBlock> &gml_data_block)
+{
+	if (scribe.is_saving())
+	{
+		// Save the tuple list.
+		GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type tuple_list_ = &gml_data_block->tuple_list();
+		scribe.save(TRANSCRIBE_SOURCE, tuple_list_, "tuple_list");
+	}
+	else // loading
+	{
+		// Load the tuple list.
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type> tuple_list_ =
+				scribe.load<GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "tuple_list");
+		if (!tuple_list_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gml_data_block.construct_object(
+				boost::ref(transaction),  // non-const ref
+				tuple_list_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlDataBlock::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Save the tuple list.
+			scribe.save(TRANSCRIBE_SOURCE, tuple_list(), "tuple_list");
+		}
+		else // loading
+		{
+			// Load the tuple list.
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type> tuple_list_ =
+					scribe.load<GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "tuple_list");
+			if (!tuple_list_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			revision_handler.get_revision<Revision>().tuple_list.change(
+					revision_handler.get_model_transaction(),
+					tuple_list_);
+			revision_handler.commit();
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlDataBlock>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

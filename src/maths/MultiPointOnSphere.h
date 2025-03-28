@@ -39,6 +39,9 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesMaths
 {
@@ -404,6 +407,15 @@ namespace GPlatesMaths
 		 * This pointer is NULL until the first calculation is requested.
 		 */
 		mutable boost::intrusive_ptr<MultiPointOnSphereImpl::CachedCalculations> d_cached_calculations;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

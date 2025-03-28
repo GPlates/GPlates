@@ -71,11 +71,6 @@ namespace GPlatesCanvasTools
 	{
 	public:
 
-		/**
-		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<SplitFeature>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<SplitFeature> non_null_ptr_type;
-
 		static
 		const non_null_ptr_type
 		create(

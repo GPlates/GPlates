@@ -381,8 +381,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Predicate to sort @a ResolvedSubSegmentMarker from beginning to end of the section geometry.
 		 */
-		class SortResolvedSubSegmentMarkers :
-				public std::binary_function<ResolvedSubSegmentMarker, ResolvedSubSegmentMarker, bool>
+		class SortResolvedSubSegmentMarkers
 		{
 		public:
 
@@ -1882,11 +1881,45 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 
 		// Now that we've gathered all the shared sub-segments for the current section,
 		// add them to a ResolvedTopologicalSection.
-		resolved_topological_sections.push_back(
-				ResolvedTopologicalSection::create(
-						shared_sub_segments.begin(),
-						shared_sub_segments.end(),
-						section_rg,
-						section_feature_ref));
+		//
+		// Note: It's possible to have no shared sub-segments.
+		//       We only create a ResolvedTopologicalSection if it has shared sub-segments.
+		if (!shared_sub_segments.empty())
+		{
+			resolved_topological_sections.push_back(
+					ResolvedTopologicalSection::create(
+							shared_sub_segments.begin(),
+							shared_sub_segments.end(),
+							section_rg,
+							section_feature_ref));
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::TopologyUtils::map_resolved_topological_boundaries_networks_to_shared_sub_segments(
+		resolved_topological_boundaries_networks_to_shared_sub_segments_map_type &resolved_topological_shared_sub_segments_map,
+		const std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections)
+{
+	resolved_topological_shared_sub_segments_map.clear();
+
+	for (auto resolved_topological_section : resolved_topological_sections)
+	{
+		for (auto shared_sub_segment : resolved_topological_section->get_shared_sub_segments())
+		{
+			// Add the current shared sub-segment to all the resolved topologies sharing it (and add their reversal flags).
+			for (const auto &sharing_resolved_topology : shared_sub_segment->get_sharing_resolved_topologies())
+			{
+				// Get the geometry property referenced by the resolved topology.
+				boost::optional<GPlatesModel::FeatureHandle::iterator> resolved_topology_geometry_property =
+						ReconstructionGeometryUtils::get_geometry_property_iterator(sharing_resolved_topology.resolved_topology);
+				if (resolved_topology_geometry_property)  // this should always succeed
+				{
+					resolved_topological_shared_sub_segments_map[resolved_topology_geometry_property.get()].push_back(
+						{ shared_sub_segment, sharing_resolved_topology.is_sub_segment_geometry_reversed });
+				}
+			}
+		}
 	}
 }

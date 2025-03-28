@@ -35,10 +35,12 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
-#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -129,6 +131,21 @@ namespace GPlatesPropertyValues
 
 		private:
 			XsString::non_null_ptr_type d_name;
+
+		private: // Transcribe...
+
+			friend class GPlatesScribe::Access;
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject<BandName> &band_name);
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
 		};
 
 		//! Typedef for a sequence of band names.
@@ -157,10 +174,7 @@ namespace GPlatesPropertyValues
 				ForwardIterator begin,
 				ForwardIterator end)
 		{
-			GPlatesModel::ModelTransaction transaction;
-			non_null_ptr_type ptr(new GpmlRasterBandNames(transaction, begin, end));
-			transaction.commit();
-			return ptr;
+			return non_null_ptr_type(new GpmlRasterBandNames(begin, end));
 		}
 
 		const non_null_ptr_type
@@ -247,10 +261,9 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		template<typename ForwardIterator>
 		GpmlRasterBandNames(
-				GPlatesModel::ModelTransaction &transaction_,
 				ForwardIterator begin,
 				ForwardIterator end) :
-			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, begin, end)))
+			PropertyValue(Revision::non_null_ptr_type(new Revision(*this, begin, end)))
 		{  }
 
 		//! Constructor used when cloning.
@@ -302,7 +315,6 @@ namespace GPlatesPropertyValues
 		{
 			template<typename ForwardIterator>
 			Revision(
-					GPlatesModel::ModelTransaction &transaction_,
 					RevisionContext &child_context_,
 					ForwardIterator begin_,
 					ForwardIterator end_) :
@@ -345,6 +357,20 @@ namespace GPlatesPropertyValues
 			band_names_list_type band_names;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlRasterBandNames> &gpml_raster_band_names);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

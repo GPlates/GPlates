@@ -55,6 +55,7 @@ set(srcs
     GpmlFeatureSnapshotReference.h
     GpmlFiniteRotation.cc
     GpmlFiniteRotation.h
+    GpmlFiniteRotationSlerp.cc
     GpmlFiniteRotationSlerp.h
     GpmlHotSpotTrailMark.cc
     GpmlHotSpotTrailMark.h
@@ -118,6 +119,7 @@ set(srcs
     RawRasterUtils.cc
     RawRasterUtils.h
     ScalarCoverageStatistics.h
+    ScribeExportPropertyValues.h
     SpatialReferenceSystem.cc
     SpatialReferenceSystem.h
     StructuralType.h

@@ -194,6 +194,33 @@ namespace
 
 
 	/**
+	 * Calculate the size of one device-independent pixel in world space coordinates.
+	 */
+	double
+	calc_device_independent_pixel_to_world_space_ratio(
+			int scene_view_width_in_device_independent_pixels,
+			int scene_view_height_in_device_independent_pixels,
+			const double &zoom_factor)
+	{
+		// Smallest dimension (view width or height) in device-independent pixels.
+		double smaller_dim_in_device_independent_pixels;
+		if (scene_view_width_in_device_independent_pixels <= scene_view_height_in_device_independent_pixels)
+		{
+			smaller_dim_in_device_independent_pixels = static_cast<GLdouble>(scene_view_width_in_device_independent_pixels);
+		}
+		else
+		{
+			smaller_dim_in_device_independent_pixels = static_cast<GLdouble>(scene_view_height_in_device_independent_pixels);
+		}
+
+		// The smallest dimension (view width or height) is bounded by this size in world space.
+		const GLdouble smaller_dim_world_space = 2 * GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO / zoom_factor;
+
+		return smaller_dim_world_space / smaller_dim_in_device_independent_pixels;
+	}
+
+
+	/**
 	 * Given the scene view's dimensions (eg, canvas dimensions) generate projection transforms
 	 * needed to display the scene.
 	 *
@@ -725,6 +752,17 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
 	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, painter);
 
+	// Clear colour buffer of the main framebuffer.
+	//
+	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
+	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
+	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
+	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
+	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
+	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
+	// white on Mac but already black on Windows/Ubuntu.
+	const GPlatesGui::Colour clear_colour(0, 0, 0, 1);
+
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(
 			*renderer,
@@ -733,6 +771,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 			d_gl_projection_transform_include_full_globe,
 			d_gl_projection_transform_include_stars,
 			d_gl_projection_transform_text_overlay,
+			clear_colour,
 			// Using device-independent pixels (eg, widget dimensions)...
 			width(),
 			height());
@@ -748,7 +787,8 @@ GPlatesQtWidgets::GlobeCanvas::get_viewport_size() const
 
 QImage
 GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
-		const QSize &image_size_in_device_independent_pixels)
+		const QSize &image_size_in_device_independent_pixels,
+		const GPlatesGui::Colour &image_clear_colour)
 {
 	// Initialise OpenGL if we haven't already.
 	initializeGL_if_necessary();
@@ -801,9 +841,9 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 		return QImage();
 	}
 
-	// Fill the image with transparent black in case there's an exception during rendering
+	// Fill the image with the clear colour in case there's an exception during rendering
 	// of one of the tiles and the image is incomplete.
-	image.fill(QColor(0,0,0,0).rgba());
+	image.fill(QColor(image_clear_colour).rgba());
 
 	// Get the frame buffer dimensions (in device pixels).
 	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
@@ -860,6 +900,7 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 				projection_transform_include_full_globe,
 				projection_transform_include_stars,
 				projection_transform_text_overlay,
+				image_clear_colour,
 				image);
 		frame_cache_handle->push_back(tile_cache_handle);
 	}
@@ -880,6 +921,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
 		const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
+		const GPlatesGui::Colour &image_clear_colour,
 		QImage &image)
 {
 	// Make sure we leave the OpenGL state the way it was.
@@ -939,6 +981,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 			tile_projection_transform_include_full_globe,
 			tile_projection_transform_include_stars,
 			tile_projection_transform_text_overlay,
+			image_clear_colour,
 			// Since QImage is just raw pixels its dimensions are in device pixels, but
 			// we need device-independent pixels here (eg, widget dimensions)...
 			image.width() / image.devicePixelRatio(),
@@ -1034,6 +1077,9 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 			projection_transform_include_stars,
 			projection_transform_text_overlay);
 
+	// Clear colour buffer of the framebuffer (set to transparent black).
+	const GPlatesGui::Colour clear_colour(0, 0, 0, 0);
+
 	// Render the scene to the feedback paint device.
 	// This will use the main framebuffer for intermediate rendering in some cases.
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
@@ -1044,6 +1090,7 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 			projection_transform_include_full_globe,
 			projection_transform_include_stars,
 			projection_transform_text_overlay,
+			clear_colour,
 			// Using device-independent pixels (eg, widget dimensions)...
 			feedback_paint_device.width(),
 			feedback_paint_device.height());
@@ -1058,23 +1105,16 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
 		const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
+		const GPlatesGui::Colour &clear_colour,
 		int paint_device_width_in_device_independent_pixels,
 		int paint_device_height_in_device_independent_pixels)
 {
 	PROFILE_FUNC();
 
-	// Clear the colour buffer of the main framebuffer.
+	// Clear the colour buffer of the framebuffer.
 	// NOTE: We leave the depth clears to class Globe since it can do multiple
 	// depth buffer clears per render depending on the projection matrices it uses.
-	//
-	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
-	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
-	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
-	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
-	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
-	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
-	// white on Mac but already black on Windows/Ubuntu.
-	renderer.gl_clear_color(0, 0, 0, 1); // Clear colour to opaque black
+	renderer.gl_clear_color(clear_colour.red(), clear_colour.green(), clear_colour.blue(), clear_colour.alpha());
 	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
 
 	// NOTE: We only set the model-view transform here.
@@ -1087,6 +1127,12 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	const float scale = calculate_scale(
 			paint_device_width_in_device_independent_pixels,
 			paint_device_height_in_device_independent_pixels);
+	const double device_independent_pixel_to_world_space_ratio =
+			calc_device_independent_pixel_to_world_space_ratio(
+					paint_device_width_in_device_independent_pixels,
+					paint_device_height_in_device_independent_pixels,
+					viewport_zoom_factor);
+
 
 	//
 	// Paint the globe and its contents.
@@ -1101,6 +1147,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	const cache_handle_type frame_cache_handle = d_globe.paint(
 			renderer,
 			viewport_zoom_factor,
+			device_independent_pixel_to_world_space_ratio,
 			scale,
 			projection_transform_include_front_half_globe,
 			projection_transform_include_rear_half_globe,

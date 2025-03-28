@@ -86,7 +86,7 @@ namespace GPlatesAppLogic
 	/**
 	 * Extracts the plate ID for use by GenericColourScheme.
 	 */
-	class PlateIdPropertyExtractor 
+	class PlateIdPropertyExtractor
 	{
 	public:
 		
@@ -104,7 +104,7 @@ namespace GPlatesAppLogic
 	/**
 	 * Extracts the age for use by GenericColourScheme.
 	 */
-	class AgePropertyExtractor 
+	class AgePropertyExtractor
 	{
 	public:
 
@@ -136,7 +136,7 @@ namespace GPlatesAppLogic
 	/**
 	 * Extracts the feature type for use by GenericColourScheme.
 	 */
-	class FeatureTypePropertyExtractor 
+	class FeatureTypePropertyExtractor
 	{
 	public:
 

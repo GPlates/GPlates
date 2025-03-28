@@ -34,11 +34,6 @@
 // msvc - __pragma()  // Takes tokens that are not in a string.
 
 
-//
-// NOTE: Unfortunately push/pop is only supported by the latest 'gcc' compilers.
-// You'll have to re-enable a warning instead of popping the warning state.
-//
-#if 0
 // Push 'gcc' warnings only.
 #if defined(__GNUC__)
 #define PUSH_GCC_WARNINGS \
@@ -53,7 +48,6 @@
 		_Pragma( STRINGIFY_WARNING(GCC diagnostic pop) )
 #else
 #	define POP_GCC_WARNINGS
-#endif
 #endif
 
 

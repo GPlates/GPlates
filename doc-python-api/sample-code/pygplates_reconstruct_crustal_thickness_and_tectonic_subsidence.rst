@@ -91,7 +91,7 @@ Note that the number of values in ``reconstructed_topology_point_locations`` mat
 
     reconstructed_topology_point_locations = reconstructed_time_span.get_topology_point_locations(time)
 
-Extract the reconstructed/deformed crustal stretching factor and tectonic subsidence (in kms) for each point in ``reconstructed_topology_point_locations``.
+Extract the reconstructed/deformed crustal stretching factor and tectonic subsidence (in kms) for each point in ``reconstructed_points``.
 Note that :meth:`pygplates.ReconstructedGeometryTimeSpan.get_scalar_values` returns a Python dictionary mapping scalar types to their scalar values
 (unless a specific scalar type is specified). From that dictionary we then extract the crustal stretching factor and tectonic subsidence values.
 Also note that these builtin scalar types are always available (even when no initial scalar values are provided).

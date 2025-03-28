@@ -65,6 +65,7 @@ set(srcs
     RenderedGeometryUtils.h
     RenderedGeometryVisitor.h
     RenderedMultiPointOnSphere.h
+    RenderedMultiReconstructionGeometry.h
     RenderedPointOnSphere.h
     RenderedPolygonOnSphere.h
     RenderedPolylineOnSphere.h
@@ -77,6 +78,7 @@ set(srcs
     RenderedSquareSymbol.h
     RenderedStrainMarkerSymbol.h
     RenderedString.h
+    RenderedSubductionTeethPolyline.h
     RenderedTangentialArrow.h
     RenderedTriangleSymbol.h
     ScalarField3DRenderParameters.cc

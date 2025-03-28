@@ -29,6 +29,8 @@ if (WIN32)
         SET(CPACK_GENERATOR NSIS ZIP)
     else()  # pyGPlates ...
         # Just create a ZIP (binary) archive by default.
+        #
+        # Note: It's better to install pyGPlates using conda or pip (rather than extracting a zip file built with CPack).
         SET(CPACK_GENERATOR ZIP)
     endif()
     # For source packages default to a ZIP archive.
@@ -42,6 +44,8 @@ elseif (APPLE)
         SET(CPACK_GENERATOR DragNDrop)
     else()  # pyGPlates ...
         # Just create a ZIP (binary) archive by default.
+        #
+        # Note: It's better to install pyGPlates using conda or pip (rather than extracting a zip file built with CPack).
         SET(CPACK_GENERATOR ZIP)
     endif()
     # For source packages default to a bzipped tarball (.tar.bz2).
@@ -50,46 +54,41 @@ elseif (APPLE)
     # Note that Apple also requires notarization.
     #
     # The entire notarization process is currently done outside of CMake/CPack and should follow the procedure outlined here...
-    #   XCode >= 13:
     #     https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow
-    #   XCode < 13:
-    #     https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow/notarizing_apps_when_developing_with_xcode_12_and_earlier
+    #
+    # ...note that Apple (as of 1st Nov 2023) requires XCode 14 or notarytool (which is in XCode 13) for notarization (and no longer supports 'altool').
+    # While XCode 13 requires macOS 11+ (see https://xcodereleases.com), and so cannot be used on macOS 10.15, you can however download
+    # XCode 13 and just copy its 'notarytool' (on macOS 10.15) and use it as "notarytool ..." (instead of "xcrun notarytool ...") according to:
+    #   https://developer.apple.com/documentation/technotes/tn3147-migrating-to-the-latest-notarization-tool#Enable-notarization-on-an-older-version-of-macOS
+    #
     #
     # For GPlates this amounts to uploading the '.dmg' file to Apple for notarization, checking for successful notarization and then stapling the
     # notarization ticket to the '.dmg' file. Once that is all done the '.dmg' file can be distributed to users.
     # For example...
-    #   XCode >= 13:
     #     xcrun notarytool submit gplates_2.3.0-dev1_Darwin-arm64.dmg --keychain-profile "AC_PASSWORD"
     #     xcrun notarytool info <request-identifier> --keychain-profile "AC_PASSWORD"
     #     xcrun stapler staple gplates_2.3.0-dev1_Darwin-arm64.dmg
-    #   XCode < 13:
-    #     xcrun altool --notarize-app --primary-bundle-id org.gplates.gplates-2.3.0-dev1 --username <email-address> --password @keychain:AC_PASSWORD --file gplates_2.3.0-dev1_Darwin-x86_64.dmg
-    #     xcrun altool --notarization-info <request-identifier> -u <email-address> --password @keychain:AC_PASSWORD
-    #     xcrun stapler staple gplates_2.3.0-dev1_Darwin-x86_64.dmg
     # Note however that, if you're only using CMake < 3.19, then you also need to manually code sign the '.dmg' file prior to notarization upload
     # (for CMake >= 3.19 we handle it during the packaging phase using CPACK_POST_BUILD_SCRIPTS). See the "DragNDrop" section below.
     #
     # For pyGPlates this amounts to uploading the zip archive to Apple for notarization and checking for successful notarization
     # (note that Apple's notarization process does not accept the TBZ2 format, which is why we default to ZIP for binary archives).
     # For example:
-    #   XCode >= 13:
     #     xcrun notarytool submit pygplates_0.34.0_Darwin-arm64.zip --keychain-profile "AC_PASSWORD"
     #     xcrun notarytool info <request-identifier> --keychain-profile "AC_PASSWORD"
-    #   XCode < 13:
-    #     xcrun altool --notarize-app --primary-bundle-id org.gplates.pygplates-0.34.0 --username <email-address> --password @keychain:AC_PASSWORD --file pygplates_0.34.0_Darwin-x86_64.zip
-    #     xcrun altool --notarization-info <request-identifier> -u <email-address> --password @keychain:AC_PASSWORD
     # However you cannot staple a notarization ticket to a ZIP archive (you must instead staple each item in the archive and then create a new archive).
     # If an item is not stapled then Gatekeeper finds the ticket online (stapling is so the ticket can be found when the network is offline).
     # So currently we don't staple the items.
     #
-    # Note that soon we will also use Conda to build pyGPlates packages (and we won't need Apple notarization for conda because the Conda package manager
-    # will be responsible for installing pygplates on the user's computer, and so conda will then be responsible for quarantine).
-    # Also the conda build script will likely use only the 'install' phase (ie, not use CPack) with something like:
-    #   cmake --install . --prefix pygplates_installation
-    # It is interesting to note that, as an alternative to using CPack, these staged install files could be manually archived into a zip file using 'ditto'
+    # NOTE: Packaging pyGPlates with CPack is no longer used. Users now install pyGPlates using conda or pip.
+    #
+    # Note that we now use Conda and Pip to build pyGPlates packages (via scikit-build-core). And conda/pip don't need Apple notarization because
+    # those package managers (conda/pip) are responsible for installing pygplates on the user's computer, and so conda/pip is responsible for quarantine.
+    # Also scikit-build-core uses only the 'install' phase (ie, doesn't use CPack) with, eg, "cmake --install . --prefix pygplates_installation".
+    # It is interesting to note that, as an alternative to using CPack, these staged install files could have been manually archived into a zip file using 'ditto'
     # (which can store extended attributes; and actually appears to be used by CPack):
     #   ditto -c -k --keepParent pygplates_installation pygplates_installation.zip
-    # ...but it's easier just to use CPack.
+    # ...but it was easier to just use CPack at the time.
     #
 
     #
@@ -115,16 +114,23 @@ elseif (APPLE)
 
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
-    if (GPLATES_INSTALL_STANDALONE)
-        # For standalone binary packages default to a bzipped tarball.
-        # With standalone Linux, like Windows and macOS, the 'install' stage has copied the dependencies
-        # into the staging area for packaging and now just need to package that into an archive.
-        # The user will be able to extract the archive on target system without having to install anything.
+    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        if (GPLATES_INSTALL_STANDALONE)
+            # For standalone binary packages default to a bzipped tarball.
+            # With standalone Linux, like Windows and macOS, the 'install' stage has copied the dependencies
+            # into the staging area for packaging and now just need to package that into an archive.
+            # The user will be able to extract the archive on target system without having to install anything.
+            SET(CPACK_GENERATOR TBZ2)
+        else()
+            # For non-standalone binary packages, default to a Debian package.
+            # Dependencies will then be installed on the target system by the system binary package manager.
+            SET(CPACK_GENERATOR DEB)
+        endif()
+    else()  # pyGPlates ...
+        # Just create a bzipped tarball (binary) archive by default.
+        #
+        # Note: It's better to install pyGPlates using conda or pip (rather than extracting a tarball built with CPack).
         SET(CPACK_GENERATOR TBZ2)
-    else()
-        # For non-standalone binary packages, default to a Debian package (can be used for GPlates or pyGPlates).
-        # Dependencies will then be installed on the target system by the system binary package manager.
-        SET(CPACK_GENERATOR DEB)
     endif()
     # For source packages default to a bzipped tarball (.tar.bz2).
     SET(CPACK_SOURCE_GENERATOR TBZ2)
@@ -151,11 +157,6 @@ SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${PROJECT_SOURCE_DIR}/cmake/distribution")
 # Lower case PROJECT_NAME.
 STRING(TOLOWER "${PROJECT_NAME}" _PROJECT_NAME_LOWER)
 
-# Python version suffix for pyGPlates builds.
-if (NOT GPLATES_BUILD_GPLATES)  # pyGPlates ...
-    SET(_PYGPLATES_PYTHON_VERSION_SUFFIX py${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
-endif()
-
 #########################################################
 # CPack configuration variables common to all platforms #
 #########################################################
@@ -178,8 +179,11 @@ SET(CPACK_PACKAGE_CONTACT "${GPLATES_PACKAGE_CONTACT}")
 #
 #   By default, this is built from CPACK_PACKAGE_VERSION_MAJOR, CPACK_PACKAGE_VERSION_MINOR, and CPACK_PACKAGE_VERSION_PATCH.
 #
-# Note: We're using PROJECT_VERSION_PRERELEASE which represents GPlates (or pyGPlates) if GPLATES_BUILD_GPLATES is true (or false).
-SET(CPACK_PACKAGE_VERSION "${PROJECT_VERSION_PRERELEASE}")
+if (GPLATES_BUILD_GPLATES)  # GPlates ...
+    SET(CPACK_PACKAGE_VERSION "${GPLATES_VERSION_PRERELEASE}")
+else()  # pyGPlates ...
+    SET(CPACK_PACKAGE_VERSION "${PYGPLATES_VERSION_RELEASE}")
+endif()
 
 #   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate, not including the extension.
 #
@@ -196,27 +200,29 @@ if (WIN32)
         SET(_CPACK_SYSTEM_NAME_WIN win32)
     endif()
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
-        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_CPACK_SYSTEM_NAME_WIN}")
+        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_VERSION_PRERELEASE_USER}_${_CPACK_SYSTEM_NAME_WIN}")
     else()  # pyGPlates ...
-        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_PYGPLATES_PYTHON_VERSION_SUFFIX}_${_CPACK_SYSTEM_NAME_WIN}")
+        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PYGPLATES_VERSION_RELEASE}_py${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR}_${_CPACK_SYSTEM_NAME_WIN}")
     endif()
 else()
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
-        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_VERSION_PRERELEASE_USER}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
     else()  # pyGPlates ...
-        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_PYGPLATES_PYTHON_VERSION_SUFFIX}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PYGPLATES_VERSION_RELEASE}_py${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
     endif()
 endif()
 
-#   CPACK_PACKAGE_DESCRIPTION_FILE - A text file used to describe the project.
+#   CPACK_PACKAGE_DESCRIPTION - A description of the project.
 #
 #   Used, for example, the introduction screen of a CPack-generated Windows installer to describe the project.
 #
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageDescription.txt")
+SET(CPACK_PACKAGE_DESCRIPTION "${GPLATES_PACKAGE_DESCRIPTION}")
 
 #   CPACK_PACKAGE_DESCRIPTION_SUMMARY - Short description of the project (only a few words).
 #
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
+# Note: CMake (>= 3.16) uses this as the first line of Debian package description and Debian doesn't want first word to be same name as package name.
+#       So PROJECT_DESCRIPTION (in DESCRIPTION variable of 'project()' command in root 'CMakeLists.txt' file) should not start with 'GPlates' (or 'PyGPlates').
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
 
 #   CPACK_RESOURCE_FILE_LICENSE - License to be embedded in the installer.
 #
@@ -225,20 +231,27 @@ SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 #   used by some CPack generators like NSIS. If you want to install a license file (may be the same as this one)
 #   along with your project, you must add an appropriate CMake install() command in your CMakeLists.txt.
 #
-SET(CPACK_RESOURCE_FILE_LICENSE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/LicenseFile.txt")
+set(PACKAGE_LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LicenseFile.txt")
+file(WRITE "${PACKAGE_LICENSE_FILE}" "${GPLATES_PACKAGE_LICENSE}")
+SET(CPACK_RESOURCE_FILE_LICENSE "${PACKAGE_LICENSE_FILE}")
 
 #   CPACK_RESOURCE_FILE_README - ReadMe file to be embedded in the installer.
 #
 #    It typically describes in some detail the purpose of the project during the installation.
 #    Not all CPack generators use this file.
 #
-SET(CPACK_RESOURCE_FILE_README "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageReadMe.txt")
+set(PACKAGE_README_FILE "${CMAKE_CURRENT_BINARY_DIR}/PackageReadMe.txt")
+file(WRITE "${PACKAGE_README_FILE}" "${GPLATES_PACKAGE_DESCRIPTION}")
+SET(CPACK_RESOURCE_FILE_README "${PACKAGE_README_FILE}")
 
 #   CPACK_RESOURCE_FILE_WELCOME - Welcome file to be embedded in the installer.
 #
 #   It welcomes users to this installer. Typically used in the graphical installers on Windows and Mac OS X.
 #
-SET(CPACK_RESOURCE_FILE_WELCOME "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageWelcome.txt")
+set(PACKAGE_WELCOME_FILE "${CMAKE_CURRENT_BINARY_DIR}/PackageWelcome.txt")
+file(WRITE "${PACKAGE_WELCOME_FILE}" "Welcome to the ${PROJECT_NAME} installer. This program will guide you through the installation of this software.
+")  # newline
+SET(CPACK_RESOURCE_FILE_WELCOME "${PACKAGE_WELCOME_FILE}")
 
 #   CPACK_PACKAGE_EXECUTABLES - Lists each of the executables and associated text label to be used to create Start Menu shortcuts.
 #
@@ -256,8 +269,12 @@ SET(CPACK_STRIP_FILES TRUE)
 
 #   CPACK_SOURCE_PACKAGE_FILE_NAME - The name of the source package, e.g., cmake-2.6.1
 #
-# Note: We do not insert the python version suffix for pyGPlates source builds (like we do for pyGPlates binary builds).
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_src")
+if (GPLATES_BUILD_GPLATES)  # GPlates ...
+    SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_VERSION_PRERELEASE_USER}_src")
+else()  # pyGPlates ...
+    # Note: We do not insert the python version suffix for pyGPlates source builds (like we do for pyGPlates binary builds).
+    SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PYGPLATES_VERSION_RELEASE}_src")
+endif()
 
 #   CPACK_SOURCE_STRIP_FILES - List of files in the source tree that will be stripped.
 #
@@ -271,9 +288,13 @@ SET(CPACK_SOURCE_STRIP_FILES FALSE)
 #   This is a list of patterns, e.g., /CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~;cscope.*
 #
 # Skip:
-# - directories and files starting with '.' (eg, '.git/' directory or '.git' file, and '.gitattributes' and '.gitignore'), and
-# - directories named '__pycache__'.
-SET(CPACK_SOURCE_IGNORE_FILES "/\\.[^/]+" "/__pycache__/")
+#
+# Directories and files starting with '.' (eg, '.git/' directory or '.git' file, and '.gitattributes' and '.gitignore').
+LIST(APPEND CPACK_SOURCE_IGNORE_FILES "^/\\.[^/]+")
+# Files ending with '.log'.
+LIST(APPEND CPACK_SOURCE_IGNORE_FILES "/[^/]+\\.log$")
+# Directories.
+LIST(APPEND CPACK_SOURCE_IGNORE_FILES "/__pycache__/" "/wheelhouse/" "/dist/" "/debug/")
 
 #   CPACK_VERBATIM_VARIABLES - If set to TRUE, values of variables prefixed with CPACK_ will be escaped before being written
 #                              to the configuration files, so that the cpack program receives them exactly as they were specified.
@@ -299,11 +320,11 @@ set(CPACK_VERBATIM_VARIABLES TRUE)
 if (GPLATES_BUILD_GPLATES)
     #   CPACK_NSIS_PACKAGE_NAME - The title displayed at the top of the installer.
     #
-    SET(CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME} ${PROJECT_VERSION_PRERELEASE_USER}")
+    SET(CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME} ${GPLATES_VERSION_PRERELEASE_USER}")
 
     #   CPACK_NSIS_DISPLAY_NAME - The display name string that appears in the Windows Apps & features in Control Panel.
     #
-    SET(CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME} ${PROJECT_VERSION_PRERELEASE_USER}")
+    SET(CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME} ${GPLATES_VERSION_PRERELEASE_USER}")
 
     #   CPACK_NSIS_MUI_ICON - An icon filename.
     #
@@ -400,20 +421,22 @@ if (GPLATES_BUILD_GPLATES)
                 #
                 file(WRITE "${post_build_script}" "
                     foreach(_package_file \${CPACK_PACKAGE_FILES})
-                        # Run 'codesign' to sign with a Developer ID certificate.
-                        execute_process(
-                            COMMAND ${CODESIGN} --timestamp --sign \"${GPLATES_APPLE_CODE_SIGN_IDENTITY}\" \${_package_file}
-                            RESULT_VARIABLE _codesign_result
-                            OUTPUT_VARIABLE _codesign_output
-                            ERROR_VARIABLE _codesign_error)
-                        if (_codesign_result)
-                            message(FATAL_ERROR \"${CODESIGN} failed: \${_codesign_error}\")
+                        if (_package_file MATCHES [[.*\.dmg]])
+                            # Run 'codesign' to sign with a Developer ID certificate.
+                            execute_process(
+                                COMMAND ${CODESIGN} --timestamp --sign \"${GPLATES_APPLE_CODE_SIGN_IDENTITY}\" \${_package_file}
+                                RESULT_VARIABLE _codesign_result
+                                OUTPUT_VARIABLE _codesign_output
+                                ERROR_VARIABLE _codesign_error)
+                            if (_codesign_result)
+                                message(FATAL_ERROR \"${CODESIGN} failed: \${_codesign_error}\")
+                            endif()
                         endif()
                     endforeach()
                 ")
             endfunction()
 
-            set(_post_build_script "${CMAKE_CURRENT_BINARY_DIR}/codesign_dragndrop_package.cmake")
+            set(_post_build_script "${CMAKE_CURRENT_BINARY_DIR}/codesign_package.cmake.cmake")
 
             create_post_build_script(${_post_build_script})
 
@@ -428,120 +451,129 @@ endif()
 # DEB #
 #######
 #
-# Packages GPlates (or pyGPlates) if GPLATES_BUILD_GPLATES is true (or false).
+# Only used to package GPlates (not pyGPlates).
+if (GPLATES_BUILD_GPLATES)
+    #   CPACK_DEBIAN_PACKAGE_VERSION - The Debian package version.
+    #
+    #   Default : CPACK_PACKAGE_VERSION
+    #
+    # For a pre-release append the pre-release version, using a '~' character which is the common Debian method
+    # of handling pre-releases (see https://www.debian.org/doc/debian-policy/ch-controlfields.html#version).
+    if (GPLATES_VERSION_PRERELEASE_SUFFIX)
+        # For example, the first development release before 2.3.0 would be 2.3.0~1, and the first release candidate would be 2.3.0~rc.1.
+        SET(CPACK_DEBIAN_PACKAGE_VERSION "${GPLATES_VERSION}~${GPLATES_VERSION_PRERELEASE_SUFFIX}")
+    else()
+        SET(CPACK_DEBIAN_PACKAGE_VERSION "${GPLATES_VERSION}")
+    endif()
 
-#   CPACK_DEBIAN_PACKAGE_VERSION - The Debian package version.
-#
-#   Default : CPACK_PACKAGE_VERSION
-#
-# For a pre-release append the pre-release version, using a '~' character which is the common Debian method
-# of handling pre-releases (see https://www.debian.org/doc/debian-policy/ch-controlfields.html#version).
-# Note: We're using PROJECT_VERSION_PRERELEASE which represents GPlates (or pyGPlates) if GPLATES_BUILD_GPLATES is true (or false).
-if (PROJECT_VERSION_PRERELEASE_SUFFIX)
-    # For example, for GPlates, the first development release before 2.3.0 would be 2.3.0~1, and the first release candidate would be 2.3.0~rc.1.
-    SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}~${PROJECT_VERSION_PRERELEASE_SUFFIX}")
-else()
-    SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}")
-endif()
+    #   CPACK_DEBIAN_FILE_NAME (CPACK_DEBIAN_<COMPONENT>_FILE_NAME) - Package file name.
+    #
+    #   Default : <CPACK_PACKAGE_FILE_NAME>[-<component>].deb
+    #
+    #   This may be set to DEB-DEFAULT to allow the CPack DEB generator to generate package file name by itself in deb format:
+    #
+    #       <PackageName>_<VersionNumber>-<DebianRevisionNumber>_<DebianArchitecture>.deb
+    #
+    #   Alternatively provided package file name must end with either .deb or .ipk suffix.
+    #
+    # Note: Instead of specifying DEB-DEFAULT we emulate it so that the pre-release suffix gets included in the package filename.
+    #       And we don't use <DebianRevisionNumber> which is set with CPACK_DEBIAN_PACKAGE_RELEASE since that's for downstream packaging/versioning.
+    # NOTE: And for <DebianArchitexture> we use the equivalent of CPACK_DEBIAN_PACKAGE_ARCHITECTURE instead of using CMAKE_SYSTEM_NAME
+    #       (which CPACK_PACKAGE_FILE_NAME uses).
+    #       For Intel this gives us 'amd64' that's traditionaly used in Debian package names (instead of 'x86_64') and
+    #       for Arm64 this gives us 'arm64' (instead of 'aarch64').
+    #       But we can't access CPACK variables here (ie, at CMake configure time) so we can't access CPACK_DEBIAN_PACKAGE_ARCHITECTURE which is defined as:
+    #           "Output of dpkg --print-architecture (or i386 if dpkg is not found)"
+    #       So instead we'll implement our own CPACK_DEBIAN_PACKAGE_ARCHITECTURE equivalent (to do the same thing as what CPack does)
+    #       but we'll make it private by calling it _DEBIAN_PACKAGE_ARCHITECTURE (to not conflict with CPack's CPACK_DEBIAN_PACKAGE_ARCHITECTURE).
+    #
+    # TODO: Find a way to apply this to DEB generator *only*.
+    #       Could use CPACK_PRE_BUILD_SCRIPTS and access package filename using CPACK_PACKAGE_FILES (but that requires CMake 3.19 - a bit too high).
+    #       Could use CPACK_INSTALL_SCRIPTS (requires 3.16) but then don't have access to CPACK_PACKAGE_FILES.
+    #       For now we just assume a Linux build that's not standalone will be packaged as Debian (which is the default we set for CPACK_GENERATOR).
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT GPLATES_INSTALL_STANDALONE)
+        find_program(DPKG_CMD dpkg)
+        if (NOT DPKG_CMD)
+            message(WARNING "DEB Generator: Can't find dpkg in your path. Setting _DEBIAN_PACKAGE_ARCHITECTURE to i386.")
+            set(_DEBIAN_PACKAGE_ARCHITECTURE i386)
+        endif()
+        execute_process(COMMAND "${DPKG_CMD}" --print-architecture
+                        OUTPUT_VARIABLE _DEBIAN_PACKAGE_ARCHITECTURE
+                        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        # Note: GPLATES_VERSION_PRERELEASE_USER is the version that includes the pre-release version suffix in a form that is suitable
+        #       for use in package filenames (unlike GPLATES_VERSION_PRERELEASE). For example, for development 2.3 pre-releases this looks like
+        #       gplates_2.3.0-dev1_amd64.deb (when the actual version is 2.3.0~1 - see CPACK_DEBIAN_PACKAGE_VERSION).
+        SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_VERSION_PRERELEASE_USER}_${_DEBIAN_PACKAGE_ARCHITECTURE}.deb")
+    endif()
 
-#   CPACK_DEBIAN_FILE_NAME (CPACK_DEBIAN_<COMPONENT>_FILE_NAME) - Package file name.
-#
-#   Default : <CPACK_PACKAGE_FILE_NAME>[-<component>].deb
-#
-#   This may be set to DEB-DEFAULT to allow the CPack DEB generator to generate package file name by itself in deb format:
-#
-#       <PackageName>_<VersionNumber>-<DebianRevisionNumber>_<DebianArchitecture>.deb
-#
-#   Alternatively provided package file name must end with either .deb or .ipk suffix.
-#
-# Note: Instead of specifying DEB-DEFAULT we emulate it so that the pre-release suffix gets included in the package filename.
-#       And we don't use <DebianRevisionNumber> which is set with CPACK_DEBIAN_PACKAGE_RELEASE since that's for downstream packaging/versioning.
-if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(_DEBIAN_ARCH amd64)
-else()
-    SET(_DEBIAN_ARCH i386)
-endif()
-# Note: PROJECT_VERSION_PRERELEASE_USER is the version that includes the pre-release version suffix in a form that is suitable
-#       for use in package filenames (unlike PROJECT_VERSION_PRERELEASE). For example, for development 2.3 pre-releases this looks like
-#       gplates_2.3.0-dev1_amd64.deb (when the actual version is 2.3.0~1 - see CPACK_DEBIAN_PACKAGE_VERSION).
-if (GPLATES_BUILD_GPLATES)  # GPlates ...
-    SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_DEBIAN_ARCH}.deb")
-else()  # pyGPlates ...
-    SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_PYGPLATES_PYTHON_VERSION_SUFFIX}_${_DEBIAN_ARCH}.deb")
-endif()
+    #   CPACK_DEBIAN_PACKAGE_HOMEPAGE - The URL of the web site for this package, preferably (when applicable) the site
+    #                                   from which the original source can be obtained and any additional upstream documentation
+    #                                   or information may be found.
+    #
+    SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://www.gplates.org")
 
-#   CPACK_DEBIAN_PACKAGE_HOMEPAGE - The URL of the web site for this package, preferably (when applicable) the site
-#                                   from which the original source can be obtained and any additional upstream documentation
-#                                   or information may be found.
-#
-SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://www.gplates.org")
+    #   CPACK_DEBIAN_PACKAGE_SECTION (CPACK_DEBIAN_<COMPONENT>_PACKAGE_SECTION) - Set Section control field e.g. admin, devel, doc, ...
+    #
+    SET(CPACK_DEBIAN_PACKAGE_SECTION science)
 
-#   CPACK_DEBIAN_PACKAGE_SECTION (CPACK_DEBIAN_<COMPONENT>_PACKAGE_SECTION) - Set Section control field e.g. admin, devel, doc, ...
-#
-SET(CPACK_DEBIAN_PACKAGE_SECTION science)
+    #   CPACK_DEBIAN_PACKAGE_SHLIBDEPS (CPACK_DEBIAN_<COMPONENT>_PACKAGE_SHLIBDEPS) - May be set to ON in order to use dpkg-shlibdeps
+    #                                                                                 to generate better package dependency list.
+    #
+    #   Default: CPACK_DEBIAN_PACKAGE_SHLIBDEPS if set or OFF.
+    #
+    #   Note: You may need set CMAKE_INSTALL_RPATH to an appropriate value if you use this feature, because if you don't
+    #         dpkg-shlibdeps may fail to find your own shared libs.
+    #         See https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/RPATH-handling
+    #
+    #   Note: You can also set CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS to an appropriate value if you use this feature, in order to
+    #         please dpkg-shlibdeps. However, you should only do this for private shared libraries that could not get resolved otherwise.
+    #
+    # NOTE: You'll need to install the 'dpkg-dev' package ('sudo apt install dpkg-dev') for 'dpkg-shlibdeps' to be available.
+    #       Otherwise you'll get the following warning message and dependencies will not be listed in the generated package...
+    #           "CPACK_DEBIAN_PACKAGE_DEPENDS not set, the package will have no dependencies"
+    SET(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
-#   CPACK_DEBIAN_PACKAGE_SHLIBDEPS (CPACK_DEBIAN_<COMPONENT>_PACKAGE_SHLIBDEPS) - May be set to ON in order to use dpkg-shlibdeps
-#                                                                                 to generate better package dependency list.
-#
-#   Default: CPACK_DEBIAN_PACKAGE_SHLIBDEPS if set or OFF.
-#
-#   Note: You may need set CMAKE_INSTALL_RPATH to an appropriate value if you use this feature, because if you don't
-#         dpkg-shlibdeps may fail to find your own shared libs.
-#         See https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/RPATH-handling
-#
-#   Note: You can also set CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS to an appropriate value if you use this feature, in order to
-#         please dpkg-shlibdeps. However, you should only do this for private shared libraries that could not get resolved otherwise.
-#
-# NOTE: You'll need to install the 'dpkg-dev' package ('sudo apt install dpkg-dev') for 'dpkg-shlibdeps' to be available.
-#       Otherwise you'll get the following warning message and dependencies will not be listed in the generated package...
-#           "CPACK_DEBIAN_PACKAGE_DEPENDS not set, the package will have no dependencies"
-SET(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    #   CPACK_DEB_COMPONENT_INSTALL - Enable component packaging for CPackDEB.
+    #
+    #   If enabled (ON) multiple packages are generated. By default a single package containing files of all components is generated.
+    #
+    SET(CPACK_DEB_COMPONENT_INSTALL OFF)
 
-#   CPACK_DEB_COMPONENT_INSTALL - Enable component packaging for CPackDEB.
-#
-#   If enabled (ON) multiple packages are generated. By default a single package containing files of all components is generated.
-#
-SET(CPACK_DEB_COMPONENT_INSTALL OFF)
+    # Check the GPLATES_PACKAGE_CONTACT variable has been set.
+    #
+    # GPLATES_PACKAGE_CONTACT initialises CPACK_PACKAGE_CONTACT which initialises CPACK_DEBIAN_PACKAGE_MAINTAINER which is mandatory for the DEB generator.
+    #
+    # TODO: Find a way to apply this to DEB generator *only*.
+    #       Could use CPACK_PRE_BUILD_SCRIPTS and access package filename using CPACK_PACKAGE_FILES (but that requires CMake 3.19 - a bit too high).
+    #       Could use CPACK_INSTALL_SCRIPTS (requires 3.16) but then don't have access to CPACK_PACKAGE_FILES.
+    #       For now we just assume a Linux build that's not standalone will be packaged as Debian (which is the default we set for CPACK_GENERATOR).
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        if (NOT GPLATES_INSTALL_STANDALONE)
+            function(check_package_contact_script install_script)
+                # Check the GPLATES_PACKAGE_CONTACT variable has been set.
+                #
+                # Careful use of the escape charactor '\' allows us to prevent expansion of some variables until the script is executed.
+                # The only variable we want to expand when writing the script is GPLATES_PACKAGE_CONTACT.
+                #
+                file(WRITE "${install_script}" "
+                    # Error if no package contact.
+                    set(_PACKAGE_CONTACT \"${GPLATES_PACKAGE_CONTACT}\")
+                    if (NOT _PACKAGE_CONTACT)
+                        message(FATAL_ERROR \"Package contact not specified - please set GPLATES_PACKAGE_CONTACT before creating a package\")
+                    endif()
+                ")
+            endfunction()
 
-# Check the GPLATES_PACKAGE_CONTACT variable has been set.
-#
-# GPLATES_PACKAGE_CONTACT initialises CPACK_PACKAGE_CONTACT which initialises CPACK_DEBIAN_PACKAGE_MAINTAINER which is mandatory for the DEB generator.
-#
-# TODO: Find a way to apply this to DEB generator *only*.
-#       Could use CPACK_PRE_BUILD_SCRIPTS and access package filename using CPACK_PACKAGE_FILES (but that requires CMake 3.19 - a bit too high).
-#       Could use CPACK_INSTALL_SCRIPTS (requires 3.16) but then don't have access to CPACK_PACKAGE_FILES.
-#       For now we just assume a Linux build that's not standalone will be packaged as Debian (which is the default we set for CPACK_GENERATOR).
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    if (NOT GPLATES_INSTALL_STANDALONE)
-        function(check_package_contact_script install_script)
-            # Check the GPLATES_PACKAGE_CONTACT variable has been set.
-            #
-            # Careful use of the escape charactor '\' allows us to prevent expansion of some variables until the script is executed.
-            # The only variable we want to expand when writing the script is GPLATES_PACKAGE_CONTACT.
-            #
-            file(WRITE "${install_script}" "
-                # Error if no package contact.
-                set(_PACKAGE_CONTACT \"${GPLATES_PACKAGE_CONTACT}\")
-                if (NOT _PACKAGE_CONTACT)
-                    message(FATAL_ERROR \"Package contact not specified - please set GPLATES_PACKAGE_CONTACT before creating a package\")
-                endif()
-            ")
-        endfunction()
+            set(_install_script "${CMAKE_CURRENT_BINARY_DIR}/check_package_contact.cmake")
 
-        set(_install_script "${CMAKE_CURRENT_BINARY_DIR}/check_package_contact.cmake")
+            check_package_contact_script(${_install_script})
 
-        check_package_contact_script(${_install_script})
-
-        # List of CMake script(s) to execute before installing the files to be packaged.
-        if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+            # List of CMake script(s) to execute before installing the files to be packaged.
+            # Note: CMake 3.16 added support for multiple scripts (CPACK_INSTALL_SCRIPTS), but still supports single script (CPACK_INSTALL_SCRIPT).
             set(CPACK_INSTALL_SCRIPTS "${_install_script}")
-        else()
-            # Only a single install script supported prior to CMake 3.16.
-            set(CPACK_INSTALL_SCRIPT "${_install_script}")
         endif()
     endif()
 endif()
-
 
 
 #########

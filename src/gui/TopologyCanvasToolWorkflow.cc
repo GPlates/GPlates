@@ -29,6 +29,7 @@
 #include "FeatureFocus.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/Reconstruction.h"
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
 
@@ -139,7 +140,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	// Click geometry canvas tool.
 	//
 
-	GPlatesCanvasTools::ClickGeometry::non_null_ptr_type click_geometry_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type click_geometry_tool =
 			GPlatesCanvasTools::ClickGeometry::create(
 					status_bar_callback,
 					view_state.get_focused_feature_geometry_builder(),
@@ -168,7 +169,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	// Build line topology canvas tool.
 	//
 
-	GPlatesCanvasTools::BuildTopology::non_null_ptr_type build_line_topology_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type build_line_topology_tool =
 			GPlatesCanvasTools::BuildTopology::create(
 					GPlatesAppLogic::TopologyGeometry::LINE,
 					status_bar_callback,
@@ -195,7 +196,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	// Build boundary topology canvas tool.
 	//
 
-	GPlatesCanvasTools::BuildTopology::non_null_ptr_type build_boundary_topology_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type build_boundary_topology_tool =
 			GPlatesCanvasTools::BuildTopology::create(
 					GPlatesAppLogic::TopologyGeometry::BOUNDARY,
 					status_bar_callback,
@@ -222,7 +223,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	// Build network topology canvas tool.
 	//
 
-	GPlatesCanvasTools::BuildTopology::non_null_ptr_type build_network_topology_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type build_network_topology_tool =
 			GPlatesCanvasTools::BuildTopology::create(
 					GPlatesAppLogic::TopologyGeometry::NETWORK,
 					status_bar_callback,
@@ -249,7 +250,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	// Edit topology canvas tool.
 	//
 
-	GPlatesCanvasTools::EditTopology::non_null_ptr_type edit_topology_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type edit_topology_tool =
 			GPlatesCanvasTools::EditTopology::create(
 					status_bar_callback,
 					view_state,
@@ -391,6 +392,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::draw_feature_focus()
 			d_rendered_geometry_parameters,
 			d_render_settings,
 			d_application_state.get_current_topological_sections(),
+			d_application_state.get_current_reconstruction().get_all_resolved_topological_shared_sub_segments(),
 			d_symbol_map);
 }
 

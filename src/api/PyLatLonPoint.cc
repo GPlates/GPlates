@@ -28,6 +28,7 @@
 
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/python.h"
 
@@ -123,7 +124,12 @@ export_lat_lon_point()
 					"As a convenience the North and South poles are available as class attributes:\n"
 					"\n"
 					"* ``pygplates.LatLonPoint.north_pole``\n"
-					"* ``pygplates.LatLonPoint.south_pole``\n",
+					"* ``pygplates.LatLonPoint.south_pole``\n"
+					"\n"
+					"A *LatLonPoint* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					bp::init<double,double>(
 							(bp::arg("latitude"), bp::arg("longitude")),
 							"__init__(latitude, longitude)\n"
@@ -142,6 +148,12 @@ export_lat_lon_point()
 							"  .. note:: *latitude* must satisfy :meth:`is_valid_latitude` and "
 							"*longitude* must satisfy :meth:`is_valid_longitude`, otherwise "
 							"*InvalidLatLonError* will be raised.\n"))
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::LatLonPoint>>())
 		.def("is_valid_latitude",
 				&GPlatesMaths::LatLonPoint::is_valid_latitude,
 				(bp::arg("latitude")),

@@ -75,6 +75,7 @@ POP_MSVC_WARNINGS
 #include "DeformationStrainRate.h"
 #include "ResolvedVertexSourceInfo.h"
 #include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
 #include "maths/AzimuthalEqualAreaProjection.h"
 #include "maths/CalculateVelocity.h"
@@ -85,6 +86,7 @@ POP_MSVC_WARNINGS
 #include "maths/PointOnSphere.h"
 #include "maths/Real.h"
 
+#include "utils/Earth.h"
 #include "utils/Profile.h"
 #include "utils/ReferenceCount.h"
 
@@ -333,28 +335,42 @@ namespace GPlatesAppLogic
 						velocity_delta_time_type);
 			}
 
-			//! Calculates the velocity vector of this vertex.
+			/**
+			 * Calculates the velocity vector of this vertex.
+			 *
+			 * Note: Velocity units default to cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
+			 */
 			GPlatesMaths::Vector3D
 			calc_velocity_vector(
 					const double &velocity_delta_time = 1.0,
-					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const
 			{
 				return get_shared_source_info().get_velocity_vector(
 						get_point_on_sphere(),
 						get_reconstruction_time(),
 						velocity_delta_time,
-						velocity_delta_time_type);
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms);
 			}
 
-			//! Calculates the velocity colat/lon of this vertex.
+			/**
+			 * Calculates the velocity colat / lon of this vertex.
+			 *
+			 * Note: Velocity units default to cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
+			 */
 			GPlatesMaths::VectorColatitudeLongitude
 			calc_velocity_colat_lon(
 					const double &velocity_delta_time = 1.0,
-					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const
 			{
 				return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(
 						get_point_on_sphere(),
-						calc_velocity_vector(velocity_delta_time, velocity_delta_time_type));
+						calc_velocity_vector(velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms));
 			}
 
 
@@ -374,7 +390,7 @@ namespace GPlatesAppLogic
 				return d_deformation_info.get();
 			}
 
-			//! Return Delaunay triangulation containg this vertex.
+			//! Return Delaunay triangulation containing this vertex.
 			const Delaunay_2 &
 			get_delaunay_2() const
 			{
@@ -490,17 +506,18 @@ namespace GPlatesAppLogic
 
 
 			//
-			// NOTE: We do not need to initialise faces (like we do vertices).
-			//
+			// When we insert new vertices into the Delaunay triangulation it automatically
+			// creates new faces. In other words, we don't explicitly create the faces.
+			// And so we don't explicitly initialise the faces either (like we do with the vertices).
 			// This makes it easier to incrementally modify the Delaunay triangulation
 			// (such as adaptive subdivision of its edges) without having to subsequently iterate
 			// over all the faces and initialise those that haven't already been initialised.
 			//
-			// The Delaunay triangulation (required for face initialisation) is obtained from one
-			// of the vertices of a face. Also a face can detect when it has been modified due to a
-			// modification in the Delaunay triangulation (such as a vertex insertion splitting a
-			// face into 3 faces, two of which are new and the third being the existing face modified
-			// to reference the newly inserted vertex).
+			// Also, the Delaunay triangulation (required for calculating deformation on-demand) is
+			// obtained from one of the vertices of a face. Also a face can detect when it has been
+			// modified due to a modification in the Delaunay triangulation (such as a vertex insertion
+			// splitting a face into 3 faces, two of which are new and the third being the existing face
+			// modified to reference the newly inserted vertex).
 			//
 
 
@@ -549,7 +566,7 @@ namespace GPlatesAppLogic
 				return d_deformation_info.get();
 			}
 
-			//! Return Delaunay triangulation containg this face.
+			//! Return Delaunay triangulation containing this face.
 			const Delaunay_2 &
 			get_delaunay_2() const
 			{

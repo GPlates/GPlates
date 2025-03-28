@@ -28,6 +28,7 @@
 
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -38,6 +39,9 @@
 #include "maths/Real.h"
 
 #include "property-values/GeoTimeInstant.h"
+
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeDelegateProtocol.h"
 
 
 namespace bp = boost::python;
@@ -149,6 +153,60 @@ namespace GPlatesApi
 	private:
 
 		GPlatesPropertyValues::GeoTimeInstant d_geo_time_instant;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GeoTimeInstant> &geo_time_instant)
+		{
+			//
+			// Using transcribe delegate protocol so that GPlatesApi::GeoTimeInstant and GPlatesPropertyValues::GeoTimeInstant
+			// can be used interchangeably (ie, are transcription compatible).
+			//
+			if (scribe.is_saving())
+			{
+				save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, geo_time_instant->d_geo_time_instant);
+			}
+			else // loading...
+			{
+				GPlatesScribe::LoadRef<GPlatesPropertyValues::GeoTimeInstant> time_instant =
+						GPlatesScribe::load_delegate_protocol<GPlatesPropertyValues::GeoTimeInstant>(TRANSCRIBE_SOURCE, scribe);
+				if (!time_instant.is_valid())
+				{
+					return scribe.get_transcribe_result();
+				}
+
+				geo_time_instant.construct_object(time_instant);
+			}
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data)
+		{
+			// If not already transcribed in 'transcribe_construct_data()'.
+			if (!transcribed_construct_data)
+			{
+				//
+				// Using transcribe delegate protocol so that GPlatesApi::GeoTimeInstant and GPlatesPropertyValues::GeoTimeInstant
+				// can be used interchangeably (ie, are transcription compatible).
+				//
+				if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_geo_time_instant))
+				{
+					return scribe.get_transcribe_result();
+				}
+			}
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
 	};
 
 	boost::shared_ptr<GeoTimeInstant>
@@ -355,15 +413,15 @@ namespace GPlatesApi
 	}
 
 
-	//
-	// The following to/from Python conversions are handled:
-	//
-	// To Python               GPlatesApi::GeoTimeInstant     float
-	//     /\                             |                     /\
-	//     |                              |                     |
-	//     \/                             \/                    \/
-	// From Python                  GPlatesPropertyValues::GeoTimeInstant
-	//
+	/*
+	 * The following to/from Python conversions are handled:
+	 *
+	 * To Python               GPlatesApi::GeoTimeInstant     float
+	 *     /\                             |                     /\
+	 *     |                              |                     |
+	 *     \/                             \/                    \/
+	 * From Python                  GPlatesPropertyValues::GeoTimeInstant
+	 */
 
 	/**
 	 * Enables passing GPlatesApi::GeoTimeInstant object (the python 'GeoTimeInstant') to
@@ -503,29 +561,29 @@ namespace GPlatesApi
 void
 export_geo_time_instant()
 {
-	//
-	// GeoTimeInstant - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
-	//
-	// NOTE: We wrap GPlatesApi::GeoTimeInstant instead of GPlatesPropertyValues::GeoTimeInstant
-	// since we already have a converter from the latter to python 'float' (and vice versa).
-	// So GPlatesPropertyValues::GeoTimeInstant converts to/from python 'float' and
-	// GPlatesApi::GeoTimeInstant only converts *from* python 'GeoTimeInstant'.
-	// In other words a C++ GeoTimeInstant is only passed *to* python as python 'float' whereas both
-	// python GeoTimeInstant and python 'float' can be passed *from* python to C++ GeoTimeInstant.
-	// The python 'GeoTimeInstant' is mainly provided as a convenience class for python users so they
-	// can test for distant past/future and perform epsilon equality comparison tests - to do this
-	// they simply create a python 'GeoTimeInstant' (from their python 'float') and then do tests on that.
-	//
-	// To Python               GPlatesApi::GeoTimeInstant     float
-	//     /\                             |                     /\
-	//     |                              |                     |
-	//     \/                             \/                    \/
-	// From Python                  GPlatesPropertyValues::GeoTimeInstant
-	//
-	// GeoTimeInstant is immutable (contains no mutable methods) hence we can copy it into python
-	// wrapper objects without worrying that modifications from the C++ will not be visible to the
-	// python side and vice versa.
-	//
+	/*
+	 * GeoTimeInstant - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	 *
+	 * NOTE: We wrap GPlatesApi::GeoTimeInstant instead of GPlatesPropertyValues::GeoTimeInstant
+	 * since we already have a converter from the latter to python 'float' (and vice versa).
+	 * So GPlatesPropertyValues::GeoTimeInstant converts to/from python 'float' and
+	 * GPlatesApi::GeoTimeInstant only converts *from* python 'GeoTimeInstant'.
+	 * In other words a C++ GeoTimeInstant is only passed *to* python as python 'float' whereas both
+	 * python GeoTimeInstant and python 'float' can be passed *from* python to C++ GeoTimeInstant.
+	 * The python 'GeoTimeInstant' is mainly provided as a convenience class for python users so they
+	 * can test for distant past/future and perform epsilon equality comparison tests - to do this
+	 * they simply create a python 'GeoTimeInstant' (from their python 'float') and then do tests on that.
+	 *
+	 * To Python               GPlatesApi::GeoTimeInstant     float
+	 *     /\                             |                     /\
+	 *     |                              |                     |
+	 *     \/                             \/                    \/
+	 * From Python                  GPlatesPropertyValues::GeoTimeInstant
+	 *
+	 * GeoTimeInstant is immutable (contains no mutable methods) hence we can copy it into python
+	 * wrapper objects without worrying that modifications from the C++ will not be visible to the
+	 * python side and vice versa.
+	 */
 	bp::class_<
 			GPlatesApi::GeoTimeInstant/*NOTE: This is not GPlatesPropertyValues::GeoTimeInstant*/,
 			// A pointer holder is required by 'bp::make_constructor'...
@@ -578,7 +636,12 @@ export_geo_time_instant()
 					"  # assert(time20Ma.get_value() > time10Ma)\n"
 					"  # assert(time20Ma < pygplates.GeoTimeInstant.create_distant_past())\n"
 					"  # assert(time20Ma.get_value() < pygplates.GeoTimeInstant.create_distant_past())\n"
-					"  # assert(20 < pygplates.GeoTimeInstant.create_distant_past())\n",
+					"  # assert(20 < pygplates.GeoTimeInstant.create_distant_past())\n"
+					"\n"
+					"A *GeoTimeInstant* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -598,6 +661,12 @@ export_geo_time_instant()
 				"  ::\n"
 				"\n"
 				"    time_instant = pygplates.GeoTimeInstant(time_value)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::GeoTimeInstant>>())
 		.def("create_distant_past",
 				&GPlatesApi::GeoTimeInstant::create_distant_past,
 				"create_distant_past()\n"

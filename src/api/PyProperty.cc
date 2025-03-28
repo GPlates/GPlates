@@ -28,6 +28,7 @@
 
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -85,7 +86,12 @@ export_top_level_property()
 					"\n"
 					"Properties are equality (``==``, ``!=``) comparable (but not hashable "
 					"- cannot be used as a key in a ``dict``). This includes comparing the property value "
-					"in the two properties being compared (see :class:`PropertyValue`) as well as the property name.\n",
+					"in the two properties being compared (see :class:`PropertyValue`) as well as the property name.\n"
+					"\n"
+					"A *Property* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -105,6 +111,12 @@ export_top_level_property()
 				"  ::\n"
 				"\n"
 				"    property = pygplates.Property(property_name, property_value)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::TopLevelProperty::non_null_ptr_type>())
 		.def("clone",
 				&GPlatesModel::TopLevelProperty::clone,
 				"clone()\n"

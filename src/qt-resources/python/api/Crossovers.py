@@ -203,7 +203,7 @@ def find_crossovers(
     :param rotation_features: A rotation feature collection, or rotation filename, or \
         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
         of any combination of those four types
-    :type rotation_features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
+    :type rotation_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param crossover_filter: A predicate function to determine which crossovers to return
@@ -318,11 +318,11 @@ def find_crossovers(
     |                                                                  | pole to determine the crossover type according to the                            |
     |                                                                  | presence of the following strings/tags:                                          |
     |                                                                  |                                                                                  |
-    |                                                                  | - \@xo_ig : *CrossoverType.ignore*                                               |
-    |                                                                  | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
-    |                                                                  | - \@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
-    |                                                                  | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
-    |                                                                  | - \@xo_of : *CrossoverType.synch_young_crossover_only*                           |
+    |                                                                  | - \\@xo_ig : *CrossoverType.ignore*                                               |
+    |                                                                  | - \\@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
+    |                                                                  | - \\@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
+    |                                                                  | - \\@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
+    |                                                                  | - \\@xo_of : *CrossoverType.synch_young_crossover_only*                           |
     |                                                                  |                                                                                  |
     |                                                                  | ...and if none of those tags are present then the crossover                      |
     |                                                                  | type is *CrossoverType.unknown*.                                                 |
@@ -350,7 +350,7 @@ def find_crossovers(
     | *CrossoverType.synch_young_crossover_only*                       | All crossovers will be of type *CrossoverType.synch_young_crossover_only*.       |
     +------------------------------------------------------------------+----------------------------------------------------------------------------------+
     
-    Find all crossovers in a rotation file where crossover types are determined by '\@xo_' tags
+    Find all crossovers in a rotation file where crossover types are determined by '\\@xo_' tags
     in the young crossover description/comment:
     ::
     
@@ -375,6 +375,10 @@ def find_crossovers(
           rotation_feature_collection,
           lambda crossover: crossover.moving_plate_id==801,
           pygplates.CrossoverType.synch_old_crossover_and_stages)
+
+    .. versionchanged:: 0.44
+       Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_
+       (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
     
     # Use helper class to convert 'rotation_features' argument to a list of features.
@@ -517,7 +521,7 @@ def synchronise_crossovers(
     :param rotation_features: A rotation feature collection, or rotation filename, or \
         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
         of any combination of those four types - all features are used as input and output
-    :type rotation_features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
+    :type rotation_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param crossover_filter: Optional predicate function (accepting a single crossover argument) that determines \
@@ -660,11 +664,11 @@ def synchronise_crossovers(
     |                                                                  | pole to determine the crossover type according to the                            |
     |                                                                  | presence of the following strings/tags:                                          |
     |                                                                  |                                                                                  |
-    |                                                                  | - \@xo_ig : *CrossoverType.ignore*                                               |
-    |                                                                  | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
-    |                                                                  | - \@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
-    |                                                                  | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
-    |                                                                  | - \@xo_of : *CrossoverType.synch_young_crossover_only*                           |
+    |                                                                  | - \\@xo_ig : *CrossoverType.ignore*                                               |
+    |                                                                  | - \\@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
+    |                                                                  | - \\@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
+    |                                                                  | - \\@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
+    |                                                                  | - \\@xo_of : *CrossoverType.synch_young_crossover_only*                           |
     |                                                                  |                                                                                  |
     |                                                                  | ...and if none of those tags are present then the crossover                      |
     |                                                                  | type is *CrossoverType.unknown*.                                                 |
@@ -701,7 +705,7 @@ def synchronise_crossovers(
     *CrossoverType.unknown*). The appended list elements are sorted by crossover time.
     
     Synchronise all crossovers found in a rotation file (and save modifications back to the same rotation file)
-    where crossover types are determined by '\@xo_' tags in the young crossover description/comment:
+    where crossover types are determined by '\\@xo_' tags in the young crossover description/comment:
     ::
     
       pygplates.synchronise_crossovers('rotations.rot')
@@ -720,6 +724,10 @@ def synchronise_crossovers(
           crossover_results)
       print 'Fixed %d crossovers' % sum(
           1 for result in crossover_results if result[1]==pygplates.CrossoverResult.synchronised)
+
+    .. versionchanged:: 0.44
+       Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_
+       (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
     
     # Use helper class to convert 'rotation_features' argument to a list of features.

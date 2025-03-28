@@ -37,6 +37,8 @@
 #include <QString>
 
 #include "PyFeatureCollectionFunctionArgument.h"
+#include "PyFilePathFunctionArgument.h"
+#include "PyReconstructSnapshot.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonUtils.h"
@@ -44,21 +46,15 @@
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
-#include "app-logic/ReconstructedMotionPath.h"
-#include "app-logic/ReconstructHandle.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructMethodInterface.h"
 #include "app-logic/ReconstructMethodRegistry.h"
+#include "app-logic/ReconstructedMotionPath.h"
 
 #include "feature-visitors/GeometrySetter.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
-#include "file-io/ReadErrorAccumulation.h"
-#include "file-io/ReconstructedFeatureGeometryExport.h"
-#include "file-io/ReconstructedFlowlineExport.h"
-#include "file-io/ReconstructedMotionPathExport.h"
-#include "file-io/ReconstructionGeometryExportImpl.h"
 
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
@@ -79,26 +75,12 @@ namespace GPlatesApi
 	namespace
 	{
 		/**
-		 * Enumeration to determine which reconstructed feature geometry types to output.
-		 */
-		namespace ReconstructType
-		{
-			enum Value
-			{
-				FEATURE_GEOMETRY,
-				MOTION_PATH,
-				FLOWLINE
-			};
-		};
-
-
-		/**
-		 * The argument types for 'reconstructed feature geometries'.
+		 * The argument types for 'reconstructed geometries'.
 		 */
 		typedef boost::variant<
-				QString,  // export filename
+				FilePathFunctionArgument,  // export filename
 				bp::list> // list of ReconstructedFeatureGeometry's
-						reconstructed_feature_geometries_argument_type;
+						reconstructed_geometries_argument_type;
 
 
 		/**
@@ -115,9 +97,9 @@ namespace GPlatesApi
 		get_deprecated_reconstruct_args(
 				bp::tuple positional_args,
 				bp::dict keyword_args,
-				std::vector<GPlatesFileIO::File::non_null_ptr_type> &reconstructable_files,
-				boost::optional<RotationModel::non_null_ptr_type> &rotation_model,
-				reconstructed_feature_geometries_argument_type &reconstructed_feature_geometries,
+				boost::optional<FeatureCollectionSequenceFunctionArgument> &reconstructable_features,
+				boost::optional<RotationModelFunctionArgument> &rotation_model,
+				reconstructed_geometries_argument_type &reconstructed_geometries,
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 				boost::optional<GPlatesModel::integer_plate_id_type> &anchor_plate_id)
 		{
@@ -130,7 +112,7 @@ namespace GPlatesApi
 					RotationModelFunctionArgument,
 					double, // Note: This is not GPlatesPropertyValues::GeoTimeInstant.
 					boost::optional<GPlatesModel::integer_plate_id_type>,
-					QString> // Only export filename supported (not a python list of RFG's).
+					FilePathFunctionArgument> // Only export filename supported (not a python list of RFG's).
 							reconstruct_args_type;
 
 			// Define the explicit function argument names...
@@ -168,11 +150,11 @@ namespace GPlatesApi
 							boost::none/*unused_positional_args*/,
 							boost::none/*unused_keyword_args*/);
 
-			boost::get<0>(reconstruct_args).get_files(reconstructable_files);
-			rotation_model = boost::get<1>(reconstruct_args).get_rotation_model();
+			reconstructable_features = boost::get<0>(reconstruct_args);
+			rotation_model = boost::get<1>(reconstruct_args);
 			reconstruction_time = GPlatesPropertyValues::GeoTimeInstant(boost::get<2>(reconstruct_args));
 			anchor_plate_id = boost::get<3>(reconstruct_args);
-			reconstructed_feature_geometries = boost::get<4>(reconstruct_args);
+			reconstructed_geometries = boost::get<4>(reconstruct_args);
 
 			return true;
 		}
@@ -185,22 +167,23 @@ namespace GPlatesApi
 		get_reconstruct_args(
 				bp::tuple positional_args,
 				bp::dict keyword_args,
-				std::vector<GPlatesFileIO::File::non_null_ptr_type> &reconstructable_files,
-				boost::optional<RotationModel::non_null_ptr_type> &rotation_model,
-				reconstructed_feature_geometries_argument_type &reconstructed_feature_geometries,
+				boost::optional<FeatureCollectionSequenceFunctionArgument> &reconstructable_features,
+				boost::optional<RotationModelFunctionArgument> &rotation_model,
+				reconstructed_geometries_argument_type &reconstructed_geometries,
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 				boost::optional<GPlatesModel::integer_plate_id_type> &anchor_plate_id,
 				ReconstructType::Value &reconstruct_type,
 				bool &export_wrap_to_dateline,
-				bool &group_with_feature)
+				bool &group_with_feature,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> &export_force_boundary_orientation)
 		{
 			// First attempt to get arguments from deprecated version of 'reconstruct()'.
 			if (get_deprecated_reconstruct_args(
 					positional_args,
 					keyword_args,
-					reconstructable_files,
+					reconstructable_features,
 					rotation_model,
-					reconstructed_feature_geometries,
+					reconstructed_geometries,
 					reconstruction_time,
 					anchor_plate_id))
 			{
@@ -210,6 +193,7 @@ namespace GPlatesApi
 				reconstruct_type = ReconstructType::FEATURE_GEOMETRY;
 				export_wrap_to_dateline = true;
 				group_with_feature = false;
+				export_force_boundary_orientation = boost::none;
 
 				return;
 			}
@@ -227,7 +211,7 @@ namespace GPlatesApi
 			typedef boost::tuple<
 					FeatureCollectionSequenceFunctionArgument,
 					RotationModelFunctionArgument,
-					reconstructed_feature_geometries_argument_type,
+					reconstructed_geometries_argument_type,
 					GPlatesPropertyValues::GeoTimeInstant,
 					boost::optional<GPlatesModel::integer_plate_id_type>>
 							reconstruct_args_type;
@@ -254,9 +238,9 @@ namespace GPlatesApi
 							boost::none/*unused_positional_args*/,
 							unused_keyword_args);
 
-			boost::get<0>(reconstruct_args).get_files(reconstructable_files);
-			rotation_model = boost::get<1>(reconstruct_args).get_rotation_model();
-			reconstructed_feature_geometries = boost::get<2>(reconstruct_args);
+			reconstructable_features = boost::get<0>(reconstruct_args);
+			rotation_model = boost::get<1>(reconstruct_args);
+			reconstructed_geometries = boost::get<2>(reconstruct_args);
 			reconstruction_time = boost::get<3>(reconstruct_args);
 			anchor_plate_id = boost::get<4>(reconstruct_args);
 
@@ -282,266 +266,16 @@ namespace GPlatesApi
 							"group_with_feature",
 							false);
 
+			export_force_boundary_orientation =
+					VariableArguments::extract_and_remove_or_default<
+									boost::optional<GPlatesMaths::PolygonOrientation::Orientation> >(
+							unused_keyword_args,
+							"export_force_boundary_orientation",
+							boost::none);
+
 			// Raise a python error if there are any unused keyword arguments remaining.
 			// These will be keywords that we didn't recognise.
 			VariableArguments::raise_python_error_if_unused(unused_keyword_args);
-		}
-
-
-		void
-		export_reconstructed_feature_geometries(
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &rfgs,
-				const QString &export_file_name,
-				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
-				const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
-				const GPlatesModel::integer_plate_id_type &anchor_plate_id,
-				const double &reconstruction_time,
-				bool export_wrap_to_dateline)
-		{
-			// Converts to raw pointers.
-			std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> reconstructed_feature_geometries;
-			reconstructed_feature_geometries.reserve(rfgs.size());
-			BOOST_FOREACH(
-					const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &rfg,
-					rfgs)
-			{
-				reconstructed_feature_geometries.push_back(rfg.get());
-			}
-
-			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
-			const GPlatesFileIO::ReconstructedFeatureGeometryExport::Format format =
-					GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
-							export_file_name,
-							file_format_registry);
-
-			// The API docs state that dateline wrapping should be ignored except for Shapefile.
-			//
-			// For example, we don't want to pollute real-world data with dateline vertices when
-			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
-			if (format != GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE)
-			{
-				export_wrap_to_dateline = false;
-			}
-
-			// Export the reconstructed feature geometries.
-			GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
-						export_file_name,
-						format,
-						reconstructed_feature_geometries,
-						reconstructable_file_ptrs,
-						reconstruction_file_ptrs,
-						anchor_plate_id,
-						reconstruction_time,
-						// If exporting to Shapefile and there's only *one* input reconstructable file then
-						// shapefile attributes in input reconstructable file will get copied to output...
-						true/*export_single_output_file*/,
-						false/*export_per_input_file*/, // We only generate a single output file.
-						false/*export_output_directory_per_input_file*/, // We only generate a single output file.
-						export_wrap_to_dateline);
-		}
-
-
-		void
-		export_reconstructed_motion_paths(
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &rfgs,
-				const QString &export_file_name,
-				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
-				const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
-				const GPlatesModel::integer_plate_id_type &anchor_plate_id,
-				const double &reconstruction_time,
-				bool export_wrap_to_dateline)
-		{
-			// Get any ReconstructedFeatureGeometry objects that are of type ReconstructedMotionPath.
-			//
-			// Note that, when motion paths are reconstructed, both ReconstructedMotionPath's and
-			// ReconstructedFeatureGeometry's are generated - so this also ensures that the
-			// ReconstructedFeatureGeometry's are ignored when outputting reconstructed motion paths.
-			std::vector<const GPlatesAppLogic::ReconstructedMotionPath *> reconstructed_motion_paths;
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-					rfgs.begin(),
-					rfgs.end(),
-					reconstructed_motion_paths);
-
-			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
-			const GPlatesFileIO::ReconstructedMotionPathExport::Format format =
-					GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(
-							export_file_name,
-							file_format_registry);
-
-			// The API docs state that dateline wrapping should be ignored except for Shapefile.
-			//
-			// For example, we don't want to pollute real-world data with dateline vertices when
-			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
-			if (format != GPlatesFileIO::ReconstructedMotionPathExport::SHAPEFILE)
-			{
-				export_wrap_to_dateline = false;
-			}
-
-			// Export the reconstructed motion paths.
-			GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
-						export_file_name,
-						format,
-						reconstructed_motion_paths,
-						reconstructable_file_ptrs,
-						reconstruction_file_ptrs,
-						anchor_plate_id,
-						reconstruction_time,
-						true/*export_single_output_file*/,
-						false/*export_per_input_file*/, // We only generate a single output file.
-						false/*export_output_directory_per_input_file*/, // We only generate a single output file.
-						export_wrap_to_dateline);
-		}
-
-
-		void
-		export_reconstructed_flowlines(
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &rfgs,
-				const QString &export_file_name,
-				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
-				const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
-				const GPlatesModel::integer_plate_id_type &anchor_plate_id,
-				const double &reconstruction_time,
-				bool export_wrap_to_dateline)
-		{
-			// Get any ReconstructedFeatureGeometry objects that are of type ReconstructedFlowline.
-			// In fact they should all be ReconstructedFlowlines.
-			std::vector<const GPlatesAppLogic::ReconstructedFlowline *> reconstructed_flowlines;
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-					rfgs.begin(),
-					rfgs.end(),
-					reconstructed_flowlines);
-
-			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
-			const GPlatesFileIO::ReconstructedFlowlineExport::Format format =
-					GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(
-							export_file_name,
-							file_format_registry);
-
-			// The API docs state that dateline wrapping should be ignored except for Shapefile.
-			//
-			// For example, we don't want to pollute real-world data with dateline vertices when
-			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
-			if (format != GPlatesFileIO::ReconstructedFlowlineExport::SHAPEFILE)
-			{
-				export_wrap_to_dateline = false;
-			}
-
-			// Export the reconstructed flowlines.
-			GPlatesFileIO::ReconstructedFlowlineExport::export_reconstructed_flowlines(
-						export_file_name,
-						format,
-						reconstructed_flowlines,
-						reconstructable_file_ptrs,
-						reconstruction_file_ptrs,
-						anchor_plate_id,
-						reconstruction_time,
-						true/*export_single_output_file*/,
-						false/*export_per_input_file*/, // We only generate a single output file.
-						false/*export_output_directory_per_input_file*/, // We only generate a single output file.
-						export_wrap_to_dateline);
-		}
-
-
-		/**
-		 * Append the reconstruction geometries, as type 'ReconstructionGeometryType', to the
-		 * python list @a output_reconstruction_geometries_list.
-		 *
-		 * If @a group_with_feature is true then @a output_reconstruction_geometries_list contains
-		 * tuples of (feature, list of reconstruction geometries).
-		 */
-		template <class ReconstructionGeometryType>
-		void
-		output_reconstruction_geometries(
-				bp::list &output_reconstruction_geometries_list,
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &rfgs,
-				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
-				bool group_with_feature)
-		{
-			// Get any ReconstructedFeatureGeometry objects that are of type ReconstructionGeometryType.
-			//
-			// Note that, when motion paths are reconstructed, both ReconstructedMotionPath's and
-			// ReconstructedFeatureGeometry's are generated - so this also ensures that the
-			// ReconstructedFeatureGeometry's are ignored when outputting reconstructed motion paths.
-			std::vector<const ReconstructionGeometryType *> reconstruction_geometries;
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-					rfgs.begin(),
-					rfgs.end(),
-					reconstruction_geometries);
-
-			//
-			// Order the reconstruction geometries according to the order of the features in the feature collections.
-			//
-
-			// Get the list of active reconstructable feature collection files that contain
-			// the features referenced by the ReconstructionGeometry objects.
-			GPlatesFileIO::ReconstructionGeometryExportImpl::feature_handle_to_collection_map_type feature_to_collection_map;
-			GPlatesFileIO::ReconstructionGeometryExportImpl::populate_feature_handle_to_collection_map(
-					feature_to_collection_map,
-					reconstructable_file_ptrs);
-
-			// Group the ReconstructionGeometry objects by their feature.
-			typedef GPlatesFileIO::ReconstructionGeometryExportImpl::FeatureGeometryGroup<
-					ReconstructionGeometryType> feature_geometry_group_type;
-			std::list<feature_geometry_group_type> grouped_recon_geoms_seq;
-			GPlatesFileIO::ReconstructionGeometryExportImpl::group_reconstruction_geometries_with_their_feature(
-					grouped_recon_geoms_seq,
-					reconstruction_geometries,
-					feature_to_collection_map);
-
-			//
-			// Append the ordered RFG's to the output list.
-			//
-
-			typename std::list<feature_geometry_group_type>::const_iterator feature_iter;
-			for (feature_iter = grouped_recon_geoms_seq.begin();
-				feature_iter != grouped_recon_geoms_seq.end();
-				++feature_iter)
-			{
-				const feature_geometry_group_type &feature_geom_group = *feature_iter;
-
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
-						feature_geom_group.feature_ref;
-				if (!feature_ref.is_valid())
-				{
-					continue;
-				}
-
-				// Group reconstruction geometries with their feature if requested.
-				boost::optional<bp::list> feature_reconstruction_geometries_list;
-				if (group_with_feature)
-				{
-					// Create a Python feature.
-					bp::object feature_object(
-							GPlatesModel::FeatureHandle::non_null_ptr_to_const_type(feature_ref.handle_ptr()));
-					// Create a Python list (of reconstruction geometries).
-					feature_reconstruction_geometries_list = bp::list();
-
-					// Add a tuple containing the feature and its list of reconstruction geometries.
-					output_reconstruction_geometries_list.append(
-							bp::make_tuple(
-									feature_object,
-									feature_reconstruction_geometries_list.get()));
-				}
-
-				// Iterate through the reconstruction geometries of the current feature and write to output.
-				typename std::vector<const ReconstructionGeometryType *>::const_iterator rg_iter;
-				for (rg_iter = feature_geom_group.recon_geoms.begin();
-					rg_iter != feature_geom_group.recon_geoms.end();
-					++rg_iter)
-				{
-					const typename ReconstructionGeometryType::non_null_ptr_to_const_type rg(*rg_iter);
-
-					// Add the reconstruction geometry to python list.
-					if (group_with_feature)
-					{
-						feature_reconstruction_geometries_list->append(rg);
-					}
-					else
-					{
-						output_reconstruction_geometries_list.append(rg);
-					}
-				}
-			}
 		}
 	}
 
@@ -564,26 +298,28 @@ namespace GPlatesApi
 		// Get the explicit function arguments from the variable argument list.
 		//
 
-		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstructable_files;
-		boost::optional<RotationModel::non_null_ptr_type> rotation_model;
-		reconstructed_feature_geometries_argument_type reconstructed_feature_geometries_argument;
+		boost::optional<FeatureCollectionSequenceFunctionArgument> reconstructable_features_argument;
+		boost::optional<RotationModelFunctionArgument> rotation_model_argument;
+		reconstructed_geometries_argument_type reconstructed_geometries_argument;
 		GPlatesPropertyValues::GeoTimeInstant reconstruction_time(0);
 		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id;
 		ReconstructType::Value reconstruct_type;
 		bool export_wrap_to_dateline;
 		bool group_with_feature;
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> export_force_boundary_orientation;
 
 		get_reconstruct_args(
 				positional_args,
 				keyword_args,
-				reconstructable_files,
-				rotation_model,
-				reconstructed_feature_geometries_argument,
+				reconstructable_features_argument,
+				rotation_model_argument,
+				reconstructed_geometries_argument,
 				reconstruction_time,
 				anchor_plate_id,
 				reconstruct_type,
 				export_wrap_to_dateline,
-				group_with_feature);
+				group_with_feature,
+				export_force_boundary_orientation);
 
 		// Time must not be distant past/future.
 		if (!reconstruction_time.is_real())
@@ -593,208 +329,86 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		//
-		// Reconstruct the features in the feature collection files.
-		//
-
-		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default
-		// (which if none, then uses default anchor plate of 'rotation_model' instead).
-		// This ensures 'ReconstructMethodInterface' will reconstruct using the correct anchor plate.
-		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
-				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
-						rotation_model.get()->get_reconstruction_tree_creator(),
-						anchor_plate_id);
-
-		// Create the context state in which to reconstruct.
-		const GPlatesAppLogic::ReconstructMethodInterface::Context reconstruct_method_context(
-				GPlatesAppLogic::ReconstructParams(),
-				reconstruction_tree_creator);
-
-		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> rfgs;
-		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
-
-		// Get the next global reconstruct handle - it'll be stored in each RFG.
-		// It doesn't actually matter in our case though.
-		const GPlatesAppLogic::ReconstructHandle::type reconstruct_handle =
-				GPlatesAppLogic::ReconstructHandle::get_next_reconstruct_handle();
-
-		// Iterate over the files and reconstruct their features.
-		BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type reconstruct_file, reconstructable_files)
+		// Reconstruct type must correspond to one of the existing flags.
+		if ((reconstruct_type & ~ReconstructType::ALL_RECONSTRUCT_TYPES) != 0)
 		{
-			const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
-					reconstruct_file->get_reference().get_feature_collection();
-
-			// Iterate over the features in the current file's feature collection.
-			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_ref->begin();
-			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_ref->end();
-			for ( ; features_iter != features_end; ++features_iter)
-			{
-				const GPlatesModel::FeatureHandle::weak_ref feature_ref = (*features_iter)->reference();
-
-				// Determine what type of reconstructed output the current feature will produce (if any).
-				boost::optional<GPlatesAppLogic::ReconstructMethod::Type> reconstruct_method_type =
-						reconstruct_method_registry.get_reconstruct_method_type(feature_ref);
-				if (!reconstruct_method_type)
-				{
-					continue;
-				}
-
-				// Check that the reconstructed type matches that requested by the caller.
-				switch (reconstruct_type)
-				{
-				case ReconstructType::FEATURE_GEOMETRY:
-					// Skip flowlines and motion paths.
-					if (reconstruct_method_type.get() == GPlatesAppLogic::ReconstructMethod::FLOWLINE ||
-						reconstruct_method_type.get() == GPlatesAppLogic::ReconstructMethod::MOTION_PATH)
-					{
-						continue;
-					}
-					break;
-
-				case ReconstructType::MOTION_PATH:
-					// Skip anything but motion paths.
-					if (reconstruct_method_type.get() != GPlatesAppLogic::ReconstructMethod::MOTION_PATH)
-					{
-						continue;
-					}
-					break;
-
-				case ReconstructType::FLOWLINE:
-					// Skip anything but flowlines.
-					if (reconstruct_method_type.get() != GPlatesAppLogic::ReconstructMethod::FLOWLINE)
-					{
-						continue;
-					}
-					break;
-
-				default:
-					GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-					break;
-				}
-
-				GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
-						reconstruct_method_registry.create_reconstruct_method(
-								reconstruct_method_type.get(),
-								feature_ref,
-								reconstruct_method_context);
-
-				// Reconstruct the current feature and append the reconstructed feature geoms to 'rfgs'.
-				reconstruct_method->reconstruct_feature_geometries(
-						rfgs,
-						reconstruct_handle,
-						reconstruct_method_context,
-						reconstruction_time.value());
-			}
+			PyErr_SetString(PyExc_ValueError, "Unknown reconstruct type.");
+			bp::throw_error_already_set();
 		}
+
+		//
+		// Reconstruct the features (as a reconstruct snapshot).
+		//
+
+		ReconstructSnapshot::non_null_ptr_type reconstruct_snapshot = ReconstructSnapshot::create(
+				reconstructable_features_argument.get(),
+				rotation_model_argument.get(),
+				reconstruction_time.value(),
+				anchor_plate_id);
 
 		//
 		// Either export the reconstructed geometries to a file or append them to a python list.
 		//
-		// NOTE: In both cases the reconstructed geometries are output in the same order as that of their
-		// respective features with each feature collection (and the order across feature collections).
-		//
 
-		if (const QString *export_file_name = boost::get<QString>(&reconstructed_feature_geometries_argument))
+		if (const FilePathFunctionArgument *reconstructed_geometries_export_file_name =
+			boost::get<FilePathFunctionArgument>(&reconstructed_geometries_argument))
 		{
-			// Get the sequence of reconstructable files as File pointers.
-			std::vector<const GPlatesFileIO::File::Reference *> reconstructable_file_ptrs;
-			BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type reconstructable_file, reconstructable_files)
-			{
-				reconstructable_file_ptrs.push_back(&reconstructable_file->get_reference());
-			}
-
-			// Get the sequence of reconstruction files (if any) from the rotation model.
-			std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstruction_files;
-			rotation_model.get()->get_files(reconstruction_files);
-			std::vector<const GPlatesFileIO::File::Reference *> reconstruction_file_ptrs;
-			BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type reconstruction_file, reconstruction_files)
-			{
-				reconstruction_file_ptrs.push_back(&reconstruction_file->get_reference());
-			}
-
-			// Export based on the reconstructed type requested by the caller.
-			switch (reconstruct_type)
-			{
-			case ReconstructType::FEATURE_GEOMETRY:
-				export_reconstructed_feature_geometries(
-						rfgs,
-						*export_file_name,
-						reconstructable_file_ptrs,
-						reconstruction_file_ptrs,
-						reconstruction_tree_creator.get_default_anchor_plate_id(),
-						reconstruction_time.value(),
-						export_wrap_to_dateline);
-				break;
-
-			case ReconstructType::MOTION_PATH:
-				export_reconstructed_motion_paths(
-						rfgs,
-						*export_file_name,
-						reconstructable_file_ptrs,
-						reconstruction_file_ptrs,
-						reconstruction_tree_creator.get_default_anchor_plate_id(),
-						reconstruction_time.value(),
-						export_wrap_to_dateline);
-				break;
-
-			case ReconstructType::FLOWLINE:
-				export_reconstructed_flowlines(
-						rfgs,
-						*export_file_name,
-						reconstructable_file_ptrs,
-						reconstruction_file_ptrs,
-						reconstruction_tree_creator.get_default_anchor_plate_id(),
-						reconstruction_time.value(),
-						export_wrap_to_dateline);
-				break;
-
-			default:
-				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-				break;
-			}
+			// Export reconstructed geometries.
+			reconstruct_snapshot->export_reconstructed_geometries(
+					*reconstructed_geometries_export_file_name,
+					reconstruct_type,
+					export_wrap_to_dateline,
+					export_force_boundary_orientation);
 		}
-		else // list of ReconstructedFeatureGeometry's...
+		else // list of reconstructed geometries...
 		{
-			bp::list output_reconstruction_geometries_list =
-					boost::get<bp::list>(reconstructed_feature_geometries_argument);
-
-			// Get the sequence of reconstructable files as File pointers.
-			std::vector<const GPlatesFileIO::File::Reference *> reconstructable_file_ptrs;
-			BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type reconstructable_file, reconstructable_files)
+			if (group_with_feature)
 			{
-				reconstructable_file_ptrs.push_back(&reconstructable_file->get_reference());
+				// The caller's Python list.
+				bp::list output_reconstructed_features_list = boost::get<bp::list>(reconstructed_geometries_argument);
+
+				// Group the reconstructed geometries by their feature.
+				//
+				// Note: The features are sorted in the order of the features in the reconstructable files (and the order across files).
+				const std::list<ReconstructSnapshot::feature_geometry_group_type> reconstructed_features =
+						reconstruct_snapshot->get_reconstructed_features(reconstruct_type);
+
+				// Output the reconstructed geometries of each feature.
+				for (const auto &reconstructed_feature : reconstructed_features)
+				{
+					// Create a Python feature.
+					bp::object feature_object(
+							GPlatesModel::FeatureHandle::non_null_ptr_to_const_type(
+									reconstructed_feature.feature_ref.handle_ptr()));
+
+					// Python list of reconstructed geometries of the current feature.
+					bp::list reconstructed_geometries_list;
+					for (auto reconstructed_geometry : reconstructed_feature.recon_geoms)
+					{
+						reconstructed_geometries_list.append(reconstructed_geometry->get_non_null_pointer_to_const());
+					}
+
+					output_reconstructed_features_list.append(
+							bp::make_tuple(feature_object, reconstructed_geometries_list));
+				}
 			}
-
-			// Output based on the reconstructed type requested by the caller.
-			switch (reconstruct_type)
+			else
 			{
-			case ReconstructType::FEATURE_GEOMETRY:
-				output_reconstruction_geometries<GPlatesAppLogic::ReconstructedFeatureGeometry>(
-						output_reconstruction_geometries_list,
-						rfgs,
-						reconstructable_file_ptrs,
-						group_with_feature);
-				break;
+				// The caller's Python list.
+				bp::list output_reconstructed_geometries_list = boost::get<bp::list>(reconstructed_geometries_argument);
 
-			case ReconstructType::MOTION_PATH:
-				output_reconstruction_geometries<GPlatesAppLogic::ReconstructedMotionPath>(
-						output_reconstruction_geometries_list,
-						rfgs,
-						reconstructable_file_ptrs,
-						group_with_feature);
-				break;
+				// Group the reconstructed geometries by their feature.
+				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+						reconstructed_geometries = reconstruct_snapshot->get_reconstructed_geometries(
+								reconstruct_type,
+								// Sort in the order of the features in the reconstructable files (and the order across files)...
+								true/*same_order_as_reconstructable_features*/);
 
-			case ReconstructType::FLOWLINE:
-				output_reconstruction_geometries<GPlatesAppLogic::ReconstructedFlowline>(
-						output_reconstruction_geometries_list,
-						rfgs,
-						reconstructable_file_ptrs,
-						group_with_feature);
-				break;
-
-			default:
-				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-				break;
+				// Output the reconstructed geometries.
+				for (const auto &reconstructed_geometry : reconstructed_geometries)
+				{
+					output_reconstructed_geometries_list.append(reconstructed_geometry);
+				}
 			}
 		}
 
@@ -939,12 +553,6 @@ namespace GPlatesApi
 void
 export_reconstruct()
 {
-	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::ReconstructType::Value>("ReconstructType")
-			.value("feature_geometry", GPlatesApi::ReconstructType::FEATURE_GEOMETRY)
-			.value("motion_path", GPlatesApi::ReconstructType::MOTION_PATH)
-			.value("flowline", GPlatesApi::ReconstructType::FLOWLINE);
-
 	const char *reconstruct_function_name = "reconstruct";
 	bp::def(reconstruct_function_name, bp::raw_function(&GPlatesApi::reconstruct));
 
@@ -954,17 +562,17 @@ export_reconstruct()
 	bp::scope().attr(reconstruct_function_name).attr("__doc__") =
 			"reconstruct(reconstructable_features, rotation_model, reconstructed_geometries, "
 			"reconstruction_time, [anchor_plate_id], [**output_parameters])\n"
-			"  Reconstruct regular geological features, motion paths or flowlines to a specific geological time.\n"
+			"  Reconstruct regular geological features (including motion paths and flowlines) to a specific geological time.\n"
 			"\n"
 			"  :param reconstructable_features: the features to reconstruct as a feature collection, or filename, or "
 			"feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any "
 			"combination of those four types\n"
-			"  :type reconstructable_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"  :type reconstructable_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
-			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
-			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+			"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
+			"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
+			"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
+			"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param reconstructed_geometries: the "
 			":class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` (default) or "
 			":class:`reconstructed motion paths<ReconstructedMotionPath>` or "
@@ -973,7 +581,7 @@ export_reconstruct()
 			"file (with specified filename) or *appended* to a Python ``list`` (note that the list is *not* "
 			"cleared first and note that the list contents are affected by *group_with_feature* - see "
 			"*output_parameters* table)\n"
-			"  :type reconstructed_geometries: string or ``list``\n"
+			"  :type reconstructed_geometries: string/``os.PathLike`` or ``list``\n"
 			"  :param reconstruction_time: the specific geological time to reconstruct to\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 			"  :param anchor_plate_id: The anchored plate id used during reconstruction. "
@@ -992,36 +600,47 @@ export_reconstruct()
 			"\n"
 			"  The following optional keyword arguments are supported by *output_parameters*:\n"
 			"\n"
-			"  +-------------------------+-----------------+----------------------------------+---------------------------------------------------------------------------+\n"
-			"  | Name                    | Type            | Default                          | Description                                                               |\n"
-			"  +=========================+=================+==================================+===========================================================================+\n"
-			"  | reconstruct_type        | ReconstructType | ReconstructType.feature_geometry | - *ReconstructType.feature_geometry*:                                     |\n"
-			"  |                         |                 |                                  |   only reconstruct regular features (not motion paths or                  |\n"
-			"  |                         |                 |                                  |   flowlines), this generates                                              |\n"
-			"  |                         |                 |                                  |   :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` |\n"
-			"  |                         |                 |                                  | - *ReconstructType.motion_path*:                                          |\n"
-			"  |                         |                 |                                  |   only reconstruct motion path features, this generates                   |\n"
-			"  |                         |                 |                                  |   :class:`reconstructed motion paths<ReconstructedMotionPath>`            |\n"
-			"  |                         |                 |                                  | - *ReconstructType.flowline*:                                             |\n"
-			"  |                         |                 |                                  |   only reconstruct flowline features, this generates                      |\n"
-			"  |                         |                 |                                  |   :class:`reconstructed flowlines<ReconstructedFlowline>`                 |\n"
-			"  +-------------------------+-----------------+----------------------------------+---------------------------------------------------------------------------+\n"
-			"  | group_with_feature      | bool            | False                            | | Group reconstructed geometries with their feature.                      |\n"
-			"  |                         |                 |                                  | | This can be useful when a feature has more than one geometry and hence  |\n"
-			"  |                         |                 |                                  |   more than one reconstructed geometry.                                   |\n"
-			"  |                         |                 |                                  | | *reconstructed_geometries* then becomes a list of tuples where each     |\n"
-			"  |                         |                 |                                  |   tuple contains a :class:`feature<Feature>` and a ``list`` of            |\n"
-			"  |                         |                 |                                  |   reconstructed geometries.                                               |\n"
-			"  |                         |                 |                                  |                                                                           |\n"
-			"  |                         |                 |                                  | .. note:: Only applies when *reconstructed_geometries* is a ``list``      |\n"
-			"  |                         |                 |                                  |    because exported files are always grouped with feature.                |\n"
-			"  |                         |                 |                                  |                                                                           |\n"
-			"  |                         |                 |                                  | .. note:: Any *ReconstructType* can be grouped.                           |\n"
-			"  +-------------------------+-----------------+----------------------------------+---------------------------------------------------------------------------+\n"
-			"  | export_wrap_to_dateline | bool            | True                             | | Wrap/clip reconstructed geometries to the dateline (currently           |\n"
-			"  |                         |                 |                                  |   ignored unless exporting to an ESRI Shapefile format *file*).           |\n"
-			"  |                         |                 |                                  | | Only applies when exporting to a file (ESRI Shapefile).                 |\n"
-			"  +-------------------------+-----------------+----------------------------------+---------------------------------------------------------------------------+\n"
+			"  +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | Name                                 | Type            | Default                          | Description                                                                      |\n"
+			"  +======================================+=================+==================================+==================================================================================+\n"
+			"  | reconstruct_type                     | ReconstructType | ReconstructType.feature_geometry | - *ReconstructType.feature_geometry*:                                            |\n"
+			"  |                                      |                 |                                  |   only reconstruct regular features (not motion paths or                         |\n"
+			"  |                                      |                 |                                  |   flowlines), this generates                                                     |\n"
+			"  |                                      |                 |                                  |   :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>`        |\n"
+			"  |                                      |                 |                                  | - *ReconstructType.motion_path*:                                                 |\n"
+			"  |                                      |                 |                                  |   only reconstruct motion path features, this generates                          |\n"
+			"  |                                      |                 |                                  |   :class:`reconstructed motion paths<ReconstructedMotionPath>`                   |\n"
+			"  |                                      |                 |                                  | - *ReconstructType.flowline*:                                                    |\n"
+			"  |                                      |                 |                                  |   only reconstruct flowline features, this generates                             |\n"
+			"  |                                      |                 |                                  |   :class:`reconstructed flowlines<ReconstructedFlowline>`                        |\n"
+			"  +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | group_with_feature                   | bool            | False                            | | Group reconstructed geometries with their feature.                             |\n"
+			"  |                                      |                 |                                  | | This can be useful when a feature has more than one geometry and hence         |\n"
+			"  |                                      |                 |                                  |   more than one reconstructed geometry.                                          |\n"
+			"  |                                      |                 |                                  | | *reconstructed_geometries* then becomes a list of tuples where each            |\n"
+			"  |                                      |                 |                                  |   tuple contains a :class:`feature<Feature>` and a ``list`` of                   |\n"
+			"  |                                      |                 |                                  |   reconstructed geometries.                                                      |\n"
+			"  |                                      |                 |                                  |                                                                                  |\n"
+			"  |                                      |                 |                                  | .. note:: Only applies when *reconstructed_geometries* is a ``list``             |\n"
+			"  |                                      |                 |                                  |    because exported files are always grouped with feature.                       |\n"
+			"  |                                      |                 |                                  |                                                                                  |\n"
+			"  |                                      |                 |                                  | .. note:: Any *ReconstructType* can be grouped.                                  |\n"
+			"  +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | export_wrap_to_dateline              | bool            | True                             | | Wrap/clip reconstructed geometries to the dateline (currently                  |\n"
+			"  |                                      |                 |                                  |   ignored unless exporting to an ESRI Shapefile format *file*).                  |\n"
+			"  |                                      |                 |                                  | | Only applies when exporting to a file (ESRI Shapefile).                        |\n"
+			"  +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | export_force_boundary_orientation    | int             | ``None`` (don't force)           | Optionally force boundary orientation (clockwise or counter-clockwise):          |\n"
+			"  |                                      |                 |                                  |                                                                                  |\n"
+			"  |                                      |                 |                                  | - ``PolygonOnSphere.Orientation.clockwise``                                      |\n"
+			"  |                                      |                 |                                  | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |\n"
+			"  |                                      |                 |                                  |                                                                                  |\n"
+			"  |                                      |                 |                                  | .. note:: Only applies to reconstructed feature geometries that are *polygons*.  |\n"
+			"  |                                      |                 |                                  |                                                                                  |\n"
+			"  |                                      |                 |                                  | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |\n"
+			"  |                                      |                 |                                  |                                                                                  |\n"
+			"  |                                      |                 |                                  | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |\n"
+			"  +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+\n"
 			"\n"
 			"  Only the :class:`features<Feature>`, in *reconstructable_features*, that match the "
 			"optional keyword argument *reconstruct_type* (see *output_parameters* table) are reconstructed. "
@@ -1129,11 +748,22 @@ export_reconstruct()
 			"\n"
 			"    reconstructed_feature_geometries = []\n"
             "    pygplates.reconstruct(feature, rotation_model, reconstructed_feature_geometries, 10)\n"
-			"    # assert(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())\n";
+			"    # assert(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())\n"
+			"\n"
+			"  .. seealso:: :class:`ReconstructModel` and :class:`ReconstructSnapshot`\n"
+			"\n"
+			"  .. versionchanged:: 0.44\n"
+			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+			"\n"
+			"  .. versionchanged:: 0.48\n"
+			"\n"
+			"     * Added *export_force_boundary_orientation* argument.\n"
+			"     * Changed underlying bit values for *ReconstructType.feature_geometry*, *ReconstructType.motion_path* and *ReconstructType.flowline*.\n";
 
 	// Register 'reconstructed feature geometries' variant.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<
-			GPlatesApi::reconstructed_feature_geometries_argument_type>();
+			GPlatesApi::reconstructed_geometries_argument_type>();
 
 
 	bp::def("reverse_reconstruct",
@@ -1148,12 +778,12 @@ export_reconstruct()
 			"  :param reconstructable_features: A reconstructable feature collection, or filename, or "
 			"feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any "
 			"combination of those four types - all features used as input and output\n"
-			"  :type reconstructable_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"  :type reconstructable_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
-			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
-			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+			"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
+			"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
+			"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
+			"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param reconstruction_time: the specific geological time to reverse reconstruct from "
 			"(note that this also :meth:`sets the geometry import time<Feature.set_geometry_import_time>`).\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
@@ -1214,5 +844,9 @@ export_reconstruct()
             "    pygplates.reconstruct(feature, rotation_model, 10)\n"
 			"\n"
 			"  .. versionchanged:: 0.29\n"
-			"     The :meth:`geometry import time<Feature.set_geometry_import_time>` is set to *reconstruction_time*.\n");
+			"     The :meth:`geometry import time<Feature.set_geometry_import_time>` is set to *reconstruction_time*.\n"
+			"\n"
+			"  .. versionchanged:: 0.44\n"
+			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n");
 }

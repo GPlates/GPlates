@@ -26,6 +26,7 @@
 #ifndef GPLATES_SCRIBE_TRANSCRIBEBOOST_H
 #define GPLATES_SCRIBE_TRANSCRIBEBOOST_H
 
+#include <boost/any.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/mpl/empty.hpp>
 #include <boost/mpl/front.hpp>
@@ -54,6 +55,17 @@ namespace GPlatesScribe
 	//
 
 	class Scribe;
+
+	/**
+	 * Transcribe boost::any.
+	 *
+	 * NOTE: The type stored in the boost::any must be export registered (see 'ScribeExportRegistration.h').
+	 */
+	TranscribeResult
+	transcribe(
+			Scribe &scribe,
+			boost::any &any_object,
+			bool transcribed_construct_data);
 
 	//! Transcribe boost::intrusive_ptr.
 	template <typename T>
@@ -208,11 +220,9 @@ namespace GPlatesScribe
 			raw_ptr = intrusive_ptr_object.get();
 		}
 
-		TranscribeResult transcribe_result =
-				transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/);
-		if (transcribe_result != TRANSCRIBE_SUCCESS)
+		if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/))
 		{
-			return transcribe_result;
+			return scribe.get_transcribe_result();
 		}
 
 		if (scribe.is_loading())
@@ -366,11 +376,9 @@ namespace GPlatesScribe
 			raw_ptr = scoped_ptr_object.get();
 		}
 
-		TranscribeResult transcribe_result =
-				transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, false/*shared_owner*/);
-		if (transcribe_result != TRANSCRIBE_SUCCESS)
+		if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, false/*shared_owner*/))
 		{
-			return transcribe_result;
+			return scribe.get_transcribe_result();
 		}
 
 		if (scribe.is_loading())
@@ -396,11 +404,9 @@ namespace GPlatesScribe
 			raw_ptr = shared_ptr_object.get();
 		}
 
-		TranscribeResult transcribe_result =
-				transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/);
-		if (transcribe_result != TRANSCRIBE_SUCCESS)
+		if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/))
 		{
-			return transcribe_result;
+			return scribe.get_transcribe_result();
 		}
 
 		if (scribe.is_loading())

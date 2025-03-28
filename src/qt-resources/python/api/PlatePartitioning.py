@@ -123,7 +123,7 @@ def plate_partitioner_partition_features(
     Partitions features into partitioning plates.
     
     :param features: the features to partition
-    :type features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
+    :type features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
@@ -333,6 +333,10 @@ def plate_partitioner_partition_features(
     ...this is useful when the features to be partitioned already have reconstruction plate IDs but
     they are deemed to be incorrect. By resetting them to zero we ensure the unpartitioned features remain stationary
     and do not reconstruct incorrectly over geological time. Any partitioned features will get a new plate ID.
+
+    .. versionchanged:: 0.44
+       Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ \
+    (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
     
     # Turn function argument into something more convenient for extracting features.
@@ -442,7 +446,12 @@ def plate_partitioner_partition_features(
             
             if partitioned_inside_geometries:
                 # Determine which partitioning plate (if feature is partitioned into any) overlaps the current feature the most.
-                max_geometry_size_measure = (0.0, 0)
+                #
+                # Note: It's possible for an inside polyline/polygon to have zero arc length (if all its points are coincident).
+                #       So we need to start with a 'max_geometry_size_measure' that will pass 'geometry_size_measure > max_geometry_size_measure'
+                #       when 'geometry_size_measure' is '(0.0, 0)' otherwise 'most_overlapping_partitioning_plate' will remain None.
+                #       So we use '(0.0, -1)'.
+                max_geometry_size_measure = (0.0, -1)
                 most_overlapping_partitioning_plate = None
                 for partitioning_plate, inside_geometries in partitioned_inside_geometries:
                     # Accumulate the size of the geometries inside the current partitioning plate.
@@ -481,11 +490,12 @@ def plate_partitioner_partition_features(
                 unpartitioned_feature = feature.clone()
                 unpartitioned_features.append(unpartitioned_feature)
     
-    # Reverse reconstruct all partitioned features (using their new plate IDs) if their geometries are not at present day.
+    # Reverse reconstruct all partitioned features (using their new plate IDs).
+    # Note: Reverse reconstruct even when reconstruction time is zero
+    #       (since can have non-zero finite rotation at present day, not advisable though).
     reconstruction_time = plate_partitioner._get_reconstruction_time()
-    if reconstruction_time != GeoTimeInstant(0):
-        rotation_model = plate_partitioner._get_rotation_model()
-        reverse_reconstruct(partitioned_features, rotation_model, reconstruction_time)
+    rotation_model = plate_partitioner._get_rotation_model()
+    reverse_reconstruct(partitioned_features, rotation_model, reconstruction_time)
     
     # Return partitioned and unpartitioned features in the format requested by the caller.
     if partition_return == PartitionReturn.combined_partitioned_and_unpartitioned:
@@ -520,16 +530,16 @@ def partition_into_plates(
     Partition features into plates.
     
     :param partitioning_features: the partitioning features
-    :type partitioning_features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
+    :type partitioning_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
-    :param rotation_model: A rotation model or a rotation feature collection or a rotation \
-        filename or a sequence of rotation feature collections and/or rotation filenames
-    :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string \
-        or sequence of :class:`FeatureCollection` instances and/or strings
+    :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, \
+        or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
+    :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, \
+        or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param features_to_partition: the features to be partitioned
-    :type features_to_partition: :class:`FeatureCollection`, or string, or :class:`Feature`, \
+    :type features_to_partition: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
@@ -801,8 +811,7 @@ def partition_into_plates(
     to overlap you don't need to sort them by plate *ID* to get deterministic partitioning results.
     So we are free to sort by plate *area* (well, plate area is also deterministic but not as deterministic
     as sorting by plate *ID* since modifications to the plate geometries change their areas but not their plate IDs).
-    Note that we also group by partition type in case the topological networks happen
-    to overlay the topological plate boundaries (usually this isn't the case though):
+    Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:
     ::
     
         features = pygplates.partition_into_plates(...,
@@ -827,6 +836,10 @@ def partition_into_plates(
             plate_partitioner = pygplates.PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
             
             return plate_partitioner.partition_features(features_to_partition, properties_to_copy, partition_method, partition_return)
+
+    .. versionchanged:: 0.44
+       Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ \
+    (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
     
     plate_partitioner = PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)

@@ -244,13 +244,17 @@ namespace GPlatesAppLogic
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
 				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type)
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms)
 		{
 			boost::optional< std::pair<const ReconstructionGeometry *, GPlatesMaths::Vector3D > >
 					network_velocity = resolved_networks_query.calculate_velocity(
 							domain_point,
 							velocity_delta_time,
-							velocity_delta_time_type);
+							velocity_delta_time_type,
+							velocity_units,
+							earth_radius_in_kms);
 			if (!network_velocity)
 			{
 				return false;
@@ -296,7 +300,9 @@ namespace GPlatesAppLogic
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
 				const GeometryCookieCutter &rigid_plates_query,
 				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type)
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms)
 		{
 			const boost::optional<const ReconstructionGeometry *> rigid_plate_containing_point =
 					rigid_plates_query.partition_point(domain_point);
@@ -352,7 +358,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 							recon_tree_creator.get(),
 							reconstruction_time,
 							velocity_delta_time,
-							velocity_delta_time_type);
+							velocity_delta_time_type,
+							velocity_units,
+							earth_radius_in_kms);
 
 			// Determine if point was in a resolved topological boundary or RFG (static polygon).
 			const MultiPointVectorField::CodomainElement::Reason codomain_element_reason =
@@ -383,7 +391,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 				const GeometryCookieCutter &rigid_plates_query,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
 				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type)
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms)
 		{
 			//
 			// First check whether domain point is inside any topological networks.
@@ -394,7 +404,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					range_element,
 					resolved_networks_query,
 					velocity_delta_time,
-					velocity_delta_time_type))
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms))
 			{
 				return true;
 			}
@@ -408,7 +420,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					range_element,
 					rigid_plates_query,
 					velocity_delta_time,
-					velocity_delta_time_type))
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms))
 			{
 				return true;
 			}
@@ -446,7 +460,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 				const GeometryCookieCutter &rigid_plates_query,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
 				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type)
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms)
 		{
 			// Sample the velocity at the point sample.
 			boost::optional<MultiPointVectorField::CodomainElement> velocity_sample;
@@ -456,7 +472,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					rigid_plates_query,
 					resolved_networks_query,
 					velocity_delta_time,
-					velocity_delta_time_type))
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms))
 			{
 				// Didn't sample a surface.
 				return;
@@ -503,7 +521,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 				const GeometryCookieCutter &rigid_plates_query,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
 				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type)
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms)
 		{
 			// We need both a velocity just inside and just outside the polygon boundary before
 			// we can calculate the average velocity at boundary.
@@ -544,7 +564,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					rigid_plates_query,
 					resolved_networks_query,
 					velocity_delta_time,
-					velocity_delta_time_type);
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms);
 
 			// To get point sample inside polygon boundary we rotate the point outside by 180 degrees.
 			GPlatesMaths::Rotation rotation_180_about_polygon_boundary_point =
@@ -559,7 +581,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					rigid_plates_query,
 					resolved_networks_query,
 					velocity_delta_time,
-					velocity_delta_time_type);
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms);
 
 			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 			{
@@ -588,7 +612,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					rigid_plates_query,
 					resolved_networks_query,
 					velocity_delta_time,
-					velocity_delta_time_type);
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms);
 
 			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 			{
@@ -605,7 +631,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					rigid_plates_query,
 					resolved_networks_query,
 					velocity_delta_time,
-					velocity_delta_time_type);
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms);
 
 			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 			{
@@ -646,7 +674,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 							rigid_plates_query,
 							resolved_networks_query,
 							velocity_delta_time,
-							velocity_delta_time_type);
+							velocity_delta_time_type,
+							velocity_units,
+							earth_radius_in_kms);
 
 					if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 					{
@@ -679,7 +709,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 						rigid_plates_query,
 						resolved_networks_query,
 						velocity_delta_time,
-						velocity_delta_time_type);
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms);
 
 				if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 				{
@@ -719,6 +751,8 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
 				const double &velocity_delta_time,
 				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms,
 				const double &boundary_smoothing_half_angle_radians,
 				const GPlatesMaths::AngularExtent &boundary_smoothing_angular_half_extent,
 				bool exclude_deforming_regions_from_smoothing)
@@ -730,7 +764,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 					rigid_plates_query,
 					resolved_networks_query,
 					velocity_delta_time,
-					velocity_delta_time_type))
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms))
 			{
 				// Domain point is not inside any surfaces.
 				return false;
@@ -819,7 +855,9 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 							rigid_plates_query,
 							resolved_networks_query,
 							velocity_delta_time,
-							velocity_delta_time_type);
+							velocity_delta_time_type,
+							velocity_units,
+							earth_radius_in_kms);
 			if (!average_boundary_velocity)
 			{
 				// Unable to calculate average since unable to sample adjacent polygon -
@@ -916,6 +954,8 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &velocity_surface_resolved_topological_networks,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms,
 		const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options)
 {
 	PROFILE_FUNC();
@@ -1010,6 +1050,8 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 						resolved_networks_query,
 						velocity_delta_time,
 						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms,
 						velocity_smoothing_options->angular_half_extent_radians,
 						boundary_smoothing_angular_half_extent,
 						exclude_deforming_regions_from_smoothing);
@@ -1022,7 +1064,9 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 						rigid_plates_query,
 						resolved_networks_query,
 						velocity_delta_time,
-						velocity_delta_time_type);
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms);
 			}
 		}
 
@@ -1031,23 +1075,33 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 }
 
 
-GPlatesMaths::Vector3D
-GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
-		const GPlatesMaths::PointOnSphere &point,
+GPlatesMaths::FiniteRotation
+GPlatesAppLogic::PlateVelocityUtils::StageRotationCalculator::calculate_stage_rotation(
 		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const double &reconstruction_time,
-		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type)
+		const ReconstructionTreeCreator &reconstruction_tree_creator) const
 {
-	const GPlatesMaths::FiniteRotation stage_rotation = calculate_stage_rotation(
-			reconstruction_plate_id,
-			reconstruction_tree_creator,
-			reconstruction_time,
-			velocity_delta_time,
-			velocity_delta_time_type);
+	const plate_id_to_stage_rotation_map_type::key_type map_key(reconstruction_plate_id, reconstruction_tree_creator);
 
-	return GPlatesMaths::calculate_velocity_vector(point, stage_rotation, velocity_delta_time);
+	// See if we've already calculated a finite rotation.
+	plate_id_to_stage_rotation_map_type::const_iterator stage_rotation_iter = d_stage_rotation_map.find(map_key);
+	if (stage_rotation_iter != d_stage_rotation_map.end())
+	{
+		return stage_rotation_iter->second;
+	}
+
+	// Calculate stage rotation and insert into the map.
+	const std::pair<plate_id_to_stage_rotation_map_type::iterator, bool> insert_result =
+			d_stage_rotation_map.insert(
+					plate_id_to_stage_rotation_map_type::value_type(
+							map_key,
+							PlateVelocityUtils::calculate_stage_rotation(
+									reconstruction_plate_id,
+									reconstruction_tree_creator,
+									reconstruction_time,
+									velocity_delta_time,
+									velocity_delta_time_type)));
+
+	return insert_result.first->second;
 }
 
 
@@ -1140,15 +1194,119 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
 }
 
 
+GPlatesMaths::Vector3D
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesMaths::FiniteRotation &finite_rotation1,
+		const GPlatesMaths::FiniteRotation &finite_rotation2,
+		const double &delta_time,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
+{
+	const GPlatesMaths::Vector3D velocity_cms_yr = GPlatesMaths::calculate_velocity_vector(
+			point,
+			finite_rotation1,
+			finite_rotation2,
+			delta_time,
+			earth_radius_in_kms);
+
+	if (velocity_units == VelocityUnits::CMS_PER_YR)
+	{
+		return velocity_cms_yr;
+	}
+
+	return 10/*cms/yr -> kms/myr*/ * velocity_cms_yr;
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesMaths::FiniteRotation &stage_rotation,
+		const double &velocity_delta_time,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
+{
+	const GPlatesMaths::Vector3D velocity_cms_yr = GPlatesMaths::calculate_velocity_vector(
+			point,
+			stage_rotation,
+			velocity_delta_time,
+			earth_radius_in_kms);
+
+	if (velocity_units == VelocityUnits::CMS_PER_YR)
+	{
+		return velocity_cms_yr;
+	}
+
+	return 10/*cms/yr -> kms/myr*/ * velocity_cms_yr;
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
+{
+	const GPlatesMaths::FiniteRotation stage_rotation = calculate_stage_rotation(
+			reconstruction_plate_id,
+			reconstruction_tree_creator,
+			reconstruction_time,
+			velocity_delta_time,
+			velocity_delta_time_type);
+
+	return calculate_velocity_vector(
+			point,
+			stage_rotation,
+			velocity_delta_time,
+			velocity_units,
+			earth_radius_in_kms);
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const StageRotationCalculator &stage_rotation_calculator,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
+{
+	const GPlatesMaths::FiniteRotation stage_rotation = stage_rotation_calculator.calculate_stage_rotation(
+			reconstruction_plate_id,
+			reconstruction_tree_creator);
+
+	return calculate_velocity_vector(
+			point,
+			stage_rotation,
+			stage_rotation_calculator.velocity_delta_time,
+			velocity_units,
+			earth_radius_in_kms);
+}
+
+
 GPlatesMaths::VectorColatitudeLongitude
 GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 		const GPlatesMaths::PointOnSphere &point,
 		const GPlatesMaths::FiniteRotation &finite_rotation1,
 		const GPlatesMaths::FiniteRotation &finite_rotation2,
-		const double &delta_time)
+		const double &delta_time,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
 {
-	const GPlatesMaths::Vector3D vector_xyz =
-			GPlatesMaths::calculate_velocity_vector(point, finite_rotation1, finite_rotation2, delta_time);
+	const GPlatesMaths::Vector3D vector_xyz = calculate_velocity_vector(
+			point,
+			finite_rotation1,
+			finite_rotation2,
+			delta_time,
+			velocity_units,
+			earth_radius_in_kms);
 
 	return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
 }
@@ -1161,7 +1319,9 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type)
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
 {
 	const GPlatesMaths::Vector3D vector_xyz = calculate_velocity_vector(
 			point,
@@ -1169,7 +1329,30 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 			reconstruction_tree_creator,
 			reconstruction_time,
 			velocity_delta_time,
-			velocity_delta_time_type);
+			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms);
+
+	return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
+}
+
+
+GPlatesMaths::VectorColatitudeLongitude
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const StageRotationCalculator &stage_rotation_calculator,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
+{
+	const GPlatesMaths::Vector3D vector_xyz = calculate_velocity_vector(
+			point,
+			reconstruction_plate_id,
+			reconstruction_tree_creator,
+			stage_rotation_calculator,
+			velocity_units,
+			earth_radius_in_kms);
 
 	return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
 }
@@ -1189,7 +1372,9 @@ boost::optional<
 GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::calculate_velocity(
 		const GPlatesMaths::PointOnSphere &point,
 		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type) const
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
 {
 	BOOST_FOREACH(const ResolvedTopologicalNetwork::non_null_ptr_type &network, d_networks)
 	{
@@ -1200,7 +1385,9 @@ GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::calculate_ve
 				velocity = network->get_triangulation_network().calculate_velocity(
 						point,
 						velocity_delta_time,
-						velocity_delta_time_type);
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms);
 		if (velocity)
 		{
 			const GPlatesMaths::Vector3D &velocity_vector = velocity->first;

@@ -34,6 +34,9 @@
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_revisionable() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -260,6 +263,20 @@ namespace GPlatesPropertyValues
 			GPlatesModel::RevisionedReference<GpmlPropertyDelegate> source_geometry;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlTopologicalPoint> &gpml_topological_point);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

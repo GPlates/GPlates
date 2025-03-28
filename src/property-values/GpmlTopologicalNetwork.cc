@@ -34,6 +34,8 @@
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GpmlTopologicalNetwork::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalNetwork");
@@ -98,4 +100,99 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalNetwork::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlTopologicalNetwork> &gpml_topological_network)
+{
+	if (scribe.is_saving())
+	{
+		GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type boundary_sections_ =
+				&gpml_topological_network->boundary_sections();
+		scribe.save(TRANSCRIBE_SOURCE, boundary_sections_, "boundary_sections");
+
+		GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type interior_geometries_ =
+				&gpml_topological_network->interior_geometries();
+		scribe.save(TRANSCRIBE_SOURCE, interior_geometries_, "interior_geometries");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> boundary_sections_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "boundary_sections");
+		if (!boundary_sections_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type> interior_geometries_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "interior_geometries");
+		if (!interior_geometries_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_topological_network.construct_object(
+				boost::ref(transaction),  // non-const ref
+				boundary_sections_,
+				interior_geometries_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalNetwork::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type boundary_sections_ = &boundary_sections();
+			scribe.save(TRANSCRIBE_SOURCE, boundary_sections_, "boundary_sections");
+
+			GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type interior_geometries_ =
+					&interior_geometries();
+			scribe.save(TRANSCRIBE_SOURCE, interior_geometries_, "interior_geometries");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> boundary_sections_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "boundary_sections");
+			if (!boundary_sections_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type> interior_geometries_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "interior_geometries");
+			if (!interior_geometries_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+			revision.boundary_sections.change(revision_handler.get_model_transaction(), boundary_sections_);
+			revision.interior_geometries.change(revision_handler.get_model_transaction(), interior_geometries_);
+			revision_handler.commit();
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlTopologicalNetwork>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

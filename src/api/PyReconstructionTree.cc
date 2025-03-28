@@ -740,7 +740,7 @@ export_reconstruction_tree()
 					"Represents the plate-reconstruction hierarchy of total reconstruction poles at "
 					"an instant in geological time.\n"
 					"\n"
-					"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy`.\n"
+					"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` in the *Primer* documentation.\n"
 					"\n"
 					"Total rotations are handled by the methods :meth:`get_equivalent_total_rotation` and "
 					":meth:`get_relative_total_rotation`.\n"
@@ -819,7 +819,7 @@ export_reconstruction_tree()
 				"  If there is no plate circuit path from *plate_id* to the anchor plate (in either "
 				"reconstruction tree) then an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` "
 				"is returned if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
-				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a plate id can "
+				"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` for details on how a plate id can "
 				"go missing and how to work around it.\n"
 				"\n"
 				"  The only real advantage of this function over :meth:`get_relative_stage_rotation` is "
@@ -836,7 +836,7 @@ export_reconstruction_tree()
 				"        if from_plate_rotation and to_plate_rotation:\n"
 				"            return to_plate_rotation * from_plate_rotation.get_inverse()\n"
 				"\n"
-				"  .. note:: See :ref:`pygplates_foundations_equivalent_stage_rotation` for the derivation of the stage rotation.\n")
+				"  .. note:: See :ref:`pygplates_primer_equivalent_stage_rotation` for the derivation of the stage rotation.\n")
 		.staticmethod("get_equivalent_stage_rotation")
 		.def("get_relative_stage_rotation",
 				&GPlatesApi::get_relative_stage_rotation,
@@ -890,7 +890,7 @@ export_reconstruction_tree()
 				"  If there is no plate circuit path from *fixed_plate_id* or *moving_plate_id* to the anchor "
 				"plate (in either reconstruction tree) then an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` "
 				"is returned if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
-				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a plate id can "
+				"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` for details on how a plate id can "
 				"go missing and how to work around it.\n"
 				"\n"
 				"  This function essentially does the following:\n"
@@ -907,7 +907,7 @@ export_reconstruction_tree()
 				"            return fixed_plate_to_rotation.get_inverse() * moving_plate_to_rotation * "
 				"moving_plate_from_rotation.get_inverse() * fixed_plate_from_rotation\n"
 				"\n"
-				"  .. note:: See :ref:`pygplates_foundations_relative_stage_rotation` for the derivation of the stage rotation.\n")
+				"  .. note:: See :ref:`pygplates_primer_relative_stage_rotation` for the derivation of the stage rotation.\n")
 		.staticmethod("get_relative_stage_rotation")
 		.def("get_reconstruction_time",
 				&GPlatesAppLogic::ReconstructionTree::get_reconstruction_time,
@@ -953,7 +953,7 @@ export_reconstruction_tree()
 				"  If there is no plate circuit path from *plate_id* to the anchor plate then an "
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` is returned "
 				"if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
-				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a plate id can "
+				"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` for details on how a plate id can "
 				"go missing and how to work around it.\n"
 				"\n"
 				"  This method essentially does the following:\n"
@@ -969,7 +969,7 @@ export_reconstruction_tree()
 				"            return pygplates.FiniteRotation.create_identity_rotation()\n"
 				"        # else returns None\n"
 				"\n"
-				"  .. note:: See :ref:`pygplates_foundations_equivalent_total_rotation` for the derivation of the rotation.\n")
+				"  .. note:: See :ref:`pygplates_primer_equivalent_total_rotation` for the derivation of the rotation.\n")
 		.def("get_relative_total_rotation",
 				&GPlatesApi::get_relative_total_rotation,
 				(bp::arg("moving_plate_id"),
@@ -1006,13 +1006,13 @@ export_reconstruction_tree()
 				"  If *fixed_plate_id* is the *anchored* plate then this method gives the same "
 				"result as :meth:`get_equivalent_total_rotation`. Another way to calculate this result "
 				"is to create a new *ReconstructionTree* using *fixed_plate_id* as the *anchored* plate. "
-				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for a description of some "
+				"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` for a description of some "
 				"subtle differences between these two approaches.\n"
 				"\n"
 				"  If there is no plate circuit path from *fixed_plate_id* or *moving_plate_id* to the "
 				"anchor plate then an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` "
 				"is returned if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
-				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a plate id can "
+				"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` for details on how a plate id can "
 				"go missing and how to work around it.\n"
 				"\n"
 				"  This method essentially does the following:\n"
@@ -1024,7 +1024,7 @@ export_reconstruction_tree()
 				"        if fixed_plate_rotation and moving_plate_rotation:\n"
 				"            return fixed_plate_rotation.get_inverse() * moving_plate_rotation\n"
 				"\n"
-				"  .. note:: See :ref:`pygplates_foundations_relative_total_rotation` for the derivation of the rotation.\n")
+				"  .. note:: See :ref:`pygplates_primer_relative_total_rotation` for the derivation of the rotation.\n")
 		.def("get_edge",
 				&GPlatesApi::reconstruction_tree_get_edge,
 				(bp::arg("moving_plate_id")),
@@ -1123,8 +1123,8 @@ export_reconstruction_tree()
 	bp::class_<
 			GPlatesApi::ReconstructionTreeEdge>(
 					"ReconstructionTreeEdge",
-					"A reconstruction tree edge represents a moving/fixed plate pair in the graph of "
-					"the plate-reconstruction hierarchy. See :ref:`pygplates_foundations_plate_reconstruction_hierarchy`.\n",
+					"A reconstruction tree edge represents a moving/fixed plate pair in the graph of the plate-reconstruction hierarchy. "
+					"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` in the *Primer* documentation.\n",
 					bp::no_init)
 		.def("get_fixed_plate_id",
 				&GPlatesApi::ReconstructionTreeEdge::get_fixed_plate_id,

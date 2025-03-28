@@ -33,9 +33,9 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
-#include <QString>
 
 #include "PyFeatureCollectionFunctionArgument.h"
+#include "PyFilePathFunctionArgument.h"
 #include "PyRotationModel.h"
 #include "PyTopologicalSnapshot.h"
 #include "PythonConverterUtils.h"
@@ -70,7 +70,7 @@ namespace GPlatesApi
 		 */
 		typedef boost::variant<
 				// Export filename...
-				QString,
+				FilePathFunctionArgument,
 				// List of 'ResolvedTopologicalLine's, 'ResolvedTopologicalBoundary's and 'ResolvedTopologicalNetwork's...
 				bp::list>
 						resolved_topologies_argument_type;
@@ -80,7 +80,7 @@ namespace GPlatesApi
 		 */
 		typedef boost::variant<
 				// Export filename...
-				QString,
+				FilePathFunctionArgument,
 				// List of 'ResolvedTopologicalSection's...
 				bp::list>
 						resolved_topological_sections_argument_type;
@@ -282,8 +282,8 @@ namespace GPlatesApi
 		// Either export the resolved topologies to a file or append them to a python list.
 		//
 
-		if (const QString *resolved_topologies_export_file_name =
-			boost::get<QString>(&resolved_topologies_argument))
+		if (const FilePathFunctionArgument *resolved_topologies_export_file_name =
+			boost::get<FilePathFunctionArgument>(&resolved_topologies_argument))
 		{
 			// Export resolved topologies.
 			topological_snapshot->export_resolved_topologies(
@@ -295,7 +295,7 @@ namespace GPlatesApi
 		else // list of resolved topologies...
 		{
 			// Gather all the resolved topologies to output (limited to the resolve types requested).
-			std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> resolved_topologies =
+			const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> resolved_topologies =
 					topological_snapshot->get_resolved_topologies(
 							resolve_topology_types,
 							// Sort the resolved topologies in the order of the features in the
@@ -318,8 +318,8 @@ namespace GPlatesApi
 			// Either export the resolved topological sections to a file or append them to a python list.
 			//
 
-			if (const QString *resolved_topological_sections_export_file_name =
-				boost::get<QString>(&resolved_topological_sections_argument.get()))
+			if (const FilePathFunctionArgument *resolved_topological_sections_export_file_name =
+				boost::get<FilePathFunctionArgument>(&resolved_topological_sections_argument.get()))
 			{
 				// Export resolved topological sections.
 				topological_snapshot->export_resolved_topological_sections(
@@ -372,14 +372,14 @@ export_resolve_topologies()
 			"  :param topological_features: The topological boundary and network features and the "
 			"topological section features they reference (regular and topological lines) as a feature collection, "
 			"or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) "
-			"of any combination of those four types. Note: Each sequence entry can optionally be a 2-tuple "
+			"of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple "
 			"(entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.\n"
-			"  :type topological_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"  :type topological_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
-			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
-			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+			"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
+			"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
+			"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
+			"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param resolved_topologies: the "
 			":class:`resolved topological lines<ResolvedTopologicalLine>`, "
 			":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
@@ -387,13 +387,13 @@ export_resolve_topologies()
 			"keyword argument *resolve_topology_types* - see *output_parameters* table) are either exported "
 			"to a file (with specified filename) or *appended* to a python ``list`` (note that the list is "
 			"*not* cleared first)\n"
-			"  :type resolved_topologies: string or ``list``\n"
+			"  :type resolved_topologies: string/``os.PathLike`` or ``list``\n"
 			"  :param reconstruction_time: the specific geological time to resolve to\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 			"  :param resolved_topological_sections: The :class:`resolved topological sections<ResolvedTopologicalSection>` "
 			" are either exported to a file (with specified filename) or *appended* to a python ``list`` "
 			"(note that the list is *not* cleared first). Default is to do neither.\n"
-			"  :type resolved_topological_sections: string or ``list``\n"
+			"  :type resolved_topological_sections: string/``os.PathLike`` or ``list``\n"
 			"  :param anchor_plate_id: The anchored plate id used during reconstruction. "
 			"Defaults to the default anchor plate of *rotation_model*.\n"
 			"  :type anchor_plate_id: int\n"
@@ -589,6 +589,8 @@ export_resolve_topologies()
 			"        'plate_polygons_and_networks.gpml', 'rotations.rot', resolved_topologies, 10,\n"
 			"         resolved_topological_sections)\n"
 			"\n"
+			"  .. seealso:: :class:`TopologicalModel` and :class:`TopologicalSnapshot`\n"
+			"\n"
 			"  .. versionchanged:: 0.29\n"
 			"     The output order of *resolved_topological_sections* is now same as that of their "
 			"respective features in *topological_features* (the order across feature collections is also retained). "
@@ -598,7 +600,11 @@ export_resolve_topologies()
 			"     Added *default_resolve_topology_parameters* argument.\n"
 			"\n"
 			"  .. versionchanged:: 0.33\n"
-			"     Added *export_topological_line_sub_segments* argument.\n";
+			"     Added *export_topological_line_sub_segments* argument.\n"
+			"\n"
+			"  .. versionchanged:: 0.44\n"
+			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n";
 
 	// Register 'resolved topologies' variant.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::resolved_topologies_argument_type>();

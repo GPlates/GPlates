@@ -26,9 +26,12 @@
 #ifndef GPLATES_FILEIO_GMTFORMATRECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
 #define GPLATES_FILEIO_GMTFORMATRECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
 
+#include <boost/optional.hpp>
 #include <QFileInfo>
 
 #include "ReconstructionGeometryExportImpl.h"
+
+#include "maths/PolygonOrientation.h"
 
 #include "model/types.h"
 
@@ -56,8 +59,11 @@ namespace GPlatesFileIO
 
 
 		/**
-		* Exports @a ReconstructedFeatureGeometry objects to GMT format.
-		*/
+		 * Exports @a ReconstructedFeatureGeometry objects to GMT format.
+		 *
+		 * @param force_polygon_orientation optionally force polygon orientation (clockwise or counter-clockwise)
+		 * for those geometries that are polygons.
+		 */
 		void
 		export_geometries(
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
@@ -65,7 +71,8 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &referenced_files,
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation = boost::none);
 	}
 }
 

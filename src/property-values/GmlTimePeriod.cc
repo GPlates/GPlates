@@ -35,6 +35,8 @@
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GmlTimePeriod::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
@@ -128,4 +130,87 @@ GPlatesPropertyValues::GmlTimePeriod::bubble_up(
 			GPLATES_ASSERTION_SOURCE);
 
 	return revision.end.clone_revision(transaction);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlTimePeriod::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlTimePeriod> &gml_time_period)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_time_period->begin(), "begin");
+		scribe.save(TRANSCRIBE_SOURCE, gml_time_period->end(), "end");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type> begin_ =
+				scribe.load<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>(TRANSCRIBE_SOURCE, "begin");
+		if (!begin_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type> end_ =
+				scribe.load<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>(TRANSCRIBE_SOURCE, "end");
+		if (!end_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gml_time_period.construct_object(
+				boost::ref(transaction),  // non-const ref
+				begin_,
+				end_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlTimePeriod::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, begin(), "begin");
+			scribe.save(TRANSCRIBE_SOURCE, end(), "end");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type> begin_ =
+					scribe.load<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>(TRANSCRIBE_SOURCE, "begin");
+			if (!begin_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type> end_ =
+					scribe.load<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>(TRANSCRIBE_SOURCE, "end");
+			if (!end_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_begin(begin_);
+			set_end(end_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlTimePeriod>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

@@ -28,7 +28,7 @@
 #ifndef GPLATES_UTILS_SMARTNODELINKEDLIST_H
 #define GPLATES_UTILS_SMARTNODELINKEDLIST_H
 
-#include <iterator>  // std::iterator, std::bidirectional_iterator_tag
+#include <iterator>  // std::bidirectional_iterator_tag
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
 #include <boost/type_traits/add_const.hpp>
@@ -203,7 +203,6 @@ namespace GPlatesUtils
 		 */
 		template <class ElementNodeQualifiedType>
 		class NodeIterator:
-				public std::iterator<std::bidirectional_iterator_tag, ElementNodeQualifiedType>,
 				public boost::bidirectional_iteratable<NodeIterator<ElementNodeQualifiedType>, ElementNodeQualifiedType *>
 		{
 		public:
@@ -215,6 +214,14 @@ namespace GPlatesUtils
 			
 			//! Typedef for a const or non-const @a Node.
 			typedef typename GPlatesUtils::CopyConst<ElementNodeQualifiedType, Node>::type node_qualified_type;
+
+			// Iterator typedefs.
+			using iterator_category = std::bidirectional_iterator_tag;
+			using value_type = element_node_qualified_type;
+			using difference_type = std::ptrdiff_t;
+			using pointer = element_node_qualified_type *;
+			using reference = element_node_qualified_type &;
+
 
 			explicit
 			NodeIterator(

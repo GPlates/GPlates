@@ -26,6 +26,7 @@
 #include "ReconstructedMotionPath.h"
 
 #include "ReconstructionGeometryVisitor.h"
+#include "ResolvedVertexSourceInfo.h"
 
 #include "model/WeakObserverVisitor.h"
 
@@ -53,3 +54,23 @@ GPlatesAppLogic::ReconstructedMotionPath::accept_weak_observer_visitor(
 	visitor.visit_reconstructed_motion_path(*this);
 }
 
+
+GPlatesMaths::Vector3D
+GPlatesAppLogic::ReconstructedMotionPath::reconstructed_seed_point_velocity(
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
+{
+	const ResolvedVertexSourceInfo::non_null_ptr_to_const_type reconstructed_source_info =
+			ResolvedVertexSourceInfo::create(get_non_null_pointer_to_const());
+
+	// Calculate a velocity at seed point.
+	return reconstructed_source_info->get_velocity_vector(
+			reconstructed_seed_point(),
+			get_reconstruction_time(),
+			velocity_delta_time,
+			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms);
+}

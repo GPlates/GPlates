@@ -35,6 +35,8 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GmlGridEnvelope::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("GridEnvelope");
@@ -96,3 +98,66 @@ GPlatesPropertyValues::GmlGridEnvelope::print_to(
 	return os;
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlGridEnvelope::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlGridEnvelope> &gml_grid_envelope)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_grid_envelope->get_low(), "low");
+		scribe.save(TRANSCRIBE_SOURCE, gml_grid_envelope->get_high(), "high");
+	}
+	else // loading
+	{
+		integer_list_type low_;
+		integer_list_type high_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, low_, "low") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, high_, "high"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gml_grid_envelope.construct_object(low_, high_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlGridEnvelope::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_low(), "low");
+			scribe.save(TRANSCRIBE_SOURCE, get_high(), "high");
+		}
+		else // loading
+		{
+			integer_list_type low_;
+			integer_list_type high_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, low_, "low") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, high_, "high"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			set_low_and_high(low_, high_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlGridEnvelope>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

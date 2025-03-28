@@ -53,8 +53,7 @@ namespace bp = boost::python;
 namespace GPlatesApi
 {
 	/**
-	 * A from-python converter from a feature collection or a string filename to a
-	 * @a FeatureCollectionFunctionArgument.
+	 * A from-python converter from a feature collection or a filename to a @a FeatureCollectionFunctionArgument.
 	 */
 	struct ConversionFeatureCollectionFunctionArgument :
 			private boost::noncopyable
@@ -97,7 +96,7 @@ namespace GPlatesApi
 
 
 	/**
-	 * Registers converter from a feature collection or a string filename to a @a FeatureCollectionFunctionArgument.
+	 * Registers converter from a feature collection or a filename to a @a FeatureCollectionFunctionArgument.
 	 */
 	void
 	register_conversion_feature_collection_function_argument()
@@ -117,8 +116,8 @@ namespace GPlatesApi
 
 
 	/**
-	 * A from-python converter from a feature collection or a string filename or a sequence of feature
-	 * collections and/or string filenames to a @a FeatureCollectionSequenceFunctionArgument.
+	 * A from-python converter from a feature collection or a filename or a sequence of feature
+	 * collections and/or filenames to a @a FeatureCollectionSequenceFunctionArgument.
 	 */
 	struct ConversionFeatureCollectionSequenceFunctionArgument :
 			private boost::noncopyable
@@ -161,7 +160,7 @@ namespace GPlatesApi
 
 
 	/**
-	 * Registers converter from a feature collection or a string filename to a @a FeatureCollectionSequenceFunctionArgument.
+	 * Registers converter from a feature collection or a filename to a @a FeatureCollectionSequenceFunctionArgument.
 	 */
 	void
 	register_conversion_feature_collection_sequence_function_argument()
@@ -187,7 +186,7 @@ GPlatesApi::FeatureCollectionFunctionArgument::is_convertible(
 {
 	// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
 	if (bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(python_function_argument).check() ||
-		bp::extract<QString>(python_function_argument).check() ||
+		bp::extract<FilePathFunctionArgument>(python_function_argument).check() ||
 		bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type>(python_function_argument).check())
 	{
 		return true;
@@ -227,12 +226,12 @@ GPlatesApi::FeatureCollectionFunctionArgument::initialise_feature_collection(
 		// came from a file or not.
 		return GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), *feature_collection_function_argument);
 	}
-	else if (const QString *filename_function_argument =
-		boost::get<QString>(&function_argument))
+	else if (const FilePathFunctionArgument *filename_function_argument =
+		boost::get<FilePathFunctionArgument>(&function_argument))
 	{
 		// Create a file with an empty feature collection.
 		GPlatesFileIO::File::non_null_ptr_type file =
-				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(*filename_function_argument));
+				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(filename_function_argument->get_file_path()));
 
 		// Read new features from the file into the feature collection.
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
@@ -518,7 +517,7 @@ export_feature_collection_function_argument()
 					"The currently supported source types are:\n"
 					"\n"
 					"* :class:`FeatureCollection`\n"
-					"* filename (string)\n"
+					"* filename (string/``os.PathLike``)\n"
 					"* :class:`Feature`\n"
 					"* sequence of :class:`Feature`\n"
 					"* sequence of any combination of the above four types\n"
@@ -542,7 +541,13 @@ export_feature_collection_function_argument()
 					"  my_function([feature1, feature2])\n"
 					"  my_function([feature_collection,  feature1, feature2 ])\n"
 					"  my_function([feature_collection, [feature1, feature2]])\n"
-					"  my_function(feature)\n",
+					"  my_function(feature)\n"
+					"  from pathlib import Path\n"
+					"  my_function(Path('file.gpml')\n"
+					"\n"
+					".. versionchanged:: 0.44\n"
+					"   Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+					"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -557,7 +562,7 @@ export_feature_collection_function_argument()
 				"  :param function_argument: A feature collection, or filename, or feature, or "
 				"sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination "
 				"of those four types\n"
-				"  :type function_argument: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+				"  :type function_argument: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 				"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 				"  :raises: OpenFileForReadingError if any file is not readable (when filenames specified)\n"
 				"  :raises: FileFormatNotSupportedError if any file format (identified by the filename "
@@ -580,7 +585,11 @@ export_feature_collection_function_argument()
 				"        for feature in features.get_features()\n"
 				"            ...\n"
 				"    \n"
-				"    my_function(['file1.gpml', 'file2.gpml'])\n")
+				"    my_function(['file1.gpml', 'file2.gpml'])\n"
+				"\n"
+				"  .. versionchanged:: 0.44\n"
+				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		.def("contains_features",
 				&GPlatesApi::FeaturesFunctionArgument::contains_features,
 				(bp::arg("function_argument")),

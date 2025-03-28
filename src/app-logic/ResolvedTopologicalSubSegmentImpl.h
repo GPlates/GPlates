@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_RESOLVEDTOPOLOGICALSUBSEGMENTIMPL_H
 #define GPLATES_APP_LOGIC_RESOLVEDTOPOLOGICALSUBSEGMENTIMPL_H
 
+#include <vector>
 #include <boost/optional.hpp>
 
 #include "ReconstructionGeometry.h"
@@ -33,6 +34,7 @@
 #include "ResolvedTopologicalGeometrySubSegment.h"
 #include "ResolvedVertexSourceInfo.h"
 
+#include "model/FeatureHandle.h"
 
 
 namespace GPlatesAppLogic
@@ -49,7 +51,7 @@ namespace GPlatesAppLogic
 		 *
 		 * If a resolved topological line then each point in the subsegment geometry (except the optional
 		 * rubber band points at either/both ends) will come from a subsegment of that resolved topological line
-		 * (where those subsegments, in turn, are reconstructed feature geometries).
+		 * (where those subsegments, in turn, each potentially have a different reconstructed feature geometry).
 		 *
 		 * If @a include_rubber_band_points is false then the optional rubber band points are excluded.
 		 *
@@ -61,6 +63,28 @@ namespace GPlatesAppLogic
 		void
 		get_sub_segment_vertex_source_infos(
 				resolved_vertex_source_info_seq_type &vertex_source_infos,
+				const ResolvedSubSegmentRangeInSection &sub_segment,
+				ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry,
+				bool include_rubber_band_points = true);
+
+
+		/**
+		 * Find the vertex source features in the specified sub-segment range of the specified resolved topological section geometry.
+		 *
+		 * A topological section can come from a reconstructed feature geometry or a resolved topological *line*.
+		 *
+		 * If a reconstructed feature geometry then all points in the subsegment geometry (including the optional
+		 * rubber band points at either/both ends) will share that same source feature.
+		 *
+		 * If a resolved topological line then each point in the subsegment geometry (including the optional
+		 * rubber band points at either/both ends) will come from a subsegment of that resolved topological line
+		 * (where those subsegments, in turn, each potentially have a different source feature).
+		 *
+		 * If @a include_rubber_band_points is false then the optional rubber band points are excluded.
+		 */
+		void
+		get_sub_segment_vertex_source_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &vertex_source_features,
 				const ResolvedSubSegmentRangeInSection &sub_segment,
 				ReconstructionGeometry::non_null_ptr_to_const_type section_reconstruction_geometry,
 				bool include_rubber_band_points = true);

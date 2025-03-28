@@ -397,6 +397,7 @@ GPlatesApi::PythonRunner::handle_exception(
 
 
 // For Py_XDECREF below.
+PUSH_GCC_WARNINGS
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
@@ -464,4 +465,4 @@ GPlatesApi::PythonRunner::handle_system_exit(
 }
 
 // See above.
-ENABLE_GCC_WARNING("-Wold-style-cast")
+POP_GCC_WARNINGS

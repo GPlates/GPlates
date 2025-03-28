@@ -25,8 +25,8 @@ Sample code
     # Load one or more rotation files into a rotation model.
     rotation_model = pygplates.RotationModel('rotations.rot')
     
-    # Load some features to test for closeness to subducting lines.
-    features = pygplates.FeatureCollection('features.gpml')
+    # Create a reconstruct model from some regular (non-topological) features and the rotation model.
+    reconstruct_model = pygplates.ReconstructModel('features.gpml', rotation_model)
 
     # Create a topological model from the topological plate polygon features (can also include deforming networks)
     # and the rotation model.
@@ -40,9 +40,9 @@ Sample code
         
         print 'Time %f' % time
         
-        # Reconstruct the features to the current 'time'.
-        reconstructed_features = []
-        pygplates.reconstruct(features, rotation_model, reconstructed_features, time, group_with_feature=True)
+        # Reconstruct the regular features to the current 'time'.
+        reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(time)
+        reconstructed_features = reconstruct_snapshot.get_reconstructed_features()
         
         # Get a snapshot of our resolved topologies at the current 'time'.
         topological_snapshot = topological_model.topological_snapshot(time)
@@ -97,47 +97,8 @@ Sample code
                 print '      either feature has no geometries or there are no subducting lines in topologies.'
                 continue
             
-            #
             # Determine the overriding plate of the subducting line.
-            #
-            
-            # Get the subduction polarity of the nearest subducting line.
-            subduction_polarity = nearest_shared_sub_segment.get_feature().get_enumeration(pygplates.PropertyName.gpml_subduction_polarity)
-            if (not subduction_polarity or
-                subduction_polarity == 'Unknown'):
-                print '    Unable to find the overriding plate of the nearest subducting line "%s"' % nearest_shared_sub_segment.get_feature().get_name()
-                print '      subduction zone feature is missing subduction polarity property or it is set to "Unknown".'
-                continue
-            
-            overriding_plate = None
-            
-            # Iterate over the topologies that are sharing the part (sub-segment) of the subducting line that is closest to the feature.
-            sharing_resolved_topologies = nearest_shared_sub_segment.get_sharing_resolved_topologies()
-            geometry_reversal_flags = nearest_shared_sub_segment.get_sharing_resolved_topology_geometry_reversal_flags()
-            for index in range(len(sharing_resolved_topologies)):
-                
-                sharing_resolved_topology = sharing_resolved_topologies[index]
-                geometry_reversal_flag = geometry_reversal_flags[index]
-                
-                if sharing_resolved_topology.get_resolved_boundary().get_orientation() == pygplates.PolygonOnSphere.Orientation.clockwise:
-                    # The current topology sharing the subducting line has clockwise orientation (when viewed from above the Earth).
-                    # If the overriding plate is to the 'left' of the subducting line (when following its vertices in order) and
-                    # the subducting line is reversed when contributing to the topology then that topology is the overriding plate.
-                    # A similar test applies to the 'right' but with the subducting line not reversed in the topology.
-                    if ((subduction_polarity == 'Left' and geometry_reversal_flag) or
-                        (subduction_polarity == 'Right' and not geometry_reversal_flag)):
-                        overriding_plate = sharing_resolved_topology
-                        break
-                else:
-                    # The current topology sharing the subducting line has counter-clockwise orientation (when viewed from above the Earth).
-                    # If the overriding plate is to the 'left' of the subducting line (when following its vertices in order) and
-                    # the subducting line is not reversed when contributing to the topology then that topology is the overriding plate.
-                    # A similar test applies to the 'right' but with the subducting line reversed in the topology.
-                    if ((subduction_polarity == 'Left' and not geometry_reversal_flag) or
-                        (subduction_polarity == 'Right' and geometry_reversal_flag)):
-                        overriding_plate = sharing_resolved_topology
-                        break
-            
+            overriding_plate = nearest_shared_sub_segment.get_overriding_plate()
             if not overriding_plate:
                 print '    Unable to find the overriding plate of the nearest subducting line "%s"' % nearest_shared_sub_segment.get_feature().get_name()
                 print '      topology on overriding side of subducting line is missing.'
@@ -156,26 +117,26 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 
     rotation_model = pygplates.RotationModel('rotations.rot')
     
-Load the regular features that we want to see which subducting lines (in the topologies) are closest to.
+Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the regular (non-topological) features and the rotation model.
+These are the regular features that we want to see which subducting lines (in the topologies) are closest to.
 ::
 
-    features = pygplates.FeatureCollection('features.gpml')
+    reconstruct_model = pygplates.ReconstructModel('features.gpml', rotation_model)
 
 Create a :class:`topological model<pygplates.TopologicalModel>` from topological features and the rotation model.
 ::
 
     topological_model = pygplates.TopologicalModel('topologies.gpml', rotation_model)
 
-| All regular features are reconstructed to the current ``time`` using :func:`pygplates.reconstruct`.
-| We specify a ``list`` for *reconstructed_features* instead of a filename.
-| We also set the output parameter *group_with_feature* to ``True`` (it defaults to ``False``)
-  so that our :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>`
-  are grouped with their :class:`feature<pygplates.Feature>`.
+| All regular features are reconstructed to the current ``time`` using :meth:`pygplates.ReconstructModel.reconstruct_snapshot`
+  that returns a :class:`pygplates.ReconstructSnapshot`.
+| We then call :meth:`pygplates.ReconstructSnapshot.get_reconstructed_features` so that our
+  :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>` are grouped with their :class:`feature<pygplates.Feature>`.
 
 ::
 
-    reconstructed_features = []
-    pygplates.reconstruct(features, rotation_model, reconstructed_features, time, group_with_feature=True)
+    reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(time)
+    reconstructed_features = reconstruct_snapshot.get_reconstructed_features()
 
 | Each item in the *reconstructed_features* list is a tuple containing a feature and its associated
   reconstructed geometries.
@@ -246,69 +207,15 @@ nearest subducting lines.
         min_distance_to_all_subducting_lines = min_distance_to_subducting_line
         nearest_shared_sub_segment = shared_sub_segment
 
-| Now that we have found the nearest subducting line we can find its overriding plate.
-| First we need to get the subduction polarity of the nearest subducting line.
-| This determines which side of the subducting line the overriding plate is on (when following its vertices in order).
+| Now that we have found the nearest subducting line we can find its overriding plate using
+  :meth:`pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate`.
+| This uses the subduction polarity of the subducting line to determine whether the overriding
+  plate is on its left or right side, and then it searches the resolved topologies attached to
+  the subducting line to find the single plate (or deforming network) on the overriding side.
 
 ::
 
-    subduction_polarity = nearest_shared_sub_segment.get_feature().get_enumeration(pygplates.PropertyName.gpml_subduction_polarity)
-
-| The nearest subducting line is a :class:`pygplates.ResolvedTopologicalSharedSubSegment`.
-| It is uniquely shared by topological boundaries. And it is the part of the subducting line that is closest to the feature.
-| It has a list of topologies that share it - it also has a same-size list of boolean flags indicating whether its geometry
-  vertices were reversed when contributing to the those topologies.
-
-::
-
-    sharing_resolved_topologies = nearest_shared_sub_segment.get_sharing_resolved_topologies()
-    geometry_reversal_flags = nearest_shared_sub_segment.get_sharing_resolved_topology_geometry_reversal_flags()
-
-We iterate over the two above-mentioned lists and retrieve items from them.
-::
-
-    for index in range(len(sharing_resolved_topologies)):
-        
-        sharing_resolved_topology = sharing_resolved_topologies[index]
-        geometry_reversal_flag = geometry_reversal_flags[index]
-
-To determine if the current topology in the sharing list is the overriding plate we need to look at:
-
-- the polarity of the subducting line,
-- the topology's boundary polygon :meth:`orientation<pygplates.PolygonOnSphere.get_orientation>` and
-- the geometry reversal flag of the subducting line sub-segment (for that topology).
-
-If the current topology (sharing the subducting line) has *clockwise* orientation (when viewed from above the Earth)
-and either:
-
-- the overriding plate is *left* of the subducting line and the subducting line is *reversed* in the topology, or
-- the overriding plate is *right* of the subducting line and the subducting line is *not reversed* in the topology
-
-...then that topology is the overriding plate.
-
-::
-
-    if sharing_resolved_topology.get_resolved_boundary().get_orientation() == pygplates.PolygonOnSphere.Orientation.clockwise:
-        if ((subduction_polarity == 'Left' and geometry_reversal_flag) or
-            (subduction_polarity == 'Right' and not geometry_reversal_flag)):
-            overriding_plate = sharing_resolved_topology
-            break
-
-If the current topology (sharing the subducting line) has *counter-clockwise* orientation (when viewed from above the Earth)
-and either:
-
-- the overriding plate is *left* of the subducting line and the subducting line is *not reversed* in the topology, or
-- the overriding plate is *right* of the subducting line and the subducting line is *reversed* in the topology
-
-...then that topology is the overriding plate.
-
-::
-
-    else:
-        if ((subduction_polarity == 'Left' and not geometry_reversal_flag) or
-            (subduction_polarity == 'Right' and geometry_reversal_flag)):
-            overriding_plate = sharing_resolved_topology
-            break
+    overriding_plate = nearest_shared_sub_segment.get_overriding_plate()
 
 When we've found the overriding plate of the nearest subduction zone to the current feature we print out
 the overriding plate ID and the distance to nearest subducting line.

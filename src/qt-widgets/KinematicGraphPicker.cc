@@ -65,8 +65,7 @@ namespace
 {
 
 	class
-	SmallestTimeCoordinateYoungerThan:
-			public std::unary_function<QPointF,bool>
+	SmallestTimeCoordinateYoungerThan
 	{
 
 	public:

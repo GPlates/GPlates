@@ -499,8 +499,7 @@ export_plate_partitioner()
 				"to overlap you don't need to sort them by plate *ID* to get deterministic partitioning results. "
 				"So we are free to sort by plate *area* (well, plate area is also deterministic but not as deterministic "
 				"as sorting by plate *ID* since modifications to the plate geometries change their areas but not their plate IDs). "
-				"Note that we also group by partition type in case the topological networks happen "
-				"to overlay the topological plate boundaries (usually this isn't the case though):\n"
+				"Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:\n"
 				"  ::\n"
 				"\n"
 				"    plate_partitioner = pygplates.PlatePartitioner(..., "
@@ -520,10 +519,10 @@ export_plate_partitioner()
 				"\n"
 				"  :param partitioning_plates: A sequence of reconstructed/resolved plates to partition with.\n"
 				"  :type partitioning_plates: Any sequence of :class:`ReconstructionGeometry`\n"
-				"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
-				"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-				"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
-				"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+				"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
+				"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
+				"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
+				"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
 				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
 				"  :type sort_partitioning_plates: One of the values in the *SortPartitioningPlates* table above, or None\n"
@@ -547,7 +546,11 @@ export_plate_partitioner()
 				"\n"
 				"  .. note:: *rotation_model* should be the same rotation model used to reconstruct/resolve "
 				"the partitioning plates. This enables partitioned feature geometries to be reverse-reconstructed "
-				"correctly in :meth:`partition_features` for non-zero reconstruction times.\n")
+				"correctly in :meth:`partition_features` for non-zero reconstruction times.\n"
+				"\n"
+				"  .. versionchanged:: 0.44\n"
+				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		//
 		// NOTE: We define this *after* the '__init__' associated with 'plate_partitioner_create_from_reconstruction_geometries()'
 		// because boost-python matches most recently defined functions first and this function has a tighter
@@ -568,12 +571,12 @@ export_plate_partitioner()
 				"  Create a partitioner by reconstructing/resolving plates from a sequence of plate features.\n"
 				"\n"
 				"  :param partitioning_features: A sequence of plate features to partition with.\n"
-				"  :type partitioning_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+				"  :type partitioning_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 				"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-				"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
-				"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-				"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
-				"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+				"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
+				"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
+				"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
+				"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 				"  :param reconstruction_time: the specific geological time to reconstruct/resolve the "
 				"*partitioning_features* to (defaults to zero)\n"
 				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
@@ -591,7 +594,11 @@ export_plate_partitioner()
 				"  To create a plate partitioner suitable for partitioning present day geometries/features (ie, *reconstruction_time* is zero):.\n"
 				"  ::\n"
 				"    \n"
-				"    plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')\n")
+				"    plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')\n"
+				"\n"
+				"  .. versionchanged:: 0.44\n"
+				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		.def("partition_geometry",
 				&GPlatesApi::plate_partitioner_partition_geometry,
 				(bp::arg("geometry"),
@@ -652,7 +659,7 @@ export_plate_partitioner()
 				"partitioning plate (if any) containing the point.\n"
 				"\n"
 				"  :param point: the point to partition\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (float,float,float) or tuple (float,float)\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :rtype: :class:`ReconstructionGeometry` or None\n"
 				"\n"
 				"  .. note:: ``None`` is returned if *point* is not contained by any partitioning plates.\n"

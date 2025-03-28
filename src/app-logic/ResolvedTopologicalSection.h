@@ -71,6 +71,10 @@ namespace GPlatesAppLogic
 		/**
 		 * The sequence of sub-segments of the topological section feature used as part of the *boundary*
 		 * of resolved topologies (@a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork).
+		 *
+		 * Note: The order of shared sub-segments is from the *start* to the *end* of this resolved topological section.
+		 *       In other words, the *first* sub-segment will be at (or near) the *start* of the section geometry and
+		 *       the *last* sub-segment will be at (or near) the *end* of the section geometry.
 		 */
 		const shared_sub_segment_seq_type &
 		get_shared_sub_segments() const

@@ -133,7 +133,7 @@ namespace GPlatesAppLogic
 		 * multiplication by a scalar (eg, a GPlatesMaths::Vector3D).
 		 */
 		template <class Functor, class CoordType, class Point2Type>
-		typename Functor::result_type::first_type
+		typename Functor::data_type
 		linear_interpolation_2(
 				const std::pair<
 						std::vector< std::pair<Point2Type, CoordType> >,
@@ -186,14 +186,15 @@ namespace GPlatesAppLogic
 	namespace ResolvedTriangulation
 	{
 		template <class Functor, class CoordType, class Point2Type>
-		typename Functor::result_type::first_type
+		typename Functor::data_type
 		linear_interpolation_2(
 				const std::pair<
 						std::vector< std::pair<Point2Type, CoordType> >,
 						CoordType> &natural_neighbor_coordinates_2,
 				const Functor &function_value)
 		{
-			typedef typename Functor::result_type::first_type value_type;
+			typedef typename Functor::data_type result_type;
+			typedef std::pair<result_type, bool> value_type;
 			typedef std::vector< std::pair<Point2Type, CoordType> > point_2_coordinate_vector_type;
 
 			const point_2_coordinate_vector_type &coords = natural_neighbor_coordinates_2.first;
@@ -204,7 +205,7 @@ namespace GPlatesAppLogic
 					GPLATES_ASSERTION_SOURCE);
 			const CoordType inv_norm = 1 / norm;
 
-			value_type result = value_type();
+			result_type result = result_type();
 
 			// Interpolate the function values.
 			typename point_2_coordinate_vector_type::const_iterator coords_iter = coords.begin();
@@ -212,7 +213,7 @@ namespace GPlatesAppLogic
 			for( ; coords_iter != coords_end; ++coords_iter)
 			{
 				const Point2Type &point_2 = coords_iter->first;
-				typename Functor::result_type value = function_value(point_2);
+				value_type value = function_value(point_2);
 				// Make sure a function value was found for the current 2D point (of triangulation).
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 						value.second,

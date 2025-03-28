@@ -38,6 +38,9 @@
 #include "property-values/StructuralType.h"
 #include "property-values/XsString.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/QtStreamable.h"
 
 
@@ -268,6 +271,21 @@ namespace GPlatesPropertyValues
 
 
 		StructuralType d_value_type;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlKeyValueDictionaryElement> &gpml_key_value_dictionary_element);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

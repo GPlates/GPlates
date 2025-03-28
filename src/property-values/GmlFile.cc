@@ -34,6 +34,10 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
+#include "model/TranscribeQualifiedXmlName.h"
+#include "model/TranscribeStringContentTypeGenerator.h"
+
+#include "scribe/Scribe.h"
 
 
 namespace
@@ -321,6 +325,137 @@ GPlatesPropertyValues::GmlFile::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlFile::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlFile> &gml_file)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_file->get_range_parameters(), "range_parameters");
+		scribe.save(TRANSCRIBE_SOURCE, gml_file->get_file_name(), "file_name");
+		scribe.save(TRANSCRIBE_SOURCE, gml_file->get_file_structure(), "file_structure");
+		scribe.save(TRANSCRIBE_SOURCE, gml_file->get_mime_type(), "mime_type");
+		scribe.save(TRANSCRIBE_SOURCE, gml_file->get_compression(), "compression");
+	}
+	else // loading
+	{
+		composite_value_type range_parameters_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, range_parameters_, "range_parameters"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<XsString::non_null_ptr_type> file_name_ =
+				scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "file_name");
+		if (!file_name_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<XsString::non_null_ptr_type> file_structure_ =
+			scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "file_structure");
+		if (!file_structure_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		boost::optional<XsString::non_null_ptr_type> mime_type_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, mime_type_, "mime_type"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		boost::optional<XsString::non_null_ptr_type> compression_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, compression_, "compression"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gml_file.construct_object(
+				boost::ref(transaction),  // non-const ref
+				range_parameters_,
+				file_name_,
+				file_structure_,
+				mime_type_,
+				compression_,
+				static_cast<GPlatesFileIO::ReadErrorAccumulation *>(nullptr)/*read_errors_*/);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlFile::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_range_parameters(), "range_parameters");
+			scribe.save(TRANSCRIBE_SOURCE, get_file_name(), "file_name");
+			scribe.save(TRANSCRIBE_SOURCE, get_file_structure(), "file_structure");
+			scribe.save(TRANSCRIBE_SOURCE, get_mime_type(), "mime_type");
+			scribe.save(TRANSCRIBE_SOURCE, get_compression(), "compression");
+		}
+		else // loading
+		{
+			composite_value_type range_parameters_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, range_parameters_, "range_parameters"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<XsString::non_null_ptr_type> file_name_ =
+					scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "file_name");
+			if (!file_name_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<XsString::non_null_ptr_type> file_structure_ =
+				scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "file_structure");
+			if (!file_structure_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			boost::optional<XsString::non_null_ptr_type> mime_type_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, mime_type_, "mime_type"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			boost::optional<XsString::non_null_ptr_type> compression_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, compression_, "compression"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			set_range_parameters(range_parameters_);
+			set_file_name(file_name_);
+			set_file_structure(file_structure_);
+			set_mime_type(mime_type_);
+			set_compression(compression_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlFile>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

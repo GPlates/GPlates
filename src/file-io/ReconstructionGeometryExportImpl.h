@@ -241,8 +241,7 @@ namespace GPlatesFileIO
 		 * Predicate to determine if @a FeatureCollectionFeatureGroup object has specific file pointer.
 		 */
 		template <class ReconstructionGeometryType>
-		class ContainsSameFilePointerPredicate :
-				public std::unary_function< FeatureCollectionFeatureGroup<ReconstructionGeometryType>, bool >
+		class ContainsSameFilePointerPredicate
 		{
 		public:
 			explicit
@@ -273,8 +272,7 @@ namespace GPlatesFileIO
 		 * features they were reconstructed from.
 		 */
 		template <class ReconstructionGeometryType>
-		class SortByFeatureOrderInCollections :
-				public std::binary_function<const ReconstructionGeometryType *, const ReconstructionGeometryType *, bool>
+		class SortByFeatureOrderInCollections
 		{
 		public:
 

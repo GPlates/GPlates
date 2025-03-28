@@ -28,8 +28,13 @@
 #define GPLATES_APP_LOGIC_RECONSTRUCTEDMOTIONPATH_H
 
 #include "ReconstructedFeatureGeometry.h"
-#include "maths/PolylineOnSphere.h"
+#include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
+#include "maths/PolylineOnSphere.h"
+#include "maths/Vector3D.h"
+
+#include "utils/Earth.h"
 
 
 namespace GPlatesAppLogic
@@ -162,6 +167,16 @@ namespace GPlatesAppLogic
 		{
 			return d_reconstructed_seed_point;
 		}
+
+		/**
+		 * Returns the velocity at the reconstructed seed point.
+		 */
+		GPlatesMaths::Vector3D
+		reconstructed_seed_point_velocity(
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
 
 	private:
 		/**

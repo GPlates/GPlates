@@ -47,23 +47,23 @@ namespace GPlatesMaths
 {
 	namespace PointInPolygon
 	{
-		//! If dot product of crossing arc and polygon edge greater than this then too closely aligned.
+		/**
+		 * If dot product of crossing arc and polygon edge greater than this then too closely aligned.
+		 *
+		 * Note: Choosing a larger epsilon than default to ensure we don't have numerical issues.
+		 *       We just want to avoid the more expensive test that is required when the planes align,
+		 *       so the actual epsilon we use is not important.
+		 */
 		const double MAX_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE = 1 - 1e-4;
-
 		//! If dot product of crossing arc and polygon edge less than this then too closely aligned.
-		const double MIN_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE = -1 + 1e-4;
+		const double MIN_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE = -MAX_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE;
 
 
-		// The test point can lie "on" a polygon edge by using an epsilon when testing
-		// closeness to the great circle plane of a polygon edge.
-		// This helps avoid cases such as a point exactly on the dateline not getting included
-		// by a polygon that has an edge exactly aligned with the dateline.
-		// So this value should be extremely small (unlike the other epsilons used in this source file).
-		const double POINT_ON_POLYGON_OUTLINE_COSINE = 1 - 1e-12;
+		// Point-ON-polygon threshold used for a dot product between two points.
+		const double POINT_ON_POLYGON_OUTLINE_COSINE = get_point_on_polygon_threshold_cosine();
 
-		// Base epsilon calculations off a cosine since that usually has the least accuracy for small angles.
-		// '1 - 1e-12' in cosine corresponds to a displacement of about 1.4e-6 [=sin(acos(1 - 1e-12))].
-		const double POINT_ON_POLYGON_OUTLINE_SINE = std::sin(std::acos(POINT_ON_POLYGON_OUTLINE_COSINE));
+		// Point-ON-polygon threshold used for a dot product between a point and a plane (GCA normal vector).
+		const double POINT_ON_POLYGON_OUTLINE_SINE = get_point_on_polygon_threshold_sine();
 
 
 		/**
@@ -1749,4 +1749,29 @@ GPlatesMaths::PointInPolygon::Polygon::is_point_in_polygon(
 	return d_spherical_lune_tree->is_point_in_polygon(
 			test_point.position_vector(),
 			use_point_on_polygon_threshold);
+}
+
+
+double
+GPlatesMaths::PointInPolygon::get_point_on_polygon_threshold_cosine()
+{
+	// A test point can lie "on" a polygon edge by using an epsilon when testing
+	// closeness to the great circle plane of a polygon edge.
+	// This helps avoid cases such as a point exactly on the dateline not getting included
+	// by a polygon that has an edge exactly aligned with the dateline.
+	// So this value should be extremely small (unlike the other epsilons used in this source file).
+	static const double POINT_ON_POLYGON_OUTLINE_COSINE_ = 1 - 1e-12;
+
+	return POINT_ON_POLYGON_OUTLINE_COSINE_;
+}
+
+
+double
+GPlatesMaths::PointInPolygon::get_point_on_polygon_threshold_sine()
+{
+	// Base epsilon calculations off a cosine since that usually has the least accuracy for small angles.
+	// '1 - 1e-12' in cosine corresponds to a displacement of about 1.4e-6 [=sin(acos(1 - 1e-12))].
+	static const double POINT_ON_POLYGON_OUTLINE_SINE_ = std::sin(std::acos(get_point_on_polygon_threshold_cosine()));
+
+	return POINT_ON_POLYGON_OUTLINE_SINE_;
 }

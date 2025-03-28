@@ -39,21 +39,21 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-	//
-	// The following to/from Python conversions are handled:
-	//
-	// To Python                 Numpy scalar
-	//     /\                       |
-	//     |                        |
-	//     |                        |
-	//     |                        \/
-	//     |                      float
-	//     |                        /\
-	//     |                        |
-	//     |                        |
-	//     \/                       \/
-	// From Python           GPlatesMaths::Real
-	//
+	/*
+	 * The following to/from Python conversions are handled:
+	 *
+	 * To Python                 Numpy scalar
+	 *     /\                       |
+	 *     |                        |
+	 *     |                        |
+	 *     |                        \/
+	 *     |                      float
+	 *     |                        /\
+	 *     |                        |
+	 *     |                        |
+	 *     \/                       \/
+	 * From Python           GPlatesMaths::Real
+	 */
 
 // For PyFloat_Check below.
 DISABLE_GCC_WARNING("-Wold-style-cast")

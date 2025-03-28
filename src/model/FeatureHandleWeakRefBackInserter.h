@@ -45,8 +45,7 @@ namespace GPlatesModel {
 	 * Consult Josuttis p.289 for an example insert iterator.
 	 */
 	template<typename C>
-	class FeatureHandleWeakRefBackInserter:
-			public std::iterator<std::output_iterator_tag, void, void, void, void>
+	class FeatureHandleWeakRefBackInserter
 	{
 	public:
 		/**
@@ -58,6 +57,14 @@ namespace GPlatesModel {
 		 * The type of this class.
 		 */
 		typedef FeatureHandleWeakRefBackInserter this_type;
+
+		// Iterator typedefs.
+		using iterator_category = std::output_iterator_tag;
+		using value_type = void;
+		using difference_type = void;
+		using pointer = void;
+		using reference = void;
+
 
 		/**
 		 * Construct an instance of this class which will insert into @a target_container.

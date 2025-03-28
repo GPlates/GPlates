@@ -30,13 +30,14 @@
 
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
+#include <QPointF>
+
+#include "ProjectionException.h"
 
 #include "file-io/Proj.h"
 
-#include "gui/ProjectionException.h"
-
-#include "maths/GreatCircle.h"
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 
 #include "utils/ReferenceCount.h"
 
@@ -58,9 +59,9 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<const MapProjection> non_null_ptr_to_const_type;
 
 
-		// Make the first enum Orthographic (even though we don't implement that
-		// as a map projection), so that we'll match up better with the combo-box indices, which will
-		// use the zeroth entry for the 3D Orthographic (Globe) view. 
+		// Make the first enum Orthographic (even though we don't implement that as a map projection),
+		// so that we'll match up better with the combo-box indices, which will use the zeroth entry
+		// for the 3D Orthographic (Globe) view.
 		enum Type
 		{
 			ORTHOGRAPHIC = 0,
@@ -68,11 +69,17 @@ namespace GPlatesGui
 			MERCATOR,
 			MOLLWEIDE,
 			ROBINSON,
-			LAMBERT_CONIC,
 
 			NUM_PROJECTIONS
 		};
 
+		/**
+		 * Return a suitable label naming the specified projection type.
+		 */
+		static
+		const char *
+		get_display_name(
+				Type projection_type);
 
 		/**
 		 * Creates a @a MapProjection object with no map projection setting.
@@ -134,66 +141,137 @@ namespace GPlatesGui
 			return d_projection_type;
 		}
 
+
 		/**
-		 * Transforms the point on sphere to cartesian coodinates according to the 
+		 * Set the central meridian.
+		 */ 
+		void
+		set_central_meridian(
+				const double &central_meridian_);
+
+		/**
+		 * Get the central meridian.
+		 */
+		double
+		central_meridian() const
+		{
+			return d_central_meridian;
+		}
+
+
+		/**
+		 * Transforms the point on sphere to cartesian coordinates (x,y) according to the 
 		 * current state of the projection.
 		 */
-		void
+		QPointF
 		forward_transform(
-			const GPlatesMaths::PointOnSphere &point_on_sphere,
-			double &x_coordinate, 
-			double &y_coordinate) const;
+				const GPlatesMaths::PointOnSphere &point_on_sphere) const
+		{
+			return forward_transform(make_lat_lon_point(point_on_sphere));
+		}
 
 		/**
-		 * Transform the latitude and longitude to cartesian coordinates according to the 
-		 * current state of the projection. 
+		 * Transforms the lat-lon point to cartesian coordinates (x,y) according to the 
+		 * current state of the projection.
+		 */
+		QPointF
+		forward_transform(
+				const GPlatesMaths::LatLonPoint &lat_lon_point) const;
+
+		/**
+		 * Transform the longitude and latitude to cartesian coordinates according to the
+		 * current state of the projection.
 		 */ 
 		void
 		forward_transform(
-			double &longitude,
-			double &latitude) const;
+				double &longitude,
+				double &latitude) const;
+
 
 		/**
-		* Transform cartesian (x,y) coordinates to a LatLonPoint according to the current
-		* state of the projection. 
-		* 
-		* Return type is boost::optional as there may not be a valid inverse transform
-		* for the provided (x,y) values. 
-		*/ 
+		 * Transform cartesian (x,y) coordinates to a LatLonPoint according to the current
+		 * state of the projection.
+		 *
+		 * Return type is boost::optional as there may not be a valid inverse transform for
+		 * the provided (x,y) values - including if the specified map point is outside
+		 * the map boundary (eg, outside the map rectangle in the Rectangular projection).
+		 */
 		boost::optional<GPlatesMaths::LatLonPoint>
 		inverse_transform(
-			double &x,
-			double &y) const;
+				const QPointF &map_point) const;
 
 		/**
-		 * Set the central llp
-		 */ 
-		void
-		set_central_llp(
-				const GPlatesMaths::LatLonPoint &llp);
-
-		/**
-		 * Get the central llp
+		 * Transform cartesian (x,y) coordinates to longitude and latitude according to the current
+		 * state of the projection.
+		 *
+		 * Returns false if there is not a valid inverse transform for the provided (x,y) values -
+		 * including if the specified (x, y) map position is outside the map boundary
+		 * (eg, outside the map rectangle in the Rectangular projection).
 		 */
-		const GPlatesMaths::LatLonPoint &
-		central_llp() const
+		bool
+		inverse_transform(
+				double &x,
+				double &y) const;
+
+
+		/**
+		 * Returns true if specified point is inside the map projection boundary.
+		 */
+		bool
+		is_inside_map_boundary(
+				const QPointF &map_point) const
 		{
-			return d_central_llp;
+			return static_cast<bool>(inverse_transform(map_point));
 		}
 
 		/**
-		 * Get the great circle which includes the great circle arc defining the boundary of the map. 
+		 * Return the map position near (but just inside to within a small tolerance) the map boundary
+		 * given two map positions (one inside and one outside map boundary).
+		 *
+		 * The returned position is essentially the intersection of the 2D line segment joining the specified
+		 * inside and outside points with the map boundary, obtained using bisection iteration that terminates
+		 * once converged to within @a bisection_iteration_threshold_ratio times the bounding radius.
+		 *
+		 * Throws @a PreconditionViolationError if the specified inside point is not inside, or
+		 * the specified outside point is not outside, the map boundary.
+		 *
+		 * Note: The returned map position is guaranteed to have a valid inverse transform.
+		 *
+		 * Note: The lat-lon point (0, central_meridian) maps to the origin in map projection space.
+		 *
+		 * Note: The line segment (joining inside and outside points) only crosses map boundary once
+		 *       since shape of map boundary is convex.
 		 */
-		const GPlatesMaths::GreatCircle &
-		boundary_great_circle() const
-		{
-			return d_boundary_great_circle;
-		}
+		QPointF
+		get_map_boundary_position(
+				const QPointF &map_point_inside_boundary,
+				const QPointF &map_point_outside_boundary,
+				double bisection_iteration_threshold_ratio = 1e-6/*equivalent to roughly 1 arc second on map*/) const;
 
+		/**
+		 * Return the radius of the circle/sphere that bounds the map (including a very small numerical tolerance).
+		 *
+		 * Note: The lat-lon point (0, central_meridian) maps to the origin in map projection space.
+		 *       So the bounding circle/sphere is centred at the origin (in map projection space).
+		 */
+		double
+		get_map_bounding_radius() const;
+
+
+		/**
+		 * The Proj library has issues with the Mercator projection at the poles (ie, latitudes -90 and 90).
+		 * So we clamp latitude slightly inside the poles.
+		 *
+		 * Note: We do this for all map projections for consistency.
+		 *
+		 * Note: The clamping epsilon also determines the height range of the Mercator map projection.
+		 *       Eg, changing from 1e-3  to 1e-5 increases the range quite noticeably.
+		 */
+		static constexpr double CLAMP_LATITUDE_NEAR_POLES_EPSILON = 1e-5;
+		static constexpr double MIN_LATITUDE = -90.0 + CLAMP_LATITUDE_NEAR_POLES_EPSILON;
+		static constexpr double MAX_LATITUDE = 90.0 - CLAMP_LATITUDE_NEAR_POLES_EPSILON;
 			
 	private:
-
-		static const int MIN_PROJECTION_INDEX = RECTANGULAR;
 
 #if defined(GPLATES_USING_PROJ4)
 
@@ -235,15 +313,16 @@ namespace GPlatesGui
 
 
 		/**
-		 * The central lat-lon point for the projection.
+		 * The central meridian for the projection.
 		 */
-		GPlatesMaths::LatLonPoint d_central_llp;
-
+		double d_central_meridian;
 
 		/**
-		 * The great circle which includes the great circle arc defining the boundary of the map. 
+		 * Radius of the circle/sphere that bounds the map (including a very small numerical tolerance).
+		 *
+		 * This is calculated and cached when bounding radius is requested (and set to none when the map projection changes).
 		 */
-		GPlatesMaths::GreatCircle d_boundary_great_circle;
+		mutable boost::optional<double> d_cached_bounding_radius;
 
 
 		MapProjection();
@@ -255,10 +334,37 @@ namespace GPlatesGui
 				const MapProjectionSettings &projection_settings);
 
 		/**
-		 * Updates the boundary great circle - should be called if central llp or projection type changed.
+		 * Ask the Proj library to forward transform from (longitude, latitude) in degrees to map projection space.
 		 */
 		void
-		update_boundary_great_circle();
+		forward_proj_transform(
+				double longitude,
+				double latitude,
+				double &x,
+				double &y) const;
+
+		/**
+		 * Ask the Proj library to inverse transform from map projection space (x, y) back to (longitude, latitude) in degrees.
+		 *
+		 * Returns false is there's not a valid inverse transform for the provided (x, y) values.
+		 */
+		bool
+		inverse_proj_transform(
+				double x,
+				double y,
+				double &longitude,
+				double &latitude) const;
+
+		/**
+		 * Check that the inverted (x, y), which are (longitude, latitude) coordinates, forward transform
+		 * to the specified (x, y) within a numerical tolerance.
+		 */
+		bool
+		check_forward_transform(
+				const double &inverted_x,
+				const double &inverted_y,
+				const double &x,
+				const double &y) const;
 	};
 
 
@@ -276,7 +382,7 @@ namespace GPlatesGui
 	public:
 		MapProjectionSettings(
 				MapProjection::Type projection_type_,
-				const GPlatesMaths::LatLonPoint &central_llp_);
+				const double &central_meridian_);
 
 		MapProjection::Type
 		get_projection_type() const
@@ -291,25 +397,25 @@ namespace GPlatesGui
 			d_projection_type = projection_type_;
 		}
 
-		const GPlatesMaths::LatLonPoint &
-		get_central_llp() const
+		double
+		get_central_meridian() const
 		{
-			return d_central_llp;
+			return d_central_meridian;
 		}
 
 		void
-		set_central_llp(
-				const GPlatesMaths::LatLonPoint &central_llp_)
+		set_central_meridian(
+				const double &central_meridian_)
 		{
-			d_central_llp = central_llp_;
+			d_central_meridian = central_meridian_;
 		}
 
 	private:
 		//! The projection type.
 		MapProjection::Type d_projection_type;
 
-		//! The central lat-lon point for the projection.
-		GPlatesMaths::LatLonPoint d_central_llp;
+		//! The central meridian for the projection.
+		double d_central_meridian;
 
 		friend
 		bool
@@ -318,7 +424,7 @@ namespace GPlatesGui
 				const MapProjectionSettings &rhs)
 		{
 			return lhs.d_projection_type == rhs.d_projection_type &&
-				make_point_on_sphere(lhs.d_central_llp) == make_point_on_sphere(rhs.d_central_llp);
+				GPlatesMaths::are_almost_exactly_equal(lhs.d_central_meridian, rhs.d_central_meridian);
 		}
 	};
 }

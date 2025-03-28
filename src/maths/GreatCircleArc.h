@@ -28,7 +28,6 @@
 #ifndef GPLATES_MATHS_GREATCIRCLEARC_H
 #define GPLATES_MATHS_GREATCIRCLEARC_H
 
-#include <functional>  /* std::unary_function */
 #include <utility>  /* std::pair */
 #include <vector>
 #include <boost/cstdint.hpp>
@@ -42,6 +41,10 @@
 #include "Vector3D.h"
 
 #include "global/PointerTraits.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesMaths
 {
@@ -124,11 +127,14 @@ namespace GPlatesMaths
 		 *
 		 * The rotated arc has the same arc length but it's end points (and rotation axis) are
 		 * rotated versions of those in @a arc.
+		 *
+		 * Note: 'RotationType' can be @a FiniteRotation or @a Rotation.
 		 */
+		template <class RotationType>
 		static
 		const GreatCircleArc
 		create_rotated_arc(
-				const FiniteRotation &rot,
+				const RotationType &rot,
 				const GreatCircleArc &arc);
 
 
@@ -229,7 +235,7 @@ namespace GPlatesMaths
 		 *
 		 * @throws IndeterminateArcRotationAxisException if this arc is zero length (@a is_zero_length).
 		 */
-		Vector3D
+		UnitVector3D
 		direction_on_arc(
 				const real_t &normalised_distance_from_start_point) const;
 
@@ -407,19 +413,29 @@ namespace GPlatesMaths
 		static
 		real_t
 		get_zero_length_threshold_cosine();
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GreatCircleArc> &great_circle_arc);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
 	/**
 	 * This class instantiates to a function object which determines whether a GreatCircleArc
 	 * has an indeterminate rotation axis.
-	 *
-	 * See Josuttis99, Chapter 8 "STL Function Objects", and in particular section 8.2.4
-	 * "User-Defined Function Objects for Function Adapters", for more information about
-	 * @a std::unary_function.
 	 */
-	struct ArcHasIndeterminateRotationAxis:
-			public std::unary_function<GreatCircleArc, bool>
+	struct ArcHasIndeterminateRotationAxis
 	{
 		ArcHasIndeterminateRotationAxis()
 		{  }
@@ -449,6 +465,35 @@ namespace GPlatesMaths
 			std::vector<PointOnSphere> &tessellation_points,
 			const GreatCircleArc &great_circle_arc,
 			const real_t &max_segment_angular_extent);
+
+	/**
+	 * Generates a sequence of uniformly-spaced points along the specified great circle arc
+	 * (returned in @a uniform_points).
+	 *
+	 * The first point is located @a first_uniform_point_spacing radians from the arc's start point.
+	 * And each subsequent point is separated by @a uniform_point_spacing radians.
+	 *
+	 * Can optionally return a segment interpolation factor (in range [0,1]) for each uniform point
+	 * (where 0.0 means the arc start point and 1.0 means the arc end point).
+	 *
+	 * Note: If @a first_uniform_point_spacing is greater than the arc's length then no uniform points will be generated.
+	 *
+	 * Note: If the arc is zero length and @a first_uniform_point_spacing is zero then a single uniform point will be generated.
+	 *
+	 * Note: The spacing between the last uniform point and the arc's end point can be less than
+	 *       @a uniform_point_spacing (since the length of the arc minus @a first_uniform_point_spacing
+	 *       might not be an integer multiple of @a uniform_point_spacing).
+	 *
+	 * Note: Ideally @a first_uniform_point_spacing is non-negative, but if it's negative then extra uniformly-spaced points
+	 *       will be extrapolated off the arc from its start point (along its great circle).
+	 */
+	void
+	uniformly_spaced_points(
+			std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+			const GreatCircleArc &great_circle_arc,
+			const double &uniform_point_spacing,
+			const double &first_uniform_point_spacing = 0.0,
+			boost::optional<std::vector<double> &> segment_interpolations = boost::none);
 
 
 	/**
@@ -725,6 +770,39 @@ namespace GPlatesMaths
 	calculate_angle_between_adjacent_non_zero_length_arcs(
 			const GreatCircleArc &first_gca,
 			const GreatCircleArc &second_gca);
+}
+
+
+namespace GPlatesMaths
+{
+	template <class RotationType>
+	const GPlatesMaths::GreatCircleArc
+	GreatCircleArc::create_rotated_arc(
+			const RotationType &rotation,
+			const GreatCircleArc &arc)
+	{
+		// Copy the arc (and any cached-on-demand quantities).
+		GreatCircleArc rotated_arc(arc);
+
+		// Rotate the start/end points.
+		rotated_arc.d_start_point = rotation * rotated_arc.d_start_point;
+		rotated_arc.d_end_point = rotation * rotated_arc.d_end_point;
+
+		// Note: The dot product of the start/end points remains unchanged by rotation.
+		//       As does the arc length (if it was calculated/cached).
+
+		// If the rotation axis has been cached (ie, rotation info calculated and not zero length)
+		// then rotate the cached rotation axis.
+		if (rotated_arc.d_cached_on_demand.d_have_calculated_rotation_info)
+		{
+			if (!rotated_arc.d_cached_on_demand.d_is_zero_length)
+			{
+				rotated_arc.d_cached_on_demand.d_rotation_axis = rotation * rotated_arc.d_cached_on_demand.d_rotation_axis;
+			}
+		}
+
+		return rotated_arc;
+	}
 }
 
 #endif  // GPLATES_MATHS_GREATCIRCLEARC_H

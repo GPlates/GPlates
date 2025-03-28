@@ -45,6 +45,7 @@
 #include "ResolvedVertexSourceInfo.h"
 #include "TopologyNetworkParams.h"
 #include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
 #include "maths/AngularExtent.h"
 #include "maths/AzimuthalEqualAreaProjection.h"
@@ -281,6 +282,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type left_plate_id;
 				GPlatesModel::integer_plate_id_type right_plate_id;
 
+				// Any parameters not specified will instead use equivalents from TopologyNetworkParams::RiftParams
+				// passed to Network::create.
 				boost::optional<double> exponential_stretching_constant;
 				boost::optional<double> strain_rate_resolution;
 				boost::optional<GPlatesMaths::AngularExtent> edge_length_threshold;
@@ -327,19 +330,13 @@ namespace GPlatesAppLogic
 
 			/**
 			 * Returns the polygon that bounds the network.
+			 *
+			 * If @a include_rigid_blocks_as_interior_holes is true then include rigid blocks (if any) as
+			 * interior rings in the returned boundary polygon. Defaults to false.
 			 */
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-			get_boundary_polygon() const
-			{
-				return d_network_boundary_polygon;
-			}
-
-
-			/**
-			 * Returns the polygon that bounds the network with the rigid blocks (if any) as interior holes.
-			 */
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-			get_boundary_polygon_with_rigid_block_holes() const;
+			get_boundary_polygon(
+					bool include_rigid_blocks_as_interior_holes = false) const;
 
 
 			/**
@@ -534,14 +531,14 @@ namespace GPlatesAppLogic
 			 *
 			 * Returns boost::none if the point is outside the network (if @a is_point_in_network returns false).
 			 */
-			boost::optional<DeformationInfo>
+			boost::optional< std::pair<DeformationInfo, PointLocation> >
 			calculate_deformation(
 					const GPlatesMaths::PointOnSphere &point,
 					boost::optional<PointLocation> point_location = boost::none) const;
 
 			//! Convenient overload for 2D projected point.
 			template <class Point2Type>
-			boost::optional<DeformationInfo>
+			boost::optional< std::pair<DeformationInfo, PointLocation> >
 			calculate_deformation(
 					const Point2Type &point_2,
 					boost::optional<PointLocation> point_location = boost::none) const
@@ -713,9 +710,9 @@ namespace GPlatesAppLogic
 			 * Calculates the velocity at @a point in the network interpolated using natural neighbour coordinates.
 			 *
 			 * If the point is inside the deforming region it will be interpolated using the delaunay triangulation.
-			 * And if the point is inside an interior rigid block then the velocity will be
-			 * calculated according to the rigid motion of that block (and the rigid block will be
-			 * returned along with the velocity).
+			 * And if the point is inside an interior rigid block then the velocity will be calculated according to
+			 * the rigid motion of that block (and the rigid block will be returned along with the velocity) -
+			 * noting that if a rigid block has no plate ID then plate ID 0 will be used to calculate its velocity.
 			 *
 			 * @a point_location is an optional optimisation if you already know the location of @a point
 			 * (delaunay face or rigid block containing the point).
@@ -727,6 +724,8 @@ namespace GPlatesAppLogic
 					const GPlatesMaths::PointOnSphere &point,
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 					boost::optional<PointLocation> point_location = boost::none) const;
 
 			//! Convenient overload for 2D projected point.
@@ -736,12 +735,16 @@ namespace GPlatesAppLogic
 					const Point2Type &point_2,
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 					boost::optional<PointLocation> point_location = boost::none) const
 			{
 				return calculate_velocity(
 						d_projection.unproject_to_point_on_sphere(point_2),
 						velocity_delta_time,
 						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms,
 						point_location);
 			}
 
@@ -844,10 +847,7 @@ namespace GPlatesAppLogic
 			 * Functor class for accessing function values at delaunay vertices.
 			 */
 			template <typename DataType>
-			class UncachedDataAccess :
-					public std::unary_function<
-							delaunay_point_2_type,
-							std::pair<DataType, bool> >
+			class UncachedDataAccess
 			{
 			public:
 
@@ -889,10 +889,7 @@ namespace GPlatesAppLogic
 			 * Functor class for accessing, and caching, function values at delaunay vertices.
 			 */
 			template <class VertexHandleToDataMapType>
-			class CachedDataAccess :
-					public std::unary_function<
-							delaunay_point_2_type,
-							std::pair<typename VertexHandleToDataMapType::mapped_type, bool> >
+			class CachedDataAccess
 			{
 			public:
 
@@ -1181,6 +1178,13 @@ namespace GPlatesAppLogic
 					const delaunay_point_2_type &point_2,
 					Delaunay_2::Face_handle start_face_hint = Delaunay_2::Face_handle()) const;
 
+
+			/**
+			 * Creates the polygon that bounds the network with the rigid blocks (if any) as interior holes.
+			 */
+			void
+			create_boundary_polygon_with_rigid_block_holes() const;
+
 			/**
 			 * Find the delaunay convex hull edge that is closest to the specified point
 			 * (where one of the edge end points is also the closest triangulation vertex to the
@@ -1218,7 +1222,9 @@ namespace GPlatesAppLogic
 					const GPlatesMaths::PointOnSphere &point,
 					const RigidBlock &rigid_block,
 					const double &velocity_delta_time,
-					VelocityDeltaTime::Type velocity_delta_time_type) const;
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					VelocityUnits::Value velocity_units,
+					const double &earth_radius_in_kms) const;
 		};
 	}
 }

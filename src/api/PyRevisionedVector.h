@@ -40,6 +40,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/CompilerWarnings.h"
 
@@ -49,6 +50,7 @@
 #include <boost/python/slice.hpp>
 
 #include "model/RevisionedVector.h"
+#include "model/TranscribeRevisionedVector.h"
 
 
 namespace GPlatesApi
@@ -536,7 +538,11 @@ namespace GPlatesApi
 					"python ``list`` in that the following operations are supported:\n"
 					"\n"
 					<< GPlatesApi::get_python_list_operations_docstring(class_name.c_str())
-					<< "\n";
+					<< "\n"
+					<< "A *" << class_name << "* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n";
 
 			//
 			// RevisionedVector - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -560,6 +566,15 @@ namespace GPlatesApi
 					.def(GPlatesApi::NoHashDefVisitor(false, true))
 					.def(bp::self == bp::self)
 					.def(bp::self != bp::self)
+			;
+
+			// And pickle support.
+			revisioned_vector_class
+					.def(GPlatesApi::PythonPickle::PickleDefVisitor<
+							typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type>(
+									// Since we are providing the only constructor (__init__ for pickling) we need its
+									// docstring to document that this class cannot be instantiated from Python...
+									true/*document_class_as_non_instantiable*/))
 			;
 		}
 

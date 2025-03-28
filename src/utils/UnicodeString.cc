@@ -116,7 +116,12 @@ GPlatesUtils::UnicodeString::transcribe(
 	// Using transcribe delegate protocol so that UnicodeString and QString
 	// can be used interchangeably (ie, are transcription compatible).
 	//
-	return transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_qstring);
+	if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_qstring))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

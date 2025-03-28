@@ -58,13 +58,17 @@ namespace GPlatesGui
 			NUM_CATEGORIES // Must be the last one.
 		};
 
-		/*
-		* Are you joking me?
-		*/
-		class Iterator :
-				public std::iterator<std::input_iterator_tag, Type>
+		class Iterator
 		{
 		public:
+
+			// Iterator typedefs.
+			using iterator_category = std::input_iterator_tag;
+			using value_type = Type;
+			using difference_type = std::ptrdiff_t;
+			using pointer = Type *;
+			using reference = Type &;
+
 
 			Iterator(
 					Type curr) :

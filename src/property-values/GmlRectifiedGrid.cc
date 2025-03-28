@@ -36,6 +36,10 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
+#include "model/TranscribeQualifiedXmlName.h"
+#include "model/TranscribeStringContentTypeGenerator.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -262,6 +266,177 @@ GPlatesPropertyValues::GmlRectifiedGrid::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlRectifiedGrid::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlRectifiedGrid> &gml_rectified_grid)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_rectified_grid->limits(), "limits");
+		scribe.save(TRANSCRIBE_SOURCE, gml_rectified_grid->get_axes(), "axes");
+		scribe.save(TRANSCRIBE_SOURCE, gml_rectified_grid->origin(), "origin");
+		scribe.save(TRANSCRIBE_SOURCE, gml_rectified_grid->get_offset_vectors(), "offset_vectors");
+		scribe.save(TRANSCRIBE_SOURCE, gml_rectified_grid->get_xml_attributes(), "xml_attributes");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GmlGridEnvelope::non_null_ptr_type> limits_ =
+				scribe.load<GmlGridEnvelope::non_null_ptr_type>(TRANSCRIBE_SOURCE, "limits");
+		if (!limits_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		axes_list_type axes_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, axes_, "axes"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<GmlPoint::non_null_ptr_type> origin_ =
+				scribe.load<GmlPoint::non_null_ptr_type>(TRANSCRIBE_SOURCE, "origin");
+		if (!origin_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		offset_vector_list_type offset_vectors_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, offset_vectors_, "offset_vectors"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		xml_attributes_type xml_attributes_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, xml_attributes_, "xml_attributes"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gml_rectified_grid.construct_object(
+				boost::ref(transaction),  // non-const ref
+				limits_,
+				axes_,
+				origin_,
+				offset_vectors_,
+				xml_attributes_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlRectifiedGrid::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, limits(), "limits");
+			scribe.save(TRANSCRIBE_SOURCE, get_axes(), "axes");
+			scribe.save(TRANSCRIBE_SOURCE, origin(), "origin");
+			scribe.save(TRANSCRIBE_SOURCE, get_offset_vectors(), "offset_vectors");
+			scribe.save(TRANSCRIBE_SOURCE, get_xml_attributes(), "xml_attributes");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GmlGridEnvelope::non_null_ptr_type> limits_ =
+					scribe.load<GmlGridEnvelope::non_null_ptr_type>(TRANSCRIBE_SOURCE, "limits");
+			if (!limits_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			axes_list_type axes_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, axes_, "axes"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<GmlPoint::non_null_ptr_type> origin_ =
+					scribe.load<GmlPoint::non_null_ptr_type>(TRANSCRIBE_SOURCE, "origin");
+			if (!origin_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			offset_vector_list_type offset_vectors_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, offset_vectors_, "offset_vectors"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			xml_attributes_type xml_attributes_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, xml_attributes_, "xml_attributes"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			set_limits(limits_);
+			set_axes(axes_);
+			set_origin(origin_);
+			set_offset_vectors(offset_vectors_);
+			set_xml_attributes(xml_attributes_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlRectifiedGrid>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlRectifiedGrid::Axis::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<Axis> &axis)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, axis->get_name(), "name");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<XsString::non_null_ptr_type> name_ =
+				scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "name");
+		if (!name_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		axis.construct_object(name_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlRectifiedGrid::Axis::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_name, "name"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

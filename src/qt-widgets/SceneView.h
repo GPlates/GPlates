@@ -42,6 +42,11 @@ namespace GPlatesMaths
 	class LatLonPoint;
 }
 
+namespace GPlatesGui
+{
+	class Colour;
+}
+
 namespace GPlatesQtWidgets
 {
 
@@ -110,7 +115,8 @@ namespace GPlatesQtWidgets
 		virtual
 		QImage
 		render_to_qimage(
-				const QSize &image_size_in_device_independent_pixels) = 0;
+				const QSize &image_size_in_device_independent_pixels,
+				const GPlatesGui::Colour &image_clear_colour) = 0;
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.

@@ -26,7 +26,7 @@
 #ifndef GPLATES_UTILS_INTRUSIVESINGLYLINKEDLIST_H
 #define GPLATES_UTILS_INTRUSIVESINGLYLINKEDLIST_H
 
-#include <iterator>  // std::iterator
+#include <iterator>  // std::forward_iterator_tag
 #include <boost/operators.hpp>
 #include <boost/type_traits/add_const.hpp>
 
@@ -122,10 +122,18 @@ namespace GPlatesUtils
 		 */
 		template <class ElementNodeQualifiedType>
 		class Iterator :
-				public std::iterator<std::forward_iterator_tag, ElementNodeQualifiedType>,
 				public boost::forward_iteratable<Iterator<ElementNodeQualifiedType>, ElementNodeQualifiedType *>
 		{
 		public:
+
+			// Iterator typedefs.
+			using iterator_category = std::forward_iterator_tag;
+			using value_type = ElementNodeQualifiedType;
+			using difference_type = std::ptrdiff_t;
+			using pointer = ElementNodeQualifiedType *;
+			using reference = ElementNodeQualifiedType &;
+
+
 			explicit
 			Iterator(
 					ElementNodeQualifiedType *node = NULL) :

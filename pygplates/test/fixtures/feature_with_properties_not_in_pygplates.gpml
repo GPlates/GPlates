@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0339" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+    <gml:featureMember>
+        <gpml:UnclassifiedFeature>
+            <gpml:identity>GPlates-fd7f0b2c-bc06-45cf-b2ed-8bcd2beba3c7</gpml:identity>
+            <gpml:revision>GPlates-e1dac2da-4bc5-44bf-b439-d029d956b2b7</gpml:revision>
+            <gml:name>Test uninterpreted property, age, revision ID (actually also uninterpreted).</gml:name>
+            <gml:description>Property not exposed via pygplates</gml:description>
+            <gpml:unknownPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>0</gpml:value>
+                    <gml:description>This will get loaded as an gpml::UninterpretedPropertyValue type.</gml:description>
+                    <gpml:valueType>gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:unknownPlateId>
+            <gpml:age>
+                <gpml:Age>
+                    <gpml:timescale>ICC2012</gpml:timescale>
+                    <gpml:namedAge>Neogene</gpml:namedAge>
+                    <gpml:uncertainty gpml:oldest="Proterozoic" gpml:youngest="Phanerozoic"/>
+                </gpml:Age>
+            </gpml:age>
+			<gpml:revisionId>GPlates-e1dac2da-4bc5-44bf-b439-d029d956b2b7</gpml:revisionId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>0 0</gml:pos>
+                </gml:Point>
+            </gpml:position>
+        </gpml:UnclassifiedFeature>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Raster>
+            <gpml:identity>GPlates-e541486e-e517-4673-9ed0-d75a4444df87</gpml:identity>
+            <gpml:revision>GPlates-58f64d6f-2e0b-4597-abaa-4782c169ea25</gpml:revision>
+            <gml:name>Test gml:RectifiedGrid (and gml:GridEnvelope), gml:File, gpml:RasterBandNames.</gml:name>
+            <gpml:domainSet>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:RectifiedGrid gml:dimension="2">
+                            <gml:limits>
+                                <gml:GridEnvelope>
+                                    <gml:low>0 0 </gml:low>
+                                    <gml:high>2000 1895 </gml:high>
+                                </gml:GridEnvelope>
+                            </gml:limits>
+                            <gml:axisName>longitude</gml:axisName>
+                            <gml:axisName>latitude</gml:axisName>
+                            <gml:origin>
+                                <gml:Point>
+                                    <gml:pos>38.583333333353941 -19.033333333333985</gml:pos>
+                                </gml:Point>
+                            </gml:origin>
+                            <gml:offsetVector>0.039516666666666672 0 </gml:offsetVector>
+                            <gml:offsetVector>0 -0.039516666666666672 </gml:offsetVector>
+                        </gml:RectifiedGrid>
+                    </gpml:value>
+                    <gml:description></gml:description>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:RectifiedGrid</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:domainSet>
+            <gpml:rangeSet>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:File>
+                            <gml:rangeParameters>
+                                <gml:CompositeValue>
+                                    <gml:valueComponent>
+                                        <gpml:Rgba>template</gpml:Rgba>
+                                    </gml:valueComponent>
+                                </gml:CompositeValue>
+                            </gml:rangeParameters>
+                            <gml:fileName>AfricaTopoOnly1.tif</gml:fileName>
+                            <gml:fileStructure></gml:fileStructure>
+                            <gml:mimeType>image/tiff</gml:mimeType>
+                        </gml:File>
+                    </gpml:value>
+                    <gml:description></gml:description>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:File</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:rangeSet>
+            <gpml:bandNames>
+                <gpml:RasterBandNames>
+                    <gpml:bandName>band_1</gpml:bandName>
+                </gpml:RasterBandNames>
+            </gpml:bandNames>
+        </gpml:Raster>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Isochron>
+            <gpml:identity>GPlates-33b58ea7-a952-454d-8113-c5b4ac144b45</gpml:identity>
+            <gpml:revision>GPlates-07786866-3603-4bd2-ae79-386fb83fac5f</gpml:revision>
+            <gml:name>Test feature reference</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>701</gpml:value>
+                    <gml:description></gml:description>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:geometryImportTime>
+                <gml:TimeInstant>
+                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                </gml:TimeInstant>
+            </gpml:geometryImportTime>
+            <gpml:conjugate>
+                <gpml:FeatureReference>
+                    <gpml:targetFeature>GPlates-cb9618ec-557d-4175-ba2b-8affa3ad52cd</gpml:targetFeature>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:Isochron</gpml:valueType>
+                </gpml:FeatureReference>
+            </gpml:conjugate>
+            <gpml:conjugatePlateId>201</gpml:conjugatePlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">9.4420718964502157 14.078426007508693 -3.7905795468050818 20.092900609171704 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gml:description></gml:description>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+        </gpml:Isochron>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Isochron>
+            <gpml:identity>GPlates-cb9618ec-557d-4175-ba2b-8affa3ad52cd</gpml:identity>
+            <gpml:revision>GPlates-19b04e8a-45ad-46c6-b8a1-41df2548f669</gpml:revision>
+            <gml:name>Conjugate of Test feature reference</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>201</gpml:value>
+                    <gml:description></gml:description>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:geometryImportTime>
+                <gml:TimeInstant>
+                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                </gml:TimeInstant>
+            </gpml:geometryImportTime>
+            <gpml:conjugate>
+                <gpml:FeatureReference>
+                    <gpml:targetFeature>GPlates-33b58ea7-a952-454d-8113-c5b4ac144b45</gpml:targetFeature>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:Isochron</gpml:valueType>
+                </gpml:FeatureReference>
+            </gpml:conjugate>
+            <gpml:conjugatePlateId>701</gpml:conjugatePlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">9.4420718964502157 14.078426007508693 -3.7905795468050818 20.092900609171704 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gml:description></gml:description>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+        </gpml:Isochron>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:HotSpotTrail>
+            <gpml:identity>GPlates-32981ef9-0287-493c-8ff9-e7b98933179f</gpml:identity>
+            <gpml:revision>GPlates-fb140b28-782b-41d4-8462-39e693bef3e4</gpml:revision>
+            <gml:name>Test gpml:HotSpotTrailMark</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>201</gpml:value>
+                    <gml:description></gml:description>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:geometryImportTime>
+                <gml:TimeInstant>
+                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                </gml:TimeInstant>
+            </gpml:geometryImportTime>
+			<gpml:mark>
+				<gpml:HotSpotTrailMark>
+					<gpml:position>
+						<gml:Point>
+							<gml:pos>10.0 10.0</gml:pos>
+						</gml:Point>
+					</gpml:position>
+					<gpml:trailWidth>1</gpml:trailWidth>
+					<gpml:measuredAge>
+						<gml:TimeInstant>
+							<gml:timePosition gml:frame="http://gplates.org/TRS/flat">90.0</gml:timePosition>
+						</gml:TimeInstant>
+					</gpml:measuredAge>
+					<gpml:measuredAgeRange>
+						<gml:TimePeriod>
+							<gml:begin>
+								<gml:TimeInstant>
+									<gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+								</gml:TimeInstant>
+							</gml:begin>
+							<gml:end>
+								<gml:TimeInstant>
+									<gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+								</gml:TimeInstant>
+							</gml:end>
+						</gml:TimePeriod>
+					</gpml:measuredAgeRange>
+				</gpml:HotSpotTrailMark>
+			</gpml:mark>
+            <gpml:unclassifiedGeometry>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:Point>
+                            <gml:pos>-15.77050706124054 9.0760695936716029</gml:pos>
+                        </gml:Point>
+                    </gpml:value>
+                    <gml:description></gml:description>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:unclassifiedGeometry>
+        </gpml:HotSpotTrail>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:TotalReconstructionSequence>
+            <gpml:identity>GPlates-9b8af91a-e856-4393-b87a-dd5b179c304a</gpml:identity>
+            <gpml:revision>GPlates-ad3ecf6e-379a-4a21-a65f-85a697333148</gpml:revision>
+            <gml:name>Test gpml:FiniteRotationSlerp</gml:name>
+            <gpml:totalReconstructionPole>
+                <gpml:IrregularSampling>
+                    <gpml:timeSample>
+                        <gpml:TimeSample>
+                            <gpml:value>
+                                <gpml:ZeroFiniteRotation/>
+                            </gpml:value>
+                            <gpml:validTime>
+                                <gml:TimeInstant>
+                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                                </gml:TimeInstant>
+                            </gpml:validTime>
+                            <gml:description> AHS-HOT Present day Atlantic-Indian hotspots fixed to 000          </gml:description>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:TimeSample>
+                    </gpml:timeSample>
+                    <gpml:timeSample>
+                        <gpml:TimeSample>
+                            <gpml:value>
+                                <gpml:ZeroFiniteRotation/>
+                            </gpml:value>
+                            <gpml:validTime>
+                                <gml:TimeInstant>
+                                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">600</gml:timePosition>
+                                </gml:TimeInstant>
+                            </gpml:validTime>
+                            <gml:description> AHS-HOT                                    </gml:description>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:TimeSample>
+                    </gpml:timeSample>
+                    <gpml:interpolationFunction>
+                        <gpml:FiniteRotationSlerp>
+                            <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                        </gpml:FiniteRotationSlerp>
+                    </gpml:interpolationFunction>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:FiniteRotation</gpml:valueType>
+                </gpml:IrregularSampling>
+            </gpml:totalReconstructionPole>
+            <gpml:fixedReferenceFrame>0</gpml:fixedReferenceFrame>
+            <gpml:movingReferenceFrame>1</gpml:movingReferenceFrame>
+        </gpml:TotalReconstructionSequence>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:ScalarField3D>
+            <gpml:identity>GPlates-6efc044b-c13a-4979-919d-b4c411f82b3d</gpml:identity>
+            <gpml:revision>GPlates-8f77a30c-98c1-488f-8eb5-8d15481965a5</gpml:revision>
+            <gml:name>Test gpml:ScalarField3DFile</gml:name>
+            <gpml:file>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gpml:ScalarField3DFile>
+                            <gpml:fileName>MITP08-regional.gpsf</gpml:fileName>
+                        </gpml:ScalarField3DFile>
+                    </gpml:value>
+                    <gml:description></gml:description>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:ScalarField3DFile</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:file>
+        </gpml:ScalarField3D>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:VirtualGeomagneticPole>
+            <gpml:identity>GPlates-4c3e0bfa-256a-47ee-b906-30b7e5b5ce01</gpml:identity>
+            <gpml:revision>GPlates-4a496400-6f7e-495a-91ae-932a74c3db9d</gpml:revision>
+            <gml:name>Test gpml:StringList</gml:name>
+			<gpml:locationNames>
+				<gpml:StringList>
+					<gpml:element>name1</gpml:element>
+					<gpml:element>name2</gpml:element>
+				</gpml:StringList>
+			</gpml:locationNames>
+            <gml:description>https://doi.org/10.1016/j.earscirev.2022.104258</gml:description>
+            <gpml:averageSampleSitePosition>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:Point>
+                            <gml:pos>29.999999999999996 32.083300000000001</gml:pos>
+                        </gml:Point>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:averageSampleSitePosition>
+            <gpml:polePosition>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:Point>
+                            <gml:pos>69.399999999999991 -170.60000000000002</gml:pos>
+                        </gml:Point>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:polePosition>
+            <gpml:poleA95>3.0495901363953815</gpml:poleA95>
+            <gpml:poleDp>3.2000000000000002</gpml:poleDp>
+            <gpml:poleDm>6.0999999999999996</gpml:poleDm>
+            <gpml:averageInclination>-20.800000000000001</gpml:averageInclination>
+            <gpml:averageDeclination>187.90000000000001</gpml:averageDeclination>
+            <gpml:averageAge>43.5</gpml:averageAge>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">50</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">37</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>715</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+        </gpml:VirtualGeomagneticPole>
+    </gml:featureMember>
+</gpml:FeatureCollection>

@@ -1705,8 +1705,9 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_builtin_scalar_colour_
 			GPlatesPresentation::RemappedColourPaletteParameters scalar_colour_palette_parameters =
 					params->get_scalar_colour_palette_parameters();
 			scalar_colour_palette_parameters.load_builtin_colour_palette(builtin_scalar_colour_palette_type);
-			// If an age palette then don't map the range - the age palettes don't need remapping.
-			if (builtin_scalar_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE)
+			// If an age or topography palette then don't map the range - these palettes don't need remapping.
+			if (builtin_scalar_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE ||
+				builtin_scalar_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::TOPOGRAPHY_PALETTE)
 			{
 				scalar_colour_palette_parameters.unmap_palette_range();
 			}
@@ -1989,8 +1990,9 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_builtin_gradient_colou
 			GPlatesPresentation::RemappedColourPaletteParameters gradient_colour_palette_parameters =
 					params->get_gradient_colour_palette_parameters();
 			gradient_colour_palette_parameters.load_builtin_colour_palette(builtin_gradient_colour_palette_type);
-			// If an age palette then don't map the range - the age palettes don't need remapping.
-			if (builtin_gradient_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE)
+			// If an age or topography palette then don't map the range - these palettes don't need remapping.
+			if (builtin_gradient_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE ||
+				builtin_gradient_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::TOPOGRAPHY_PALETTE)
 			{
 				gradient_colour_palette_parameters.unmap_palette_range();
 			}

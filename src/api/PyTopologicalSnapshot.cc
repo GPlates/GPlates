@@ -23,16 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-// Workaround for compile error in <pyport.h> for Python versions less than 2.7.13 and 3.5.3.
-// See https://bugs.python.org/issue10910
-// Workaround involves including "global/python.h" at the top of some source files
-// to ensure <Python.h> is included before <ctype.h>.
-#include "global/python.h"
-
-// This is not included by <boost/python.hpp>.
-// Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/raw_function.hpp>
-
 #include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
@@ -43,12 +33,17 @@
 #include "PyTopologicalSnapshot.h"
 
 #include "PyFeatureCollectionFunctionArgument.h"
+#include "PyGeometriesOnSphere.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 #include "PythonUtils.h"
 #include "PythonVariableFunctionArguments.h"
 
+#include "app-logic/PlateBoundaryStats.h"
+#include "app-logic/PlateVelocityUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructContext.h"
 #include "app-logic/ReconstructHandle.h"
@@ -61,6 +56,8 @@
 #include "app-logic/ResolvedTopologicalSharedSubSegment.h"
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
+#include "app-logic/VelocityDeltaTime.h"
+#include "app-logic/VelocityUnits.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
@@ -77,6 +74,10 @@
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
+
+#include "scribe/Scribe.h"
+
+#include "utils/Earth.h"
 
 
 namespace bp = boost::python;
@@ -147,7 +148,7 @@ namespace GPlatesApi
 	void
 	topological_snapshot_export_resolved_topologies(
 			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
-			const QString &export_file_name,
+			const FilePathFunctionArgument &export_file_name,
 			ResolveTopologyType::flags_type resolve_topology_types,
 			bool wrap_to_dateline,
 			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation)
@@ -203,7 +204,7 @@ namespace GPlatesApi
 	void
 	topological_snapshot_export_resolved_topological_sections(
 			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
-			const QString &export_file_name,
+			const FilePathFunctionArgument &export_file_name,
 			ResolveTopologyType::flags_type resolve_topological_section_types,
 			bool export_topological_line_sub_segments,
 			bool wrap_to_dateline)
@@ -223,10 +224,604 @@ namespace GPlatesApi
 				wrap_to_dateline);
 	}
 
+	/**
+	 * Calculate plate boundary stats at uniformly spaced points along resolved topological sections.
+	 */
+	bp::object
+	topological_snapshot_calculate_plate_boundary_statistics(
+			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+			const double &uniform_point_spacing_radians,
+			boost::optional<double> first_uniform_point_spacing_radians,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms,
+			bool include_network_boundaries,
+			bp::object boundary_section_filter_object,
+			bool return_shared_sub_segment_dict)
+	{
+		if (uniform_point_spacing_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'uniform_point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
+		// Velocity delta time must be positive.
+		if (velocity_delta_time <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
+		// Get the resolved topological sections.
+		//
+		// Note: We include networks in the resolved topological sections regardless of the value of
+		//       *include_network_boundaries* because we still need to discover the left/right networks
+		//       sharing a plate boundary (and our first attempt at doing this is via the resolved topologies
+		//       sharing the resolved topological section).
+		std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections =
+				topological_snapshot->get_resolved_topological_sections(
+						ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES);
+
+		// If a boundary section filter object was specified then filter the resolved topological sections,
+		// otherwise accept them all.
+		if (boundary_section_filter_object != bp::object()/*Py_None*/)
+		{
+			std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> filtered_resolved_topological_sections;
+
+			// See if filter object is a feature type.
+			bp::extract<GPlatesModel::FeatureType> extract_feature_type(boundary_section_filter_object);
+			if (extract_feature_type.check())
+			{
+				// Extract the allowed feature type.
+				const GPlatesModel::FeatureType allowed_feature_type = extract_feature_type();
+
+				// Filter the resolved topological sections.
+				for (const auto &resolved_topological_section : resolved_topological_sections)
+				{
+					// Should be valid due to GPlatesApi::ResolvedTopologicalSectionWrapper.
+					if (resolved_topological_section->get_feature_ref().is_valid())
+					{
+						const GPlatesModel::FeatureType feature_type = resolved_topological_section->get_feature_ref()->feature_type();
+
+						// See if the feature type matches the allowed feature type.
+						if (feature_type == allowed_feature_type)
+						{
+							filtered_resolved_topological_sections.push_back(resolved_topological_section);
+						}
+					}
+				}
+			}
+			// Else attempt to extract a sequence of feature types...
+			else if (PythonExtractUtils::check_sequence<GPlatesModel::FeatureType>(boundary_section_filter_object))
+			{
+				// Extract the allowed feature types.
+				std::vector<GPlatesModel::FeatureType> allowed_feature_types;
+				PythonExtractUtils::extract_sequence(allowed_feature_types, boundary_section_filter_object);
+
+				// Filter the resolved topological sections.
+				for (const auto &resolved_topological_section : resolved_topological_sections)
+				{
+					// Should be valid due to GPlatesApi::ResolvedTopologicalSectionWrapper.
+					if (resolved_topological_section->get_feature_ref().is_valid())
+					{
+						const GPlatesModel::FeatureType feature_type = resolved_topological_section->get_feature_ref()->feature_type();
+
+						// See if the feature type matches one of the allowed feature types.
+						if (std::find(allowed_feature_types.begin(), allowed_feature_types.end(), feature_type) !=
+							allowed_feature_types.end())
+						{
+							filtered_resolved_topological_sections.push_back(resolved_topological_section);
+						}
+					}
+				}
+			}
+			else  // Filter must be a callable predicate...
+			{
+				// Filter the resolved topological sections.
+				for (const auto &resolved_topological_section : resolved_topological_sections)
+				{
+					// Pass the resolved topological section to the callable predicate.
+					if (bp::extract<bool>(boundary_section_filter_object(resolved_topological_section)))
+					{
+						filtered_resolved_topological_sections.push_back(resolved_topological_section);
+					}
+				}
+			}
+
+			resolved_topological_sections.swap(filtered_resolved_topological_sections);
+		}
+
+		// Get the resolved topological boundaries (rigid plates).
+		//
+		// Need to convert pointers-to-non-const to pointers-to-const.
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type> resolved_topological_boundaries(
+				topological_snapshot->get_resolved_topological_boundaries().begin(),
+				topological_snapshot->get_resolved_topological_boundaries().end());
+		// Get the resolved topological networks (deforming regions).
+		//
+		// Need to convert pointers-to-non-const to pointers-to-const.
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type> resolved_topological_networks(
+				topological_snapshot->get_resolved_topological_networks().begin(),
+				topological_snapshot->get_resolved_topological_networks().end());
+
+		// Calculate the plate boundary statistics.
+		std::map<
+				GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type,
+				std::vector<GPlatesAppLogic::PlateBoundaryStat>
+		> plate_boundary_stats;
+		GPlatesAppLogic::calculate_plate_boundary_stats(
+				plate_boundary_stats,
+				resolved_topological_sections,
+				resolved_topological_boundaries,
+				resolved_topological_networks,
+				topological_snapshot->get_reconstruction_time(),
+				uniform_point_spacing_radians,
+				first_uniform_point_spacing_radians,
+				velocity_delta_time,
+				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms,
+				include_network_boundaries);
+		
+		// If we should group plate boundary stats (dict value) by their shared sub-segments (dict key).
+		if (return_shared_sub_segment_dict)
+		{
+			bp::dict shared_sub_segment_dict;
+
+			// Add a list of plate boundary stats for each shared sub-segment to the dict.
+			for (const auto &shared_sub_segment_plate_boundary_stats : plate_boundary_stats)
+			{
+				bp::list shared_sub_segment_plate_boundary_stats_list;
+				for (const auto &plate_boundary_stat : shared_sub_segment_plate_boundary_stats.second)
+				{
+					shared_sub_segment_plate_boundary_stats_list.append(plate_boundary_stat);
+				}
+
+				shared_sub_segment_dict[shared_sub_segment_plate_boundary_stats.first] =
+						shared_sub_segment_plate_boundary_stats_list;
+			}
+
+			return shared_sub_segment_dict;
+		}
+
+		// One big list of plate boundary stats (not grouped by shared sub-segment).
+		bp::list plate_boundary_stats_list;
+		for (const auto &shared_sub_segment_plate_boundary_stats : plate_boundary_stats)
+		{
+			for (const auto &plate_boundary_stat : shared_sub_segment_plate_boundary_stats.second)
+			{
+				plate_boundary_stats_list.append(plate_boundary_stat);
+			}
+		}
+
+		return plate_boundary_stats_list;
+	}
+
+	namespace
+	{
+		/**
+		 * Find location of point in resolved topological networks and boundaries.
+		 */
+		GPlatesAppLogic::TopologyPointLocation
+		get_point_location_in_resolved_topologies(
+				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries)
+		{
+			// See if point is inside any topological networks.
+			if (resolved_topological_networks)
+			{
+				for (const auto &resolved_topological_network : resolved_topological_networks.get())
+				{
+					if (boost::optional<GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> point_location =
+						resolved_topological_network->get_triangulation_network().get_point_location(point))
+					{
+						return GPlatesAppLogic::TopologyPointLocation(resolved_topological_network, point_location.get());
+					}
+				}
+			}
+
+			// See if point is inside any topological boundaries.
+			if (resolved_topological_boundaries)
+			{
+				for (const auto &resolved_topological_boundary : resolved_topological_boundaries.get())
+				{
+					if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
+					{
+						return GPlatesAppLogic::TopologyPointLocation(resolved_topological_boundary);
+					}
+				}
+			}
+
+			// Point is not located inside any resolved boundaries/networks.
+			return GPlatesAppLogic::TopologyPointLocation();
+		}
+	}
+
+	bp::list
+	topological_snapshot_get_point_locations(
+			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+			PointSequenceFunctionArgument point_seq,
+			ResolveTopologyType::flags_type resolve_topology_types)
+	{
+		bp::list point_locations_list;
+
+		// Resolved topology type flags must correspond to BOUNDARY and/or NETWORK.
+		if ((resolve_topology_types & ~ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) != 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Bit flags specified in resolve topology types must be "
+					"ResolveTopologyType.BOUNDARY and/or ResolveTopologyType.NETWORK.");
+			bp::throw_error_already_set();
+		}
+
+		// Get the resolved topological networks (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks;
+		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
+		{
+			resolved_topological_networks = topological_snapshot->get_resolved_topological_networks();
+		}
+		// Get the resolved topological boundaries (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries;
+		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
+		{
+			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
+		}
+
+		// Iterate over the sequence of points.
+		for (const auto &point : point_seq.get_points())
+		{
+			// Find which resolved topological network or boundary (if any) contains the point.
+			const GPlatesAppLogic::TopologyPointLocation point_location =
+					get_point_location_in_resolved_topologies(
+							point,
+							resolved_topological_networks,
+							resolved_topological_boundaries);
+
+			point_locations_list.append(point_location);
+		}
+
+		return point_locations_list;
+	}
+
+	namespace
+	{
+		/**
+		 * Find location, and calculate velocity, of point in resolved topological networks and boundaries.
+		 *
+		 * Returns none if point is not in any resolved topological networks or boundaries.
+		 */
+		boost::optional<std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::TopologyPointLocation>>
+		get_point_velocity_in_resolved_topologies(
+				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries,
+				const double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+				GPlatesAppLogic::VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms)
+		{
+			// See if point is inside any topological networks.
+			if (resolved_topological_networks)
+			{
+				for (const auto &resolved_topological_network : resolved_topological_networks.get())
+				{
+					boost::optional< std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
+							velocity = resolved_topological_network->get_triangulation_network().calculate_velocity(
+									point,
+									velocity_delta_time,
+									velocity_delta_time_type,
+									velocity_units,
+									earth_radius_in_kms);
+					if (velocity)
+					{
+						return std::make_pair(
+								velocity->first,
+								GPlatesAppLogic::TopologyPointLocation(resolved_topological_network, velocity->second));
+					}
+				}
+			}
+
+			// See if point is inside any topological boundaries.
+			if (resolved_topological_boundaries)
+			{
+				for (const auto &resolved_topological_boundary : resolved_topological_boundaries.get())
+				{
+					if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
+					{
+						// Get the plate ID from resolved boundary.
+						//
+						// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+						// which can still give a non-identity rotation if the anchor plate id is non-zero.
+						boost::optional<GPlatesModel::integer_plate_id_type> resolved_boundary_plate_id =
+								resolved_topological_boundary->plate_id();
+						if (!resolved_boundary_plate_id)
+						{
+							resolved_boundary_plate_id = 0;
+						}
+
+						const GPlatesMaths::Vector3D velocity = GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+								point,
+								resolved_boundary_plate_id.get(),
+								resolved_topological_boundary->get_reconstruction_tree_creator(),
+								resolved_topological_boundary->get_reconstruction_time(),
+								velocity_delta_time,
+								velocity_delta_time_type,
+								velocity_units,
+								earth_radius_in_kms);
+
+						return std::make_pair(
+								velocity,
+								GPlatesAppLogic::TopologyPointLocation(resolved_topological_boundary));
+					}
+				}
+			}
+
+			// Point is not located inside any resolved boundaries/networks.
+			return boost::none;
+		}
+	}
+
+	bp::object
+	topological_snapshot_get_point_velocities(
+			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+			PointSequenceFunctionArgument point_seq,
+			ResolveTopologyType::flags_type resolve_topology_types,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms,
+			bool return_point_locations)
+	{
+		bp::list point_velocities_list;
+
+		boost::optional<bp::list> point_locations_list;
+		if (return_point_locations)
+		{
+			point_locations_list = bp::list();
+		}
+
+		// Resolved topology type flags must correspond to BOUNDARY and/or NETWORK.
+		if ((resolve_topology_types & ~ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) != 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Bit flags specified in resolve topology types must be "
+					"ResolveTopologyType.BOUNDARY and/or ResolveTopologyType.NETWORK.");
+			bp::throw_error_already_set();
+		}
+
+		// Get the resolved topological networks (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks;
+		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
+		{
+			resolved_topological_networks = topological_snapshot->get_resolved_topological_networks();
+		}
+		// Get the resolved topological boundaries (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries;
+		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
+		{
+			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
+		}
+
+		// Iterate over the sequence of points.
+		for (const auto &point : point_seq.get_points())
+		{
+			// Find which resolved topological network or boundary (if any) contains the point.
+			//
+			// Note: This is none if the point is not inside any resolved boundaries/networks. 
+			const boost::optional<std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::TopologyPointLocation>> point_velocity_and_location =
+					get_point_velocity_in_resolved_topologies(
+							point,
+							resolved_topological_networks,
+							resolved_topological_boundaries,
+							velocity_delta_time,
+							velocity_delta_time_type,
+							velocity_units,
+							earth_radius_in_kms);
+
+			if (point_velocity_and_location)
+			{
+				point_velocities_list.append(point_velocity_and_location->first);
+				if (return_point_locations)
+				{
+					point_locations_list->append(point_velocity_and_location->second);
+				}
+			}
+			else
+			{
+				// Point is not located inside any resolved boundaries/networks.
+				point_velocities_list.append(bp::object()/*Py_None*/);
+				if (return_point_locations)
+				{
+					point_locations_list->append(GPlatesAppLogic::TopologyPointLocation());
+				}
+			}
+		}
+
+		if (return_point_locations)
+		{
+			return bp::make_tuple(point_velocities_list, point_locations_list.get());
+		}
+		else
+		{
+			return point_velocities_list;
+		}
+	}
+
+	namespace
+	{
+		/**
+		 * Find location, and calculate strain rate, of point in resolved topological networks and boundaries.
+		 *
+		 * Returns none if point is not in any resolved topological networks or boundaries.
+		 */
+		boost::optional<std::pair<GPlatesAppLogic::DeformationStrainRate, GPlatesAppLogic::TopologyPointLocation>>
+		get_point_strain_rate_in_resolved_topologies(
+				const GPlatesMaths::PointOnSphere &point,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
+				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries)
+		{
+			// See if point is inside any topological networks.
+			if (resolved_topological_networks)
+			{
+				for (const auto &resolved_topological_network : resolved_topological_networks.get())
+				{
+					boost::optional<std::pair<
+							GPlatesAppLogic::ResolvedTriangulation::DeformationInfo,
+							GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
+									deformation_info = resolved_topological_network->get_triangulation_network().calculate_deformation(point);
+					if (deformation_info)
+					{
+						return std::make_pair(
+								deformation_info->first.get_strain_rate(),
+								GPlatesAppLogic::TopologyPointLocation(resolved_topological_network, deformation_info->second));
+					}
+				}
+			}
+
+			// See if point is inside any topological boundaries.
+			if (resolved_topological_boundaries)
+			{
+				for (const auto &resolved_topological_boundary : resolved_topological_boundaries.get())
+				{
+					if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
+					{
+						// Return zero deformation (since inside a rigid plate).
+						return std::make_pair(
+								GPlatesAppLogic::DeformationStrainRate(),
+								GPlatesAppLogic::TopologyPointLocation(resolved_topological_boundary));
+					}
+				}
+			}
+
+			// Point is not located inside any resolved boundaries/networks.
+			return boost::none;
+		}
+	}
+
+	bp::object
+	topological_snapshot_get_point_strain_rates(
+			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+			PointSequenceFunctionArgument point_seq,
+			ResolveTopologyType::flags_type resolve_topology_types,
+			bool return_point_locations)
+	{
+		bp::list point_strain_rates_list;
+
+		boost::optional<bp::list> point_locations_list;
+		if (return_point_locations)
+		{
+			point_locations_list = bp::list();
+		}
+
+		// Resolved topology type flags must correspond to BOUNDARY and/or NETWORK.
+		if ((resolve_topology_types & ~ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) != 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Bit flags specified in resolve topology types must be "
+					"ResolveTopologyType.BOUNDARY and/or ResolveTopologyType.NETWORK.");
+			bp::throw_error_already_set();
+		}
+
+		// Get the resolved topological networks (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks;
+		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
+		{
+			resolved_topological_networks = topological_snapshot->get_resolved_topological_networks();
+		}
+		// Get the resolved topological boundaries (if requested).
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries;
+		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
+		{
+			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
+		}
+
+		// Iterate over the sequence of points.
+		for (const auto &point : point_seq.get_points())
+		{
+			// Find which resolved topological network or boundary (if any) contains the point.
+			//
+			// Note: This is none if the point is not inside any resolved boundaries/networks. 
+			const boost::optional<std::pair<GPlatesAppLogic::DeformationStrainRate, GPlatesAppLogic::TopologyPointLocation>> point_strain_rate_and_location =
+					get_point_strain_rate_in_resolved_topologies(
+							point,
+							resolved_topological_networks,
+							resolved_topological_boundaries);
+
+			if (point_strain_rate_and_location)
+			{
+				point_strain_rates_list.append(point_strain_rate_and_location->first);
+				if (return_point_locations)
+				{
+					point_locations_list->append(point_strain_rate_and_location->second);
+				}
+			}
+			else
+			{
+				// Point is not located inside any resolved boundaries/networks.
+				point_strain_rates_list.append(bp::object()/*Py_None*/);
+				if (return_point_locations)
+				{
+					point_locations_list->append(GPlatesAppLogic::TopologyPointLocation());
+				}
+			}
+		}
+
+		if (return_point_locations)
+		{
+			return bp::make_tuple(point_strain_rates_list, point_locations_list.get());
+		}
+		else
+		{
+			return point_strain_rates_list;
+		}
+	}
+
+	/**
+	 * Returns the boundary feature.
+	 *
+	 * The feature reference could be invalid.
+	 * It should normally be valid though so we don't document that Py_None could be returned to the caller.
+	 */
+	boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
+	plate_boundary_statistic_get_boundary_feature(
+			const GPlatesAppLogic::PlateBoundaryStat &plate_boundary_statistic)
+	{
+		// The feature reference could be invalid. It should normally be valid though.
+		const GPlatesModel::FeatureHandle::weak_ref boundary_feature_ref =
+				plate_boundary_statistic.get_boundary_feature();
+		if (!boundary_feature_ref.is_valid())
+		{
+			return boost::none;
+		}
+
+		return GPlatesModel::FeatureHandle::non_null_ptr_type(boundary_feature_ref.handle_ptr());
+	}
+
+	// Convert UnitVector3D to Vector3D.
+	GPlatesMaths::Vector3D
+	plate_boundary_statistic_get_boundary_normal(
+			const GPlatesAppLogic::PlateBoundaryStat &plate_boundary_statistic)
+	{
+		return GPlatesMaths::Vector3D(plate_boundary_statistic.get_boundary_normal());
+	}
+
+	double
+	plate_boundary_statistic_get_convergence_velocity_magnitude(
+			const GPlatesAppLogic::PlateBoundaryStat &plate_boundary_statistic)
+	{
+		return plate_boundary_statistic.get_convergence_velocity_magnitude(false/*return_signed_magnitude*/);
+	}
+
+	double
+	plate_boundary_statistic_get_convergence_velocity_signed_magnitude(
+			const GPlatesAppLogic::PlateBoundaryStat &plate_boundary_statistic)
+	{
+		return plate_boundary_statistic.get_convergence_velocity_magnitude(true/*return_signed_magnitude*/);
+	}
+
 
 	TopologicalSnapshot::non_null_ptr_type
 	TopologicalSnapshot::create(
-			const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features_argument,
+			const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 			const RotationModelFunctionArgument &rotation_model_argument,
 			const double &reconstruction_time,
 			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
@@ -240,6 +835,14 @@ namespace GPlatesApi
 				1/*reconstruction_tree_cache_size*/,
 				anchor_plate_id);
 
+		// Get the topological files.
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> topological_files;
+		topological_features.get_files(topological_files);
+
+		// Get the associated resolved topology parameters.
+		std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> resolve_topology_parameters;
+		topological_features.get_resolve_topology_parameters(resolve_topology_parameters);
+
 		// If no resolve topology parameters specified then use default values.
 		if (!default_resolve_topology_parameters)
 		{
@@ -248,22 +851,67 @@ namespace GPlatesApi
 
 		return non_null_ptr_type(
 				new TopologicalSnapshot(
-						topological_features_argument,
 						rotation_model,
-						reconstruction_time,
-						default_resolve_topology_parameters.get()));
+						topological_files,
+						resolve_topology_parameters,
+						default_resolve_topology_parameters.get(),
+						reconstruction_time));
+	}
+	
+	TopologicalSnapshot::TopologicalSnapshot(
+			const std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
+			const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+			const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
+			const RotationModel::non_null_ptr_type &rotation_model,
+			const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+			const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+			ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters,
+			const double &reconstruction_time) :
+		d_rotation_model(rotation_model),
+		d_topological_files(topological_files),
+		d_resolve_topology_parameters(resolve_topology_parameters),
+		d_default_resolve_topology_parameters(default_resolve_topology_parameters),
+		d_reconstruction_time(reconstruction_time),
+		d_resolved_topological_lines(resolved_topological_lines),
+		d_resolved_topological_boundaries(resolved_topological_boundaries),
+		d_resolved_topological_networks(resolved_topological_networks)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_resolve_topology_parameters.size() == d_topological_files.size(),
+				GPLATES_ASSERTION_SOURCE);
 	}
 
 	TopologicalSnapshot::TopologicalSnapshot(
-			const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features_argument,
 			const RotationModel::non_null_ptr_type &rotation_model,
-			const double &reconstruction_time,
-			ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters) :
+			const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+			const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+			ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters,
+			const double &reconstruction_time) :
 		d_rotation_model(rotation_model),
+		d_topological_files(topological_files),
+		d_resolve_topology_parameters(resolve_topology_parameters),
+		d_default_resolve_topology_parameters(default_resolve_topology_parameters),
 		d_reconstruction_time(reconstruction_time)
 	{
-		// Extract the topological files from the function argument.
-		topological_features_argument.get_files(d_topological_files);
+		initialise_resolved_topologies();
+	}
+
+	void
+	TopologicalSnapshot::initialise_resolved_topologies()
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_resolve_topology_parameters.size() == d_topological_files.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// Clear the data members we're about to initialise in case this function called during transcribing.
+		d_resolved_topological_lines.clear();
+		d_resolved_topological_boundaries.clear();
+		d_resolved_topological_networks.clear();
+		// Also clear any caches.
+		for (auto &resolved_topological_sections : d_resolved_topological_sections)
+		{
+			resolved_topological_sections = boost::none;
+		}
 
 		// Extract topological feature collection weak refs from their files.
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> topological_feature_collections;
@@ -284,7 +932,7 @@ namespace GPlatesApi
 					topological_sections_referenced,
 					topological_feature_collection,
 					boost::none/*topology_geometry_type*/,
-					reconstruction_time);
+					d_reconstruction_time);
 		}
 
 		// Contains the topological section regular geometries referenced by topologies.
@@ -301,8 +949,8 @@ namespace GPlatesApi
 						reconstruct_context.create_context_state(
 								GPlatesAppLogic::ReconstructMethodInterface::Context(
 										GPlatesAppLogic::ReconstructParams(),
-										rotation_model->get_reconstruction_tree_creator())),
-						reconstruction_time);
+										d_rotation_model->get_reconstruction_tree_creator())),
+						d_reconstruction_time);
 
 		// All reconstruct handles used to find topological sections (referenced by topological boundaries/networks).
 		std::vector<GPlatesAppLogic::ReconstructHandle::type> topological_sections_reconstruct_handles(1, reconstruct_handle);
@@ -315,8 +963,8 @@ namespace GPlatesApi
 				GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 						d_resolved_topological_lines,
 						topological_feature_collections,
-						rotation_model->get_reconstruction_tree_creator(), 
-						reconstruction_time,
+						d_rotation_model->get_reconstruction_tree_creator(),
+						d_reconstruction_time,
 						// Resolved topo lines use the reconstructed non-topo geometries...
 						topological_sections_reconstruct_handles
 	// NOTE: We need to generate all resolved topological lines, not just those referenced by resolved boundaries/networks,
@@ -333,8 +981,8 @@ namespace GPlatesApi
 		GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
 				d_resolved_topological_boundaries,
 				topological_feature_collections,
-				rotation_model->get_reconstruction_tree_creator(), 
-				reconstruction_time,
+				d_rotation_model->get_reconstruction_tree_creator(),
+				d_reconstruction_time,
 				// Resolved topo boundaries use the resolved topo lines *and* the reconstructed non-topo geometries...
 				topological_sections_reconstruct_handles);
 
@@ -343,47 +991,26 @@ namespace GPlatesApi
 		//
 		// The resolve topology parameters currently only affect the resolving of *networks*.
 		//
-		// Extract the resolved topology parameters from the function argument.
-		std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> resolve_topology_parameters_list;
-		if (topological_features_argument.get_resolve_topology_parameters(resolve_topology_parameters_list))
+		// Each feature collection can have a different resolve topology parameters so resolve them separately.
+		const unsigned int num_feature_collections = topological_feature_collections.size();
+		for (unsigned int feature_collection_index = 0; feature_collection_index < num_feature_collections; ++feature_collection_index)
 		{
-			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					resolve_topology_parameters_list.size() == topological_feature_collections.size(),
-					GPLATES_ASSERTION_SOURCE);
+			auto topological_feature_collection = topological_feature_collections[feature_collection_index];
+			auto resolve_topology_parameters = d_resolve_topology_parameters[feature_collection_index];
 
-			// Each feature collection can have a different resolve topology parameters so resolve them separately.
-			const unsigned int num_feature_collections = topological_feature_collections.size();
-			for (unsigned int feature_collection_index = 0; feature_collection_index < num_feature_collections; ++feature_collection_index)
+			// If current feature collection did not specify resolve topology parameters then use the default parameters.
+			if (!resolve_topology_parameters)
 			{
-				auto topological_feature_collection = topological_feature_collections[feature_collection_index];
-				auto resolve_topology_parameters = resolve_topology_parameters_list[feature_collection_index];
-
-				// If current feature collection did not specify resolve topology parameters then use the default parameters.
-				if (!resolve_topology_parameters)
-				{
-					resolve_topology_parameters = default_resolve_topology_parameters;
-				}
-
-				GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
-						d_resolved_topological_networks,
-						reconstruction_time,
-						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, topological_feature_collection),
-						// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
-						topological_sections_reconstruct_handles,
-						resolve_topology_parameters.get()->get_topology_network_params());
+				resolve_topology_parameters = d_default_resolve_topology_parameters;
 			}
-		}
-		else
-		{
-			// None of the feature collections specified resolve topology parameters so just use the default for all of them.
-			// This is the most common case.
+
 			GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 					d_resolved_topological_networks,
-					reconstruction_time,
-					topological_feature_collections,
+					d_reconstruction_time,
+					std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, topological_feature_collection),
 					// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
 					topological_sections_reconstruct_handles,
-					default_resolve_topology_parameters->get_topology_network_params());
+					resolve_topology_parameters.get()->get_topology_network_params());
 		}
 	}
 
@@ -430,11 +1057,13 @@ namespace GPlatesApi
 
 	void
 	TopologicalSnapshot::export_resolved_topologies(
-			const QString &export_file_name,
+			const FilePathFunctionArgument &export_file_path,
 			ResolveTopologyType::flags_type resolve_topology_types,
 			bool wrap_to_dateline,
 			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const
 	{
+		const QString export_file_name = export_file_path.get_file_path();
+
 		// Get the resolved topologies.
 		const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> resolved_topologies =
 				get_resolved_topologies(
@@ -511,8 +1140,8 @@ namespace GPlatesApi
 		// Array index zero corresponds to an empty 'resolve_topological_section_types' where no sections are returned.
 		unsigned int array_index = 0;
 
-		if ((resolve_topological_section_types & (ResolveTopologyType::BOUNDARY | ResolveTopologyType::NETWORK)) ==
-			(ResolveTopologyType::BOUNDARY | ResolveTopologyType::NETWORK))
+		if ((resolve_topological_section_types & ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) ==
+			ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES)
 		{
 			// BOUNDARY and NETWORK
 			array_index = 1;
@@ -551,11 +1180,13 @@ namespace GPlatesApi
 
 	void
 	TopologicalSnapshot::export_resolved_topological_sections(
-			const QString &export_file_name,
+			const FilePathFunctionArgument &export_file_path,
 			ResolveTopologyType::flags_type resolve_topological_section_types,
 			bool export_topological_line_sub_segments,
 			bool wrap_to_dateline) const
 	{
+		const QString export_file_name = export_file_path.get_file_path();
+
 		// Get the resolved topological sections.
 		const std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections =
 				get_resolved_topological_sections(
@@ -823,6 +1454,190 @@ namespace GPlatesApi
 
 		return sorted_resolved_topological_sections;
 	}
+
+
+	GPlatesScribe::TranscribeResult
+	TopologicalSnapshot::transcribe_construct_data(
+			GPlatesScribe::Scribe &scribe,
+			GPlatesScribe::ConstructObject<TopologicalSnapshot> &topological_snapshot)
+	{
+		if (scribe.is_saving())
+		{
+			save_construct_data(scribe, topological_snapshot.get_object());
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> rotation_model;
+			std::vector<GPlatesFileIO::File::non_null_ptr_type> topological_files;
+			std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> resolve_topology_parameters;
+			GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters;
+			double reconstruction_time;
+			if (!load_construct_data(
+					scribe,
+					rotation_model,
+					topological_files,
+					resolve_topology_parameters,
+					default_resolve_topology_parameters,
+					reconstruction_time))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Create the topological model.
+			topological_snapshot.construct_object(
+					rotation_model,
+					topological_files,
+					resolve_topology_parameters,
+					default_resolve_topology_parameters,
+					reconstruction_time);
+		}
+
+		return GPlatesScribe::TRANSCRIBE_SUCCESS;
+	}
+
+
+	GPlatesScribe::TranscribeResult
+	TopologicalSnapshot::transcribe(
+			GPlatesScribe::Scribe &scribe,
+			bool transcribed_construct_data)
+	{
+		if (!transcribed_construct_data)
+		{
+			if (scribe.is_saving())
+			{
+				save_construct_data(scribe, *this);
+			}
+			else // loading
+			{
+				GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> rotation_model;
+				GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters;
+				if (!load_construct_data(
+						scribe,
+						rotation_model,
+						d_topological_files,
+						d_resolve_topology_parameters,
+						default_resolve_topology_parameters,
+						d_reconstruction_time))
+				{
+					return scribe.get_transcribe_result();
+				}
+				d_rotation_model = rotation_model.get();
+				d_default_resolve_topology_parameters = default_resolve_topology_parameters.get();
+
+				// Initialise resolved topologies (based on the construct parameters we just loaded).
+				//
+				// Note: The existing resolved topologies in 'this' topological snapshot must be old data
+				//       because 'transcribed_construct_data' is false (ie, it was not transcribed) and so 'this'
+				//       object must've been created first (using unknown constructor arguments) and *then* transcribed.
+				initialise_resolved_topologies();
+			}
+		}
+
+		return GPlatesScribe::TRANSCRIBE_SUCCESS;
+	}
+
+
+	void
+	TopologicalSnapshot::save_construct_data(
+			GPlatesScribe::Scribe &scribe,
+			const TopologicalSnapshot &topological_snapshot)
+	{
+		// Save the rotation model.
+		scribe.save(TRANSCRIBE_SOURCE, topological_snapshot.d_rotation_model, "rotation_model");
+
+		const GPlatesScribe::ObjectTag files_tag("files");
+
+		// Save number of topological files.
+		const unsigned int num_files = topological_snapshot.d_topological_files.size();
+		scribe.save(TRANSCRIBE_SOURCE, num_files, files_tag.sequence_size());
+
+		// Save the topological files (feature collections and their filenames).
+		for (unsigned int file_index = 0; file_index < num_files; ++file_index)
+		{
+			const auto feature_collection_file = topological_snapshot.d_topological_files[file_index];
+
+			const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection(
+					feature_collection_file->get_reference().get_feature_collection().handle_ptr());
+			const QString filename =
+					feature_collection_file->get_reference().get_file_info().get_qfileinfo().absoluteFilePath();
+
+			scribe.save(TRANSCRIBE_SOURCE, feature_collection, files_tag[file_index]("feature_collection"));
+			scribe.save(TRANSCRIBE_SOURCE, filename, files_tag[file_index]("filename"));
+		}
+
+		// Save the resolved topology parameters.
+		scribe.save(TRANSCRIBE_SOURCE, topological_snapshot.d_resolve_topology_parameters, "resolve_topology_parameters");
+		scribe.save(TRANSCRIBE_SOURCE, topological_snapshot.d_default_resolve_topology_parameters, "default_resolve_topology_parameters");
+
+		// Save the reconstruction time.
+		scribe.save(TRANSCRIBE_SOURCE, topological_snapshot.d_reconstruction_time, "reconstruction_time");
+	}
+
+
+	bool
+	TopologicalSnapshot::load_construct_data(
+			GPlatesScribe::Scribe &scribe,
+			GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> &rotation_model,
+			std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+			const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+			GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> &default_resolve_topology_parameters,
+			double &reconstruction_time)
+	{
+		// Load the rotation model.
+		rotation_model = scribe.load<RotationModel::non_null_ptr_type>(TRANSCRIBE_SOURCE, "rotation_model");
+		if (!rotation_model.is_valid())
+		{
+			return false;
+		}
+
+		const GPlatesScribe::ObjectTag files_tag("files");
+
+		// Number of topological files.
+		unsigned int num_files;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, num_files, files_tag.sequence_size()))
+		{
+			return false;
+		}
+
+		// Load the topological files (feature collections and their filenames).
+		for (unsigned int file_index = 0; file_index < num_files; ++file_index)
+		{
+			GPlatesScribe::LoadRef<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collection =
+					scribe.load<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(
+							TRANSCRIBE_SOURCE,
+							files_tag[file_index]("feature_collection"));
+			if (!feature_collection.is_valid())
+			{
+				return false;
+			}
+
+			QString filename;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, filename, files_tag[file_index]("filename")))
+			{
+				return false;
+			}
+
+			topological_files.push_back(
+					GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(filename), feature_collection));
+		}
+
+		// Load the resolved topology parameters.
+		default_resolve_topology_parameters = scribe.load<ResolveTopologyParameters::non_null_ptr_to_const_type>(
+				TRANSCRIBE_SOURCE, "default_resolve_topology_parameters");
+		if (!default_resolve_topology_parameters.is_valid() ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, resolve_topology_parameters, "resolve_topology_parameters"))
+		{
+			return false;
+		}
+
+		// Load the reconstruction time.
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, reconstruction_time, "reconstruction_time"))
+		{
+			return false;
+		}
+
+		return true;
+	}
 }
 
 	
@@ -837,6 +1652,714 @@ export_topological_snapshot()
 
 
 	//
+	// PlateBoundaryStatistic - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<GPlatesAppLogic::PlateBoundaryStat>(
+					"PlateBoundaryStatistic",
+					"Statistics at a point *on* a plate boundary.\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_plate_boundary_statistics` in the *Primer* documentation.\n"
+					"\n"
+					"PlateBoundaryStatistics are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
+					"\n"
+					".. versionadded:: 0.47\n",
+					bp::no_init)
+		.add_property("shared_sub_segment",
+				&GPlatesAppLogic::PlateBoundaryStat::get_shared_sub_segment,
+				"Shared sub-segment containing the :attr:`boundary point <boundary_point>`.\n"
+				"\n"
+				"  :type: :class:`ResolvedTopologicalSharedSubSegment`\n"
+				"\n"
+				"  .. note:: Another way to get the shared sub-segment is to call :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics` "
+				"with ``return_shared_sub_segment_dict=True`` (which associates each shared sub-segment with a list of boundary point statistics).\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_feature`\n"
+				"\n"
+				".. versionadded:: 1.0\n")
+		.add_property("boundary_feature",
+				&GPlatesApi::plate_boundary_statistic_get_boundary_feature,
+				"Boundary feature associated with the :attr:`boundary point <boundary_point>`.\n"
+				"\n"
+				"  :type: :class:`Feature`\n"
+				"\n"
+				"  If the :attr:`shared sub-segment <shared_sub_segment>` containing the :attr:`boundary point <boundary_point>` "
+				"is from a :class:`ReconstructedFeatureGeometry` then the returned feature matches the shared sub-segment's feature. "
+				"However, if the shared sub-segment is from a :class:`ResolvedTopologicalLine` then the returned feature matches one of "
+				"the resolved topological line's :meth:`sub-segments <ResolvedTopologicalLine.get_line_sub_segments>` (the one containing the boundary point).\n"
+				"\n"
+				"  .. note:: An example where this is useful is along a deforming trench line when you need to know the reconstruction plate ID "
+				"associated with the sub-segment of the trench line that the :attr:`boundary point <boundary_point>` is on, since that plate ID "
+				"more accurately represents motion of the trench near the boundary point.\n"
+				"\n"
+				"  .. seealso:: :attr:`shared_sub_segment`\n"
+				"\n"
+				".. versionadded:: 1.0\n")
+		.add_property("boundary_point",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_boundary_point, bp::return_value_policy<bp::copy_const_reference>()),
+				"Position of the point on a plate boundary.\n"
+				"\n"
+				"  :type: :class:`PointOnSphere`\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_length` and :attr:`boundary_normal`\n")
+		.add_property("boundary_length",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_length,
+				"Length (in radians) subtended on the plate boundary (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_point` and :attr:`boundary_normal`\n")
+		.add_property("boundary_normal",
+				&GPlatesApi::plate_boundary_statistic_get_boundary_normal,
+				"Normal to the plate boundary (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D`\n"
+				"\n"
+				"  .. note:: This is the unit-length normal of the :class:`great circle arc <GreatCircleArc>` segment (that the :attr:`boundary point <boundary_point>` is located on). "
+				"And, as such, the normal is to the *left* of the segment (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_point` and :attr:`boundary_length`\n")
+		.add_property("boundary_normal_azimuth",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_normal_azimuth,
+				"Clockwise (East-wise) angle in radians (in the range :math:`[0, 2\\pi]`) from North to the :attr:`plate boundary normal <boundary_normal>` "
+				"(at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    local_cartesian = pygplates.LocalCartesian(plate_boundary_stat.boundary_point)\n"
+				"    _, azimuth, _ = local_cartesian.from_geocentric_to_magnitude_azimuth_inclination(plate_boundary_stat.boundary_normal)\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_normal`\n")
+		.add_property("boundary_velocity",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity, bp::return_value_policy<bp::copy_const_reference>()),
+				"Velocity vector of the plate boundary (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D`\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  This is the velocity of the plate boundary itself. In other words, the velocity of the :class:`topological section <ResolvedTopologicalSection>` "
+				"that contributes to the plate boundary at the :attr:`boundary point <boundary_point>`.\n"
+				"\n"
+				"  .. seealso:: :attr:`left_plate_velocity` and :attr:`right_plate_velocity`\n")
+		.add_property("boundary_velocity_magnitude",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity_magnitude,
+				"Magnitude of velocity vector of the plate boundary (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    plate_boundary_stat.boundary_velocity.get_magnitude()\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_velocity`\n")
+		.add_property("boundary_velocity_obliquity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity_obliquity,
+				"Obliquity (in radians) of velocity vector of the plate boundary (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`boundary velocity magnitude <boundary_velocity_magnitude>` is zero.\n"
+				"\n"
+				"  This is the angle of the :attr:`boundary velocity vector <boundary_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. "
+				"It is in the range :math:`[-\\pi, \\pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).\n"
+				"\n"
+				"  Since the :attr:`boundary normal <boundary_normal>` is to the *left*, an obliquity angle satisfying :math:`\\lvert obliquity \\rvert < \\frac{\\pi}{2}` "
+				"represents movement towards the *left* plate and an angle satisfying :math:`\\lvert obliquity \\rvert > \\frac{\\pi}{2}` represents movement towards *right* plate.\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_velocity`\n")
+		.add_property("boundary_velocity_orthogonal",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity_orthogonal,
+				"Orthogonal component (in direction of boundary normal) of velocity vector of the plate boundary (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    boundary_velocity_orthogonal = (plate_boundary_stat.boundary_velocity_magnitude *\n"
+				"                                    math.cos(plate_boundary_stat.boundary_velocity_obliquity))\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_velocity`\n")
+		.add_property("boundary_velocity_parallel",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity_parallel,
+				"Parallel component (in direction along boundary line) of velocity vector of the plate boundary (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    boundary_velocity_parallel = (plate_boundary_stat.boundary_velocity_magnitude *\n"
+				"                                  math.sin(plate_boundary_stat.boundary_velocity_obliquity))\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`boundary_velocity`\n")
+		.add_property("left_plate",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_left_plate, bp::return_value_policy<bp::copy_const_reference>()),
+				"The left plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: :class:`TopologyPointLocation`\n"
+				"\n"
+				"  .. note:: :meth:`TopologyPointLocation.not_located_in_resolved_topology` will return ``True`` if there is no plate (or network) to the left "
+				"(when following the vertices of the :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the "
+				":attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  To get the polygon boundary of the left resolved topological :class:`plate <ResolvedTopologicalBoundary>` or "
+				":class:`network <ResolvedTopologicalNetwork>` (or ``None`` if neither):\n"
+				"  ::\n"
+				"\n"
+				"    left_plate = plate_boundary_stat.left_plate\n"
+				"    if left_plate.located_in_resolved_boundary():\n"
+				"        left_topology_boundary = left_plate.located_in_resolved_boundary().get_resolved_boundary()\n"
+				"    elif left_plate.located_in_resolved_network():\n"
+				"        left_topology_boundary = left_plate.located_in_resolved_network().get_resolved_boundary()\n"
+				"    else:\n"
+				"        left_topology_boundary = None\n"
+				"\n"
+				"  If both a left :class:`plate <ResolvedTopologicalBoundary>` and a left :class:`network <ResolvedTopologicalNetwork>` share the plate boundary "
+				"(at the :attr:`boundary point <boundary_point>`) then the :class:`network <ResolvedTopologicalNetwork>` is returned. This is because a network "
+				"typically overlays its underlying plate. The same applies if there are *multiple* left plates and a single overlayed left network. However, if there are "
+				"multiple overlaying left networks then it is undefined which network is returned (the topological model was likely constructed incorrectly in this case). "
+				"Furthermore, if a left plate shares the plate boundary but an overlaying network does not (eg, the network crosses the plate boundary rather than sharing "
+				"a boundary with it) then the left plate is returned (the network is not discovered in this case).\n"
+				"\n"
+				"  .. seealso:: :attr:`right_plate`\n")
+		.add_property("right_plate",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_right_plate, bp::return_value_policy<bp::copy_const_reference>()),
+				"The right plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: :class:`TopologyPointLocation`\n"
+				"\n"
+				"  .. note:: :meth:`TopologyPointLocation.not_located_in_resolved_topology` will return ``True`` if there is no plate (or network) to the right "
+				"(when following the vertices of the :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the "
+				":attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  To get the polygon boundary of the right resolved topological :class:`plate <ResolvedTopologicalBoundary>` or "
+				":class:`network <ResolvedTopologicalNetwork>` (or ``None`` if neither):\n"
+				"  ::\n"
+				"\n"
+				"    right_plate = plate_boundary_stat.right_plate\n"
+				"    if right_plate.located_in_resolved_boundary():\n"
+				"        right_topology_boundary = right_plate.located_in_resolved_boundary().get_resolved_boundary()\n"
+				"    elif right_plate.located_in_resolved_network():\n"
+				"        right_topology_boundary = right_plate.located_in_resolved_network().get_resolved_boundary()\n"
+				"    else:\n"
+				"        right_topology_boundary = None\n"
+				"\n"
+				"  If both a right :class:`plate <ResolvedTopologicalBoundary>` and a right :class:`network <ResolvedTopologicalNetwork>` share the plate boundary "
+				"(at the :attr:`boundary point <boundary_point>`) then the :class:`network <ResolvedTopologicalNetwork>` is returned. This is because a network "
+				"typically overlays its underlying plate. The same applies if there are *multiple* right plates and a single overlayed right network. However, if there are "
+				"multiple overlaying right networks then it is undefined which network is returned (the topological model was likely constructed incorrectly in this case). "
+				"Furthermore, if a right plate shares the plate boundary but an overlaying network does not (eg, the network crosses the plate boundary rather than sharing "
+				"a boundary with it) then the right plate is returned (the network is not discovered in this case).\n"
+				"\n"
+				"  .. seealso:: :attr:`left_plate`\n")
+		.add_property("left_plate_velocity",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity, bp::return_value_policy<bp::copy_const_reference>()),
+				"Velocity vector of the left plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D` or ``None``\n"
+				"\n"
+				"  Returns ``None`` if there is no plate (or network) to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on). "
+				"See :attr:`left_plate` for details on how the left plate is determined.\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`right_plate_velocity` and :attr:`boundary_velocity`\n")
+		.add_property("left_plate_velocity_magnitude",
+				&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity_magnitude,
+				"Magnitude of velocity vector of the left plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.left_plate_velocity:\n"
+				"        left_plate_velocity_magnitude = plate_boundary_stat.left_plate_velocity.get_magnitude()\n"
+				"    else:\n"
+				"        left_plate_velocity_magnitude = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`left_plate_velocity`\n")
+		.add_property("left_plate_velocity_obliquity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity_obliquity,
+				"Obliquity (in radians) of velocity vector of the left plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`left plate velocity magnitude <left_plate_velocity_magnitude>` is zero.\n"
+				"\n"
+				"  This is the angle of the :attr:`left plate velocity vector <left_plate_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. "
+				"It is in the range :math:`[-\\pi, \\pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).\n"
+				"\n"
+				"  Since the :attr:`boundary normal <boundary_normal>` is to the *left*, an obliquity angle satisfying :math:`\\lvert obliquity \\rvert < \\frac{\\pi}{2}` "
+				"represents movement of the left plate *away* from the boundary and an angle satisfying :math:`\\lvert obliquity \\rvert > \\frac{\\pi}{2}` represents "
+				"movement *towards* the boundary.\n"
+				"\n"
+				"  .. seealso:: :attr:`left_plate_velocity`\n")
+		.add_property("left_plate_velocity_orthogonal",
+				&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity_orthogonal,
+				"Orthogonal component (in direction of boundary normal) of velocity vector of the left plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.left_plate_velocity:\n"
+				"        left_plate_velocity_orthogonal = (plate_boundary_stat.left_plate_velocity_magnitude *\n"
+				"                                          math.cos(plate_boundary_stat.left_plate_velocity_obliquity))\n"
+				"    else:\n"
+				"        left_plate_velocity_orthogonal = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`left_plate_velocity`\n")
+		.add_property("left_plate_velocity_parallel",
+				&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity_parallel,
+				"Parallel component (in direction along boundary line) of velocity vector of the left plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.left_plate_velocity:\n"
+				"        left_plate_velocity_parallel = (plate_boundary_stat.left_plate_velocity_magnitude *\n"
+				"                                        math.sin(plate_boundary_stat.left_plate_velocity_obliquity))\n"
+				"    else:\n"
+				"        left_plate_velocity_parallel = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`left_plate_velocity`\n")
+		.add_property("right_plate_velocity",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity, bp::return_value_policy<bp::copy_const_reference>()),
+				"Velocity vector of the right plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D` or ``None``\n"
+				"\n"
+				"  Returns ``None`` if there is no plate (or network) to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on). "
+				"See :attr:`right_plate` for details on how the right plate is determined.\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`left_plate_velocity` and :attr:`boundary_velocity`\n")
+		.add_property("right_plate_velocity_magnitude",
+				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity_magnitude,
+				"Magnitude of velocity vector of the right plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.right_plate_velocity:\n"
+				"        right_plate_velocity_magnitude = plate_boundary_stat.right_plate_velocity.get_magnitude()\n"
+				"    else:\n"
+				"        right_plate_velocity_magnitude = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`right_plate_velocity`\n")
+		.add_property("right_plate_velocity_obliquity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity_obliquity,
+				"Obliquity (in radians) of velocity vector of the right plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`right plate velocity magnitude <right_plate_velocity_magnitude>` is zero.\n"
+				"\n"
+				"  This is the angle of the :attr:`right plate velocity vector <right_plate_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. "
+				"It is in the range :math:`[-\\pi, \\pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).\n"
+				"\n"
+				"  Since the :attr:`boundary normal <boundary_normal>` is to the *left*, an obliquity angle satisfying :math:`\\lvert obliquity \\rvert < \\frac{\\pi}{2}` "
+				"represents movement of the right plate *towards* the boundary and an angle satisfying :math:`\\lvert obliquity \\rvert > \\frac{\\pi}{2}` represents "
+				"movement *away* from the boundary.\n"
+				"\n"
+				"  .. seealso:: :attr:`right_plate_velocity`\n")
+		.add_property("right_plate_velocity_orthogonal",
+				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity_orthogonal,
+				"Orthogonal component (in direction of boundary normal) of velocity vector of the right plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.right_plate_velocity:\n"
+				"        right_plate_velocity_orthogonal = (plate_boundary_stat.right_plate_velocity_magnitude *\n"
+				"                                           math.cos(plate_boundary_stat.right_plate_velocity_obliquity))\n"
+				"    else:\n"
+				"        right_plate_velocity_orthogonal = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`right_plate_velocity`\n")
+		.add_property("right_plate_velocity_parallel",
+				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity_parallel,
+				"Parallel component (in direction along boundary line) of velocity vector of the right plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.right_plate_velocity:\n"
+				"        right_plate_velocity_parallel = (plate_boundary_stat.right_plate_velocity_magnitude *\n"
+				"                                         math.sin(plate_boundary_stat.right_plate_velocity_obliquity))\n"
+				"    else:\n"
+				"        right_plate_velocity_parallel = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`right_plate_velocity`\n")
+		.add_property("left_plate_strain_rate",
+				&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_strain_rate,
+				"Strain rate of the left plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: :class:`StrainRate`\n"
+				"\n"
+				"  Returns ``pygplates.StrainRate.zero`` (no deformation) if there's no left deforming network (eg, there's just a rigid plate with no "
+				"deforming network overlaid on top) or if :attr:`boundary point <boundary_point>` is inside an interior rigid block of the left deforming network. "
+				"See :attr:`left_plate` for details on how the left plate is determined.\n"
+				"\n"
+				"  .. note:: Strain rate in a deforming network is calculated from the spatial gradients of velocity where the velocities are calculated over "
+				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
+				"\n"
+				"  .. seealso:: :attr:`left_plate` and :attr:`left_plate_velocity`\n")
+		.add_property("right_plate_strain_rate",
+				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_strain_rate,
+				"Strain rate of the right plate (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: :class:`StrainRate`\n"
+				"\n"
+				"  Returns ``pygplates.StrainRate.zero`` (no deformation) if there's no right deforming network (eg, there's just a rigid plate with no "
+				"deforming network overlaid on top) or if :attr:`boundary point <boundary_point>` is inside an interior rigid block of the right deforming network. "
+				"See :attr:`right_plate` for details on how the right plate is determined.\n"
+				"\n"
+				"  .. note:: Strain rate in a deforming network is calculated from the spatial gradients of velocity where the velocities are calculated over "
+				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
+				"\n"
+				"  .. seealso:: :attr:`right_plate` and :attr:`right_plate_velocity`\n")
+		.add_property("convergence_velocity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity,
+				"Convergence velocity vector (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D` or ``None``\n"
+				"\n"
+				"  This is the velocity of the *right* plate relative to the *left* plate.\n"
+				"\n"
+				"  .. note:: Returns ``None`` if there is no plate (or network) on the left or no plate (or network) on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`left_plate_velocity` and :attr:`right_plate_velocity`\n")
+		.add_property("convergence_velocity_magnitude",
+				&GPlatesApi::plate_boundary_statistic_get_convergence_velocity_magnitude,
+				"Magnitude of convergence velocity vector (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) on the left or no plate (or network) on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`convergence velocity <convergence_velocity>` has :meth:`zero magnitude <Vector3D.is_zero_magnitude>`.\n"
+				"\n"
+				"  The magnitude is always positive (or zero or ``float('nan')``).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.convergence_velocity:\n"
+				"        if plate_boundary_stat.convergence_velocity.is_zero_magnitude():\n"
+				"            convergence_velocity_magnitude = 0.0\n"
+				"        else:\n"
+				"            convergence_velocity_magnitude = plate_boundary_stat.convergence_velocity.get_magnitude()\n"
+				"    else:\n"
+				"        convergence_velocity_magnitude = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`convergence_velocity_signed_magnitude` and :attr:`convergence_velocity`\n")
+		.add_property("convergence_velocity_signed_magnitude",
+				&GPlatesApi::plate_boundary_statistic_get_convergence_velocity_signed_magnitude,
+				"Signed magnitude of convergence velocity vector (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) on the left or no plate (or network) on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`convergence velocity <convergence_velocity>` has :meth:`zero magnitude <Vector3D.is_zero_magnitude>`.\n"
+				"\n"
+				"  The *signed* magnitude is positive if the plates are *converging* and negative if they're *diverging*. Otherwise it's zero or ``float('nan')``.\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    convergence_velocity_signed_magnitude = plate_boundary_stat.convergence_velocity_magnitude\n"
+				"    if (not math.isnan(convergence_velocity_signed_magnitude) and\n"
+				"        abs(plate_boundary_stat.convergence_obliquity) > math.pi/2):\n"
+				"        convergence_velocity_signed_magnitude = -convergence_velocity_signed_magnitude\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`convergence_velocity_magnitude` and :attr:`convergence_velocity`\n")
+		.add_property("convergence_velocity_obliquity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity_obliquity,
+				"Obliquity (in radians) of the convergence velocity vector (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) on the left or no plate (or network) on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`convergence velocity magnitude <convergence_velocity_magnitude>` is zero.\n"
+				"\n"
+				"  This is the angle of the :attr:`convergence velocity vector <convergence_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. "
+				"It is in the range :math:`[-\\pi, \\pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).\n"
+				"\n"
+				"  Since the :attr:`boundary normal <boundary_normal>` is to the *left* and the :attr:`convergence velocity <convergence_velocity>` is the "
+				"velocity of the *right* plate relative to the *left* plate, an obliquity angle satisfying :math:`\\lvert obliquity \\rvert < \\frac{\\pi}{2}` "
+				"represents *convergence* and an angle satisfying :math:`\\lvert obliquity \\rvert > \\frac{\\pi}{2}` represents *divergence*.\n"
+				"\n"
+				"  .. seealso:: :attr:`convergence_velocity`\n")
+		.add_property("convergence_velocity_orthogonal",
+				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity_orthogonal,
+				"Orthogonal component (in direction of boundary normal) of convergence velocity vector (at the v).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) on the left or no plate (or network) on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.convergence_velocity:\n"
+				"        convergence_velocity_orthogonal = (plate_boundary_stat.convergence_velocity_magnitude *\n"
+				"                                           math.cos(plate_boundary_stat.convergence_velocity_obliquity))\n"
+				"    else:\n"
+				"        convergence_velocity_orthogonal = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`convergence_velocity`\n")
+		.add_property("convergence_velocity_parallel",
+				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity_parallel,
+				"Parallel component (in direction along boundary line) of convergence velocity vector (at the :attr:`boundary point <boundary_point>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate (or network) on the left or no plate (or network) on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`boundary point <boundary_point>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.convergence_velocity:\n"
+				"        convergence_velocity_parallel = (plate_boundary_stat.convergence_velocity_magnitude *\n"
+				"                                         math.sin(plate_boundary_stat.convergence_velocity_obliquity))\n"
+				"    else:\n"
+				"        convergence_velocity_parallel = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`convergence_velocity`\n")
+		.add_property("distance_from_start_of_shared_sub_segment",
+				&GPlatesAppLogic::PlateBoundaryStat::get_distance_from_start_of_shared_sub_segment,
+				"Distance (in radians) from the *start* of the shared sub-segment geometry.\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  A :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` represents a part of a resolved topological section that *uniquely* contributes "
+				"to the boundaries of one or more resolved topologies. So this is the distance from the *start* of that shared part.\n"
+				"\n"
+				"  .. note:: The shared sub-segment geometry *includes* any rubber banding. So if the shared sub-segment (containing the :attr:`boundary point <boundary_point>`) "
+				"is the first shared sub-segment of the topological section, and the start of the topological section has rubber banding, then the *start* of the "
+				"shared sub-segment will be halfway along the rubber band (the line segment joining start of topological section with adjacent topological section in a plate boundary).\n"
+				"\n"
+				"  To find the distance from the :attr:`boundary point <boundary_point>` to the nearest edge (start or end) of the shared sub-segment "
+				"(containing the boundary point):\n"
+				"  ::\n"
+				"\n"
+				"    distance_to_nearest_shared_edge_kms = (pygplates.Earth.mean_radius_in_kms *\n"
+				"                                           min(plate_boundary_stat.distance_from_start_of_shared_sub_segment,\n"
+				"                                               plate_boundary_stat.distance_to_end_of_shared_sub_segment))\n"
+				"\n"
+				"  .. seealso:: :attr:`distance_from_start_of_topological_section`\n")
+		.add_property("distance_to_end_of_shared_sub_segment",
+				&GPlatesAppLogic::PlateBoundaryStat::get_distance_to_end_of_shared_sub_segment,
+				"Distance (in radians) to the *end* of the shared sub-segment geometry.\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  A :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` represents a part of a resolved topological section that *uniquely* contributes "
+				"to the boundaries of one or more resolved topologies. So this is the distance to the *end* of that shared part.\n"
+				"\n"
+				"  .. note:: The shared sub-segment geometry *includes* any rubber banding. So if the shared sub-segment (containing the :attr:`boundary point <boundary_point>`) "
+				"is the last shared sub-segment of the topological section, and the end of the topological section has rubber banding, then the *end* of the "
+				"shared sub-segment will be halfway along the rubber band (the line segment joining end of topological section with adjacent topological section in a plate boundary).\n"
+				"\n"
+				"  To find the distance from the :attr:`boundary point <boundary_point>` to the nearest edge (start or end) of the shared sub-segment "
+				"(containing the boundary point):\n"
+				"  ::\n"
+				"\n"
+				"    distance_to_nearest_shared_edge_kms = (pygplates.Earth.mean_radius_in_kms *\n"
+				"                                           min(plate_boundary_stat.distance_from_start_of_shared_sub_segment,\n"
+				"                                               plate_boundary_stat.distance_to_end_of_shared_sub_segment))\n"
+				"\n"
+				"  .. seealso:: :attr:`distance_to_end_of_topological_section`\n")
+		.add_property("signed_distance_from_start_of_topological_section",
+				&GPlatesAppLogic::PlateBoundaryStat::get_signed_distance_from_start_of_topological_section,
+				"Signed distance (in radians) from the *start* of the resolved topological section geometry.\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  This distance is *signed* because it is negative if the :attr:`boundary point <boundary_point>` is on a rubber-band part of a plate boundary. "
+				"That is, it's not on the actual :meth:`resolved topological section geometry <ResolvedTopologicalSection.get_topological_section_geometry>` itself but on the "
+				"rubber band that joins the *start* of the resolved topological section geometry  with the start or end of an adjacent resolved topological section (of that plate boundary). "
+				"Rubber banding happens when two adjacent topological sections fail to intersect each other. It's usually the result of an error in the creation of the topological model, "
+				"but can happen if points (instead of lines) are directly added to  plate boundaries (typically points are first added to :meth:`topological lines <ResolvedTopologicalLine>` "
+				"which are then, in turn, added to plate boundaries).\n"
+				"\n"
+				"  To see if the :attr:`boundary point <boundary_point>` is on a rubber band:\n"
+				"  ::\n"
+				"\n"
+				"    is_on_rubber_band = (plate_boundary_stat.signed_distance_from_start_of_topological_section < 0 ||\n"
+				"                         plate_boundary_stat.signed_distance_to_end_of_topological_section < 0)\n"
+				"\n"
+				"  .. seealso:: :attr:`distance_from_start_of_topological_section`\n")
+		.add_property("distance_from_start_of_topological_section",
+				&GPlatesAppLogic::PlateBoundaryStat::get_distance_from_start_of_topological_section,
+				"Distance (in radians) from the *start* of the resolved topological section geometry.\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  For example, if the topological section is a subduction zone then this could be considered the distance from the start of the trench "
+				"(depending on how the topological model is built).\n"
+				"\n"
+				"  This is **not** necessarily from the start of the *entire* :meth:`topological section geometry <ResolvedTopologicalSection.get_topological_section_geometry>`. "
+				"A resolved topological section represents a distinct feature that is used by one or more plates as part of their boundaries. "
+				"But typically only the interior part of the topological section polyline actually contributes to plate boundaries "
+				"(due to the intersecting adjacent topological sections when resolving the boundary of a plate at a particular reconstruction time). "
+				"And there can be more than one of these interior intersected segments for each topological section geometry "
+				"(these are its :meth:`shared sub-segments <ResolvedTopologicalSection.get_shared_sub_segments>`). "
+				"So, this distance is the distance from the *start* of the first vertex (eg, intersection) of all these shared sub-segments along the topological section geometry.\n"
+				"\n"
+				"  To find the distance from the :attr:`boundary point <boundary_point>` to the nearest edge (start or end) of the topological section "
+				"(containing the boundary point):\n"
+				"  ::\n"
+				"\n"
+				"    distance_to_nearest_edge_kms = (pygplates.Earth.mean_radius_in_kms *\n"
+				"                                    min(plate_boundary_stat.distance_from_start_of_topological_section,\n"
+				"                                        plate_boundary_stat.distance_to_end_of_topological_section))\n"
+				"\n"
+				"  .. note:: This is the absolute value of :attr:`signed_distance_from_start_of_topological_section` and hence only differs from it when the "
+				":attr:`boundary point <boundary_point>` is on a rubber-band part of a plate boundary (where it'll be positive here and negative there).\n"
+				"\n"
+				"  .. seealso:: :attr:`distance_from_start_of_shared_sub_segment`\n")
+		.add_property("signed_distance_to_end_of_topological_section",
+				&GPlatesAppLogic::PlateBoundaryStat::get_signed_distance_to_end_of_topological_section,
+				"Signed distance (in radians) to the *end* of the resolved topological section geometry.\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  This distance is *signed* because it is negative if the :attr:`boundary point <boundary_point>` is on a rubber-band part of a plate boundary. "
+				"That is, it's not on the actual :meth:`resolved topological section geometry <ResolvedTopologicalSection.get_topological_section_geometry>` itself but on the "
+				"rubber band that joins the *end* of the resolved topological section geometry  with the start or end of an adjacent resolved topological section (of that plate boundary). "
+				"Rubber banding happens when two adjacent topological sections fail to intersect each other. It's usually the result of an error in the creation of the topological model, "
+				"but can happen if points (instead of lines) are directly added to  plate boundaries (typically points are first added to :meth:`topological lines <ResolvedTopologicalLine>` "
+				"which are then, in turn, added to plate boundaries).\n"
+				"\n"
+				"  To see if the :attr:`boundary point <boundary_point>` is on a rubber band:\n"
+				"  ::\n"
+				"\n"
+				"    is_on_rubber_band = (plate_boundary_stat.signed_distance_from_start_of_topological_section < 0 ||\n"
+				"                         plate_boundary_stat.signed_distance_to_end_of_topological_section < 0)\n"
+				"\n"
+				"  .. seealso:: :attr:`distance_to_end_of_topological_section`\n")
+		.add_property("distance_to_end_of_topological_section",
+				&GPlatesAppLogic::PlateBoundaryStat::get_distance_to_end_of_topological_section,
+				"Distance (in radians) to the *end* of the resolved topological section geometry.\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  For example, if the topological section is a subduction zone then this could be considered the distance to the end of the trench "
+				"(depending on how the topological model is built).\n"
+				"\n"
+				"  This is **not** necessarily to the end of the *entire* :meth:`topological section geometry <ResolvedTopologicalSection.get_topological_section_geometry>`. "
+				"A resolved topological section represents a distinct feature that is used by one or more plates as part of their boundaries. "
+				"But typically only the interior part of the topological section polyline actually contributes to plate boundaries "
+				"(due to the intersecting adjacent topological sections when resolving the boundary of a plate at a particular reconstruction time). "
+				"And there can be more than one of these interior intersected segments for each topological section geometry "
+				"(these are its :meth:`shared sub-segments <ResolvedTopologicalSection.get_shared_sub_segments>`). "
+				"So, this distance is the distance to the *end* of the last vertex (eg, intersection) of all these shared sub-segments along the topological section geometry.\n"
+				"\n"
+				"  To find the distance from the :attr:`boundary point <boundary_point>` to the nearest edge (start or end) of the topological section "
+				"(containing the boundary point):\n"
+				"  ::\n"
+				"\n"
+				"    distance_to_nearest_edge_kms = (pygplates.Earth.mean_radius_in_kms *\n"
+				"                                    min(plate_boundary_stat.distance_from_start_of_topological_section,\n"
+				"                                        plate_boundary_stat.distance_to_end_of_topological_section))\n"
+				"\n"
+				"  .. note:: This is the absolute value of :attr:`signed_distance_to_end_of_topological_section` and hence only differs from it when the "
+				":attr:`boundary point <boundary_point>` is on a rubber-band part of a plate boundary (where it'll be positive here and negative there).\n"
+				"\n"
+				"  .. seealso:: :attr:`distance_to_end_of_shared_sub_segment`\n")
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+	;
+
+	// Enable boost::optional<PlateBoundaryStat> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::PlateBoundaryStat>();
+
+
+	//
 	// TopologicalSnapshot - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
@@ -844,9 +2367,16 @@ export_topological_snapshot()
 			GPlatesApi::TopologicalSnapshot::non_null_ptr_type,
 			boost::noncopyable>(
 					"TopologicalSnapshot",
-					"A snapshot of topologies at a specific geological time.\n"
+					"A snapshot of resolved topological features (lines, boundaries and networks) at a specific geological time.\n"
 					"\n"
-					"  .. versionadded:: 0.30\n",
+					".. seealso:: :ref:`pygplates_primer_topological_snapshot` in the *Primer* documentation.\n"
+					"\n"
+					"A *TopologicalSnapshot* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionadded:: 0.30\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -866,40 +2396,45 @@ export_topological_snapshot()
 			"  :param topological_features: The topological boundary and/or network features and the "
 			"topological section features they reference (regular and topological lines) as a feature collection, "
 			"or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) "
-			"of any combination of those four types. Note: Each sequence entry can optionally be a 2-tuple "
+			"of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple "
 			"(entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.\n"
-			"  :type topological_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"  :type topological_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
-			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
-			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+			"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
+			"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
+			"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
+			"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param reconstruction_time: the specific geological time to resolve to\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 			"  :param anchor_plate_id: The anchored plate id used for all reconstructions "
 			"(resolving topologies, and reconstructing regular features). "
-			"Defaults to the default anchor plate of *rotation_model*.\n"
+			"Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).\n"
 			"  :type anchor_plate_id: int\n"
 			"  :param default_resolve_topology_parameters: Default parameters used to resolve topologies. "
 			"Note that these can optionally be overridden in *topological_features*. "
 			"Defaults to :meth:`default-constructed ResolveTopologyParameters<ResolveTopologyParameters.__init__>`).\n"
 			"  :type default_resolve_topology_parameters: :class:`ResolveTopologyParameters`\n"
 			"\n"
-			"  Create a topological snapshot by resolving topologies at a specific reconstruction time:\n"
-			"  ::\n"
-			"\n"
-			"    reconstruction_time = 100\n"
-			"    topology_features = pygplates.FeatureCollection('topologies.gpml')\n"
-			"    rotation_model = pygplates.RotationModel('rotations.rot')\n"
-			"    topological_snapshot = pygplates.TopologicalSnapshot(topology_features, rotation_model, reconstruction_time)\n"
+			"  .. seealso:: :ref:`pygplates_primer_topological_snapshot` in the *Primer* documentation.\n"
 			"\n"
 			"  .. versionchanged:: 0.31\n"
-			"     Added *default_resolve_topology_parameters* argument.\n")
+			"     Added *default_resolve_topology_parameters* argument.\n"
+			"\n"
+			"  .. versionchanged:: 0.44\n"
+			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::TopologicalSnapshot::non_null_ptr_type>())
 		.def("get_resolved_topologies",
 				&GPlatesApi::topological_snapshot_get_resolved_topologies,
 				(bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
 					bp::arg("same_order_as_topological_features") = false),
-				"get_resolved_topologies([resolve_topology_types], [same_order_as_topological_features=False])\n"
+				"get_resolved_topologies([resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
+				"[same_order_as_topological_features=False])\n"
 				"  Returns the resolved topologies of the requested type(s).\n"
 				"\n"
 				"  :param resolve_topology_types: specifies the resolved topology types to return - defaults "
@@ -919,18 +2454,22 @@ export_topological_snapshot()
 				"  :rtype: ``list``\n"
 				"  :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that "
 				"is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or "
-				"``pygplates.ResolveTopologyType.network``\n")
+				"``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topologies are sorted in the order of their "
+				"respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.\n")
 		.def("export_resolved_topologies",
 				&GPlatesApi::topological_snapshot_export_resolved_topologies,
 				(bp::arg("export_filename"),
 					bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
 					bp::arg("wrap_to_dateline") = true,
 					bp::arg("force_boundary_orientation") = boost::optional<GPlatesMaths::PolygonOrientation::Orientation>()),
-				"export_resolved_topologies(export_filename, [resolve_topology_types], [wrap_to_dateline=True], [force_boundary_orientation])\n"
-				"  Exports the resolved topologies to a file.\n"
+				"export_resolved_topologies(export_filename, [resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
+				"[wrap_to_dateline=True], [force_boundary_orientation])\n"
+				"  Exports the resolved topologies of the requested type(s) to a file.\n"
 				"\n"
 				"  :param export_filename: the name of the export file\n"
-				"  :type export_filename: string\n"
+				"  :type export_filename: string/``os.PathLike``\n"
 				"  :param resolve_topology_types: specifies the resolved topology types to export - defaults "
 				"to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
 				":class:`resolved topological networks<ResolvedTopologicalNetwork>` "
@@ -963,17 +2502,22 @@ export_topological_snapshot()
 				"\n"
 				"  .. note:: Resolved topologies are exported in the same order as that of their "
 				"respective topological features (see :meth:`constructor<__init__>`) and the order across "
-				"topological feature collections (if any) is also retained.\n")
+				"topological feature collections (if any) is also retained.\n"
+				"\n"
+				"  .. versionchanged:: 0.44\n"
+				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		.def("get_resolved_topological_sections",
 				&GPlatesApi::topological_snapshot_get_resolved_topological_sections,
 				(bp::arg("resolve_topological_section_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGICAL_SECTION_TYPES,
 					bp::arg("same_order_as_topological_features") = false),
-				"get_resolved_topological_sections([resolve_topological_section_types], [same_order_as_topological_features=False])\n"
+				"get_resolved_topological_sections([resolve_topological_section_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
+				"[same_order_as_topological_features=False])\n"
 				"  Returns the resolved topological sections of the requested type(s).\n"
 				"\n"
 				"  :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or "
 				":class:`ResolvedTopologicalNetwork` (or both types) are listed in the returned resolved topological sections. "
-				"Note that ``ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. "
+				"Note that ``pygplates.ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. "
 				"Defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
 				":class:`resolved topological networks<ResolvedTopologicalNetwork>`.\n"
 				"  :type resolve_topological_section_types: a bitwise combination of any of "
@@ -984,22 +2528,26 @@ export_topological_snapshot()
 				"  :type same_order_as_topological_features: bool\n"
 				"  :rtype: ``list`` of :class:`ResolvedTopologicalSection`\n"
 				"  :raises: ValueError if *resolve_topological_section_types* (if specified) contains a flag that "
-				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n")
+				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topological sections are sorted in the order of their "
+				"respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.\n")
 		.def("export_resolved_topological_sections",
 				&GPlatesApi::topological_snapshot_export_resolved_topological_sections,
 				(bp::arg("export_filename"),
 					bp::arg("resolve_topological_section_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
 					bp::arg("export_topological_line_sub_segments") = true,
 					bp::arg("wrap_to_dateline") = true),
-				"export_resolved_topological_sections(export_filename, [resolve_topological_section_types], "
+				"export_resolved_topological_sections(export_filename, "
+				"[resolve_topological_section_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
 				"[export_topological_line_sub_segments=True], [wrap_to_dateline=True])\n"
-				"  Exports the resolved topological sections to a file.\n"
+				"  Exports the resolved topological sections of the requested type(s) to a file.\n"
 				"\n"
 				"  :param export_filename: the name of the export file\n"
-				"  :type export_filename: string\n"
+				"  :type export_filename: string/``os.PathLike``\n"
 				"  :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or "
 				":class:`ResolvedTopologicalNetwork` (or both types) are listed in the exported resolved topological sections. "
-				"Note that ``ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. "
+				"Note that ``pygplates.ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. "
 				"Defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
 				":class:`resolved topological networks<ResolvedTopologicalNetwork>`.\n"
 				"  :type resolve_topological_section_types: a bitwise combination of any of "
@@ -1036,7 +2584,248 @@ export_topological_snapshot()
 				"topological feature collections (if any) is also retained.\n"
 				"\n"
 				"  .. versionchanged:: 0.33\n"
-				"     Added *export_topological_line_sub_segments* argument.\n")
+				"     Added *export_topological_line_sub_segments* argument.\n"
+				"\n"
+				"  .. versionchanged:: 0.44\n"
+				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+		.def("calculate_plate_boundary_statistics",
+				&GPlatesApi::topological_snapshot_calculate_plate_boundary_statistics,
+				(bp::arg("uniform_point_spacing_radians"),
+					bp::arg("first_uniform_point_spacing_radians") = boost::optional<double>(),
+					bp::arg("velocity_delta_time") = 1.0,
+					bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS,
+					bp::arg("include_network_boundaries") = false,
+					bp::arg("boundary_section_filter") = bp::object()/*Py_None*/,
+					bp::arg("return_shared_sub_segment_dict") = false),
+				"calculate_plate_boundary_statistics(uniform_point_spacing_radians, [first_uniform_point_spacing_radians], "
+				"[velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms], "
+				"[include_network_boundaries=False], [boundary_section_filter], [return_shared_sub_segment_dict=False])\n"
+				"Calculate statistics at uniformly spaced points along plate boundaries.\n"
+				"\n"
+				"  :param uniform_point_spacing_radians: Spacing between uniform points along plate boundaries (in radians). "
+				"See :meth:`PolylineOnSphere.to_uniform_points`.\n"
+				"  :type uniform_point_spacing_radians: float\n"
+				"  :param first_uniform_point_spacing_radians: Spacing of first uniform point in each "
+				":class:`resolved topological section <ResolvedTopologicalSection>` (in radians). "
+				"Each resolved topological section represents a specific boundary :class:`Feature` and has a list of "
+				":meth:`shared sub-segments <ResolvedTopologicalSection.get_shared_sub_segments>` that are the parts of it that actually "
+				"contribute to plate boundaries. So, this parameter is the distance from the *first* vertex of the *first* shared sub-segment "
+				"(*along* the sub-segment). And note that the uniform spacing is continuous across adjacent shared sub-segments, unless there's a "
+				"gap between them (eg, that no plate uses as part of its boundary), in which case the spacing is reset to *first_uniform_point_spacing_radians* "
+				"for the next shared sub-segment (after the gap). "
+				"See :meth:`PolylineOnSphere.to_uniform_points`. Defaults to half of *uniform_point_spacing_radians*.\n"
+				"  :type first_uniform_point_spacing_radians: float\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: The radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``). "
+				"This is only used to calculate velocities (strain rates always use ``pygplates.Earth.equatorial_radius_in_kms``).\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :param include_network_boundaries: Whether to calculate statistics along *network* boundaries "
+				"that are **not** also plate boundaries (defaults to ``False``). If a deforming network shares a "
+				"boundary with a plate then it'll get included regardless of this option.\n"
+				"  :type include_network_boundaries: bool\n"
+				"  :param boundary_section_filter: Optionally restrict boundary sections to those that match a feature type, "
+				"or match one of several feature types, or match a filter function. Defaults to ``None`` (meaning accept all boundary sections).\n"
+				"  :type boundary_section_filter: :class:`FeatureType`, or list of :class:`FeatureType`, or callable "
+				"(accepting a single :class:`ResolvedTopologicalSection`)\n"
+				"  :param return_shared_sub_segment_dict: Whether to return a ``dict`` mapping each :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` "
+				"(ie, a boundary section shared by one or more plates) to a ``list`` of :class:`PlateBoundaryStatistic` associated with it. "
+				"If ``False`` then just returns one large ``list`` of :class:`PlateBoundaryStatistic` for all plate boundaries. Defaults to ``False``.\n"
+				"  :type return_shared_sub_segment_dict: bool\n"
+				"  :returns: list of :class:`PlateBoundaryStatistic` for all uniform points, or (if *return_shared_sub_segment_dict* is ``True``) a "
+				"``dict`` mapping each :class:`ResolvedTopologicalSharedSubSegment` to a list of :class:`PlateBoundaryStatistic`\n"
+				"  :rtype: ``list`` or ``dict``\n"
+				"  :raises: ValueError if *uniform_point_spacing_radians* is negative or zero\n"
+				"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
+				"\n"
+				"  .. seealso:: :ref:`pygplates_primer_plate_boundary_statistics` in the *Primer* documentation.\n"
+				"\n"
+				"  .. note:: If *return_shared_sub_segment_dict* is ``True`` then any shared sub-segments that are not long enough to contain any uniform points "
+				"will be missing from the returned ``dict``.\n"
+				"\n"
+				"  Uniform points are **not** generated along *network* boundaries by default (unless they happen to also be a plate boundary) since "
+				"not all parts of a network's boundary are necessarily along plate boundaries. But you can optionally generate points along them by setting "
+				"*include_network_boundaries* to ``True``. Note that, regardless of this option, networks are always used when *calculating* plate statistics. "
+				"This is because networks typically *overlay* rigid plates, and so need to be queried (at uniform points along plate boundaries) with a "
+				"higher priority than the *underlying* rigid plate.\n"
+				"\n"
+				"  .. note:: The plate boundaries, *along* which uniform points are generated, can be further restricted using *boundary_section_filter*.\n"
+				"\n"
+				"  .. versionadded:: 0.47\n")
+		.def("get_point_locations",
+				&GPlatesApi::topological_snapshot_get_point_locations,
+				(bp::arg("points"),
+					bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES),
+				"get_point_locations(points, [resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)])\n"
+				"  Returns the resolved topological boundaries/networks that contain the specified points.\n"
+				"\n"
+				"  :param points: sequence of points at which to find containing topologies\n"
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param resolve_topology_types: specifies the resolved topology types to search - defaults "
+				"to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
+				":class:`resolved topological networks<ResolvedTopologicalNetwork>` "
+				"(excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)\n"
+				"  :type resolve_topology_types: a bitwise combination of any of ``pygplates.ResolveTopologyType.boundary`` or "
+				"``pygplates.ResolveTopologyType.network``\n"
+				"  :rtype: list of :class:`TopologyPointLocation`\n"
+				"  :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that "
+				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than "
+				":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. "
+				"So if a point is inside both a boundary and a network then the network location is returned.\n"
+				"\n"
+				"  .. note:: Each point that is *outside* all resolved topologies searched will have "
+				":meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``.\n"
+				"\n"
+				"  To associate each point with the resolved topological boundary/network containing it:\n"
+				"  ::\n"
+				"\n"
+				"    topology_point_locations = reconstruct_snapshot.get_point_locations(points)\n"
+				"\n"
+				"    for point_index in range(len(points)):\n"
+				"        point = points[point_index]\n"
+				"        topology_point_location = topology_point_locations[point_index]\n"
+				"\n"
+				"        if topology_point_location.located_in_resolved_boundary():  # if point is inside a resolved boundary\n"
+				"            resolved_topological_boundary = topology_point_location.located_in_resolved_boundary()\n"
+				"        elif topology_point_location.located_in_resolved_network():  # if point is inside a resolved network\n"
+				"            resolved_topological_network = topology_point_location.located_in_resolved_network()\n"
+				"        else:  # point is not in any resolved topologies\n"
+				"            ...\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
+		.def("get_point_velocities",
+				&GPlatesApi::topological_snapshot_get_point_velocities,
+				(bp::arg("points"),
+					bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES,
+					bp::arg("velocity_delta_time") = 1.0,
+					bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS,
+					bp::arg("return_point_locations") = false),
+				"get_point_velocities(points, [resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
+				"[velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms], "
+				"[return_point_locations=False])\n"
+				"  Returns the velocities of the specified points (as determined by the resolved topological boundaries/networks that contain them).\n"
+				"\n"
+				"  :param points: sequence of points at which to calculate velocities\n"
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param resolve_topology_types: specifies the resolved topology types to use for calculating velocities - defaults "
+				"to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
+				":class:`resolved topological networks<ResolvedTopologicalNetwork>` "
+				"(excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)\n"
+				"  :type resolve_topology_types: a bitwise combination of any of ``pygplates.ResolveTopologyType.boundary`` or "
+				"``pygplates.ResolveTopologyType.network``\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :param return_point_locations: whether to also return the resolved topological boundary/network that contains each point - defaults to ``False``\n"
+				"  :rtype: list of :class:`Vector3D`, or 2-tuple (list of :class:`Vector3D`, list of :class:`TopologyPointLocation`) if "
+				"*return_point_locations* is ``True``\n"
+				"  :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that "
+				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than "
+				":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. "
+				"So if a point is inside both a boundary and a network then the velocity of the network is returned.\n"
+				"\n"
+				"  .. note:: Each point that is *outside* all resolved topologies searched will have a velocity of ``None``, and optionally "
+				"(if *return_point_locations* is ``True``) have a :meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``.\n"
+				"\n"
+				"  To associate each point with its velocity and the resolved topological boundary/network containing it:\n"
+				"  ::\n"
+				"\n"
+				"    velocities, topology_point_locations = topological_snapshot.get_point_velocities(\n"
+				"            points,\n"
+				"            return_point_locations=True)\n"
+				"\n"
+				"    for point_index in range(len(points)):\n"
+				"        point = points[point_index]\n"
+				"        velocity = velocities[point_index]\n"
+				"        topology_point_location = topology_point_locations[point_index]\n"
+				"\n"
+				"        if velocity:  # if point is inside a resolved boundary or network\n"
+				"            ...\n"
+				"\n"
+				"  .. note:: It is more efficient to call ``topological_snapshot.get_point_velocities(points, return_point_locations=True)`` to get both velocities and "
+				"point locations than it is to call both ``topological_snapshot.get_point_velocities(points)`` and ``topological_snapshot.get_point_locations(points)``.\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
+		.def("get_point_strain_rates",
+				&GPlatesApi::topological_snapshot_get_point_strain_rates,
+				(bp::arg("points"),
+					bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES,
+					bp::arg("return_point_locations") = false),
+				"get_point_strain_rates(points, "
+				"[resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], [return_point_locations=False])\n"
+				"  Returns the strain rates of the specified points (as determined by the resolved topological boundaries/networks that contain them).\n"
+				"\n"
+				"  :param points: sequence of points at which to calculate strain rates\n"
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param resolve_topology_types: specifies the resolved topology types to use for strain rates - defaults "
+				"to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
+				":class:`resolved topological networks<ResolvedTopologicalNetwork>` "
+				"(excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)\n"
+				"  :type resolve_topology_types: a bitwise combination of any of ``pygplates.ResolveTopologyType.boundary`` or "
+				"``pygplates.ResolveTopologyType.network``\n"
+				"  :param return_point_locations: whether to also return the resolved topological boundary/network that contains each point - defaults to ``False``\n"
+				"  :rtype: list of :class:`StrainRate`, or 2-tuple (list of :class:`StrainRate`, list of :class:`TopologyPointLocation`) if "
+				"*return_point_locations* is ``True``\n"
+				"  :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that "
+				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than "
+				":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. "
+				"So a point that is inside a resolved topological network can generate a *non-zero* :class:`strain rate <StrainRate>`. "
+				"However, a point that is inside a resolved topological boundary (but is outside all resolved topological networks searched) "
+				"will generate a *zero* strain rate (``pygplates.StrainRate.zero``) since it is inside a *non-deforming* plate.\n"
+				"\n"
+				"  .. note:: Each point that is *outside* all resolved topologies searched (boundaries and networks) will have a strain rate of ``None``, and "
+				"optionally (if *return_point_locations* is ``True``) have a :meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``.\n"
+				"\n"
+				"  To associate each point with its strain rate and the resolved topological boundary/network containing it:\n"
+				"  ::\n"
+				"\n"
+				"    strain_rates, topology_point_locations = topological_snapshot.get_point_strain_rates(\n"
+				"            points,\n"
+				"            return_point_locations=True)\n"
+				"\n"
+				"    for point_index in range(len(points)):\n"
+				"        point = points[point_index]\n"
+				"        strain_rate = strain_rates[point_index]\n"
+				"        topology_point_location = topology_point_locations[point_index]\n"
+				"\n"
+				"        if strain_rate:  # if point is inside a resolved boundary or network\n"
+				"            ...\n"
+				"\n"
+				"  .. note:: It is more efficient to call ``topological_snapshot.get_point_strain_rates(points, return_point_locations=True)`` to get both strain rates and "
+				"point locations than it is to call both ``topological_snapshot.get_point_strain_rates(points)`` and ``topological_snapshot.get_point_locations(points)``.\n"
+				"\n"
+				"  .. note:: Strain rates in deforming networks are calculated from the spatial gradients of velocity where the velocities are calculated over "
+				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalSnapshot::get_rotation_model,
 				"get_rotation_model()\n"
@@ -1047,6 +2836,14 @@ export_topological_snapshot()
 				"  .. note:: The :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of the returned rotation model "
 				"may be different to that of the rotation model passed into the :meth:`constructor<__init__>` if an anchor plate ID was specified "
 				"in the :meth:`constructor<__init__>`.\n")
+		.def("get_reconstruction_time",
+				&GPlatesApi::TopologicalSnapshot::get_reconstruction_time,
+				"get_reconstruction_time()\n"
+				"  Return the reconstruction time of this snapshot.\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  .. versionadded:: 0.43\n")
 		.def("get_anchor_plate_id",
 				&GPlatesApi::TopologicalSnapshot::get_anchor_plate_id,
 				"get_anchor_plate_id()\n"

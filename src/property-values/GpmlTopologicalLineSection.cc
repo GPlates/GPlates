@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/ref.hpp>
+
 #include "GpmlTopologicalLineSection.h"
 
 #include "global/AssertionFailureException.h"
@@ -32,6 +34,8 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -88,4 +92,88 @@ GPlatesPropertyValues::GpmlTopologicalLineSection::bubble_up(
 			GPLATES_ASSERTION_SOURCE);
 
 	return revision.source_geometry.clone_revision(transaction);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalLineSection::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlTopologicalLineSection> &gpml_topological_line_section)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_topological_line_section->get_source_geometry(), "source_geometry");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_topological_line_section->get_reverse_order(), "reverse_order");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GpmlPropertyDelegate::non_null_ptr_type> source_geometry_ =
+				scribe.load<GpmlPropertyDelegate::non_null_ptr_type>(TRANSCRIBE_SOURCE, "source_geometry");
+		if (!source_geometry_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		bool reverse_order_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, reverse_order_, "reverse_order"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_topological_line_section.construct_object(
+				boost::ref(transaction),  // non-const ref
+				source_geometry_,
+				reverse_order_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalLineSection::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_source_geometry(), "source_geometry");
+			scribe.save(TRANSCRIBE_SOURCE, get_reverse_order(), "reverse_order");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GpmlPropertyDelegate::non_null_ptr_type> source_geometry_ =
+					scribe.load<GpmlPropertyDelegate::non_null_ptr_type>(TRANSCRIBE_SOURCE, "source_geometry");
+			if (!source_geometry_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			bool reverse_order_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, reverse_order_, "reverse_order"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+			revision.source_geometry.change(revision_handler.get_model_transaction(), source_geometry_);
+			revision.reverse_order = reverse_order_;
+			revision_handler.commit();
+		}
+	}
+
+	// Transcribe base class.
+	if (!scribe.transcribe_base<GpmlTopologicalSection>(TRANSCRIBE_SOURCE, *this, "GpmlTopologicalSection"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

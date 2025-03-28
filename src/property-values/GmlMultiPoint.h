@@ -37,10 +37,13 @@
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
-#include "model/PropertyValue.h"
-
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
+
+#include "model/PropertyValue.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -289,6 +292,20 @@ namespace GPlatesPropertyValues
 			std::vector<GmlPoint::GmlProperty> gml_properties;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GmlMultiPoint> &gml_multi_point);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

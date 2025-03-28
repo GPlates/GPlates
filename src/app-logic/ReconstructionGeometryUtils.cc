@@ -468,14 +468,7 @@ void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundaryOrLineGeometry::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 {
-	if (d_include_network_rigid_block_holes)
-	{
-		d_geometry = rtn->boundary_polygon_with_rigid_block_holes();
-	}
-	else
-	{
-		d_geometry = rtn->boundary_polygon();
-	}
+	d_geometry = rtn->boundary_polygon(d_include_network_rigid_block_holes);
 }
 
 
@@ -491,14 +484,7 @@ void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundaryPolygon::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 {
-	if (d_include_network_rigid_block_holes)
-	{
-		d_boundary_polygon = rtn->boundary_polygon_with_rigid_block_holes();
-	}
-	else
-	{
-		d_boundary_polygon = rtn->boundary_polygon();
-	}
+	d_boundary_polygon = rtn->boundary_polygon(d_include_network_rigid_block_holes);
 }
 
 
@@ -524,14 +510,7 @@ void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetBoundaryPolygon::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 {
-	if (d_include_network_rigid_block_holes)
-	{
-		d_boundary_polygon = rtn->boundary_polygon_with_rigid_block_holes();
-	}
-	else
-	{
-		d_boundary_polygon = rtn->boundary_polygon();
-	}
+	d_boundary_polygon = rtn->boundary_polygon(d_include_network_rigid_block_holes);
 }
 
 

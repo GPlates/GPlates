@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/ref.hpp>
+
 #include "GpmlTopologicalPoint.h"
 
 #include "global/AssertionFailureException.h"
@@ -32,6 +34,8 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -77,4 +81,72 @@ GPlatesPropertyValues::GpmlTopologicalPoint::bubble_up(
 			GPLATES_ASSERTION_SOURCE);
 
 	return revision.source_geometry.clone_revision(transaction);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalPoint::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlTopologicalPoint> &gpml_topological_point)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_topological_point->get_source_geometry(), "source_geometry");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GpmlPropertyDelegate::non_null_ptr_type> source_geometry_ =
+				scribe.load<GpmlPropertyDelegate::non_null_ptr_type>(TRANSCRIBE_SOURCE, "source_geometry");
+		if (!source_geometry_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_topological_point.construct_object(
+			boost::ref(transaction),  // non-const ref
+			source_geometry_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalPoint::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_source_geometry(), "source_geometry");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GpmlPropertyDelegate::non_null_ptr_type> source_geometry_ =
+					scribe.load<GpmlPropertyDelegate::non_null_ptr_type>(TRANSCRIBE_SOURCE, "source_geometry");
+			if (!source_geometry_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+			revision.source_geometry.change(revision_handler.get_model_transaction(), source_geometry_);
+			revision_handler.commit();
+		}
+	}
+
+	// Transcribe base class.
+	if (!scribe.transcribe_base<GpmlTopologicalSection>(TRANSCRIBE_SOURCE, *this, "GpmlTopologicalSection"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

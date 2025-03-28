@@ -145,12 +145,131 @@ namespace GPlatesGui
 			 *
 			 * Age colour palettes cover a range of age values starting at 0Ma.
 			 *
+			 * @a invert reverses the ordering of colours.
+			 *
 			 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
 			 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
 			 */
 			ColourPalette<double>::non_null_ptr_type
 			create_palette(
+					Type type,
+					bool invert);
+
+
+			//
+			// Transcribe for sessions/projects.
+			//
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					Type &type,
+					bool transcribed_construct_data);
+		}
+
+
+		/**
+		 * Topography palettes.
+		 *
+		 * Added in GPlates 2.4.
+		 */
+		namespace Topography
+		{
+			enum Type
+			{
+				Etopo1,
+				Geo,
+				Relief
+			};
+
+			/**
+			 * Returns a name for a topography colour palette.
+			 *
+			 * This is useful for displaying in the GUI.
+			 */
+			QString
+			get_palette_name(
 					Type type);
+
+			/**
+			 * Topography colour palette.
+			 *
+			 * @a invert reverses the ordering of colours.
+			 *
+			 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
+			 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
+			 */
+			ColourPalette<double>::non_null_ptr_type
+			create_palette(
+					Type type,
+					bool invert);
+
+
+			//
+			// Transcribe for sessions/projects.
+			//
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					Type &type,
+					bool transcribed_construct_data);
+		}
+
+
+		/**
+		 * Scientific Colour Maps by Fabio Crameri.
+		 *
+		 * Added in GPlates 2.4.
+		 */
+		namespace SCM
+		{
+			enum Type
+			{
+				// Sequential...
+				Batlow,
+				Hawaii,
+				Oslo,
+				Lapaz,
+				Lajolla,
+				Buda,
+				Davos,
+				Tokyo,
+
+				// Diverging...
+				Vik,
+				Roma,
+				Broc,
+				Berlin,
+				Lisbon,
+				Bam,
+
+				// Multi-sequential...
+				Oleron,
+				Bukavu
+			};
+
+			/**
+			 * Returns a name for a SCM colour palette.
+			 *
+			 * This is useful for displaying in the GUI.
+			 */
+			QString
+			get_palette_name(
+					Type type);
+
+			/**
+			 * SCM colour palette.
+			 *
+			 * @a invert reverses the ordering of colours.
+			 *
+			 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
+			 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
+			 */
+			ColourPalette<double>::non_null_ptr_type
+			create_palette(
+					Type type,
+					bool invert);
 
 
 			//

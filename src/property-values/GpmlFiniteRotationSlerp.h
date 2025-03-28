@@ -29,7 +29,11 @@
 #define GPLATES_PROPERTYVALUES_GPMLFINITEROTATIONSLERP_H
 
 #include "GpmlInterpolationFunction.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -129,8 +133,20 @@ namespace GPlatesPropertyValues {
 			return non_null_ptr_type(new GpmlFiniteRotationSlerp(*this, context));
 		}
 
-	private:
+	private: // Transcribe...
 
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlFiniteRotationSlerp> &gpml_finite_rotation_slerp);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

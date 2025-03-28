@@ -61,7 +61,7 @@ namespace GPlatesFileIO
 		void
 		initialise(
 #if !defined(GPLATES_PYTHON_EMBEDDING)  // compiling pygplates (not gplates)
-			QString bundle_directory
+			QString pygplates_import_directory
 #endif
 		);
 
@@ -83,6 +83,12 @@ namespace GPlatesFileIO
 		 */
 		boost::optional<QString>
 		get_gdal_data_directory();
+
+		/**
+		 * Return the location of the GDAL plugins in the standalone bundle.
+		 */
+		boost::optional<QString>
+		get_gdal_plugins_directory();
 
 		/**
 		 * Return the location of the Python standard library in the standalone bundle.

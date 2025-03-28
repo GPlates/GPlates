@@ -30,9 +30,11 @@
 #include <boost/optional.hpp>
 
 #include "PythonConverterUtils.h"
+#include "PythonPickle.h"
 
 #include "model/FeatureId.h"
 #include "model/RevisionId.h"
+#include "model/TranscribeIdTypeGenerator.h"
 
 
 namespace bp = boost::python;
@@ -72,7 +74,12 @@ export_feature_id()
 			"hashable (can be used as a key in a ``dict``).\n"
 			"\n"
 			"The format of a feature ID is 'GPlates-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' where each "
-			"*x* is a hexadecimal digit (0-9, a-f).\n",
+			"*x* is a hexadecimal digit (0-9, a-f).\n"
+			"\n"
+			"A *FeatureId* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init)
 		.def("create_unique_id",
 				&GPlatesApi::feature_id_create_unique_id,
@@ -116,6 +123,11 @@ export_feature_id()
 		.def("__str__",
 				&GPlatesModel::FeatureId::get,
 				bp::return_value_policy<bp::copy_const_reference>())
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesModel::FeatureId>>(
+				// Since we are providing the only constructor (__init__ for pickling) we need its
+				// docstring to document that this class cannot be instantiated from Python...
+				true/*document_class_as_non_instantiable*/))
 	;
 
 	// Enable boost::optional<FeatureId> to be passed to and from python.

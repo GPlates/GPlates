@@ -17,6 +17,15 @@ This document lists the Python functions and classes that make up the GPlates Py
 Reconstruction
 --------------
 
+Classes to query the history of reconstructions:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.ReconstructModel
+   pygplates.ReconstructSnapshot
+
 Function to reconstruct backward and forward in time:
 
 .. autosummary::
@@ -109,8 +118,16 @@ The following classes represent sub-segments *shared* by one or more resolved to
    pygplates.ResolvedTopologicalSection
    pygplates.ResolvedTopologicalSharedSubSegment
 
-Velocity
---------
+The following class contains the triangulation of the deforming region of a resolved topological network.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.NetworkTriangulation
+
+Velocity and strain
+-------------------
 
 Functions to calculate velocities:
 
@@ -119,11 +136,29 @@ Functions to calculate velocities:
 
    pygplates.calculate_velocities
 
+The following classes represent strain rate and strain (at a particular surface location).
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.Strain
+   pygplates.StrainRate
+
+The following class contains statistics (like convergence velocity) at a point on a plate boundary.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.PlateBoundaryStatistic
+
 Rotation
 --------
 
 | ``RotationModel`` is the main class for getting finite and stage rotations from rotation models/files.
 | ``FiniteRotation`` is a useful maths class for rotating geometries (and vectors).
+| ``NetRotationModel`` is for calculating net rotation of topological plates and deforming networks.
 
 .. autosummary::
    :nosignatures:
@@ -131,6 +166,9 @@ Rotation
 
    pygplates.RotationModel
    pygplates.FiniteRotation
+   pygplates.NetRotationModel
+   pygplates.NetRotationSnapshot
+   pygplates.NetRotation
 
 .. note:: ``ReconstructionTreeEdge`` is only needed for very advanced scenarios.
 
@@ -263,9 +301,11 @@ The following subset of property value classes represent the *topological* secti
    :toctree: generated
 
    pygplates.GpmlTopologicalSection
+   pygplates.GpmlTopologicalSectionList
    pygplates.GpmlTopologicalPoint
    pygplates.GpmlTopologicalLineSection
    pygplates.GpmlPropertyDelegate
+   pygplates.GpmlPropertyDelegateList
 
 
 The following subset of property value classes are time-dependent wrappers.
@@ -281,19 +321,17 @@ These are what enable the above :class:`property values<pygplates.PropertyValue>
    pygplates.GpmlIrregularSampling
    pygplates.GpmlPiecewiseAggregation
 
-The following support classes are closed related to property values
-(but are not actual :class:`property values<pygplates.PropertyValue>`).
+The following time sample and time window classes are used by the above time-dependent wrappers to
+contain :class:`property values<pygplates.PropertyValue>`.
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
 
-   pygplates.GpmlPropertyDelegateList
    pygplates.GpmlTimeSample
    pygplates.GpmlTimeSampleList
    pygplates.GpmlTimeWindow
    pygplates.GpmlTimeWindowList
-   pygplates.GpmlTopologicalSectionList
 
 Geometry
 --------

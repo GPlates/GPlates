@@ -34,6 +34,9 @@
 #include "global/GPlatesAssert.h"
 
 #include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeQualifiedXmlName.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -44,17 +47,11 @@ std::ostream &
 GPlatesPropertyValues::GpmlPiecewiseAggregation::print_to(
 		std::ostream &os) const
 {
-	const GPlatesModel::RevisionedVector<GpmlTimeWindow> &windows = time_windows();
-
 	os << "[ ";
 
-	GPlatesModel::RevisionedVector<GpmlTimeWindow>::const_iterator windows_iter =
-			windows.begin();
-	GPlatesModel::RevisionedVector<GpmlTimeWindow>::const_iterator windows_end =
-			windows.end();
-	for ( ; windows_iter != windows_end; ++windows_iter)
+	for (GpmlTimeWindow::non_null_ptr_to_const_type time_window : time_windows())
 	{
-		os << **windows_iter;
+		os << *time_window;
 	}
 
 	return os << " ]";
@@ -80,4 +77,99 @@ GPlatesPropertyValues::GpmlPiecewiseAggregation::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlPiecewiseAggregation::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlPiecewiseAggregation> &gpml_piecewise_aggregation)
+{
+	if (scribe.is_saving())
+	{
+		// Get the current list of time windows.
+		GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type time_windows_ = &gpml_piecewise_aggregation->time_windows();
+		scribe.save(TRANSCRIBE_SOURCE, time_windows_, "time_windows");
+
+		scribe.save(TRANSCRIBE_SOURCE, gpml_piecewise_aggregation->get_value_type(), "value_type");
+	}
+	else // loading
+	{
+		// Load the time windows.
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type> time_windows_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "time_windows");
+		if (!time_windows_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+		if (!value_type_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_piecewise_aggregation.construct_object(
+				boost::ref(transaction),  // non-const ref
+				time_windows_,
+				value_type_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlPiecewiseAggregation::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Get the current list of time windows.
+			GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type time_windows_ = &time_windows();
+			scribe.save(TRANSCRIBE_SOURCE, time_windows_, "time_windows");
+
+			scribe.save(TRANSCRIBE_SOURCE, get_value_type(), "value_type");
+		}
+		else // loading
+		{
+			// Load the time windows.
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type> time_windows_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "time_windows");
+			if (!time_windows_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+			if (!value_type_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			{
+				// Set the time windows.
+				GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+				Revision &revision = revision_handler.get_revision<Revision>();
+				revision.time_windows.change(revision_handler.get_model_transaction(), time_windows_);
+				revision_handler.commit();
+			}
+			d_value_type = value_type_;
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlPiecewiseAggregation>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

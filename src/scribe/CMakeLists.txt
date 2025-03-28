@@ -21,6 +21,8 @@ set(srcs
     ScribeBinaryArchiveReader.h
     ScribeBinaryArchiveWriter.cc
     ScribeBinaryArchiveWriter.h
+    ScribeBool.cc
+    ScribeBool.h
     ScribeConstructObject.h
     ScribeExceptions.cc
     ScribeExceptions.h
@@ -49,6 +51,7 @@ set(srcs
     ScribeXmlArchiveWriter.h
     Transcribe.h
     TranscribeArray.h
+    TranscribeBoost.cc
     TranscribeBoost.h
     TranscribeContext.h
     TranscribeDelegateProtocol.h
