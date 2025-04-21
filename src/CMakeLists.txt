@@ -226,10 +226,21 @@ if (Boost_VERSION VERSION_LESS 1.67.0)
 		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy)
 	endif()
 else()
-	# Boost 1.67 and above use 2-digit Python version suffixes (eg, 'python37' and 'numpy37').
-	# Match Boost Python with the Python version we found earlier.
-	set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
-	set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
+	# Boost 1.67 and above use Python version suffixes (eg, 'python37' and 'numpy37').
+	if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.30 AND NOT WIN32)
+		# CMake 3.30 removed the FindBoost module (thus requiring boost-cmake). (This also means our Boost version must be >= 1.70).
+		# We could use Python version suffixes but there's an error in the boost-cmake scripts (fixed in
+		# https://github.com/boostorg/boost_install/commit/e193f08) where it fails to detect 3-digits Python version (ie, boost_python310).
+		# However specifying NO version works (except on Windows), so we'll just specify no version (except on Windows).
+		# Note: On Windows, it appears that the boost-python target WITHOUT a version (eg, Boost::python) has trouble finding the DLL at runtime
+		#       (so we specify a target WITH version on Windows, eg, Boost::python310).
+		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python)
+		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy)
+	else()
+		# Match Boost Python with the Python version we found earlier.
+		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
+		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
+	endif()
 endif()
 
 # Now find the Boost library components.
