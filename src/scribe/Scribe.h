@@ -45,27 +45,10 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/pool/object_pool.hpp>
-#include <boost/preprocessor/arithmetic/dec.hpp>
-#include <boost/preprocessor/arithmetic/div.hpp>
-#include <boost/preprocessor/arithmetic/inc.hpp>
-#include <boost/preprocessor/arithmetic/mod.hpp>
-#include <boost/preprocessor/arithmetic/mul.hpp>
-#include <boost/preprocessor/comparison/greater.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/control/expr_iif.hpp>
-#include <boost/preprocessor/control/if.hpp>
-#include <boost/preprocessor/control/iif.hpp>
-#include <boost/preprocessor/enum_shifted.hpp>
-#include <boost/preprocessor/enum_shifted_params.hpp>
-#include <boost/preprocessor/facilities/empty.hpp>
-#include <boost/preprocessor/facilities/identity.hpp>
-#include <boost/preprocessor/repetition/for.hpp>
-#include <boost/preprocessor/repetition/repeat.hpp>
-#include <boost/preprocessor/repetition/repeat_from_to.hpp>
-#include <boost/preprocessor/seq/enum.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/type_traits/add_pointer.hpp>
 #include <boost/type_traits/is_array.hpp>
 #include <boost/type_traits/is_abstract.hpp>
 #include <boost/type_traits/is_const.hpp>
@@ -77,6 +60,7 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
+#include <boost/type_traits/type_identity.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include "ScribeAccess.h"
@@ -100,34 +84,6 @@
 #include "utils/ObjectPool.h"
 #include "utils/ReferenceCount.h"
 #include "utils/SmartNodeLinkedList.h"
-
-
-/**
- * The maximum dimension of transcribable multi-level pointers.
- *
- * For example, 'const int *const *' has dimension 2.
- *
- * NOTE: Setting this above 5 slows down compilation noticeably.
- * And at 7, on the MSVC2005 compiler, we get the following error:
- *   "fatal error C1009: compiler limit : macros nested too deeply"
- * Setting this to 4 on Ubuntu 14.04 causes the compiler to use up to 2Gb of memory and
- * bringing it down to 3 takes that down to 1Gb.
- *
- * Each increment of 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION' doubles the number of combinations.
- * So the slowdown/memory-usage is exponential.
- */
-#define GPLATES_SCRIBE_MAX_POINTER_DIMENSION 2
-
-/**
- * The maximum dimension of transcribable native arrays.
- *
- * For example, 'const int [3][3]' has dimension 2.
- *
- * Actually 'rank' might be a better term than 'dimension'.
- *
- * This doesn't have as much impact on compilation time as 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION'.
- */
-#define GPLATES_SCRIBE_MAX_ARRAY_DIMENSION 3
 
 
 /**
@@ -1587,841 +1543,85 @@ namespace GPlatesScribe
 		const Access::export_registered_classes_type &d_exported_registered_classes;
 
 
-		////////////////////////////////
-		// Const conversion delegates //
-		////////////////////////////////
-
-		//
-		// The methods cast away 'const'ness in the objects passed in via this class's public interface.
-		//
-
-		//
-		// Why is const conversion needed ?
-		//
-		// Const conversion is necessary because objects are tracked based on both their address and
-		// their *type*. The *type* tracking assumes all 'const's have been removed. This is because
-		// we need to be able to link pointers to the objects that they point to as the following
-		// example demonstrates...
-		//
-		//     int var = 1;
-		// 	   int *var_ptr = &var;
-		//     const int *const *const var_ptr_ptr1 = &var_ptr; // Needs const conversion to link up.
-		//     int * *const var_ptr_ptr2 = &var_ptr;            // Happens to be fine without const conversion.
-		//
-		// ...where the type of the object that both 'var_ptr_ptr1' and 'var_ptr_ptr2' points to
-		// (ie, 'var_ptr') is 'int *'. However when 'var_ptr_ptr1' is transcribed, the scribe system
-		// sees that it points to an object of type 'const int *const' (the type of '*var_ptr_ptr1')
-		// and records this (as well as the address of 'var_ptr' which it gets from the value of 'var_ptr_ptr1').
-		// If 'var_ptr' is subsequently transcribed (after 'var_ptr_ptr1') then the scribe system will
-		// register its address and the type 'int *'. Even though the addresses are the same,
-		// the types are different and so the scribe system will not link 'var_ptr_ptr1' to 'var_ptr'
-		// and will complain that the object pointed to by 'var_ptr_ptr1' was never transcribed
-		// (with tracking enabled). The other pointer-to-pointer, 'var_ptr_ptr2', just happens to
-		// get lucky because the type of '*var_ptr_ptr2' is the same as the type of 'var_ptr'.
-		//
-		// Removing all 'const's from 'const int *const' to get 'int *' solves the problem.
-		//
-		// And the reason *type*s are used (as well as addresses) to link pointers to their pointed-to
-		// objects is there can be multiple objects at the same address. For example the first
-		// data member of a class object has the same address as the class object itself.
-		// Another example is the first inherited base class object and the derived class object.
-		// But the types at the same address are always guaranteed to be different so we can use
-		// the address *and* the type to distinguish between different objects.
-		// This is why the Empty Base Optimisation cannot always optimise away empty base classes
-		// (see http://en.cppreference.com/w/cpp/language/ebo).
-		//
-
-		//
-		// A typical delegate const-cast looks like (for a pointer-to-pointer-to-2D-array)...
-		// 
-		//    template <typename ObjectType, int N1, int N2>
-		//    void transcribe_const_cast(
-		//            const ObjectType (*const *const &object_array)[N1][N2],
-		//            const ObjectTag &object_tag,
-		//            unsigned int options)
-		//    {
-		//        // Delegate to non-const version.
-		//        transcribe_object(
-		//                const_cast<ObjectType (**&)[N1][N2]>(object_array),
-		//                object_tag,
-		//                options);
-		//    }
-		//
-
-		//
-		// Due to the existence of (multi-level) pointers and multi-dimensional native arrays
-		// we end up with quite a large number of functions to cover all the 'const' combinations.
-		//
-		// So we resort to using the power of the boost preprocessor library to do all the heavy
-		// lifting for us. The parameters 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION' and
-		// 'GPLATES_SCRIBE_MAX_ARRAY_DIMENSION' determine the number of combinations.
-		//
-
-		//
-		// Preprocessor technical detail:
-		//
-		// It appears *empty* macro arguments are not guaranteed to be supported in C++98 according to...
-		//
-		//   http://boost.2283326.n4.nabble.com/preprocessor-missing-IS-EMPTY-documentation-tp2663247p2663248.html
-		//
-		// ...specifically the part (in the above link) that mentions...
-		// 
-		//    #define BLANK
-		//
-		//    #define A(x) x
-		//
-		//    A(BLANK) // valid, even in C90 and C++98
-		//    A()      // invalid in C90/C++98
-		//             //   but valid in C99/C++0x
-		//
-		//    #define B(x) A(x)
-		//
-		//    B(BLANK) // invalid in C90/C++98
-		//             //   but valid in C99/C++0x
-		//
-		// ...so while we could use 'BOOST_PP_EMPTY()' in place of 'BLANK', it would fail (for C++98)
-		// if we, in turn, passed that argument onto another macro call as seen with 'BLANK' in the
-		// 'B()' macro in the above example.
-		//
-		// So our solution is to use 'BOOST_PP_EMPTY' *without* the parentheses, pass that through
-		// multiple macro calls and only expand (using parentheses) it in the final macro that
-		// uses the parameter. So the above example would then be...
-		//
-		//    #define A(x) x
-		//
-		//    A(BOOST_PP_EMPTY)   // valid, even in C90 and C++98
-		//
-		//    #define B(x) A(x)() // note the extra parentheses
-		//
-		//    B(BOOST_PP_EMPTY)   // now valid, even in C90 and C++98
-		//
-		// ...and to pass non-empty parameters we use BOOST_PP_IDENTITY which is defined as...
-		//
-		//    #define BOOST_PP_IDENTITY(item) item BOOST_PP_EMPTY
-		//
-		// ...which eventually gets expanded using 'BOOST_PP_IDENTITY(item)()' which is the same as
-		// 'item BOOST_PP_EMPTY()' which is just 'item'.
-		//
-
-
-		/////////////////////////////////////////////
-		// Begin boost preprocessor library macros //
-		//                                         //
-
-		// Predicate for GPLATES_SCRIBE_POW2.
-		#define GPLATES_SCRIBE_POW2_PRED(d, state) \
-				BOOST_PP_TUPLE_ELEM(2, 1, state) \
-				/**/
-
-		// Operation for GPLATES_SCRIBE_POW2.
-		#define GPLATES_SCRIBE_POW2_MUL_BY_2(d, state) \
-				( \
-						BOOST_PP_MUL_D(d, BOOST_PP_TUPLE_ELEM(2, 0, state), 2), \
-						BOOST_PP_DEC(BOOST_PP_TUPLE_ELEM(2, 1, state)) \
-				) \
-				/**/
-
-		// This is just pow(2,n) implemented as 1*2*2*2*, ie, repeated 'n' times...
-		#define GPLATES_SCRIBE_POW2(n) \
-				BOOST_PP_TUPLE_ELEM( \
-						2, \
-						0, \
-						BOOST_PP_WHILE( \
-								GPLATES_SCRIBE_POW2_PRED, \
-								GPLATES_SCRIBE_POW2_MUL_BY_2, \
-								(1, n)) \
-						) \
-				/**/
-
-		// Predicate tests if array dimension decremented to zero.
-		#define GPLATES_SCRIBE_ARRAY_INDICES_PRED(r, state) \
-				BOOST_PP_TUPLE_ELEM(2, 1, state) \
-				/**/
-
-		// Increment array index and decrements predicate counter.
-		#define GPLATES_SCRIBE_ARRAY_INDICES_OP(r, state) \
-				( \
-						BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 0, state)), \
-						BOOST_PP_DEC(BOOST_PP_TUPLE_ELEM(2, 1, state)) \
-				) \
-				/**/
-
-		// Returns array template index as, eg, '[N3]'.
-		#define GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES_MACRO(r, state) \
-				[BOOST_PP_CAT(N, BOOST_PP_TUPLE_ELEM(2, 0, state))] \
-				/**/
-
-		// Array template template indices (eg, '[N1] [N2] [N3]').
-		//
-		// NOTE: We can't use BOOST_PP_REPEAT because we've exceeded its maximum nested depth of 3.
-		// So we use BOOST_PP_FOR instead.
-		#define GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES(array_dim) \
-				BOOST_PP_FOR( \
-						(1, array_dim), \
-						GPLATES_SCRIBE_ARRAY_INDICES_PRED, \
-						GPLATES_SCRIBE_ARRAY_INDICES_OP, \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES_MACRO) \
-				/**/
-
-		// Returns array template parameter index as, eg, '(int N3)'.
-		// The parenthesis are because we're building up a boost preprocessor 'sequence'.
-		#define GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES_MACRO(r, state) \
-				(BOOST_PP_CAT(int N, BOOST_PP_TUPLE_ELEM(2, 0, state))) \
-				/**/
-
-		// Array template parameter indices returned as a sequence (eg, '(int N1) (int N2) (int N3)').
-		// Later the sequence will get converted to, eg, 'int N1, int N2, int N3'.
-		// Using a sequence avoids problem of commas in a macro argument.
-		//
-		// NOTE: We can't use BOOST_PP_REPEAT because we've exceeded its maximum nested depth of 3.
-		// So we use BOOST_PP_FOR instead.
-		#define GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES(array_dim) \
-				BOOST_PP_FOR( \
-						(1, array_dim), \
-						GPLATES_SCRIBE_ARRAY_INDICES_PRED, \
-						GPLATES_SCRIBE_ARRAY_INDICES_OP, \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES_MACRO) \
-				/**/
-
-		// Returns 'const' if least-significant bit of 'index' is set, otherwise nothing.
-		#define GPLATES_SCRIBE_QUALIFIED_OBJECT(index) \
-				BOOST_PP_EXPR_IIF( \
-						BOOST_PP_MOD(index, 2), \
-						const) \
-				/**/
-
-		#define GPLATES_SCRIBE_PRINT(z, n, text) text
-
-		// Repeat '*' character 'pointer_level' times.
-		//
-		// NOTE: Returns nothing when 'pointer_level' is 0.
-		#define GPLATES_SCRIBE_UNQUALIFIED_POINTER(z, pointer_level) \
-				BOOST_PP_CAT(BOOST_PP_REPEAT_,z)(pointer_level, GPLATES_SCRIBE_PRINT, *) \
-				/**/
-
-		// Predicate tests if pointer-level counter is zero.
-		#define GPLATES_SCRIBE_QUALIFIED_POINTER_PRED(r, state) \
-				BOOST_PP_TUPLE_ELEM(3, 2, state) \
-				/**/
-
-		// Right shifts by one bit and tests the least-significant bit (that was shifted out).
-		// Also decrements pointer-level counter for predicate.
-		#define GPLATES_SCRIBE_QUALIFIED_POINTER_OP(r, state) \
-				( \
-						BOOST_PP_DIV(BOOST_PP_TUPLE_ELEM(3, 0, state), 2), \
-						BOOST_PP_MOD(BOOST_PP_TUPLE_ELEM(3, 0, state), 2), \
-						BOOST_PP_DEC(BOOST_PP_TUPLE_ELEM(3, 2, state)) \
-				) \
-				/**/
-
-		// Return '*const' or '*' depending on the state.
-		#define GPLATES_SCRIBE_QUALIFIED_POINTER_MACRO(r, state) \
-				BOOST_PP_IIF( \
-						BOOST_PP_TUPLE_ELEM(3, 1, state), \
-						*const, \
-						*) \
-				/**/
-
-		// Repeat '*const' or '*' character 'pointer_level' times depending on
-		// 'pointer_level' number of bit flags in 'index'.
-		//
-		// NOTE: Returns nothing when 'pointer_level' is 0.
-		#define GPLATES_SCRIBE_QUALIFIED_POINTER(index, pointer_level) \
-				BOOST_PP_FOR( \
-						( \
-								BOOST_PP_DIV(index, 2), \
-								BOOST_PP_MOD(index, 2), \
-								pointer_level \
-						), \
-						GPLATES_SCRIBE_QUALIFIED_POINTER_PRED, \
-						GPLATES_SCRIBE_QUALIFIED_POINTER_OP, \
-						GPLATES_SCRIBE_QUALIFIED_POINTER_MACRO) \
-				/**/
-
-		// Generates single argument function delegate overloads for *non-arrays* for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_NON_ARRAY_CALL( \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				\
-				template <typename ObjectType> \
-				bool \
-				transcribe_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &object, \
-						const ObjectTag &object_tag, \
-						unsigned int options) \
-				{ \
-					return transcribe_object( \
-							const_cast<ObjectType unqualified_pointer() &>(object), \
-							object_tag, \
-							options); \
-				} \
-				\
-				template <typename ObjectType> \
-				bool \
-				transcribe_construct_const_cast( \
-						ConstructObject<qualified_object() ObjectType qualified_pointer()> &construct_object, \
-						const ObjectTag &object_tag, \
-						unsigned int options) \
-				{ \
-					return transcribe_construct_object( \
-							reinterpret_cast<ConstructObject<ObjectType unqualified_pointer()> &>(construct_object), \
-							object_tag, \
-							options); \
-				} \
-				\
-				template <typename ObjectType> \
-				bool \
-				transcribe_construct_const_cast( \
-						ConstructObject<qualified_object() ObjectType qualified_pointer()> &construct_object, \
-						object_id_type object_id, \
-						unsigned int options) \
-				{ \
-					return transcribe_construct_object( \
-							reinterpret_cast<ConstructObject<ObjectType unqualified_pointer()> &>(construct_object), \
-							object_id, \
-							options); \
-				} \
-				\
-				/* Note that we get a non-pointer overload in this set but it never gets used \
-				because 'transcribe_smart_pointer_object()' expects a pointer. */ \
-				template <typename ObjectType> \
-				bool \
-				transcribe_smart_pointer_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &object, \
-						bool shared_owner) \
-				{ \
-					return transcribe_smart_pointer_object( \
-							const_cast<ObjectType unqualified_pointer() &>(object), \
-							shared_owner); \
-				} \
-				\
-				template <typename ObjectType> \
-				bool \
-				has_been_transcribed_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &object) \
-				{ \
-					return has_object_been_transcribed( \
-							const_cast<ObjectType unqualified_pointer() &>(object)); \
-				} \
-				\
-				template <typename ObjectType> \
-				void \
-				untrack_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &object, \
-						bool discard) \
-				{ \
-					untrack_object( \
-							const_cast<ObjectType unqualified_pointer() &>(object), \
-							discard); \
-				} \
-				\
-				template <typename ObjectType> \
-				void \
-				save_reference_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &object_reference, \
-						const ObjectTag &object_tag) \
-				{ \
-					save_object_reference( \
-							const_cast<ObjectType unqualified_pointer() &>(object_reference), \
-							object_tag); \
-				} \
-				/**/
-
-		// Generates single argument function delegate overloads for native *arrays* for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY_CALL( \
-						array_template_parameter_indices, \
-						array_template_indices, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				bool \
-				transcribe_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &array) array_template_indices, \
-						const ObjectTag &object_tag, \
-						unsigned int options) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					return transcribe_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(array), \
-							object_tag, \
-							options); \
-				} \
-				\
-				/* Exclude 'transcribe_construct_const_cast()' since not allowing it for native arrays. \
-				If it does get used by client then it'll either get trapped in a compile-time 'const'
-				assertion check in 'transcribe_construct_object()' or a run-time assertion in 'transcribe_construct_data()'
-				in 'TranscribeArray.h'. */ \
-				\
-				/* We also exclude 'transcribe_smart_pointer_const_cast()' since we're not expecting \
-				arrays to be heap-allocated (perhaps support in future though). */ \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				bool \
-				has_been_transcribed_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &array) array_template_indices) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					return has_object_been_transcribed( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(array)); \
-				}  \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				untrack_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &array) array_template_indices, \
-						bool discard) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					untrack_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(array), \
-							discard); \
-				} \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				save_reference_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &array_reference) array_template_indices, \
-						const ObjectTag &object_tag) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					save_object_reference( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(array_reference), \
-							object_tag); \
-				} \
-				/**/
-
-		// Generates single argument function delegate overloads for native *arrays* for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY(z, array_dim, data) \
-				GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY_CALL( \
-						/* This is actually a sequence, eg, '(int N1) (int N2) (int N3)' \
-						so that we can pass to macro without worrying about commas... */ \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES(array_dim), \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES(array_dim), \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_TUPLE_ELEM(3, 0, data), /*qualified_object*/ \
-						BOOST_PP_TUPLE_ELEM(3, 1, data), /*qualified_pointer*/ \
-						BOOST_PP_TUPLE_ELEM(3, 2, data) /*unqualified_pointer*/) \
-				/**/
-
-		// Generates single argument function delegate overloads for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_CALL( \
-						z, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				\
-				/* Delegate non-arrays... */ \
-				GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_NON_ARRAY_CALL( \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				/* Delegate arrays by looping over array dimensions [1, GPLATES_SCRIBE_MAX_ARRAY_DIMENSION] ... */ \
-				BOOST_PP_CAT(BOOST_PP_REPEAT_FROM_TO_,z)( \
-						1, \
-						BOOST_PP_INC(GPLATES_SCRIBE_MAX_ARRAY_DIMENSION), \
-						GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						(qualified_object, qualified_pointer, unqualified_pointer)) \
-				/**/
-
-		// Generates single argument function delegate overloads for
-		// a multi-level pointer of dimension 'pointer_level'.
-		//
-		// Note: The 'BOOST_PP_DIV(index, 2)' shifts out the least-significant bit of 'index' used by
-		// 'GPLATES_SCRIBE_QUALIFIED_OBJECT()' - the remaining bits are used for the multi-level
-		// pointer levels in 'GPLATES_SCRIBE_QUALIFIED_POINTER()'.
-		//
-		// Note: Calculating 'GPLATES_SCRIBE_QUALIFIED_OBJECT',
-		// 'GPLATES_SCRIBE_UNQUALIFIED_POINTER()' and
-		// 'GPLATES_SCRIBE_QUALIFIED_POINTER' only once here (instead of once per
-		// delegated function) reduces time spent in the preprocessor noticeably.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_INDEX(z, index, pointer_level) \
-				GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_CALL( \
-						z, \
-						/* Using BOOST_PP_IDENTITY since the following macros may return nothing. */ \
-						/* This causes the following to end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_IDENTITY(GPLATES_SCRIBE_QUALIFIED_OBJECT(index)), \
-						BOOST_PP_IDENTITY(GPLATES_SCRIBE_QUALIFIED_POINTER(BOOST_PP_DIV(index, 2), pointer_level)), \
-						BOOST_PP_IDENTITY(GPLATES_SCRIBE_UNQUALIFIED_POINTER(z, pointer_level))) \
-				/**/
-
-		// Iterate over half-open range [ 0, 2*pow(2,pointer_level) ) and generate all const/non-const
-		// multi-level pointer combinations for a particular pointer-level.
-		// Pass 'pointer_level' as auxiliary data.
-		//
-		// Note: The 'BOOST_PP_INC(pointer_level)' is because we need two times as many combinations
-		// of 'const' due to the const/non-const of the final pointed-to object type.
-		// 'GPLATES_SCRIBE_QUALIFIED(index)'.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS(z, pointer_level, _) \
-				BOOST_PP_CAT(BOOST_PP_REPEAT_,z)( \
-						GPLATES_SCRIBE_POW2(BOOST_PP_INC(pointer_level)), \
-						GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_INDEX, \
-						pointer_level) \
-				/**/
-
-
-		// Generate single argument function delegate overloads for
-		// all multi-level pointer levels up to maximum pointer dimension.
-		//
-		// NOTE: If the following compile-time assertion is triggered here...
-		//
-		//    "use of undefined type 'boost::STATIC_ASSERTION_FAILURE<x>'"
-		//
-		// ...then a native array with dimension (actually rank) greater than
-		// 'GPLATES_SCRIBE_MAX_ARRAY_DIMENSION' was transcribed, etc.
-		//
-		BOOST_PP_REPEAT( \
-				BOOST_PP_INC(GPLATES_SCRIBE_MAX_POINTER_DIMENSION), \
-				GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS, \
-				_)
-
-
-		// Generates double argument function delegate overloads for *non-arrays*
-		// for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_NON_ARRAY_CALL( \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				\
-				template <typename ObjectType> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &relocated_object, \
-						qualified_object() ObjectType qualified_pointer() &transcribed_object) \
-				{ \
-					relocated_transcribed_object( \
-							const_cast<ObjectType unqualified_pointer() &>(relocated_object), \
-							const_cast<ObjectType unqualified_pointer() &>(transcribed_object)); \
-				} \
-				\
-				template <typename ObjectType> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType qualified_pointer() const &relocated_object, \
-						qualified_object() ObjectType qualified_pointer() &transcribed_object) \
-				{ \
-					relocated_transcribed_object( \
-							const_cast<ObjectType unqualified_pointer() &>(relocated_object), \
-							const_cast<ObjectType unqualified_pointer() &>(transcribed_object)); \
-				} \
-				\
-				template <typename ObjectType> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &relocated_object, \
-						qualified_object() ObjectType qualified_pointer() const &transcribed_object) \
-				{ \
-					relocated_transcribed_object( \
-							const_cast<ObjectType unqualified_pointer() &>(relocated_object), \
-							const_cast<ObjectType unqualified_pointer() &>(transcribed_object)); \
-				} \
-				\
-				template <typename ObjectType> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType qualified_pointer() const &relocated_object, \
-						qualified_object() ObjectType qualified_pointer() const &transcribed_object) \
-				{ \
-					relocated_transcribed_object( \
-							const_cast<ObjectType unqualified_pointer() &>(relocated_object), \
-							const_cast<ObjectType unqualified_pointer() &>(transcribed_object)); \
-				} \
-				/**/
-
-		// Generates double argument function delegate overloads for native *arrays*
-		// for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_ARRAY_CALL( \
-						array_template_parameter_indices, \
-						array_template_indices, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_object_const, \
-						qualified_pointer, \
-						qualified_pointer_const, \
-						unqualified_pointer) \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &relocated_array) array_template_indices, \
-						qualified_object() ObjectType (qualified_pointer() &transcribed_array) array_template_indices) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					relocated_transcribed_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(relocated_array), \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(transcribed_array)); \
-				} \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				relocated_const_cast( \
-						qualified_object_const() ObjectType (qualified_pointer_const() &relocated_array) array_template_indices, \
-						qualified_object() ObjectType (qualified_pointer() &transcribed_array) array_template_indices) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					relocated_transcribed_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(relocated_array), \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(transcribed_array)); \
-				} \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &relocated_array) array_template_indices, \
-						qualified_object_const() ObjectType (qualified_pointer_const() &transcribed_array) array_template_indices) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					relocated_transcribed_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(relocated_array), \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(transcribed_array)); \
-				} \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				relocated_const_cast( \
-						qualified_object_const() ObjectType (qualified_pointer_const() &relocated_array) array_template_indices, \
-						qualified_object_const() ObjectType (qualified_pointer_const() &transcribed_array) array_template_indices) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					relocated_transcribed_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(relocated_array), \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(transcribed_array)); \
-				} \
-				/**/
-
-		// Generates double *non-pointer* argument function delegate overloads for native *arrays*.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS_ARRAY(z, array_dim, _) \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_ARRAY_CALL( \
-						/* This is actually a sequence, eg, '(int N1) (int N2) (int N3)' \
-						so that we can pass to macro without worrying about commas... */ \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES(array_dim), \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES(array_dim), \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_EMPTY,           /*qualified_object*/ \
-						/* For arrays the const goes on the the final pointed-to object. */ \
-						/* However two of the four functions generated will never get used because \
-						only the top-level const can differ (due to compile-time assertion in \
-						public 'relocated()' method) and with arrays this means the actual array \
-						objects will be the same type (same const-ness). \
-						But we'll keep them anyway since it's easier to code. */ \
-						BOOST_PP_IDENTITY(const), /*qualified_object_const*/ \
-						BOOST_PP_EMPTY,           /*qualified_pointer*/ \
-						BOOST_PP_EMPTY,           /*qualified_pointer_const*/ \
-						BOOST_PP_EMPTY)           /*unqualified_pointer*/ \
-				/**/
-
-		// Double *non-pointer* argument function delegates.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS() \
-				/* Delegate non-arrays... */ \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_NON_ARRAY_CALL( \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_EMPTY, /*qualified_object*/ \
-						BOOST_PP_EMPTY, /*qualified_pointer*/ \
-						BOOST_PP_EMPTY) /*unqualified_pointer*/ \
-				/* Delegate arrays by looping over array dimensions [1, GPLATES_SCRIBE_MAX_ARRAY_DIMENSION] ... */ \
-				BOOST_PP_REPEAT_FROM_TO( \
-						1, \
-						BOOST_PP_INC(GPLATES_SCRIBE_MAX_ARRAY_DIMENSION), \
-						GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS_ARRAY, \
-						_) \
-				/**/
-
-		// Generates double pointer argument function delegate overloads for native *arrays*
-		// for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_ARRAY(z, array_dim, data) \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_ARRAY_CALL( \
-						/* This is actually a sequence, eg, '(int N1) (int N2) (int N3)' \
-						so that we can pass to macro without worrying about commas... */ \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES(array_dim), \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES(array_dim), \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_TUPLE_ELEM(3, 0, data),       /*qualified_object*/ \
-						/* For pointers-to-arrays the const goes on the pointer not the final pointed-to object... */ \
-						BOOST_PP_TUPLE_ELEM(3, 0, data),       /*qualified_object_const*/ \
-						BOOST_PP_TUPLE_ELEM(3, 1, data),       /*qualified_pointer*/ \
-						/* For pointers-to-arrays the const goes on the pointer not the final pointed-to object... */ \
-						BOOST_PP_IDENTITY(BOOST_PP_TUPLE_ELEM(3, 1, data)() const), /*qualified_pointer_const*/ \
-						BOOST_PP_TUPLE_ELEM(3, 2, data))       /*unqualified_pointer*/ \
-				/**/
-
-		// Generates double pointer argument function delegate overloads for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_CALL( \
-						z, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				\
-				/* Delegate non-arrays... */ \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_NON_ARRAY_CALL( \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				/* Delegate arrays by looping over array dimensions [1, GPLATES_SCRIBE_MAX_ARRAY_DIMENSION] ... */ \
-				BOOST_PP_CAT(BOOST_PP_REPEAT_FROM_TO_,z)( \
-						1, \
-						BOOST_PP_INC(GPLATES_SCRIBE_MAX_ARRAY_DIMENSION), \
-						GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_ARRAY, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						(qualified_object, qualified_pointer, unqualified_pointer)) \
-				/**/
-
-		// Generates double argument pointer function delegate overloads for
-		// a multi-level pointer of dimension 'pointer_level'.
-		//
-		// Note: The 'BOOST_PP_DIV(index, 2)' shifts out the least-significant bit of 'index' used by
-		// 'GPLATES_SCRIBE_QUALIFIED_OBJECT()' - the remaining bits are used for the multi-level
-		// pointer levels in 'GPLATES_SCRIBE_QUALIFIED_POINTER()'.
-		//
-		// Note: The 'BOOST_PP_DEC(pointer_level)' is there because the last pointer '*'
-		// (which is explicitly concatenated below) is always non-const - its const-ness is
-		// manually enumerated in 'GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_CALL()'.
-		//
-		// Note: Calculating 'GPLATES_SCRIBE_QUALIFIED_OBJECT',
-		// 'GPLATES_SCRIBE_UNQUALIFIED_POINTER()' and
-		// 'GPLATES_SCRIBE_QUALIFIED_POINTER' only once here (instead of once per
-		// delegated function) reduces time spent in the preprocessor noticeably.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_INDEX(z, index, pointer_level) \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_CALL( \
-						z, \
-						/* Using BOOST_PP_IDENTITY since the following macros may return nothing. */ \
-						/* This causes the following to end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_IDENTITY(GPLATES_SCRIBE_QUALIFIED_OBJECT(index)), \
-						BOOST_PP_IDENTITY( \
-								GPLATES_SCRIBE_QUALIFIED_POINTER( \
-										BOOST_PP_DIV(index, 2), \
-										BOOST_PP_DEC(pointer_level)) \
-								*), \
-						BOOST_PP_IDENTITY(GPLATES_SCRIBE_UNQUALIFIED_POINTER(z, pointer_level))) \
-				/**/
-
-		// Double *pointer* argument function delegates.
-		// Iterate over half-open range [ 0, pow(2,pointer_level) ) and generate all const/non-const
-		// multi-level pointer combinations for a particular pointer-level.
-		// Pass 'pointer_level' as auxiliary data.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS(z, pointer_level, _) \
-				BOOST_PP_CAT(BOOST_PP_REPEAT_,z)( \
-						GPLATES_SCRIBE_POW2(pointer_level), \
-						GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_INDEX, \
-						pointer_level) \
-				/**/
-
-
-		// Generate double argument function delegate overloads for
-		// all multi-level pointer levels up to maximum pointer dimension.
-		//
-		// NOTE: If the following compile-time assertion is triggered here...
-		//
-		//    "use of undefined type 'boost::STATIC_ASSERTION_FAILURE<x>'"
-		//
-		// ...then a native array with dimension (actually rank) greater than
-		// 'GPLATES_SCRIBE_MAX_ARRAY_DIMENSION' was transcribed, etc.
-		//
-		GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS() /* Handle *non-pointer* case. */
-		BOOST_PP_REPEAT_FROM_TO( \
-				1, \
-				BOOST_PP_INC(GPLATES_SCRIBE_MAX_POINTER_DIMENSION), \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS, \
-				_) /* Handle *pointer* cases. */
-
-
-		#undef GPLATES_SCRIBE_POW2_PRED
-		#undef GPLATES_SCRIBE_POW2_MUL_BY_2
-		#undef GPLATES_SCRIBE_POW2
-		#undef GPLATES_SCRIBE_ARRAY_INDICES_PRED
-		#undef GPLATES_SCRIBE_ARRAY_INDICES_OP
-		#undef GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES_MACRO
-		#undef GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES
-		#undef GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES_MACRO
-		#undef GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES
-		#undef GPLATES_SCRIBE_QUALIFIED_OBJECT
-		#undef GPLATES_SCRIBE_PRINT
-		#undef GPLATES_SCRIBE_UNQUALIFIED_POINTER
-		#undef GPLATES_SCRIBE_QUALIFIED_POINTER_PRED
-		#undef GPLATES_SCRIBE_QUALIFIED_POINTER_OP
-		#undef GPLATES_SCRIBE_QUALIFIED_POINTER_MACRO
-		#undef GPLATES_SCRIBE_QUALIFIED_POINTER
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_NON_ARRAY_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_INDEX
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_NON_ARRAY_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_ARRAY_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS_ARRAY
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_ARRAY
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_INDEX
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS
-
-		//                                       //
-		// End boost preprocessor library macros //
-		///////////////////////////////////////////
-
-
 		/**
-		 * A metafunction used to catch (at compile-time) any transcribed objects that are
-		 * pointers with a dimension greater than 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION'.
+		 * A metafunction used to remove all 'const' from an object type.
 		 *
-		 * These high dimension multi-level pointer objects cannot be properly const-cast and
-		 * hence are not supported for transcribing.
+		 * To remove all 'const' from 'ObjectType' use 'remove_all_const_t<ObjectType>'.
 		 *
-		 * Can be used like:
+		 * The type can be a (multi-dimensional) pointer to an object
+		 * (which in turn can be a multi-dimensional native array).
+		 * For example:
 		 *
-		 *    BOOST_STATIC_ASSERT(boost::mpl::not_< UnsupportedPointerType<ObjectType> >::value);
+		 *   const int var[2][3] = { };
+		 *   const int (*const pvar)[2][3] = &var;
+		 *   const int (*const *const ppvar)[2][3] = &pvar;
 		 *
+		 * ...will result in 'decltype(ppvar)' giving 'const int (*const *)[2][3]' and
+		 * 'remove_all_const_t<decltype(ppvar)>' giving 'int (**)[2][3]'.
+		 *
+		 *
+		 * Why is const conversion needed ?
+		 *
+		 * Const conversion is necessary because objects are tracked based on both their address and
+		 * their *type*. The *type* tracking assumes all 'const's have been removed. This is because
+		 * we need to be able to link pointers to the objects that they point to as the following
+		 * example demonstrates...
+		 *
+		 *     int var = 1;
+		 * 	   int *var_ptr = &var;
+		 *     const int *const *const var_ptr_ptr1 = &var_ptr; // Needs const conversion to link up.
+		 *     int * *const var_ptr_ptr2 = &var_ptr;            // Happens to be fine without const conversion.
+		 *
+		 * ...where the type of the object that both 'var_ptr_ptr1' and 'var_ptr_ptr2' points to
+		 * (ie, 'var_ptr') is 'int *'. However when 'var_ptr_ptr1' is transcribed, the scribe system
+		 * sees that it points to an object of type 'const int *const' (the type of '*var_ptr_ptr1')
+		 * and records this (as well as the address of 'var_ptr' which it gets from the value of 'var_ptr_ptr1').
+		 * If 'var_ptr' is subsequently transcribed (after 'var_ptr_ptr1') then the scribe system will
+		 * register its address and the type 'int *'. Even though the addresses are the same,
+		 * the types are different and so the scribe system will not link 'var_ptr_ptr1' to 'var_ptr'
+		 * and will complain that the object pointed to by 'var_ptr_ptr1' was never transcribed
+		 * (with tracking enabled). The other pointer-to-pointer, 'var_ptr_ptr2', just happens to
+		 * get lucky because the type of '*var_ptr_ptr2' is the same as the type of 'var_ptr'.
+		 *
+		 * Removing all 'const's from 'const int *const' to get 'int *' solves the problem.
+		 *
+		 * And the reason *type*s are used (as well as addresses) to link pointers to their pointed-to
+		 * objects is there can be multiple objects at the same address. For example the first
+		 * data member of a class object has the same address as the class object itself.
+		 * Another example is the first inherited base class object and the derived class object.
+		 * But the types at the same address are always guaranteed to be different so we can use
+		 * the address *and* the type to distinguish between different objects.
+		 * This is why the Empty Base Optimisation cannot always optimise away empty base classes
+		 * (see http://en.cppreference.com/w/cpp/language/ebo).
 		 */
-		template <typename ObjectType, int Dim=0> // Primary template.
-		struct UnsupportedPointerType :
-				public boost::mpl::eval_if<
-						boost::is_pointer<ObjectType>,
-						UnsupportedPointerType<typename boost::remove_pointer<ObjectType>::type, Dim+1>,
-						boost::mpl::false_>
-		{  };
-		template <typename ObjectType> // Partial specialisation to terminate recursion.
-		struct UnsupportedPointerType<ObjectType, GPLATES_SCRIBE_MAX_POINTER_DIMENSION+1> :
-				public boost::mpl::true_
+		template <typename ObjectType>
+		struct RemoveAllConst :
+				public boost::type_identity<ObjectType>
 		{  };
 
-		// 		template <typename ObjectType, int Dim=0>
-		// 		struct UnsupportedPointerType :
-		// 				public boost::mpl::eval_if<
-		// 						boost::is_pointer<ObjectType>,
-		// 						boost::mpl::eval_if<
-		// 								boost::mpl::greater<
-		// 										boost::mpl::int_<Dim+1>,
-		// 										boost::mpl::int_<GPLATES_SCRIBE_MAX_POINTER_DIMENSION> >,
-		// 								boost::mpl::true_,
-		// 								UnsupportedPointerType<typename boost::remove_pointer<ObjectType>::type, Dim+1> >,
-		// 						boost::mpl::false_>
-		// 		{  };
+		template <typename ObjectType>
+		struct RemoveAllConst<const ObjectType> :
+				public RemoveAllConst<ObjectType>
+		{  };
+
+		template <typename ObjectType>
+		struct RemoveAllConst<volatile ObjectType> :
+				public RemoveAllConst<ObjectType>
+		{  };
+
+		template <typename ObjectType>
+		struct RemoveAllConst<const volatile ObjectType> :
+				public RemoveAllConst<ObjectType>
+		{  };
+
+		template <typename ObjectType>
+		struct RemoveAllConst<ObjectType *> :
+				public boost::add_pointer<typename RemoveAllConst<ObjectType>::type>
+		{  };
+
+		template <typename ObjectType>
+		using remove_all_const_t = typename RemoveAllConst<ObjectType>::type;
+
 
 
 		/**
@@ -2437,7 +1637,13 @@ namespace GPlatesScribe
 		void
 		untrack(
 				ObjectType &object,
-				bool discard);
+				bool discard)
+		{
+			untrack_object(
+					// Remove all 'const' from 'ObjectType' (if const)...
+					const_cast<remove_all_const_t<ObjectType> &>(object),
+					discard);
+		}
 
 
 		/**
@@ -2450,11 +1656,15 @@ namespace GPlatesScribe
 		template <typename ObjectType>
 		bool
 		transcribe_construct(
-				ConstructObject<ObjectType> &object,
+				ConstructObject<ObjectType> &construct_object,
 				const ObjectTag &object_tag,
 				unsigned int options)
 		{
-			return transcribe_construct_const_cast(object, object_tag, options);
+			return transcribe_construct_object(
+					// Remove all 'const' from 'ObjectType' (if const)...
+					reinterpret_cast<ConstructObject<remove_all_const_t<ObjectType>> &>(construct_object),
+					object_tag,
+					options);
 		}
 
 
@@ -2466,11 +1676,15 @@ namespace GPlatesScribe
 		template <typename ObjectType>
 		bool
 		transcribe_construct(
-				ConstructObject<ObjectType> &object,
+				ConstructObject<ObjectType> &construct_object,
 				object_id_type object_id,
 				unsigned int options)
 		{
-			return transcribe_construct_const_cast(object, object_id, options);
+			return transcribe_construct_object(
+					// Remove all 'const' from 'ObjectType' (if const)...
+					reinterpret_cast<ConstructObject<remove_all_const_t<ObjectType>> &>(construct_object),
+					object_id,
+					options);
 		}
 
 
@@ -2489,7 +1703,10 @@ namespace GPlatesScribe
 				ObjectType *&object_ptr,
 				bool shared_owner)
 		{
-			return transcribe_smart_pointer_const_cast(object_ptr, shared_owner);
+			return transcribe_smart_pointer_object(
+					// Remove all 'const' from 'ObjectType *' (if const)...
+					const_cast<remove_all_const_t<ObjectType *> &>(object_ptr),
+					shared_owner);
 		}
 
 
@@ -2528,33 +1745,6 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Delegates to @a transcribe_delegate_object.
-		 *
-		 * We don't have to worry about const-casting pointers and native arrays.
-		 */
-		template <typename ObjectType>
-		bool
-		transcribe_delegate_const_cast(
-				ObjectType &object)
-		{
-			return transcribe_delegate_object(object);
-		}
-
-		/**
-		 * Delegates to @a transcribe_delegate_object.
-		 *
-		 * We don't have to worry about const-casting pointers and native arrays.
-		 */
-		template <typename ObjectType>
-		bool
-		transcribe_delegate_const_cast(
-				const ObjectType &object)
-		{
-			return transcribe_delegate_object(const_cast<ObjectType &>(object));
-		}
-
-
-		/**
 		 * A transcribed object type has delegated transcribing to another object type.
 		 */
 		template <typename ObjectType>
@@ -2564,99 +1754,12 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Delegates to @a transcribe_delegate_construct_object.
-		 *
-		 * We don't have to worry about const-casting pointers and native arrays.
-		 */
-		template <typename ObjectType>
-		bool
-		transcribe_delegate_construct_const_cast(
-				ConstructObject<ObjectType> &construct_object)
-		{
-			return transcribe_delegate_construct_object(construct_object);
-		}
-
-		/**
-		 * Delegates to @a transcribe_delegate_construct_object.
-		 *
-		 * We don't have to worry about const-casting pointers and native arrays.
-		 */
-		template <typename ObjectType>
-		bool
-		transcribe_delegate_construct_const_cast(
-				ConstructObject<const ObjectType> &construct_object)
-		{
-			return transcribe_delegate_construct_object(
-					reinterpret_cast<ConstructObject<ObjectType> &>(construct_object));
-		}
-
-
-		/**
 		 * A transcribed object type has delegated transcribing to another object type.
 		 */
 		template <typename ObjectType>
 		bool
 		transcribe_delegate_construct_object(
 				ConstructObject<ObjectType> &construct_object);
-
-
-		/**
-		 * Delegates to @a transcribe_base_object.
-		 *
-		 * We don't have to worry about const-casting pointers, etc, because BaseType and DerivedType
-		 * are always classes (ie, not pointers).
-		 */
-		template <class BaseType, class DerivedType>
-		bool
-		transcribe_base_const_cast(
-				DerivedType &derived_object,
-				const ObjectTag &base_object_tag)
-		{
-			return transcribe_base_object<
-					// Remove 'const' from 'BaseType' (if needed)...
-					typename boost::remove_const<BaseType>::type>(
-							derived_object,
-							base_object_tag);
-		}
-
-		/**
-		 * Delegates to @a transcribe_base_object.
-		 *
-		 * We don't have to worry about const-casting pointers, etc, because BaseType and DerivedType
-		 * are always classes (ie, not pointers).
-		 */
-		template <class BaseType, class DerivedType>
-		bool
-		transcribe_base_const_cast(
-				const DerivedType &derived_object,
-				const ObjectTag &base_object_tag)
-		{
-			return transcribe_base_object<
-					// Remove 'const' from 'BaseType' (if needed)...
-					typename boost::remove_const<BaseType>::type>(
-							const_cast<DerivedType &>(derived_object),
-							base_object_tag);
-		}
-
-
-		/**
-		 * Delegates to @a transcribe_base_object.
-		 *
-		 * This overload just registers the base-derived inheritance.
-		 * It doesn't also transcribe base sub-object.
-		 *
-		 * We don't have to worry about const-casting pointers, etc, because BaseType and DerivedType
-		 * are always classes (ie, not pointers).
-		 */
-		template <class BaseType, class DerivedType>
-		bool
-		transcribe_base_const_cast()
-		{
-			return transcribe_base_object<
-					// Remove 'const' from 'BaseType' and 'DerivedType' (if needed)...
-					typename boost::remove_const<BaseType>::type,
-					typename boost::remove_const<DerivedType>::type>();
-		}
 
 
 		/**
@@ -2830,9 +1933,11 @@ namespace GPlatesScribe
 
 		/**
 		 * Load a *reference* to an object.
+		 *
+		 * Returns NULL on failure.
 		 */
 		template <typename ObjectType>
-		LoadRef<ObjectType>
+		ObjectType *
 		load_object_reference(
 				const GPlatesUtils::CallStack::Trace &transcribe_source,
 				const ObjectTag &object_tag);
@@ -3443,7 +2548,11 @@ namespace GPlatesScribe
 		// Wrap in a Bool object to force caller to check return code.
 		return Bool(
 				transcribe_source,
-				transcribe_const_cast(object, object_tag, options),
+				transcribe_object(
+						// Remove all 'const' from 'ObjectType' (if const)...
+						const_cast<remove_all_const_t<ObjectType> &>(object),
+						object_tag,
+						options),
 				is_loading()/*require_check*/);
 	}
 
@@ -3461,7 +2570,10 @@ namespace GPlatesScribe
 		// Wrap in a Bool object to force caller to check return code.
 		return Bool(
 				transcribe_source,
-				transcribe_base_const_cast<BaseType>(derived_object, base_object_tag),
+				// Remove 'const' from 'BaseType' and 'DerivedType' (if const)...
+				transcribe_base_object<remove_all_const_t<BaseType>>(
+						const_cast<remove_all_const_t<DerivedType> &>(derived_object),
+						base_object_tag),
 				is_loading()/*require_check*/);
 	}
 
@@ -3474,7 +2586,8 @@ namespace GPlatesScribe
 		// Wrap in a Bool object to force caller to check return code.
 		return Bool(
 				transcribe_source,
-				transcribe_base_const_cast<BaseType, DerivedType>(),
+				// Remove 'const' from 'BaseType' and 'DerivedType' (if const)...
+				transcribe_base_object<remove_all_const_t<BaseType>, remove_all_const_t<DerivedType>>(),
 				is_loading()/*require_check*/);
 	}
 
@@ -3583,7 +2696,10 @@ namespace GPlatesScribe
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
-		save_reference_const_cast(object_reference, object_tag);
+		save_object_reference(
+				// Remove all 'const' from 'ObjectType' (if const)...
+				const_cast<remove_all_const_t<ObjectType> &>(object_reference),
+				object_tag);
 	}
 
 
@@ -3596,7 +2712,24 @@ namespace GPlatesScribe
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
-		return load_object_reference<ObjectType>(transcribe_source, object_tag);
+		// Remove all 'const' from 'ObjectType' (if const)...
+		remove_all_const_t<ObjectType> *referenced_object_ptr =
+				load_object_reference<remove_all_const_t<ObjectType>>(
+						transcribe_source,
+						object_tag);
+		if (referenced_object_ptr == nullptr)
+		{
+			// Return NULL reference.
+			return LoadRef<ObjectType>();
+		}
+
+		// Return reference to the object.
+		return LoadRef<ObjectType>(
+				transcribe_source,
+				*this,
+				static_cast<ObjectType *>(referenced_object_ptr),
+				// Referencing an existing object (not transferring ownership)...
+				false/*release*/);
 	}
 
 
@@ -3628,7 +2761,10 @@ namespace GPlatesScribe
 				typename boost::remove_const<ObjectFirstQualifiedType>::type,
 				typename boost::remove_const<ObjectSecondQualifiedType>::type>::value));
 
-		relocated_const_cast(relocated_object, transcribed_object);
+		// Remove all 'const' from 'ObjectFirstQualifiedType' and 'ObjectSecondQualifiedType' (if const)...
+		relocated_transcribed_object(
+				const_cast<remove_all_const_t<ObjectFirstQualifiedType> &>(relocated_object),
+				const_cast<remove_all_const_t<ObjectSecondQualifiedType> &>(transcribed_object));
 	}
 
 
@@ -3637,7 +2773,9 @@ namespace GPlatesScribe
 	Scribe::has_been_transcribed(
 			ObjectType &object)
 	{
-		return has_been_transcribed_const_cast(object);
+		// Remove all 'const' from 'ObjectType' (if const)...
+		return has_object_been_transcribed(
+				const_cast<remove_all_const_t<ObjectType> &>(object));
 	}
 
 
@@ -3688,7 +2826,7 @@ namespace GPlatesScribe
 		// And we want this to work with non-transcribed, non-registered object types.
 		const class_id_type class_id =
 				get_or_create_class_id(
-						// Remove 'const' from the object type (if needed)...
+						// Remove 'const' from the object type (if const)...
 						typeid(typename boost::remove_const<ObjectType>::type));
 
 		// Get the class info.
@@ -3706,7 +2844,7 @@ namespace GPlatesScribe
 	boost::optional<TranscribeContext<ObjectType> &>
 	Scribe::get_transcribe_context()
 	{
-		// Remove 'const' from the object type (if needed).
+		// Remove 'const' from the object type (if const).
 		typedef typename boost::remove_const<ObjectType>::type non_const_object_type;
 
 		const std::type_info &class_type_info = typeid(non_const_object_type);
@@ -3735,7 +2873,7 @@ namespace GPlatesScribe
 	void
 	Scribe::pop_transcribe_context()
 	{
-		// Remove 'const' from the object type (if needed).
+		// Remove 'const' from the object type (if const).
 		typedef typename boost::remove_const<ObjectType>::type non_const_object_type;
 
 		const std::type_info &class_type_info = typeid(non_const_object_type);
@@ -3783,7 +2921,9 @@ namespace GPlatesScribe
 				GPLATES_ASSERTION_SOURCE,
 				object);
 
-		return transcribe_delegate_const_cast(object);
+		return transcribe_delegate_object(
+				// Remove all 'const' from 'ObjectType' (if const)...
+				const_cast<remove_all_const_t<ObjectType> &>(object));
 	}
 
 
@@ -3815,7 +2955,9 @@ namespace GPlatesScribe
 		// Mirror the load path.
 		SaveConstructObject<ObjectType> save_construct_object(object);
 		// We're on the *save* path so no need to check return value.
-		transcribe_delegate_construct_const_cast(save_construct_object);
+		transcribe_delegate_construct_object(
+				// Remove all 'const' from 'ObjectType' (if const)...
+				reinterpret_cast<SaveConstructObject<remove_all_const_t<ObjectType>> &>(save_construct_object));
 	}
 
 
@@ -3833,7 +2975,9 @@ namespace GPlatesScribe
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value);
 
 		LoadConstructObjectOnHeap<ObjectType> load_construct_object;
-		if (!transcribe_delegate_construct_const_cast(load_construct_object))
+		if (!transcribe_delegate_construct_object(
+				// Remove all 'const' from 'ObjectType' (if const)...
+				reinterpret_cast<LoadConstructObjectOnHeap<remove_all_const_t<ObjectType>> &>(load_construct_object)))
 		{
 			// Heap-allocated object destructed/deallocated by construct object 'load_construct_object' on returning...
 			return LoadRef<ObjectType>();
@@ -4079,13 +3223,6 @@ namespace GPlatesScribe
 			object_id_type pointer_object_id,
 			unsigned int options)
 	{
-		// Ensure maximum supported pointer dimension has not been exceeded.
-		//
-		// If this assertion is triggered then a multi-level pointer with dimension greater than
-		// 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION' is being transcribed.
-		//
-		BOOST_STATIC_ASSERT(boost::mpl::not_< UnsupportedPointerType<ObjectType*> >::value);
-
 		// Compile-time assertion to ensure that 'ObjectType' is not const.
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
 
@@ -4651,10 +3788,12 @@ namespace GPlatesScribe
 		//
 		// Note: We don't call 'transcribe()' directly because it would require the object's
 		// actual type to be 'BaseType' (but it's really 'DerivedType' or some derivation of that).
-		// And we don't call 'transcribe_object()' directly because that bypasses the const conversions
+		// Instead we call 'transcribe_object()' and remove 'const' from 'BaseType'
 		// (although in our case we use non-const classes so it wouldn't actually matter).
-		if (!transcribe_const_cast(
-				static_cast<BaseType &>(derived_object),
+		if (!transcribe_object(
+				// Remove all 'const' from 'ObjectType' (if const)...
+				const_cast<remove_all_const_t<BaseType> &>(
+						static_cast<BaseType &>(derived_object)),
 				base_object_tag,
 				// The tracking of base class object should always be enabled even if the client requested
 				// tracking be disabled for the derived class object.
@@ -4772,7 +3911,7 @@ namespace GPlatesScribe
 
 
 	template <typename ObjectType>
-	LoadRef<ObjectType>
+	ObjectType *
 	Scribe::load_object_reference(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
 			const ObjectTag &object_tag)
@@ -4789,7 +3928,7 @@ namespace GPlatesScribe
 		if (!transcribe_object_id(object_address_type(), object_tag, object_id))
 		{
 			// Return NULL reference.
-			return LoadRef<ObjectType>();
+			return nullptr;
 		}
 
 		// Get the referenced object info.
@@ -4812,7 +3951,7 @@ namespace GPlatesScribe
 			set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_UNKNOWN_TYPE);
 
 			// Return NULL reference.
-			return LoadRef<ObjectType>();
+			return nullptr;
 		}
 
 		// We need to do any pointer fix ups in the presence of multiple inheritance.
@@ -4831,7 +3970,7 @@ namespace GPlatesScribe
 				referenced_object_ptr))
 		{
 			// Return NULL reference.
-			return LoadRef<ObjectType>();
+			return nullptr;
 		}
 
 		// Mark the referenced object as referenced so we can raise an error if an attempt
@@ -4842,12 +3981,7 @@ namespace GPlatesScribe
 		object_info.is_load_object_bound_to_a_reference_or_untracked_pointer = true;
 
 		// Return reference to the object.
-		return LoadRef<ObjectType>(
-				transcribe_source,
-				*this,
-				static_cast<ObjectType *>(referenced_object_ptr),
-				// Referencing an existing object (not transferring ownership)...
-				false/*release*/);
+		return referenced_object_ptr;
 	}
 
 
@@ -4939,16 +4073,6 @@ namespace GPlatesScribe
 		// This is unlikely though since the parent must be tracked for relocations to work and
 		// leaving an unused but tracked (parent) object lying around can be problematic.
 		add_or_remove_relocated_child_as_sub_object_if_inside_or_outside_parent(transcribed_object_id.get());
-	}
-
-
-	template <typename ObjectType>
-	void
-	Scribe::untrack(
-			ObjectType &object,
-			bool discard)
-	{
-		untrack_const_cast(object, discard);
 	}
 
 
