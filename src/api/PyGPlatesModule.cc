@@ -418,7 +418,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	//
 	// Note that it's possible some boost python objects are still alive when atexit calls this function,
 	// but we're assuming that any profiled code has already run (and hence been profiled) before this happens.
-#if defined(PROFILE_GPLATES)
+#if defined(GPLATES_PROFILE_CODE)
 	bp::import("atexit").attr("register")(bp::make_function(&pygplates_profile_report_to_file));
 #endif
 
