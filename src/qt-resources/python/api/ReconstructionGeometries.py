@@ -193,7 +193,7 @@ def get_overriding_plate(
     
     .. note:: If *enforce_single_plate* is ``False``, then ``None`` could be returned for the overriding plate/network (if none are found), and
        if more than one overriding plate (or more than one overriding network) is found then it is arbitrary which overriding plate (or network)
-       is returned. This means if *return_subduction_polarity* is also ``False`` then it's possible a 2-tuple is returned with ``None`` for the
+       is returned. This means if *return_subduction_polarity* is ``True`` then it's possible a 2-tuple is returned with ``None`` for the
        overriding plate and a valid value for the subduction polarity.
 
     .. note:: The number of *subducting* plates and networks is not considered (only overriding plates/networks are considered). In other words,
@@ -323,7 +323,7 @@ def get_subducting_plate(
     
     .. note:: If *enforce_single_plate* is ``False``, then ``None`` could be returned for the subducting plate/network (if none are found), and
        if more than one subducting plate (or more than one subducting network) is found then it is arbitrary which subducting plate (or network)
-       is returned. This means if *return_subduction_polarity* is also ``False`` then it's possible a 2-tuple is returned with ``None`` for the
+       is returned. This means if *return_subduction_polarity* is ``True`` then it's possible a 2-tuple is returned with ``None`` for the
        subducting plate and a valid value for the subduction polarity.
 
     .. note:: The number of *overriding* plates and networks is not considered (only subducting plates/networks are considered). In other words,
