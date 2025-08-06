@@ -43,8 +43,8 @@ GPlatesFileIO::DataFormats::data_format_to_str(
 	case PlatesLine:
 		str = "PLATES \"line\"";
 		break;
-	case Shapefile:
-		str = "ESRI Shapefile";
+	case Ogr:
+		str = "OGR";
 		break;
 	case Gmap:
 		str = "GMAP VGP";

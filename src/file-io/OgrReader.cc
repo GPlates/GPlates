@@ -808,7 +808,7 @@ namespace
 		for ( ; it != it_end ; ++it)
 		{
 			boost::shared_ptr<GPlatesFileIO::DataSource> source(
-				new GPlatesFileIO::LocalFileDataSource(filename, GPlatesFileIO::DataFormats::Shapefile));
+				new GPlatesFileIO::LocalFileDataSource(filename, GPlatesFileIO::DataFormats::Ogr));
 			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
 				new GPlatesFileIO::LineNumber(count));
 			GPlatesModel::FeatureHandle::weak_ref feature = (*it)->reference();
@@ -969,7 +969,7 @@ GPlatesFileIO::OgrReader::check_file_format(
 	}
 
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
-		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Shapefile));
+		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Ogr));
   	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
 				new GPlatesFileIO::LineNumber(0));
 
@@ -1054,7 +1054,7 @@ GPlatesFileIO::OgrReader::read_features(
 	int feature_number = 0; // For error reporting.
 
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
-		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Shapefile));
+		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Ogr));
 
 	static const OgrUtils::feature_map_type &feature_map = OgrUtils::build_feature_map();
 
@@ -1417,7 +1417,7 @@ GPlatesFileIO::OgrReader::get_field_names(
 	ReadErrorAccumulation &read_errors)
 {
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
-		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Shapefile));
+		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Ogr));
 
 	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
 		new GPlatesFileIO::LineNumber(0));
