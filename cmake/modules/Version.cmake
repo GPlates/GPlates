@@ -111,7 +111,7 @@ set(GPLATES_VERSION ${GPLATES_VERSION_MAJOR}.${GPLATES_VERSION_MINOR}.${GPLATES_
 #
 # See note about pre-release version suffixes above.
 #
-set(GPLATES_VERSION_PRERELEASE_SUFFIX "1")
+set(GPLATES_VERSION_PRERELEASE_SUFFIX "2")
 # Ensure pre-release contains only dot-separated alphanumeric identifiers.
 check_prerelease_suffix("${GPLATES_VERSION_PRERELEASE_SUFFIX}")
 
