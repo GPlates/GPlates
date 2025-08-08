@@ -42,13 +42,13 @@
  */
 #define SCRIBE_EXPORT_DATA_MINING \
 		\
-		((GPlatesDataMining::DummyFilter::Config, \
+		(((GPlatesDataMining::DummyFilter::Config), \
 			"GPlatesDataMining::DummyFilter::Config")) \
 		\
-		((GPlatesDataMining::RegionOfInterestFilter::Config, \
+		(((GPlatesDataMining::RegionOfInterestFilter::Config), \
 			"GPlatesDataMining::RegionOfInterestFilter::Config")) \
 		\
-		((GPlatesDataMining::SeedSelfFilter::Config, \
+		(((GPlatesDataMining::SeedSelfFilter::Config), \
 			"GPlatesDataMining::SeedSelfFilter::Config")) \
 		\
 

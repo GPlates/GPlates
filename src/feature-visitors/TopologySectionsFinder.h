@@ -65,6 +65,7 @@
 namespace GPlatesPropertyValues
 {
 	class GpmlKeyValueDictionaryElement;
+	class GpmlPropertyDelegate;
 	class GpmlTimeSample;
 	class GpmlTimeWindow;
 	class GpmlTopologicalSection;

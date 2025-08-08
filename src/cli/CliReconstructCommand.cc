@@ -286,5 +286,6 @@ GPlatesCli::ReconstructCommand::run(
 				d_export_single_output_file/*export_single_output_file*/,
 				!d_export_single_output_file/*export_per_input_file*/,
 				d_export_separate_output_directory_per_input_file,
+				boost::none/*force_polygon_orientation*/,
 				d_wrap_to_dateline);
 }

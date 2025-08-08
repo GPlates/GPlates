@@ -36,6 +36,9 @@
 
 #include "global/unicode.h"
 
+ // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/UniqueId.h"
 
 
@@ -336,6 +339,23 @@ namespace GPlatesModel
 		// This is a scoped_ptr, so that it cannot be shared between IdTypeGenerator
 		// instances which are copied or copy-assigned.
 		boost::scoped_ptr<const BackRef> d_back_ref_ptr;
+
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		// NOTE: Implementation is in "TranscribeIdTypeGenerator.h" to avoid including "Scribe.h" here.
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject< IdTypeGenerator<SingletonType, BackRefTargetType> > &id_type_generator);
+
+		// NOTE: Implementation is in "TranscribeIdTypeGenerator.h" to avoid including "Scribe.h" here.
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

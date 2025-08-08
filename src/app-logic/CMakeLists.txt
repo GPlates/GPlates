@@ -89,6 +89,8 @@ set(srcs
     PartitionFeatureTask.h
     PartitionFeatureUtils.cc
     PartitionFeatureUtils.h
+    PlateBoundaryStats.cc
+    PlateBoundaryStats.h
     PlateVelocityUtils.cc
     PlateVelocityUtils.h
     PropertyExtractors.cc
@@ -269,6 +271,7 @@ set(srcs
     VelocityFieldCalculatorLayerTask.h
     VelocityParams.cc
     VelocityParams.h
+    VelocityUnits.h
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h
 )

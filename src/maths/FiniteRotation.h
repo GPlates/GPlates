@@ -36,6 +36,9 @@
 #include "UnitQuaternion3D.h"
 #include "types.h"  /* real_t */
 
+ // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/QtStreamable.h"
@@ -239,6 +242,21 @@ namespace GPlatesMaths
 
 		// This provides a hint as to what the rotation axis might approx be.
 		boost::optional<UnitVector3D> d_axis_hint;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<FiniteRotation> &finite_rotation);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

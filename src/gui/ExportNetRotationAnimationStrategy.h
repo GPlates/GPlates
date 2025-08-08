@@ -187,16 +187,6 @@ namespace GPlatesGui
 	private:
 
 		/**
-		 * @brief export_iteration_using_existing_velocity_mesh - calculates net-rotations using the velocities
-		 * of an existing velocity mesh layer.
-		 * @param frame_index
-		 * @return
-		 */
-		bool
-		export_iteration_using_existing_velocity_mesh(
-				std::size_t frame_index);
-
-		/**
 		 * @brief export_iteration - calculates net-rotations based on a hard-coded 1-degree lat-lon grid.
 		 * @param frame_index
 		 * @return

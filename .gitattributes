@@ -4,3 +4,5 @@
 # Isolate binary files in case auto-detection algorithm fails.
 # These are extensions of binary files that exist in repository.
 *.{icns,ico,gz,dbf,shp,shx,png} binary
+
+*.sh text eol=lf

@@ -521,6 +521,8 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::cache_velocities(
 				surface_resolved_topological_networks,
 				velocity_params.get_delta_time(),
 				velocity_params.get_delta_time_type(),
+				VelocityUnits::CMS_PER_YR,
+				GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 				velocity_smoothing_options);
 	}
 	else

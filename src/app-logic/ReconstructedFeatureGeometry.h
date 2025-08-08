@@ -36,9 +36,12 @@
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructMethodFiniteRotation.h"
 #include "ReconstructMethodType.h"
+#include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/PointOnSphere.h"
+#include "maths/Vector3D.h"
 
 #include "model/FeatureHandle.h"
 #include "model/WeakObserver.h"
@@ -46,6 +49,7 @@
 
 #include "property-values/GeoTimeInstant.h"
 
+#include "utils/Earth.h"
 #include "utils/non_null_intrusive_ptr.h"
 
 
@@ -76,6 +80,9 @@ namespace GPlatesAppLogic
 
 		//! Typedef for a sequence of points.
 		typedef std::vector<GPlatesMaths::PointOnSphere> point_seq_type;
+
+		//! Typedef for a sequence of velocities.
+		typedef std::vector<GPlatesMaths::Vector3D> velocity_seq_type;
 
 
 		/**
@@ -327,6 +334,32 @@ namespace GPlatesAppLogic
 		virtual
 		geometry_ptr_type
 		reconstructed_geometry() const;
+
+		/**
+		 * Returns the reconstructed geometry points in @a reconstructed_geometry.
+		 *
+		 * Note: Includes points on interior rings if geometry is a polygon.
+		 */
+		virtual
+		void
+		reconstructed_geometry_points(
+				point_seq_type &reconstructed_geometry_points_) const;
+
+		/**
+		 * Returns the velocities at points in @a reconstructed_geometry_points.
+		 *
+		 * Note: Each velocity maps to a point in @a reconstructed_geometry_points.
+		 *
+		 * Note: The number of velocities is guaranteed to match points in @a reconstructed_geometry_points.
+		 */
+		virtual
+		void
+		reconstructed_geometry_point_velocities(
+				velocity_seq_type &reconstructed_geometry_point_velocities_,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
 
 
 		/**

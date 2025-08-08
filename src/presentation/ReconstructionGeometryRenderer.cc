@@ -2112,7 +2112,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 	// Use the network boundary polygon with rigid block interior holes since the triangulation
 	// (ie, deforming region) is filled and we don't want to fill the interior holes (rigid blocks).
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type network_boundary_with_rigid_block_holes =
-			rtn->get_triangulation_network().get_boundary_polygon_with_rigid_block_holes();
+			rtn->get_triangulation_network().get_boundary_polygon(true/*include_rigid_blocks_as_interior_holes*/);
 
 	// Create a RenderedGeometry for drawing the network boundary polygon.
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =

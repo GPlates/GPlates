@@ -159,6 +159,7 @@ namespace
 					true/*export_single_output_file*/,
 					false/*export_per_input_file*/,
 					false/*export_separate_output_directory_per_input_file*/,
+					boost::none/*force_polygon_orientation*/,
 					format == ReconstructedFeatureGeometryExport::SHAPEFILE/*wrap_to_dateline*/);
 	}
 

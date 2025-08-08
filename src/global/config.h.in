@@ -38,9 +38,6 @@
 // Define if have the <proj_api.h> header file (Proj4).
 #cmakedefine GPLATES_HAVE_PROJ_API_H
 
-// The full path to certain system header files.
-#cmakedefine BOOST_CSTDINT_HPP_PATH "@BOOST_CSTDINT_HPP_PATH@"
-
 // Define if have boost.python.numpy (NumPy extension package of Boost.Python).
 #cmakedefine GPLATES_HAVE_BOOST_PYTHON_NUMPY
 

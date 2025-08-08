@@ -32,18 +32,23 @@
 #define GPLATES_MATHS_POLYLINEONSPHERE_H
 
 #include <algorithm>
-#include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
+#include <iterator>  // std::random_access_iterator_tag, std::distance
 #include <utility>  // std::pair
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/optional.hpp>
 
 #include "AngularExtent.h"
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
+#include "PointOnSphere.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 namespace GPlatesMaths
@@ -871,8 +876,7 @@ namespace GPlatesMaths
 		generate_segments_and_swap(
 				PolylineOnSphere &poly,
 				PointForwardIter begin,
-				PointForwardIter end,
-				bool check_distinct_points);
+				PointForwardIter end);
 
 
 		/**
@@ -898,6 +902,15 @@ namespace GPlatesMaths
 		 * This pointer is NULL until the first calculation is requested.
 		 */
 		mutable boost::intrusive_ptr<PolylineOnSphereImpl::CachedCalculations> d_cached_calculations;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
@@ -918,6 +931,37 @@ namespace GPlatesMaths
 	tessellate(
 			const PolylineOnSphere &polyline,
 			const real_t &max_angular_extent);
+
+	/**
+	 * Generates a sequence of uniformly-spaced points *along* a polyline (returned in @a uniform_points).
+	 *
+	 * The first point is located @a first_uniform_point_spacing radians from the polyline's first vertex.
+	 * And each subsequent point is separated by @a uniform_point_spacing radians.
+	 *
+	 * Can optionally return segment information for each uniform point.
+	 * Segment information is a segment index (into @a get_segment) and an interpolation within the segment (of a uniform point).
+	 * The interpolation is in the range [0,1] where 0.0 means the arc start point and 1.0 means the arc end point.
+	 *
+	 * Note: If @a first_uniform_point_spacing is greater than the polyline's length then no uniform points will be generated.
+	 *
+	 * Note: If the polyline is zero length and @a first_uniform_point_spacing is zero then a single uniform point will be generated.
+	 *
+	 * Note: The spacing between the last uniform point and the polyline's last vertex can be less than
+	 *       @a uniform_point_spacing (since the length of the polyline minus @a first_uniform_point_spacing
+	 *       might not be an integer multiple of @a uniform_point_spacing).
+	 *
+	 * Note: Ideally @a first_uniform_point_spacing is non-negative, but if it's negative then extra uniformly-spaced points
+	 *       will be extrapolated off the polyline's first arc from its start point (along its great circle).
+	 */
+	void
+	uniformly_spaced_points(
+			std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+			const PolylineOnSphere &polyline,
+			const double &uniform_point_spacing,
+			const double &first_uniform_point_spacing = 0.0,
+			boost::optional<
+					std::vector<std::pair<unsigned int/*segment index*/, double/*segment interpolation*/>> &
+				> segment_informations = boost::none);
 
 
 	/**
@@ -1013,18 +1057,6 @@ namespace GPlatesMaths
 		return VALID;
 	}
 
-	template<typename PointForwardIter>
-	const PolylineOnSphere::non_null_ptr_to_const_type
-	PolylineOnSphere::create(
-			PointForwardIter begin,
-			PointForwardIter end,
-			bool check_distinct_points)
-	{
-		non_null_ptr_type ptr(new PolylineOnSphere());
-		generate_segments_and_swap(*ptr, begin, end, check_distinct_points);
-		return ptr;
-	}
-
 
 	/**
 	 * The exception thrown when an attempt is made to create a polyline using invalid points.
@@ -1072,16 +1104,15 @@ namespace GPlatesMaths
 
 
 	template<typename PointForwardIter>
-	void
-	PolylineOnSphere::generate_segments_and_swap(
-			PolylineOnSphere &poly,
+	const PolylineOnSphere::non_null_ptr_to_const_type
+	PolylineOnSphere::create(
 			PointForwardIter begin,
 			PointForwardIter end,
 			bool check_distinct_points)
 	{
 		// NOTE: We ignore determination of insufficient distinct points if we are *not*
 		// throwing an exception for it.
-		ConstructionParameterValidity v =
+		const ConstructionParameterValidity v =
 				evaluate_construction_parameter_validity(
 						begin,
 						end,
@@ -1091,6 +1122,20 @@ namespace GPlatesMaths
 			throw InvalidPointsForPolylineConstructionError(GPLATES_EXCEPTION_SOURCE, v);
 		}
 
+		// Create a new polyline.
+		non_null_ptr_type ptr(new PolylineOnSphere());
+		generate_segments_and_swap(*ptr, begin, end);
+		return ptr;
+	}
+
+
+	template<typename PointForwardIter>
+	void
+	PolylineOnSphere::generate_segments_and_swap(
+			PolylineOnSphere &poly,
+			PointForwardIter begin,
+			PointForwardIter end)
+	{
 		// Make it easier to provide strong exception safety by appending the new segments
 		// to a temporary sequence (rather than putting them directly into 'd_seq').
 		seq_type tmp_seq;

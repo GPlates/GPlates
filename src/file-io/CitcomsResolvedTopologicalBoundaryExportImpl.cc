@@ -51,7 +51,6 @@ namespace GPlatesFileIO
 				private GPlatesModel::ConstFeatureVisitor
 		{
 		public:
-			explicit
 			DetermineSubSegmentFeatureType(
 					const double &recon_time) :
 				d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time))

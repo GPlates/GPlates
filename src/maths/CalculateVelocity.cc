@@ -40,20 +40,20 @@
 #include "MathsUtils.h"
 #include "UnitQuaternion3D.h"
 
-#include "utils/Earth.h"
-
 
 GPlatesMaths::Vector3D
 GPlatesMaths::calculate_velocity_vector(
 		const PointOnSphere &point, 
 		const FiniteRotation &fr_t1,
 		const FiniteRotation &fr_t2,
-		const double &delta_time)
+		const double &delta_time,
+		const double &earth_radius_in_kms)
 {
 	return calculate_velocity_vector(
 			point, 
 			calculate_stage_rotation(fr_t1, fr_t2),
-			delta_time);
+			delta_time,
+			earth_radius_in_kms);
 }
 
 
@@ -104,7 +104,8 @@ GPlatesMaths::Vector3D
 GPlatesMaths::calculate_velocity_vector(
 		const PointOnSphere &point, 
 		const FiniteRotation &stage_rotation,
-		const double &delta_time)
+		const double &delta_time,
+		const double &earth_radius_in_kms)
 {
 	if (represents_identity_rotation(stage_rotation.unit_quat()))
 	{
@@ -129,7 +130,7 @@ GPlatesMaths::calculate_velocity_vector(
 	// Cartesian (x, y, z) velocity (cm/yr).
 	const Vector3D velocity_xyz =
 			omega *
-				(GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS * 1e-1/* kms/my -> cm/yr */) *
+				(earth_radius_in_kms * 1e-1/* kms/my -> cm/yr */) *
 					cross(rotation_axis, point.position_vector());
 
 	return velocity_xyz;
@@ -214,7 +215,8 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 		const GPlatesMaths::PointOnSphere &point,
 		const GPlatesMaths::FiniteRotation &fr_t1,
 		const GPlatesMaths::FiniteRotation &fr_t2,
-		const double &delta_time)
+		const double &delta_time,
+		const double &earth_radius_in_kms)
 {
 	const UnitQuaternion3D &q1 = fr_t1.unit_quat();
 	const UnitQuaternion3D &q2 = fr_t2.unit_quat();
@@ -267,7 +269,7 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 	// Cartesian (x, y, z) velocity (cm/yr).
 	const Vector3D velocity_xyz =
 			omega *
-				(GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS * 1e-1/* kms/my -> cm/yr */) *
+				(earth_radius_in_kms * 1e-1/* kms/my -> cm/yr */) *
 					cross(rotation_axis, point.position_vector());
 
 	// Note that an axis hint would only affect 'omega' since a negated axis and negated angle cancel

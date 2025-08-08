@@ -35,6 +35,7 @@ __pycache__/
 /bin/
 /install_manifest*.txt
 /.vs*
+/*.log
 
 #
 # /cmake/modules/
@@ -63,4 +64,12 @@ __pycache__/
 /src/global/License.cc
 /src/global/Version.cc
 /src/global/config.h
-/src/pygplates/test/test_*.py
+
+# Python sdist/wheel building.
+/dist/
+/wheelhouse/
+
+# Docker.
+/pygplates/wheel/*.bz2
+/pygplates/wheel/*.gz
+/pygplates/wheel/*.xz

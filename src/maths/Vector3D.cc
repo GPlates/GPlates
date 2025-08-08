@@ -34,6 +34,8 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "scribe/Scribe.h"
+
 
 bool
 GPlatesMaths::Vector3D::is_zero_magnitude() const
@@ -59,6 +61,71 @@ GPlatesMaths::Vector3D::get_normalisation() const
 	// Using double (dval()) instead of real_t generates more efficient assembly code.
 	const double scale = 1.0 / sqrt(mag_sqrd).dval();
 	return UnitVector3D(d_x.dval() * scale, d_y.dval() * scale, d_z.dval() * scale);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::Vector3D::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<Vector3D> &vector)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, vector->d_x, "x");
+		scribe.save(TRANSCRIBE_SOURCE, vector->d_y, "y");
+		scribe.save(TRANSCRIBE_SOURCE, vector->d_z, "z");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<real_t> x_ = scribe.load<real_t>(TRANSCRIBE_SOURCE, "x");
+		if (!x_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<real_t> y_ = scribe.load<real_t>(TRANSCRIBE_SOURCE, "y");
+		if (!y_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<real_t> z_ = scribe.load<real_t>(TRANSCRIBE_SOURCE, "z");
+		if (!z_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		vector.construct_object(x_, y_, z_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::Vector3D::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_x, "x"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_y, "y"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_z, "z"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

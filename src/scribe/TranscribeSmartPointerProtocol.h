@@ -27,6 +27,7 @@
 #define GPLATES_SCRIBE_TRANSCRIBESMARTPOINTERPROTOCOL_H
 
 #include "Scribe.h"
+#include "ScribeBool.h"
 #include "ScribeInternalAccess.h"
 #include "TranscribeResult.h"
 
@@ -45,7 +46,7 @@ namespace GPlatesScribe
 	 * and GPlatesUtils::non_null_intrusive_ptr.
 	 */
 	template <typename ObjectType>
-	TranscribeResult
+	Bool
 	transcribe_smart_pointer_protocol(
 			const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 			Scribe &scribe,
@@ -55,12 +56,11 @@ namespace GPlatesScribe
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
-		if (!ScribeInternalAccess::transcribe_smart_pointer(scribe, object_ptr, shared_owner))
-		{
-			return scribe.get_transcribe_result();
-		}
-
-		return TRANSCRIBE_SUCCESS;
+		// Wrap in a Bool object to force caller to check return code.
+		return ScribeInternalAccess::create_bool(
+				transcribe_source,
+				ScribeInternalAccess::transcribe_smart_pointer(scribe, object_ptr, shared_owner),
+				scribe.is_loading()/*require_check*/);
 	}
 }
 

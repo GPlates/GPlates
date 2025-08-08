@@ -365,3 +365,32 @@ GPlatesMaths::operator*(
 {
 	return RotateGeometryOnSphere(r).rotate(g);
 }
+
+
+const GPlatesMaths::GreatCircleArc
+GPlatesMaths::operator*(
+		const Rotation &r,
+		const GreatCircleArc &g)
+{
+	return GreatCircleArc::create_rotated_arc(r, g);
+}
+
+
+const GPlatesMaths::GreatCircle
+GPlatesMaths::operator*(
+		const Rotation &r,
+		const GreatCircle &g)
+{
+	UnitVector3D axis = r * g.axis_vector();
+	return GreatCircle(axis);
+}
+
+
+const GPlatesMaths::SmallCircle
+GPlatesMaths::operator*(
+		const Rotation &r,
+		const SmallCircle &s)
+{
+	UnitVector3D axis = r * s.axis_vector();
+	return SmallCircle::create_cosine_colatitude(axis, s.cos_colatitude());
+}

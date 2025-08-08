@@ -54,7 +54,7 @@ namespace GPlatesModel
 	{
 		if (scribe.is_saving())
 		{
-			GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, *string_content->d_ss_iter);
+			save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, *string_content->d_ss_iter);
 		}
 		else // loading...
 		{
@@ -83,7 +83,7 @@ namespace GPlatesModel
 		{
 			if (scribe.is_saving())
 			{
-				GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, *d_ss_iter);
+				save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, *d_ss_iter);
 			}
 			else // loading...
 			{

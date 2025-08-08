@@ -25,8 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
-
 #include "ReconstructionGraphPopulator.h"
 
 #include "model/FeatureHandle.h"
@@ -66,7 +64,7 @@ namespace
 		virtual
 		bool
 		initialise_pre_feature_properties(
-				const GPlatesModel::FeatureHandle &feature_handle)
+				feature_handle_type &feature_handle)
 		{
 			d_has_finite_rotation = false;
 			d_has_fixed_reference_frame = false;
@@ -78,7 +76,7 @@ namespace
 		virtual
 		void
 		finalise_post_feature_properties(
-				const GPlatesModel::FeatureHandle &feature_handle)
+				feature_handle_type &feature_handle)
 		{
 			if (d_has_finite_rotation && d_has_moving_reference_frame && d_has_fixed_reference_frame)
 			{

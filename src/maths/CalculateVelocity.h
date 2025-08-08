@@ -40,6 +40,8 @@
 #include "FiniteRotation.h"
 #include "types.h"
 
+#include "utils/Earth.h"
+
 
 namespace GPlatesMaths
 {
@@ -75,11 +77,9 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Calculate the velocity of a PointOnSphere @a point undergoing rotation.
-	 * Dimensions are centimetres per year.  
-	 * The velocity will be returned as an X Y Z vector
-	 * If, for whatever reason, the velocity cannot be calculated, 
-	 * return Vector3D(0, 0, 0).
+	 * Calculate the velocity of a PointOnSphere @a point undergoing rotation (in cm/yr).
+	 *
+	 * Returns the zero vector if stage rotation between the two finite rotations is zero (identity rotation).
 	 *
 	 * In general, time 1 should be more recent than time 2.
 	 * That is, t1 should be less than t2 in GPlates age based system.
@@ -93,7 +93,8 @@ namespace GPlatesMaths
 			const PointOnSphere &point, 
 			const FiniteRotation &fr_t1,
 			const FiniteRotation &fr_t2,
-			const double &delta_time);
+			const double &delta_time,
+			const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 	/**
 	 * Similar to @a calculate_velocity_vector but returns the stage rotation.
@@ -111,7 +112,8 @@ namespace GPlatesMaths
 	calculate_velocity_vector(
 			const PointOnSphere &point, 
 			const FiniteRotation &stage_rotation,
-			const double &delta_time);
+			const double &delta_time,
+			const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 	/**
 	 * @brief calculate_velocity_vector_and_omega - as calculate_velocity_vector but
@@ -136,7 +138,8 @@ namespace GPlatesMaths
 			const PointOnSphere &point,
 			const FiniteRotation &fr_t1,
 			const FiniteRotation &fr_t2,
-			const double &delta_time);
+			const double &delta_time,
+			const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 	/**
 	 * Convert a vector from X Y Z space to North East Down space and 

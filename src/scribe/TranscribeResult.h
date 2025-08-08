@@ -65,8 +65,8 @@ namespace GPlatesScribe
 		//      unknown polymorphic type (one that is not registered with this version of GPlates), or
 		//   2) An enumeration value is encountered that is unknown (not registered for the associated
 		//      enumeration type by this version of GPlates), or
-		//   3) A variant (eg, boost::variant) is encountered that contains an object whose type is
-		//      unknown (not registered with this version of GPlates).
+		//   3) A variant (eg, boost::variant) or boost::any is encountered that contains an object
+		//      whose type is unknown (not registered with this version of GPlates).
 		//
 		// However note that unknown types are only detected via polymorphic pointers, enums and
 		// variants. So it's still possible that a future version of GPlates introduces a new derived

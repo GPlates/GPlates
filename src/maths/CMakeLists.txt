@@ -112,6 +112,7 @@ set(srcs
     Real.h
     Rotation.cc
     Rotation.h
+    ScribeExportMaths.h
     SmallCircle.cc
     SmallCircle.h
     SmallCircleArc.cc

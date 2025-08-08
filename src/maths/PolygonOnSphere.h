@@ -29,14 +29,15 @@
 #define GPLATES_MATHS_POLYGONONSPHERE_H
 
 #include <cstddef>  // For std::size_t
-#include <vector>
 #include <algorithm> 
 #include <utility>  // std::pair
+#include <vector>
 #include <boost/function.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/optional.hpp>
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
@@ -44,6 +45,9 @@
 #include "PolylineOnSphere.h"
 
 #include "global/PreconditionViolationError.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 namespace GPlatesMaths
@@ -1836,8 +1840,7 @@ namespace GPlatesMaths
 		generate_rings_and_swap(
 				PolygonOnSphere &polygon,
 				PointForwardIter exterior_begin,
-				PointForwardIter exterior_end,
-				bool check_distinct_points);
+				PointForwardIter exterior_end);
 
 
 		/**
@@ -1858,8 +1861,7 @@ namespace GPlatesMaths
 				PointForwardIter exterior_begin,
 				PointForwardIter exterior_end,
 				PointCollectionForwardIter interior_rings_begin,
-				PointCollectionForwardIter interior_rings_end,
-				bool check_distinct_points);
+				PointCollectionForwardIter interior_rings_end);
 
 
 		/**
@@ -1905,6 +1907,15 @@ namespace GPlatesMaths
 		 * This pointer is NULL until the first calculation is requested.
 		 */
 		mutable boost::intrusive_ptr<PolygonOnSphereImpl::CachedCalculations> d_cached_calculations;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
@@ -1925,6 +1936,40 @@ namespace GPlatesMaths
 	tessellate(
 			const PolygonOnSphere &polygon,
 			const real_t &max_angular_extent);
+
+	/**
+	 * Generates a sequence of uniformly-spaced points *along* each ring (exterior and interior) of the polygon (returned in @a uniform_points).
+	 *
+	 * The first point in each ring is located @a first_uniform_point_spacing radians from the ring's first vertex.
+	 * And each subsequent point is separated by @a uniform_point_spacing radians.
+	 *
+	 * Can optionally return segment information for each uniform point.
+	 * Segment information is a segment index (into @a get_segment) and an interpolation within the segment (of a uniform point).
+	 * The interpolation is in the range [0,1] where 0.0 means the arc start point and 1.0 means the arc end point.
+	 *
+	 * Note: If @a first_uniform_point_spacing is greater than a ring's length then no uniform points will be generated for that ring.
+	 *
+	 * Note: If a ring is zero length and @a first_uniform_point_spacing is zero then a single uniform point will be generated for that ring.
+	 *
+	 * Note: The spacing between the last uniform point in a ring and the ring's last vertex (also its first vertex) can be less than
+	 *       @a uniform_point_spacing (since the length of the ring minus @a first_uniform_point_spacing
+	 *       might not be an integer multiple of @a uniform_point_spacing).
+	 *
+	 * Note: If the first uniform point of a ring was added at the ring's first vertex location and the last uniform point of the ring was added at
+	 *       the same location (ie, the ring's first/last vertex location) then the duplicate point (ie, last uniform point of the ring) is removed.
+	 *
+	 * Note: Ideally @a first_uniform_point_spacing is non-negative, but if it's negative then extra uniformly-spaced points
+	 *       will be extrapolated off each ring's first arc from its start point (along its great circle).
+	 */
+	void
+	uniformly_spaced_points(
+			std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+			const PolygonOnSphere &polygon,
+			const double &uniform_point_spacing,
+			const double &first_uniform_point_spacing,
+			boost::optional<
+					std::vector<std::pair<unsigned int/*segment index*/, double/*segment interpolation*/>> &
+				> segment_informations = boost::none);
 }
 
 //
@@ -2087,38 +2132,6 @@ namespace GPlatesMaths
 	}
 
 
-	template <typename PointForwardIter>
-	const PolygonOnSphere::non_null_ptr_to_const_type
-	PolygonOnSphere::create(
-			PointForwardIter exterior_begin,
-			PointForwardIter exterior_end,
-			bool check_distinct_points)
-	{
-		non_null_ptr_type ptr(new PolygonOnSphere());
-		generate_rings_and_swap(*ptr, exterior_begin, exterior_end, check_distinct_points);
-		return ptr;
-	}
-
-
-	template <typename PointForwardIter, typename PointCollectionForwardIter>
-	const PolygonOnSphere::non_null_ptr_to_const_type
-	PolygonOnSphere::create(
-			PointForwardIter exterior_begin,
-			PointForwardIter exterior_end,
-			PointCollectionForwardIter interior_rings_begin,
-			PointCollectionForwardIter interior_rings_end,
-			bool check_distinct_points)
-	{
-		non_null_ptr_type ptr(new PolygonOnSphere());
-		generate_rings_and_swap(
-				*ptr,
-				exterior_begin, exterior_end,
-				interior_rings_begin, interior_rings_end,
-				check_distinct_points);
-		return ptr;
-	}
-
-
 	/**
 	 * The exception thrown when an attempt is made to create a polygon using invalid points.
 	 */
@@ -2166,10 +2179,9 @@ namespace GPlatesMaths
 
 
 	template <typename PointForwardIter>
-	void
-	PolygonOnSphere::generate_rings_and_swap(
-			PolygonOnSphere &polygon,
-	 		PointForwardIter exterior_begin,
+	const PolygonOnSphere::non_null_ptr_to_const_type
+	PolygonOnSphere::create(
+			PointForwardIter exterior_begin,
 			PointForwardIter exterior_end,
 			bool check_distinct_points)
 	{
@@ -2183,19 +2195,16 @@ namespace GPlatesMaths
 			throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, v);
 		}
 
-		// Make it easier to provide strong exception safety by appending the new segments
-		// to a temporary sequence (rather than putting them directly into 'd_exterior_ring').
-		ring_type exterior;
-		generate_ring(exterior, exterior_begin, exterior_end);
-		polygon.d_exterior_ring.swap(exterior);
+		non_null_ptr_type ptr(new PolygonOnSphere());
+		generate_rings_and_swap(*ptr, exterior_begin, exterior_end);
+		return ptr;
 	}
 
 
 	template <typename PointForwardIter, typename PointCollectionForwardIter>
-	void
-	PolygonOnSphere::generate_rings_and_swap(
-			PolygonOnSphere &polygon,
-	 		PointForwardIter exterior_begin,
+	const PolygonOnSphere::non_null_ptr_to_const_type
+	PolygonOnSphere::create(
+			PointForwardIter exterior_begin,
 			PointForwardIter exterior_end,
 			PointCollectionForwardIter interior_rings_begin,
 			PointCollectionForwardIter interior_rings_end,
@@ -2211,15 +2220,6 @@ namespace GPlatesMaths
 			throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, exterior_validity);
 		}
 
-		// Make it easier to provide strong exception safety by appending to temporary rings
-		// and then swapping them into 'polygon'.
-
-		ring_type exterior;
-		generate_ring(exterior, exterior_begin, exterior_end);
-
-		ring_sequence_type interiors;
-		interiors.resize(std::distance(interior_rings_begin, interior_rings_end));
-
 		unsigned int interior_index = 0;
 		for (PointCollectionForwardIter interior_rings_iter = interior_rings_begin;
 			interior_rings_iter != interior_rings_end;
@@ -2234,7 +2234,55 @@ namespace GPlatesMaths
 			{
 				throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, interior_validity);
 			}
+		}
 
+		non_null_ptr_type ptr(new PolygonOnSphere());
+		generate_rings_and_swap(
+				*ptr,
+				exterior_begin, exterior_end,
+				interior_rings_begin, interior_rings_end);
+		return ptr;
+	}
+
+
+	template <typename PointForwardIter>
+	void
+	PolygonOnSphere::generate_rings_and_swap(
+			PolygonOnSphere &polygon,
+	 		PointForwardIter exterior_begin,
+			PointForwardIter exterior_end)
+	{
+		// Make it easier to provide strong exception safety by appending the new segments
+		// to a temporary sequence (rather than putting them directly into 'd_exterior_ring').
+		ring_type exterior;
+		generate_ring(exterior, exterior_begin, exterior_end);
+		polygon.d_exterior_ring.swap(exterior);
+	}
+
+
+	template <typename PointForwardIter, typename PointCollectionForwardIter>
+	void
+	PolygonOnSphere::generate_rings_and_swap(
+			PolygonOnSphere &polygon,
+	 		PointForwardIter exterior_begin,
+			PointForwardIter exterior_end,
+			PointCollectionForwardIter interior_rings_begin,
+			PointCollectionForwardIter interior_rings_end)
+	{
+		// Make it easier to provide strong exception safety by appending to temporary rings
+		// and then swapping them into 'polygon'.
+
+		ring_type exterior;
+		generate_ring(exterior, exterior_begin, exterior_end);
+
+		ring_sequence_type interiors;
+		interiors.resize(std::distance(interior_rings_begin, interior_rings_end));
+
+		unsigned int interior_index = 0;
+		for (PointCollectionForwardIter interior_rings_iter = interior_rings_begin;
+			interior_rings_iter != interior_rings_end;
+			++interior_rings_iter, ++interior_index)
+		{
 			generate_ring(
 					interiors[interior_index],
 					interior_rings_iter->begin(),
@@ -2274,13 +2322,21 @@ namespace GPlatesMaths
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-			// Only add last ring vertex if it's not the same as the first
-			// (provided the ring will have at least 3 vertices).
-			if (num_ring_points == s_min_num_ring_points ||
-				p1 != p2)
-			{
-				ring.push_back(GreatCircleArc::create(p1, p2));
-			}
+			// Note: Previously we only added the last ring vertex if was not the same as the first
+			//       (provided the ring would have at least 3 vertices).
+			//
+			//       We no longer do this since the user might want the last ring vertex included.
+			//       For example, when topological boundaries are resolved, each sub-segment has all
+			//       its vertices added to the polygon, which means duplicate vertices where two
+			//       adjacent sub-segments intersect - if we removed one vertex then the sum of all
+			//       sub-segment vertices no longer matches number of polygon exterior ring vertices
+			//       (which causes other quantities derived from vertices to get out-of-sync).
+			//
+			//       In any case, when writing polygons to GPML we add an extra vertex (ring's start vertex)
+			//       if it doesn't coincide with the ring's last vertex. And when reading polygons from GPML
+			//       we remove a ring's last vertex if it coincides with the ring's start vertex
+			//       (provided the ring will still have at least 3 vertices).
+			ring.push_back(GreatCircleArc::create(p1, p2));
 		}
 	}
 }

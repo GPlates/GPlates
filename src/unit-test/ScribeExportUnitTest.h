@@ -40,13 +40,13 @@
  */
 #define SCRIBE_EXPORT_UNIT_TEST \
 		\
-		((GPlatesUnitTest::TranscribePrimitivesTest::Data::NonDefaultConstructable, \
+		(((GPlatesUnitTest::TranscribePrimitivesTest::Data::NonDefaultConstructable), \
 			"GPlatesUnitTest::TranscribePrimitivesTest::Data::NonDefaultConstructable")) \
 		\
-		((GPlatesUnitTest::TranscribeInheritanceTest::D, \
+		(((GPlatesUnitTest::TranscribeInheritanceTest::D), \
 			"GPlatesUnitTest::TranscribeInheritanceTest::D")) \
 		\
-		((GPlatesUnitTest::TranscribeCompatibilityTest::Derived, \
+		(((GPlatesUnitTest::TranscribeCompatibilityTest::Derived), \
 			"GPlatesUnitTest::TranscribeCompatibilityTest::Derived")) \
 		\
 

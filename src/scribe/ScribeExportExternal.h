@@ -28,6 +28,7 @@
 
 #include <string>
 #include <QByteArray>
+#include <QMap>
 #include <QString>
 #include <QStringList>
 
@@ -56,38 +57,39 @@
  */
 #define SCRIBE_EXPORT_EXTERNAL \
 		\
-		((char, "char")) \
-		((signed char, "signed char")) \
-		((unsigned char, "unsigned char")) \
+		(((char), "char")) \
+		(((signed char), "signed char")) \
+		(((unsigned char), "unsigned char")) \
 		\
-		((short, "short")) \
-		((unsigned short, "unsigned short")) \
+		(((short), "short")) \
+		(((unsigned short), "unsigned short")) \
 		\
-		((int, "int")) \
-		((unsigned int, "unsigned int")) \
+		(((int), "int")) \
+		(((unsigned int), "unsigned int")) \
 		\
-		((long, "long")) \
-		((unsigned long, "unsigned long")) \
+		(((long), "long")) \
+		(((unsigned long), "unsigned long")) \
 		\
-		((float, "float")) \
-		((double, "double")) \
-		((long double, "long double")) \
-		\
-		\
-		\
-		((std::string, "std::string")) \
+		(((float), "float")) \
+		(((double), "double")) \
+		(((long double), "long double")) \
 		\
 		\
 		\
-		((QByteArray, "QByteArray")) \
-		((QString, "QString")) \
-		((QStringList, "QStringList")) \
+		(((std::string), "std::string")) \
 		\
 		\
 		\
-		((GPlatesScribe::TranscribeUtils::FilePath, \
+		(((QByteArray), "QByteArray")) \
+		/* Used as a feature collection tag (boost::any) for OGR model-to-attribute mapping. */ \
+		(((QMap<QString, QString>), "QMap<QString, QString>")) \
+		(((QString), "QString")) \
+		(((QStringList), "QStringList")) \
+		\
+		\
+		\
+		(((GPlatesScribe::TranscribeUtils::FilePath), \
 			"GPlatesScribe::TranscribeUtils::FilePath")) \
 		\
-
 
 #endif // GPLATES_SCRIBE_SCRIBEEXPORTEXTERNAL_H

@@ -1,13 +1,5 @@
-/* $Id: Parse.h 10114 2010-11-04 05:44:05Z elau $ */
-
 /**
- * \file
- * Wrapper around <boost/cstdint.hpp> to fix compile errors on Visual Studio 2010.
- *
- * Most recent change:
- *   $Date: 2010-11-04 16:44:05 +1100 (Thu, 04 Nov 2010) $
- *
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2024 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,20 +17,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_SYSTEMFIXES_BOOST_CSTDINT_HPP
-#define GPLATES_SYSTEMFIXES_BOOST_CSTDINT_HPP
+#ifndef GPLATES_APP_LOGIC_VELOCITY_UNITS_H
+#define GPLATES_APP_LOGIC_VELOCITY_UNITS_H
 
-#include "global/config.h"
+namespace GPlatesAppLogic
+{
+	/**
+	 * Enumeration to determine what velocity units to use.
+	 */
+	namespace VelocityUnits
+	{
+		enum Value
+		{
+			KMS_PER_MY,   // kilometres per million years
+			CMS_PER_YR    // centimetres per year
+		};
+	};
+}
 
-#if _MSC_VER >= 1600 // Visual Studio 2010
-#	undef UINT8_C
-#endif
-
-#include BOOST_CSTDINT_HPP_PATH
-
-#if _MSC_VER >= 1600 // Visual Studio 2010
-#	undef UINT8_C
-#	include <cstdint>
-#endif
-
-#endif  // GPLATES_SYSTEMFIXES_BOOST_CSTDINT_HPP
+#endif // GPLATES_APP_LOGIC_VELOCITY_UNITS_H

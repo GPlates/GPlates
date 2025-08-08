@@ -525,6 +525,8 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 				reconstruction_time,
 				velocity_delta_time,
 				velocity_delta_time_type,
+				VelocityUnits::CMS_PER_YR,
+				GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 				domain_points,
 				domain_point_locations))
 		{

@@ -1971,20 +1971,47 @@ GPlatesMaths::minimum_distance(
 			closest_positions,
 			closest_segment_indices);
 
-	// If polygon1's interior is solid and polygon2 has not intersected polygon1's boundary then
-	// it's possible polygon2 is completely inside polygon1 which also counts as an intersection.
+	// If polygon1's interior is solid and polygon2 has not intersected polygon1's boundary then it's possible
+	// that one (or more) of polygon2's rings is completely inside polygon1 which also counts as an intersection.
 	if (polygon1_interior_is_solid &&
 		min_distance != AngularDistance::ZERO /*epsilon comparison*/)
 	{
-		// If polygon2 is completely inside polygon1 then we only need to test if one of
-		// the polygon2's points (any arbitrary point) is inside polygon1 (because we know that
-		// polygon2 did not intersect polygon1's boundary).
-		if (polygon1.is_point_in_polygon(
-				polygon2.first_exterior_ring_vertex()/*arbitrary*/,
-				GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
-				// Note we turn off point-on-polygon outline threshold testing.
-				// We don't want test to return true if point is outside polygon but *very* close to it...
-				false/*use_point_on_polygon_threshold*/))
+		auto point_in_polygon_func = [](
+				const PolygonOnSphere &polygon,
+				const PointOnSphere &point)
+		{
+			return polygon.is_point_in_polygon(
+					point,
+					GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
+					// Note we turn off point-on-polygon outline threshold testing.
+					// We don't want test to return true if point is outside polygon but *very* close to it...
+					false/*use_point_on_polygon_threshold*/);
+		};
+
+		// Test one (arbitrary) point on each of polygon2's rings to see if it's is inside polygon1.
+		//
+		// Test exterior ring.
+		bool a_ring_of_polygon2_is_inside_polygon1 = point_in_polygon_func(
+				polygon1,
+				polygon2.first_exterior_ring_vertex()/*arbitrary point in ring*/);
+		if (!a_ring_of_polygon2_is_inside_polygon1)
+		{
+			// Test interior rings.
+			for (unsigned int polygon2_interior_ring_index = 0;
+				polygon2_interior_ring_index < polygon2.number_of_interior_rings();
+				++polygon2_interior_ring_index)
+			{
+				if (point_in_polygon_func(
+						polygon1,
+						polygon2.first_interior_ring_vertex(polygon2_interior_ring_index)/*arbitrary point in ring*/))
+				{
+					a_ring_of_polygon2_is_inside_polygon1 = true;
+					break;
+				}
+			}
+		}
+
+		if (a_ring_of_polygon2_is_inside_polygon1)
 		{
 			if (closest_positions ||
 				closest_segment_indices)
@@ -2022,20 +2049,47 @@ GPlatesMaths::minimum_distance(
 		}
 	}
 
-	// If polygon2's interior is solid and polygon1 has not intersected polygon2's boundary then
-	// it's possible polygon1 is completely inside polygon2 which also counts as an intersection.
+	// If polygon2's interior is solid and polygon1 has not intersected polygon2's boundary then it's possible
+	// that one (or more) of polygon1's rings is completely inside polygon2 which also counts as an intersection.
 	if (polygon2_interior_is_solid &&
 		min_distance != AngularDistance::ZERO /*epsilon comparison*/)
 	{
-		// If polygon1 is completely inside polygon2 then we only need to test if one of
-		// the polygon1's points (any arbitrary point) is inside polygon2 (because we know that
-		// polygon1 did not intersect polygon2's boundary).
-		if (polygon2.is_point_in_polygon(
-				polygon1.first_exterior_ring_vertex()/*arbitrary*/,
-				GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
-				// Note we turn off point-on-polygon outline threshold testing.
-				// We don't want test to return true if point is outside polygon but *very* close to it...
-				false/*use_point_on_polygon_threshold*/))
+		auto point_in_polygon_func = [](
+				const PolygonOnSphere &polygon,
+				const PointOnSphere &point)
+		{
+			return polygon.is_point_in_polygon(
+					point,
+					GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
+					// Note we turn off point-on-polygon outline threshold testing.
+					// We don't want test to return true if point is outside polygon but *very* close to it...
+					false/*use_point_on_polygon_threshold*/);
+		};
+
+		// Test one (arbitrary) point on each of polygon1's rings to see if it's is inside polygon2.
+		//
+		// Test exterior ring.
+		bool a_ring_of_polygon1_is_inside_polygon2 = point_in_polygon_func(
+				polygon2,
+				polygon1.first_exterior_ring_vertex()/*arbitrary point in ring*/);
+		if (!a_ring_of_polygon1_is_inside_polygon2)
+		{
+			// Test interior rings.
+			for (unsigned int polygon1_interior_ring_index = 0;
+				polygon1_interior_ring_index < polygon1.number_of_interior_rings();
+				++polygon1_interior_ring_index)
+			{
+				if (point_in_polygon_func(
+						polygon2,
+						polygon1.first_interior_ring_vertex(polygon1_interior_ring_index)/*arbitrary point in ring*/))
+				{
+					a_ring_of_polygon1_is_inside_polygon2 = true;
+					break;
+				}
+			}
+		}
+
+		if (a_ring_of_polygon1_is_inside_polygon2)
 		{
 			if (closest_positions ||
 				closest_segment_indices)

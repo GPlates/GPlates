@@ -320,7 +320,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 			boost::none/*points*/,
 			boost::none/*points_locations*/,
 			current_domain_strain_rates/*strain rates*/);
-
+	// We should have active strain rates since initially all geometry points should be active.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			current_domain_strain_rates.size() == d_num_scalar_values,
 			GPLATES_ASSERTION_SOURCE);

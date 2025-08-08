@@ -39,6 +39,7 @@
 #include <QStringList>
 
 #include "Scribe.h"
+#include "ScribeBool.h"
 #include "ScribeInternalAccess.h"
 #include "ScribeLoadRef.h"
 #include "ScribeObjectTag.h"
@@ -287,7 +288,7 @@ namespace GPlatesScribe
 		 *		}
 		 */
 		template <typename SmartPtrType>
-		Scribe::Bool
+		Bool
 		load_smart_pointer_from_raw_pointer(
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 				Scribe &scribe,
@@ -366,7 +367,7 @@ namespace GPlatesScribe
 		 *   (3) An untracked pointer and an untracked object - for the above reasons.
 		 */
 		template <typename ObjectType, typename ObjectRawPtrType>
-		Scribe::Bool
+		Bool
 		load_raw_pointer_and_object_from_smart_pointer(
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 				Scribe &scribe,
@@ -524,7 +525,7 @@ namespace GPlatesScribe
 
 
 		template <typename SmartPtrType>
-		Scribe::Bool
+		Bool
 		load_smart_pointer_from_raw_pointer(
 				const GPlatesUtils::CallStack::Trace &transcribe_source,
 				Scribe &scribe,
@@ -569,7 +570,7 @@ namespace GPlatesScribe
 
 
 		template <typename ObjectType, typename ObjectRawPtrType>
-		Scribe::Bool
+		Bool
 		load_raw_pointer_and_object_from_smart_pointer(
 				const GPlatesUtils::CallStack::Trace &transcribe_source,
 				Scribe &scribe,

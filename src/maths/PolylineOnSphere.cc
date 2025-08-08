@@ -39,9 +39,12 @@
 #include "PolylineProximityHitDetail.h"
 #include "PolyGreatCircleArcBoundingTree.h"
 #include "ProximityCriteria.h"
+#include "Rotation.h"
 #include "SmallCircleBounds.h"
 
 #include "global/InvalidParametersException.h"
+
+#include "scribe/Scribe.h"
 
 #include "utils/ReferenceCount.h"
 
@@ -317,6 +320,40 @@ GPlatesMaths::PolylineOnSphere::get_bounding_tree() const
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesMaths::PolylineOnSphere::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Transcribe the vertices instead of segments because the segments (great circle arcs)
+	// contain duplicate vertices (end of segment contains same vertex as start of next segment).
+	if (scribe.is_saving())
+	{
+		const std::vector<PointOnSphere> vertices(vertex_begin(), vertex_end());
+		scribe.save(TRANSCRIBE_SOURCE, vertices, "vertices");
+	}
+	else // loading
+	{
+		std::vector<PointOnSphere> vertices;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, vertices, "vertices"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Add the vertices (as great circle arc segments).
+		generate_segments_and_swap(*this, vertices.begin(), vertices.end());
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GeometryOnSphere, PolylineOnSphere>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 GPlatesMaths::tessellate(
 		const PolylineOnSphere &polyline,
@@ -349,6 +386,67 @@ GPlatesMaths::tessellate(
 	}
 
 	return PolylineOnSphere::create(tessellated_points);
+}
+
+
+void
+GPlatesMaths::uniformly_spaced_points(
+		std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+		const PolylineOnSphere &polyline,
+		const double &uniform_point_spacing,
+		const double &first_uniform_point_spacing,
+		boost::optional<
+				std::vector<std::pair<unsigned int/*segment index*/, double/*segment interpolation*/>> &
+			> segment_informations)
+{
+	// Distance from start of first arc to the first uniform point.
+	double first_uniform_point_spacing_in_arc = first_uniform_point_spacing;
+
+	// Iterate over the segments (arcs) of the polyline.
+	unsigned int segment_index = 0;
+	for (const auto &gca : polyline)
+	{
+		// Get a segment interpolation factor for each uniform point (if requested).
+		boost::optional<std::vector<double> &> current_segment_interpolations_ref;
+		std::vector<double> current_segment_interpolations;
+		if (segment_informations)
+		{
+			current_segment_interpolations_ref = current_segment_interpolations;
+		}
+
+		// Generate points at uniform spacings along the current arc starting at
+		// an offset of 'first_uniform_point_spacing_in_arc' from the arc's start point.
+		const unsigned int num_uniform_points_before_arc = uniform_points.size();
+		uniformly_spaced_points(
+				uniform_points,
+				gca,
+				uniform_point_spacing,
+				first_uniform_point_spacing_in_arc,
+				current_segment_interpolations_ref);
+		const unsigned int num_uniform_points_in_arc = uniform_points.size() - num_uniform_points_before_arc;
+
+		// The first uniform point offset in the *next* arc (if any) depends on the offset of the first point
+		// in the *current* arc and the number of uniform points added to the *current* arc (and its length).
+		//
+		// Note: If the *current* arc is zero-length then it could have generated a single uniform point if
+		//       its 'first_uniform_point_spacing_in_arc' was zero (or slightly negative).
+		//       This can happen if that uniform point just missed the end of the previous arc (due to numerical tolerance).
+		//       In this case the next arc will not generate a uniform point at its start point
+		//       (because its 'first_uniform_point_spacing_in_arc' will be 'point_spacing', not zero).
+		first_uniform_point_spacing_in_arc += num_uniform_points_in_arc * uniform_point_spacing - gca.arc_length().dval();
+
+		// If segment information was requested (one for each uniform point on the current segment).
+		if (segment_informations)
+		{
+			for (auto segment_interpolation : current_segment_interpolations)
+			{
+				// Segment information is segment index and interpolation within segment (of uniform point).
+				segment_informations->push_back({segment_index, segment_interpolation});
+			}
+		}
+
+		++segment_index;
+	}
 }
 
 

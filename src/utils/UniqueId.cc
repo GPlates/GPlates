@@ -42,7 +42,7 @@ GPlatesUtils::generate_unique_id()
 
 	char buffer[45];
 
-	sprintf(buffer, "GPlates-%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x", 
+	snprintf(buffer, sizeof(buffer), "GPlates-%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 			uuid.data1, uuid.data2, uuid.data3, uuid.data4[0], uuid.data4[1],
 			uuid.data4[2], uuid.data4[3], uuid.data4[4], uuid.data4[5], uuid.data4[6],
 			uuid.data4[7]);

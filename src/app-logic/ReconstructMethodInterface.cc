@@ -117,6 +117,14 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 						reconstruct_handle);
 		MultiPointVectorField::codomain_type::iterator field_iter = vector_field->begin();
 
+		const GPlatesMaths::FiniteRotation velocity_stage_rotation = PlateVelocityUtils::calculate_stage_rotation(
+				reconstruction_plate_id,
+				context.reconstruction_tree_creator,
+				reconstruction_time,
+				velocity_delta_time,
+				velocity_delta_time_type);
+
+
 		// Iterate over the domain points and calculate their velocities.
 		for ( ; domain_iter != domain_end; ++domain_iter, ++field_iter)
 		{
@@ -124,11 +132,10 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 			const GPlatesMaths::Vector3D vector_xyz =
 					PlateVelocityUtils::calculate_velocity_vector(
 							*domain_iter,
-							reconstruction_plate_id,
-							context.reconstruction_tree_creator,
-							reconstruction_time,
+							velocity_stage_rotation,
 							velocity_delta_time,
-							velocity_delta_time_type);
+							VelocityUnits::CMS_PER_YR,
+							GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 			*field_iter = MultiPointVectorField::CodomainElement(
 					vector_xyz,

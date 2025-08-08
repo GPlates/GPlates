@@ -1405,9 +1405,9 @@ GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_co
 	// plane of another segment, that both points will still be close enough to the plane that they
 	// can touch the segment. This avoids the possibility of incorrectly missing an intersection
 	// when a zero-length segment is involved.
-	static const double THICKNESS_THRESHOLD_COSINE = GreatCircleArc::get_zero_length_threshold_cosine().dval();
+	static const double THICKNESS_THRESHOLD_COSINE_ = GreatCircleArc::get_zero_length_threshold_cosine().dval();
 
-	return THICKNESS_THRESHOLD_COSINE;
+	return THICKNESS_THRESHOLD_COSINE_;
 }
 
 
@@ -1416,9 +1416,9 @@ GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_si
 {
 	// Base epsilon calculations off a cosine since that usually has the least accuracy for small angles.
 	// '1 - 1e-12' in cosine corresponds to a displacement of about 1.4e-6 [=sin(acos(1 - 1e-12))].
-	static const double THICKNESS_THRESHOLD_SINE = std::sin(std::acos(get_on_segment_start_threshold_cosine()));
+	static const double THICKNESS_THRESHOLD_SINE_ = std::sin(std::acos(get_on_segment_start_threshold_cosine()));
 
-	return THICKNESS_THRESHOLD_SINE;
+	return THICKNESS_THRESHOLD_SINE_;
 }
 
 

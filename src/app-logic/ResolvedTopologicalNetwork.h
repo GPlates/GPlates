@@ -37,14 +37,20 @@
 #include "ResolvedTopologicalGeometrySubSegment.h"
 #include "ResolvedTriangulationNetwork.h"
 #include "ResolvedVertexSourceInfo.h"
+#include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
+#include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
+#include "maths/Vector3D.h"
 
 #include "model/FeatureHandle.h"
 #include "model/types.h"
 #include "model/WeakObserver.h"
 
 #include "property-values/GeoTimeInstant.h"
+
+#include "utils/Earth.h"
 
 
 namespace GPlatesAppLogic
@@ -122,34 +128,63 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Access the boundary polygon of this resolved topology network.
+		 *
+		 * If @a include_rigid_blocks_as_interior_holes is true then include rigid blocks (if any) as
+		 * interior rings in the returned boundary polygon. Defaults to false.
 		 */
 		const boundary_polygon_ptr_type
-		boundary_polygon() const
+		boundary_polygon(
+				bool include_rigid_blocks_as_interior_holes = false) const
 		{
-			return get_triangulation_network().get_boundary_polygon();
+			return get_triangulation_network().get_boundary_polygon(include_rigid_blocks_as_interior_holes);
 		}
 
 		/**
-		 * Access the boundary polygon (including rigid block holes) of this resolved topology network.
-		 *
-		 * The outlines of interior rigid block holes (if any) in the network form interiors of the returned polygon.
+		 * Returns the boundary points in @a boundary_polygon.
 		 */
-		const boundary_polygon_ptr_type
-		boundary_polygon_with_rigid_block_holes() const
-		{
-			return get_triangulation_network().get_boundary_polygon_with_rigid_block_holes();
-		}
-
-
+		void
+		boundary_polygon_points(
+				std::vector<GPlatesMaths::PointOnSphere> &resolved_topology_geometry_points_,
+				bool include_rigid_blocks_as_interior_holes = false) const;
 
 		/**
-		 * Returns the boundary per-vertex source reconstructed feature geometries.
+		 * Returns the velocities at points in @a boundary_polygon_points.
 		 *
-		 * Each vertex returned by @a boundary_polygon references a source reconstructed feature geometry.
-		 * This method returns the same number of vertex sources as vertices returned by @a boundary_polygon.
+		 * Note: Each velocity maps to a point in @a boundary_polygon_points.
+		 *
+		 * Note: The number of velocities is guaranteed to match points in @a boundary_polygon_points
+		 *       (with the same value of @a include_rigid_blocks_as_interior_holes).
+		 */
+		void
+		boundary_polygon_point_velocities(
+				std::vector<GPlatesMaths::Vector3D> &resolved_topology_geometry_point_velocities_,
+				bool include_rigid_blocks_as_interior_holes = false,
+				const double &velocity_delta_time = 1.0,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
+
+		/**
+		 * Returns the source infos at points in @a boundary_polygon_points.
+		 *
+		 * Note: Each source info maps to a point in @a boundary_polygon_points.
+		 *
+		 * Note: The number of source infos is guaranteed to match points in @a boundary_polygon_points.
 		 */
 		const resolved_vertex_source_info_seq_type &
-		get_boundary_vertex_source_infos() const;
+		boundary_polygon_point_source_infos(
+				bool include_rigid_blocks_as_interior_holes = false) const;
+
+		/**
+		 * Returns the source features at points in @a boundary_polygon_points.
+		 *
+		 * Note: Each source feature maps to a point in @a boundary_polygon_points.
+		 *
+		 * Note: The number of source features is guaranteed to match points in @a boundary_polygon_points.
+		 */
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &
+		boundary_polygon_point_source_features(
+				bool include_rigid_blocks_as_interior_holes = false) const;
 
 
 		/**
@@ -347,12 +382,27 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Each point in the boundary of the resolved topological network can potentially reference
-		 * a different source reconstructed feature geometry.
+		 * Each point in the boundary of the resolved topological network can potentially reference a different source info.
 		 *
 		 * As an optimisation, this is only created when first requested.
 		 */
 		mutable boost::optional<resolved_vertex_source_info_seq_type> d_boundary_vertex_source_infos;
+		/**
+		 * Same as @a d_boundary_vertex_source_infos except includes vertices of interior rigid blocks.
+		 */
+		mutable boost::optional<resolved_vertex_source_info_seq_type> d_boundary_with_rigid_blocks_vertex_source_infos;
+
+
+		/**
+		 * Each point in the boundary of the resolved topological network can potentially reference a different source feature.
+		 *
+		 * As an optimisation, this is only created when first requested.
+		 */
+		mutable boost::optional<std::vector<GPlatesModel::FeatureHandle::weak_ref>> d_boundary_vertex_source_features;
+		/**
+		 * Same as @a d_boundary_vertex_source_features except includes vertices of interior rigid blocks.
+		 */
+		mutable boost::optional<std::vector<GPlatesModel::FeatureHandle::weak_ref>> d_boundary_with_rigid_blocks_vertex_source_features;
 
 
 		/**
@@ -383,7 +433,12 @@ namespace GPlatesAppLogic
 		{  }
 
 		void
-		calc_boundary_vertex_source_infos() const;
+		calc_boundary_vertex_source_infos(
+				bool include_rigid_blocks_as_interior_holes) const;
+
+		void
+		calc_boundary_vertex_source_features(
+				bool include_rigid_blocks_as_interior_holes) const;
 	};
 }
 

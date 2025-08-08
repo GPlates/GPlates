@@ -287,7 +287,12 @@ GPlatesMaths::Real::transcribe(
 	// Note that +/- Infinity and NaN (float and double) are handled properly by the
 	// scribe archive writers/readers.
 	//
-	return transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, _dval);
+	if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, _dval))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

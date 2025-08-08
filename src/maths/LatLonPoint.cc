@@ -35,6 +35,8 @@
 #include "IndeterminateResultException.h"
 #include "PointOnSphere.h"
 
+#include "scribe/Scribe.h"
+
 
 GPlatesMaths::LatLonPoint::LatLonPoint(
 		const double &lat,
@@ -54,6 +56,59 @@ GPlatesMaths::LatLonPoint::LatLonPoint(
 		throw InvalidLatLonException(GPLATES_EXCEPTION_SOURCE,
 				lon, InvalidLatLonException::Longitude);
 	}
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::LatLonPoint::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<LatLonPoint> &lat_lon_point)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, lat_lon_point->d_latitude, "latitude");
+		scribe.save(TRANSCRIBE_SOURCE, lat_lon_point->d_longitude, "longitude");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<double> latitude_ = scribe.load<double>(TRANSCRIBE_SOURCE, "latitude");
+		if (!latitude_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<double> longitude_ = scribe.load<double>(TRANSCRIBE_SOURCE, "longitude");
+		if (!longitude_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		lat_lon_point.construct_object(latitude_, longitude_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::LatLonPoint::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_latitude, "latitude"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_longitude, "longitude"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 
