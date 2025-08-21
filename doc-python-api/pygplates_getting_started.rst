@@ -69,11 +69,11 @@ To install the latest stable version of pyGPlates type the following in a termin
   conda install -c conda-forge pygplates
 
 We recommend installing pyGPlates into a new conda environment.
-For example, the following creates and activates a Python 3.12 environment named ``pygplates_py312`` containing pyGPlates and all its dependency libraries:
+For example, the following creates and activates a Python 3.13 environment named ``pygplates_py313`` containing pyGPlates and all its dependency libraries:
 ::
 
-  conda create -n pygplates_py312 -c conda-forge python=3.12 pygplates
-  conda activate pygplates_py312
+  conda create -n pygplates_py313 -c conda-forge python=3.13 pygplates
+  conda activate pygplates_py313
 
 Now you can use pyGPlates. For example, to see the pyGPlates version:
 ::
@@ -100,35 +100,48 @@ PyGPlates installed using ``pip`` supports (via our `binary wheels <https://pypi
 
   - Version 3.8 - 3.13.
 
-    - Except 3.13 not yet available on macOS.
-
 - NumPy:
 
   - Version 1.x (for Python 3.8):
   - Version 2.x and 1.x (for Python 3.9 and later).
 
-On **macOS** or **Linux**, to install the latest stable version of pyGPlates type the following in a terminal:
+This section demonstrates how to install pyGPlates into the **global** Python installation.
+
+.. warning:: | We **highly** recommend :ref:`installing pyGPlates into a virtual environment <pygplates_getting_started_install_into_a_venv>`.
+  | This can avoid unintended side effects on other projects or the global Python installation.
+
+On **macOS** and **Linux**, to install the latest stable version of pyGPlates type the following in a terminal:
 ::
 
-  python -m pip install pygplates
+  python3 -m pip install pygplates
+
+.. note:: If ``python3`` doesn't work then try ``python``.
 
 On **Windows**, to install the latest stable version of pyGPlates type the following in a command window:
 ::
 
   py -m pip install pygplates
 
-.. note:: On the Windows platform, ``py`` installs into the default version of Python (if you have multiple Python installations).
-  However you can install into a specific Python version. For example, to install into Python 3.12 replace ``py`` with ``py -3.12``.
+.. note:: On the Windows platform, ``py`` installs into the *default* version of Python (if you have multiple Python installations).
+  However you can install into a specific Python version. For example, to install into Python 3.13 replace ``py`` with ``py -3.13``.
 
-We recommend installing pyGPlates into a new `virtual environment <https://docs.python.org/3/tutorial/venv.html>`_.
-For example, you can create and activate a Python environment named ``pygplates_venv`` that will contain pyGPlates (and all its dependency shared libraries).
-This creates a sub-directory called ``pygplates_venv`` in the current directory.
+.. _pygplates_getting_started_install_into_a_venv:
 
-On **macOS** or **Linux**:
+Install into a virtual environment
+""""""""""""""""""""""""""""""""""
+
+This section demonstrates how to install pyGPlates into a new `virtual environment <https://docs.python.org/3/tutorial/venv.html>`_.
+
+In the following example, we create and *activate* a Python environment named ``pygplates_venv`` that will contain pyGPlates (and all its dependency shared libraries).
+This will create a sub-directory called ``pygplates_venv`` in the current directory.
+
+On **macOS** and **Linux**:
 ::
 
-  python -m venv pygplates_venv
+  python3 -m venv pygplates_venv
   source pygplates_venv/bin/activate
+
+.. note:: If ``python3`` doesn't work then try ``python``.
 
 On **Windows**:
 ::
@@ -136,13 +149,16 @@ On **Windows**:
   py -m venv pygplates_venv
   pygplates_venv\Scripts\activate.bat
 
+.. note:: On the Windows platform, ``py`` creates a virtual environment that uses the *default* version of Python (if you have multiple Python installations).
+  However you can create an environment with a specific Python version. For example, for Python 3.13 replace ``py`` with ``py -3.13``.
+
 Then you can install pyGPlates into the *activated* environment with:
 ::
 
   python -m pip install pygplates
 
-.. note:: You can use ``python`` on **all** platforms (once a virtual environment has been *activated*).
-  You do **not** need to use ``py`` on Windows.
+.. note:: Once a virtual environment has been *activated* you can use ``python`` on **all** platforms.
+  In other words, you do **not** need to use ``python3`` on macOS and Linux, or ``py`` on Windows.
 
 Now you can use pyGPlates. For example, to see the pyGPlates version:
 ::
@@ -152,23 +168,21 @@ Now you can use pyGPlates. For example, to see the pyGPlates version:
 And other packages can also be installed (such as packages that *depend* on pyGPlates).
 For example, if you want to create an environment containing ``gplately`` (that will use the latest ``pygplates``).
 
-On **macOS** or **Linux**:
+On **macOS** and **Linux**:
 ::
 
-  python -m venv gplately_venv
+  python3 -m venv gplately_venv
   source gplately_venv/bin/activate
-  python -m pip install pygplates gplately
+  python -m pip install gplately
 
 On **Windows**:
 ::
   
   py -m venv gplately_venv
   gplately_venv\Scripts\activate.bat
-  python -m pip install pygplates gplately
+  python -m pip install gplately
 
-.. note:: We explicitly specified ``pygplates`` (in addition to ``gplately``).
-  However, once GPlately 2.0 is released you will only need to specify ``gplately`` since it will
-  automatically install ``pygplates`` (as a new explicit dependency).
+.. note:: We did not specify ``pygplates`` because ``gplately`` will automatically install ``pygplates``.
 
 .. _pygplates_getting_started_install_from_source_code:
 
@@ -197,29 +211,30 @@ These instructions are in the root directory of the source code.
 
 Once the dependency libraries (and compilation tools) have been installed then you can compile and install pyGPlates.
 
-.. note:: | As described in :ref:`pygplates_getting_started_install_using_pip`, it is recommended to install pyGPlates
-            into a new `virtual environment <https://docs.python.org/3/tutorial/venv.html>`_.
-          | On the Windows platform, the following assumes you have created and activated a virtual environment
-            (if not, then replace ``python`` with ``py``).
-
 To compile pyGPlates and install it into Python (along with its dependency shared libraries), type the following
 (assuming you are currently in the root directory of the source code - see ``cd GPlates`` above):
 ::
 
   python -m pip install .
 
+.. note:: This assumes a virtual environment has already been *activated* as described in :ref:`pygplates_getting_started_install_into_a_venv`.
+  Otherwise you might need to replace ``python`` with ``python3`` (on macOS and Linux) or ``py`` (on Windows).
+
 Now you can use pyGPlates. For example, to see the pyGPlates version:
 ::
 
   python -c "import pygplates; print(pygplates.__version__)"
 
-.. note:: The dependency shared libraries are installed **without** giving them unique names. If you find that ``import pygplates``
-  generates shared library conflicts, then a more robust installation method is to build a Python wheel, then install the shared library
-  dependencies into the wheel (using ``auditwheel`` on Linux, ``delocate`` on macOS or ``delvewheel`` on Windows), and then install the wheel.
-  This avoids potential issues with binary dependency conflicts from other installed Python packages that have the same dependencies as pyGPlates
-  (eg, the GDAL dependency). The build scripts in the ``pygplates/wheel`` directory (of the source code) build wheels in this way.
-  In fact these scripts are used to generate the pyGPlates wheels that are `uploaded to PyPI <https://pypi.org/project/pygplates/#files>`_
-  (and in turn used by ``pip install pygplates``).
+.. note:: | If you find that ``import pygplates`` generates shared library conflicts, then you will need to use a build script
+    in the ``pygplates/wheel/`` directory (of the source code) to build a wheel. And then install that wheel instead.
+  
+  | In fact, those build scripts are used to generate the official pyGPlates wheels that are `uploaded to PyPI <https://pypi.org/project/pygplates/#files>`_
+    (and automatically downloaded/installed when a user types ``pip install pygplates``).
+  
+  | The build scripts are more robust because they install the shared library dependencies into the wheel using ``auditwheel`` on Linux, ``delocate`` on macOS,
+    and ``delvewheel`` on Windows. This generates *unique* shared library names to avoid potential conflicts with other installed Python packages that have
+    the same dependencies as pyGPlates (eg, the GDAL dependency). This is in contrast to installing pyGPlates directly from source code (as described above), which does **not**
+    generate unique names because the dependency libraries (that you built above) are simply copied into the Python ``site-packages`` installation without renaming them.
 
 
 .. _pygplates_getting_started_troubleshooting:
