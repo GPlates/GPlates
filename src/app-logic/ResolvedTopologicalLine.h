@@ -211,10 +211,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Accept a ConstReconstructionGeometryVisitor instance.
 		 */
-		virtual
 		void
 		accept_visitor(
-				ConstReconstructionGeometryVisitor &visitor) const
+				ConstReconstructionGeometryVisitor &visitor) const override
 		{
 			visitor.visit(this->get_non_null_pointer_to_const());
 		}
@@ -223,10 +222,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Accept a ReconstructionGeometryVisitor instance.
 		 */
-		virtual
 		void
 		accept_visitor(
-				ReconstructionGeometryVisitor &visitor)
+				ReconstructionGeometryVisitor &visitor) override
 		{
 			visitor.visit(this->get_non_null_pointer());
 		}
@@ -234,10 +232,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Accept a WeakObserverVisitor instance.
 		 */
-		virtual
 		void
 		accept_weak_observer_visitor(
-				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor)
+				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor) override
 		{
 			visitor.visit_resolved_topological_line(*this);
 		}
