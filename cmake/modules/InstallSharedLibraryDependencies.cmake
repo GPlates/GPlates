@@ -574,7 +574,6 @@ elseif (APPLE)
             CODE "set(GDAL_PLUGINS_INSTALLED \"${GDAL_PLUGINS_INSTALLED}\")"
             CODE "set(GPLATES_BUILD_GPLATES [[${GPLATES_BUILD_GPLATES}]])"
             CODE "set(STANDALONE_BASE_INSTALL_DIR [[${STANDALONE_BASE_INSTALL_DIR}]])"
-            CODE "set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX [[${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}]])"
             # The *build* target filename: executable (for gplates) or module library (for pygplates).
             CODE "set(_target_file_name \"$<TARGET_FILE_NAME:${BUILD_TARGET}>\")"
             #
@@ -583,30 +582,56 @@ elseif (APPLE)
             # At the same time code sign GPlates (or pyGPlates), its Qt/GDAL plugins and their installed dependencies with a valid Developer ID certificate (if available).
             #
             CODE [[
-                # Fix the dependency install names in each installed dependency.
+                # Fix the dependency install names in each installed dependency, and then codesign the dependency.
                 foreach(_installed_dependency ${_installed_dependencies})
                     fix_dependency_install_names(${_installed_dependency})
                     # Sign *after* fixing dependencies (since we cannot modify after signing).
                     codesign(${_installed_dependency})
                 endforeach()
 
-                if (GPLATES_BUILD_GPLATES)  # GPlates ...
-                    #
-                    # There are some shared '.so' libraries in the Python framework that need code signing.
-                    #
-                    # For example, there's a directory called, 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
-                    # There's also site packages (eg, in 'Python.framework/Versions/3.8/lib/python3.8/site-packages/' like NumPy that contain '.so' libraries.
-                    # We need to codesign and secure timestamp these (otherwise Apple notarization fails).
-                    #
-                    # Note: The Python standard library is only installed for the 'gplates' target which has an embedded Python interpreter
-                    #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
-            
-                    # Recursively search for '.so' files within the Python standard library.
-                    file(GLOB_RECURSE _python_shared_libs "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}/*.so")
-                    foreach(_python_shared_lib ${_python_shared_libs})
-                        codesign(${_python_shared_lib})
+                # Get a unique list of installed frameworks that our installed dependencies are contained within (if any).
+                set(_installed_frameworks)
+                foreach(_installed_dependency ${_installed_dependencies})
+                    if (_installed_dependency MATCHES "/[^/]+\\.framework/")
+                        # Get the framework directory (the path up to and including '<name>.framework').
+                        # For example, '.../gplates.app/Contents/Frameworks/Python.framework'.
+                        string(REGEX REPLACE "^(.*/[^/]+\\.framework)/.*$" "\\1" _installed_framework ${_installed_dependency})
+                        # Add installed framework to the list.
+                        list(APPEND _installed_frameworks "${_installed_framework}")
+                    endif()
+                endforeach()
+                # Remove duplicate frameworks, just in case multiple installed dependencies came from the same framework
+                # (and hence that framework got added to the list multiple times).
+                list(REMOVE_DUPLICATES _installed_frameworks)
+
+                # Codesign the installed frameworks (after codesigning any shared '.so' libraries contained within them).
+                #
+                # For example, there are some shared '.so' libraries in the Python framework that are not dependencies of GPlates/pyGPlates
+                # (and hence have not been codesigned). However, they still need code signing (otherwise Apple notarization fails).
+                # An example is a directory called 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that contains '.so' libraries (and is in 'sys.path').
+                # There's also site packages (eg, in 'Python.framework/Versions/3.8/lib/python3.8/site-packages/') like NumPy that contain '.so' libraries.
+                #
+                # Originally we only applied this logic to the Python framework (since the other frameworks, like the Qt frameworks, don't typically have '.so' libraries).
+                # However, we now apply the same logic to all installed frameworks (just in case the other frameworks add '.so' libraries in the future).
+                #
+                # Note: The Python standard library is only installed for the 'gplates' target which has an embedded Python interpreter
+                #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
+                #       So it will only get installed (and therefore codesigned) for the 'gplates' target.
+                #
+                foreach(_installed_framework ${_installed_frameworks})
+                    # Recursively search for '.so' files within the installed framework (if any).
+                    file(GLOB_RECURSE _installed_framework_shared_libs "${_installed_framework}/*.so")
+                    foreach(_shared_lib ${_installed_framework_shared_libs})
+                        codesign(${_shared_lib})
                     endforeach()
-                endif()
+
+                    # Then codesign the framework itself.
+                    # This must be done *after* codesigning its contents.
+                    #
+                    # Note: Previously we did not need to do this.
+                    #       But it appears we do now, otherwise we can get the error "a sealed resource is missing or invalid" for the Python framework.
+                    codesign(${_installed_framework})
+                endforeach()
 
                 # Fix the dependency install names in each installed plugin (Qt and GDAL).
                 foreach(_plugin ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
