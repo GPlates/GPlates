@@ -2599,6 +2599,12 @@ class RotationModelTestCase(unittest.TestCase):
         pickled_rotation_model_non_zero_default_anchor = pickle.loads(pickle.dumps(rotation_model_non_zero_default_anchor))
         self.assertTrue(pickled_rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802) ==
                         rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802))
+        # Test adding an attribute to a rotation model from the Python (note: this should work for all other pyGPlates objects too).
+        # This attribute will be unknown to the C++ side (except that it's in __dict__).
+        self.rotation_model.reconstruction_identifier = "RotationModel"
+        pickled_rotation_model = pickle.loads(pickle.dumps(self.rotation_model))
+        self.assertTrue(pickled_rotation_model.reconstruction_identifier == "RotationModel")
+
 
 
 class StrainTestCase(unittest.TestCase):

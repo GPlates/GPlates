@@ -176,11 +176,16 @@ namespace GPlatesApi
 			 *
 			 *     .def_pickle(GPlatesApi::PythonPickle::Impl::PickleSuite<ObjectHolderType>())
 			 *
-			 * Note: We only implement 'getinitargs()'.
-			 *       We don't use 'getstate()', 'setstate()' or 'getstate_manages_dict()'.
-			 *       This is because 'getinitargs()' (a part of boost::python::pickle_suite) will pickle
-			 *       an object (of type 'ObjectHolderType') into a byte stream (a Python 'bytes' object), and
-			 *       then @a unpickle will reverse that to convert the byte stream back into an object.
+			 * Note: Previously we only implemented 'getinitargs()' - not 'getstate()', 'setstate()' or 'getstate_manages_dict()'.
+			 *       This is because 'getinitargs()' (a part of boost::python::pickle_suite) will pickle an object
+			 *       (of type 'ObjectHolderType') into a byte stream (a Python 'bytes' object), and then
+			 *       @a unpickle will reverse that to convert the byte stream back into an object.
+			 *       And so we only needed 'getinitargs()' to achieve this.
+			 *       However, if an attribute is added to a pyGPlates object from the Python side then we would
+			 *       get the following error when pickling it:
+			 *           RuntimeError: Incomplete pickle support (__getstate_manages_dict__ not set)
+			 *       So now we also implement 'getstate()' and 'setstate()' (and 'getstate_manages_dict()') such that the
+			 *       Python object's __dict__ is also pickled. Note that __dict__ will be empty if no attributes were added.
 			 */
 			template <typename ObjectHolderType>
 			class PickleSuite :
@@ -198,6 +203,41 @@ namespace GPlatesApi
 
 					// Convert Bytes object from C++ to Python and return it in the tuple.
 					return boost::python::make_tuple(object_bytes);
+				}
+
+				static
+				boost::python::tuple
+				getstate(
+						boost::python::object object)
+				{
+					// Save the __dict__ of the Python object.
+					return boost::python::make_tuple(object.attr("__dict__"));
+				}
+
+				static
+				void
+				setstate(
+						boost::python::object object,
+						boost::python::tuple state)
+				{
+					// Restore the __dict__ of the Python object.
+					boost::python::extract<boost::python::dict> extract_state_dict(state[0]);
+					if (extract_state_dict.check())
+					{
+						boost::python::dict state_dict = extract_state_dict();
+						if (state_dict)  // not empty
+						{
+							object.attr("__dict__").attr("update")(state_dict);
+						}
+					}
+				}
+
+				static
+				bool
+				getstate_manages_dict()
+				{
+					// Signal that we are handling the __dict__ (by copying it).
+					return true;
 				}
 			};
 

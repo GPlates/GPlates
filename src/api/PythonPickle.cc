@@ -48,6 +48,14 @@ namespace GPlatesApi
 
 					return boost::python::make_tuple(bytes_object);
 				}
+
+				static
+				bool
+				getstate_manages_dict()
+				{
+					// Signal that we are handling the __dict__ (by ignoring it).
+					return true;
+				}
 			};
 
 
