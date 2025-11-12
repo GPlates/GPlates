@@ -86,6 +86,27 @@ class GeometryOnSphereCase(unittest.TestCase):
         self.assertAlmostEqual(distance, 0)
         self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), 0)
 
+        # Test two polylines that intersect each other *twice*.
+        (
+            distance,
+            polyline1_intersection,
+            polyline2_intersection,
+            polyline1_segment_index,
+            polyline2_segment_index,
+        ) = pygplates.GeometryOnSphere.distance(
+            pygplates.PolylineOnSphere([(5,-5), (5,5), (-5,5)]),
+            pygplates.PolylineOnSphere([(10,0), (0,0), (0,10)]),
+            return_closest_positions=True,
+            return_closest_indices=True)
+        self.assertTrue(distance == 0.0)  # can now compare directly with zero
+        self.assertTrue(polyline1_intersection == polyline2_intersection)  # should be same intersection position
+        # The returned intersection will be one of the two (arbitrarily).
+        # Ensure that the intersection point and the segment indices are consistent
+        # (there was a bug in pyGPlates 1.0 where the segment indices were for the first intersection but the intersection point was the second intersection).
+        self.assertTrue(
+            (pygplates.GeometryOnSphere.distance(polyline1_intersection, pygplates.PointOnSphere(5,0)) < math.radians(0.5) and polyline1_segment_index == 0 and polyline2_segment_index == 0) or
+            (pygplates.GeometryOnSphere.distance(polyline1_intersection, pygplates.PointOnSphere(0,5)) < math.radians(0.5) and polyline1_segment_index == 1 and polyline2_segment_index == 1))
+
     def test_get_centroid(self):
         # Test all geometry types have a 'get_centroid()' method.
         self.assertTrue(isinstance(pygplates.PointOnSphere(0, 1, 0).get_centroid(), pygplates.PointOnSphere))

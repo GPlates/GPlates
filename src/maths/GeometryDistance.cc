@@ -809,6 +809,15 @@ namespace GPlatesMaths
 			if (geometry1_sub_tree_node.is_leaf_node() &&
 				geometry2_sub_tree_node.is_leaf_node())
 			{
+				// Storage for closest positions on two great circle arcs (if requested).
+				GPlatesMaths::UnitVector3D closest_arc_position1 = GPlatesMaths::UnitVector3D::xBasis()/*dummy value*/;
+				GPlatesMaths::UnitVector3D closest_arc_position2 = GPlatesMaths::UnitVector3D::xBasis()/*dummy value*/;
+				boost::optional< boost::tuple<UnitVector3D &/*arc1*/, UnitVector3D &/*arc2*/> > closest_arc_positions;
+				if (closest_positions)
+				{
+					closest_arc_positions = boost::make_tuple(boost::ref(closest_arc_position1), boost::ref(closest_arc_position2));
+				}
+
 				// Iterate over the great circle arcs of the leaf node of the first geometry.
 				typename geometry1_bounding_tree_type::great_circle_arc_const_iterator_type
 						gca1_iter = geometry1_sub_tree_node.get_bounded_great_circle_arcs_begin();
@@ -836,13 +845,20 @@ namespace GPlatesMaths
 										gca1,
 										gca2,
 										min_distance_threshold,
-										closest_positions);
+										closest_arc_positions);
 
 						// If shortest distance so far (within threshold)...
 						if (min_distance_between_gcas.is_precisely_less_than(min_distance))
 						{
 							min_distance = min_distance_between_gcas;
 							min_distance_threshold = AngularExtent(min_distance);
+
+							// If positions on closest segments in polygeoms is requested...
+							if (closest_positions)
+							{
+								boost::get<0>(closest_positions.get()) = closest_arc_position1;
+								boost::get<1>(closest_positions.get()) = closest_arc_position2;
+							}
 
 							// If indices of closest segments in polygeoms is requested...
 							if (closest_segment_indices)
