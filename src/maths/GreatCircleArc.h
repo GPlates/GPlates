@@ -539,6 +539,8 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * Note that if the threshold is zero then AngularDistance::PI is returned to signify threshold exceeded
+	 * (even if an intersection would have occurred, which would otherwise have returned a distance of zero).
 	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions_on_arcs (even if it's not none).
 	 *
