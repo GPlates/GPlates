@@ -169,8 +169,18 @@ namespace GPlatesMaths
 		{
 			if (!d_sine)
 			{
-				// Real takes care of very slightly negative arguments to 'sqrt'.
-				d_sine = sqrt(1 - d_cosine * d_cosine);
+				// Real takes care of very slightly negative arguments to 'sqrt' due to the cosine
+				// being slightly greater than 1.0. But the *square* of cosine is even larger.
+				// Large enough to trip an exception in 'sqrt', so we'll just clamp it to 1.0
+				// in that case, which clamps the sine to 0.0.
+				if (is_strictly_greater_than_one(d_cosine))
+				{
+					d_sine = 0.0;
+				}
+				else
+				{
+					d_sine = sqrt(1 - d_cosine * d_cosine);
+				}
 			}
 
 			return d_sine.get();
