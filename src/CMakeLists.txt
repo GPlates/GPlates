@@ -246,7 +246,7 @@ endif()
 # Now find the Boost library components.
 find_package(Boost ${_GPLATES_MIN_BOOST_VERSION} REQUIRED
 		# These components are required (including boost python)...
-		COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAME}
+		COMPONENTS program_options thread ${GPLATES_BOOST_PYTHON_COMPONENT_NAME}
 		#
 		# These components are optional...
 		OPTIONAL_COMPONENTS
@@ -854,7 +854,7 @@ target_link_libraries(${SOURCE_TARGET} PUBLIC ZLIB::ZLIB)
 # Boost dependency.
 #
 # Add required Boost components.
-target_link_libraries(${SOURCE_TARGET} PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
+target_link_libraries(${SOURCE_TARGET} PUBLIC Boost::boost Boost::program_options Boost::thread Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
 # Disable Boost auto-linking.
 # This solves the issue whereby, for example, Boost is compiled with Visual Studio 2015 but we're compiling GPlates/pyGPlates
 # with Visual Studio 2019 (which causes auto-linking to look for Boost libs with 'vc142' in their name) and hence cannot find
