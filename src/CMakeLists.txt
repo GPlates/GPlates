@@ -202,9 +202,10 @@ endif()
 # Minimum required Boost version.
 #
 if (CMAKE_VERSION VERSION_LESS 3.30)
+	# Version 1.69 is when the boost::system became header-only and no longer required adding the boost::system module (which was removed in 1.89).
 	# Version 1.55 is when boost::is_copy_constructible<T> was introduced (although can use std version in C++11 compilers now).
 	# Version 1.39 is when <boost/bind/bind.hpp> was added (before that there was just <boost/bind.hpp>).
-	set(_GPLATES_MIN_BOOST_VERSION 1.55)
+	set(_GPLATES_MIN_BOOST_VERSION 1.69)
 else()  # CMake >= 3.30 ...
 	# CMake 3.30 removed the FindBoost module, which means Boost needs to provide a CMake package configuration file and
 	# only Boost >= 1.70 provides that.
@@ -246,7 +247,7 @@ endif()
 # Now find the Boost library components.
 find_package(Boost ${_GPLATES_MIN_BOOST_VERSION} REQUIRED
 		# These components are required (including boost python)...
-		COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAME}
+		COMPONENTS program_options thread ${GPLATES_BOOST_PYTHON_COMPONENT_NAME}
 		#
 		# These components are optional...
 		OPTIONAL_COMPONENTS
@@ -854,7 +855,7 @@ target_link_libraries(${SOURCE_TARGET} PUBLIC ZLIB::ZLIB)
 # Boost dependency.
 #
 # Add required Boost components.
-target_link_libraries(${SOURCE_TARGET} PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
+target_link_libraries(${SOURCE_TARGET} PUBLIC Boost::boost Boost::program_options Boost::thread Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
 # Disable Boost auto-linking.
 # This solves the issue whereby, for example, Boost is compiled with Visual Studio 2015 but we're compiling GPlates/pyGPlates
 # with Visual Studio 2019 (which causes auto-linking to look for Boost libs with 'vc142' in their name) and hence cannot find
