@@ -30,12 +30,11 @@ jobs:
       with:
         ref: pygplates
 
-    - name: Set up Micromamba
+    - name: Set up Miniconda
       uses: conda-incubator/setup-miniconda@v3
-      #uses: mamba-org/setup-micromamba@v2
       with:
         use-mamba: true
-        # use the matrix python versio
+        # use the matrix python version
         python-version: ${{ matrix.python-version }}
         environment-file: .github/condaenvs/env.LINUX.yml
         activate-environment: pygplates
