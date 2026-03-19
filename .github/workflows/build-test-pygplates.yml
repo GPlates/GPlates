@@ -46,7 +46,7 @@ jobs:
       run: |
         env
         pip install -vv \
-        -C "cmake.define.CMAKE_PREFIX_PATH=${CONDA_PREFIX}" \
+        -C "cmake.define.CMAKE_PREFIX_PATH=/usr/share/miniconda/envs/pygplates" \
         .
 
     - name: Test pygplates
