@@ -34,7 +34,7 @@ jobs:
         # use the matrix python version
         python-version: ${{ matrix.python-version }}
         environment-file: .github/condaenvs/env.LINUX.yml
-        activate-environment: $ENV_NAME
+        activate-environment: ${{ env.ENV_NAME }}
 
     - name: Conda diagnostic
       run: |
