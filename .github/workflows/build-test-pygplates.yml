@@ -1,0 +1,55 @@
+# This workflow builds and tests pygplates 
+# Dependencies run from conda, installed via `environment.yml` 
+# Tests run from in pygplates/test/test.py
+name: pygplates build and test
+
+on:
+  push:
+    branches: [ "pygplates" ]
+  pull_request:
+    branches: [ "pygplates" ]
+  workflow_dispatch:
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  build-test:
+    strategy:
+      matrix:
+        os: ["ubuntu"] #, "macos"] #, "windows"]
+        python-version: ["3.11", "3.12"]
+
+    runs-on: ${{ matrix.os }}-latest
+    continue-on-error: true # debugging for now
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+      with:
+        ref: pygplates
+
+    - name: Set up Micromamba
+      uses: conda-incubator/setup-miniconda@v3
+      #uses: mamba-org/setup-micromamba@v2
+      with:
+        use-mamba: true
+        # use the matrix python versio
+        python-version: ${{ matrix.python-version }}
+        environment-file: .github/workflows/env.LINUX.yml
+        activate-environment: pygplates
+
+    - name: Conda diagnostic
+      run: |
+        conda info
+
+    - name: Build pygplates
+      run: |
+        env
+        pip install -vv \
+        -C "cmake.define.CMAKE_PREFIX_PATH=/usr/share/miniconda/envs/pygplates/" \
+        .
+
+    - name: Test pygplates
+      run: python pygplates/test/test.py
