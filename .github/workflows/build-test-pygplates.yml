@@ -37,7 +37,7 @@ jobs:
         use-mamba: true
         # use the matrix python versio
         python-version: ${{ matrix.python-version }}
-        environment-file: .github/workflows/env.LINUX.yml
+        environment-file: .github/condaenvs/env.LINUX.yml
         activate-environment: pygplates
 
     - name: Conda diagnostic
