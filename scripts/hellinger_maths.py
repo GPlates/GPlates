@@ -895,7 +895,7 @@ class MathsUtils():
         self.table[:,4] = 6.635,9.21,11.341,13.277,15.086,16.812,18.475,20.09,21.666,23.209,24.725,26.217,27.688,29.141,30.578,32.,33.409,34.805,36.191,37.566,38.932,40.289        
         for j in range(0,5):
             if abs(self.cent[j])-self.pc < 0.0005:
-                x2val = self.table[self.idfX2tab,j]        
+                x2val = self.table[floor(self.idfX2tab).astype(int),j]  # floor() is used to match the FORTRAN code, which truncates to integer.
         return x2val
         
     def lat_lon_to_euclidean(self,alat,along):

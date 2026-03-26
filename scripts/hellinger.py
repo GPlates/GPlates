@@ -665,7 +665,7 @@ class Hellinger():
                 self.chat[i,j,0] = self.ahat[i,j]
         for iside in range(0,2):
             for ipt in range(0,int(self.ndat[iside])+1):
-                self.isect = self.data[iside,ipt,0]
+                self.isect = floor(self.data[iside,ipt,0]).astype(int)  # floor() is used to match the FORTRAN code, which truncates to integer.
                 if iside == 0:
                     self.resi = self.data[0,ipt,2] * self.eta[self.isect,1,2] + self.data[0,ipt,3]*self.eta[self.isect,2,0]+self.data[0,ipt,6]*self.eta[self.isect,0,1]
                     self.data[0,ipt,2] = self.resi*sqrt(self.rfact)/self.data[0,ipt,1]
@@ -713,7 +713,7 @@ class Hellinger():
             self.sum11 = self.sum11 + self.resid[jpt] ** 2
             self.sum12 = self.sum12 + self.resid[jpt]*self.scores[jpt]
             self.sum22 = self.sum22 + self.scores[jpt]**2
-            ipt = self.ipoint[jpt]
+            ipt = floor(self.ipoint[jpt]).astype(int)  # floor() is used to match the FORTRAN code, which truncates to integer.
             if ipt <= self.ndat[0]:
                 self.data[0,ipt,3] = self.scores[jpt]
             else:
