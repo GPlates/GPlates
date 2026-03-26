@@ -1,4 +1,5 @@
 from __future__ import print_function
+import builtins
 import sys
 import os
 import optparse
@@ -147,7 +148,7 @@ class Hellinger():
                 self.long = self.result[3] #along
                 self.error = float(self.result[4]) #sd
                 self.segmentNumbers.append(self.segmentNumber)
-                self.maxSegmentNumber = max(self.segmentNumbers)
+                self.maxSegmentNumber = builtins.max(self.segmentNumbers)  # distinguish from numpy.max
                 if self.plateId <= 2:
                     if self.plateId == 1:                        
                         self.ndat[0] +=1
@@ -190,7 +191,7 @@ class Hellinger():
                 self.long = self.result[3] #along
                 self.error = float(self.result[4]) #sd
                 self.segmentNumbers.append(self.segmentNumber)
-                self.maxSegmentNumber = max(self.segmentNumbers)
+                self.maxSegmentNumber = builtins.max(self.segmentNumbers)  # distinguish from numpy.max
                 if self.plateId <= 3:
                     if self.plateId == 1:                        
                         self.ndat[0] +=1

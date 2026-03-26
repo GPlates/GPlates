@@ -1,4 +1,5 @@
 from __future__ import print_function
+import builtins
 from math import *
 from numpy import *
 import sys
@@ -700,7 +701,7 @@ class MathsUtils():
         b = self.df + sqrt(2.0*self.df) * b
         if (ier != 0):
             b = self.df
-        b = max(1.0, b)
+        b = builtins.max(1.0, b)  # distinguish from numpy.max
         a = b
         self.pa = self.xdch(self.dX, a, ier)[0]
         if self.pa >= self.plev :
@@ -845,7 +846,7 @@ class MathsUtils():
                 if p > 0:
                     q = -q
                 p = abs(p)
-                if (2.0 * p) < min(3.0 * self.xm*q - abs(self.tol1*q),abs(e*q)):
+                if (2.0 * p) < builtins.min(3.0 * self.xm*q - abs(self.tol1*q),abs(e*q)):
                     e = d
                     d = p/q
                 else:
