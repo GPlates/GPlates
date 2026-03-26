@@ -1,10 +1,7 @@
-from __future__ import print_function
 import builtins
 import sys
 import os
-import optparse
 from math import *
-from optparse import OptionParser
 try:
     from hellinger_maths import MathsUtils
 except ImportError:
@@ -248,7 +245,7 @@ class Hellinger():
         self.sigmaMatrix = self.calculateSigmaMatrixTwoWay()
         self.info = self.getInfoAboutSigmaMatrix(self.sigmaMatrix)                 
         self.eps = float(self.radius) #eps
-        self.eps = math.radians(self.eps)
+        self.eps = radians(self.eps)
         self.nsect = int(self.maxSegmentNumber)
         h = zeros(3)
         self.yp = zeros(4)
@@ -529,7 +526,7 @@ class Hellinger():
             self.ier = self.xidch2[1]
             self.xchi1 = self.xidch2[0]
             if (self.ier != 0):
-                print("subroutine xidch--ier", ier)
+                print("subroutine xidch--ier", self.ier)
         else:
             self.df = (self.ndat[0]+self.ndat[1]+self.ndat[2]) - 2*self.nsect -6
             self.plev1 = (1.0-self.plev) / 2

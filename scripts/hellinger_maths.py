@@ -1,8 +1,6 @@
-from __future__ import print_function
 import builtins
 from math import *
 from numpy import *
-import sys
 import os
 
 """
@@ -1536,13 +1534,13 @@ class MathsUtils():
                                         blat = thetm[k]*180/self.pi
                                         self.boundaryFile.write(str(blong)+" "+str(blat)+"\n")
                                     if icase == 2:
-                                        print("a sequence of " +npt+" points along the southern",)
+                                        print("a sequence of " +str(npt)+" points along the southern",)
                                         print("border of the set of admissible axes has been",)
-                                        print("written to the file "+bfile+" .")
+                                        print("written to the file "+file_dat+" .")
                                     elif icase == 3:
-                                        print("a sequence of "+npt+ " points along the northern",)
+                                        print("a sequence of "+str(npt)+ " points along the northern",)
                                         print("border of the set of admissible axes has been",)
-                                        print("written to the file "+bfile+" .")
+                                        print("written to the file "+file_dat+" .")
                                 return pmind, pmaxd, tmind, tmaxd, jer
                     for k in range(0,npt+1):
                         phim[k] = phi[k]
@@ -1695,9 +1693,9 @@ class MathsUtils():
                                                 print("degrees, the other near axis longitude = -180")
                                                 print("degrees).  the other hole is bounded by a closed")
                                                 print("curve.")
-                                                print("a sequence of "+npt+" points around the closed")
-                                                print("curve have been written to the file "+bfile+ " these are")
-                                                print("followed by"+n1+" points one one open curve and "+n2+" points on the other.")
+                                                print("a sequence of "+str(npt)+" points around the closed")
+                                                print("curve have been written to the file "+file_dat+ " these are")
+                                                print("followed by"+str(n1)+" points one one open curve and "+str(n2)+" points on the other.")
                                             return pmind, pmaxd, tmind, tmaxd, jer
                                         jer = 1
                                         print("error in boundc (icase=5, subcase b):")
@@ -1764,9 +1762,9 @@ class MathsUtils():
                                                     print("degrees, the other near axis longitude = -180")
                                                     print("degrees).  the other hole is bounded by a closed")
                                                     print("curve.")
-                                                    print("a sequence of "+npt+" points around the closed")
-                                                    print("curve have been written to the file "+bfile+ " these are")
-                                                    print("followed by"+n1+" points one one open curve and "+n2+" points on the other.")
+                                                    print("a sequence of "+str(npt)+" points around the closed")
+                                                    print("curve have been written to the file "+file_dat+ " these are")
+                                                    print("followed by"+str(n1)+" points one one open curve and "+str(n2)+" points on the other.")
                                                 return pmind, pmaxd, tmind, tmaxd, jer
                                             jer = 1
                                             print("error in boundc (icase=5, subcase b):")
