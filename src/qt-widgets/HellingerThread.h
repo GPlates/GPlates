@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_HELLINGERTHREAD_H
 #define GPLATES_QTWIDGETS_HELLINGERTHREAD_H
 
+#include <string>
 #include <QThread>
 
 namespace GPlatesQtWidgets
@@ -78,7 +79,8 @@ namespace GPlatesQtWidgets
 		}
 
 		void
-		initialise(const QString &python_file,
+		initialise(
+				const std::string &python_code,
 				const QString &output_path,
 				const QString &results_filename_root,
 				const QString &temporary_path);
@@ -109,9 +111,9 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * @brief d_python_file - the main hellinger python file (hellinger.py) including the path.
+		 * @brief d_python_code - the contents of the main hellinger python file (hellinger.py).
 		 */
-		QString d_python_file;
+		std::string d_python_code;
 
 		/**
 		 * @brief d_output_path - path for outputting results
