@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_HELLINGERDIALOG_H
 #define GPLATES_QTWIDGETS_HELLINGERDIALOG_H
 
+#include <string>
 #include <vector>
 
 #include "gui/Colour.h"
@@ -626,15 +627,9 @@ namespace GPlatesQtWidgets
 		ThreadType d_thread_type;
 
 		/**
-		 * @brief d_python_path - At present we need to pass the hellinger python file to boost::python::exec_file. This
-		 * stores the path to the hellinger python file.
+		 * @brief d_python_code - the full python code from the hellinger python file.
 		 */
-		QString d_python_path;
-
-		/**
-		 * @brief d_python_file - the full filename (including path) of the hellinger python file.
-		 */
-		QString d_python_file;
+		std::string d_python_code;
 
 		/**
 		 * @brief d_path_for_temporary_files - location for storing temporary files used for passing data between the python scripts and GPlates.

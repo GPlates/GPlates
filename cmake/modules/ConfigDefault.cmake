@@ -72,9 +72,9 @@ set(GPLATES_PACKAGE_CONTACT "" CACHE STRING "Package contact/maintainer. Use for
 
 # The GPlates (or pyGPlates) package license.
 set(GPLATES_PACKAGE_LICENSE [[
-Copyright (C) 2003-2025 The University of Sydney, Australia.
-Copyright (C) 2007-2025 The Geological Survey of Norway.
-Copyright (C) 2004-2025 California Institute of Technology.
+Copyright (C) 2003-2026 The University of Sydney, Australia.
+Copyright (C) 2007-2026 The Geological Survey of Norway.
+Copyright (C) 2004-2026 California Institute of Technology.
 This is free software. You may redistribute copies of it under the terms of
 the GNU General Public License version 2 <http://www.gnu.org/licenses/gpl.html>.
 There is NO WARRANTY, to the extent permitted by law.
@@ -83,9 +83,9 @@ There is NO WARRANTY, to the extent permitted by law.
 
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING [[
-Copyright (C) 2003-2025 The University of Sydney, Australia
-Copyright (C) 2004-2025 California Institute of Technology
-Copyright (C) 2007-2025 The Geological Survey of Norway
+Copyright (C) 2003-2026 The University of Sydney, Australia
+Copyright (C) 2004-2026 California Institute of Technology
+Copyright (C) 2007-2026 The Geological Survey of Norway
 
 The GPlates source code also contains code derived from:
  * ReconTreeViewer (James Boyden)
@@ -100,9 +100,9 @@ environment, the Inkscape vector graphics editor and the Tango icon library.
 # The GPlates copyright for html.
 set(GPLATES_HTML_COPYRIGHT_STRING [[
 <html><body>
-Copyright &copy; 2003-2025 The University of Sydney, Australia<br />
-Copyright &copy; 2004-2025 California Institute of Technology<br />
-Copyright &copy; 2007-2025 The Geological Survey of Norway<br />
+Copyright &copy; 2003-2026 The University of Sydney, Australia<br />
+Copyright &copy; 2004-2026 California Institute of Technology<br />
+Copyright &copy; 2007-2026 The Geological Survey of Norway<br />
 <br />
 
 The GPlates source code also contains code derived from: <ul>
@@ -120,9 +120,9 @@ environment, the Inkscape vector graphics editor and the Tango icon library.
 # The pyGPlates copyright - string version to be used in Python API documentation.
 # We don't include the word 'Copyright' since we're using Sphinx for documentation and it prepends it to our copyright string.
 set(PYGPLATES_DOCS_COPYRIGHT_STRING [[
-(C) 2003-2025 The University of Sydney, Australia
-(C) 2004-2025 California Institute of Technology
-(C) 2007-2025 The Geological Survey of Norway
+(C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
 ]])
 
 
