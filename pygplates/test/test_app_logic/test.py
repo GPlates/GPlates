@@ -3454,6 +3454,61 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         self.assertTrue(point_velocities == [pygplates.Vector3D.zero] * len(points))
         self.assertTrue(point_strain_rates == [pygplates.StrainRate.zero] * len(points))
     
+    def test_reconstruct_points(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        points = [
+                pygplates.PointOnSphere(0, -30),  # only 'topology2' contains this point
+                pygplates.PointOnSphere(0, -60),  # only the sole network 'topology3' contains this point
+        ]
+
+        reconstructed_points = snapshot.reconstruct_points(
+                points,
+                snapshot.get_reconstruction_time() + 1.0)
+        self.assertTrue(reconstructed_points == points)  # plates/networks don't actually move
+
+        reconstructed_points = snapshot.reconstruct_points(
+                points,
+                snapshot.get_reconstruction_time() + 1.0,
+                resolve_topology_types=pygplates.ResolveTopologyType.boundary,
+                use_natural_neighbour_interpolation=False) # just test the argument gets accepted
+        # First point is in resolved boundary 'topology2'.
+        self.assertTrue(reconstructed_points[0] == points[0])  # plates/networks don't actually move
+        # Second point is in resolved network 'topology3', but we only searched resolved boundaries.
+        self.assertTrue(reconstructed_points[1] is None)
+        reconstructed_points = snapshot.reconstruct_points(
+                points,
+                snapshot.get_reconstruction_time() + 1.0,
+                resolve_topology_types=pygplates.ResolveTopologyType.boundary,
+                return_input_if_not_intersect=True)
+        # First point is in resolved boundary 'topology2'.
+        self.assertTrue(reconstructed_points[0] == points[0])  # plates/networks don't actually move
+        # Second point is in resolved network 'topology3'. Even though we only searched resolved boundaries,
+        # we still return the input point since we set "return_input_if_not_intersect=True".
+        self.assertTrue(reconstructed_points[1] == points[1])  # plates/networks don't actually move
+        
+        reconstructed_points = snapshot.reconstruct_points(
+                points,
+                snapshot.get_reconstruction_time() + 1.0,
+                resolve_topology_types=pygplates.ResolveTopologyType.network,
+                use_natural_neighbour_interpolation=False) # just test the argument gets accepted
+        # First point is in resolved boundary 'topology2', but we only searched resolved networks.
+        self.assertTrue(reconstructed_points[0] is None)
+        # Second point is in resolved network 'topology3'.
+        self.assertTrue(reconstructed_points[1] == points[1])  # plates/networks don't actually move
+        reconstructed_points = snapshot.reconstruct_points(
+                points,
+                snapshot.get_reconstruction_time() + 1.0,
+                resolve_topology_types=pygplates.ResolveTopologyType.network,
+                return_input_if_not_intersect=True)
+        # First point is in resolved boundary 'topology2'. Even though we only searched resolved networks,
+        # we still return the input point since we set "return_input_if_not_intersect=True".
+        self.assertTrue(reconstructed_points[0] == points[0])  # plates/networks don't actually move
+        # Second point is in resolved network 'topology3'.
+        self.assertTrue(reconstructed_points[1] == points[1])  # plates/networks don't actually move
+    
     def test_resolve_topology_parameters(self):
         default_resolve_topology_parameters=pygplates.ResolveTopologyParameters()
         self.assertFalse(default_resolve_topology_parameters.enable_strain_rate_clamping)

@@ -859,6 +859,228 @@ namespace GPlatesApi
 		}
 	}
 
+	namespace
+	{
+		/**
+		 * Reconstruct points in resolved topological networks and boundaries.
+		 */
+		boost::optional<GPlatesMaths::PointOnSphere>
+		reconstruct_point_in_resolved_topologies(
+				const GPlatesMaths::PointOnSphere &point,
+				const double &initial_time,
+				const double &final_time,
+				const double &time_increment,
+				bool reverse_reconstruct,
+				const RotationModel::non_null_ptr_type &rotation_model,
+				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>> &resolved_topological_networks,
+				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>> &resolved_topological_boundaries,
+				bool use_natural_neighbour_interpolation,
+				bool return_input_if_not_intersect)
+		{
+			// See if point is inside any topological networks.
+			if (resolved_topological_networks)
+			{
+				const auto resolved_networks_begin = resolved_topological_networks->begin();
+				const auto resolved_networks_end = resolved_topological_networks->end();
+				for (auto resolved_networks_iter = resolved_networks_begin;
+					resolved_networks_iter != resolved_networks_end;
+					++resolved_networks_iter)
+				{
+					// NOTE: Don't use a reference here
+					//       (helps avoid using wrong resolved network in case std::swap below is moved higher up).
+					const auto resolved_topological_network = *resolved_networks_iter;
+
+					boost::optional<std::pair<
+							GPlatesMaths::PointOnSphere,
+							GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
+									deformed_point_result = resolved_topological_network->get_triangulation_network().calculate_deformed_point(
+											point,
+											time_increment,
+											reverse_reconstruct,
+											use_natural_neighbour_interpolation);
+					if (deformed_point_result)
+					{
+						// The next point is probably in the same resolved network so make it the first one to be tested next time.
+						if (resolved_networks_iter != resolved_networks_begin)
+						{
+							std::swap(*resolved_networks_begin, *resolved_networks_iter);
+						}
+
+						return deformed_point_result->first;
+					}
+				}
+			}
+
+			// See if point is inside any topological boundaries.
+			if (resolved_topological_boundaries)
+			{
+				const auto resolved_boundaries_begin = resolved_topological_boundaries->begin();
+				const auto resolved_boundaries_end = resolved_topological_boundaries->end();
+				for (auto resolved_boundaries_iter = resolved_boundaries_begin;
+					resolved_boundaries_iter != resolved_boundaries_end;
+					++resolved_boundaries_iter)
+				{
+					// NOTE: Don't use a reference here
+					//       (helps avoid using wrong resolved boundary in case std::swap below is moved higher up).
+					const auto resolved_topological_boundary = *resolved_boundaries_iter;
+
+					// See if point is inside the resolved topological boundary.
+					if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
+					{
+						// Get the plate ID from resolved boundary.
+						//
+						// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+						// which can still give a non-identity rotation if the anchor plate id is non-zero.
+						boost::optional<GPlatesModel::integer_plate_id_type> resolved_boundary_plate_id =
+								resolved_topological_boundary->plate_id();
+						if (!resolved_boundary_plate_id)
+						{
+							resolved_boundary_plate_id = 0;
+						}
+
+						//
+						// Delegate to 'PlateVelocityUtils::calculate_stage_rotation()' since it adjusts the
+						// stage rotation time interval if one of the times goes negative or if the rotation
+						// file only has rotations up to time 't', but not time 't+dt'.
+						//
+
+						boost::optional<GPlatesMaths::FiniteRotation> stage_rotation;
+						if (reverse_reconstruct) // forward in time ...
+						{
+							// Forward stage rotation from 'initial_time' to 'final_time'.
+							stage_rotation = GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
+									resolved_boundary_plate_id.get(),
+									rotation_model->get_reconstruction_tree_creator(),
+									initial_time,
+									// Must be positive...
+									time_increment/*velocity_delta_time*/,
+									GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T/*velocity_delta_time_type*/);
+						}
+						else // backward in time ...
+						{
+							// Backward stage rotation from 'initial_time' to 'final_time'.
+							//
+							// Note: Need to reverse rotation from forward-in-time to backward-in-time.
+							stage_rotation = GPlatesMaths::get_reverse(
+									GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
+											resolved_boundary_plate_id.get(),
+											rotation_model->get_reconstruction_tree_creator(),
+											initial_time,
+											// Must be positive...
+											time_increment/*velocity_delta_time*/,
+											GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T/*velocity_delta_time_type*/));
+						}
+
+						// The next point is probably in the same resolved boundary so make it the first one to be tested next time.
+						if (resolved_boundaries_iter != resolved_boundaries_begin)
+						{
+							std::swap(*resolved_boundaries_begin, *resolved_boundaries_iter);
+						}
+
+						// Return reconstructed point.
+						return stage_rotation.get() * point;
+					}
+				}
+			}
+
+			// Point is not located inside any resolved boundaries/networks.
+
+			if (return_input_if_not_intersect)
+			{
+				return point;
+			}
+
+			return boost::none;
+		}
+	}
+
+	bp::object
+	topological_snapshot_reconstruct_points(
+			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+			PointSequenceFunctionArgument point_seq,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			ResolveTopologyType::flags_type resolve_topology_types,
+			bool use_natural_neighbour_interpolation,
+			bool return_input_if_not_intersect)
+	{
+		bp::list reconstructed_points;
+
+		// Reconstruction time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Reconstruction time cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		// The initial time is the time we're reconstructing *from*.
+		const double initial_time = topological_snapshot->get_reconstruction_time();
+		// The final time is the time we're reconstructing *to*.
+		const double final_time = reconstruction_time.value();
+
+		bool reverse_reconstruct;
+		double time_increment;
+		if (initial_time > final_time)
+		{
+			// Final time is *younger* than the initial time.
+			// So we are reverse reconstructing (going forward in time).
+			reverse_reconstruct = true;
+			// The time increment should always be positive.
+			time_increment = initial_time - final_time;
+		}
+		else
+		{
+			// Final time is *older* than the initial time.
+			// So we are reconstructing (going backward in time).
+			reverse_reconstruct = false;
+			// The time increment should always be positive.
+			time_increment = final_time - initial_time;
+		}
+
+		// Resolved topology type flags must correspond to BOUNDARY and/or NETWORK.
+		if ((resolve_topology_types & ~ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) != 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Bit flags specified in resolve topology types must be "
+					"ResolveTopologyType.BOUNDARY and/or ResolveTopologyType.NETWORK.");
+			bp::throw_error_already_set();
+		}
+
+		// Get the resolved topological networks (if requested).
+		boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>> resolved_topological_networks;
+		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
+		{
+			resolved_topological_networks = topological_snapshot->get_resolved_topological_networks();
+		}
+		// Get the resolved topological boundaries (if requested).
+		boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>> resolved_topological_boundaries;
+		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
+		{
+			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
+		}
+
+		// Iterate over the sequence of points.
+		for (const auto &point : point_seq.get_points())
+		{
+			// Reconstruct the point using the resolved topological network or boundary (if any) containing the point.
+			const boost::optional<GPlatesMaths::PointOnSphere> reconstructed_point =
+					reconstruct_point_in_resolved_topologies(
+							point,
+							initial_time,
+							final_time,
+							time_increment,
+							reverse_reconstruct,
+							topological_snapshot->get_rotation_model(),
+							resolved_topological_networks,
+							resolved_topological_boundaries,
+							use_natural_neighbour_interpolation,
+							return_input_if_not_intersect);
+
+			reconstructed_points.append(reconstructed_point);
+		}
+
+		return reconstructed_points;
+	}
+
 	/**
 	 * Returns the boundary feature.
 	 *
@@ -2780,7 +3002,7 @@ export_topological_snapshot()
 				"  To associate each point with the resolved topological boundary/network containing it:\n"
 				"  ::\n"
 				"\n"
-				"    topology_point_locations = reconstruct_snapshot.get_point_locations(points)\n"
+				"    topology_point_locations = topological_snapshot.get_point_locations(points)\n"
 				"\n"
 				"    for point_index in range(len(points)):\n"
 				"        point = points[point_index]\n"
@@ -2914,6 +3136,72 @@ export_topological_snapshot()
 				"a 1 Myr time interval and using the *equatorial* Earth radius :class:`pygplates.Earth.equatorial_radius_in_kms <Earth>`.\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
+		.def("reconstruct_points",
+				&GPlatesApi::topological_snapshot_reconstruct_points,
+				(bp::arg("points"),
+					bp::arg("reconstruction_time"),
+					bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES,
+					bp::arg("use_natural_neighbour_interpolation") = true,
+					bp::arg("return_input_if_not_intersect") = false),
+				"reconstruct_points(points, reconstruction_time, "
+				"[resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
+				"[use_natural_neighbour_interpolation=True], [return_input_if_not_intersect=False])\n"
+				"  Incrementally reconstruct the specified points (that lie within resolved topological boundaries/networks searched in this snapshot) to the specified reconstruction time.\n"
+				"\n"
+				"  :param points: sequence of points to reconstruct\n"
+				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the "
+				":meth:`reconstruction time of this snapshot <get_reconstruction_time>`.\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :param resolve_topology_types: specifies the resolved topology types to search - defaults "
+				"to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
+				":class:`resolved topological networks<ResolvedTopologicalNetwork>` "
+				"(excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)\n"
+				"  :type resolve_topology_types: a bitwise combination of any of ``pygplates.ResolveTopologyType.boundary`` or "
+				"``pygplates.ResolveTopologyType.network``\n"
+				"  :param use_natural_neighbour_interpolation: If ``True`` and a point lies within the deforming region of a resolved network, "
+				"then the reconstructed point is the interpolation of the natural neighbour deformed triangulation vertex positions "
+				"(otherwise barycentric interpolation is used). Only applies if resolved networks are specified in *resolve_topology_types*. "
+				"Defaults to ``True``.\n"
+				"  :type use_natural_neighbour_interpolation: bool\n"
+				"  :param return_input_if_not_intersect: Whether to return the *input* point for each point that does *not* intersect any "
+				"resolved topological boundaries/networks searched in this snapshot - if ``False`` then ``None`` is returned. Defaults to ``False``.\n"
+				"  :rtype: list of :class:`PointOnSphere` (or ``None`` depending on *return_input_if_not_intersect*)\n"
+				"  :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that "
+				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than "
+				":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. "
+				"So if a point is inside both a boundary and a network then the network will reconstruct the point.\n"
+				"\n"
+				"  .. note:: Each point that is *outside* all resolved topologies searched will return ``None``, unless "
+				"*return_input_if_not_intersect* is ``True`` in which case the input point is returned unchanged.\n"
+				"\n"
+				"  The specified reconstruction time can be older or younger than the :meth:`reconstruction time of this snapshot <get_reconstruction_time>`. "
+				"If it's *older* then each point is reconstructed *backward* in time, and if it's *younger* then each point is reconstructed *forward* in time.\n"
+				"\n"
+				"  .. note:: Each point reconstruction involves calculating a stage rotation (for resolved networks this is for each nearby vertex in the deforming triangulation) "
+				"from the :meth:`reconstruction time of this snapshot <get_reconstruction_time>` to *reconstruction_time*. "
+				"So ideally a small time increment (such as 1 Myr) should be used since the plate boundaries and rotations typically change over small time intervals.\n"
+				"\n"
+				"  To reconstruct each point using the resolved topological boundary/network containing it to a new position "
+				"at a time 1 Myr older than the snapshot time (and return each original point unreconstructed if it's not contained by any):\n"
+				"  ::\n"
+				"\n"
+				"    reconstructed_points = topological_snapshot.reconstruct_points(\n"
+				"            points,\n"
+				"            topological_snapshot.get_reconstruction_time() + 1.0,\n"
+				"            return_input_if_not_intersect=True)\n"
+				"\n"
+				"  .. seealso:: :meth:`ResolvedTopologicalBoundary.reconstruct_point` and :meth:`ResolvedTopologicalNetwork.reconstruct_point`\n"
+				"\n"
+				"  .. note:: This method is noticeably faster than reconstructing each point individually (using :meth:`get_point_locations`, followed by "
+				":meth:`ResolvedTopologicalBoundary.reconstruct_point` or :meth:`ResolvedTopologicalNetwork.reconstruct_point` for each point). "
+				"This is because extracting a ``ResolvedTopologicalBoundary`` or ``ResolvedTopologicalNetwork`` from the :class:`TopologyPointLocation` "
+				"associated with each point is time consuming (for reasons related to the internal implementation). Especially when the number of points "
+				"is much larger than the number of resolved topologies in the snapshot.\n"
+				"\n"
+				"  .. versionadded:: 1.1\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalSnapshot::get_rotation_model,
 				"get_rotation_model()\n"

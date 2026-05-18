@@ -1866,7 +1866,7 @@ namespace GPlatesApi
 			const GPlatesMaths::PointOnSphere &point,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 	{
-		// Reconstruction reconstruction time must not be distant past/future.
+		// Reconstruction time must not be distant past/future.
 		if (!reconstruction_time.is_real())
 		{
 			PyErr_SetString(PyExc_ValueError,
@@ -2529,7 +2529,7 @@ namespace GPlatesApi
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			bool use_natural_neighbour_interpolation)
 	{
-		// Reconstruction reconstruction time must not be distant past/future.
+		// Reconstruction time must not be distant past/future.
 		if (!reconstruction_time.is_real())
 		{
 			PyErr_SetString(PyExc_ValueError,
