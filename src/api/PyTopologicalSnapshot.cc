@@ -406,17 +406,31 @@ namespace GPlatesApi
 		GPlatesAppLogic::TopologyPointLocation
 		get_point_location_in_resolved_topologies(
 				const GPlatesMaths::PointOnSphere &point,
-				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
-				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries)
+				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>> &resolved_topological_networks,
+				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>> &resolved_topological_boundaries)
 		{
 			// See if point is inside any topological networks.
 			if (resolved_topological_networks)
 			{
-				for (const auto &resolved_topological_network : resolved_topological_networks.get())
+				const auto resolved_networks_begin = resolved_topological_networks->begin();
+				const auto resolved_networks_end = resolved_topological_networks->end();
+				for (auto resolved_networks_iter = resolved_networks_begin;
+					resolved_networks_iter != resolved_networks_end;
+					++resolved_networks_iter)
 				{
+					// NOTE: Don't use a reference here
+					//       (otherwise wrong resolved network will be returned due to std::swap below).
+					const auto resolved_topological_network = *resolved_networks_iter;
+
 					if (boost::optional<GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> point_location =
 						resolved_topological_network->get_triangulation_network().get_point_location(point))
 					{
+						// The next point is probably in the same resolved network so make it the first one to be tested next time.
+						if (resolved_networks_iter != resolved_networks_begin)
+						{
+							std::swap(*resolved_networks_begin, *resolved_networks_iter);
+						}
+
 						return GPlatesAppLogic::TopologyPointLocation(resolved_topological_network, point_location.get());
 					}
 				}
@@ -425,10 +439,24 @@ namespace GPlatesApi
 			// See if point is inside any topological boundaries.
 			if (resolved_topological_boundaries)
 			{
-				for (const auto &resolved_topological_boundary : resolved_topological_boundaries.get())
+				const auto resolved_boundaries_begin = resolved_topological_boundaries->begin();
+				const auto resolved_boundaries_end = resolved_topological_boundaries->end();
+				for (auto resolved_boundaries_iter = resolved_boundaries_begin;
+					resolved_boundaries_iter != resolved_boundaries_end;
+					++resolved_boundaries_iter)
 				{
+					// NOTE: Don't use a reference here
+					//       (otherwise wrong resolved boundary will be returned due to std::swap below).
+					const auto resolved_topological_boundary = *resolved_boundaries_iter;
+
 					if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
 					{
+						// The next point is probably in the same resolved boundary so make it the first one to be tested next time.
+						if (resolved_boundaries_iter != resolved_boundaries_begin)
+						{
+							std::swap(*resolved_boundaries_begin, *resolved_boundaries_iter);
+						}
+
 						return GPlatesAppLogic::TopologyPointLocation(resolved_topological_boundary);
 					}
 				}
@@ -456,13 +484,13 @@ namespace GPlatesApi
 		}
 
 		// Get the resolved topological networks (if requested).
-		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks;
+		boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>> resolved_topological_networks;
 		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
 		{
 			resolved_topological_networks = topological_snapshot->get_resolved_topological_networks();
 		}
 		// Get the resolved topological boundaries (if requested).
-		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries;
+		boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>> resolved_topological_boundaries;
 		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
 		{
 			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
@@ -494,8 +522,8 @@ namespace GPlatesApi
 		boost::optional<std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::TopologyPointLocation>>
 		get_point_velocity_in_resolved_topologies(
 				const GPlatesMaths::PointOnSphere &point,
-				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
-				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries,
+				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>> &resolved_topological_networks,
+				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>> &resolved_topological_boundaries,
 				const double &velocity_delta_time,
 				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
 				GPlatesAppLogic::VelocityUnits::Value velocity_units,
@@ -504,8 +532,16 @@ namespace GPlatesApi
 			// See if point is inside any topological networks.
 			if (resolved_topological_networks)
 			{
-				for (const auto &resolved_topological_network : resolved_topological_networks.get())
+				const auto resolved_networks_begin = resolved_topological_networks->begin();
+				const auto resolved_networks_end = resolved_topological_networks->end();
+				for (auto resolved_networks_iter = resolved_networks_begin;
+					resolved_networks_iter != resolved_networks_end;
+					++resolved_networks_iter)
 				{
+					// NOTE: Don't use a reference here
+					//       (otherwise wrong resolved network will be returned due to std::swap below).
+					const auto resolved_topological_network = *resolved_networks_iter;
+
 					boost::optional< std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
 							velocity = resolved_topological_network->get_triangulation_network().calculate_velocity(
 									point,
@@ -515,6 +551,12 @@ namespace GPlatesApi
 									earth_radius_in_kms);
 					if (velocity)
 					{
+						// The next point is probably in the same resolved network so make it the first one to be tested next time.
+						if (resolved_networks_iter != resolved_networks_begin)
+						{
+							std::swap(*resolved_networks_begin, *resolved_networks_iter);
+						}
+
 						return std::make_pair(
 								velocity->first,
 								GPlatesAppLogic::TopologyPointLocation(resolved_topological_network, velocity->second));
@@ -525,8 +567,16 @@ namespace GPlatesApi
 			// See if point is inside any topological boundaries.
 			if (resolved_topological_boundaries)
 			{
-				for (const auto &resolved_topological_boundary : resolved_topological_boundaries.get())
+				const auto resolved_boundaries_begin = resolved_topological_boundaries->begin();
+				const auto resolved_boundaries_end = resolved_topological_boundaries->end();
+				for (auto resolved_boundaries_iter = resolved_boundaries_begin;
+					resolved_boundaries_iter != resolved_boundaries_end;
+					++resolved_boundaries_iter)
 				{
+					// NOTE: Don't use a reference here
+					//       (otherwise wrong resolved boundary will be returned due to std::swap below).
+					const auto resolved_topological_boundary = *resolved_boundaries_iter;
+
 					if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
 					{
 						// Get the plate ID from resolved boundary.
@@ -549,6 +599,12 @@ namespace GPlatesApi
 								velocity_delta_time_type,
 								velocity_units,
 								earth_radius_in_kms);
+
+						// The next point is probably in the same resolved boundary so make it the first one to be tested next time.
+						if (resolved_boundaries_iter != resolved_boundaries_begin)
+						{
+							std::swap(*resolved_boundaries_begin, *resolved_boundaries_iter);
+						}
 
 						return std::make_pair(
 								velocity,
@@ -590,13 +646,13 @@ namespace GPlatesApi
 		}
 
 		// Get the resolved topological networks (if requested).
-		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks;
+		boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>> resolved_topological_networks;
 		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
 		{
 			resolved_topological_networks = topological_snapshot->get_resolved_topological_networks();
 		}
 		// Get the resolved topological boundaries (if requested).
-		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries;
+		boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>> resolved_topological_boundaries;
 		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
 		{
 			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
@@ -657,20 +713,34 @@ namespace GPlatesApi
 		boost::optional<std::pair<GPlatesAppLogic::DeformationStrainRate, GPlatesAppLogic::TopologyPointLocation>>
 		get_point_strain_rate_in_resolved_topologies(
 				const GPlatesMaths::PointOnSphere &point,
-				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
-				boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries)
+				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>> &resolved_topological_networks,
+				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>> &resolved_topological_boundaries)
 		{
 			// See if point is inside any topological networks.
 			if (resolved_topological_networks)
 			{
-				for (const auto &resolved_topological_network : resolved_topological_networks.get())
+				const auto resolved_networks_begin = resolved_topological_networks->begin();
+				const auto resolved_networks_end = resolved_topological_networks->end();
+				for (auto resolved_networks_iter = resolved_networks_begin;
+					resolved_networks_iter != resolved_networks_end;
+					++resolved_networks_iter)
 				{
+					// NOTE: Don't use a reference here
+					//       (otherwise wrong resolved network will be returned due to std::swap below).
+					const auto resolved_topological_network = *resolved_networks_iter;
+
 					boost::optional<std::pair<
 							GPlatesAppLogic::ResolvedTriangulation::DeformationInfo,
 							GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
 									deformation_info = resolved_topological_network->get_triangulation_network().calculate_deformation(point);
 					if (deformation_info)
 					{
+						// The next point is probably in the same resolved network so make it the first one to be tested next time.
+						if (resolved_networks_iter != resolved_networks_begin)
+						{
+							std::swap(*resolved_networks_begin, *resolved_networks_iter);
+						}
+
 						return std::make_pair(
 								deformation_info->first.get_strain_rate(),
 								GPlatesAppLogic::TopologyPointLocation(resolved_topological_network, deformation_info->second));
@@ -681,10 +751,24 @@ namespace GPlatesApi
 			// See if point is inside any topological boundaries.
 			if (resolved_topological_boundaries)
 			{
-				for (const auto &resolved_topological_boundary : resolved_topological_boundaries.get())
+				const auto resolved_boundaries_begin = resolved_topological_boundaries->begin();
+				const auto resolved_boundaries_end = resolved_topological_boundaries->end();
+				for (auto resolved_boundaries_iter = resolved_boundaries_begin;
+					resolved_boundaries_iter != resolved_boundaries_end;
+					++resolved_boundaries_iter)
 				{
+					// NOTE: Don't use a reference here
+					//       (otherwise wrong resolved boundary will be returned due to std::swap below).
+					const auto resolved_topological_boundary = *resolved_boundaries_iter;
+
 					if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
 					{
+						// The next point is probably in the same resolved boundary so make it the first one to be tested next time.
+						if (resolved_boundaries_iter != resolved_boundaries_begin)
+						{
+							std::swap(*resolved_boundaries_begin, *resolved_boundaries_iter);
+						}
+
 						// Return zero deformation (since inside a rigid plate).
 						return std::make_pair(
 								GPlatesAppLogic::DeformationStrainRate(),
@@ -722,13 +806,13 @@ namespace GPlatesApi
 		}
 
 		// Get the resolved topological networks (if requested).
-		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks;
+		boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>> resolved_topological_networks;
 		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
 		{
 			resolved_topological_networks = topological_snapshot->get_resolved_topological_networks();
 		}
 		// Get the resolved topological boundaries (if requested).
-		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries;
+		boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>> resolved_topological_boundaries;
 		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
 		{
 			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
