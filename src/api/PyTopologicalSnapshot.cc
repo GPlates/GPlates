@@ -68,6 +68,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/FiniteRotation.h"
 #include "maths/PolygonOrientation.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -522,12 +523,15 @@ namespace GPlatesApi
 		boost::optional<std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::TopologyPointLocation>>
 		get_point_velocity_in_resolved_topologies(
 				const GPlatesMaths::PointOnSphere &point,
+				const RotationModel::non_null_ptr_type &rotation_model,
+				const double &reconstruction_time,
 				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>> &resolved_topological_networks,
 				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>> &resolved_topological_boundaries,
 				const double &velocity_delta_time,
 				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
 				GPlatesAppLogic::VelocityUnits::Value velocity_units,
-				const double &earth_radius_in_kms)
+				const double &earth_radius_in_kms,
+				std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> &resolved_boundary_stage_rotation_map)
 		{
 			// See if point is inside any topological networks.
 			if (resolved_topological_networks)
@@ -590,15 +594,35 @@ namespace GPlatesApi
 							resolved_boundary_plate_id = 0;
 						}
 
-						const GPlatesMaths::Vector3D velocity = GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
-								point,
-								resolved_boundary_plate_id.get(),
-								resolved_topological_boundary->get_reconstruction_tree_creator(),
-								resolved_topological_boundary->get_reconstruction_time(),
-								velocity_delta_time,
-								velocity_delta_time_type,
-								velocity_units,
-								earth_radius_in_kms);
+						boost::optional<GPlatesMaths::FiniteRotation> stage_rotation;
+
+						// See if we've already calculated a stage rotation for the current plate ID.
+						auto stage_rotation_map_iter = resolved_boundary_stage_rotation_map.find(resolved_boundary_plate_id.get());
+						if (stage_rotation_map_iter != resolved_boundary_stage_rotation_map.end())
+						{
+							stage_rotation = stage_rotation_map_iter->second;
+						}
+						else // calculate stage rotation and insert into the map...
+						{
+							stage_rotation = GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
+									resolved_boundary_plate_id.get(),
+									rotation_model->get_reconstruction_tree_creator(),
+									reconstruction_time,
+									velocity_delta_time,
+									velocity_delta_time_type);
+
+							// Insert stage rotation into the map.
+							resolved_boundary_stage_rotation_map.insert(
+								{ resolved_boundary_plate_id.get() , stage_rotation.get() });
+						}
+
+						const GPlatesMaths::Vector3D velocity =
+							GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+									point,
+									stage_rotation.get(),
+									velocity_delta_time,
+									velocity_units,
+									earth_radius_in_kms);
 
 						// The next point is probably in the same resolved boundary so make it the first one to be tested next time.
 						if (resolved_boundaries_iter != resolved_boundaries_begin)
@@ -658,6 +682,10 @@ namespace GPlatesApi
 			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
 		}
 
+		// Keep track of the stage rotations of resolved boundaries as we encounter them.
+		// This is an optimisation since many points can be inside the same resolved boundary.
+		std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> resolved_boundary_stage_rotation_map;
+
 		// Iterate over the sequence of points.
 		for (const auto &point : point_seq.get_points())
 		{
@@ -667,12 +695,15 @@ namespace GPlatesApi
 			const boost::optional<std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::TopologyPointLocation>> point_velocity_and_location =
 					get_point_velocity_in_resolved_topologies(
 							point,
+							topological_snapshot->get_rotation_model(),
+							topological_snapshot->get_reconstruction_time(),
 							resolved_topological_networks,
 							resolved_topological_boundaries,
 							velocity_delta_time,
 							velocity_delta_time_type,
 							velocity_units,
-							earth_radius_in_kms);
+							earth_radius_in_kms,
+							resolved_boundary_stage_rotation_map);
 
 			if (point_velocity_and_location)
 			{
@@ -875,7 +906,8 @@ namespace GPlatesApi
 				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>> &resolved_topological_networks,
 				boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>> &resolved_topological_boundaries,
 				bool use_natural_neighbour_interpolation,
-				bool return_input_if_not_intersect)
+				bool return_input_if_not_intersect,
+				std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> &resolved_boundary_stage_rotation_map)
 		{
 			// See if point is inside any topological networks.
 			if (resolved_topological_networks)
@@ -938,37 +970,51 @@ namespace GPlatesApi
 							resolved_boundary_plate_id = 0;
 						}
 
-						//
-						// Delegate to 'PlateVelocityUtils::calculate_stage_rotation()' since it adjusts the
-						// stage rotation time interval if one of the times goes negative or if the rotation
-						// file only has rotations up to time 't', but not time 't+dt'.
-						//
-
 						boost::optional<GPlatesMaths::FiniteRotation> stage_rotation;
-						if (reverse_reconstruct) // forward in time ...
+
+						// See if we've already calculated a stage rotation for the current plate ID.
+						auto stage_rotation_map_iter = resolved_boundary_stage_rotation_map.find(resolved_boundary_plate_id.get());
+						if (stage_rotation_map_iter != resolved_boundary_stage_rotation_map.end())
 						{
-							// Forward stage rotation from 'initial_time' to 'final_time'.
-							stage_rotation = GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
-									resolved_boundary_plate_id.get(),
-									rotation_model->get_reconstruction_tree_creator(),
-									initial_time,
-									// Must be positive...
-									time_increment/*velocity_delta_time*/,
-									GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T/*velocity_delta_time_type*/);
+							stage_rotation = stage_rotation_map_iter->second;
 						}
-						else // backward in time ...
+						else // calculate stage rotation and insert into the map...
 						{
-							// Backward stage rotation from 'initial_time' to 'final_time'.
 							//
-							// Note: Need to reverse rotation from forward-in-time to backward-in-time.
-							stage_rotation = GPlatesMaths::get_reverse(
-									GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
-											resolved_boundary_plate_id.get(),
-											rotation_model->get_reconstruction_tree_creator(),
-											initial_time,
-											// Must be positive...
-											time_increment/*velocity_delta_time*/,
-											GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T/*velocity_delta_time_type*/));
+							// Delegate to 'PlateVelocityUtils::calculate_stage_rotation()' since it adjusts the
+							// stage rotation time interval if one of the times goes negative or if the rotation
+							// file only has rotations up to time 't', but not time 't+dt'.
+							//
+
+							if (reverse_reconstruct) // forward in time ...
+							{
+								// Forward stage rotation from 'initial_time' to 'final_time'.
+								stage_rotation = GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
+										resolved_boundary_plate_id.get(),
+										rotation_model->get_reconstruction_tree_creator(),
+										initial_time,
+										// Must be positive...
+										time_increment/*velocity_delta_time*/,
+										GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T/*velocity_delta_time_type*/);
+							}
+							else // backward in time ...
+							{
+								// Backward stage rotation from 'initial_time' to 'final_time'.
+								//
+								// Note: Need to reverse rotation from forward-in-time to backward-in-time.
+								stage_rotation = GPlatesMaths::get_reverse(
+										GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
+												resolved_boundary_plate_id.get(),
+												rotation_model->get_reconstruction_tree_creator(),
+												initial_time,
+												// Must be positive...
+												time_increment/*velocity_delta_time*/,
+												GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T/*velocity_delta_time_type*/));
+							}
+
+							// Insert stage rotation into the map.
+							resolved_boundary_stage_rotation_map.insert(
+								{ resolved_boundary_plate_id.get() , stage_rotation.get() });
 						}
 
 						// The next point is probably in the same resolved boundary so make it the first one to be tested next time.
@@ -1058,6 +1104,10 @@ namespace GPlatesApi
 			resolved_topological_boundaries = topological_snapshot->get_resolved_topological_boundaries();
 		}
 
+		// Keep track of the stage rotations of resolved boundaries as we encounter them.
+		// This is an optimisation since many points can be inside the same resolved boundary.
+		std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> resolved_boundary_stage_rotation_map;
+
 		// Iterate over the sequence of points.
 		for (const auto &point : point_seq.get_points())
 		{
@@ -1073,7 +1123,8 @@ namespace GPlatesApi
 							resolved_topological_networks,
 							resolved_topological_boundaries,
 							use_natural_neighbour_interpolation,
-							return_input_if_not_intersect);
+							return_input_if_not_intersect,
+							resolved_boundary_stage_rotation_map);
 
 			reconstructed_points.append(reconstructed_point);
 		}
