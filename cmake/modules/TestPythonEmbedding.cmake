@@ -76,6 +76,11 @@ SET(CMAKE_TRY_COMPILE_CONFIGURATION Release)
 if (CMAKE_CROSSCOMPILING)
 	# Compile the test executable.
 	# We don't run the executable because it's built for the target platform (we're cross-compiling, so it cannot be run on build platform).
+	#
+	# This situation arises when the pygplates conda-forge feedstock is compiled for macOS ARM.
+	# Conda has separate build and host (target) environments and does not run the target binaries in the build environment.
+	# Note that there is the CMAKE_CROSSCOMPILING_EMULATOR environment variable, but conda does not set it.
+	# Also note that CMake policy CMP0190 (CMake 4.1) may require setting CMAKE_CROSSCOMPILING_EMULATOR.
 	TRY_COMPILE(PYTHON_EMBEDDING_COMPILES
 		${CMAKE_BINARY_DIR}
 		${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc

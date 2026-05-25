@@ -109,6 +109,14 @@ install(
         CODE "set(QT_PLUGINS_INSTALLED \"${QT_PLUGINS_INSTALLED}\")"
         CODE "set(GDAL_PLUGINS_INSTALLED \"${GDAL_PLUGINS_INSTALLED}\")"
         CODE "set(GPLATES_BUILD_GPLATES [[${GPLATES_BUILD_GPLATES}]])"
+        # Need to set any relevant CMake policies here since install code apparently does not have access to the
+        # max policy version specified in cmake_minimum_required().
+        # Policy CMP0207 was introduced in CMake 4.3...
+        CODE [[
+            if(POLICY CMP0207)
+                cmake_policy(SET CMP0207 NEW)
+            endif()
+        ]]
         CODE [[
             unset(ARGUMENT_EXECUTABLES)
             unset(ARGUMENT_BUNDLE_EXECUTABLE)

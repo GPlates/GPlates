@@ -96,6 +96,11 @@ if (GPLATES_CONDA_BUILD)
 	#   "Empty package; python present in build and host deps.  You probably picked up the build environment's python  executable.
 	#    You need to alter your recipe to  use the PYTHON env var in your recipe to run that executable."
 	#
+	# UPDATE: CMake policy CMP0190 (CMake 4.1) may require setting CMAKE_CROSSCOMPILING_EMULATOR since we specified the 'Development'
+	#         component together with the 'Interpreter' component. See:
+	#           https://github.com/Kitware/CMake/blob/bda0b36155a63134811c8ec754fba4fa85dfcd65/Modules/FindPython/Support.cmake#L1601
+	#         If we get an error building on conda then can try separate 'find_package()' calls for the 'Interpreter' and 'Development' components.
+	#
 	# When not cross-compiling there's only a 'host' prefix (conda only installs Python into the 'host' prefix, not also the 'build' prefix).
 	# In this situation the PYTHON environment variable should be the same as that found with 'find_package(Python2/3)'.
 	#
