@@ -296,12 +296,12 @@ GDAL
        o Start a Visual Studio command prompt (64-bit).
           Run 'nmake /f makefile.vc' with options specifying compiler, 64 bit and the install prefix.
           For example, to compile using Visual Studio 2019 as 64-bit and install into the "msvc2019_64" sub-directory of source code root, type:
-            nmake /f makefile.vc MSVC_VER=1929 WIN64=1 GDAL_HOME=C:\SDK\GDAL\gdal-3.4.3\msvc2019_64 devinstall
+            nmake /f makefile.vc MSVC_VER=1929 WIN64=1 GDAL_DRIVER_PATH=C:\SDK\GDAL\gdal-3.4.3\msvc2019_64\bin\gdalplugins devinstall
           - If 'MSVC_VER' is not specified it appears (in "nmake.opt") to default to 1900 (Visual Studio 2015). At least for GDAL 2.3 (and still there for 3.3).
             Above we specify MSVC_VER=1929 which corresponds to Visual Studio 2019 version 16.10 (and 16.11).
           - 'WIN64=1' specifies a 64-bit build.
-          - 'GDAL_HOME' specifies the install location.
-            For example, "C:\SDK\GDAL\gdal-3.4.3\msvc2019_64" specifies the "msvc2019_64" sub-directory of the source code root "C:\SDK\GDAL\gdal-3.4.3".
+          - 'GDAL_DRIVER_PATH' specifies the location of the GDAL plugins.
+            For example, "C:\SDK\GDAL\gdal-3.4.3\msvc2019_64\bin\gdalplugins" specifies the "msvc2019_64\bin\gdalplugins" sub-directory of the source code root "C:\SDK\GDAL\gdal-3.4.3".
           - If you want a debug build then add 'DEBUG=1'.
             NOTE: It appears both debug and release builds use the same filenames (so they just overwrite each other).
                   Might need to pick one or the other.
@@ -312,9 +312,11 @@ GDAL
     5. Add the GDAL *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, "C:\SDK\GDAL\gdal-3.8.3\msvc2019_64" or "C:\SDK\GDAL\gdal-3.4.3\msvc2019_64").
        This enables CMake to find GDAL when configuring GPlates/pyGPlates (see BUILD.Windows).
        Note that this is not strictly necessary since CMake can find the GDAL install prefix using the PATH environment variable (CMake strips off 'bin').
-    6. Set the GDAL_HOME environment variable to the installed GDAL directory (eg, "C:\SDK\GDAL\gdal-3.8.3\msvc2019_64" or "C:\SDK\GDAL\gdal-3.4.3\msvc2019_64").
+    6. Set the GDAL_DRIVER_PATH environment variable to the location of the GDAL plugins
+       (eg, "C:\SDK\GDAL\gdal-3.8.3\msvc2019_64\bin\gdalplugins" or "C:\SDK\GDAL\gdal-3.4.3\msvc2019_64\bin\gdalplugins").
        This enables GPlates to deploy GDAL plugins.
-    7. Set the GDAL_DATA environment variable to the installed GDAL data directory (eg, "C:\SDK\GDAL\gdal-3.8.3\msvc2019_64\data" or "C:\SDK\GDAL\gdal-3.4.3\msvc2019_64\data").
+    7. Set the GDAL_DATA environment variable to the installed GDAL data directory
+       (eg, "C:\SDK\GDAL\gdal-3.8.3\msvc2019_64\data" or "C:\SDK\GDAL\gdal-3.4.3\msvc2019_64\data").
        This enables GDAL to find its resource data.
     
     NOTE that GDAL 2.3 (and above) use C++11 features which requires Visual Studio 2015 (or above).

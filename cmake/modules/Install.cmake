@@ -466,12 +466,12 @@ if (GPLATES_INSTALL_STANDALONE)
     # Copy the GDAL library plugins (eg, NetCDF) into standalone bundle (unless compiled into core library). #
     ##########################################################################################################
     #
-    # Find the GDAL home directory (the GDAL plugins will be in a sub-directory depending on the platform).
+    # Find the GDAL library plugins directory.
     if (WIN32)
-        # The 'gdal-config' command is not available on Windows. Instead we'll use the GDAL_HOME environment variable (that we asked the user to set).
-        set(_gdal_home_dir $ENV{GDAL_HOME})
-        if (NOT _gdal_home_dir)
-            message(WARNING "GDAL_HOME environment variable not set - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+        # The 'gdal-config' command is not available on Windows. Instead we're expected to use the GDAL_DRIVER_PATH environment variable.
+        set(_gdal_plugins_dir $ENV{GDAL_DRIVER_PATH})
+        if (NOT _gdal_plugins_dir)
+            message(WARNING "GDAL_DRIVER_PATH environment variable not set - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
         endif()
     else() # Apple or Linux
         # Find the 'gdal-config' command (should be able to find via PATH environment variable).
@@ -490,15 +490,29 @@ if (GPLATES_INSTALL_STANDALONE)
         else()
             message(WARNING "Unable to find 'gdal-config' command - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
         endif()
+
+        # The GDAL plugins directory is a sub-directory of the GDAL home directory.
+        # The exact location depends on the platform and how GDAL is installed.
+        if (APPLE)
+            # If the GDAL home directory is inside a framework then it has a different plugin path.
+            if (_gdal_home_dir MATCHES "[^/]+\\.framework/")
+                set(_gdal_plugins_dir ${_gdal_home_dir}/PlugIns)
+            else()
+                set(_gdal_plugins_dir ${_gdal_home_dir}/lib/gdalplugins)
+            endif()
+        else()  # Linux
+            set(_gdal_plugins_dir ${_gdal_home_dir}/lib/gdalplugins)
+        endif()
     endif()
     #
-    if (_gdal_home_dir)
-        file(TO_CMAKE_PATH ${_gdal_home_dir} _gdal_home_dir)
-        if (EXISTS "${_gdal_home_dir}")
+    if (_gdal_plugins_dir)
+        file(TO_CMAKE_PATH ${_gdal_plugins_dir} _gdal_plugins_dir)
+        if (EXISTS "${_gdal_plugins_dir}")
             # Remove the trailing '/' if there is one.
-            string(REGEX REPLACE "/+$" "" _gdal_home_dir "${_gdal_home_dir}")
+            string(REGEX REPLACE "/+$" "" _gdal_plugins_dir "${_gdal_plugins_dir}")
         else()
-            message(WARNING "GDAL home directory \"${_gdal_home_dir}\" does not exist - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+            # The GDAL plugins directory does not exist. It's possible the plugins were compiled into core GDAL library though.
+            # For each specific plugin we later attempt to install we'll emit a message indicating it will not be included in standalone bundle.
         endif()
     endif()
     #
@@ -522,30 +536,22 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # ...and the full path to installed plugin file will be added to 'GDAL_PLUGINS_INSTALLED'.
     function(install_gdal_plugin gdal_plugin_short_name)
-        if (NOT EXISTS "${_gdal_home_dir}")
-            return()
-        endif()
-
         # Get the source file location of the GDAL plugin.
+        set(_gdal_plugin_path ${_gdal_plugins_dir}/gdal_${gdal_plugin_short_name})
         if (WIN32)
-            set(_gdal_plugin_path ${_gdal_home_dir}/bin/gdalplugins/gdal_${gdal_plugin_short_name}.dll)
+            set(_gdal_plugin_path ${_gdal_plugin_path}.dll)
         elseif (APPLE)
-            # If the GDAL home directory is inside a framework then it has a different plugin path.
-            if (_gdal_home_dir MATCHES "[^/]+\\.framework/")
-                set(_gdal_plugin_path ${_gdal_home_dir}/PlugIns/gdal_${gdal_plugin_short_name}.dylib)
-            else()
-                set(_gdal_plugin_path ${_gdal_home_dir}/lib/gdalplugins/gdal_${gdal_plugin_short_name}.dylib)
-            endif()
+            set(_gdal_plugin_path ${_gdal_plugin_path}.dylib)
         else()  # Linux
-            set(_gdal_plugin_path ${_gdal_home_dir}/lib/gdalplugins/gdal_${gdal_plugin_short_name}.so)
+            set(_gdal_plugin_path ${_gdal_plugin_path}.so)
         endif()
 
         if (NOT EXISTS "${_gdal_plugin_path}")
             # Report message at install time since it's not an error if plugin is compiled into core GDAL library.
             #
-            # Update: It's common to have GDAL plugins compiled into the core library.
-            #         So we won't output a message since it tends to look like an error/warning message.
-            #install(CODE "message(\"GDAL plugin ${_gdal_plugin_path} not found, so not installed (might be compiled into core GDAL library though)\")")
+            # Report a message even though it looks like an error because it's provides a debug clue if GDAL plugins exist
+            # (ie, are *not* compiled into the core GDAL library) but were nevertheless not found.
+            install(CODE "message(\"GDAL plugin ${_gdal_plugin_path} not found, so not installed (might be compiled into core GDAL library though)\")")
             return()
         endif()
 
