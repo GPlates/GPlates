@@ -226,7 +226,7 @@
 #include <QIcon>
 #include <QPixmap>
 #include <QMouseEvent>
-#include <QGLFormat>
+#include <QSurfaceFormat>
 #include <QCoreApplication>
 #include <QSet>
 #include <QGridLayout>
@@ -282,8 +282,7 @@
 #include <QValidator>
 #include <QSizePolicy>
 #include <QPainter>
-#include <QGLWidget>
-#include <QGLPixelBuffer>
+#include <QOpenGLWidget>
 #include <QDialogButtonBox>
 #include <QWizard>
 #include <QScopedPointer>

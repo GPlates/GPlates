@@ -30,7 +30,7 @@
 #include <iostream>
 #include <QDebug>
 #include <QGraphicsView>
-#include <QtOpenGL/qgl.h>
+#include <QOpenGLWidget>
 #include <QPaintEngine>
 #include <QScrollBar>
 #include <QtGlobal>
@@ -127,23 +127,18 @@ GPlatesQtWidgets::MapView::MapView(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_,
-		const QGLWidget *share_gl_widget,
+		const QOpenGLWidget *share_gl_widget,
 		const GPlatesOpenGL::GLContext::non_null_ptr_type &share_gl_context,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &share_gl_visual_layers) :
 	d_gl_widget_ptr(
-			new MapViewport(
-				GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
-				this,
-				// Share texture objects, vertex buffer objects, etc...
-				share_gl_widget)),
-	d_gl_context(d_gl_widget_ptr->isSharing() // Mirror the sharing of OpenGL context state (if sharing)...
-			? GPlatesOpenGL::GLContext::create(
+			new MapViewport(this)),
+	// OpenGL context state is shared globally via Qt::AA_ShareOpenGLContexts, so mirror that
+	// sharing at the GLContext level...
+	d_gl_context(
+			GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*d_gl_widget_ptr)),
-					*share_gl_context)
-			: GPlatesOpenGL::GLContext::create(
-					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*d_gl_widget_ptr)))),
+							new GPlatesOpenGL::GLContextImpl::QOpenGLWidgetImpl(*d_gl_widget_ptr)),
+					*share_gl_context)),
 	d_gl_visual_layers(
 			// Attempt to share OpenGL resources across contexts.
 			// This will depend on whether the two 'GLContext's share any state.
@@ -164,6 +159,10 @@ GPlatesQtWidgets::MapView::MapView(
 				this)),
 	d_map_transform(view_state.get_map_transform())
 {
+	// OpenGL context sharing is now global (Qt::AA_ShareOpenGLContexts) so the share widget is
+	// no longer needed to enable resource sharing between the map and globe OpenGL contexts.
+	Q_UNUSED(share_gl_widget);
+
 	setViewport(d_gl_widget_ptr);
 	setScene(d_map_canvas_ptr.get());
 
@@ -499,9 +498,7 @@ GPlatesQtWidgets::MapView::paintEvent(
 {
 	QGraphicsView::paintEvent(paint_event);
 
-	// If the QGLWidget is double buffered and auto-swap-buffers is turned off then
-	// explicitly swap the OpenGL front and back buffers.
-	d_gl_widget_ptr->swap_buffers_if_necessary();
+	// QOpenGLWidget composites its internal framebuffer automatically - no manual buffer swap needed.
 
 	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
 }
@@ -881,27 +878,17 @@ GPlatesQtWidgets::MapView::set_orientation(
 
 
 GPlatesQtWidgets::MapView::MapViewport::MapViewport(
-		const QGLFormat &format_,
 		QWidget *parent_,
-		const QGLWidget *shareWidget_,
 		Qt::WindowFlags flags_) :
-	QGLWidget(format_, parent_, shareWidget_, flags_)
+	QOpenGLWidget(parent_, flags_)
 {
-	// Since we're using a QPainter inside 'paintEvent()' or more specifically 'MapCanvas::drawBackground()'
-	// (which is called from 'paintEvent()') then we turn off automatic swapping of the OpenGL
-	// front and back buffers after each 'MapCanvas::drawBackground()' call. This is because QPainter::end(),
-	// or QPainter's destructor, automatically calls QGLWidget::swapBuffers() if auto buffer swap
-	// is enabled - and this results in two calls to QGLWidget::swapBuffers() - one from QPainter
-	// and one from 'paintEvent()'. So we disable auto buffer swapping and explicitly call it ourself.
-	//
-	// Also we don't want to swap buffers when we're just rendering to a QImage (using OpenGL)
-	// and not rendering to the QGLWidget itself, otherwise the widget will have the wrong content.
-	setAutoBufferSwap(false);
+	// QOpenGLWidget renders into an internal framebuffer object and composites it automatically,
+	// so there is no manual front/back buffer swapping to manage (unlike the old QGLWidget).
 
 	// Don't fill the background - we already clear the background using OpenGL in MapCanvas anyway.
 	//
 	// Also we don't want to clear the canvas when we're just rendering to a QImage (using OpenGL)
-	// and not rendering to the QGLWidget itself, otherwise the widget will appear to have no content.
+	// and not rendering to the QOpenGLWidget itself, otherwise the widget will appear to have no content.
 	setAutoFillBackground(false);
 
 	// QWidget::setMouseTracking:
@@ -914,15 +901,4 @@ GPlatesQtWidgets::MapView::MapViewport::MapViewport(
 	setMouseTracking(true);
 
 	setAttribute(Qt::WA_NoSystemBackground);
-}
-
-
-void
-GPlatesQtWidgets::MapView::MapViewport::swap_buffers_if_necessary()
-{
-	// Explicitly swap the OpenGL front and back buffers.
-	if (doubleBuffer() && !autoBufferSwap())
-	{
-		swapBuffers();
-	}
 }

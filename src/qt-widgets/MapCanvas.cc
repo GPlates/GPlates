@@ -27,7 +27,7 @@
 
 #include <QApplication>
 #include <QDebug>
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include <QGraphicsView>
 #include <QPaintDevice>
 #include <QPaintEngine>
@@ -114,7 +114,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		MapView *map_view_ptr,
-		QGLWidget *gl_widget,
+		QOpenGLWidget *gl_widget,
 		const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesGui::ViewportZoom &viewport_zoom,
@@ -167,7 +167,7 @@ GPlatesQtWidgets::MapCanvas::~MapCanvas()
 
 void 
 GPlatesQtWidgets::MapCanvas::initializeGL(
-		QGLWidget *gl_widget) 
+		QOpenGLWidget *gl_widget)
 {
 	// Initialise our context-like object first.
 	d_gl_context->initialise();

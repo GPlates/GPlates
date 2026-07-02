@@ -54,19 +54,21 @@ bool GPlatesOpenGL::GLContext::s_initialised_GLEW = false;
 GPlatesOpenGL::GLCapabilities GPlatesOpenGL::GLContext::s_capabilities;
 
 
-QGLFormat
+QSurfaceFormat
 GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 {
+	QSurfaceFormat format;
+
 	// We turn *off* multisampling because lines actually look better without it...
+	format.setSamples(0);
 	// We need a stencil buffer for filling polygons.
+	format.setStencilBufferSize(8);
 	// We need an alpha channel in case falling back to main frame buffer for render textures.
-	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::StencilBuffer | QGL::AlphaChannel);
+	format.setAlphaBufferSize(8);
 
 	// We use features deprecated in OpenGL 3 so use compatibility profile and allowed deprecated functions.
-	format.setProfile(QGLFormat::CompatibilityProfile);
-	format.setOption(QGL::DeprecatedFunctions);
-
-	const QGLFormat::OpenGLVersionFlags opengl_version_flags = QGLFormat::openGLVersionFlags();
+	format.setProfile(QSurfaceFormat::CompatibilityProfile);
+	format.setOption(QSurfaceFormat::DeprecatedFunctions);
 
 	// We use OpenGL extensions in GPlates and hence don't rely on a particular OpenGL core version.
 	// So we just set the version to OpenGL 1.1 which is supported by everything and is the
@@ -85,10 +87,7 @@ GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 	// Note that we use GL_EXT_framebuffer_object only, and not GL_ARB_framebuffer_object, due to
 	// widespread hardware support of the (less flexible) GL_EXT_framebuffer_object.
 	//
-	if (opengl_version_flags.testFlag(QGLFormat::OpenGL_Version_1_1))
-	{
-		format.setVersion(1, 1);
-	}
+	format.setVersion(1, 1);
 
 	return format;
 }
@@ -139,7 +138,7 @@ GPlatesOpenGL::GLContext::initialise()
 
 	// A lot of main frame buffer and render-target rendering uses an alpha channel so emit
 	// a warning if the frame buffer doesn't have an alpha channel.
-	if (!get_qgl_format().alpha())
+	if (get_qgl_format().alphaBufferSize() <= 0)
 	{
 		qWarning("Could not get alpha channel on main frame buffer.");
 
@@ -153,7 +152,7 @@ GPlatesOpenGL::GLContext::initialise()
 
 	// A lot of main frame buffer and render-target rendering uses a stencil buffer so emit
 	// a warning if the frame buffer doesn't have a stencil buffer.
-	if (!get_qgl_format().stencil())
+	if (get_qgl_format().stencilBufferSize() <= 0)
 	{
 		qWarning("Could not get a stencil buffer on the main frame buffer.");
 	}

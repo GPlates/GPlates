@@ -32,7 +32,7 @@
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include <QGraphicsScene>
 #include <QImage>
 #include <QPaintDevice>
@@ -88,7 +88,7 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				MapView *map_view_ptr,
-				QGLWidget *gl_widget,
+				QOpenGLWidget *gl_widget,
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesGui::ViewportZoom &viewport_zoom,
@@ -230,9 +230,9 @@ namespace GPlatesQtWidgets
 
 
 		//! Do some OpenGL initialisation.
-		void 
+		void
 		initializeGL(
-				QGLWidget *gl_widget);
+				QOpenGLWidget *gl_widget);
 
 		/**
 		 * Render one tile of the scene (as specified by @a tile_render).

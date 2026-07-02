@@ -39,6 +39,7 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QStringList>
+#include <QSurfaceFormat>
 #include <QTextStream>
 
 #include "app-logic/ApplicationState.h"
@@ -61,6 +62,8 @@
 #include "gui/PythonManager.h"
 
 #include "maths/MathsUtils.h"
+
+#include "opengl/GLContext.h"
 
 #include "presentation/Application.h"
 
@@ -831,6 +834,18 @@ internal_main(int argc, char* argv[])
 	// Force usage of desktop OpenGL since we currently link to OpenGL (and make native OpenGL calls).
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 #endif
+
+	// Share OpenGL contexts across the application's QOpenGLWidgets (eg, the globe and map views)
+	// so they can share texture objects, vertex buffer objects, etc (this replaces the per-widget
+	// 'shareWidget' mechanism that QOpenGLWidget, unlike the old QGLWidget, does not provide).
+	//
+	// NOTE: This must be set before the QApplication is constructed.
+	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+
+	// Use our standard OpenGL surface format (alpha channel, stencil buffer, compatibility profile)
+	// as the default format for all OpenGL contexts/widgets created by the application.
+	QSurfaceFormat::setDefaultFormat(
+			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with());
 
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)  // Qt::AA_UseHighDpiPixmaps deprecated in Qt6 (always enabled)
 	// Enable high DPI pixmaps (for high DPI displays like Apple Retina).

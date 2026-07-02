@@ -40,7 +40,7 @@
 #include <QImage>
 #include <QPaintDevice>
 #include <QPainter>
-#include <QtOpenGL/qgl.h>
+#include <QOpenGLWidget>
 
 #include "gui/Colour.h"
 #include "gui/ColourScheme.h"
@@ -87,7 +87,7 @@ namespace GPlatesViewOperations
 namespace GPlatesQtWidgets 
 {
 	class GlobeCanvas:
-			public QGLWidget,
+			public QOpenGLWidget,
 			public SceneView
 	{
 		Q_OBJECT
@@ -322,13 +322,12 @@ namespace GPlatesQtWidgets
 
 	protected:
 		/**
-		 * This is a virtual override of the function in QGLWidget.
+		 * This is a virtual override of the function in QOpenGLWidget.
 		 *
-		 * To quote the QGLWidget documentation:
+		 * To quote the QOpenGLWidget documentation:
 		 *
 		 * This virtual function is called once before the first call to paintGL() or
-		 * resizeGL(), and then once whenever the widget has been assigned a new
-		 * QGLContext.  Reimplement it in a subclass.
+		 * resizeGL().  Reimplement it in a subclass.
 		 *
 		 * This function should set up any required OpenGL context rendering flags,
 		 * defining display lists, etc.
@@ -336,14 +335,14 @@ namespace GPlatesQtWidgets
 		 * There is no need to call makeCurrent() because this has already been done when
 		 * this function is called.
 		 */
-		virtual 
-		void 
-		initializeGL();
+		virtual
+		void
+		initializeGL() override;
 
 		/**
-		 * This is a virtual override of the function in QGLWidget.
+		 * This is a virtual override of the function in QOpenGLWidget.
 		 *
-		 * To quote the QGLWidget documentation:
+		 * To quote the QOpenGLWidget documentation:
 		 *
 		 * This virtual function is called whenever the widget has been resized.  The new
 		 * size is passed in width and height.  Reimplement it in a subclass.
@@ -352,15 +351,15 @@ namespace GPlatesQtWidgets
 		 * this function is called.
 		 */
 		virtual
-		void 
+		void
 		resizeGL(
-				int width, 
-				int height);
+				int width,
+				int height) override;
 
 		/**
-		 * This is a virtual override of the function in QGLWidget.
+		 * This is a virtual override of the function in QOpenGLWidget.
 		 *
-		 * To quote the QGLWidget documentation:
+		 * To quote the QOpenGLWidget documentation:
 		 *
 		 * This virtual function is called whenever the widget needs to be painted.
 		 * Reimplement it in a subclass.
@@ -370,12 +369,12 @@ namespace GPlatesQtWidgets
 		 */
 		virtual
 		void
-		paintGL();
+		paintGL() override;
 
 		virtual
 		void
 		paintEvent(
-				QPaintEvent *paint_event);
+				QPaintEvent *paint_event) override;
 
 		/**
 		 * This is a virtual override of the function in QWidget.

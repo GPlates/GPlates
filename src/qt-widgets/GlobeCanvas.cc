@@ -350,14 +350,12 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
-	QGLWidget(
-			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
-			parent_),
+	QOpenGLWidget(parent_),
 	d_view_state(view_state),
 	d_gl_context(
 			GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)))),
+							new GPlatesOpenGL::GLContextImpl::QOpenGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
 	d_initialisedGL(false),
 	d_gl_visual_layers(
@@ -393,20 +391,15 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesGui::Globe &existing_globe_,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
-	QGLWidget(
-			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
-			parent_,
-			// Share texture objects, vertex buffer objects, etc...
-			existing_globe_canvas),
+	QOpenGLWidget(parent_),
 	d_view_state(view_state_),
-	d_gl_context(isSharing() // Mirror the sharing of OpenGL context state (if sharing)...
-			? GPlatesOpenGL::GLContext::create(
+	// OpenGL context state is shared globally via Qt::AA_ShareOpenGLContexts, so mirror that
+	// sharing at the GLContext level...
+	d_gl_context(
+			GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)),
-					*existing_globe_canvas->d_gl_context)
-			: GPlatesOpenGL::GLContext::create(
-					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)))),
+							new GPlatesOpenGL::GLContextImpl::QOpenGLWidgetImpl(*this)),
+					*existing_globe_canvas->d_gl_context)),
 	d_make_context_current(*d_gl_context),
 	d_initialisedGL(false),
 	d_gl_visual_layers(
@@ -430,11 +423,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_velocity_legend_overlay(
 			new GPlatesGui::VelocityLegendOverlay())
 {
-	if (!isSharing())
-	{
-		qWarning() << "Unable to share an OpenGL context between QGLWidgets.";
-	}
-
 	init();
 }
 
@@ -446,16 +434,8 @@ GPlatesQtWidgets::GlobeCanvas::~GlobeCanvas()
 void
 GPlatesQtWidgets::GlobeCanvas::init()
 {
-	// Since we're using a QPainter inside 'paintEvent()' or more specifically 'paintGL()'
-	// (which is called from 'paintEvent()') then we turn off automatic swapping of the OpenGL
-	// front and back buffers after each 'paintGL()' call. This is because QPainter::end(),
-	// or QPainter's destructor, automatically calls QGLWidget::swapBuffers() if auto buffer swap
-	// is enabled - and this results in two calls to QGLWidget::swapBuffers() - one from QPainter
-	// and one from 'paintEvent()'. So we disable auto buffer swapping and explicitly call it ourself.
-	//
-	// Also we don't want to swap buffers when we're just rendering to a QImage (using OpenGL)
-	// and not rendering to the QGLWidget itself, otherwise the widget will have the wrong content.
-	setAutoBufferSwap(false);
+	// QOpenGLWidget renders into an internal framebuffer object and composites it automatically,
+	// so there is no manual front/back buffer swapping to manage (unlike the old QGLWidget).
 
 	// Don't fill the background - we already clear the background using OpenGL in 'render_scene()' anyway.
 	//
@@ -1191,16 +1171,9 @@ GPlatesQtWidgets::GlobeCanvas::paintEvent(
 // This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Qt overpainting
 //  ( http://doc.trolltech.com/4.3/opengl-overpainting.html )
 
-	QGLWidget::paintEvent(paint_event);
-
-	// Explicitly swap the OpenGL front and back buffers.
-	// Note that we have already disabled auto buffer swapping because otherwise both the QPainter
-	// in 'paintGL()' and 'QGLWidget::paintEvent()' will call 'QGLWidget::swapBuffers()'
-	// essentially canceling each other out (or causing flickering).
-	if (doubleBuffer() && !autoBufferSwap())
-	{
-		swapBuffers();
-	}
+	// Let QOpenGLWidget paint the scene (this calls 'paintGL()') and composite its internal
+	// framebuffer - buffer swapping is handled automatically, so there's nothing to do here.
+	QOpenGLWidget::paintEvent(paint_event);
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
 	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
@@ -1364,7 +1337,7 @@ GPlatesQtWidgets::GlobeCanvas::keyPressEvent(
 			break;
 
 		default:
-			QGLWidget::keyPressEvent(key_event);
+			QOpenGLWidget::keyPressEvent(key_event);
 	}
 }
 

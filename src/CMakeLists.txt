@@ -294,11 +294,11 @@ if (QT_VERSION_MAJOR EQUAL 6)
 	# For example, QRegExp instead of QRegularExpression.
 	# Remove Core5Compat when no longer supporting Qt5.
 	#
-	# Also Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
+	# Also Qt6 moved the QOpenGL* classes from (Gui and Widgets modules in Qt5) into OpenGL (and new OpenGLWidgets) modules.
 	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
 else()
-	# We're still using QGL* classes (instead of QOpenGL* classes) so need the OpenGL module.
-	find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
+	# In Qt5, the modern QOpenGL* classes are in the Gui and Widgets modules (not OpenGL and OpenGLWidgets modules).
+	find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
 endif()
 
 ############
@@ -908,8 +908,7 @@ if (QT_VERSION_MAJOR EQUAL 6)
 	# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
 	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
 else()
-	# We're still using QGL* classes (instead of QOpenGL* classes) so need the OpenGL module.
-	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::OpenGL Qt5::XmlPatterns)
+	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::XmlPatterns)
 endif()
 # The directory where Qt AUTOIUC auto-generated files ('ui_*.h') get written is automatically added to the
 # INCLUDE_DIRECTORIES target property of the 'gplates-lib' and 'pygplates' targets, but not INTERFACE_INCLUDE_DIRECTORIES.
