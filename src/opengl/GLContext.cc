@@ -32,6 +32,7 @@
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
 #include <QDebug>
+#include <QOpenGLContext>
 
 #include "GLContext.h"
 
@@ -70,24 +71,18 @@ GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 	format.setProfile(QSurfaceFormat::CompatibilityProfile);
 	format.setOption(QSurfaceFormat::DeprecatedFunctions);
 
-	// We use OpenGL extensions in GPlates and hence don't rely on a particular OpenGL core version.
-	// So we just set the version to OpenGL 1.1 which is supported by everything and is the
-	// only version supported by the Microsoft software renderer (fallback from hardware).
+	// We use OpenGL extensions in GPlates (loaded at runtime via GLEW) and hence don't rely on a
+	// particular OpenGL core version. So we deliberately leave the version *unset* and let Qt/the
+	// driver create the highest compatibility-profile context available.
 	//
-	// NOTE: If GL_EXT_framebuffer_object is not supported (but the newer GL_ARB_framebuffer_object is)
-	// then a possible reason for this could be...
-	//
-	// From http://stackoverflow.com/questions/15017911/oes-ext-arb-framebuffer-object:
-	//  Issues with GL_EXT_framebuffer_object a) GL_EXT_framebuffer_object might not be listed in
-	//  GL 3.x contexts because FBO's are core. b) also, if have a GL 2.x context with newer hardware,
-	//  possible that GL_EXT_framebuffer_object is not listed but GL_ARB_framebuffer_object is.
-	//
-	// ...so this is another reason to set the OpenGL version to 1.1 (instead of 2.x, or 3.x) below.
-	// But it's possible (according to the above comment) that it may not be enough.
-	// Note that we use GL_EXT_framebuffer_object only, and not GL_ARB_framebuffer_object, due to
-	// widespread hardware support of the (less flexible) GL_EXT_framebuffer_object.
-	//
-	format.setVersion(1, 1);
+	// NOTE: Do NOT request OpenGL 1.1 here. Under Qt5's legacy QGLFormat/QGLWidget path the version
+	// request was effectively ignored (the legacy WGL path returned the driver's full compatibility
+	// context regardless), so requesting 1.1 was harmless. Under Qt6's QSurfaceFormat/QOpenGLContext
+	// the version *is* honored (via wglCreateContextAttribsARB on Windows), and explicitly requesting
+	// 1.1 causes Windows to hand back the Microsoft GDI generic *software* renderer (which is OpenGL
+	// 1.1). GLEW then can't find the modern extension entry points and we fall back to slow software
+	// rendering. Leaving the version unset avoids that and lets GLEW load whatever extensions the real
+	// (hardware) context provides.
 
 	return format;
 }
@@ -105,18 +100,50 @@ GPlatesOpenGL::GLContext::initialise()
 	// this is the assumption here.
 	if (!s_initialised_GLEW)
 	{
-		GLenum err = glewInit();
+		// GLEW (and the capability queries below) require a *current* OpenGL context.
+		//
+		// Unlike the old QGLWidget - which created its OpenGL context eagerly in its constructor -
+		// QOpenGLWidget creates its context lazily (on the first show/paint processed by the event
+		// loop). So initialise() can be reached while no context is current - e.g. via an off-screen
+		// render_to_qimage() on a widget that has been constructed/shown but whose first paint event
+		// hasn't been processed yet (used to render the colour-scheme preview thumbnails).
+		//
+		// In that case bail *without* marking GLEW as initialised, so we retry later when a real
+		// context is current. Otherwise glewInit() fails ("Missing GL version"), yet GLEW would be
+		// permanently (and wrongly) flagged as initialised - causing every subsequent context,
+		// including the main canvas, to skip GLEW init and fall back to software OpenGL 1.1.
+		if (QOpenGLContext::currentContext() == nullptr)
+		{
+			qWarning() << "Skipping GLEW init: no current OpenGL context yet "
+					"(a QOpenGLWidget's context is not created until its first paint).";
+			return;
+		}
+
+		// Force GLEW to load all extension entry points regardless of the OpenGL context type.
+		//
+		// Without this, glewInit() probes extensions via the legacy 'glGetString(GL_EXTENSIONS)'.
+		// On a modern (3.2+) or forward-compatible context that legacy query raises GL_INVALID_ENUM,
+		// so GLEW aborts loading extension function pointers and returns a non-GLEW_OK error - even
+		// though the core GL entry points still work (hence the app appears to render but reports a
+		// glewInit error). Setting glewExperimental makes GLEW use glGetStringi() instead and load
+		// every available entry point. This is required on both Qt5 and Qt6 with recent drivers.
+		glewExperimental = GL_TRUE;
+
+		const GLenum err = glewInit();
 		if (GLEW_OK != err)
 		{
-			// glewInit failed.
-			//
-			// We'll assume all calls to test whether an extension is available
-			// (such as "if (get_capabilities().gl_ARB_multitexture) ..." will fail since they just
-			// test boolean variables which are assumed to be initialised by GLEW to zero.
-			// This just means we will be forced to fall back to OpenGL version 1.1.
+			// glewInit failed. Do NOT set s_initialised_GLEW - leave it false so a later call (with
+			// a valid current context) can retry. If we flagged GLEW as initialised here, every
+			// extension-availability test (eg, "get_capabilities().gl_ARB_multitexture") would read
+			// false and we'd be permanently forced to fall back to OpenGL version 1.1.
 			qWarning() << "Error: " << reinterpret_cast<const char *>(glewGetErrorString(err));
+			return;
 		}
 		//qDebug() << "Status: Using GLEW " << reinterpret_cast<const char *>(glewGetString(GLEW_VERSION));
+
+		// With glewExperimental enabled, glewInit() itself leaves a spurious GL_INVALID_ENUM in the
+		// GL error queue. Clear it here so it doesn't trip a later GLUtils::assert_no_gl_errors().
+		glGetError();
 
 		s_initialised_GLEW = true;
 

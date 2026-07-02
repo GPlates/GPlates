@@ -27,6 +27,7 @@
 
 #include <QApplication>
 #include <QDebug>
+#include <QOpenGLContext>
 #include <QOpenGLWidget>
 #include <QGraphicsView>
 #include <QPaintDevice>
@@ -124,7 +125,8 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	d_view_state(view_state),
 	d_map_view_ptr(map_view_ptr),
 	d_gl_context(gl_context),
-	d_make_context_current(*d_gl_context),
+	d_gl_widget_ptr(gl_widget),
+	d_initialisedGL(false),
 	d_text_overlay(new GPlatesGui::TextOverlay(view_state.get_application_state())),
 	d_velocity_legend_overlay(new GPlatesGui::VelocityLegendOverlay()),
 	d_map(
@@ -137,9 +139,10 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			gl_widget->devicePixelRatio()),
 	d_rendered_geometry_collection(&rendered_geometry_collection)
 {
-	// Do some OpenGL initialisation.
-	// Because of 'd_make_context_current' we know the OpenGL context is currently active.
-	initializeGL(gl_widget);
+	// NOTE: OpenGL initialisation is deferred to initializeGL_if_necessary() (called from the first
+	// drawBackground()/render). Unlike the old QGLWidget - which created its OpenGL context eagerly
+	// in its constructor - the QOpenGLWidget viewport creates its context lazily on its first paint,
+	// so there is no current context here and we cannot do OpenGL yet.
 
 	// Give the scene a rectangle that's big enough to guarantee that the map view,
 	// even after rotations and translations, won't go outside these boundaries.
@@ -193,6 +196,38 @@ GPlatesQtWidgets::MapCanvas::initializeGL(
 
 	// Initialise those parts of map that require a valid OpenGL context to be bound.
 	d_map.initialiseGL(*renderer);
+}
+
+
+bool
+GPlatesQtWidgets::MapCanvas::initializeGL_if_necessary()
+{
+	if (d_initialisedGL)
+	{
+		return true;
+	}
+
+	// GLEW/OpenGL initialisation requires a current OpenGL context. QOpenGLWidget creates its context
+	// lazily (on its first paint, after being shown), so make it current if it isn't already. When
+	// called from drawBackground() the context is already current (QGraphicsView is mid-paint), so we
+	// avoid a redundant makeCurrent() there.
+	if (QOpenGLContext::currentContext() == nullptr)
+	{
+		d_gl_widget_ptr->makeCurrent();
+	}
+
+	// If there's still no current context then the widget hasn't been shown/painted yet - bail
+	// without initialising so we don't run OpenGL with no context; the caller should skip rendering.
+	if (QOpenGLContext::currentContext() == nullptr)
+	{
+		qWarning() << "MapCanvas: OpenGL context not available yet - deferring initialisation.";
+		return false;
+	}
+
+	initializeGL(d_gl_widget_ptr);
+	d_initialisedGL = true;
+
+	return true;
 }
 
 
@@ -279,6 +314,13 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 		QPainter *painter,
 		const QRectF &/*exposed_rect*/)
 {
+	// Initialise OpenGL now that we have a current context (QGraphicsView is mid-paint). If it's not
+	// ready for some reason there's nothing we can draw.
+	if (!initializeGL_if_necessary())
+	{
+		return;
+	}
+
 	// Restore the QPainter's transform after our rendering because we overwrite it during our
 	// text rendering (where we set it to the identity transform).
 	const QTransform qpainter_world_transform = painter->worldTransform();
@@ -366,6 +408,13 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 		const QSize &image_size_in_device_independent_pixels,
 		const GPlatesGui::Colour &image_clear_colour)
 {
+	// Initialise OpenGL if we haven't already. If the QOpenGLWidget's context isn't available yet
+	// (it hasn't been shown/painted) then we can't render - return a null image.
+	if (!initializeGL_if_necessary())
+	{
+		return QImage();
+	}
+
 	// Set up a QPainter to help us with OpenGL text rendering.
 	QPainter painter(&map_canvas_paint_device);
 
@@ -577,6 +626,13 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 		const QTransform &viewport_transform,
 		QPaintDevice &feedback_paint_device)
 {
+	// Initialise OpenGL if we haven't already. If the QOpenGLWidget's context isn't available yet
+	// (it hasn't been shown/painted) then we can't render - nothing to do.
+	if (!initializeGL_if_necessary())
+	{
+		return;
+	}
+
 	// Note that the OpenGL rendering gets redirected into the QPainter (using OpenGL feedback) and
 	// ends up in the feedback paint device.
 	QPainter feedback_painter(&feedback_paint_device);

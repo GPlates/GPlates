@@ -38,6 +38,7 @@
 
 #include <QtGlobal>
 #include <QDebug>
+#include <QOpenGLContext>
 #include <QLinearGradient>
 #include <QLocale>
 #include <QPainter>
@@ -356,7 +357,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContextImpl::QOpenGLWidgetImpl(*this)))),
-	d_make_context_current(*d_gl_context),
 	d_initialisedGL(false),
 	d_gl_visual_layers(
 			GPlatesOpenGL::GLVisualLayers::create(
@@ -400,7 +400,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContextImpl::QOpenGLWidgetImpl(*this)),
 					*existing_globe_canvas->d_gl_context)),
-	d_make_context_current(*d_gl_context),
 	d_initialisedGL(false),
 	d_gl_visual_layers(
 			// Attempt to share OpenGL resources across contexts.
@@ -635,23 +634,37 @@ GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 }
 
 
-void 
-GPlatesQtWidgets::GlobeCanvas::initializeGL_if_necessary() 
+bool
+GPlatesQtWidgets::GlobeCanvas::initializeGL_if_necessary()
 {
 	// Return early if we've already initialised OpenGL.
-	// This is now necessary because it's not only 'paintEvent()' and other QGLWidget methods
+	// This is now necessary because it's not only 'paintEvent()' and other QOpenGLWidget methods
 	// that call our 'initializeGL()' method - we also now it when a client wants to render the
-	// scene to an image (instead of render/update the QGLWidget itself).
+	// scene to an image (instead of render/update the QOpenGLWidget itself).
 	if (d_initialisedGL)
 	{
-		return;
+		return true;
 	}
 
 	// Make sure the OpenGL context is current.
 	// We can't use 'd_gl_context' yet because it hasn't been initialised.
 	makeCurrent();
 
+	// QOpenGLWidget creates its OpenGL context lazily - on its first paint, after it has been shown
+	// and the event loop has processed the show. If we reach here before that (eg, an off-screen
+	// render_to_qimage() issued synchronously right after show(), as when generating preview
+	// thumbnails), makeCurrent() cannot make a context current. Bail without initialising so we don't
+	// run GLEW/OpenGL with no context; the caller should skip rendering. This used to "just work"
+	// with QGLWidget because it created its context eagerly in its constructor.
+	if (QOpenGLContext::currentContext() == nullptr)
+	{
+		qWarning() << "GlobeCanvas: OpenGL context not available yet - deferring initialisation.";
+		return false;
+	}
+
 	initializeGL();
+
+	return d_initialisedGL;
 }
 
 
@@ -771,8 +784,12 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 		const QSize &image_size_in_device_independent_pixels,
 		const GPlatesGui::Colour &image_clear_colour)
 {
-	// Initialise OpenGL if we haven't already.
-	initializeGL_if_necessary();
+	// Initialise OpenGL if we haven't already. If the OpenGL context isn't available yet (the
+	// QOpenGLWidget hasn't been shown/painted) then we can't render - return a null image.
+	if (!initializeGL_if_necessary())
+	{
+		return QImage();
+	}
 
 	// We use a QPainter (attached to the canvas) since it is used for (OpenGL) text rendering.
 	QPainter painter(this);
@@ -992,8 +1009,12 @@ void
 GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 		QPaintDevice &feedback_paint_device)
 {
-	// Initialise OpenGL if we haven't already.
-	initializeGL_if_necessary();
+	// Initialise OpenGL if we haven't already. If the OpenGL context isn't available yet (the
+	// QOpenGLWidget hasn't been shown/painted) then we can't render - nothing to do.
+	if (!initializeGL_if_necessary())
+	{
+		return;
+	}
 
 	// Note that we're not rendering to the OpenGL canvas here.
 	// The OpenGL rendering gets redirected into the QPainter (using OpenGL feedback) and
