@@ -764,7 +764,16 @@ if (GPLATES_INSTALL_STANDALONE)
             # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
             if (WIN32)
                 install_qt_plugin(Qt${QT_VERSION_MAJOR}::QWindowsIntegrationPlugin)
-                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QWindowsVistaStylePlugin)
+                # The Windows Vista style plugin ('qwindowsvistastyle', target 'QWindowsVistaStylePlugin')
+                # was replaced in Qt 6.7 by the modern Windows style plugin ('qmodernwindowsstyle',
+                # target 'QModernWindowsStylePlugin'), which provides both the 'windowsvista' and
+                # 'windows11' styles. The old target no longer exists in Qt 6.7+, so install whichever
+                # style plugin target is available.
+                if (TARGET Qt${QT_VERSION_MAJOR}::QModernWindowsStylePlugin)
+                    install_qt_plugin(Qt${QT_VERSION_MAJOR}::QModernWindowsStylePlugin)
+                else()
+                    install_qt_plugin(Qt${QT_VERSION_MAJOR}::QWindowsVistaStylePlugin)
+                endif()
             elseif (APPLE)
                 install_qt_plugin(Qt${QT_VERSION_MAJOR}::QCocoaIntegrationPlugin)
                 install_qt_plugin(Qt${QT_VERSION_MAJOR}::QMacStylePlugin)
