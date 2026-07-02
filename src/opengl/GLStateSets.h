@@ -321,11 +321,17 @@ namespace GPlatesOpenGL
 	{
 		/**
 		 * Binds a framebuffer object, or unbinds (if @a frame_buffer_object is boost::none).
+		 *
+		 * @a default_framebuffer_resource is the resource handle of the main framebuffer to bind when
+		 * unbinding. This might not be zero - eg, each QOpenGLWidget renders into its own framebuffer
+		 * object (that we treat as our main framebuffer).
 		 */
 		explicit
 		GLBindFrameBufferObjectStateSet(
-				boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> frame_buffer_object) :
-			d_frame_buffer_object(frame_buffer_object)
+				boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> frame_buffer_object,
+				GLuint default_framebuffer_resource = 0) :
+			d_frame_buffer_object(frame_buffer_object),
+			d_default_framebuffer_resource(default_framebuffer_resource)
 		{  }
 
 		virtual
@@ -349,6 +355,9 @@ namespace GPlatesOpenGL
 
 
 		boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> d_frame_buffer_object;
+
+		//! The main framebuffer resource to bind when unbinding (might not be zero, eg, QOpenGLWidget).
+		GLuint d_default_framebuffer_resource;
 	};
 
 	/**

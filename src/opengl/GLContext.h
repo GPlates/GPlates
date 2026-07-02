@@ -99,6 +99,11 @@ namespace GPlatesOpenGL
 			const QSurfaceFormat
 			get_qgl_format() const = 0;
 
+			//! Return default framebuffer resource (might not be zero, eg, each QOpenGLWidget has its own framebuffer object).
+			virtual
+			GLuint
+			get_default_framebuffer_object() const = 0;
+
 			//! The width of the frame buffer currently attached to the OpenGL context.
 			virtual
 			unsigned int
@@ -719,6 +724,20 @@ namespace GPlatesOpenGL
 		get_qgl_format() const
 		{
 			return d_qgl_format;
+		}
+
+
+		/**
+		 * Returns the default framebuffer resource.
+		 *
+		 * Note: This might not be zero.
+		 *       For example, each QOpenGLWidget has its own framebuffer object
+		 *       (that we treat as our main framebuffer when rendering into it).
+		 */
+		GLuint
+		get_default_framebuffer_object() const
+		{
+			return d_context_impl->get_default_framebuffer_object();
 		}
 
 

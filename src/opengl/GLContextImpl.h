@@ -63,6 +63,16 @@ namespace GPlatesOpenGL
 			}
 
 			virtual
+			GLuint
+			get_default_framebuffer_object() const
+			{
+				// Each QOpenGLWidget renders into its own framebuffer object (rather than framebuffer
+				// zero) which it then composites to the screen. We treat that as our main framebuffer.
+				// NOTE: Returns 0 if the widget's OpenGL context has not been initialised yet.
+				return d_qgl_widget.defaultFramebufferObject();
+			}
+
+			virtual
 			unsigned int
 			get_width() const
 			{

@@ -945,7 +945,10 @@ namespace GPlatesOpenGL
 		gl_bind_frame_buffer(
 				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object)
 		{
-			get_current_state()->set_bind_frame_buffer(frame_buffer_object);
+			get_current_state()->set_bind_frame_buffer(
+					frame_buffer_object,
+					// The main framebuffer to restore when unbinding (might not be zero, eg, QOpenGLWidget)...
+					get_context().get_default_framebuffer_object());
 		}
 
 		/**
@@ -954,7 +957,9 @@ namespace GPlatesOpenGL
 		void
 		gl_unbind_frame_buffer()
 		{
-			get_current_state()->set_unbind_frame_buffer();
+			get_current_state()->set_unbind_frame_buffer(
+					// The main framebuffer might not be zero (eg, each QOpenGLWidget has its own framebuffer object)...
+					get_context().get_default_framebuffer_object());
 		}
 
 
@@ -2019,7 +2024,10 @@ namespace GPlatesOpenGL
 				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object)
 		{
 			get_current_state()->set_bind_frame_buffer_and_apply(
-					get_capabilities(), frame_buffer_object, *d_last_applied_state);
+					get_capabilities(), frame_buffer_object,
+					// The main framebuffer to restore when unbinding (might not be zero, eg, QOpenGLWidget)...
+					get_context().get_default_framebuffer_object(),
+					*d_last_applied_state);
 		}
 
 		/**
@@ -2058,7 +2066,11 @@ namespace GPlatesOpenGL
 		void
 		gl_unbind_frame_buffer_and_apply()
 		{
-			get_current_state()->set_unbind_frame_buffer_and_apply(get_capabilities(), *d_last_applied_state);
+			get_current_state()->set_unbind_frame_buffer_and_apply(
+					get_capabilities(),
+					// The main framebuffer might not be zero (eg, each QOpenGLWidget has its own framebuffer object)...
+					get_context().get_default_framebuffer_object(),
+					*d_last_applied_state);
 		}
 
 		/**
