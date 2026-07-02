@@ -141,8 +141,9 @@ GPlatesOpenGL::GLContext::initialise()
 		//qDebug() << "Status: Using GLEW " << reinterpret_cast<const char *>(glewGetString(GLEW_VERSION));
 
 		// With glewExperimental enabled, glewInit() itself leaves a spurious GL_INVALID_ENUM in the
-		// GL error queue. Clear it here so it doesn't trip a later GLUtils::assert_no_gl_errors().
-		glGetError();
+		// GL error queue. Drain the queue here so it doesn't trip a later GLUtils::check_gl_errors().
+		while (glGetError() != GL_NO_ERROR)
+		{ }
 
 		s_initialised_GLEW = true;
 
@@ -154,6 +155,13 @@ GPlatesOpenGL::GLContext::initialise()
 
 		// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
 		s_capabilities.initialise();
+
+		// Capability detection deliberately probes legacy enums (eg, GL_MAX_TEXTURE_UNITS) that are
+		// removed in a core/forward-compatible profile - which is what some platforms provide even when
+		// a compatibility profile is requested (eg, macOS). Querying such an enum raises a harmless
+		// GL_INVALID_ENUM. Drain those probe errors so they don't trip the first GLUtils::check_gl_errors().
+		while (glGetError() != GL_NO_ERROR)
+		{ }
 
 		// Provide information about lack of framebuffer object support.
 		if (!s_capabilities.framebuffer.gl_EXT_framebuffer_object)
