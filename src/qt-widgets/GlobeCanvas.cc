@@ -669,8 +669,20 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL_if_necessary()
 
 
 void 
-GPlatesQtWidgets::GlobeCanvas::initializeGL() 
+GPlatesQtWidgets::GlobeCanvas::initializeGL()
 {
+	// QOpenGLWidget creates its OpenGL context lazily (on its first paint), so guard against being
+	// reached with no current context. This method is a QOpenGLWidget override - so Qt itself calls it
+	// (always with a current context) - but it can also be reached via initializeGL_if_necessary().
+	// Without a current context the OpenGL initialisation below (GLEW init, renderer/off-screen-context
+	// creation, GL object setup) would misbehave or crash, so bail out leaving 'd_initialisedGL' false.
+	if (QOpenGLContext::currentContext() == nullptr)
+	{
+		qWarning() << "GlobeCanvas: skipping OpenGL initialisation - no current OpenGL context yet "
+				"(a QOpenGLWidget's context is not created until its first paint).";
+		return;
+	}
+
 	// Initialise our context-like object first.
 	d_gl_context->initialise();
 

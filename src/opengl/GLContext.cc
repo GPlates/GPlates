@@ -32,7 +32,6 @@
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
 #include <QDebug>
-#include <QOpenGLContext>
 
 #include "GLContext.h"
 
@@ -103,21 +102,21 @@ GPlatesOpenGL::GLContext::initialise()
 		// GLEW (and the capability queries below) require a *current* OpenGL context.
 		//
 		// Unlike the old QGLWidget - which created its OpenGL context eagerly in its constructor -
-		// QOpenGLWidget creates its context lazily (on the first show/paint processed by the event
-		// loop). So initialise() can be reached while no context is current - e.g. via an off-screen
-		// render_to_qimage() on a widget that has been constructed/shown but whose first paint event
-		// hasn't been processed yet (used to render the colour-scheme preview thumbnails).
+		// QOpenGLWidget creates its context lazily (on its first paint). Our callers therefore only
+		// reach here once a context is current: they check QOpenGLContext::currentContext() before
+		// starting OpenGL initialisation (see GlobeCanvas::initializeGL() and
+		// MapCanvas::initializeGL_if_necessary()).
 		//
-		// In that case bail *without* marking GLEW as initialised, so we retry later when a real
-		// context is current. Otherwise glewInit() fails ("Missing GL version"), yet GLEW would be
-		// permanently (and wrongly) flagged as initialised - causing every subsequent context,
-		// including the main canvas, to skip GLEW init and fall back to software OpenGL 1.1.
-		if (QOpenGLContext::currentContext() == nullptr)
-		{
-			qWarning() << "Skipping GLEW init: no current OpenGL context yet "
-					"(a QOpenGLWidget's context is not created until its first paint).";
-			return;
-		}
+		// As a final backstop, if we ever were reached with no current context then glewInit() below
+		// fails ("Missing GL version") and we return *without* setting s_initialised_GLEW - so a later
+		// call (with a valid context) can retry. It's important not to flag GLEW as initialised on
+		// failure, otherwise every extension-availability test would read false and we'd be permanently
+		// forced to fall back to software OpenGL 1.1.
+		//
+		// NOTE: We deliberately do *not* '#include <QOpenGLContext>' here. This is a GLEW translation
+		// unit, and Qt's <QOpenGLContext> transitively pulls in <QOpenGLFunctions>, which refuses to
+		// coexist with GLEW in the same translation unit (it warns and undefines GLEW's entry points).
+		// The current-context check therefore lives in the Qt-widget callers, which don't include GLEW.
 
 		// Force GLEW to load all extension entry points regardless of the OpenGL context type.
 		//
