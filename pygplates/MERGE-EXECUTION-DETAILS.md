@@ -113,3 +113,44 @@ Suggested resolution order: cmake files first (Version → src/CMakeLists → Co
 - `src/presentation/ReconstructionGeometryRenderer.cc`
 - `cmake/modules/InstallSharedLibraryDependencies.cmake`
 - `src/api/PyGPlatesModule.cc` (reference — no edit expected)
+
+## 7. Post-merge regression found in Step 2 smoke testing: dead `*iter = clone` model commits
+
+**Symptom (reported):** moving a vertex of a file-loaded feature, then undoing, did not flag unsaved
+changes (no red row in Manage Feature Collections). Root cause is broader: the edit never reached the
+model at all (the moved overlay came from `GeometryBuilder`, not the model).
+
+**Root cause:** the old gplates model's `HandleTraits<FeatureHandle>::iterator_value_type` was the
+`TopLevelPropertyRef` proxy, whose `operator=` committed via `FeatureHandle::set()` (notify → unsaved
+changes; instance-id equality skip — this is what `PropertyValue::update_instance_id()` fed). The
+pygplates model removed the proxy: dereferencing `FeatureHandle::iterator` returns a **temporary**
+`non_null_ptr_type`, so `*iter = new_property` compiles but is a silent no-op. The pygplates branch
+knew this for its own code (see the disabled-`__setitem__` comment in `src/api/PyFeatureCollection.cc`
+referencing the deferred `pygplates-model-revisions` branch) but the desktop-app call sites were never
+audited because the app never ran on that branch. This is risk "auto-merged files hide
+compiles-but-wrong mixes" materialising — via the model-API semantics change, not the 22 gplates-only
+commits.
+
+**Fixed call sites** (replaced with `FeatureHandle::set()` — e.g. `iter.handle_weak_ref()->set(iter, x)`):
+- `src/view-operations/FocusedFeatureGeometryManipulator.cc` (2 sites — vertex move/insert/delete/split commit path for focused features)
+- `src/qt-widgets/EditWidgetGroupBox.cc` `commit_property_to_model()` (all edit-property dialogs; commits a clone since the widget retains its working copy — new `set()` stores the pointer directly, unlike old `set()` which deep-cloned internally)
+- `src/gui/FeaturePropertyTableModel.cc` `setData()` (dormant — table currently non-editable; commit moved inside conversion-success branch), plus deleted the dead dry-run assignment in `refresh_data()` (a read path — must NOT commit, because new `set()` has no equality skip and would dirty files on mere viewing)
+- `src/qt-widgets/MetadataDialog.cc` `save_fc_meta()` / `save_mprs_meta()` (added `is_still_valid()` guards matching the old proxy's silent-skip)
+- `src/file-io/GpmlUpgradeReaderUtils.cc` crustal-thinning-factor upgrade (**also affects pygplates**: loading pre-GPlates-1.6.338 files silently kept unconverted values)
+- `src/qt-widgets/CreateFeatureDialog.cc` `reverse_reconstruct_geometry_property()` (also removed a stray duplicated `clone()` statement that predates the merge on both branches)
+
+**Not fixed / known residual:**
+- `BubbleUpRevisionHandler::commit()` has `// TODO: Emit model events.` — **in-place** property-value
+  modifications (bubble-up path, e.g. embedded-console scripts calling `pv.set_value(...)` on a
+  model-attached property value) do not notify handle listeners, so no view refresh / unsaved-changes
+  flag. Same gap existed for in-place edits on the old branch (old GUI always used clone + commit).
+  Console `feature.add/remove/set` paths DO notify. Full fix is the deferred
+  `feature/pygplates-model-revisions` work.
+- New `FeatureHandle::set()` lacks the old instance-id equality skip, so a commit of an unchanged
+  clone now still dirties the file (rare; e.g. a no-op geometry-builder update).
+- Disabled (`#if 0`) code still containing the dead pattern, left as-is: `SplitFeatureUndoCommand.cc`,
+  `PyFeature.cc`, `PyFeatureCollection.cc`, `FeaturePropertyTableModel.cc` `assign_new_property_value`.
+
+**Verified-clean commit paths:** `PartitionFeatureUtils.cc` and active `SplitFeatureUndoCommand.cc`
+code use `feature->add()`; `ModelUtils.cc` already uses `feature->set()`; `RevisionedVector` iterators
+have a working assignment proxy (`OgrUtils.cc` etc. are fine).

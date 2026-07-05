@@ -931,8 +931,12 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::con
 										false/*check_property_value_type*/);
 						if (converted_top_level_property)
 						{
-							// Reset the property iterator to the converted property.
-							*property_iter = converted_top_level_property.get();
+							// Replace the property with the converted property.
+							//
+							// Note: Cannot use '*property_iter = ...' since dereferencing a feature
+							// properties iterator returns a temporary pointer (so assigning to it
+							// does nothing) - instead set the property via the feature.
+							feature->set(property_iter, converted_top_level_property.get());
 
 							updated_crustal_thinning_factors = true;
 						}

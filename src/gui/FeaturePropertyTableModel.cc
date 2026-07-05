@@ -259,9 +259,16 @@ GPlatesGui::FeaturePropertyTableModel::setData(
 	GPlatesFeatureVisitors::FromQvariantConverter fromqv_converter(value);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*it)->clone();
 	top_level_prop_clone->accept_visitor(fromqv_converter);
-	*it = top_level_prop_clone;
-	
+
 	if (fromqv_converter.get_property_value()) {
+		// Commit the converted clone back into the model.
+		//
+		// Note: Cannot use '*it = top_level_prop_clone' since dereferencing a feature properties
+		// iterator returns a temporary pointer (so assigning to it does nothing) - instead
+		// set the property via the feature (which also notifies model listeners, eg, to
+		// flag unsaved changes).
+		it.handle_weak_ref()->set(it, top_level_prop_clone);
+
 		// Successful conversion. Now, assign the new value.
 		GPlatesModel::PropertyValue::non_null_ptr_type new_value = *(fromqv_converter.get_property_value());
 
@@ -400,11 +407,12 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 				
 				const GPlatesModel::PropertyName property_name = (*add_it)->get_property_name();
 				// To work out if property is editable inline, we do a dry-run of the FromQvariantConverter.
+				// This is a read-only query so the dry run visits a clone (which is then discarded)
+				// rather than committing anything back into the model.
 				QVariant dummy;
 				GPlatesFeatureVisitors::FromQvariantConverter qvariant_converter(dummy);
 				GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*add_it)->clone();
 				top_level_prop_clone->accept_visitor(qvariant_converter);
-				*add_it = top_level_prop_clone;
 				bool can_convert_inline = static_cast<bool>(qvariant_converter.get_property_value());
 		
 				FeaturePropertyTableInfo info = { property_name, add_it, can_convert_inline };

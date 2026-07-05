@@ -992,9 +992,18 @@ GPlatesQtWidgets::MetadataDialog::save_fc_meta()
 		}
 	}
 	d_fc_meta.get_dc_data().date.modified = tmp;
-	*d_feature_iter = TopLevelPropertyInline::create(
-		PropertyName::create_gpml("metadata"),
-		GPlatesPropertyValues::GpmlMetadata::create(d_fc_meta));
+	if (d_feature_iter.is_still_valid())
+	{
+		// Note: Cannot use '*d_feature_iter = ...' since dereferencing a feature properties
+		// iterator returns a temporary pointer (so assigning to it does nothing) - instead
+		// set the property via the feature (which also notifies model listeners, eg, to
+		// flag unsaved changes).
+		d_feature_iter.handle_weak_ref()->set(
+				d_feature_iter,
+				TopLevelPropertyInline::create(
+						PropertyName::create_gpml("metadata"),
+						GPlatesPropertyValues::GpmlMetadata::create(d_fc_meta)));
+	}
 
 	d_grot_proxy->update_header_metadata(d_fc_meta);
 }
@@ -1034,15 +1043,18 @@ GPlatesQtWidgets::MetadataDialog::save_mprs_meta()
 						StructuralType::create_xsi("string"));
 		dictionary_elements.push_back(new_element);
 	}
-	if (!dictionary_elements.empty())
+	if (!dictionary_elements.empty() &&
+		d_feature_iter.is_still_valid())
 	{
-		GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
+		GpmlKeyValueDictionary::non_null_ptr_type dictionary =
 				GpmlKeyValueDictionary::create(dictionary_elements);
 
-		*d_feature_iter = 
-			TopLevelPropertyInline::create(
-					PropertyName::create_gpml("mprsAttributes"),
-					dictionary);
+		// Note: Cannot use '*d_feature_iter = ...' (see save_fc_meta).
+		d_feature_iter.handle_weak_ref()->set(
+				d_feature_iter,
+				TopLevelPropertyInline::create(
+						PropertyName::create_gpml("mprsAttributes"),
+						dictionary));
 	}
 	d_grot_proxy->update_MPRS_metadata(
 			get_mprs_only_data(),

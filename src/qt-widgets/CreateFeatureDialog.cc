@@ -2589,12 +2589,15 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 					true/*reverse_reconstruct*/);
 
 	// Store the geometry property value back into the geometry property (in the feature).
+	//
+	// Note: Cannot use '*geometry_property_iterator = ...' since dereferencing a feature
+	// properties iterator returns a temporary pointer (so assigning to it does nothing) -
+	// instead set the property via the feature.
 	GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone =
 			(*geometry_property_iterator)->clone();
-			(*geometry_property_iterator)->clone();
 	geometry_setter.set_geometry(geometry_property_clone.get());
-	*geometry_property_iterator = geometry_property_clone;
+	feature->set(geometry_property_iterator, geometry_property_clone);
 
 	return true;
 }
