@@ -178,17 +178,22 @@ GPlatesApi::PythonUtils::get_error_message()
 		if ((p_str=PyObject_Str(type)) && PyString_Check(p_str))
 			msg.append(PyString_AsString(p_str)).append("\n");
 #else
+        // Note: PyObject_Str() returns a 'str' (unicode) object, not 'bytes', so we need
+        // PyUnicode_AsUTF8() here rather than PyBytes_AsString() (which was previously being
+        // called on a unicode object - undefined behaviour that produced a blank message).
         if ((p_str=PyObject_Str(type)) && PyUnicode_Check(p_str))
-            msg.append(PyBytes_AsString(p_str)).append("\n");
+            msg.append(QString::fromUtf8(PyUnicode_AsUTF8(p_str))).append("\n");
 #endif
 		Py_XDECREF(p_str);
 
 #if PY_MAJOR_VERSION < 3
-		if ((p_str=PyObject_Str(value)) && PyString_Check(p_str)) 
-			msg.append(PyString_AsString(value)).append("\n");
+		if ((p_str=PyObject_Str(value)) && PyString_Check(p_str))
+			msg.append(PyString_AsString(p_str)).append("\n");
 #else
+        // Same fix as above, and also use 'p_str' (the str() of 'value') rather than 'value'
+        // itself (the exception instance, which is not a string object).
         if ((p_str=PyObject_Str(value)) && PyUnicode_Check(p_str))
-            msg.append(PyBytes_AsString(value)).append("\n");
+            msg.append(QString::fromUtf8(PyUnicode_AsUTF8(p_str))).append("\n");
 #endif
 		Py_XDECREF(p_str);
 	}
