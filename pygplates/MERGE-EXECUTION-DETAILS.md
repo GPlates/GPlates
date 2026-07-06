@@ -154,3 +154,105 @@ commits.
 **Verified-clean commit paths:** `PartitionFeatureUtils.cc` and active `SplitFeatureUndoCommand.cc`
 code use `feature->add()`; `ModelUtils.cc` already uses `feature->set()`; `RevisionedVector` iterators
 have a working assignment proxy (`OgrUtils.cc` etc. are fine).
+
+## 8. Property/feature cloning semantics: `gplates` branch vs pygplates-merged branch
+
+Raised by the user as a hypothesis (referencing `PropertyValue::update_instance_id()` and the
+comment on `feature_handle_clone()` in `src/api/PyFeature.cc`) that needed verifying before treating
+the merge as otherwise stable. Confirmed: real, and one instance is currently live/reachable.
+
+**Old `gplates` branch semantics** (`git show gplates:<path>`):
+- `PropertyValue`: only `deep_clone_as_prop_val()` (always recursive). Equality is instance-id based:
+  `operator==` returns `d_instance_id == other.d_instance_id && directly_modifiable_fields_equal(...)`
+  — "is this an unmodified clone of that", not structural equality. `update_instance_id()` breaks the
+  link when a subclass mutates a value in place.
+- `TopLevelProperty`: has *both* `clone()` (shallow — shares the contained `PropertyValue` instances;
+  header warns "probably not what you want... until bubble-up is fully operational") and `deep_clone()`
+  (recursively deep-clones contained property values).
+- `FeatureHandle::clone()`: shallow (`FeatureRevision::clone()` shallow-copies the `d_children` pointer
+  vector). Justified in the header: *"property objects in the model are immutable; if a property were
+  to be changed... the clone would point to the old property, while this feature would point to the
+  new... Hence, there is no need for a deep clone method."*
+- `FeatureHandle::set()`: checks `new_child_equals_existing()` (the instance-id `operator==` above)
+  and, only if different, stores `new_child->deep_clone()` — **always installs an independent,
+  freshly-cloned object**, never the caller's own pointer.
+- Net effect: the *only* way a property could change was via `set()`/`add()`/`remove()`, and `set()`
+  always deep-cloned before storing. There was no in-place-mutation path yet ("bubble-up... not yet
+  fully operational" — the old branch's own words). That is precisely what made the shallow
+  `FeatureHandle::clone()` provably safe.
+
+**Current (merged) branch semantics:**
+- `PropertyValue`/`TopLevelProperty`: `clone()` (via `Revisionable::clone()` → `clone_impl()`) is now
+  itself a genuine **deep**, recursive clone (`TopLevelPropertyInline`'s deep-clone constructor calls
+  `clone_impl()` on every contained `PropertyValue`). `deep_clone()` no longer exists — `clone()`
+  absorbed its behaviour. Instance-id equality is gone, replaced by a real structural
+  `Revisionable::operator==()`/`equality()`.
+- `FeatureHandle::clone()`: **still shallow**, unmodified from the old branch — `FeatureHandle` was
+  never migrated onto `Revisionable`/bubble-up (it still uses `BasicRevision`/`FeatureRevision`). Same
+  doc comment, same shallow pointer-vector copy.
+- `FeatureHandle::set()`/`add()`/`remove()`: store the incoming pointer **directly** — no clone, no
+  equality check. This is the safety net the old branch had and the merged branch lost.
+- **Bubble-up** (`BubbleUpRevisionHandler`, used by every in-place `PropertyValue` setter, e.g.
+  `GpmlPlateId::set_value()`): mutates the *same* `TopLevelProperty`/`PropertyValue` C++ object's
+  `d_current_revision` pointer in place — object identity preserved, no new object allocated — and
+  does not notify any owning `FeatureHandle` (same gap as §7's residual item). This in-place path is
+  new capability the old branch never had.
+- `src/api/PyFeature.cc`/`PyFeatureCollection.cc` already route around this: both explicitly avoid
+  `FeatureHandle::clone()`/`FeatureCollectionHandle::clone()`, instead manually looping over properties
+  and calling the (now genuinely deep) `TopLevelProperty::clone()` on each, with the comment: *"We
+  don't use FeatureHandle::clone() because it currently does a shallow copy instead of a deep copy...
+  Once FeatureHandle has been updated to use the same revisioning system as TopLevelProperty and
+  PropertyValue then just delegate directly to FeatureHandle::clone()."* — the pygplates authors knew
+  about this gap and deliberately worked around it for the Python API, but never touched the desktop
+  GUI code that has the same problem (matching §7's pattern: pygplates fixed its own call sites,
+  gplates-only call sites were never audited).
+
+**Two distinct risk classes:**
+- **Risk A — `set()`/`add()` no longer clone/guard:** dormant today. An audit of every
+  `FeatureHandle::set()`/`add()` call site in `src/` (~100+, including all 8 sites fixed in §7) found
+  every one currently passes a freshly-created or freshly-`.clone()`'d property — so no active bug from
+  this angle, but it is no longer *structurally* enforced (previously enforced once, centrally, inside
+  `set()`; now depends on every call site remembering to clone).
+- **Risk B — bubble-up in-place mutation + shallow `FeatureHandle::clone()` (confirmed live):**
+  `src/view-operations/CloneOperation.cc:111`, `clone_focused_feature()` — the GUI "Clone Feature"
+  action — calls the shallow `feature_ref->clone()` directly. This file predates the merge and was
+  never given the `PyFeature.cc`-style deep-clone-loop workaround. After cloning, the original feature
+  and its GUI-created sibling share every `TopLevelProperty`/`PropertyValue` object. Any subsequent
+  in-place mutation of a shared property value that bypasses `FeatureHandle::set()` (e.g. the embedded
+  pygplates console calling a property value's own setter directly on a value fetched by reference)
+  would silently mutate **both** features — with no model notification and no unsaved-changes flag on
+  either, since bubble-up doesn't touch `FeatureHandle` at all.
+
+**Options considered:**
+1. *Recommended minimal fix — applied:* rewrite `CloneOperation::clone_focused_feature()` to build the
+   cloned feature via a per-property deep-clone loop mirroring `PyFeature.cc`'s `feature_handle_clone()`.
+2. *Optional hardening — not applied:* reinstate a deep-clone-before-store inside
+   `FeatureHandle::set()`/`add()` (no equality check needed — `clone()` is genuinely deep now, so this
+   is just the old safety net, not the old optimisation). Would close Risk A structurally, but does not
+   touch Risk B since bubble-up bypasses `set()` entirely. Skipped: the user judged this unnecessary
+   because the full fix (option 3) will land soon enough, and every current `set()`/`add()` call site is
+   already disciplined (see Risk A above).
+3. *Full fix (deferred, matches the plan's existing expectation):* migrate `FeatureHandle`/
+   `FeatureCollectionHandle` onto `Revisionable`/`BubbleUpRevisionHandler`, per the not-yet-completed
+   `feature/pygplates-model-revisions` branch — the merge plan already anticipated this work would be
+   needed at the Feature/FeatureCollection level; this finding confirms why. Out of scope here.
+
+**Fix applied:** `src/view-operations/CloneOperation.cc`, `clone_focused_feature()` — replaced the single
+shallow `feature_ref->clone()` call with a `FeatureHandle::create()` + per-property
+`new_feature_ptr->add(feature_property->clone())` loop, deep-cloning each property (now that
+`TopLevelProperty::clone()` is itself deep) instead of sharing property objects with the original
+feature. This closes the one confirmed live instance of Risk B. The new feature still gets a fresh
+`FeatureId` (via `FeatureHandle::create()`'s default argument), matching the semantics
+`FeatureHandle::clone()` used to provide.
+
+This is deliberately a **temporary, un-refactored fix** — the loop is duplicated inline in
+`CloneOperation.cc` rather than factored into a shared `GPlatesModel::ModelUtils` helper, with a `FIXME`
+comment (mirroring the one on `GPlatesApi::feature_handle_clone()` in `src/api/PyFeature.cc`) pointing at
+the real fix: once `FeatureHandle` is migrated onto `Revisionable`/bubble-up (`feature/pygplates-model-revisions`),
+both this call site and `PyFeature.cc`'s can go back to calling `FeatureHandle::clone()` directly, and the
+workaround can be deleted. No shared helper was introduced since it would just be more code to delete later.
+
+**Conclusion:** Risk B's one confirmed live call site is now fixed. Risk A remains dormant and
+un-hardened (option 2 skipped, per above) — every current `set()`/`add()` call site is disciplined today,
+and the full model migration (option 3) is expected to close this properly rather than layering a second
+temporary workaround on top of `set()`/`add()`.
