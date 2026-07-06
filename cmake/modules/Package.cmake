@@ -71,6 +71,15 @@ elseif (APPLE)
     # Note however that, if you're only using CMake < 3.19, then you also need to manually code sign the '.dmg' file prior to notarization upload
     # (for CMake >= 3.19 we handle it during the packaging phase using CPACK_POST_BUILD_SCRIPTS). See the "DragNDrop" section below.
     #
+    # NOTE: You can check if the notarization will succeed before uploading the final '.dmg' file (to Apple for notarization).
+    #       This can be useful to locate errors (eg, contents not properly code signed) without having to wait for Apple notarization every time you try a fix.
+    #       To do this you can type:
+    #           spctl -a -vvv -t install _CPack_Packages/Darwin/DragNDrop/*/*/gplates.app
+    #       ...noting that this is actually testing the staged install location used by CPack to create the '.dmg' file.
+    #       And if everything is fine then it'll say "Unnotarized Developer ID" (even though it will still say "rejected").
+    #       If something is wrong then you will get a different message, such as "a sealed resource is missing or invalid".
+    #       Note that this procedure is NOT necessary - it's only for convenience if you're running into errors and making multiple attempts to fix them.
+    #
     # For pyGPlates this amounts to uploading the zip archive to Apple for notarization and checking for successful notarization
     # (note that Apple's notarization process does not accept the TBZ2 format, which is why we default to ZIP for binary archives).
     # For example:

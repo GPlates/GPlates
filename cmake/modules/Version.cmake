@@ -12,11 +12,10 @@
 #       Update: We no longer support building Debian packages for pyGPlates (instead using conda and pip).
 #               However we still only support *either* GPlates or pyGPlates (even though we could potentially go back to supporting both).
 #
-# NOTE: THIS IS CURRENTLY THE PYGPLATES BRANCH (SO 'GPLATES_BUILD_GPLATES' DEFAULTS TO 'FALSE').
-#       YOU SHOULD ONLY BUILD 'pygplates'. YOU SHOULDN'T BUILD 'gplates' UNTIL THIS BRANCH IS FULLY MERGED TO TRUNK
-#       (WHICH CAN ONLY HAPPEN ONCE WE'VE COMPLETELY UPDATED THE INTERNAL MODEL).
+# NOTE: THIS BRANCH BUILDS BOTH GPLATES AND PYGPLATES (ONE PRODUCT PER CMAKE BUILD).
+#       'GPLATES_BUILD_GPLATES' DEFAULTS TO 'TRUE' (BUILDS 'gplates'). SET IT TO 'FALSE' TO BUILD 'pygplates'.
 #
-option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)." false)
+option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)." true)
 
 
 #
@@ -47,7 +46,7 @@ option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)."
 #   2.6.0
 #   2.6.1
 #
-set(GPLATES_SEMANTIC_VERSION 2.5.0)
+set(GPLATES_SEMANTIC_VERSION 2.6.0-4)
 
 
 #
@@ -78,7 +77,7 @@ set(GPLATES_SEMANTIC_VERSION 2.5.0)
 #   1.0.0
 #   1.0.1
 #
-set(PYGPLATES_PEP440_VERSION 1.1.0.dev4)
+set(PYGPLATES_PEP440_VERSION 1.1.0.dev5)
 
 
 ##################

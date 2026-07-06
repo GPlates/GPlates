@@ -73,7 +73,7 @@
 						}
 						else // vector format ...
 						{
-							data_format = DataFormats::Shapefile;
+							data_format = DataFormats::Ogr;
 							description = ReadErrors::ErrorReadingVectorFile;
 						}
 
@@ -123,7 +123,7 @@
 						read_errors->d_failures_to_begin.push_back(
 								make_read_error_occurrence(
 									filename,
-									DataFormats::Shapefile,
+									DataFormats::Ogr,
 									0,
 									ReadErrors::ErrorReadingVectorFile,
 									ReadErrors::FileNotLoaded));

@@ -84,7 +84,7 @@ GPlatesQtWidgets::HellingerThread::calculate_two_way_fit()
 	boost::python::object main = boost::python::import("__main__");
 
 	boost::python::object global(main.attr("__dict__"));
-	boost::python::object ignored = boost::python::exec_file(d_python_file.toStdString().c_str(),global, global);
+	boost::python::object ignored = boost::python::exec(d_python_code.c_str(), global, global);
 	boost::python::object pythonCode = global["calculate_pole_2_way"];
 
 	HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
@@ -118,7 +118,7 @@ GPlatesQtWidgets::HellingerThread::calculate_three_way_fit()
 	boost::python::object main = boost::python::import("__main__");
 
 	boost::python::object global(main.attr("__dict__"));
-	boost::python::object ignored = boost::python::exec_file(d_python_file.toStdString().c_str(),global, global);
+	boost::python::object ignored = boost::python::exec(d_python_code.c_str(), global, global);
 	boost::python::object pythonCode = global["calculate_pole_3_way"];
 
 	HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
@@ -152,7 +152,7 @@ GPlatesQtWidgets::HellingerThread::calculate_two_way_uncertainties()
 
 	boost::python::object main = boost::python::import("__main__");
 	boost::python::object global(main.attr("__dict__"));
-	boost::python::object ignored = boost::python::exec_file(d_python_file.toStdString().c_str(),global, global);
+	boost::python::object ignored = boost::python::exec(d_python_code.c_str(), global, global);
 	boost::python::object pythonCode = global["calculate_uncertainty_2_way"];
 
 	HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
@@ -187,7 +187,7 @@ GPlatesQtWidgets::HellingerThread::calculate_three_way_uncertainties()
 	boost::python::object main = boost::python::import("__main__");
 
 	boost::python::object global(main.attr("__dict__"));
-	boost::python::object ignored = boost::python::exec_file(d_python_file.toStdString().c_str(),global, global);
+	boost::python::object ignored = boost::python::exec(d_python_code.c_str(), global, global);
 	boost::python::object pythonCode = global["calculate_uncertainty_3_way"];
 
 	HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
@@ -234,7 +234,6 @@ GPlatesQtWidgets::HellingerThread::run()
 	qDebug() << "temp file par: " << temp_file_par;
 	qDebug() << "temp_file_res: " << temp_file_res;
 	qDebug() << "about to run thread. result file: " << temp_file_temp_result;
-	qDebug() << "python file: " << d_python_file;
 #endif
 
 
@@ -294,12 +293,12 @@ GPlatesQtWidgets::HellingerThread::temp_par_filename() const
 
 void
 GPlatesQtWidgets::HellingerThread::initialise(
-		const QString &python_file,
+		const std::string &python_code,
 		const QString &output_path,
 		const QString &results_filename_root,
 		const QString &temporary_path)
 {
-	d_python_file = python_file;
+	d_python_code = python_code;
 	d_output_path = output_path;
 	d_results_filename_root = results_filename_root;
 	d_path_for_temporary_files = temporary_path;

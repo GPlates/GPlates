@@ -996,7 +996,12 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::QStringWrapper::transcribe(
 {
 #if 1 // test using transcribe delegate protocol...
 
-	return transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, str);
+	if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, str))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 
 #else // test using save/load delegate protocol...
 

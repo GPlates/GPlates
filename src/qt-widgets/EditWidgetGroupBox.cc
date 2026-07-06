@@ -724,7 +724,17 @@ GPlatesQtWidgets::EditWidgetGroupBox::commit_property_to_model()
 	{
 		GPlatesModel::FeatureHandle::iterator &it = *d_current_property_iterator;
 		GPlatesModel::TopLevelProperty::non_null_ptr_type &property_clone = *d_current_property;
-		*it = property_clone;
+		if (it.is_still_valid())
+		{
+			// Note: Cannot use '*it = property_clone' since dereferencing a feature properties
+			// iterator returns a temporary pointer (so assigning to it does nothing) - instead
+			// set the property via the feature (which also notifies model listeners, eg, to
+			// flag unsaved changes).
+			//
+			// Commit a clone of our working copy so that subsequent edits to the working copy
+			// (before the next commit) don't modify the property stored in the model.
+			it.handle_weak_ref()->set(it, property_clone->clone());
+		}
 	}
 }
 

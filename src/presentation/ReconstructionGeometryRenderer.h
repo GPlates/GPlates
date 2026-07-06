@@ -593,15 +593,6 @@ namespace GPlatesPresentation
 		 */
 		void
 		render_topological_shared_sub_segments();
-
-		enum class SubductionPolarity { LEFT, RIGHT };
-
-		/**
-		 * Returns the subduction polarity if the specified reconstruction geometry represents a subduction zone.
-		 */
-		boost::optional<SubductionPolarity>
-		get_subduction_polarity(
-				const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &resolved_topological_section) const;
 	};
 
 

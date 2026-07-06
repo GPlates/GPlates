@@ -101,7 +101,7 @@ namespace
 			return false;
 		}
 
-		char **driver_metadata = driver->GetMetadata();
+		CSLConstList driver_metadata = driver->GetMetadata();
 		if (driver_metadata == NULL)
 		{
 			qWarning() << "Unable to get metadata for GDAL raster driver '" << driver_name << "'.";
@@ -135,7 +135,7 @@ namespace
 			return supported_band_types;
 		}
 
-		char **driver_metadata = driver->GetMetadata();
+		CSLConstList driver_metadata = driver->GetMetadata();
 		if (driver_metadata == NULL)
 		{
 			qWarning() << "Unable to get metadata for GDAL raster driver '" << driver_name << "'.";
@@ -437,7 +437,7 @@ GPlatesFileIO::GDALRasterWriter::GDALRasterWriter(
 			<< d_filename << "'.";
 		return;
 	}
-	char **file_driver_metadata = d_file_driver->GetMetadata();
+	CSLConstList file_driver_metadata = d_file_driver->GetMetadata();
 	if (file_driver_metadata == NULL)
 	{
 		qWarning() << "Unable to get metadata for GDAL raster driver '" << file_driver_name.c_str() << "'.";

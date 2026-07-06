@@ -36,6 +36,7 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/TopLevelProperty.h"
 
 
 void
@@ -108,7 +109,24 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature(
 		target_feature_collection = feature_ref->parent_ptr()->reference();
 	}
 
-	GPlatesModel::FeatureHandle::non_null_ptr_type new_feature_ptr = feature_ref->clone();
+	// FIXME: We don't use FeatureHandle::clone() here because it currently does a shallow copy
+	// instead of a deep copy - the clone would share TopLevelProperty/PropertyValue objects with
+	// the original feature, and (unlike the old gplates model) an in-place property-value edit can
+	// now mutate a shared property object without going through FeatureHandle::set(), silently
+	// modifying both features at once. So instead we build the clone by deep-cloning each property,
+	// mirroring the workaround already used in GPlatesApi::feature_handle_clone()
+	// (see src/api/PyFeature.cc). Once FeatureHandle has been updated to use the same revisioning
+	// system as TopLevelProperty and PropertyValue then just delegate directly to
+	// FeatureHandle::clone() (see pygplates/MERGE-EXECUTION-DETAILS.md section 8).
+	GPlatesModel::FeatureHandle::non_null_ptr_type new_feature_ptr =
+			GPlatesModel::FeatureHandle::create(feature_ref->feature_type());
+	for (GPlatesModel::FeatureHandle::iterator properties_iter = feature_ref->begin();
+			properties_iter != feature_ref->end();
+			++properties_iter)
+	{
+		GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+		new_feature_ptr->add(feature_property->clone());
+	}
 
 	target_feature_collection->add(new_feature_ptr);
 		

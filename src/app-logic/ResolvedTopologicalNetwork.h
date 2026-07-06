@@ -306,26 +306,23 @@ namespace GPlatesAppLogic
 		/**
 		 * Accept a ConstReconstructionGeometryVisitor instance.
 		 */
-		virtual
 		void
 		accept_visitor(
-				ConstReconstructionGeometryVisitor &visitor) const;
+				ConstReconstructionGeometryVisitor &visitor) const override;
 
 		/**
 		 * Accept a ReconstructionGeometryVisitor instance.
 		 */
-		virtual
 		void
 		accept_visitor(
-				ReconstructionGeometryVisitor &visitor);
+				ReconstructionGeometryVisitor &visitor) override;
 
 		/**
 		 * Accept a WeakObserverVisitor instance.
 		 */
-		virtual
 		void
 		accept_weak_observer_visitor(
-				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor);
+				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor) override;
 
 
 		/**
