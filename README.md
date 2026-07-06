@@ -112,8 +112,6 @@ To compile the latest __development snapshot__:
 - For GPlates, use the `gplates` branch (_the default branch_).
 - For PyGPlates, use the `pygplates` branch.
 
-> __Note:__ Please do __not__ compile GPlates from a pyGPlates branch (or compile pyGPlates from a GPlates branch).
-
 ##### Development branching model
 
 The branching model used in this repository is based on [gitflow](https://nvie.com/posts/a-successful-git-branching-model/), with:
