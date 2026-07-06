@@ -29,6 +29,13 @@
 #include <Psapi.h>
 #endif
 
+// Undefine the min and max macros as they can interfere with the min and
+// max functions in std::numeric_limits<T>, on Visual Studio.
+#if defined(_MSC_VER)
+	#undef min
+	#undef max
+#endif
+
 #if 0
 #include <unistd.h> 
 #include <ios> 

@@ -35,6 +35,7 @@
 
 #include <QDebug>
 #include <QDir>
+#include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMessageBox>
@@ -47,6 +48,7 @@
 #include "app-logic/AgeModelCollection.h"
 #include "app-logic/ApplicationState.h"
 #include "app-logic/UserPreferences.h"
+#include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/HellingerReader.h"
 #include "file-io/HellingerWriter.h"
 #include "global/CompilerWarnings.h"
@@ -72,7 +74,7 @@ const double SLIDER_MULTIPLIER = -10000.;
 const int DEFAULT_SYMBOL_SIZE = 2;
 const int ENLARGED_SYMBOL_SIZE = 3;
 const int POLE_ESTIMATE_SYMBOL_SIZE = 1;
-const QString MAIN_PYTHON_FILENAME("hellinger.py");
+const QString HELLINGER_PYTHON_FILENAME(":/python/scripts/hellinger/hellinger.py");
 const double DEFAULT_POINT_SIZE = 2;
 const double DEFAULT_LINE_THICKNESS = 2;
 const double ENLARGED_POINT_SIZE = 6;
@@ -445,9 +447,16 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 {
 	setupUi(this);
 
-	// We need to pass the main hellinger python file to boost::python::exec_file, hence we need to get the location of the
-	// python scripts. This step (passing the python file) might not be necessary later.
-	d_python_path = d_view_state.get_application_state().get_user_preferences().get_default_value("paths/python_system_script_dir").toString();
+	QFile python_file(HELLINGER_PYTHON_FILENAME);
+	// This should never fail since we are reading from a file that is an embedded Qt resource.
+	if (!python_file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		throw GPlatesFileIO::ErrorOpeningFileForReadingException(
+				GPLATES_EXCEPTION_SOURCE,
+				HELLINGER_PYTHON_FILENAME);
+	}
+	// Read the entire file.
+	d_python_code = python_file.readAll().toStdString();
 
 	// And we need a location to store some temporary files which are used in exchanging data between GPlates and the python scripts.
 	//
@@ -469,12 +478,9 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 		}
 	}
 
-	d_python_path.append(QDir::separator());
 	d_path_for_temporary_files.append(QDir::separator());
-	d_python_file = d_python_path + MAIN_PYTHON_FILENAME;
 #if 0
 	qDebug() << "Path used for storing temporary hellinger files: " << d_path_for_temporary_files;
-	qDebug() << "Path used for hellinger python file:  " << d_python_path;
 #endif
 	set_up_connections();
 
@@ -937,28 +943,17 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_uncertainties()
 				line_edit_output_file_root->text());
 
 	d_hellinger_thread->initialise(
-				d_python_file,
+				d_python_code,
 				d_output_file_path,
 				line_edit_output_file_root->text(),
 				d_path_for_temporary_files);
 
-	QFile python_code(d_python_file);
-	if (python_code.exists())
-	{
-		d_hellinger_model.clear_uncertainty_results();
-		update_canvas();
-		d_fit_widget->start_progress_bar();
-		d_hellinger_thread->set_python_script_type(d_thread_type);
-		qDebug() << d_hellinger_thread->path();
-		d_hellinger_thread->start();
-	}
-	else
-	{
-		QString message;
-		QTextStream(&message) << tr("The Hellinger python scripts could not be found.");
-		QMessageBox::critical(this,tr("Python scripts not found"),message,QMessageBox::Ok,QMessageBox::Ok);
-		qWarning() << message;
-	}
+	d_hellinger_model.clear_uncertainty_results();
+	update_canvas();
+	d_fit_widget->start_progress_bar();
+	d_hellinger_thread->set_python_script_type(d_thread_type);
+	qDebug() << d_hellinger_thread->path();
+	d_hellinger_thread->start();
 
 }
 
@@ -1076,44 +1071,33 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 				line_edit_output_file_root->text());
 
 	d_hellinger_thread->initialise(
-				d_python_file,
+				d_python_code,
 				d_output_file_path,
 				line_edit_output_file_root->text(),
 				d_path_for_temporary_files);
 
-	QFile python_code(d_python_file);
-	if (python_code.exists())
+	d_hellinger_model.clear_fit_results();
+	d_hellinger_model.clear_uncertainty_results();
+	update_canvas();
+
+	// Export the picks in the model to file. The python scripts will
+	// read the picks from that file and perform the fit on them.
+	QString pick_filename = d_path_for_temporary_files + d_hellinger_thread->temp_pick_filename();
+	GPlatesFileIO::HellingerWriter::write_pick_file(pick_filename,d_hellinger_model,false);
+
+	switch(d_hellinger_model.get_fit_type())
 	{
-		d_hellinger_model.clear_fit_results();
-		d_hellinger_model.clear_uncertainty_results();
-		update_canvas();
-
-		// Export the picks in the model to file. The python scripts will
-		// read the picks from that file and perform the fit on them.
-		QString pick_filename = d_path_for_temporary_files + d_hellinger_thread->temp_pick_filename();
-		GPlatesFileIO::HellingerWriter::write_pick_file(pick_filename,d_hellinger_model,false);
-
-		switch(d_hellinger_model.get_fit_type())
-		{
-		case TWO_PLATE_FIT_TYPE:
-			d_thread_type = TWO_WAY_POLE_THREAD_TYPE;
-			break;
-		case THREE_PLATE_FIT_TYPE:
-			d_thread_type = THREE_WAY_POLE_THREAD_TYPE;
-			break;
-		}
-		d_hellinger_thread->set_python_script_type(d_thread_type);
-
-		d_fit_widget->start_progress_bar();
-		d_hellinger_thread->start();
+	case TWO_PLATE_FIT_TYPE:
+		d_thread_type = TWO_WAY_POLE_THREAD_TYPE;
+		break;
+	case THREE_PLATE_FIT_TYPE:
+		d_thread_type = THREE_WAY_POLE_THREAD_TYPE;
+		break;
 	}
-	else
-	{
-		QString message;
-		QTextStream(&message) << tr("The Hellinger python scripts could not be found.");
-		QMessageBox::critical(this,tr("Python scripts not found"),message,QMessageBox::Ok,QMessageBox::Ok);
-		qWarning() << message;
-	}
+	d_hellinger_thread->set_python_script_type(d_thread_type);
+
+	d_fit_widget->start_progress_bar();
+	d_hellinger_thread->start();
 }
 
 void

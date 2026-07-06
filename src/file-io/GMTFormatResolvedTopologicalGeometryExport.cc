@@ -300,6 +300,16 @@ GPlatesFileIO::GMTFormatResolvedTopologicalGeometryExport::export_resolved_topol
 			const unsigned int num_shared_sub_segment_geometries = shared_sub_segment_geometries.size();
 			for (unsigned int n = 0; n < num_shared_sub_segment_geometries; ++n)
 			{
+				// For the 2nd, 3rd, etc, sub-segment geometries we need to handle the ">" with no newline
+				// output by the previous sub-segment geometry. We're not actually outputting a header line,
+				// we're just essentially outputting a newline so that the first line of the next geometry
+				// isn't commented out by the terminating ">" line from the previous geometry.
+				if (n > 0)
+				{
+					std::vector<QString> no_header_just_newline;
+					gmt_header_printer.print_feature_header_lines(output_stream, no_header_just_newline);
+				}
+
 				geom_exporter.export_geometry(shared_sub_segment_geometries[n]);
 			}
 		}

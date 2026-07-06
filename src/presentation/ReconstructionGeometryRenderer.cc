@@ -187,6 +187,108 @@ namespace
 	}
 
 
+	enum class SubductionPolarity { LEFT, RIGHT };
+
+	/**
+	 * Returns the subduction polarity if the specified reconstruction geometry represents a subduction zone.
+	 */
+	boost::optional<SubductionPolarity>
+	get_subduction_polarity(
+			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type& resolved_topological_section)
+	{
+		// Get the feature.
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(resolved_topological_section);
+		if (feature_ref)
+		{
+			// See if feature is a subduction zone.
+			static const GPlatesModel::FeatureType subduction_zone_type = GPlatesModel::FeatureType::create_gpml("SubductionZone");
+			if (feature_ref.get()->feature_type() == subduction_zone_type)
+			{
+				// See if has a 'gpml:subductionPolarity' property.
+				static const GPlatesModel::PropertyName subduction_polarity_property_name = GPlatesModel::PropertyName::create_gpml("subductionPolarity");
+				boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> subduction_polarity_property_value =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(feature_ref.get(), subduction_polarity_property_name);
+				if (subduction_polarity_property_value)
+				{
+					// See if property is a 'gpml:SubductionPolarityEnumeration' enumeration.
+					static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
+						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
+					if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value.get()->get_type()))
+					{
+						// See if polarity is 'Left' or 'Right'.
+						static const GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_left("Left");
+						static const GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_right("Right");
+						if (subduction_polarity_enumeration_value_left.is_equal_to(subduction_polarity_property_value.get()->get_value()))
+						{
+							return SubductionPolarity::LEFT;
+						}
+						if (subduction_polarity_enumeration_value_right.is_equal_to(subduction_polarity_property_value.get()->get_value()))
+						{
+							return SubductionPolarity::RIGHT;
+						}
+					}
+				}
+			}
+		}
+
+		return boost::none;
+	}
+
+
+	/**
+	 * Creates a @a RenderedGeometry from @a geometry.
+	 */
+	GPlatesViewOperations::RenderedGeometry
+	create_rendered_geometry(
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
+			const GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams &render_params,
+			const GPlatesGui::ColourProxy &colour_proxy,
+			const boost::optional<GPlatesMaths::Rotation> &rotation = boost::none,
+			boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none,
+			float line_width_and_point_size_multiplier = 1.0f)
+	{
+		const GPlatesMaths::GeometryType::Value geometry_type = GPlatesAppLogic::GeometryUtils::get_geometry_type(*geometry);
+
+		// If the geometry is a polyline and has a subduction polarity then render it with subduction teeth.
+		if (geometry_type == GPlatesMaths::GeometryType::POLYLINE)
+		{
+			const boost::optional<SubductionPolarity> subduction_polarity = get_subduction_polarity(reconstruction_geometry);
+			if (subduction_polarity)
+			{
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
+						GPlatesAppLogic::GeometryUtils::get_polyline_on_sphere(*geometry).get();
+
+				// Create a polyline with subduction teeth.
+				return GPlatesViewOperations::RenderedGeometryFactory::create_rendered_subduction_teeth_polyline(
+						rotation ? rotation.get() * polyline : polyline,
+						subduction_polarity.get() == SubductionPolarity::LEFT,  // subduction_polarity_is_left
+						colour_proxy,
+						render_params.reconstruction_line_width_hint * line_width_and_point_size_multiplier);
+			}
+		}
+
+		// If geometry is a point then it can get rendered as a symbol.
+		boost::optional<GPlatesGui::Symbol> symbol;
+		if (geometry_type == GPlatesMaths::GeometryType::POINT)
+		{
+			symbol = get_symbol(feature_type_symbol_map, reconstruction_geometry);
+		}
+
+		// Create a RenderedGeometry for drawing the reconstruction geometry.
+		return GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				rotation ? rotation.get() * geometry : geometry,
+				colour_proxy,
+				render_params.reconstruction_point_size_hint * line_width_and_point_size_multiplier,
+				render_params.reconstruction_line_width_hint * line_width_and_point_size_multiplier,
+				render_params.fill_polygons,
+				render_params.fill_polylines,
+				render_params.fill_modulate_colour,
+				symbol);
+	}
+
+
 	/**
 	 * Creates a @a RenderedGeometry from @a geometry and wraps it in another @a RenderedGeometry
 	 * that references @a reconstruction_geometry.
@@ -201,28 +303,21 @@ namespace
 			boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none,
 			float line_width_and_point_size_multiplier = 1.0f)
 	{
-		boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
-				feature_type_symbol_map, reconstruction_geometry);
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			create_rendered_geometry(
+					geometry,
+					reconstruction_geometry,
+					render_params,
+					colour_proxy,
+					rotation,
+					feature_type_symbol_map,
+					line_width_and_point_size_multiplier);
 
-		// Create a RenderedGeometry for drawing the reconstruction geometry.
-		GPlatesViewOperations::RenderedGeometry rendered_geom =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-						rotation ? rotation.get() * geometry : geometry,
-						colour_proxy,
-						render_params.reconstruction_point_size_hint * line_width_and_point_size_multiplier,
-						render_params.reconstruction_line_width_hint * line_width_and_point_size_multiplier,
-						render_params.fill_polygons,
-						render_params.fill_polylines,
-						render_params.fill_modulate_colour,
-						symbol);
-
-		// Create a RenderedGeometry for storing the ReconstructionGeometry and
-		// a RenderedGeometry associated with it.
+		// Create a RenderedGeometry for storing the ReconstructionGeometry and // a RenderedGeometry associated with it.
 		return GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
 				reconstruction_geometry,
-				rendered_geom);
+				rendered_geometry);
 	}
-
 
 	// Threshold used when subdividing a topological network delaunay face to visualise 'smoothed' strain rates.
 	// Natural neighbour tends to need more subdivision than barycentric.
@@ -597,8 +692,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 							d_render_params.strain_accumulation_scale * point_deformation_total_strain_principle.principal2, // scale_y
 							point_deformation_total_strain_principle.angle); // orientation angle
 
-			// Create a RenderedGeometry for storing the ReconstructionGeometry and
-			// a RenderedGeometry associated with it.
+			// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
 			GPlatesViewOperations::RenderedGeometry strain_accumulation_rendered_reconstruction_geometry =
 					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
 							trfg,
@@ -647,6 +741,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		}
 	}
 
+	// RenderedGeometry for drawing the reconstructed feature geometry.
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		create_rendered_reconstruction_geometry(
 				rfg_geometry,
@@ -899,6 +994,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		}
 	}
 
+	// RenderedGeometry for drawing the resolved topological geometry.
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		create_rendered_reconstruction_geometry(
 				rtg_geometry, 
@@ -2266,50 +2362,25 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_shared_s
 		const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> &resolved_topologies =
 				shared_sub_segment_map_entry.second;
 
-		// Shared sub-segment polyline.
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type shared_sub_segment_polyline =
-				shared_sub_segment->get_shared_sub_segment_geometry();
-		if (d_reconstruction_adjustment)
-		{
-			shared_sub_segment_polyline = d_reconstruction_adjustment.get() * shared_sub_segment_polyline;
-		}
-
 		// Shared sub-segment reconstruction geometry.
 		//
 		// Note: This is the full reconstruction geometry (not just the shared sub-segment part of it).
 		const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type shared_sub_segment_reconstruction_geometry =
-				shared_sub_segment->get_reconstruction_geometry();
-
-		// The colour is determined by the shared sub-segment (ie, the topological section feature it came from).
-		const GPlatesGui::ColourProxy shared_sub_segment_colour =
-				get_colour(shared_sub_segment_reconstruction_geometry, d_colour, d_style_adapter);
-
-		const boost::optional<SubductionPolarity> subduction_polarity =
-				get_subduction_polarity(shared_sub_segment_reconstruction_geometry);
+						shared_sub_segment->get_reconstruction_geometry();
 
 		// Create a RenderedGeometry for drawing the shared sub-segment.
-		GPlatesViewOperations::RenderedGeometry shared_sub_segment_rendered_geom;
-		if (subduction_polarity)
-		{
-			// Create a polyline with subduction teeth.
-			shared_sub_segment_rendered_geom = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_subduction_teeth_polyline(
-					shared_sub_segment_polyline,
-					subduction_polarity.get() == SubductionPolarity::LEFT,  // subduction_polarity_is_left
-					shared_sub_segment_colour,
-					// Topological plate/network boundaries get rendered with a different thickness...
-					d_render_params.reconstruction_line_width_hint * d_render_params.reconstruction_topology_size_multiplier);
-		}
-		else
-		{
-			// Create an ordinary polyline.
-			shared_sub_segment_rendered_geom = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polyline_on_sphere(
-					shared_sub_segment_polyline,
-					shared_sub_segment_colour,
-					// Topological plate/network boundaries get rendered with a different thickness...
-					d_render_params.reconstruction_line_width_hint * d_render_params.reconstruction_topology_size_multiplier,
-					d_render_params.fill_polylines,
-					d_render_params.fill_modulate_colour);
-		}
+		//
+		// If it has a subduction polarity then it'll get rendered with subduction teeth.
+		GPlatesViewOperations::RenderedGeometry shared_sub_segment_rendered_geom =
+				create_rendered_geometry(
+						shared_sub_segment->get_shared_sub_segment_geometry(),
+						shared_sub_segment_reconstruction_geometry,
+						d_render_params,
+						get_colour(shared_sub_segment_reconstruction_geometry, d_colour, d_style_adapter),
+						d_reconstruction_adjustment,
+						d_feature_type_symbol_map,
+						// Topological plate/network boundaries get rendered with a different thickness...
+						d_render_params.reconstruction_topology_size_multiplier);
 
 		// Create a RenderedGeometry for storing the sharing resolved topologies (ReconstructionGeometry's) and
 		// a RenderedGeometry associated with them (for the shared sub-segment geometry).
@@ -2335,49 +2406,6 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_shared_s
 	}
 }
 
-
-boost::optional<GPlatesPresentation::ReconstructionGeometryRenderer::SubductionPolarity>
-GPlatesPresentation::ReconstructionGeometryRenderer::get_subduction_polarity(
-		const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &resolved_topological_section) const
-{
-	// Get the feature.
-	boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(resolved_topological_section);
-	if (feature_ref)
-	{
-		// See if feature is a subduction zone.
-		static const GPlatesModel::FeatureType subduction_zone_type = GPlatesModel::FeatureType::create_gpml("SubductionZone");
-		if (feature_ref.get()->feature_type() == subduction_zone_type)
-		{
-			// See if has a 'gpml:subductionPolarity' property.
-			static const GPlatesModel::PropertyName subduction_polarity_property_name = GPlatesModel::PropertyName::create_gpml("subductionPolarity");
-			boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> subduction_polarity_property_value =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(feature_ref.get(), subduction_polarity_property_name);
-			if (subduction_polarity_property_value)
-			{
-				// See if property is a 'gpml:SubductionPolarityEnumeration' enumeration.
-				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
-						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
-				if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value.get()->get_type()))
-				{
-					// See if polarity is 'Left' or 'Right'.
-					static const GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_left("Left");
-					static const GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_right("Right");
-					if (subduction_polarity_enumeration_value_left.is_equal_to(subduction_polarity_property_value.get()->get_value()))
-					{
-						return SubductionPolarity::LEFT;
-					}
-					if (subduction_polarity_enumeration_value_right.is_equal_to(subduction_polarity_property_value.get()->get_value()))
-					{
-						return SubductionPolarity::RIGHT;
-					}
-				}
-			}
-		}
-	}
-
-	return boost::none;
-}
 
 // Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.
 // This is here at the end of the file because the problem resides in a template

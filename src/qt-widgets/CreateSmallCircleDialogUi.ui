@@ -87,7 +87,7 @@
               <string> Ma</string>
              </property>
              <property name="maximum">
-              <double>1000.000000000000000</double>
+              <double>9999.000000000000000</double>
              </property>
             </widget>
            </item>
@@ -117,7 +117,7 @@
               <string> Ma</string>
              </property>
              <property name="maximum">
-              <double>1000.000000000000000</double>
+              <double>9999.000000000000000</double>
              </property>
             </widget>
            </item>

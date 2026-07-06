@@ -198,7 +198,7 @@ endif()
 # Install Python scripts (but only for the gplates target).
 #
 if (GPLATES_BUILD_GPLATES)  # GPlates ...
-    foreach (_script hellinger.py hellinger_maths.py)
+    foreach (_script )  # currently empty but we can add scripts here in the future if needed
         if (EXISTS "${PROJECT_SOURCE_DIR}/scripts/${_script}")
             if (GPLATES_INSTALL_STANDALONE)
                 # For standalone we want to bundle everything together so it's relocatable.

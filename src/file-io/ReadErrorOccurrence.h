@@ -45,7 +45,7 @@ namespace GPlatesFileIO
 			Gpml,
 			PlatesRotation,
 			PlatesLine,
-			Shapefile,
+			Ogr,
 			Gmap,
 			RasterImage,
 			ScalarField3D,
