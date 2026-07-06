@@ -2,7 +2,14 @@
 
 > Design report (Plan agent) for the pygplates→gplates branch unification. See `MERGE-PLAN.md` for the approved plan; this file carries the full hunk-level detail behind it.
 >
-> Note: decisions confirmed after this report was written — (1) embedded console adopts the full pygplates API (drop `Python.cc`/`PyFunctions.cc`); (2) **exclude** the WIP commit a4e8f1391 (merge from staging point 3adc36990, tag pygplates tip `pygplates-final`); (3) land on `gplates` by **fast-forward** (§2 option a).
+> Note: decisions confirmed after this report was written — (1) embedded console adopts the full pygplates API (drop `Python.cc`/`PyFunctions.cc`); (2) **exclude** the WIP commit a4e8f1391 (merge from staging point 3adc36990); (3) ~~land on `gplates` by **fast-forward** (§2 option a)~~.
+>
+> **Superseded 2026-07-07:** `gplates` and `pygplates` remain **separate** develop branches (not
+> unified into one). The excluded WIP commit now lives on branch `pygplates-wip` (not a
+> `pygplates-final` tag); `pygplates` itself was reset back to 3adc36990 (its pre-divergence tip);
+> the two-parent merge commit was flattened into a single-parent commit; and landing is via a PR
+> from the staging branch into `pygplates` (approved/merged on the `public` GitHub remote) instead
+> of a fast-forward of `gplates`. See §2 step 3 and §5 step 11 (both updated below).
 
 ## 1. Empirical conflict list (from `git merge-tree --write-tree gplates pygplates`, git 2.43.0.windows.1)
 
@@ -40,19 +47,35 @@ The merge produces result tree `47c873f8d493006bfb690918dd275c085f97e836` with *
 
 ## 2. Git strategy
 
-**Pre-step decision — the WIP commit:** staging branch `feature/pygplates-merge-into-gplates` (3adc36990) is **one commit behind** the `pygplates` tip — a4e8f1391 "WIP: Fix for pygplates.GpmlTopologicalSection.create for a polygon" (touches `src/api/PyFeature.h`, `PyPropertyValues.cc`, +2). **DECISION: exclude** — merge from 3adc36990; `git tag pygplates-final a4e8f1391` preserves the WIP. The conflict list above is identical either way (the WIP doesn't touch any conflicted file).
+**Pre-step decision — the WIP commit:** staging branch `feature/pygplates-merge-into-gplates` (3adc36990) is **one commit behind** the `pygplates` tip — a4e8f1391 "WIP: Fix for pygplates.GpmlTopologicalSection.create for a polygon" (touches `src/api/PyFeature.h`, `PyPropertyValues.cc`, +2). **DECISION: exclude** — merge from 3adc36990; the WIP is preserved on branch `pygplates-wip` (a4e8f1391) rather than a tag, and `pygplates` itself was reset back to 3adc36990 so it no longer contains the WIP commit. The conflict list above is identical either way (the WIP doesn't touch any conflicted file).
 
 **Merge steps:**
 1. On `feature/pygplates-merge-into-gplates`: `git merge gplates` → resolve the 12 units per §3 (plus the silent `option()` flip and §4 deletions). Commit the merge (call it **M**; parents: pygplates-lineage first, gplates second).
 2. Validate both build variants and run tests on staging (§5). Push staging for CI/review.
-3. Land on `gplates`. Two options:
-   - **(a) Simple (CHOSEN):** `git checkout gplates && git merge feature/pygplates-merge-into-gplates` — this **fast-forwards** gplates to M (gplates is M's ancestor). Consequence: `git log --first-parent gplates` now follows the pygplates lineage. Given pygplates is 1,415 commits of real development containing nearly all of gplates' history, this is acceptable and simplest.
-   - (b) If first-parent = gplates lineage mattered: mint a parent-swapped merge without redoing resolution: `git commit-tree M^{tree} -p gplates -p <pygplates-tip> -m "..."` then fast-forward gplates to the new commit. Same tree, different parent order. (Not chosen.)
-4. **Retire `pygplates`:** `git tag pygplates-final a4e8f1391`, then delete the local branch and (with team agreement) the remote `private/pygplates`. Same treatment for the staging branch once merged.
-5. **Release branches:** `release-gplates` / `release-pygplates` are historical release lines — leave untouched; future releases of *both* products cut from unified `gplates`.
-6. **Feature branches in flight:**
-   - `feature/pygplates-model-revisions` (17 commits atop c3f42c065, pure pygplates lineage): merges into unified `gplates` normally afterward — its merge-base is fully contained in the new gplates. No action needed now; optionally merge new gplates into it early to surface conflicts.
-   - `feature/diligent-migration` (contains gplates tip already; merge-base with pygplates is the old dc735bca4): after unification, merging new `gplates` into it uses merge-base = old gplates tip, so it receives the whole pygplates side + the resolutions as one diff. Conflicts only where diligent-migration itself touched pygplates-refactored files. Do this sync **soon after** unification while the resolution rationale is fresh; enable `git config rerere.enabled true` before step 1 so recorded resolutions replay.
+3. **Land on `pygplates` (superseded 2026-07-07; supersedes options a/b below):** `gplates` and
+   `pygplates` are kept as separate long-lived develop branches — the goal is reconciling the
+   model/build divergence, not merging the branches into one. Flatten merge commit **M** into a
+   regular single-parent commit on the pygplates lineage: `git commit-tree M^{tree} -p 69a58bbc0
+   -m "..."` (69a58bbc0 = the pygplates-side parent of M), producing a new commit with the exact
+   same tree as M but no second parent pointing at `gplates`. Then `git rebase --onto <new-commit>
+   M feature/pygplates-merge-into-gplates` to replay the follow-on fix commits on top of it
+   (trivial — identical tree, so no conflicts). Finally, open a PR from
+   `feature/pygplates-merge-into-gplates` into `pygplates` on the `public` remote
+   (github.com/GPlates/GPlates), for review/approval and merge in GitHub. This keeps
+   `pygplates`'s history free of a merge commit pointing back at `gplates`, so a later `git
+   checkout gplates && git merge pygplates` (whenever convenient) needs no cherry-picking, and
+   either branch can still build either product via `GPLATES_BUILD_GPLATES`.
+   - ~~(a) Simple: `git checkout gplates && git merge feature/pygplates-merge-into-gplates` —
+     fast-forwards gplates to M.~~ Not chosen (would retire `pygplates` as a separate branch).
+   - ~~(b) Parent-swapped merge commit onto `gplates`.~~ Not chosen, same reason.
+4. **`pygplates` branch handling (superseded 2026-07-07):** rather than retiring `pygplates` via
+   `git tag pygplates-final a4e8f1391` + branch deletion, its excluded WIP tip (a4e8f1391) was
+   moved to branch `pygplates-wip`, and `pygplates` itself was reset back to 3adc36990 (its
+   pre-divergence commit) so the PR in step 3 merges into it with a clean, linear history.
+5. **Release branches:** `release-gplates` / `release-pygplates` are historical release lines — leave untouched; future releases of *both* products continue to be cut from their respective develop branches (`gplates` / `pygplates`).
+6. **Feature branches in flight (updated 2026-07-07 for the two-branches-kept strategy):**
+   - `feature/pygplates-model-revisions` (17 commits atop c3f42c065, pure pygplates lineage): merges into `pygplates` normally once this PR lands — its merge-base is fully contained in the updated pygplates. No action needed now; optionally merge updated pygplates into it early to surface conflicts.
+   - `feature/diligent-migration` (contains gplates tip already; merge-base with pygplates is the old dc735bca4): sync happens in two hops now — first `pygplates` receives this PR, then `gplates` merges `pygplates` (whenever convenient), and only then does `feature/diligent-migration` merge the updated `gplates`. That merge-base is still the old gplates tip, so it receives the whole pygplates-side reconciliation + resolutions as one diff; conflicts only where diligent-migration itself touched pygplates-refactored files. Its `CLAUDE.md` describes the old cherry-pick-only cross-branch constraint, which relaxes (both branches can build both products) but doesn't disappear (branches are still separate) — update it as part of this sync, not before. Do the sync **soon after** `gplates` picks up `pygplates` while the resolution rationale is fresh; enable `git config rerere.enabled true` before step 1 so recorded resolutions replay.
 
 ## 3. Per-conflict resolutions (concrete)
 
@@ -80,7 +103,7 @@ Suggested resolution order: cmake files first (Version → src/CMakeLists → Co
   2. `pygplates.Feature` / `pygplates.FeatureCollection` in the console are now the **full new-API classes**; the old thin wrappers are still available but renamed `OldFeature` / `OldFeatureCollection` (verified: `PyOldFeature.cc:39`, `PyOldFeatureCollection.cc:49`; both exported unconditionally at `PyGPlatesModule.cc:198–199`). Console gains the entire pygplates API — a large net win (incl. explicit GPML loading from console Python code).
 - No conditional-source CMake work is needed: every api file already compiles into both target shapes on the pygplates branch today (embedding files included), with variant differences handled by `GPLATES_PYTHON_EMBEDDING` ifdefs.
 
-## 5. Sequencing & verification plan (start → single develop branch)
+## 5. Sequencing & verification plan (start → PR into `pygplates`, both develop branches kept)
 
 1. `git config rerere.enabled true` (project-local). WIP commit a4e8f1391 excluded (decision); stay at 3adc36990.
 2. On staging: `git merge gplates` (expect exactly the 14-path conflict set above; any delta means a branch moved — re-run merge-tree).
@@ -91,8 +114,21 @@ Suggested resolution order: cmake files first (Version → src/CMakeLists → Co
 7. GPlates app smoke tests (manual, Windows): launch; load & save a GPML file; load/save a `.gproj` project/session; edit feature properties + **undo/redo** (QUndoCommand path over the bubble-up model — the highest-risk runtime behavior); Hellinger tool opens and runs (script now sourced from the Qt resource); reconstruct/animate; export resolved topologies (exercises 47c6ccaab); small-circle tool (9e5327bf7); subduction teeth render on topological sections AND boundaries (exercises the one real code conflict); Python console: new API `pygplates.reconstruct(...)` runs, `pygplates.OldFeature`/`OldFeatureCollection` exist, main-window/instance/style bindings respond.
 8. Unit tests: run `gplates-unit-test` (covers the min/max fix 90a66391a etc.).
 9. Packaging checks: configure-only run of CPack targets for variant A; verify conda recipe (`pygplates/conda/`) and wheel scripts reference nothing branch-specific (boost pins already verified OK); on a Mac (later, see risks) exercise the merged `InstallSharedLibraryDependencies.cmake` codesign path for both variants.
-10. Docs commit(s) on staging: `README.md`, `BUILD.*` (already unified in resolution — re-read end-to-end), `DEPS.*` if they mention branch choice; remove "which branch to use" language everywhere (`git grep -i 'pygplates branch'`). Update any CLAUDE.md kept outside this tree (cross-branch flow constraint obsolete).
-11. CI green on staging → land on `gplates` per §2 step 3 → tag `pygplates-final`, delete `pygplates` + staging branches (local and remote per team agreement) → announce; sync `feature/diligent-migration` promptly; leave `feature/pygplates-model-revisions` to merge normally later.
+10. Docs commit(s) on staging: `README.md` (removed the obsolete note against compiling GPlates
+    from a pyGPlates branch or vice versa — done), `BUILD.*`/`DEPS.*` (already unified wording from
+    the Step 1 resolution — verified, no changes needed); `git grep -i 'pygplates branch'` (clean
+    outside historical MERGE-*.md docs). CLAUDE.md files outside this tree describing the old
+    cherry-pick-only cross-branch constraint are updated later, during the `feature/diligent-migration`
+    sync (step 11), since the constraint relaxes rather than disappears (`gplates`/`pygplates` are
+    still separate branches).
+11. CI green on staging → flatten merge commit M into a single-parent commit and rebase the
+    follow-on fixes onto it (§2 step 3, updated) → open a PR from
+    `feature/pygplates-merge-into-gplates` into `pygplates` on the `public` remote → once
+    approved/merged, `pygplates` carries the reconciliation (WIP preserved on `pygplates-wip`,
+    `pygplates` itself reset to 3adc36990 beforehand — §2 step 4) → `gplates` merges `pygplates`
+    whenever convenient (plain merge, no cherry-picking needed going forward) → sync
+    `feature/diligent-migration` promptly once `gplates` has picked this up; leave
+    `feature/pygplates-model-revisions` to merge into `pygplates` normally, any time after the PR lands.
 
 ## 6. Risk register
 

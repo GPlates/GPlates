@@ -6,6 +6,17 @@
 > - `MERGE-FINDINGS-3-build-layout.md` — build system, tree layout, packaging, src/api
 > - `MERGE-EXECUTION-DETAILS.md` — empirical `git merge-tree` conflict list, hunk-level resolutions, risk register
 
+> **2026-07-07 landing-strategy update (supersedes the "land on `gplates`" plan below):**
+> `gplates` and `pygplates` stay **separate** long-lived develop branches — they are not being
+> unified into one. The goal of this work is instead to reconcile the model/build divergence so
+> future `pygplates` ⇄ `gplates` merges are trivial (a plain merge, no cherry-picking). Landing is
+> now via a **pull request from the staging branch into `pygplates`** (not a fast-forward of
+> `gplates`); `gplates` can merge `pygplates` whenever convenient afterwards. The merge commit was
+> flattened into a regular single-parent commit so the PR carries no second-parent history back to
+> `gplates`. The excluded WIP commit (a4e8f1391) now lives on branch `pygplates-wip` (not a tag),
+> and `pygplates` itself was reset back to its pre-divergence tip (3adc36990). See the updated
+> Step 3 below and `MERGE-EXECUTION-DETAILS.md` §2/§5 for the exact mechanics.
+
 ## Context
 
 GPlates development runs on two long-lived develop branches: `gplates` (desktop app, `GPLATES_BUILD_GPLATES=true`) and `pygplates` (Python module, `=false`), with a merge-one-way / cherry-pick-the-other treadmill between them. The pygplates branch reworked the internal model (`src/model/`, `src/property-values/`) into a bubble-up revisioning system so features/properties are individually accessible from Python. Goal: merge `pygplates` into `gplates` so a single branch builds both products and the treadmill ends.
@@ -21,7 +32,7 @@ GPlates development runs on two long-lived develop branches: `gplates` (desktop 
 **User decisions (confirmed):**
 - Embedded console adopts the **full pygplates API** (PyGPlatesModule.cc serves both builds — in gplates it's essentially only used by the Python console). Delete `Python.cc`/`PyFunctions.cc`; old thin classes remain as `OldFeature`/`OldFeatureCollection`; `reconstruct`/`reverse_reconstruct` get the new-API signatures (document in release note). Bonus: console users can explicitly load GPML via the full API.
 - **Exclude** the pygplates-tip WIP commit a4e8f1391 (`GpmlTopologicalSection.create` polygon fix): merge from the current staging point (3adc36990); tag the pygplates tip `pygplates-final` so the WIP stays recoverable.
-- Land on `gplates` by **fast-forward** to the merge commit (first-parent history follows the pygplates lineage — accepted).
+- ~~Land on `gplates` by **fast-forward** to the merge commit (first-parent history follows the pygplates lineage — accepted).~~ **Superseded 2026-07-07** — see the landing-strategy update above: lands via PR into `pygplates` instead, keeping both branches.
 
 ## Step 0 — Preparation
 
@@ -53,7 +64,8 @@ On the staging branch: `git merge gplates` (expect exactly the conflict set belo
 1. **`cmake/modules/Version.cmake` line ~25: `option(GPLATES_BUILD_GPLATES ... false)` auto-merges to `false`** (base was `true`, only pygplates changed it). Flip to `true`. Nothing will flag this.
 2. Pre-commit gate greps on the resolved tree: no conflict markers; `option(GPLATES_BUILD_GPLATES ... true)`; no `src/api/Python.cc` / `PyFunctions.cc` / `system-fixes/boost/cstdint.hpp`; python.qrc has the 8-entry union; no `->deep_clone()` outside `src/gui/DrawStyle*` (that one is a GUI-class method, not model API).
 
-Commit the merge (**M**, parents: staging first, gplates second).
+Commit the merge (**M**, parents: staging first, gplates second) — later flattened into a
+single-parent commit before landing (see the updated Step 3 below).
 
 ## Step 2 — Verification (both variants, Windows, in-tree gitignored build dirs)
 
@@ -63,12 +75,36 @@ Commit the merge (**M**, parents: staging first, gplates second).
 4. `.gproj`/GPML **cross-version round-trip**: files saved by released GPlates 2.5/2.6-dev load in merged build and vice versa (transcribe additions are additive; smoke-test anyway).
 5. Configure-only packaging check for both variants; conda recipe / wheel scripts reference nothing branch-specific (verified, re-check).
 
-## Step 3 — Docs & landing
+## Step 3 — Docs & landing (landing steps superseded 2026-07-07 — see update note at top)
 
-1. Docs commit on staging: `README.md` (gitflow section — single develop branch now), `BUILD.*` (re-read end-to-end), `DEPS.*` if branch-specific; `git grep -i 'pygplates branch'` to catch stragglers. Release/porting note: embedded-console `reconstruct`/`reverse_reconstruct` signature change; `Feature` in console is now the full-API class (old one = `OldFeature`). Update any CLAUDE.md kept outside this tree (the cross-branch flow constraint is obsolete after this lands; note the one on `feature/diligent-migration`).
-2. Land: `git checkout gplates && git merge feature/pygplates-merge-into-gplates` (fast-forwards to M).
-3. Retire: `git tag pygplates-final a4e8f1391` (preserves the excluded WIP too); delete `pygplates` local/remote per team agreement; delete staging branch. `release-gplates`/`release-pygplates` untouched — future releases of both products cut from `gplates`.
-4. Sync `feature/diligent-migration` (merge new `gplates` into it) **promptly** while rerere cache + rationale are fresh; conflicts only where that branch touched pygplates-refactored files. `feature/pygplates-model-revisions` merges normally later (its merge-base is inside the pygplates lineage).
+1. Docs commit on staging: `README.md` (removed the now-obsolete note against cross-compiling
+   GPlates/pyGPlates from the "wrong" branch — `gplates` and `pygplates` remain separate branches,
+   but both can now build either product via `GPLATES_BUILD_GPLATES`), `BUILD.*`/`DEPS.*` (already
+   unified wording from the Step 1 conflict resolution — verified, no further changes needed);
+   `git grep -i 'pygplates branch'` to catch stragglers (none outside historical MERGE-*.md docs).
+   Release/porting note (embedded-console `reconstruct`/`reverse_reconstruct` signature change;
+   `Feature` in console is now the full-API class, old one = `OldFeature`) is documented in
+   `MERGE-EXECUTION-DETAILS.md` §4 for extraction into `CHANGELOG` at the next release cut (this
+   repo's `CHANGELOG` is only updated per release, not per merge). Any CLAUDE.md kept outside this
+   tree describing the old cross-branch cherry-pick-only constraint (e.g. on
+   `feature/diligent-migration`) should be updated when that branch is synced (step 4 below) —
+   not yet done, since that constraint is now relaxed rather than removed (see update note).
+2. ~~Land: `git checkout gplates && git merge feature/pygplates-merge-into-gplates` (fast-forwards
+   to M).~~ **Superseded:** flatten merge commit M into a single-parent commit on the pygplates
+   lineage (`git commit-tree M^{tree} -p <pygplates-side-parent> -m "..."`, then `git rebase
+   --onto <new-commit> M feature/pygplates-merge-into-gplates` to replay the follow-on fix
+   commits), then open a PR from `feature/pygplates-merge-into-gplates` into `pygplates` on the
+   `public` remote (github.com/GPlates/GPlates) for review/approval and merge in GitHub.
+3. ~~Retire: `git tag pygplates-final a4e8f1391` (preserves the excluded WIP too); delete
+   `pygplates` local/remote per team agreement; delete staging branch.~~ **Superseded:**
+   `pygplates` is kept, not retired. The excluded WIP commit (a4e8f1391) lives on branch
+   `pygplates-wip` instead of a tag; `pygplates` itself was reset back to its pre-divergence tip
+   (3adc36990) so the PR above merges into it cleanly. `release-gplates`/`release-pygplates`
+   untouched — future releases of both products still cut from their respective branches.
+4. Sync `feature/diligent-migration` (merge updated `gplates` into it, once `gplates` has in turn
+   merged `pygplates`) **promptly** while rerere cache + rationale are fresh; conflicts only where
+   that branch touched pygplates-refactored files. `feature/pygplates-model-revisions` merges
+   normally later (its merge-base is inside the pygplates lineage).
 
 ## Optional perspective: `feature/pygplates-model-revisions` (not part of this merge)
 
@@ -95,4 +131,4 @@ Extends bubble-up revisioning from property values to features/feature collectio
 | Step 1 (merge + conflict resolution + audit gates) | **Fable 5** (or Opus 4.8) | The one-shot critical step. Resolutions are prescribed, but judgment is needed if branches moved, if merge-tree output differs, and for the `ReconstructionGeometryRenderer` reconciliation + silent-default audit. |
 | Step 2 (build both variants, fix compile/link fallout, run ctest) | Opus 4.8 (fast mode is handy for long build-fix loops) | Iterative build-and-fix; escalate to Fable 5 only if a deep architectural link problem appears. |
 | Step 2.3–2.4 (app smoke tests) | Human (you) + any model to assist | GUI interaction; a model can drive builds/logs but the visual/undo checks are manual. |
-| Step 3 (docs, landing, branch retirement) | Sonnet 5 | Mechanical text edits and prescribed git commands; the landing merge is a fast-forward. |
+| Step 3 (docs, landing via PR into `pygplates`) | Sonnet 5 | Mechanical text edits and prescribed git commands; landing is a reviewed PR, not a fast-forward. |
