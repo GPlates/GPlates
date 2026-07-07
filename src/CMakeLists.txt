@@ -277,15 +277,29 @@ find_package(Boost ${_GPLATES_MIN_BOOST_VERSION} REQUIRED
 		)
 
 ############
-# Find Qt5 #
+# Find Qt #
 #
 # CMake automatically runs Qt's moc, uic and rcc code generation tools.
 # See https://doc.qt.io/qt-5/cmake-get-started.html
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
-# Require Qt 5.6 for the Qt::AA_EnableHighDpiScaling attribute (Bionic, our minimum supported Ubuntu, uses Qt 5.9).
-find_package(Qt5 5.6 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
+#
+# Require Qt 5.15 (but use Qt6 when available since it has bug-fixes beyond the Qt5.15 non-commercial version).
+#
+# Our minimum supported Ubuntu is Jammy 22.04 which uses Qt 5.15.
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+if (QT_VERSION_MAJOR EQUAL 6)
+	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
+	# For example, QRegExp instead of QRegularExpression.
+	# Remove Core5Compat when no longer supporting Qt5.
+	#
+	# Also Qt6 moved the QOpenGL* classes from (Gui and Widgets modules in Qt5) into OpenGL (and new OpenGLWidgets) modules.
+	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
+else()
+	# In Qt5, the modern QOpenGL* classes are in the Gui and Widgets modules (not OpenGL and OpenGLWidgets modules).
+	find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
+endif()
 
 ############
 # Find Qwt #
@@ -500,9 +514,11 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # (where CMake chooses the stricter requirement between our requirement and CGAL's C++14 requirement).
 # And Boost 1.81 (in math library) started warning if we used less than C++14 - it seems Boost's CMake configuration
 # doesn't transitively pass its C++14 requirement to us, like CGAL does - so we just set our requirement to C++14.
+# And Qt 6 requires C++17, and this requirement is transitively passed to us via the Qt6 targets (like Qt6::Core)
+# where Qt chooses the stricter requirement between our C++11 and Qt's C++17 (which is C++17)
 #
-# Note: Specifying compile features avoids the problem of compile errors when C++14 features are used (eg, by CGAL 5)
-#       since we're not forcing C++11 by specifying '-std=c++11' directly on the compiler command-line.
+# Note: Specifying compile features avoids the problem of compile errors when C++17 features are used (eg, by Qt 6)
+#       since we're not forcing C++14 by specifying '-std=c++14' directly on the compiler command-line.
 target_compile_features(${SOURCE_TARGET} PUBLIC cxx_std_14)
 #
 # We also want to disable compiler-specific extensions (eg, for C++11 on GNU compilers we want '-std=c++11' instead of '-std=g++11').
@@ -822,7 +838,8 @@ if (GPLATES_BUILD_GPLATES)
 		# but there's nothing to capture unless GPlates is built as a console application. In fact a simple
 		# 'print()' statement in the embedded Python interpreter would have triggered an error.
 		if (FALSE)
-			set_target_properties(gplates PROPERTIES WIN32_EXECUTABLE TRUE)  # This also tells Qt5::Core to link in its WinMain.
+			# This also tells Qt${QT_VERSION_MAJOR}::Core to link in its WinMain.
+			set_target_properties(gplates PROPERTIES WIN32_EXECUTABLE TRUE)
 		endif()
 	endif()
 endif()
@@ -874,9 +891,25 @@ if (TARGET gplates-unit-test)
 endif()
 
 #
-# Qt5 dependency.
+# Qt dependency.
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::Core Qt5::Gui Qt5::Network Qt5::OpenGL Qt5::Svg Qt5::Widgets Qt5::Xml Qt5::XmlPatterns)
+target_link_libraries(${SOURCE_TARGET} PUBLIC
+		Qt${QT_VERSION_MAJOR}::Core
+		Qt${QT_VERSION_MAJOR}::Gui
+		Qt${QT_VERSION_MAJOR}::Network
+		Qt${QT_VERSION_MAJOR}::Svg
+		Qt${QT_VERSION_MAJOR}::Widgets
+		Qt${QT_VERSION_MAJOR}::Xml)
+if (QT_VERSION_MAJOR EQUAL 6)
+	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
+	# For example, QRegExp instead of QRegularExpression.
+	# Remove this when no longer supporting Qt5.
+	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::Core5Compat)
+	# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
+	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
+else()
+	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::XmlPatterns)
+endif()
 # The directory where Qt AUTOIUC auto-generated files ('ui_*.h') get written is automatically added to the
 # INCLUDE_DIRECTORIES target property of the 'gplates-lib' and 'pygplates' targets, but not INTERFACE_INCLUDE_DIRECTORIES.
 # This is fine for 'pygplates' (because nothing links to it), but it means the include directories are not propagated to
@@ -899,7 +932,7 @@ target_include_directories(${SOURCE_TARGET} PUBLIC
 #
 # Set as usage requirements (INTERFACE) on the Qt imported QtCore library so that all consuming targets,
 # including the other Qt imported libraries like QtGui as well as our targets, will inherit them.
-target_compile_definitions(Qt5::Core INTERFACE QT_NO_KEYWORDS)
+target_compile_definitions(Qt${QT_VERSION_MAJOR}::Core INTERFACE QT_NO_KEYWORDS)
 
 #
 # Qwt dependency.

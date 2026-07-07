@@ -27,6 +27,7 @@
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 
+#include <QtGlobal>
 #include <QDebug>
 #include <QHeaderView>
 #include <QLocale>
@@ -164,7 +165,15 @@ namespace
 		// Add the time cell.
 		
 		QTableWidgetItem *item = new QTableWidgetItem();
-		item->setData(0,QVariant(QVariant::Double));
+		item->setData(
+				0,
+				QVariant(
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+					QMetaType(QMetaType::Double)
+#else
+					QVariant::Double
+#endif
+				));
 		
 		table.setItem(row, COLUMN_TIME, item);
 		// Add the "Action" cell - we need to set this as uneditable.

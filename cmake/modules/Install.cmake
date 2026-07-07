@@ -65,6 +65,64 @@ if (GPLATES_INSTALL_STANDALONE)
             )
         endif()
     endif()
+
+    # On Windows, require Qt6 when installing.
+    #
+    # With the official pre-built Qt binaries, the default graphics driver is:
+    # - Qt5: OpenGL 2.1  (see https://doc.qt.io/qt-5/windows-requirements.html#graphics-drivers)
+    # - Qt6: Direct3D 11 (see https://doc.qt.io/qt-6/windows-graphics.html)
+    #
+    # Since Qt5 defaults to OpenGL it will look for a desktop OpenGL driver and if that does not support OpenGL 2.1 then it will
+    # fallback to the ANGLE or software DLLs (because the pre-built Qt binaries are configured for 'dynamic' OpenGL).
+    # This fallback relies on the ANGLE or software DLLs being present. They are dynamically loaded, rather than being dynamically linked, and
+    # so are not found by file(GET_RUNTIME_DEPENDENCIES) and so are not deployed. (However 'windeployqt' will include those ANGLE and software DLLs).
+    # Qt6, on the other hand, uses Direct3D by default (instead of OpenGL) and also does not use ANGLE (as a fallback when using OpenGL; although it
+    # still falls back to the software DLL). So we should not get an error that 'libEGL' or 'opengl32sw' DLLs cannot be loaded (due to not being present).
+    #
+    # So, on Windows, we require Qt6 (instead of Qt5) when installing GPlates/pyGPlates.
+    if (WIN32)
+        # Check at *install* time thus allowing users to build on Windows using Qt5 instead of Qt6
+        # (if they just plan to run the build locally and don't plan to deploy to other machines).
+        install(
+                CODE "
+                    set(QT_VERSION_MAJOR [[${QT_VERSION_MAJOR}]])
+                    if (QT_VERSION_MAJOR LESS 6)
+                        message(FATAL_ERROR [[Installing on Windows requires Qt6 or above (not Qt5)]])
+                    endif()
+                "
+        )
+    endif()
+
+    # Installing Qt6 plugins does not work with Qt versions 6.0 - 6.3 (according to https://bugreports.qt.io/browse/QTBUG-94066).
+    # Note that intalling Qt5 plugins is fine though.
+    #
+    # Check at *install* time thus allowing users to build with Qt versions 6.0 - 6.3
+    # (if they just plan to run the build locally and don't plan to deploy to other machines).
+    #
+    # This should not affect Linux platforms since they are not usually built as standalone
+    # (because the Linux binary package manager is used to install dependencies on the user's system).
+    # If it is an issue then an option is to use Qt5 (instead of Qt6).
+    #
+    # For Windows and macOS this just means Qt 6.4 (or above) should be installed if you want to deploy.
+    #
+    # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
+    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
+    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
+    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
+    #         However, fortunately pyGPlates doesn't need the Qt plugins, so we'll leave them out (until/if this changes in the future).
+    #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
+    #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which uses 'qt.conf' (via QCoreApplication) to find the plugins.
+    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        install(
+                CODE "
+                    set(QT_VERSION_MAJOR [[${QT_VERSION_MAJOR}]])
+                    set(QT_VERSION_MINOR [[${QT_VERSION_MINOR}]])
+                    if (QT_VERSION_MAJOR EQUAL 6 AND QT_VERSION_MINOR LESS 4)
+                        message(FATAL_ERROR [[Installing Qt6 plugins requires Qt version 6.4 or above]])
+                    endif()
+                "
+        )
+    endif()
 endif()
 
 
@@ -278,13 +336,6 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # Note that we don't get Qt to deploy its libraries/plugins to our install location (using windeployqt/macdeployqt).
     # Instead we find the Qt library dependencies ourself and we explicitly list the Qt plugins we expect to use.
-    # On Windows: The official pre-built Qt binaries are configured for 'dynamic' OpenGL (see https://doc.qt.io/qt-5/windows-requirements.html).
-    #             This means the normal desktop OpenGL drivers will be used where sufficient, otherwise Qt falls back to ANGLE or software OpenGL.
-    #             This fallback relies on the ANGLE or software DLLs being present. They are dynamically loaded, rather than being dynamically linked, and
-    #             so are not found by file(GET_RUNTIME_DEPENDENCIES) and so are not deployed. However 'windeployqt' will include those ANGLE and software DLLs.
-    #             But the fact that we're not using 'windeployqt' is fine because GPlates uses OpenGL 3.3 which is above what ANGLE and software supports
-    #             and so Qt cannot fallback. Hence not deploying the ANGLE and software DLLs is not a problem. GPlates also tells Qt not to fall back by
-    #             specifying the Qt::AA_UseDesktopOpenGL attribute (in the C++ code).
     # On macOS:   The Qt deployment tool 'macdeployqt' actually deploys more than just the Qt libraries/plugins (and the libraries they depend on).
     #             It also deploys all libraries that GPlates depends on (eg, Boost, GDAL, etc). But we're already doing this via file(GET_RUNTIME_DEPENDENCIES)
     #             and we're explicitly listing the Qt plugins. So we don't really need to use 'macdeployqt'.
@@ -598,6 +649,8 @@ if (GPLATES_INSTALL_STANDALONE)
     set(QT_PLUGIN_DIR_BASENAME "plugins")
     file(WRITE "${QT_CONF_FILE}" "[Paths]\nPlugins = ${QT_PLUGIN_DIR_BASENAME}\n")
 
+    # The "qt.conf" file currently only specifies location of Qt plugins.
+    #
     # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
     #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
     #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
@@ -636,13 +689,13 @@ if (GPLATES_INSTALL_STANDALONE)
 
     # Function to install a Qt plugin target. Call as...
     #
-    #   install_qt5_plugin(qt_plugin_target)
+    #   install_qt_plugin(qt_plugin_target)
     #
     # ...and the full path to installed plugin file will be added to 'QT_PLUGINS_INSTALLED'.
-    function(install_qt5_plugin qt_plugin_target)
+    function(install_qt_plugin qt_plugin_target)
         # Get the target file location of the Qt plugin target.
         #
-        # Note that we have access to Qt imported targets (like Qt5::QJpegPlugin) because we
+        # Note that we have access to Qt imported targets (like Qt${QT_VERSION_MAJOR}::QJpegPlugin) because we
         # (the file containing this code) gets included by 'src/CMakeLists.txt' (which has found
         # Qt and imported its targets) and so the Qt imported targets are visible to us.
         get_target_property(_qt_plugin_path "${qt_plugin_target}" LOCATION)
@@ -675,6 +728,8 @@ if (GPLATES_INSTALL_STANDALONE)
         endif()
     endfunction()
 
+    # Install Qt plugins.
+    #
     # Each installed plugin (full installed path) is added to QT_PLUGINS_INSTALLED (which is a list variable).
     # And each installed path has ${CMAKE_INSTALL_PREFIX} in it (to be evaluated at install time).
     # Later we will pass QT_PLUGINS_INSTALLED to file(GET_RUNTIME_DEPENDENCIES) to find its dependencies and install them also.
@@ -687,39 +742,48 @@ if (GPLATES_INSTALL_STANDALONE)
     #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
     #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which uses 'qt.conf' (via QCoreApplication) to find the plugins.
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
-        # Install common platform *independent* plugins (used by GPlates and pyGPlates).
-        # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
-        install_qt5_plugin(Qt5::QGenericEnginePlugin)
-        install_qt5_plugin(Qt5::QSvgIconPlugin)
-        install_qt5_plugin(Qt5::QGifPlugin)
-        install_qt5_plugin(Qt5::QICOPlugin)
-        install_qt5_plugin(Qt5::QJpegPlugin)
-        install_qt5_plugin(Qt5::QSvgPlugin)
-        # These are common to Windows and macOS only...
-        if (WIN32 OR APPLE)
-            install_qt5_plugin(Qt5::QICNSPlugin)
-            install_qt5_plugin(Qt5::QTgaPlugin)
-            install_qt5_plugin(Qt5::QTiffPlugin)
-            install_qt5_plugin(Qt5::QWbmpPlugin)
-            install_qt5_plugin(Qt5::QWebpPlugin)
-        endif()
+        # This works on Qt5.
+        # But only works on Qt6 for versions 6.4 and above (according to https://bugreports.qt.io/browse/QTBUG-94066).
+        #
+        # This should not affect Linux platforms since they are not usually built as standalone
+        # (because the Linux binary package manager is used to install dependencies on the user's system).
+        # If it is an issue then an option is to use Qt5 (instead of Qt6).
+        #
+        # For Windows and macOS this just means Qt 6.4 (or above) should be installed if you want to deploy.
+        if (QT_VERSION_MAJOR EQUAL 5 OR
+            (QT_VERSION_MAJOR EQUAL 6 AND QT_VERSION_MINOR GREATER_EQUAL 4))
+            # Install common platform *independent* plugins used by GPlates.
+            # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
+            install_qt_plugin(Qt${QT_VERSION_MAJOR}::QSvgIconPlugin)
+            install_qt_plugin(Qt${QT_VERSION_MAJOR}::QGifPlugin)
+            install_qt_plugin(Qt${QT_VERSION_MAJOR}::QICOPlugin)
+            install_qt_plugin(Qt${QT_VERSION_MAJOR}::QJpegPlugin)
+            install_qt_plugin(Qt${QT_VERSION_MAJOR}::QSvgPlugin)
 
-        # Install platform *dependent* plugins used by GPlates.
-        if (GPLATES_BUILD_GPLATES)  # GPlates ...
+            # Install platform *dependent* plugins used by GPlates.
             # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
             if (WIN32)
-                install_qt5_plugin(Qt5::QWindowsIntegrationPlugin)
-                install_qt5_plugin(Qt5::QWindowsVistaStylePlugin)
+                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QWindowsIntegrationPlugin)
+                # The Windows Vista style plugin ('qwindowsvistastyle', target 'QWindowsVistaStylePlugin')
+                # was replaced in Qt 6.7 by the modern Windows style plugin ('qmodernwindowsstyle',
+                # target 'QModernWindowsStylePlugin'), which provides both the 'windowsvista' and
+                # 'windows11' styles. The old target no longer exists in Qt 6.7+, so install whichever
+                # style plugin target is available.
+                if (TARGET Qt${QT_VERSION_MAJOR}::QModernWindowsStylePlugin)
+                    install_qt_plugin(Qt${QT_VERSION_MAJOR}::QModernWindowsStylePlugin)
+                else()
+                    install_qt_plugin(Qt${QT_VERSION_MAJOR}::QWindowsVistaStylePlugin)
+                endif()
             elseif (APPLE)
-                install_qt5_plugin(Qt5::QCocoaIntegrationPlugin)
-                install_qt5_plugin(Qt5::QMacStylePlugin)
+                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QCocoaIntegrationPlugin)
+                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QMacStylePlugin)
             else() # Linux
-                install_qt5_plugin(Qt5::QXcbIntegrationPlugin)
+                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QXcbIntegrationPlugin)
                 # The following plugins are needed otherwise GPlates generates the following error and then seg. faults:
                 #  "QXcbIntegration: Cannot create platform OpenGL context, neither GLX nor EGL are enabled"
                 # Actually installing only the Glx plugin solved the issue (on Ubuntu 20.04), but we'll also install Egl in case.
-                install_qt5_plugin(Qt5::QXcbGlxIntegrationPlugin)
-                install_qt5_plugin(Qt5::QXcbEglIntegrationPlugin)
+                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QXcbGlxIntegrationPlugin)
+                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QXcbEglIntegrationPlugin)
             endif()
         endif()
     endif()

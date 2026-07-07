@@ -296,9 +296,11 @@ namespace
 		//
 		boost::optional<Model::GpgimVersion> gpml_version;
 
-		const QStringRef file_version_string = reader.attributes().value(
+		// File version is a QStringView in Qt6 (QStringRef in Qt5).
+		const auto file_version_string = reader.attributes().value(
 				XmlUtils::get_gpml_namespace_qstring(), "version");
-		if (file_version_string == "")
+
+		if (file_version_string.isEmpty())
 		{
 			append_warning(params,
 					IO::ReadErrors::MissingVersionAttribute,

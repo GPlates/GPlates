@@ -24,6 +24,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 #include <boost/foreach.hpp>
 #include <QBuffer>
 #include <QIODevice>
@@ -134,7 +135,9 @@ GPlatesModel::FeatureCollectionMetadata::process_gpml_meta(
 		QXmlStreamReader& reader)
 {
 	QXmlStreamAttributes attr =	reader.attributes(); 
-	QStringRef name =attr.value("name");
+
+	// Name is a QStringView in Qt6 (QStringRef in Qt5).
+	const auto name = attr.value("name");
 	
 	FuncMap::iterator it = d_meta_func.find(name.toString());
 	if(it != d_meta_func.end())
@@ -449,7 +452,10 @@ GPlatesModel::create_metadata_from_gpml(
 		QXmlStreamReader reader(buf);
 		GPlatesUtils::XQuery::next_start_element(reader);
 		QXmlStreamAttributes attr =	reader.attributes(); 
-		QStringRef name =attr.value("name");
+
+		// Name is a QStringView in Qt6 (QStringRef in Qt5).
+		const auto name = attr.value("name");
+
 		QString value = reader.readElementText();
 		metadata.push_back(
 				boost::shared_ptr<Metadata>(

@@ -782,7 +782,8 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_state(
 	else
 	{
 		// No framebuffer object - back to using the main framebuffer.
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		// Note: The main framebuffer might not be zero (eg, each QOpenGLWidget has its own framebuffer object).
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, d_default_framebuffer_resource);
 	}
 }
 
@@ -820,8 +821,9 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_to_default_state(
 			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
-	// The default is zero (the main framebuffer).
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	// Back to the main framebuffer.
+	// Note: The main framebuffer might not be zero (eg, each QOpenGLWidget has its own framebuffer object).
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, d_default_framebuffer_resource);
 }
 
 

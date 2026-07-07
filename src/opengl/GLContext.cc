@@ -54,41 +54,34 @@ bool GPlatesOpenGL::GLContext::s_initialised_GLEW = false;
 GPlatesOpenGL::GLCapabilities GPlatesOpenGL::GLContext::s_capabilities;
 
 
-QGLFormat
+QSurfaceFormat
 GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 {
+	QSurfaceFormat format;
+
 	// We turn *off* multisampling because lines actually look better without it...
+	format.setSamples(0);
 	// We need a stencil buffer for filling polygons.
+	format.setStencilBufferSize(8);
 	// We need an alpha channel in case falling back to main frame buffer for render textures.
-	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::StencilBuffer | QGL::AlphaChannel);
+	format.setAlphaBufferSize(8);
 
 	// We use features deprecated in OpenGL 3 so use compatibility profile and allowed deprecated functions.
-	format.setProfile(QGLFormat::CompatibilityProfile);
-	format.setOption(QGL::DeprecatedFunctions);
+	format.setProfile(QSurfaceFormat::CompatibilityProfile);
+	format.setOption(QSurfaceFormat::DeprecatedFunctions);
 
-	const QGLFormat::OpenGLVersionFlags opengl_version_flags = QGLFormat::openGLVersionFlags();
-
-	// We use OpenGL extensions in GPlates and hence don't rely on a particular OpenGL core version.
-	// So we just set the version to OpenGL 1.1 which is supported by everything and is the
-	// only version supported by the Microsoft software renderer (fallback from hardware).
+	// We use OpenGL extensions in GPlates (loaded at runtime via GLEW) and hence don't rely on a
+	// particular OpenGL core version. So we deliberately leave the version *unset* and let Qt/the
+	// driver create the highest compatibility-profile context available.
 	//
-	// NOTE: If GL_EXT_framebuffer_object is not supported (but the newer GL_ARB_framebuffer_object is)
-	// then a possible reason for this could be...
-	//
-	// From http://stackoverflow.com/questions/15017911/oes-ext-arb-framebuffer-object:
-	//  Issues with GL_EXT_framebuffer_object a) GL_EXT_framebuffer_object might not be listed in
-	//  GL 3.x contexts because FBO's are core. b) also, if have a GL 2.x context with newer hardware,
-	//  possible that GL_EXT_framebuffer_object is not listed but GL_ARB_framebuffer_object is.
-	//
-	// ...so this is another reason to set the OpenGL version to 1.1 (instead of 2.x, or 3.x) below.
-	// But it's possible (according to the above comment) that it may not be enough.
-	// Note that we use GL_EXT_framebuffer_object only, and not GL_ARB_framebuffer_object, due to
-	// widespread hardware support of the (less flexible) GL_EXT_framebuffer_object.
-	//
-	if (opengl_version_flags.testFlag(QGLFormat::OpenGL_Version_1_1))
-	{
-		format.setVersion(1, 1);
-	}
+	// NOTE: Do NOT request OpenGL 1.1 here. Under Qt5's legacy QGLFormat/QGLWidget path the version
+	// request was effectively ignored (the legacy WGL path returned the driver's full compatibility
+	// context regardless), so requesting 1.1 was harmless. Under Qt6's QSurfaceFormat/QOpenGLContext
+	// the version *is* honored (via wglCreateContextAttribsARB on Windows), and explicitly requesting
+	// 1.1 causes Windows to hand back the Microsoft GDI generic *software* renderer (which is OpenGL
+	// 1.1). GLEW then can't find the modern extension entry points and we fall back to slow software
+	// rendering. Leaving the version unset avoids that and lets GLEW load whatever extensions the real
+	// (hardware) context provides.
 
 	return format;
 }
@@ -106,18 +99,51 @@ GPlatesOpenGL::GLContext::initialise()
 	// this is the assumption here.
 	if (!s_initialised_GLEW)
 	{
-		GLenum err = glewInit();
+		// GLEW (and the capability queries below) require a *current* OpenGL context.
+		//
+		// Unlike the old QGLWidget - which created its OpenGL context eagerly in its constructor -
+		// QOpenGLWidget creates its context lazily (on its first paint). Our callers therefore only
+		// reach here once a context is current: they check QOpenGLContext::currentContext() before
+		// starting OpenGL initialisation (see GlobeCanvas::initializeGL() and
+		// MapCanvas::initializeGL_if_necessary()).
+		//
+		// As a final backstop, if we ever were reached with no current context then glewInit() below
+		// fails ("Missing GL version") and we return *without* setting s_initialised_GLEW - so a later
+		// call (with a valid context) can retry. It's important not to flag GLEW as initialised on
+		// failure, otherwise every extension-availability test would read false and we'd be permanently
+		// forced to fall back to software OpenGL 1.1.
+		//
+		// NOTE: We deliberately do *not* '#include <QOpenGLContext>' here. This is a GLEW translation
+		// unit, and Qt's <QOpenGLContext> transitively pulls in <QOpenGLFunctions>, which refuses to
+		// coexist with GLEW in the same translation unit (it warns and undefines GLEW's entry points).
+		// The current-context check therefore lives in the Qt-widget callers, which don't include GLEW.
+
+		// Force GLEW to load all extension entry points regardless of the OpenGL context type.
+		//
+		// Without this, glewInit() probes extensions via the legacy 'glGetString(GL_EXTENSIONS)'.
+		// On a modern (3.2+) or forward-compatible context that legacy query raises GL_INVALID_ENUM,
+		// so GLEW aborts loading extension function pointers and returns a non-GLEW_OK error - even
+		// though the core GL entry points still work (hence the app appears to render but reports a
+		// glewInit error). Setting glewExperimental makes GLEW use glGetStringi() instead and load
+		// every available entry point. This is required on both Qt5 and Qt6 with recent drivers.
+		glewExperimental = GL_TRUE;
+
+		const GLenum err = glewInit();
 		if (GLEW_OK != err)
 		{
-			// glewInit failed.
-			//
-			// We'll assume all calls to test whether an extension is available
-			// (such as "if (get_capabilities().gl_ARB_multitexture) ..." will fail since they just
-			// test boolean variables which are assumed to be initialised by GLEW to zero.
-			// This just means we will be forced to fall back to OpenGL version 1.1.
+			// glewInit failed. Do NOT set s_initialised_GLEW - leave it false so a later call (with
+			// a valid current context) can retry. If we flagged GLEW as initialised here, every
+			// extension-availability test (eg, "get_capabilities().gl_ARB_multitexture") would read
+			// false and we'd be permanently forced to fall back to OpenGL version 1.1.
 			qWarning() << "Error: " << reinterpret_cast<const char *>(glewGetErrorString(err));
+			return;
 		}
 		//qDebug() << "Status: Using GLEW " << reinterpret_cast<const char *>(glewGetString(GLEW_VERSION));
+
+		// With glewExperimental enabled, glewInit() itself leaves a spurious GL_INVALID_ENUM in the
+		// GL error queue. Drain the queue here so it doesn't trip a later GLUtils::check_gl_errors().
+		while (glGetError() != GL_NO_ERROR)
+		{ }
 
 		s_initialised_GLEW = true;
 
@@ -130,6 +156,13 @@ GPlatesOpenGL::GLContext::initialise()
 		// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
 		s_capabilities.initialise();
 
+		// Capability detection deliberately probes legacy enums (eg, GL_MAX_TEXTURE_UNITS) that are
+		// removed in a core/forward-compatible profile - which is what some platforms provide even when
+		// a compatibility profile is requested (eg, macOS). Querying such an enum raises a harmless
+		// GL_INVALID_ENUM. Drain those probe errors so they don't trip the first GLUtils::check_gl_errors().
+		while (glGetError() != GL_NO_ERROR)
+		{ }
+
 		// Provide information about lack of framebuffer object support.
 		if (!s_capabilities.framebuffer.gl_EXT_framebuffer_object)
 		{
@@ -139,7 +172,7 @@ GPlatesOpenGL::GLContext::initialise()
 
 	// A lot of main frame buffer and render-target rendering uses an alpha channel so emit
 	// a warning if the frame buffer doesn't have an alpha channel.
-	if (!get_qgl_format().alpha())
+	if (get_qgl_format().alphaBufferSize() <= 0)
 	{
 		qWarning("Could not get alpha channel on main frame buffer.");
 
@@ -153,7 +186,7 @@ GPlatesOpenGL::GLContext::initialise()
 
 	// A lot of main frame buffer and render-target rendering uses a stencil buffer so emit
 	// a warning if the frame buffer doesn't have a stencil buffer.
-	if (!get_qgl_format().stencil())
+	if (get_qgl_format().stencilBufferSize() <= 0)
 	{
 		qWarning("Could not get a stencil buffer on the main frame buffer.");
 	}

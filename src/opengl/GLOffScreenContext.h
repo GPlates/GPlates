@@ -31,10 +31,9 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <QGLFormat>
-#include <QGLPixelBuffer>
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include <QPainter>
+#include <QSurfaceFormat>
 
 #include "GLContext.h"
 #include "GLContextImpl.h"
@@ -75,54 +74,29 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Associates a QGLWidget with its OpenGL context.
-		 *
-		 * In some cases we use QGLPixelBuffer (which has its own OpenGL context) for off-screen
-		 * rendering and it explicitly requires a QGLWidget in order to enable sharing of texture,
-		 * etc, resources between the two contexts.
+		 * Associates a QOpenGLWidget with its OpenGL context.
 		 */
 		struct QGLWidgetContext
 		{
 			QGLWidgetContext(
-					QGLWidget *qgl_widget_,
+					QOpenGLWidget *qgl_widget_,
 					const GLContext::non_null_ptr_type &context_) :
 				qgl_widget(qgl_widget_),
 				context(context_)
 			{  }
 
-			QGLWidget *qgl_widget;
+			QOpenGLWidget *qgl_widget;
 			GLContext::non_null_ptr_type context;
 		};
 
 
 		/**
-		 * Creates an off-screen OpenGL context and associated frame buffer using the specified format.
-		 *
-		 * If the window-system-specific 'pbuffer' extension is supported then a 'pbuffer' OpenGL
-		 * context and associated frame buffer are created. Additionally if GL_EXT_framebuffer_object
-		 * is supported then it is used as the frame buffer within the 'pbuffer' OpenGL context.
-		 *
-		 * If the 'pbuffer' extension is not supported then @a is_valid will return false.
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const QGLFormat &qgl_format)
-		{
-			return non_null_ptr_type(new GLOffScreenContext(qgl_format));
-		}
-
-
-		/**
 		 * Creates an off-screen render target that attempts to use the OpenGL context of the
-		 * specified QGLWidget.
+		 * specified QOpenGLWidget.
 		 *
 		 * If GL_EXT_framebuffer_object is supported then a frame buffer object is used as the
-		 * off-screen frame buffer (since it's more efficient than 'pbuffer's).
-		 * Otherwise, if the window-system-specific 'pbuffer' extension is supported, a 'pbuffer'
-		 * OpenGL context and associated frame buffer are created (the context shares texture, etc,
-		 * with the QGLWidget context).
-		 * Otherwise falls back to using the main frame buffer of the QGLWidget context (with additional
+		 * off-screen frame buffer.
+		 * Otherwise falls back to using the main frame buffer of the QOpenGLWidget context (with additional
 		 * save/restore of the frame buffer contents to avoid corrupting any previous rendering).
 		 */
 		static
@@ -231,14 +205,14 @@ namespace GPlatesOpenGL
 	private:
 
 		/**
-		 * This is only valid if a QGLWidget context was provided.
+		 * The QOpenGLWidget and its associated OpenGL context.
 		 */
 		const boost::optional<QGLWidgetContext> d_qgl_widget_context;
 
 		/**
 		 * The OpenGL context used for off-screen rendering.
 		 *
-		 * This is boost::none if falling back to emulation via main frame buffer of QGLWidget.
+		 * This is boost::none if falling back to emulation via main frame buffer of QOpenGLWidget.
 		 */
 		boost::optional<GLContext::non_null_ptr_type> d_off_screen_context;
 
@@ -247,9 +221,6 @@ namespace GPlatesOpenGL
 		//
 
 		boost::optional<GLScreenRenderTarget::shared_ptr_type> d_screen_render_target;
-
-		boost::optional<QGLPixelBuffer> d_qgl_pixel_buffer;
-		boost::optional< boost::shared_ptr<GLContextImpl::QGLPixelBufferImpl> > d_qgl_pixel_buffer_impl;
 
 		/**
 		 * The renderer is only valid between @a begin_off_screen_render and @a end_off_screen_render.
@@ -260,7 +231,7 @@ namespace GPlatesOpenGL
 		boost::optional< boost::shared_ptr<GLRenderer> > d_renderer;
 
 		/**
-		 * Used to save/restore the QGLWidget frame buffer when 'pbuffer' and frame buffer objects not supported.
+		 * Used to save/restore the QOpenGLWidget frame buffer when frame buffer objects not supported.
 		 *
 		 * This is only valid between @a begin_off_screen_render and @a end_off_screen_render.
 		 */
@@ -268,23 +239,13 @@ namespace GPlatesOpenGL
 
 
 		GLOffScreenContext(
-				const QGLFormat &qgl_format);
-
-		GLOffScreenContext(
 				const QGLWidgetContext &qgl_widget_context);
 
 		void
-		initialise(
-				const QGLFormat &qgl_format);
+		initialise();
 
 		bool
 		initialise_screen_render_target();
-
-		bool
-		initialise_pbuffer_context(
-				const QGLFormat &qgl_format,
-				int initial_width,
-				int initial_height);
 
 	};
 }

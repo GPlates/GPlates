@@ -157,7 +157,7 @@ namespace GPlatesApi
 				PythonInterpreterLocker lock;
 				//use python class name as catagory name.
 				boost::python::object py_class = style.attr("__class__");
-				QString cata_name	=  QString::fromUtf8(boost::python::extract<const char*>(py_class.attr("__name__")));
+				QString cata_name	=  QString::fromUtf8(boost::python::extract<const char*>(py_class.attr("__name__"))());
 
 				DrawStyleManager* mgr = DrawStyleManager::instance();
 				const StyleCategory* sc = mgr->get_catagory(cata_name);

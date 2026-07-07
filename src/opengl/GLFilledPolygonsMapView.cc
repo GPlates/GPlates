@@ -71,7 +71,7 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 	//
 	// Note that we don't have an 'is_supported()' method that tests for this because pretty much all
 	// hardware should support a stencil buffer (and software implementations should also support).
-	if (!renderer.get_context().get_qgl_format().stencil())
+	if (renderer.get_context().get_qgl_format().stencilBufferSize() <= 0)
 	{
 		// Only emit warning message once.
 		static bool emitted_warning = false;

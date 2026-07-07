@@ -49,6 +49,10 @@ Compiling GPlates
     cmake .
     make
 
+The GPlates application
+
+If you are compiling pyGPlates source code then please skip this section.
+
 The GPlates application bundle will be called "gplates.app" and is located in the "bin" directory.
 However this will appear simply as 'gplates' in the file explorer (Finder),
 and you can run GPlates by double-clicking on it.

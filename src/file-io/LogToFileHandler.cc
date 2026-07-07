@@ -99,7 +99,7 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 		// macOS   - "~/Library/Application Support/GPlates/GPlates/"
 		// Linux   - "~/.local/share/GPlates/GPlates/".
 		//
-		const QDir app_data_dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+		const QDir app_data_dir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation));
 		// Make sure the directory exists before we try to open the log file for writing in it.
 		if (!app_data_dir.exists())
 		{

@@ -459,12 +459,14 @@ namespace GPlatesOpenGL
 		//! Sets the framebuffer object to bind to the active OpenGL context.
 		void
 		set_bind_frame_buffer(
-				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object)
+				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object,
+				// The main framebuffer to restore when unbinding (might not be zero, eg, QOpenGLWidget)...
+				GLuint default_framebuffer_resource)
 		{
 			set_state_set(
 					d_state_set_store->bind_frame_buffer_object_state_sets,
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					boost::in_place(frame_buffer_object));
+					boost::in_place(frame_buffer_object, default_framebuffer_resource));
 		}
 
 		//! Same as @a set_bind_frame_buffer but also applies directly to OpenGL.
@@ -472,37 +474,47 @@ namespace GPlatesOpenGL
 		set_bind_frame_buffer_and_apply(
 				const GLCapabilities &capabilities,
 				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object,
+				// The main framebuffer to restore when unbinding (might not be zero, eg, QOpenGLWidget)...
+				GLuint default_framebuffer_resource,
 				GLState &last_applied_state)
 		{
 			set_state_set(
 					d_state_set_store->bind_frame_buffer_object_state_sets,
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					boost::in_place(frame_buffer_object));
+					boost::in_place(frame_buffer_object, default_framebuffer_resource));
 			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
 		}
 
 		//! Unbinds any framebuffer object currently bound.
 		void
-		set_unbind_frame_buffer()
+		set_unbind_frame_buffer(
+				// The main framebuffer to bind (might not be zero, eg, QOpenGLWidget)...
+				GLuint default_framebuffer_resource)
 		{
 			set_state_set(
 					d_state_set_store->bind_frame_buffer_object_state_sets,
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
 					// Seems it doesn't like 'boost::none'...
-					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
+					boost::in_place(
+							boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>(),
+							default_framebuffer_resource));
 		}
 
 		//! Same as @a set_unbind_frame_buffer but also applies directly to OpenGL.
 		void
 		set_unbind_frame_buffer_and_apply(
 				const GLCapabilities &capabilities,
+				// The main framebuffer to bind (might not be zero, eg, QOpenGLWidget)...
+				GLuint default_framebuffer_resource,
 				GLState &last_applied_state)
 		{
 			set_state_set(
 					d_state_set_store->bind_frame_buffer_object_state_sets,
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
 					// Seems it doesn't like 'boost::none'...
-					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
+					boost::in_place(
+							boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>(),
+							default_framebuffer_resource));
 			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
 		}
 

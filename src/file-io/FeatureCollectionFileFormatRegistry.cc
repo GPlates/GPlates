@@ -26,6 +26,7 @@
 #include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <QtGlobal>
 #include <QByteArray>
 #include <QDebug>
 #include <QFile>
@@ -239,6 +240,12 @@ namespace GPlatesFileIO
 			}
 
 
+			// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
+			// It has been deprecated since Qt 5.13.
+			//
+			// TODO: Find a replacement library.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+
 			/**
 			 * Reads a GSML feature collection.
 			 */
@@ -255,6 +262,7 @@ namespace GPlatesFileIO
 						contains_unsaved_changes);
 			}
 
+#endif  // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 
 			/**
 			 * Creates a GPML feature visitor writer.
@@ -959,6 +967,12 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			// No configuration options yet for this file format...
 			boost::none);
 
+	// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
+	// It has been deprecated since Qt 5.13.
+	//
+	// TODO: Find a replacement library.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+
 	classifications_type gsml_classification;
 	gsml_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	register_file_format(
@@ -973,4 +987,6 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			boost::none,
 			// No configuration options yet for this file format...
 			boost::none);
+
+#endif  // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 }

@@ -625,7 +625,12 @@ GPlatesQtWidgets::PythonConsoleDialog::handle_save_button_clicked()
 
 		QString file_contents = 
 			(file_name->endsWith("html") || file_name->endsWith("htm")) ?
-			d_output_textedit->document()->toHtml("utf-8") :
+			d_output_textedit->document()->toHtml(
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+				// Qt6 uses UTF-8 encoding, but Qt5 requires you to specify it...
+				"utf-8"
+#endif
+			) :
 			d_output_textedit->toPlainText();
 		output_file.write(file_contents.toUtf8());
 
@@ -1149,7 +1154,11 @@ GPlatesQtWidgets::ConsoleTextEdit::mousePressEvent(
 {
 	// If the user clicks below the input widget, set focus on it.
 	QRect input_geometry = d_input_textedit->geometry();
-	if (ev->y() > input_geometry.bottom())
+	if (ev->
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		position().
+#endif
+			y() > input_geometry.bottom())
 	{
 		d_input_textedit->setFocus();
 	}

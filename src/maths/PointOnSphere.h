@@ -32,6 +32,8 @@
 #include <iterator>  // std::distance
 #include <QDebug>
 #include <QTextStream>
+// Fix Qt6 metatype for boost::optional<GPlatesMaths::PointOnSphere> (used in signal/slots)...
+#include <QTypeInfo_fix.h>
 
 #include "GeometryOnSphere.h"
 #include "UnitVector3D.h"

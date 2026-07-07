@@ -751,7 +751,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	QHBoxLayout *plate_id_layout;
 	plate_id_layout = new QHBoxLayout;
 	plate_id_layout->setSpacing(2);
-	plate_id_layout->setMargin(0);
+	plate_id_layout->setContentsMargins(0, 0, 0, 0);
 	plate_id_layout->addWidget(d_plate_id_widget);
 	plate_id_layout->addWidget(d_conjugate_plate_id_widget);
 	plate_id_layout->addWidget(d_relative_plate_id_widget);
@@ -763,7 +763,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	QHBoxLayout *right_and_left_plate_id_layout;
 	right_and_left_plate_id_layout = new QHBoxLayout;
 	right_and_left_plate_id_layout->setSpacing(2);
-	right_and_left_plate_id_layout->setMargin(0);
+	right_and_left_plate_id_layout->setContentsMargins(0, 0, 0, 0);
 	d_left_plate_id->label()->setText(tr("&Left Plate ID:"));
 	d_right_plate_id->label()->setText(tr("&Right Plate ID:"));
 	right_and_left_plate_id_layout->addWidget(d_left_plate_id);

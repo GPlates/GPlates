@@ -28,6 +28,7 @@
 
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <QRegExp>
 
 #include "maths/Real.h"
 

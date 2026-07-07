@@ -39,6 +39,7 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QStringList>
+#include <QSurfaceFormat>
 #include <QTextStream>
 
 #include "app-logic/ApplicationState.h"
@@ -61,6 +62,8 @@
 #include "gui/PythonManager.h"
 
 #include "maths/MathsUtils.h"
+
+#include "opengl/GLContext.h"
 
 #include "presentation/Application.h"
 
@@ -833,6 +836,19 @@ internal_main(int argc, char* argv[])
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 #endif
 
+	// Share OpenGL contexts across the application's QOpenGLWidgets (eg, the globe and map views)
+	// so they can share texture objects, vertex buffer objects, etc (this replaces the per-widget
+	// 'shareWidget' mechanism that QOpenGLWidget, unlike the old QGLWidget, does not provide).
+	//
+	// NOTE: This must be set before the QApplication is constructed.
+	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+
+	// Use our standard OpenGL surface format (alpha channel, stencil buffer, compatibility profile)
+	// as the default format for all OpenGL contexts/widgets created by the application.
+	QSurfaceFormat::setDefaultFormat(
+			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with());
+
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)  // Qt::AA_UseHighDpiPixmaps deprecated in Qt6 (always enabled)
 	// Enable high DPI pixmaps (for high DPI displays like Apple Retina).
 	//
 	// For example this enables a QImage with a device pixel ratio of 2
@@ -842,14 +858,17 @@ internal_main(int argc, char* argv[])
 	// (though we still have to manually render a QImage twice the icon dimensions
 	// and set the image's device pixel ratio to 2).
 	QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+#endif
 
 #if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+#	if QT_VERSION < QT_VERSION_CHECK(6,0,0)  // Qt::AA_EnableHighDpiScaling deprecated in Qt6 (always enabled)
 	// Enable high DPI scaling in Qt on supported platforms (X11 and Windows).
 	// Note that MacOS has its own native scaling (eg, for Retina), so this
 	// attribute does not affect MacOS.
 	//
 	// Note: This attribute was added in Qt 5.6 (which our minimum Qt requirement satisfies).
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#	endif
 
 	// Decide how DPI non-integer scale factors (such as Windows 150%) are handled.
 	//
@@ -896,8 +915,8 @@ internal_main(int argc, char* argv[])
 	// Add the default log file to the Qt message handler.
 	//
 	// We do this after QApplication is initialised (via GPlatesQApplication above) since this adds
-	// LogToFileHandler which uses QStandardPaths::DataLocation (when GPlates is installed into a
-	// non-writeable directory) and QStandardPaths::DataLocation does not include the "GPlates/GPlates/"
+	// LogToFileHandler which uses QStandardPaths::AppLocalDataLocation (when GPlates is installed into a
+	// non-writeable directory) and QStandardPaths::AppLocalDataLocation does not include the "GPlates/GPlates/"
 	// suffix until after QApplication is created (and hence the GPlates organization and application
 	// names have been set via QCoreApplication).
 	qt_message_handler.add_log_file_handler();

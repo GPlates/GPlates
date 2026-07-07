@@ -28,6 +28,7 @@
 
 #include <vector>
 #include <boost/weak_ptr.hpp>
+#include <QtGlobal>
 #include <QLabel>
 #include <QPixmap>
 #include <QWidget>
@@ -194,7 +195,12 @@ namespace GPlatesQtWidgets
 			virtual
 			void
 			enterEvent(
-					QEvent *ev);
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+					QEnterEvent
+#else
+					QEvent
+#endif
+					*ev);
 
 			virtual
 			void

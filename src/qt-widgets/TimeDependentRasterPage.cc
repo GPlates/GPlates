@@ -39,6 +39,7 @@
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QMimeData>
+#include <QRegularExpression>
 #include <QSizePolicy>
 #include <QString>
 #include <QStringList>
@@ -920,7 +921,7 @@ GPlatesQtWidgets::TimeDependentRasterPage::deduce_times(
 	for (file_index = 0; file_index < num_files; ++file_index)
 	{
 		const QString base_name = file_infos[file_index].completeBaseName();
-		QStringList tokens = base_name.split(QRegExp("[_-]"),
+		QStringList tokens = base_name.split(QRegularExpression("[_-]"),
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
 			Qt::SkipEmptyParts
 #else
