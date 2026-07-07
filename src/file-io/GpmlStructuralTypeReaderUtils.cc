@@ -400,7 +400,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_interpolation_function
 }
 
 
-GPlatesPropertyValues::GpmlKeyValueDictionaryElement
+GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_key_value_dictionary_element(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 		const GpmlPropertyStructuralTypeReader &structural_type_reader,
@@ -428,7 +428,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_key_value_dictionary_e
 				&GpmlPropertyStructuralTypeReaderUtils::create_xs_string,
 				KEY, gpml_version, read_errors);
 
-	return GPlatesPropertyValues::GpmlKeyValueDictionaryElement(key, value, type);
+	return GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(key, value, type);
 }
 
 
@@ -512,7 +512,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_dependent_propert
 }
 
 
-GPlatesPropertyValues::GpmlTimeSample
+GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_sample(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 		const GpmlPropertyStructuralTypeReader &structural_type_reader,
@@ -547,23 +547,21 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_sample(
 		is_disabled = find_and_create_optional(elem, &create_boolean,
 				IS_DISABLED, gpml_version, read_errors);
 
-	boost::intrusive_ptr<GPlatesPropertyValues::XsString> desc;
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type> desc;
 	if (description) {
-		GPlatesPropertyValues::XsString::non_null_ptr_type tmp = 
-			GPlatesPropertyValues::XsString::create(
+		desc = GPlatesPropertyValues::XsString::create(
 				GPlatesUtils::make_icu_string_from_qstring(*description));
-		desc = GPlatesUtils::get_intrusive_ptr(tmp);
 	}
 
 	if (is_disabled) {
-		return GPlatesPropertyValues::GpmlTimeSample(
+		return GPlatesPropertyValues::GpmlTimeSample::create(
 				value, valid_time, desc, type, *is_disabled);
 	}
-	return GPlatesPropertyValues::GpmlTimeSample(value, valid_time, desc, type);
+	return GPlatesPropertyValues::GpmlTimeSample::create(value, valid_time, desc, type);
 }
 
 
-GPlatesPropertyValues::GpmlTimeWindow
+GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_window(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 		const GpmlPropertyStructuralTypeReader &structural_type_reader,
@@ -591,7 +589,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_window(
 		type = find_and_create_one(elem, &create_template_type_parameter_type,
 				VALUE_TYPE, gpml_version, read_errors);
 
-	return GPlatesPropertyValues::GpmlTimeWindow(time_dep_prop_val, time_period, type);
+	return GPlatesPropertyValues::GpmlTimeWindow::create(time_dep_prop_val, time_period, type);
 }
 
 

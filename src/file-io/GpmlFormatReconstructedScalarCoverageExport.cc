@@ -84,10 +84,10 @@ namespace
 
 			// See if property names match - only need to check domain name since range name is a
 			// one-to-one mapping from domain name.
-			if ((*scalar_coverage.domain_property)->property_name() == domain_property_name)
+			if ((*scalar_coverage.domain_property)->get_property_name() == domain_property_name)
 			{
 				// Get the range property value from the range property iterator.
-				boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> range_property_value_base =
+				boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> range_property_value_base =
 						GPlatesModel::ModelUtils::get_property_value(**scalar_coverage.range_property);
 				if (range_property_value_base)
 				{
@@ -95,15 +95,19 @@ namespace
 							GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlDataBlock>(*range_property_value_base.get());
 					if (range_property_value)
 					{
+						const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &
+								ranges = range_property_value.get()->tuple_list();
+
+						GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator
+								ranges_iter = ranges.begin(),
+								ranges_end = ranges.end();
+
 						// Iterate over the scalar types until we find a matching one.
-						GPlatesPropertyValues::GmlDataBlock::tuple_list_type::const_iterator range_iter =
-								range_property_value.get()->tuple_list_begin();
-						GPlatesPropertyValues::GmlDataBlock::tuple_list_type::const_iterator range_end =
-								range_property_value.get()->tuple_list_end();
-						for ( ; range_iter != range_end; ++range_iter)
+						for ( ; ranges_iter != ranges_end ; ++ranges_iter)
 						{
-							GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type range = *range_iter;
-							if (range->value_object_type() == reconstructed_scalar_coverage->get_scalar_type())
+							GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type
+									range = *ranges_iter;
+							if (range->get_value_object_type() == reconstructed_scalar_coverage->get_scalar_type())
 							{
 								return range;
 							}
@@ -134,9 +138,9 @@ namespace
 
 		// The domain/range property names.
 		const GPlatesModel::PropertyName domain_property_name =
-				(*reconstructed_scalar_coverage->get_domain_property())->property_name();
+				(*reconstructed_scalar_coverage->get_domain_property())->get_property_name();
 		const GPlatesModel::PropertyName range_property_name =
-				(*reconstructed_scalar_coverage->get_range_property())->property_name();
+				(*reconstructed_scalar_coverage->get_range_property())->get_property_name();
 
 		// Get the range in the domain feature associated with the reconstructed scalar coverage.
 		boost::optional<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type>
@@ -153,9 +157,8 @@ namespace
 		std::vector<double> scalar_values;
 		reconstructed_scalar_coverage->get_reconstructed_point_scalar_values(scalar_values);
 
-		// The reconstructed range (scalars) property.
-		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type reconstructed_range_property =
-				GPlatesPropertyValues::GmlDataBlock::create();
+		// The reconstructed range (scalars).
+		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> reconstructed_ranges;
 
 		if (include_dilatation_strain ||
 			include_dilatation_strain_rate ||
@@ -209,12 +212,12 @@ namespace
 
 				// Add the dilatation strain scalar values we're exporting.
 				GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_strain_range =
-						GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 								dilatation_strain_type,
 								dilatation_strain_xml_attrs,
 								dilatation_strains.begin(),
 								dilatation_strains.end());
-				reconstructed_range_property->tuple_list_push_back(dilatation_strain_range);
+				reconstructed_ranges.push_back(dilatation_strain_range);
 			}
 
 			if (include_dilatation_strain_rate)
@@ -245,12 +248,12 @@ namespace
 
 				// Add the dilatation strain rate scalar values we're exporting.
 				GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_strain_rate_range =
-						GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 								dilatation_strain_rate_type,
 								dilatation_strain_rate_xml_attrs,
 								dilatation_strain_rates.begin(),
 								dilatation_strain_rates.end());
-				reconstructed_range_property->tuple_list_push_back(dilatation_strain_rate_range);
+				reconstructed_ranges.push_back(dilatation_strain_rate_range);
 			}
 
 			if (include_second_invariant_strain_rate)
@@ -281,23 +284,23 @@ namespace
 
 				// Add the second invariant strain rate scalar values we're exporting.
 				GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_range =
-						GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 								second_invariant_strain_rate_type,
 								second_invariant_strain_rate_xml_attrs,
 								second_invariant_strain_rates.begin(),
 								second_invariant_strain_rates.end());
-				reconstructed_range_property->tuple_list_push_back(dilatation_range);
+				reconstructed_ranges.push_back(dilatation_range);
 			}
 		}
 
 		// Add the reconstructed scalar values we're exporting.
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type reconstructed_range =
-				GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
-						original_range.get()->value_object_type(),
-						original_range.get()->value_object_xml_attributes(),
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+						original_range.get()->get_value_object_type(),
+						original_range.get()->get_value_object_xml_attributes(),
 						scalar_values.begin(),
 						scalar_values.end());
-		reconstructed_range_property->tuple_list_push_back(reconstructed_range);
+		reconstructed_ranges.push_back(reconstructed_range);
 
 
 		// The reconstructed domain (geometry) property.
@@ -305,6 +308,9 @@ namespace
 				GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						reconstructed_scalar_coverage->get_reconstructed_geometry());
 
+		// The reconstructed range property.
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type reconstructed_range_property =
+				GPlatesPropertyValues::GmlDataBlock::create(reconstructed_ranges);
 
 		// Add the reconstructed domain/range properties.
 		//

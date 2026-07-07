@@ -60,7 +60,7 @@ GPlatesQtWidgets::EditIntegerWidget::update_widget_from_integer(
 		GPlatesPropertyValues::XsInteger &xs_integer)
 {
 	d_integer_ptr = &xs_integer;
-	spinbox_integer->setValue(xs_integer.value());
+	spinbox_integer->setValue(xs_integer.get_value());
 	set_clean();
 }
 

@@ -44,7 +44,7 @@ GPlatesGui::ColourSlice::ColourSlice(
 	d_annotation(annotation_),
 	d_label(label_)
 {
-	set_inverse_value_range();
+	value_range_updated();
 }
 
 

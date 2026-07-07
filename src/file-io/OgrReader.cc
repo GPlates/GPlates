@@ -469,7 +469,7 @@ namespace
 
 		for ( ; p_iter != p_iter_end ; ++p_iter)
 		{
-			GPlatesModel::PropertyName property_name = (*p_iter)->property_name();
+			GPlatesModel::PropertyName property_name = (*p_iter)->get_property_name();
 			QString q_prop_name = GPlatesUtils::make_qstring_from_icu_string(property_name.get_name());
 			if (property_name_list.contains(q_prop_name))
 			{
@@ -1558,9 +1558,8 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 	// Can there be zero attributes? I dunno. 
 	if (n == 0) return;
 
-	// Create a key-value dictionary. This is empty and needs to have elements pushed back onto its d_elements vector. 
-	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
-		GPlatesPropertyValues::GpmlKeyValueDictionary::create();
+	// The key-value dictionary elements.
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> dictionary_elements;
 
 	// If for any reason we've found more attributes than we have field names, only 
 	// go as far as the number of field names. 
@@ -1603,11 +1602,12 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 				{
 					GPlatesPropertyValues::XsInteger::non_null_ptr_type value = 
 						GPlatesPropertyValues::XsInteger::create(i);
-					GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-						key,
-						value,
-						GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-					dictionary->elements().push_back(element);
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+							GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+									key,
+									value,
+									GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+					dictionary_elements.push_back(element);
 				}
 			}
 			break;
@@ -1618,11 +1618,12 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 				{
 					GPlatesPropertyValues::XsDouble::non_null_ptr_type value = 
 						GPlatesPropertyValues::XsDouble::create(d);
-					GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-						key,
-						value,
-						GPlatesPropertyValues::StructuralType::create_xsi("double"));
-					dictionary->elements().push_back(element);
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+							GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+									key,
+									value,
+									GPlatesPropertyValues::StructuralType::create_xsi("double"));
+					dictionary_elements.push_back(element);
 				}
 			}
 			break;
@@ -1631,17 +1632,22 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 				GPlatesPropertyValues::XsString::non_null_ptr_type value = 
 					GPlatesPropertyValues::XsString::create(
 							GPlatesUtils::make_icu_string_from_qstring(attribute.toString()));
-				GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-					key,
-					value,
-					GPlatesPropertyValues::StructuralType::create_xsi("string"));
-				dictionary->elements().push_back(element);
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+						GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+								key,
+								value,
+								GPlatesPropertyValues::StructuralType::create_xsi("string"));
+				dictionary_elements.push_back(element);
 				break;
 		}
 
 	} // loop over number of attributes
 
-	// Add the dictionary to the model.
+	// Create a key-value dictionary.
+	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
+		GPlatesPropertyValues::GpmlKeyValueDictionary::create(dictionary_elements);
+
+	// Add the dictionary to the feature.
 	feature->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				GPlatesModel::PropertyName::create_gpml("shapefileAttributes"),

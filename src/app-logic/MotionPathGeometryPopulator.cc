@@ -151,7 +151,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type reconstructed_seed_multipoint_geometry =
 				reconstruction_tree->get_composed_absolute_rotation(
 					d_motion_track_property_finder->get_reconstruction_plate_id().get()) *
-					gml_multi_point.multipoint();
+					gml_multi_point.get_multipoint();
 
 	try{
 
@@ -184,12 +184,12 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 		// Present day and reconstructed seed multipoints should have the same number of points.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				reconstructed_seed_multipoint_geometry->number_of_points() ==
-					gml_multi_point.multipoint()->number_of_points(),
+					gml_multi_point.get_multipoint()->number_of_points(),
 				GPLATES_ASSERTION_SOURCE);
 
 		GPlatesMaths::MultiPointOnSphere::const_iterator 
-			seed_multipoint_iter = gml_multi_point.multipoint()->begin(),
-			seed_multipoint_end = gml_multi_point.multipoint()->end();
+			seed_multipoint_iter = gml_multi_point.get_multipoint()->begin(),
+			seed_multipoint_end = gml_multi_point.get_multipoint()->end();
 		GPlatesMaths::MultiPointOnSphere::const_iterator 
 			reconstructed_seed_multipoint_iter = reconstructed_seed_multipoint_geometry->begin();
 
@@ -231,7 +231,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 	const GPlatesMaths::PointOnSphere reconstructed_seed_point =
 		reconstruction_tree->get_composed_absolute_rotation(
 			d_motion_track_property_finder->get_reconstruction_plate_id().get()) *
-			gml_point.point();
+			gml_point.get_point();
 
 	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 			reconstructed_seed_point_geometry = reconstructed_seed_point.get_geometry_on_sphere();
@@ -264,7 +264,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 	if (d_motion_track_property_finder->can_process_motion_path())
 	{
 		create_motion_path_geometry(
-				gml_point.point(),
+				gml_point.get_point(),
 				reconstructed_seed_point,
 				reconstructed_seed_point_geometry);
 	}

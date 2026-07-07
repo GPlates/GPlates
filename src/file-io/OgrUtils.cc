@@ -52,13 +52,13 @@ namespace
         const GPlatesPropertyValues::GmlTimeInstant &time_instant)
     {
 
-        if (time_instant.time_position().is_real()) {
-            return time_instant.time_position().value();
+        if (time_instant.get_time_position().is_real()) {
+            return time_instant.get_time_position().value();
         }
-        else if (time_instant.time_position().is_distant_past()) {
+        else if (time_instant.get_time_position().is_distant_past()) {
             return 999.;
         }
-        else if (time_instant.time_position().is_distant_future()) {
+        else if (time_instant.get_time_position().is_distant_future()) {
             return -999.;
         }
         else {
@@ -228,27 +228,27 @@ GPlatesFileIO::OgrUtils::create_default_kvd_from_collection(
 				// (and, as a side effect, has the last found value of each key).
 				//
 
-				const std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &found_elements =
+				const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &found_elements =
 						found_kvd->elements();
-				std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
 						found_iter = found_elements.begin(),
 						found_end = found_elements.end();
 				for ( ; found_iter != found_end; ++found_iter)
 				{
-					const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &found_element = *found_iter;
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_to_const_type found_element = *found_iter;
 
 					const QString found_attribute_name =
-							GPlatesUtils::make_qstring_from_icu_string(found_element.key()->value().get());
+							GPlatesUtils::make_qstring_from_icu_string(found_element->key()->get_value().get());
 
-					std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &default_elements =
+					GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &default_elements =
 							default_key_value_dictionary.get()->elements();
-					std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator
+					GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator 
 							default_iter = default_elements.begin(),
 							default_end = default_elements.end();
 					for ( ; default_iter != default_end; ++default_iter)
 					{
 						const QString default_attribute_name =
-								GPlatesUtils::make_qstring_from_icu_string(default_iter->key()->value().get());
+								GPlatesUtils::make_qstring_from_icu_string(default_iter->key()->get_value().get());
 
 						if (QString::compare(found_attribute_name, default_attribute_name) == 0)
 						{
@@ -260,12 +260,12 @@ GPlatesFileIO::OgrUtils::create_default_kvd_from_collection(
 					if (default_iter != default_end)
 					{
 						// Key already exists in default kvd, so replace element (key/value) with a clone of found element.
-						*default_iter = found_element;
+						*default_iter = found_element->clone();
 					}
 					else
 					{
 						// Key does not exist in default kvd, so add element (key/value) with a clone of found element.
-						default_key_value_dictionary.get()->elements().push_back(found_element);
+						default_key_value_dictionary.get()->elements().push_back(found_element->clone());
 					}
 				}
 			}
@@ -279,6 +279,9 @@ GPlatesFileIO::OgrUtils::add_plate_id_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	static const GPlatesModel::PropertyName plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
@@ -296,17 +299,18 @@ GPlatesFileIO::OgrUtils::add_plate_id_to_kvd(
 					feature, plate_id_property_name);
 	if (recon_plate_id)
     {
-		plate_id_value = recon_plate_id.get()->value();
+		plate_id_value = recon_plate_id.get()->get_value();
     }
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
 		GPlatesPropertyValues::XsInteger::create(plate_id_value);
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-		key,
-		value,
-		GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-	kvd->elements().push_back(element);
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+	elements.push_back(element);
 }
 
 void
@@ -315,6 +319,9 @@ GPlatesFileIO::OgrUtils::add_reconstruction_fields_to_kvd(
 	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 	const double &reconstruction_time)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	// There should always be an anchor plate and a reconstruction time, so
 	// default values are not appropriate here.
 
@@ -326,22 +333,24 @@ GPlatesFileIO::OgrUtils::add_reconstruction_fields_to_kvd(
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type anchor_value = 
 		GPlatesPropertyValues::XsInteger::create(reconstruction_anchor_plate_id);	
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement anchor_element(
-		key,
-		anchor_value,
-		GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-	kvd->elements().push_back(anchor_element);	
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type anchor_element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					anchor_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+	elements.push_back(anchor_element);	
 
 	// Reconstruction time.
 	key = GPlatesPropertyValues::XsString::create("TIME");
 	GPlatesPropertyValues::XsDouble::non_null_ptr_type time_value = 
 		GPlatesPropertyValues::XsDouble::create(reconstruction_time);	
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement time_element(
-		key,
-		time_value,
-		GPlatesPropertyValues::StructuralType::create_xsi("double"));
-	kvd->elements().push_back(time_element);	
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type time_element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					time_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
+	elements.push_back(time_element);
 }
 
 void
@@ -349,6 +358,9 @@ GPlatesFileIO::OgrUtils::add_referenced_files_to_kvd(
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
 	const referenced_files_collection_type &referenced_files)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	// Referenced files. 
 
 	// Attribute field names will have the form "FILE1", "FILE2" etc...
@@ -379,11 +391,12 @@ GPlatesFileIO::OgrUtils::add_referenced_files_to_kvd(
 		GPlatesPropertyValues::XsString::non_null_ptr_type file_value = 
 			GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(filename));
 
-		GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-			key,
-			file_value,
-			GPlatesPropertyValues::StructuralType::create_xsi("string"));
-		kvd->elements().push_back(element);	
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+						key,
+						file_value,
+						GPlatesPropertyValues::StructuralType::create_xsi("string"));
+		elements.push_back(element);
 	}
 
 }
@@ -393,6 +406,9 @@ GPlatesFileIO::OgrUtils::add_reconstruction_files_to_kvd(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
 		const GPlatesFileIO::OgrUtils::referenced_files_collection_type &reconstruction_files)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	// Attribute field names will have the form "RECONFILE1", "RECONFILE2" etc...
 	QString file_string("RECONFILE");
 
@@ -421,11 +437,12 @@ GPlatesFileIO::OgrUtils::add_reconstruction_files_to_kvd(
 		GPlatesPropertyValues::XsString::non_null_ptr_type file_value =
 			GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(filename));
 
-		GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-			key,
-			file_value,
-			GPlatesPropertyValues::StructuralType::create_xsi("string"));
-		kvd->elements().push_back(element);
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+						key,
+						file_value,
+						GPlatesPropertyValues::StructuralType::create_xsi("string"));
+		elements.push_back(element);
 	}
 }
 
@@ -483,6 +500,9 @@ GPlatesFileIO::OgrUtils::add_feature_type_to_kvd(
     }
 
 
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
     GPlatesModel::PropertyValue::non_null_ptr_type value =
         GPlatesPropertyValues::XsString::create(
             GPlatesUtils::make_icu_string_from_qstring(feature_type_key));
@@ -491,12 +511,13 @@ GPlatesFileIO::OgrUtils::add_feature_type_to_kvd(
     GPlatesPropertyValues::XsString::non_null_ptr_type key =
             GPlatesPropertyValues::XsString::create("TYPE");
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement two_letter_element(
-                key,
-                value,
-                GPlatesPropertyValues::StructuralType::create_xsi("string"));
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type two_letter_element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-	kvd->elements().push_back(two_letter_element);
+	elements.push_back(two_letter_element);
 
 	// Export the gpgim form to GPGIM_TYPE field.
 	QString gpgim_feature_type = convert_qualified_xml_name_to_qstring(
@@ -506,12 +527,13 @@ GPlatesFileIO::OgrUtils::add_feature_type_to_kvd(
 	GPlatesModel::PropertyValue::non_null_ptr_type gpgim_value =
 		GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(gpgim_feature_type));
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement gpgim_element(
-				gpgim_key,
-				gpgim_value,
-				GPlatesPropertyValues::StructuralType::create_xsi("string"));
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type gpgim_element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					gpgim_key,
+					gpgim_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-	kvd->elements().push_back(gpgim_element);
+	elements.push_back(gpgim_element);
 }
 
 void
@@ -519,6 +541,9 @@ GPlatesFileIO::OgrUtils::add_begin_and_end_time_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
     static const GPlatesModel::PropertyName valid_time_property_name =
         GPlatesModel::PropertyName::create_gml("validTime");
 
@@ -545,22 +570,24 @@ GPlatesFileIO::OgrUtils::add_begin_and_end_time_to_kvd(
 	GPlatesPropertyValues::XsString::non_null_ptr_type begin_key =
 			GPlatesPropertyValues::XsString::create("FROMAGE");
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement begin_element(
-				begin_key,
-				begin_value,
-				GPlatesPropertyValues::StructuralType::create_xsi("double"));
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type begin_element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					begin_key,
+					begin_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
 
-	kvd->elements().push_back(begin_element);
+	elements.push_back(begin_element);
 
 	GPlatesPropertyValues::XsString::non_null_ptr_type end_key =
 			GPlatesPropertyValues::XsString::create("TOAGE");
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement end_element(
-				end_key,
-				end_value,
-				GPlatesPropertyValues::StructuralType::create_xsi("double"));
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type end_element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					end_key,
+					end_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
 
-	kvd->elements().push_back(end_element);
+	elements.push_back(end_element);
 }
 
 void
@@ -568,6 +595,9 @@ GPlatesFileIO::OgrUtils::add_name_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
     static const GPlatesModel::PropertyName name_property_name =
         GPlatesModel::PropertyName::create_gml("name");
 
@@ -586,12 +616,13 @@ GPlatesFileIO::OgrUtils::add_name_to_kvd(
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 			GPlatesPropertyValues::XsString::create("NAME");
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				value,
-				GPlatesPropertyValues::StructuralType::create_xsi("string"));
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-	kvd->elements().push_back(element);
+	elements.push_back(element);
 }
 
 void
@@ -599,6 +630,9 @@ GPlatesFileIO::OgrUtils::add_description_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	static const GPlatesModel::PropertyName desc_property_name =
 		GPlatesModel::PropertyName::create_gml("description");
 
@@ -617,12 +651,13 @@ GPlatesFileIO::OgrUtils::add_description_to_kvd(
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 			GPlatesPropertyValues::XsString::create("DESCR");
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				value,
-				GPlatesPropertyValues::StructuralType::create_xsi("string"));
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-	kvd->elements().push_back(element);
+	elements.push_back(element);
 }
 
 void
@@ -630,6 +665,9 @@ GPlatesFileIO::OgrUtils::add_feature_id_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	// There should always be a feature-id,so a default value is not appropriate here.
 
     GPlatesModel::PropertyValue::non_null_ptr_type feature_id_value =
@@ -638,12 +676,13 @@ GPlatesFileIO::OgrUtils::add_feature_id_to_kvd(
     GPlatesPropertyValues::XsString::non_null_ptr_type feature_id_key =
             GPlatesPropertyValues::XsString::create("FEATURE_ID");
 
-    GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-                feature_id_key,
-                feature_id_value,
-                GPlatesPropertyValues::StructuralType::create_xsi("string"));
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					feature_id_key,
+					feature_id_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-    kvd->elements().push_back(element);
+    elements.push_back(element);
 
 }
 
@@ -652,6 +691,9 @@ GPlatesFileIO::OgrUtils::add_conjugate_plate_id_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	static const GPlatesModel::PropertyName property_name =
 		GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
@@ -667,17 +709,18 @@ GPlatesFileIO::OgrUtils::add_conjugate_plate_id_to_kvd(
 					feature, property_name);
 	if (plate_id)
 	{
-		plate_id_value = plate_id.get()->value();
+		plate_id_value = plate_id.get()->get_value();
 	}
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
 		GPlatesPropertyValues::XsInteger::create(plate_id_value);
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				value,
-				GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-	kvd->elements().push_back(element);
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+	elements.push_back(element);
 }
 
 
@@ -687,6 +730,9 @@ GPlatesFileIO::OgrUtils::add_left_plate_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	static const GPlatesModel::PropertyName property_name =
 		GPlatesModel::PropertyName::create_gpml("leftPlate");
 
@@ -702,17 +748,18 @@ GPlatesFileIO::OgrUtils::add_left_plate_to_kvd(
 					feature, property_name);
 	if (plate_id)
 	{
-		plate_id_value = plate_id.get()->value();
+		plate_id_value = plate_id.get()->get_value();
 	}
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
 		GPlatesPropertyValues::XsInteger::create(plate_id_value);
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				value,
-				GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-	kvd->elements().push_back(element);
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+	elements.push_back(element);
 }
 
 void
@@ -720,6 +767,9 @@ GPlatesFileIO::OgrUtils::add_right_plate_to_kvd(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	static const GPlatesModel::PropertyName property_name =
 		GPlatesModel::PropertyName::create_gpml("rightPlate");
 
@@ -735,17 +785,18 @@ GPlatesFileIO::OgrUtils::add_right_plate_to_kvd(
 					feature, property_name);
 	if (plate_id)
 	{
-		plate_id_value = plate_id.get()->value();
+		plate_id_value = plate_id.get()->get_value();
 	}
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
 		GPlatesPropertyValues::XsInteger::create(plate_id_value);
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				value,
-				GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-	kvd->elements().push_back(element);
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+	elements.push_back(element);
 }
 
 
@@ -754,6 +805,9 @@ GPlatesFileIO::OgrUtils::add_reconstruction_method_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	static const GPlatesModel::PropertyName reconstruction_method_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 
@@ -766,16 +820,17 @@ GPlatesFileIO::OgrUtils::add_reconstruction_method_to_kvd(
 					feature, reconstruction_method_property_name);
 	if (reconstruction_method)
 	{
-		value = GPlatesPropertyValues::XsString::create(reconstruction_method.get()->value().get());
+		value = GPlatesPropertyValues::XsString::create(reconstruction_method.get()->get_value().get());
 	}
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 		GPlatesPropertyValues::XsString::create("RECON_METH");
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-		key,
-		value,
-		GPlatesPropertyValues::StructuralType::create_xsi("string"));
-	kvd->elements().push_back(element);
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
+	elements.push_back(element);
 }
 
 void
@@ -783,6 +838,9 @@ GPlatesFileIO::OgrUtils::add_spreading_asymmetry_to_kvd(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	static const GPlatesModel::PropertyName spreading_asymmetry_property_name =
 			GPlatesModel::PropertyName::create_gpml("spreadingAsymmetry");
 
@@ -795,16 +853,17 @@ GPlatesFileIO::OgrUtils::add_spreading_asymmetry_to_kvd(
 					feature, spreading_asymmetry_property_name);
 	if (spreading_asymmetry)
 	{
-		value = GPlatesPropertyValues::XsDouble::create(spreading_asymmetry.get()->value());
+		value = GPlatesPropertyValues::XsDouble::create(spreading_asymmetry.get()->get_value());
 	}
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 			GPlatesPropertyValues::XsString::create("SPREAD_ASY");
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				value,
-				GPlatesPropertyValues::StructuralType::create_xsi("double"));
-	kvd->elements().push_back(element);
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
+	elements.push_back(element);
 }
 
 void
@@ -812,6 +871,9 @@ GPlatesFileIO::OgrUtils::add_geometry_import_time_to_kvd(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
 	static const GPlatesModel::PropertyName geometry_import_time_property_name =
 			GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 
@@ -832,12 +894,13 @@ GPlatesFileIO::OgrUtils::add_geometry_import_time_to_kvd(
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 			GPlatesPropertyValues::XsString::create("IMPORT_AGE");
 
-	GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				value,
-				GPlatesPropertyValues::StructuralType::create_xsi("double"));
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
 
-	kvd->elements().push_back(element);
+	elements.push_back(element);
 }
 
 bool
@@ -889,15 +952,18 @@ void
 GPlatesFileIO::OgrUtils::write_kvd(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator it =
-			kvd->elements().begin();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+			iter = elements.begin(),
+			end = elements.end();
 
-	for (; it != kvd->elements().end(); ++it)
+	for (; iter != end; ++iter)
 	{
 		qDebug() << "Key: " <<
-					GPlatesUtils::make_qstring_from_icu_string((*it).key()->value().get()) <<
+					GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get()) <<
 					", Value: " <<
-					get_qvariant_from_kvd_element(*it);
+					get_qvariant_from_kvd_element(**iter);
 	}
 }
 
@@ -908,15 +974,18 @@ void
 GPlatesFileIO::OgrUtils::write_kvd(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type kvd)
 {
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator it =
-			kvd->elements().begin();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+			iter = elements.begin(),
+			end = elements.end();
 
-	for (; it != kvd->elements().end(); ++it)
+	for (; iter != end; ++iter)
 	{
 		qDebug() << "Key: " <<
-					GPlatesUtils::make_qstring_from_icu_string((*it).key()->value().get()) <<
+					GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get()) <<
 					", Value: " <<
-					get_qvariant_from_kvd_element(*it);
+					get_qvariant_from_kvd_element(**iter);
 	}
 }
 
@@ -1007,6 +1076,8 @@ GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(
 {
 	using namespace GPlatesPropertyValues;
 
+	GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement> &elements = dictionary->elements();
+
 	int file_count = 1;
 	referenced_files_collection_type::const_iterator file_iter;
 	for (file_iter = files.begin();
@@ -1031,10 +1102,11 @@ GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(
 		XsString::non_null_ptr_type file_value =
 			XsString::create(GPlatesUtils::make_icu_string_from_qstring(filename));
 
-		GpmlKeyValueDictionaryElement element(
-			key,
-			file_value,
-			StructuralType::create_xsi("string"));
-		dictionary->elements().push_back(element);
+		GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+				GpmlKeyValueDictionaryElement::create(
+						key,
+						file_value,
+						StructuralType::create_xsi("string"));
+		elements.push_back(element);
 	}
 }

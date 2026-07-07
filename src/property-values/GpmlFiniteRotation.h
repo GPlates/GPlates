@@ -41,6 +41,10 @@
 #include "model/Metadata.h"
 #include "model/PropertyValue.h"
 
+#include "scribe/ScribeLoadRef.h"
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -124,8 +128,8 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const GmlPoint::non_null_ptr_type &gpml_euler_pole,
-				const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees,
+				const GmlPoint::non_null_ptr_to_const_type &gpml_euler_pole,
+				const GpmlMeasure::non_null_ptr_to_const_type &gml_angle_in_degrees,
 				boost::optional<const GPlatesModel::MetadataContainer &> metadata_ = boost::none);
 
 		/**
@@ -148,18 +152,8 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlFiniteRotation(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlFiniteRotation>(clone_impl());
 		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Return whether this GpmlFiniteRotation instance represents a "zero" rotation.
@@ -179,9 +173,9 @@ namespace GPlatesPropertyValues
 		 * this instance.
 		 */
 		const GPlatesMaths::FiniteRotation &
-		finite_rotation() const
+		get_finite_rotation() const
 		{
-			return d_finite_rotation;
+			return get_current_revision<Revision>().finite_rotation;
 		}
 
 		/**
@@ -189,29 +183,21 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_finite_rotation(
-				const GPlatesMaths::FiniteRotation &fr)
-		{
-			d_finite_rotation = fr;
-			update_instance_id();
-		}
+				const GPlatesMaths::FiniteRotation &fr);
 		
 		/**
 		 * FIXME: Re-implement MetadataContainer because it's currently possible to modify the
 		 * metadata in a 'const' MetadataContainer and this by-passes revisioning.
 		 */
 		const GPlatesModel::MetadataContainer &
-		metadata() const
+		get_metadata() const
 		{
-			return d_metadata;
+			return get_current_revision<Revision>().metadata;
 		}
 		
 		void
 		set_metadata(
-				const GPlatesModel::MetadataContainer &metadata_)
-		{
-			d_metadata = metadata_;
-			update_instance_id();
-		}
+				const GPlatesModel::MetadataContainer &metadata);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -220,9 +206,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("FiniteRotation");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlFiniteRotation::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -257,49 +248,110 @@ namespace GPlatesPropertyValues
 		print_to(
 				std::ostream &os) const;
 
-	protected:
+	private:
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const GPlatesMaths::FiniteRotation &finite_rotation_,
+					boost::optional<const GPlatesModel::MetadataContainer &> metadata_);
+
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_);
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const;
+
+			GPlatesMaths::FiniteRotation finite_rotation;
+			GPlatesModel::MetadataContainer metadata;
+		};
+
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		explicit
 		GpmlFiniteRotation(
 				const GPlatesMaths::FiniteRotation &finite_rotation_,
-				boost::optional<const GPlatesModel::MetadataContainer &> metadata_):
-			PropertyValue(),
-			d_finite_rotation(finite_rotation_)
-		{
-			if (metadata_)
-			{
-				d_metadata = metadata_.get();
-			}
-		}
-
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
-		GpmlFiniteRotation(
-				const GpmlFiniteRotation &other):
-			PropertyValue(other), /* share instance id */
-			d_finite_rotation(other.d_finite_rotation),
-			d_metadata(other.d_metadata)
+				boost::optional<const GPlatesModel::MetadataContainer &> metadata_) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(finite_rotation_, metadata_)))
 		{  }
 
-	private:
+		//! Constructor used when cloning.
+		GpmlFiniteRotation(
+				const GpmlFiniteRotation &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
 
-		GPlatesMaths::FiniteRotation d_finite_rotation;
-		GPlatesModel::MetadataContainer d_metadata;
+		// This constructor is used by derived classes - seems we need to define after @a Revision.
+		explicit
+		GpmlFiniteRotation(
+				const Revision::non_null_ptr_type &revision_) :
+			PropertyValue(revision_)
+		{  }
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlFiniteRotation &
-		operator=(
-				const GpmlFiniteRotation &);
+		// This constructor is used by derived classes - seems we need to define after @a Revision.
+		explicit
+		GpmlFiniteRotation(
+				const GpmlFiniteRotation &other_,
+				const Revision::non_null_ptr_type &revision_) :
+			PropertyValue(revision_)
+		{  }
 
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlFiniteRotation(*this, context));
+		}
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlFiniteRotation> &gpml_finite_rotation);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const GpmlFiniteRotation &gpml_finite_rotation);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::LoadRef<GPlatesMaths::FiniteRotation> &finite_rotation_,
+				GPlatesModel::MetadataContainer &metadata_);
 	};
 }
 

@@ -41,6 +41,7 @@
 #include "ColourPaletteVisitor.h"
 
 #include "maths/Real.h"
+#include "maths/MathsUtils.h"
 
 #include "utils/Parse.h"
 #include "utils/Profile.h"
@@ -138,10 +139,15 @@ namespace GPlatesGui
 		can_handle(
 				value_type value) const
 		{
-			// Note: We're *not* using epsilon comparisons here - this should still create airtight
-			// lookups where values don't slip through the cracks (but is more efficient than epsilon
-			// comparison - particularly when looking up millions of raster pixels)...
-			return d_lower_value.dval() <= value.dval() && value.dval() <= d_upper_value.dval();
+			// Note: We're using epsilon comparisons here since to avoid values slipping through the cracks.
+			//       For a long time (up to and including GPlates 2.5) we had removed epsilon comparisons for
+			//       improved efficiency - particularly when looking up millions of raster pixels.
+			//       However there were cases where values would slip through the cracks whenever a NaN colour was NOT set
+			//       (happened on Windows). The strange thing was setting a NaN colour caused them not to
+			//       slip through the cracks - so there must've been some floating-point storage thing getting triggered
+			//       when NaN colour was NOT set (perhaps colour slices stored with different precision than the floating-point
+			//       CPU registers, or something like that) - very strange. In any case, it's solved by adding back in an epsilon...
+			return d_lower_value.dval() - d_range_epsilon <= value.dval() && value.dval() <= d_upper_value.dval() + d_range_epsilon;
 		}
 
 		boost::optional<Colour>
@@ -159,7 +165,7 @@ namespace GPlatesGui
 				value_type lower_value_)
 		{
 			d_lower_value = lower_value_;
-			set_inverse_value_range();
+			value_range_updated();
 		}
 
 		value_type
@@ -173,7 +179,7 @@ namespace GPlatesGui
 				value_type upper_value_)
 		{
 			d_upper_value = upper_value_;
-			set_inverse_value_range();
+			value_range_updated();
 		}
 
 		const boost::optional<Colour> &
@@ -232,14 +238,22 @@ namespace GPlatesGui
 
 		value_type d_lower_value, d_upper_value;
 		value_type d_inverse_value_range;
+		value_type d_range_epsilon;
 		boost::optional<Colour> d_lower_colour, d_upper_colour;
 		ColourScaleAnnotation::Type d_annotation;
 		boost::optional<QString> d_label;
 
 		void
-		set_inverse_value_range()
+		value_range_updated()
 		{
 			d_inverse_value_range = 1.0 / (d_upper_value - d_lower_value);
+
+			// Use a relative epsilon value based on the maximum absolute value of the range.
+			const value_type abs_lower_value = abs(d_lower_value);
+			const value_type abs_upper_value = abs(d_upper_value);
+			const value_type max_abs_range_value = (abs_lower_value.dval() > abs_upper_value.dval())
+				? abs_lower_value : abs_upper_value;
+			d_range_epsilon = GPlatesMaths::EPSILON * max_abs_range_value;
 		}
 	};
 
@@ -818,10 +832,7 @@ namespace GPlatesGui
 		{
 			// Background colour is used if value comes before first slice.
 			return d_entries.empty() ||
-					// Note: We're *not* using epsilon comparisons here since not using them in
-					// ColourSlice::can_handle() either - this should still create airtight lookups
-					// where values don't slip through the cracks (but is more efficient than epsilon
-					// comparison - particularly when looking up millions of raster pixels)...
+					// Note: We don't need epsilon comparisons here since we're already using them in ColourSlice::can_handle()...
 					value.dval() <= d_entries.front().lower_value().dval();
 		}
 
@@ -832,10 +843,7 @@ namespace GPlatesGui
 		{
 			// Foreground colour is used if value comes after last slice.
 			return !d_entries.empty() &&
-					// Note: We're *not* using epsilon comparisons here since not using them in
-					// ColourSlice::can_handle() either - this should still create airtight lookups
-					// where values don't slip through the cracks (but is more efficient than epsilon
-					// comparison - particularly when looking up millions of raster pixels)...
+					// Note: We don't need epsilon comparisons here since we're already using them in ColourSlice::can_handle()...
 					value.dval() >= d_entries.back().upper_value().dval();
 		}
 

@@ -279,7 +279,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_line_string(
 	const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	d_feature_accumulator.add_geometry(gml_line_string.polyline());
+	d_feature_accumulator.add_geometry(gml_line_string.get_polyline());
 }
 
 
@@ -287,7 +287,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_multi_point(
 	const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-	d_feature_accumulator.add_geometry(gml_multi_point.multipoint());
+	d_feature_accumulator.add_geometry(gml_multi_point.get_multipoint());
 }
 
 
@@ -303,7 +303,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_point(
 	const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_feature_accumulator.add_geometry(gml_point.point().get_geometry_on_sphere());
+	d_feature_accumulator.add_geometry(gml_point.get_point().get_geometry_on_sphere());
 }
 
 
@@ -311,7 +311,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_polygon(
 	const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	d_feature_accumulator.add_geometry(gml_polygon.polygon());
+	d_feature_accumulator.add_geometry(gml_polygon.get_polygon());
 }
 
 void

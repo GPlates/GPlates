@@ -106,10 +106,11 @@ namespace
 		XsString::non_null_ptr_type name_value = 
 			XsString::create(GPlatesUtils::make_icu_string_from_qstring(finder.get_name()));	
 
-		GpmlKeyValueDictionaryElement name_element(
-			key,
-			name_value,
-			StructuralType::create_xsi("string"));
+		GpmlKeyValueDictionaryElement::non_null_ptr_type name_element =
+				GpmlKeyValueDictionaryElement::create(
+						key,
+						name_value,
+						StructuralType::create_xsi("string"));
 		dictionary->elements().push_back(name_element);	
 
 		// Seed points.
@@ -118,10 +119,11 @@ namespace
 		XsString::non_null_ptr_type motion_path_seeds_value =
 			XsString::create(GPlatesUtils::make_icu_string_from_qstring(seed_string));
 
-		GpmlKeyValueDictionaryElement motion_path_seeds_element(
-			key,
-			motion_path_seeds_value,
-			StructuralType::create_xsi("string"));
+		GpmlKeyValueDictionaryElement::non_null_ptr_type motion_path_seeds_element =
+				GpmlKeyValueDictionaryElement::create(
+						key,
+						motion_path_seeds_value,
+						StructuralType::create_xsi("string"));
 		dictionary->elements().push_back(motion_path_seeds_element);
 
 		// Anchor plate.
@@ -129,10 +131,11 @@ namespace
 		XsInteger::non_null_ptr_type anchor_value = 
 			XsInteger::create(reconstruction_anchor_plate_id);	
 
-		GpmlKeyValueDictionaryElement anchor_element(
-			key,
-			anchor_value,
-			StructuralType::create_xsi("integer"));
+		GpmlKeyValueDictionaryElement::non_null_ptr_type anchor_element =
+				GpmlKeyValueDictionaryElement::create(
+						key,
+						anchor_value,
+						StructuralType::create_xsi("integer"));
 		dictionary->elements().push_back(anchor_element);	
 
 		// Reconstruction time.
@@ -140,10 +143,11 @@ namespace
 		XsDouble::non_null_ptr_type time_value = 
 			XsDouble::create(reconstruction_time);	
 
-		GpmlKeyValueDictionaryElement time_element(
-			key,
-			time_value,
-			StructuralType::create_xsi("double"));
+		GpmlKeyValueDictionaryElement::non_null_ptr_type time_element =
+				GpmlKeyValueDictionaryElement::create(
+						key,
+						time_value,
+						StructuralType::create_xsi("double"));
 		dictionary->elements().push_back(time_element);	
 
 		if (should_add_referenced_files)

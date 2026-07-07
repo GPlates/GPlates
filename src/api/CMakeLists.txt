@@ -11,6 +11,8 @@
 set(srcs
     AbstractConsole.h
     AbstractPythonRunner.h
+    APIVersion.cc
+    APIVersion.h
     ConsoleReader.cc
     ConsoleReader.h
     ConsoleWriter.cc
@@ -19,28 +21,101 @@ set(srcs
     DeferredApiCall.h
     DeferredApiCallImpl.h
     PyApplication.cc
+    PyCalculateVelocities.cc
     PyColour.cc
     PyCoregistrationLayerProxy.cc
     PyCoregistrationLayerProxy.h
+    PyDateLineWrapper.cc
+    PyEarth.cc
+    PyExceptions.cc
+    PyExceptions.h
     PyFeature.cc
     PyFeature.h
     PyFeatureCollection.cc
-    PyFeatureCollection.h
-    PyFunctions.cc
-    Python.cc
+    PyFeatureCollectionFileFormatRegistry.cc
+    PyFeatureCollectionFileFormatRegistry.h
+    PyFeatureCollectionFunctionArgument.cc
+    PyFeatureCollectionFunctionArgument.h
+    PyFilePathFunctionArgument.cc
+    PyFilePathFunctionArgument.h
+    PyFiniteRotation.cc
+    PyGeometriesOnSphere.cc
+    PyGeometriesOnSphere.h
+    PyGeoTimeInstant.cc
+    PyGPlatesModule.cc
+    PyGreatCircleArc.cc
+    PyGreatCircleArc.h
+    PyIds.cc
+    PyInformationModel.cc
+    PyInformationModel.h
+    PyInteger.cc
+    PyInterpolationException.h
+    PyLatLonPoint.cc
+    PyLocalCartesian.cc
+    PyNetRotation.cc
+    PyNetRotation.h
+    PyNetworkTriangulation.cc
+    PyNetworkTriangulation.h
+    PyOldFeature.cc
+    PyOldFeature.h
+    PyOldFeatureCollection.cc
+    PyOldFeatureCollection.h
+    PyPlatePartitioner.cc
+    PyPlatePartitioner.h
+    PyProperty.cc
+    PyPropertyValues.cc
+    PyPropertyValues.h
+    PyPropertyValueVisitor.cc
+    PyPurePython.cc
+    PyQualifiedXmlNames.cc
+    PyQualifiedXmlNames.h
+    PyReal.cc
+    PyReconstruct.cc
+    PyReconstructModel.cc
+    PyReconstructModel.h
+    PyReconstructionGeometries.cc
+    PyReconstructionGeometries.h
+    PyReconstructionTree.cc
+    PyReconstructionTree.h
+    PyReconstructSnapshot.cc
+    PyReconstructSnapshot.h
+    PyResolveTopologies.cc
+    PyResolveTopologyParameters.h
+    PyResolveTopologyParameters.cc
+    PyRevisionedVector.cc
+    PyRevisionedVector.h
+    PyRotationModel.cc
+    PyRotationModel.h
+    PyStrain.cc
+    PyStrings.cc
+    PythonConverterUtils.h
     PythonExecutionMonitor.cc
     PythonExecutionMonitor.h
     PythonExecutionThread.cc
     PythonExecutionThread.h
+    PythonExtractUtils.cc
+    PythonExtractUtils.h
+    PythonHashDefVisitor.h
     PythonInterpreterLocker.cc
     PythonInterpreterLocker.h
     PythonInterpreterUnlocker.cc
     PythonInterpreterUnlocker.h
+    PythonPickle.cc
+    PythonPickle.h
     PythonRunner.cc
     PythonRunner.h
     PythonUtils.cc
     PythonUtils.h
+    PythonVariableFunctionArguments.cc
+    PythonVariableFunctionArguments.h
+    PyTopologicalFeatureCollectionFunctionArgument.cc
+    PyTopologicalFeatureCollectionFunctionArgument.h
+    PyTopologicalModel.cc
+    PyTopologicalModel.h
+    PyTopologicalSnapshot.cc
+    PyTopologicalSnapshot.h
     PyTopologyTools.cc
+    PyVector3D.cc
     PyViewportWindow.cc
     Sleeper.cc
     Sleeper.h

@@ -241,7 +241,7 @@ namespace GPlatesFileIO
 								GPlatesModel::PropertyName::create_gml("name"));
 				if (gml_name)
 				{
-					output_stream << "> Name=" << gml_name.get()->value().get().qstring() << "\n";
+					output_stream << "> Name=" << gml_name.get()->get_value().get().qstring() << "\n";
 				}
 				else
 				{
@@ -255,8 +255,8 @@ namespace GPlatesFileIO
 								GPlatesModel::PropertyName::create_gml("validTime"));
 				if (gml_valid_time)
 				{
-					const GPlatesPropertyValues::GeoTimeInstant &begin_time = gml_valid_time.get()->begin()->time_position();
-					const GPlatesPropertyValues::GeoTimeInstant &end_time = gml_valid_time.get()->end()->time_position();
+					const GPlatesPropertyValues::GeoTimeInstant &begin_time = gml_valid_time.get()->begin()->get_time_position();
+					const GPlatesPropertyValues::GeoTimeInstant &end_time = gml_valid_time.get()->end()->get_time_position();
 
 					output_stream << "> ValidTime=(";
 					if (begin_time.is_real())
@@ -298,7 +298,7 @@ namespace GPlatesFileIO
 								GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
 				if (gpml_reconstruction_plate_id)
 				{
-					output_stream << "> ReconstructionPlateId=" << gpml_reconstruction_plate_id.get()->value() << "\n";
+					output_stream << "> ReconstructionPlateId=" << gpml_reconstruction_plate_id.get()->get_value() << "\n";
 				}
 				else
 				{

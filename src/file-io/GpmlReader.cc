@@ -103,7 +103,7 @@ namespace
 		visit_gml_file(
 				GPlatesPropertyValues::GmlFile &gml_file)
 		{
-			const GPlatesUtils::UnicodeString &filename = gml_file.file_name()->value().get();
+			const GPlatesUtils::UnicodeString &filename = gml_file.get_file_name()->get_value().get();
 			QString filename_qstring = GPlatesUtils::make_qstring_from_icu_string(filename);
 			
 			// Only fix if the filename in the GPML is relative.
@@ -125,7 +125,7 @@ namespace
 		visit_gpml_scalar_field_3d_file(
 				GPlatesPropertyValues::GpmlScalarField3DFile &gpml_scalar_field_3d_file)
 		{
-			const GPlatesUtils::UnicodeString &filename = gpml_scalar_field_3d_file.file_name()->value().get();
+			const GPlatesUtils::UnicodeString &filename = gpml_scalar_field_3d_file.get_file_name()->get_value().get();
 			QString filename_qstring = GPlatesUtils::make_qstring_from_icu_string(filename);
 			
 			// Only fix if the filename in the GPML is relative.
@@ -155,11 +155,11 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
-				gpml_piecewise_aggregation.time_windows();
-			BOOST_FOREACH(GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
+			BOOST_FOREACH(
+					GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type time_window,
+					gpml_piecewise_aggregation.time_windows())
 			{
-				time_window.time_dependent_value()->accept_visitor(*this);
+				time_window->time_dependent_value()->accept_visitor(*this);
 			}
 		}
 

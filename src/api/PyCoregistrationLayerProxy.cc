@@ -25,7 +25,7 @@
 #include <vector>
 #include <boost/foreach.hpp>
 
-#include "PyFeature.h"
+#include "PyOldFeature.h"
 #include "PyCoregistrationLayerProxy.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
@@ -51,7 +51,7 @@ GPlatesApi::PyCoregistrationLayerProxy::get_all_seed_features()
 		if(f.is_valid() && feature_set.find(f.handle_ptr()) == feature_set.end())
 		{
 			feature_set.insert(f.handle_ptr());
-			result.append(GPlatesApi::Feature(f));
+			result.append(GPlatesApi::OldFeature(f));
 		}
 	}
 	return result;

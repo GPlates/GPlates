@@ -31,16 +31,17 @@
 #ifndef GPLATES_MODEL_TOPLEVELPROPERTY_H
 #define GPLATES_MODEL_TOPLEVELPROPERTY_H
 
-#include <map>
 #include <iosfwd>
+#include <map>
+#include <boost/optional.hpp>
 
 #include "PropertyName.h"
+#include "Revision.h"
+#include "Revisionable.h"
+#include "types.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
-#include "types.h"
 
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
 #include "utils/QtStreamable.h"
 #include "utils/ReferenceCount.h"
 
@@ -61,110 +62,42 @@ namespace GPlatesModel
 	 * a GML Xlink to reference a remote property.
 	 */
 	class TopLevelProperty:
-			public GPlatesUtils::ReferenceCount<TopLevelProperty>,
+			public Revisionable,
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
 			public GPlatesUtils::QtStreamable<TopLevelProperty>
 	{
 	public:
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<TopLevelProperty,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<TopLevelProperty,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const TopLevelProperty,
-		 * 		GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const TopLevelProperty,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		//! A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<TopLevelProperty>.
+		typedef GPlatesUtils::non_null_intrusive_ptr<TopLevelProperty> non_null_ptr_type;
+
+		//! A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const TopLevelProperty>.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const TopLevelProperty> non_null_ptr_to_const_type;
 
 		/**
 		 * The type of the container of XML attributes.
 		 */
 		typedef std::map<XmlAttributeName, XmlAttributeValue> xml_attributes_type;
 
+
 		virtual
 		~TopLevelProperty()
 		{  }
 
 		/**
-		 * Construct a TopLevelProperty instance with the given property name.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes. 
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
+		 * Create a duplicate of this TopLevelProperty instance, including a recursive copy
+		 * of any property values this instance might contain.
 		 */
-		TopLevelProperty(
-				const PropertyName &property_name_,
-				const xml_attributes_type &xml_attributes_):
-			d_property_name(property_name_),
-			d_xml_attributes(xml_attributes_)
-		{  }
-
-		/**
-		 * Construct a TopLevelProperty instance which is a copy of @a other.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes. 
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
-		 *
-		 * This ctor should only be invoked by the @a clone member function (pure virtual
-		 * in this class; defined in derived classes), which will create a duplicate
-		 * instance and return a new non_null_intrusive_ptr reference to the new duplicate.
-		 * Since initially the only reference to the new duplicate will be the one returned
-		 * by the @a clone function, *before* the new non_null_intrusive_ptr is created,
-		 * the ref-count of the new TopLevelProperty instance should be zero.
-		 *
-		 * Note that this ctor should act exactly the same as the default (auto-generated)
-		 * copy-ctor, except that it should initialise the ref-count to zero.
-		 */
-		TopLevelProperty(
-				const TopLevelProperty &other) :
-			GPlatesUtils::ReferenceCount<TopLevelProperty>(),
-			d_property_name(other.d_property_name),
-			d_xml_attributes(other.d_xml_attributes)
-		{  }
-
-		/**
-		 * Create a duplicate of this TopLevelProperty instance.
-		 *
-		 * Note that this will @em not duplicate any property values contained within it.
-		 * As a result, the new (duplicate) instance will "contain" (reference by pointer)
-		 * the same property values as the original.  (The pointer @em values are copied,
-		 * not the pointer @em targets.)  Until the automatic Bubble-Up revisioning system
-		 * is fully operational, this is probably @em not what you want, when you're cloning
-		 * a feature:  If a property value is modified in the original, the duplicate will
-		 * now also contain a modified property value...
-		 *
-		 * Compare with @a deep_clone, which @em does duplicate any property values
-		 * contained within.
-		 */
-		virtual
 		const non_null_ptr_type
-		clone() const = 0;
-
-		/**
-		 * Create a duplicate of this TopLevelProperty instance, plus any property values
-		 * which it might contain.
-		 *
-		 * Until the automatic Bubble-Up revisioning system is fully operational, this is
-		 * the function you should call, when you're cloning a feature.
-		 */
-		virtual
-		const non_null_ptr_type
-		deep_clone() const = 0;
+		clone() const
+		{
+			return GPlatesUtils::dynamic_pointer_cast<TopLevelProperty>(clone_impl());
+		}
 
 		// Note that no "setter" is provided:  The property name of a TopLevelProperty
 		// instance should never be changed.
 		const PropertyName &
-		property_name() const
+		get_property_name() const
 		{
 			return d_property_name;
 		}
@@ -176,9 +109,9 @@ namespace GPlatesModel
 		 * elements of the XML attribute map?
 		 */
 		const xml_attributes_type &
-		xml_attributes() const
+		get_xml_attributes() const
 		{
-			return d_xml_attributes;
+			return get_current_revision<Revision>().xml_attributes;
 		}
 
 		/**
@@ -186,10 +119,7 @@ namespace GPlatesModel
 		 */
 		void
 		set_xml_attributes(
-				const xml_attributes_type &xml_attributes_)
-		{
-			d_xml_attributes = xml_attributes_;
-		}
+				const xml_attributes_type &xml_attributes_);
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -224,22 +154,105 @@ namespace GPlatesModel
 		print_to(
 				std::ostream &os) const = 0;
 
+	protected:
+
+		/**
+		 * Construct a TopLevelProperty instance directly.
+		 */
+		TopLevelProperty(
+				const PropertyName &property_name_,
+				const Revision::non_null_ptr_type &revision_) :
+			Revisionable(revision_),
+			d_property_name(property_name_) // immutable/unrevisioned
+		{  }
+
+		/**
+		 * Construct a TopLevelProperty instance using another TopLevelProperty.
+		 */
+		TopLevelProperty(
+				const TopLevelProperty &other,
+				const Revision::non_null_ptr_type &revision_) :
+			Revisionable(revision_),
+			d_property_name(other.d_property_name) // immutable/unrevisioned
+		{  }
+
 		virtual
 		bool
-		operator==(
-				const TopLevelProperty &other) const = 0;
+		equality(
+				const Revisionable &other) const
+		{
+			const TopLevelProperty &other_pv = dynamic_cast<const TopLevelProperty &>(other);
 
-	private:
+			return d_property_name == other_pv.d_property_name &&
+					// The revisioned data comparisons are handled here...
+					Revisionable::equality(other);
+		}
+
+
+		/**
+		 * Top-level property data that is mutable/revisionable.
+		 */
+		class Revision :
+				public GPlatesModel::Revision
+		{
+		public:
+
+			typedef GPlatesUtils::non_null_intrusive_ptr<Revision> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const Revision> non_null_ptr_to_const_type;
+
+			/**
+			 * The type of the container of XML attributes.
+			 */
+			typedef std::map<XmlAttributeName, XmlAttributeValue> xml_attributes_type;
+
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return xml_attributes == other_revision.xml_attributes;
+			}
+
+
+			/**
+			 * XML attributes.
+			 */
+			xml_attributes_type xml_attributes;
+
+		protected:
+
+			/**
+			 * Constructor specified optional (parent) context in which this top-level property (revision) is nested.
+			 */
+			explicit
+			Revision(
+					const xml_attributes_type &xml_attributes_,
+					boost::optional<RevisionContext &> context = boost::none) :
+				GPlatesModel::Revision(context),
+				xml_attributes(xml_attributes_)
+			{  }
+
+			/**
+			 * Construct a Revision instance using another Revision.
+			 */
+			Revision(
+					const Revision &other,
+					boost::optional<RevisionContext &> context) :
+				GPlatesModel::Revision(context),
+				xml_attributes(other.xml_attributes)
+			{  }
+
+		};
+
+		/**
+		 * The property name is not revisioned since it doesn't change - is essentially immutable.
+		 *
+		 * If it does become mutable then it should be moved into the revision.
+		 */
 		PropertyName d_property_name;
-		xml_attributes_type d_xml_attributes;
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		TopLevelProperty &
-		operator=(
-				const TopLevelProperty &);
 
 	};
 

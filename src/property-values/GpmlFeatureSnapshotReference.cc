@@ -29,10 +29,132 @@
 
 #include "GpmlFeatureSnapshotReference.h"
 
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeIdTypeGenerator.h"
+#include "model/TranscribeQualifiedXmlName.h"
+
+#include "scribe/Scribe.h"
+
+
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlFeatureSnapshotReference::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("FeatureSnapshotReference");
+
+
+void
+GPlatesPropertyValues::GpmlFeatureSnapshotReference::set_feature_id(
+		const GPlatesModel::FeatureId &feature)
+{
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().feature = feature;
+	revision_handler.commit();
+}
+
+
+void
+GPlatesPropertyValues::GpmlFeatureSnapshotReference::set_revision_id(
+		const GPlatesModel::RevisionId &revision)
+{
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().revision = revision;
+	revision_handler.commit();
+}
+
 
 std::ostream &
 GPlatesPropertyValues::GpmlFeatureSnapshotReference::print_to(
 		std::ostream &os) const
 {
-	return os << d_feature.get() << "@" << d_revision.get();
+	const Revision &revision = get_current_revision<Revision>();
+
+	return os << revision.feature.get() << "@" << revision.revision.get();
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlFeatureSnapshotReference::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlFeatureSnapshotReference> &gpml_feature_snapshot_reference)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_feature_snapshot_reference->get_feature_id(), "feature_id");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_feature_snapshot_reference->get_revision_id(), "revision_id");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_feature_snapshot_reference->get_value_type(), "value_type");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::FeatureId> feature_id_ =
+				scribe.load<GPlatesModel::FeatureId>(TRANSCRIBE_SOURCE, "feature_id");
+		if (!feature_id_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionId> revision_id_ =
+				scribe.load<GPlatesModel::RevisionId>(TRANSCRIBE_SOURCE, "revision_id");
+		if (!revision_id_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<GPlatesModel::FeatureType> value_type_ =
+				scribe.load<GPlatesModel::FeatureType>(TRANSCRIBE_SOURCE, "value_type");
+		if (!value_type_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gpml_feature_snapshot_reference.construct_object(feature_id_, revision_id_, value_type_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlFeatureSnapshotReference::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_feature_id(), "feature_id");
+			scribe.save(TRANSCRIBE_SOURCE, get_revision_id(), "revision_id");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesModel::FeatureId> feature_id_ =
+					scribe.load<GPlatesModel::FeatureId>(TRANSCRIBE_SOURCE, "feature_id");
+			if (!feature_id_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionId> revision_id_ =
+					scribe.load<GPlatesModel::RevisionId>(TRANSCRIBE_SOURCE, "revision_id");
+			if (!revision_id_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			set_feature_id(feature_id_);
+			set_revision_id(revision_id_);
+		}
+
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_value_type, "value_type"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlFeatureSnapshotReference>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

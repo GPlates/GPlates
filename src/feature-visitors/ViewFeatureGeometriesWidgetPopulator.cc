@@ -328,7 +328,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::initialise_pre_pro
 	PropertyInfo info;
 	info.is_geometric_property = false;
 	info.item_handle = make_top_level_item_for_property(
-			d_tree_widget_builder, top_level_property_inline.property_name());
+			d_tree_widget_builder, top_level_property_inline.get_property_name());
 	d_property_info_vector.push_back(info);
 
 	// If the current property is the focused geometry then scroll to it
@@ -404,7 +404,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_line_str
 	item_handle_seq_type coordinate_widgets;
 	// The present-day polyline.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type present_day_polyline =
-			gml_line_string.polyline();
+			gml_line_string.get_polyline();
 	populate_coordinates_from_polyline(d_tree_widget_builder,
 			coordinate_widgets, present_day_polyline,
 			CoordinatePeriods::PRESENT);
@@ -473,7 +473,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_multi_po
 	// The present-day polyline.
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type present_day_multi_point =
-			gml_multi_point.multipoint();
+			gml_multi_point.get_multipoint();
 	populate_coordinates_from_multi_point(d_tree_widget_builder,
 			coordinate_widgets, present_day_multi_point,
 			CoordinatePeriods::PRESENT);
@@ -566,7 +566,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 	// Now, prepare the coords in present-day and reconstructed time.
 	item_handle_seq_type coordinate_widgets;
 	// The present-day point.
-	const GPlatesMaths::PointOnSphere &present_day_point = gml_point.point();
+	const GPlatesMaths::PointOnSphere &present_day_point = gml_point.get_point();
 	populate_coordinates_from_point(d_tree_widget_builder,
 			coordinate_widgets,
 			present_day_point,
@@ -637,7 +637,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_polygon(
 
 	d_tree_widget_builder.push_current_item(exterior_item_handle);
 
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr = gml_polygon.polygon();
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr = gml_polygon.get_polygon();
 
 	write_polygon_ring(polygon_ptr);
 

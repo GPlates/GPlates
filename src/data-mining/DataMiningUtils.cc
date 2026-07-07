@@ -158,7 +158,7 @@ GPlatesDataMining::DataMiningUtils::get_property_value_by_name(
 
 	for(; it != it_end; it++)
 	{
-		if((*it)->property_name().get_name() == UnicodeString(name))
+		if((*it)->get_property_name().get_name() == UnicodeString(name))
 		{
 			GetValueFromPropertyVisitor visitor;
 			(*it)->accept_visitor(visitor);
@@ -212,7 +212,7 @@ GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 	
 	for(; it != it_end; it++)
 	{
-		if((*it)->property_name().get_name() == "shapefileAttributes")
+		if((*it)->get_property_name().get_name() == "shapefileAttributes")
 		{
 			GPlatesFeatureVisitors::ShapefileAttributeFinder visitor(name);
 			(*it)->accept_visitor(visitor);
@@ -230,49 +230,6 @@ GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 		}
 	}
 	return EmptyData;
-}
-
-GPlatesFileIO::File::non_null_ptr_type
-GPlatesDataMining::DataMiningUtils::load_file(
-		const QString fn,
-		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
-		GPlatesFileIO::ReadErrorAccumulation* read_errors)
-{
-	using namespace GPlatesFileIO;
-	GPlatesModel::ModelInterface model;
-	GPlatesModel::FeatureCollectionHandle::weak_ref ret;
-	ReadErrorAccumulation acc;
-	if(!read_errors)
-		read_errors = &acc;
-
-	File::non_null_ptr_type file = File::create_file(FileInfo(fn));
-	file_format_registry.read_feature_collection(file->get_reference(), *read_errors);
-
-	return file;	
-}
-
-std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-GPlatesDataMining::DataMiningUtils::load_files(
-		const std::vector<QString>& filenames,
-		std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
-		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
-		GPlatesFileIO::ReadErrorAccumulation* read_errors)
-{
-	using namespace GPlatesFileIO;
-	GPlatesModel::ModelInterface model;
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> ret;
-	ReadErrorAccumulation acc;
-	if(!read_errors)
-		read_errors = &acc;
-
-	BOOST_FOREACH(const QString& filename, filenames)
-	{
-		File::non_null_ptr_type file = File::create_file(FileInfo(filename));
-		files.push_back(file);
-		file_format_registry.read_feature_collection(file->get_reference(), *read_errors);
-		ret.push_back(file->get_reference().get_feature_collection());
-	}
-	return ret;
 }
 
 std::vector<QString>

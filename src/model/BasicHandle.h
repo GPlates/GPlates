@@ -485,7 +485,6 @@ namespace GPlatesModel
 
 		friend class RevisionAwareIterator<HandleType>;
 		friend class RevisionAwareIterator<const HandleType>;
-		friend class TopLevelPropertyRef;
 	};
 
 

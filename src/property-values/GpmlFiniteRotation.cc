@@ -36,7 +36,13 @@
 #include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 
+#include "scribe/Scribe.h"
+
+
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlFiniteRotation::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("FiniteRotation");
 
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
@@ -62,14 +68,14 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create(
-		const GmlPoint::non_null_ptr_type &gpml_euler_pole,
-		const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees,
+		const GmlPoint::non_null_ptr_to_const_type &gpml_euler_pole,
+		const GpmlMeasure::non_null_ptr_to_const_type &gml_angle_in_degrees,
 		boost::optional<const GPlatesModel::MetadataContainer &> metadata_)
 {
 	GPlatesMaths::FiniteRotation fr =
 			GPlatesMaths::FiniteRotation::create(
-					gpml_euler_pole->point(),
-					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees->quantity()));
+					gpml_euler_pole->get_point(),
+					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees->get_quantity()));
 
 	return create(fr, metadata_);
 }
@@ -90,7 +96,27 @@ GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation(
 bool
 GPlatesPropertyValues::GpmlFiniteRotation::is_zero_rotation() const
 {
-	return GPlatesMaths::represents_identity_rotation(d_finite_rotation.unit_quat());
+	return ::GPlatesMaths::represents_identity_rotation(get_finite_rotation().unit_quat());
+}
+
+
+void
+GPlatesPropertyValues::GpmlFiniteRotation::set_finite_rotation(
+		const GPlatesMaths::FiniteRotation &fr)
+{
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().finite_rotation = fr;
+	revision_handler.commit();
+}
+
+
+void
+GPlatesPropertyValues::GpmlFiniteRotation::set_metadata(
+		const GPlatesModel::MetadataContainer &metadata)
+{
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().metadata = metadata;
+	revision_handler.commit();
 }
 
 
@@ -98,14 +124,221 @@ std::ostream &
 GPlatesPropertyValues::GpmlFiniteRotation::print_to(
 		std::ostream &os) const
 {
-	os << d_finite_rotation;
+	const Revision &revision = get_current_revision<Revision>();
+
+	os << revision.finite_rotation;
 
 	os << ", [ ";
 
-	BOOST_FOREACH(const GPlatesModel::MetadataContainer::value_type &metadata_entry, d_metadata)
+	BOOST_FOREACH(const GPlatesModel::MetadataContainer::value_type &metadata_entry, revision.metadata)
 	{
 		os << '(' << metadata_entry->get_name().toStdString() << ": " << metadata_entry->get_content().toStdString() << "), ";
 	}
 
 	return os << " ]";
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlFiniteRotation::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlFiniteRotation> &gpml_finite_rotation)
+{
+	if (scribe.is_saving())
+	{
+		save_construct_data(scribe, gpml_finite_rotation.get_object());
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesMaths::FiniteRotation> finite_rotation_;
+		GPlatesModel::MetadataContainer metadata_;
+		if (!load_construct_data(scribe, finite_rotation_, metadata_))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gpml_finite_rotation.construct_object(finite_rotation_, metadata_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlFiniteRotation::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			save_construct_data(scribe, *this);
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesMaths::FiniteRotation> finite_rotation_;
+			GPlatesModel::MetadataContainer metadata_;
+			if (!load_construct_data(scribe, finite_rotation_, metadata_))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			{
+				GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+				Revision &revision = revision_handler.get_revision<Revision>();
+				revision.finite_rotation = finite_rotation_;
+				revision.metadata = metadata_;
+				revision_handler.commit();
+			}
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlFiniteRotation>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+void
+GPlatesPropertyValues::GpmlFiniteRotation::save_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		const GpmlFiniteRotation &gpml_finite_rotation)
+{
+	// Save the finite rotation.
+	scribe.save(TRANSCRIBE_SOURCE, gpml_finite_rotation.get_finite_rotation(), "finite_rotation");
+
+	// Save the metadata.
+	const GPlatesModel::MetadataContainer &metadata = gpml_finite_rotation.get_metadata();
+	const GPlatesScribe::ObjectTag metadata_tag("metadata");
+	const unsigned int num_metadata = metadata.size();
+	scribe.save(TRANSCRIBE_SOURCE, num_metadata, metadata_tag.sequence_size());
+	for (unsigned int metadata_index = 0; metadata_index < num_metadata; ++metadata_index)
+	{
+		scribe.save(TRANSCRIBE_SOURCE, metadata[metadata_index]->get_name(), metadata_tag[metadata_index]("name"));
+		scribe.save(TRANSCRIBE_SOURCE, metadata[metadata_index]->get_content(), metadata_tag[metadata_index]("content"));
+	}
+}
+
+
+bool
+GPlatesPropertyValues::GpmlFiniteRotation::load_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::LoadRef<GPlatesMaths::FiniteRotation> &finite_rotation_,
+		GPlatesModel::MetadataContainer &metadata_)
+{
+	// Load the finite rotation.
+	finite_rotation_ = scribe.load<GPlatesMaths::FiniteRotation>(TRANSCRIBE_SOURCE, "finite_rotation");
+	if (!finite_rotation_.is_valid())
+	{
+		return false;
+	}
+
+	// Load the metadata.
+	const GPlatesScribe::ObjectTag metadata_tag("metadata");
+	unsigned int num_metadata;
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, num_metadata, metadata_tag.sequence_size()))
+	{
+		return false;
+	}
+	for (unsigned int metadata_index = 0; metadata_index < num_metadata; ++metadata_index)
+	{
+		QString name, content;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, name, metadata_tag[metadata_index]("name")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, content, metadata_tag[metadata_index]("content")))
+		{
+			return false;
+		}
+		metadata_.push_back(boost::shared_ptr<GPlatesModel::Metadata>(new GPlatesModel::Metadata(name, content)));
+	}
+
+	return true;
+}
+
+
+GPlatesPropertyValues::GpmlFiniteRotation::Revision::Revision(
+		const GPlatesMaths::FiniteRotation &finite_rotation_,
+		boost::optional<const GPlatesModel::MetadataContainer &> metadata_) :
+	finite_rotation(finite_rotation_)
+{
+	if (metadata_)
+	{
+		// Clone each metadata entry - so that we have our own copy that's different from our client.
+		BOOST_FOREACH(const GPlatesModel::MetadataContainer::value_type &metadata_entry, metadata_.get())
+		{
+			metadata.push_back(metadata_entry->clone());
+		}
+	}
+}
+
+
+GPlatesPropertyValues::GpmlFiniteRotation::Revision::Revision(
+		const Revision &other,
+		boost::optional<GPlatesModel::RevisionContext &> context_) :
+	PropertyValue::Revision(context_),
+	finite_rotation(other.finite_rotation)
+{
+	// Clone each metadata entry.
+	BOOST_FOREACH(const GPlatesModel::MetadataContainer::value_type &metadata_entry, other.metadata)
+	{
+		metadata.push_back(metadata_entry->clone());
+	}
+}
+
+
+bool
+GPlatesPropertyValues::GpmlFiniteRotation::Revision::equality(
+		const GPlatesModel::Revision &other) const
+{
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+	if (finite_rotation != other_revision.finite_rotation)
+	{
+		return false;
+	}
+
+	if (metadata.size() != other_revision.metadata.size())
+	{
+		return false;
+	}
+
+	// Copy of other metadata so can remove equality matches.
+	GPlatesModel::MetadataContainer other_metadata(other_revision.metadata);
+
+	// FIXME: Change from O(N^2) search to something faster.
+	// Perhaps not really needed though, since metadata container sizes should be quite small.
+	GPlatesModel::MetadataContainer::const_iterator metadata_iter = metadata.begin();
+	GPlatesModel::MetadataContainer::const_iterator metadata_end = metadata.end();
+	for ( ; metadata_iter != metadata_end; ++metadata_iter)
+	{
+		const GPlatesModel::Metadata &metadata_entry = **metadata_iter;
+
+		GPlatesModel::MetadataContainer::iterator other_metadata_iter = other_metadata.begin();
+		GPlatesModel::MetadataContainer::iterator other_metadata_end = other_metadata.end();
+		for ( ; other_metadata_iter != other_metadata_end; ++other_metadata_iter)
+		{
+			const GPlatesModel::Metadata &other_metadata_entry = **other_metadata_iter;
+
+			if (metadata_entry == other_metadata_entry)
+			{
+				// Remove other metadata entry so we don't compare against it twice.
+				other_metadata.erase(other_metadata_iter);
+				break;
+			}
+		}
+
+		if (other_metadata_iter == other_metadata_end)
+		{
+			// Didn't find a match for the current metadata entry.
+			return false;
+		}
+	}
+
+	return PropertyValue::Revision::equality(other);
 }

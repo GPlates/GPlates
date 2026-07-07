@@ -34,17 +34,18 @@
 
 #include "maths/MultiPointOnSphere.h"
 
-const GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
-GPlatesPropertyValues::GmlMultiPoint::create(
-		const internal_multipoint_type &multipoint_)
-{
-	return non_null_ptr_type(new GmlMultiPoint(multipoint_));
-}
+#include "model/BubbleUpRevisionHandler.h"
+
+#include "scribe/Scribe.h"
+
+
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlMultiPoint::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("MultiPoint");
 
 
 const GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
 GPlatesPropertyValues::GmlMultiPoint::create(
-		const internal_multipoint_type &multipoint_,
+		const multipoint_type &multipoint_,
 		const std::vector<GmlPoint::GmlProperty> &gml_properties_)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -58,22 +59,37 @@ GPlatesPropertyValues::GmlMultiPoint::create(
 }
 
 
-GPlatesPropertyValues::GmlMultiPoint::GmlMultiPoint(
-		const internal_multipoint_type &multipoint_) :
-	PropertyValue(),
-	d_multipoint(multipoint_)
+void
+GPlatesPropertyValues::GmlMultiPoint::set_multipoint(
+		const multipoint_type &p)
 {
-	fill_gml_properties();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+
+	Revision &revision = revision_handler.get_revision<Revision>();
+
+	revision.multipoint = p;
+	revision.fill_gml_properties();
+
+	revision_handler.commit();
 }
 
 
-GPlatesPropertyValues::GmlMultiPoint::GmlMultiPoint(
-		const internal_multipoint_type &multipoint_,
-		const std::vector<GmlPoint::GmlProperty> &gml_properties_) :
-	PropertyValue(),
-	d_multipoint(multipoint_),
-	d_gml_properties(gml_properties_)
-{  }
+void
+GPlatesPropertyValues::GmlMultiPoint::set_gml_properties(
+		const std::vector<GmlPoint::GmlProperty> &gml_properties_)
+{
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+
+	Revision &revision = revision_handler.get_revision<Revision>();
+
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			revision.multipoint->number_of_points() == gml_properties_.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	revision.gml_properties = gml_properties_;
+
+	revision_handler.commit();
+}
 
 
 std::ostream &
@@ -85,17 +101,104 @@ GPlatesPropertyValues::GmlMultiPoint::print_to(
 }
 
 
-void
-GPlatesPropertyValues::GmlMultiPoint::fill_gml_properties()
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlMultiPoint::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlMultiPoint> &gml_multi_point)
 {
-	d_gml_properties.clear();
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_multi_point->get_multipoint(), "multipoint");
+		scribe.save(TRANSCRIBE_SOURCE, gml_multi_point->get_gml_properties(), "gml_properties");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> multi_point_ =
+				scribe.load<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>(TRANSCRIBE_SOURCE, "multipoint");
+		if (!multi_point_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
 
-	std::size_t number_of_points = d_multipoint->number_of_points();
-	d_gml_properties.reserve(number_of_points);
+		std::vector<GmlPoint::GmlProperty> gml_properties_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, gml_properties_, "gml_properties"))
+		{
+			// Failed to load GmlProperty's (eg, a future GPlates might have removed them).
+			// Just leave as the default (by using constructor with no GmlProperty's passed in).
+			gml_multi_point.construct_object(multi_point_);
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
+
+		// Create the property value.
+		gml_multi_point.construct_object(multi_point_, gml_properties_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlMultiPoint::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_multipoint(), "multipoint");
+			scribe.save(TRANSCRIBE_SOURCE, get_gml_properties(), "gml_properties");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> multi_point_ =
+					scribe.load<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>(TRANSCRIBE_SOURCE, "multipoint");
+			if (!multi_point_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the multi-point.
+			//
+			// Note: This also sets all points to use POS as their GmlProperty property.
+			set_multipoint(multi_point_);
+
+			std::vector<GmlPoint::GmlProperty> gml_properties_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, gml_properties_, "gml_properties"))
+			{
+				// Failed to load GmlProperty's (eg, a future GPlates might have removed them).
+				// Just leave as the default (set by 'set_multipoint()' above).
+			}
+			else
+			{
+				// GmlProperty's exist in transcription.
+				set_gml_properties(gml_properties_);
+			}
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlMultiPoint>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+void
+GPlatesPropertyValues::GmlMultiPoint::Revision::fill_gml_properties()
+{
+	gml_properties.clear();
+
+	std::size_t number_of_points = multipoint->number_of_points();
+	gml_properties.reserve(number_of_points);
 
 	for (std::size_t i = 0; i != number_of_points; ++i)
 	{
-		d_gml_properties.push_back(GmlPoint::POS);
+		gml_properties.push_back(GmlPoint::POS);
 	}
 }
 

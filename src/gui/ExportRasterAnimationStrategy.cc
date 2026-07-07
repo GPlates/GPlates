@@ -323,10 +323,10 @@ namespace
 			const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names =
 					raster_output->get_raster_band_names();
 			BOOST_FOREACH(
-					const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &raster_band_name,
+					const GPlatesPropertyValues::GpmlRasterBandNames::BandName &raster_band_name,
 					raster_band_names)
 			{
-				const GPlatesPropertyValues::TextContent &band_name = raster_band_name->value();
+				const GPlatesPropertyValues::TextContent &band_name = raster_band_name.get_name()->get_value();
 
 				// Exclude colour raster bands.
 				if (!raster_output->does_raster_band_contain_numerical_data(band_name))

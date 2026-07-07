@@ -31,25 +31,11 @@
 #include "StructuralType.h"
 
 #include "model/PropertyValue.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/UnicodeStringUtils.h"
-
-
-// This macro is used to define the virtual function 'deep_clone_as_interp_func' inside a class
-// which derives from InterpolationFunction.  The function definition is exactly identical in every
-// InterpolationFunction derivation, but the function must be defined in each derived class (rather
-// than in the base) because it invokes the non-virtual member function 'deep_clone' of that
-// specific derived class.
-// (This function 'deep_clone' cannot be moved into the base class, because (i) its return type is
-// the type of the derived class, and (ii) it must perform different actions in different classes.)
-// To define the function, invoke the macro in the class definition.  The macro invocation will
-// expand to a definition of the function.
-#define DEFINE_FUNCTION_DEEP_CLONE_AS_INTERP_FUNC()  \
-		virtual  \
-		const GpmlInterpolationFunction::non_null_ptr_type  \
-		deep_clone_as_interp_func() const  \
-		{  \
-			return deep_clone();  \
-		}
 
 
 namespace GPlatesPropertyValues
@@ -67,18 +53,6 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for boost::intrusive_ptr<GpmlInterpolationFunction>.
-		 */
-		typedef boost::intrusive_ptr<GpmlInterpolationFunction>
-				maybe_null_ptr_type;
-
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<const GpmlInterpolationFunction>.
-		 */
-		typedef boost::intrusive_ptr<const GpmlInterpolationFunction>
-				maybe_null_ptr_to_const_type;
-
-		/**
 		 * A convenience typedef for
 		 * GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction>.
 		 */
@@ -90,49 +64,23 @@ namespace GPlatesPropertyValues
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction> non_null_ptr_to_const_type;
 
-		/**
-		 * Construct a GpmlInterpolationFunction instance.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes.
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
-		 */
-		explicit
-		GpmlInterpolationFunction(
-				const StructuralType &value_type_):
-			PropertyValue(),
-			d_value_type(value_type_)
-		{  }
-
-		/**
-		 * Construct a GpmlInterpolationFunction instance which is a copy of @a other.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes.
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
-		 */
-		GpmlInterpolationFunction(
-				const GpmlInterpolationFunction &other) :
-			PropertyValue(other), /* share instance id */
-			d_value_type(other.d_value_type)
-		{  }
 
 		virtual
 		~GpmlInterpolationFunction()
 		{  }
 
-		virtual
-		const GpmlInterpolationFunction::non_null_ptr_type
-		deep_clone_as_interp_func() const = 0;
+		const non_null_ptr_type
+		clone() const
+		{
+			return GPlatesUtils::dynamic_pointer_cast<GpmlInterpolationFunction>(clone_impl());
+		}
 
 		// Note that no "setter" is provided:  The value type of a
 		// GpmlInterpolationFunction instance should never be changed.
 		const StructuralType &
-		value_type() const
+		get_value_type() const
 		{
-			return d_value_type;
+			return get_current_revision<Revision>().value_type;
 		}
 
 		/**
@@ -142,26 +90,81 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("InterpolationFunction");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlInterpolationFunction::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		virtual
 		std::ostream &
 		print_to(
 				std::ostream &os) const;
 
-	private:
+	protected:
 
-		StructuralType d_value_type;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const StructuralType &value_type_) :
+				value_type(value_type_)
+			{  }
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlInterpolationFunction &
-		operator=(const GpmlInterpolationFunction &);
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				value_type(other_.value_type)
+			{  }
 
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return value_type == other_revision.value_type &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			StructuralType value_type;
+		};
+
+		/**
+		 * Construct a GpmlInterpolationFunction instance - seems we need to define after @a Revision.
+		 */
+		explicit
+		GpmlInterpolationFunction(
+				const Revision::non_null_ptr_type &revision) :
+			PropertyValue(revision)
+		{  }
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

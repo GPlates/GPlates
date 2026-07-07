@@ -977,6 +977,19 @@ GPlatesMaths::minimum_distance(
 	// First see if the arcs intersect each other.
 	//
 
+	// If the minimum distance threshold is zero then return the (maximum possible) distance
+	// to signify that the minimum distance cannot be less than zero.
+	//
+	// Note: We do this before intersection testing (which would otherwise return a distance of zero).
+	//       An example of this is two polylines intersecting twice and the first intersection has
+	//       already been detected (here), resulting in the min. distance threshold being set to zero.
+	//       Then when the next intersection is detected (here) we will ignore it.
+	if (minimum_distance_threshold &&
+		minimum_distance_threshold.get() == AngularDistance::ZERO)
+	{
+		return AngularDistance::PI;
+	}
+
 	// If the caller has requested the closest points on the arcs then this
 	// will be the intersection point (if any).
 	boost::optional<UnitVector3D &> intersection;

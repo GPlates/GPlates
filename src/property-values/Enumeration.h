@@ -35,6 +35,9 @@
 
 #include "model/PropertyValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -64,55 +67,45 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				const EnumerationType &enum_type,
-				const GPlatesUtils::UnicodeString &enum_content)
+				const EnumerationContent &enum_content)
 		{
 			return non_null_ptr_type(new Enumeration(enum_type, enum_content));
+		}
+
+		static
+		const non_null_ptr_type
+		create(
+				const EnumerationType &enum_type,
+				const GPlatesUtils::UnicodeString &enum_content)
+		{
+			return non_null_ptr_type(new Enumeration(enum_type, EnumerationContent(enum_content)));
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			Enumeration::non_null_ptr_type dup(new Enumeration(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<Enumeration>(clone_impl());
 		}
-
-		const Enumeration::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular 'clone' will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const EnumerationContent &
-		value() const
+		get_value() const
 		{
-			return d_value;
+			return get_current_revision<Revision>().value;
 		}
 		
 		/**
 		 * Set the content of this enumeration to @a new_value.
 		 * EnumerationContent can be created by passing a UnicodeString in to
 		 * EnumerationContent's constructor.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_value(
-				const EnumerationContent &new_value)
-		{
-			d_value = new_value;
-			update_instance_id();
-		}
+				const EnumerationContent &new_value);
 
 		// Note that no "setter" is provided:  The type of an Enumeration
 		// instance should never be changed.
 		const EnumerationType &
-		type() const
+		get_type() const
 		{
 			return d_type;
 		}
@@ -126,6 +119,13 @@ namespace GPlatesPropertyValues
 		{
 			return StructuralType(d_type);
 		}
+
+		/**
+		 * NOTE: There is no static access to the structural type (eg, as Enumeration::STRUCTURAL_TYPE)
+		 * because it depends on the enumeration type which is non-static data.
+		 */
+		//static const StructuralType STRUCTURAL_TYPE;
+
 
 		virtual
 		void
@@ -153,27 +153,101 @@ namespace GPlatesPropertyValues
 		explicit
 		Enumeration(
 				const EnumerationType &enum_type,
-				const GPlatesUtils::UnicodeString &enum_content) :
-			PropertyValue(),
-			d_type(enum_type),
-			d_value(enum_content)
+				const EnumerationContent &enum_content) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(enum_content))),
+			d_type(enum_type)
 		{  }
 
+		//! Constructor used when cloning.
 		Enumeration(
-				const Enumeration &other) :
-			PropertyValue(other), /* share instance id */
-			d_type(other.d_type),
-			d_value(other.d_value)
+				const Enumeration &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_))),
+			d_type(other_.d_type)
 		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new Enumeration(*this, context));
+		}
+
+		virtual
+		bool
+		equality(
+				const Revisionable &other) const
+		{
+			const Enumeration &other_pv = dynamic_cast<const Enumeration &>(other);
+
+			return d_type == other_pv.d_type &&
+					// The revisioned data comparisons are handled here...
+					Revisionable::equality(other);
+		}
 
 	private:
 
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const EnumerationContent &value_) :
+				value(value_)
+			{  }
+
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				value(other_.value)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return value == other_revision.value &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			EnumerationContent value;
+		};
+
 		EnumerationType d_type;
-		EnumerationContent d_value;
 
-		Enumeration &
-		operator=(const Enumeration &);
+	private: // Transcribe...
 
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<Enumeration> &enumeration);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

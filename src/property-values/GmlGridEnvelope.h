@@ -34,6 +34,9 @@
 
 #include "model/PropertyValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -61,11 +64,12 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlGridEnvelope> non_null_ptr_to_const_type;
 
 
+		typedef std::vector<int> integer_list_type;
+
+
 		virtual
 		~GmlGridEnvelope()
 		{  }
-
-		typedef std::vector<int> integer_list_type;
 
 		/**
 		 * Create a GmlGridEnvelope instance from @a low_ and @a high_ positions.
@@ -81,30 +85,19 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GmlGridEnvelope(*this));
-			return dup;
-		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		const integer_list_type &
-		low() const
-		{
-			return d_low;
+			return GPlatesUtils::dynamic_pointer_cast<GmlGridEnvelope>(clone_impl());
 		}
 
 		const integer_list_type &
-		high() const
+		get_low() const
 		{
-			return d_high;
+			return get_current_revision<Revision>().low;
+		}
+
+		const integer_list_type &
+		get_high() const
+		{
+			return get_current_revision<Revision>().high;
 		}
 
 		void
@@ -119,9 +112,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gml("GridEnvelope");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GmlGridEnvelope::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -164,37 +162,88 @@ namespace GPlatesPropertyValues
 		GmlGridEnvelope(
 				const integer_list_type &low_,
 				const integer_list_type &high_) :
-			PropertyValue(),
-			d_low(low_),
-			d_high(high_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(low_, high_)))
 		{  }
 
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GmlGridEnvelope(
-				const GmlGridEnvelope &other) :
-			PropertyValue(other), /* share instance id */
-			d_low(other.d_low),
-			d_high(other.d_high)
+				const GmlGridEnvelope &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GmlGridEnvelope(*this, context));
+		}
 
 	private:
 
-		integer_list_type d_low;
-		integer_list_type d_high;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision(
+					const integer_list_type &low_,
+					const integer_list_type &high_) :
+				low(low_),
+				high(high_)
+			{  }
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GmlGridEnvelope &
-		operator=(
-				const GmlGridEnvelope &);
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				low(other_.low),
+				high(other_.high)
+			{  }
 
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return low == other_revision.low &&
+						high == other_revision.high &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			integer_list_type low;
+			integer_list_type high;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GmlGridEnvelope> &gml_grid_envelope);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

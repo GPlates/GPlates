@@ -123,10 +123,10 @@ void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_piecewise_aggregation(
 		const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
 			gpml_piecewise_aggregation.time_windows().begin();
 
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
 			gpml_piecewise_aggregation.time_windows().end();
 
 	for ( ; iter != end; ++iter) 
@@ -143,7 +143,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_piecewise_aggregation
 		// the *un-adjusted* time window time period will be incorrect and hence we need to ignore it.
 		// By the way, the time window is a *sole* time window because the topology tools cannot yet
 		// create time-dependent topology (section) lists.
-		process_gpml_time_window(*iter);
+		process_gpml_time_window(**iter);
 	}
 }
 
@@ -165,14 +165,15 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line(
 	d_seq_num = 0;
 
 	// loop over all the sections
-	GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator iter =
-			gpml_topological_line.sections_begin();
-	GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator end =
-			gpml_topological_line.sections_end();
-	for ( ; iter != end; ++iter) 
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &sections = gpml_topological_line.sections();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator sections_iter = sections.begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator sections_end = sections.end();
+	for ( ; sections_iter != sections_end; ++sections_iter)
 	{
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *sections_iter;
+
 		// visit the rest of the gpml 
-		(*iter)->accept_visitor(*this);
+		topological_section->accept_visitor(*this);
 	}
 }
 
@@ -184,29 +185,29 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network(
 	// Set the sequence number for the boundary sections.
 	d_seq_num = 0;
 
-	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator boundary_sections_iter =
-			gpml_topological_network.boundary_sections_begin();
-	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator boundary_sections_iter_end =
-			gpml_topological_network.boundary_sections_end();
-	// Loop over the boundary sections.
-	for ( ; boundary_sections_iter != boundary_sections_iter_end; ++boundary_sections_iter) 
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &boundary_sections = gpml_topological_network.boundary_sections();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_iter = boundary_sections.begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_end_ = boundary_sections.end();
+	for ( ; boundary_sections_iter != boundary_sections_end_; ++boundary_sections_iter)
 	{
-		// Visit the current topological section.
-		(*boundary_sections_iter)->accept_visitor(*this);
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *boundary_sections_iter;
+
+		topological_section->accept_visitor(*this);
 	}
 
 	// Set the sequence number for the interior geometries.
 	d_seq_num = 1;
 
-	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator interior_geometries_iter =
-			gpml_topological_network.interior_geometries_begin();
-	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator interior_geometries_iter_end =
-			gpml_topological_network.interior_geometries_end();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate> &interior_geometries = gpml_topological_network.interior_geometries();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::const_iterator interior_geometries_iter = interior_geometries.begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::const_iterator interior_geometries_end = interior_geometries.end();
 	// Loop over the interior geometries.
-	for ( ; interior_geometries_iter != interior_geometries_iter_end; ++interior_geometries_iter) 
+	for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter) 
 	{
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type interior_geometry = *interior_geometries_iter;
+
 		// Visit the current topological network interior.
-		visit_gpml_topological_network_interior(**interior_geometries_iter);
+		visit_gpml_topological_network_interior(*interior_geometry);
 	}
 }
 
@@ -216,11 +217,11 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network_i
 {
 	// source geom.'s value is a delegate 
 	// DO NOT visit the delegate with:
-	// ( gpml_topological_line_section.get_source_geometry() )->accept_visitor(*this); 
+	// ( gpml_topological_line_section.source_geometry() )->accept_visitor(*this); 
 
 	// Rather, access directly
-	const GPlatesModel::FeatureId &src_geom_id = gpml_topological_network_interior.feature_id();
-	const GPlatesModel::PropertyName &src_prop_name = gpml_topological_network_interior.target_property();
+	const GPlatesModel::FeatureId &src_geom_id = gpml_topological_network_interior.get_feature_id();
+	const GPlatesModel::PropertyName &src_prop_name = gpml_topological_network_interior.get_target_property_name();
 
 	// NOTE: A topological interior is *not* a topological section.
 	// But for the meantime we treat it like one because the topology tools currently access
@@ -242,14 +243,15 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_polygon(
 	d_seq_num = 0;
 
 	// loop over all the sections
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
-			gpml_topological_polygon.exterior_sections_begin();
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator end =
-			gpml_topological_polygon.exterior_sections_end();
-	for ( ; iter != end; ++iter) 
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &exterior_sections = gpml_topological_polygon.exterior_sections();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator exterior_sections_iter = exterior_sections.begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator exterior_sections_end = exterior_sections.end();
+	for ( ; exterior_sections_iter != exterior_sections_end; ++exterior_sections_iter)
 	{
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *exterior_sections_iter;
+
 		// visit the rest of the gpml 
-		(*iter)->accept_visitor(*this);
+		topological_section->accept_visitor(*this);
 	}
 }
 
@@ -259,13 +261,13 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line_sect
 {  
 	// source geom.'s value is a delegate 
 	// DO NOT visit the delegate with:
-	// ( gpml_topological_line_section.get_source_geometry() )->accept_visitor(*this); 
+	// ( gpml_topological_line_section.source_geometry() )->accept_visitor(*this); 
 
 	// Rather, access directly
-	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type property_delegate_ptr =
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type property_delegate_ptr =
 			gpml_topological_line_section.get_source_geometry();
-	GPlatesModel::FeatureId src_geom_id = property_delegate_ptr->feature_id();
-	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->target_property();
+	GPlatesModel::FeatureId src_geom_id = property_delegate_ptr->get_feature_id();
+	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->get_target_property_name();
 
 	// use reverse 
 	const bool use_reverse = gpml_topological_line_section.get_reverse_order();
@@ -292,13 +294,13 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_point(
 		const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point)
 {  
 	// DO NOT visit the delegate with:
-	// ( gpml_topological_line_section.get_source_geometry() )->accept_visitor(*this); 
+	// ( gpml_topological_line_section.source_geometry() )->accept_visitor(*this); 
 
 	// Access directly the data
-	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type property_delegate_ptr =
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type property_delegate_ptr =
 			gpml_topological_point.get_source_geometry();
-	GPlatesModel::FeatureId	src_geom_id = property_delegate_ptr->feature_id();
-	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->target_property();
+	GPlatesModel::FeatureId	src_geom_id = property_delegate_ptr->get_feature_id();
+	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->get_target_property_name();
 
 	// No click point and no reverse for point sections.
 	const GPlatesGui::TopologySectionsContainer::TableRow table_row(src_geom_id, src_prop_name);

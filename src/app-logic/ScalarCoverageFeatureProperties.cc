@@ -206,7 +206,7 @@ namespace GPlatesAppLogic
 					const Domain &domain = *domains_iter;
 
 					const GPlatesModel::PropertyName &domain_property_name =
-							(*domain.property)->property_name();
+							(*domain.property)->get_property_name();
 
 					// Look for a range name associated with the current domain name.
 					boost::optional<GPlatesModel::PropertyName> range_property_name_opt =
@@ -230,11 +230,11 @@ namespace GPlatesAppLogic
 					{
 						const Range &range = *ranges_iter;
 
-						if ((*range.property)->property_name() == range_property_name)
+						if ((*range.property)->get_property_name() == range_property_name)
 						{
 							// See if the number of scalars matches the number of points in the domain geometry.
 							if (!range.scalar_data.empty() &&
-								range.scalar_data.front()->coordinates_len() == num_domain_geometry_points)
+								range.scalar_data.front()->get_coordinates().size() == num_domain_geometry_points)
 							{
 								if (matching_range)
 								{
@@ -268,7 +268,7 @@ namespace GPlatesAppLogic
 							{
 								const Domain &remaining_domain = *remaining_domains_iter;
 
-								if ((*remaining_domain.property)->property_name() == domain_property_name)
+								if ((*remaining_domain.property)->get_property_name() == domain_property_name)
 								{
 									// See if the number of geometry points matches.
 									if (num_domain_geometry_points == GeometryUtils::get_num_geometry_exterior_points(*remaining_domain.geometry))
@@ -327,7 +327,7 @@ namespace GPlatesAppLogic
 				for (std::size_t time_window_index = 0; time_window_index < num_time_windows; ++time_window_index)
 				{
 					const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-							gpml_piecewise_aggregation.time_windows()[time_window_index].valid_time();
+							gpml_piecewise_aggregation.time_windows()[time_window_index]->valid_time();
 
 					// If the time window period contains the current reconstruction time then visit.
 					// The time periods should be mutually exclusive - if we happen to be in
@@ -335,7 +335,7 @@ namespace GPlatesAppLogic
 					// and then it doesn't really matter which one we choose.
 					if (time_period->contains(d_reconstruction_time))
 					{
-						gpml_piecewise_aggregation.time_windows()[time_window_index].time_dependent_value()
+						gpml_piecewise_aggregation.time_windows()[time_window_index]->time_dependent_value()
 								->accept_visitor(*this);
 					}
 				}
@@ -347,12 +347,14 @@ namespace GPlatesAppLogic
 			visit_gml_data_block(
 					typename feature_visitor_type::gml_data_block_type &gml_data_block)
 			{
+				const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &
+						tuple_list = gml_data_block.tuple_list();
+
 				d_ranges.push_back(
 						Range(
 								this->current_top_level_propiter().get(),
 								std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type>(
-										gml_data_block.tuple_list_begin(),
-										gml_data_block.tuple_list_end())));
+										tuple_list.begin(), tuple_list.end())));
 			}
 
 
@@ -362,7 +364,7 @@ namespace GPlatesAppLogic
 					typename feature_visitor_type::gml_line_string_type &gml_line_string)
 			{
 				d_domains.push_back(
-						Domain(this->current_top_level_propiter().get(), gml_line_string.polyline()));
+						Domain(this->current_top_level_propiter().get(), gml_line_string.get_polyline()));
 			}
 
 
@@ -372,7 +374,7 @@ namespace GPlatesAppLogic
 					typename feature_visitor_type::gml_multi_point_type &gml_multi_point)
 			{
 				d_domains.push_back(
-						Domain(this->current_top_level_propiter().get(), gml_multi_point.multipoint()));
+						Domain(this->current_top_level_propiter().get(), gml_multi_point.get_multipoint()));
 			}
 
 
@@ -391,7 +393,7 @@ namespace GPlatesAppLogic
 					typename feature_visitor_type::gml_point_type &gml_point)
 			{
 				d_domains.push_back(
-						Domain(this->current_top_level_propiter().get(), gml_point.point().get_geometry_on_sphere()));
+						Domain(this->current_top_level_propiter().get(), gml_point.get_point().get_geometry_on_sphere()));
 			}
 
 
@@ -401,7 +403,7 @@ namespace GPlatesAppLogic
 					typename feature_visitor_type::gml_polygon_type &gml_polygon)
 			{
 				d_domains.push_back(
-						Domain(this->current_top_level_propiter().get(), gml_polygon.polygon()));
+						Domain(this->current_top_level_propiter().get(), gml_polygon.get_polygon()));
 			}
 
 		private:

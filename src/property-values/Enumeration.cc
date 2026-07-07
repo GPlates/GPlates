@@ -29,11 +29,92 @@
 
 #include "Enumeration.h"
 
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeQualifiedXmlName.h"
+#include "model/TranscribeStringContentTypeGenerator.h"
+
+#include "scribe/Scribe.h"
+
+
+void
+GPlatesPropertyValues::Enumeration::set_value(
+		const EnumerationContent &new_value)
+{
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().value = new_value;
+	revision_handler.commit();
+}
+
 
 std::ostream &
 GPlatesPropertyValues::Enumeration::print_to(
 		std::ostream &os) const
 {
-	return os << d_value.get();
+	return os << get_current_revision<Revision>().value.get();
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::Enumeration::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<Enumeration> &enumeration)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, enumeration->get_type(), "type");
+		scribe.save(TRANSCRIBE_SOURCE, enumeration->get_value(), "value");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<EnumerationType> type_ = scribe.load<EnumerationType>(TRANSCRIBE_SOURCE, "type");
+		GPlatesScribe::LoadRef<EnumerationContent> value_ = scribe.load<EnumerationContent>(TRANSCRIBE_SOURCE, "value");
+		if (!type_.is_valid() ||
+			!value_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		enumeration.construct_object(type_, value_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::Enumeration::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_type(), "type");
+			scribe.save(TRANSCRIBE_SOURCE, get_value(), "value");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<EnumerationType> type_ = scribe.load<EnumerationType>(TRANSCRIBE_SOURCE, "type");
+			GPlatesScribe::LoadRef<EnumerationContent> value_ = scribe.load<EnumerationContent>(TRANSCRIBE_SOURCE, "value");
+			if (!type_.is_valid() ||
+				!value_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			d_type = type_;
+			set_value(value_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, Enumeration>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

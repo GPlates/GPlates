@@ -31,8 +31,13 @@
 #include <vector>
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "maths/PolygonOnSphere.h"
+
 #include "model/PropertyValue.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -76,38 +81,28 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const internal_polygon_type &polygon_);
+				const internal_polygon_type &polygon_)
+		{
+			// Because PolygonOnSphere can only ever be handled via a non_null_ptr_to_const_type,
+			// there is no way a PolygonOnSphere instance can be changed.  Hence, it is safe to store
+			// a pointer to the instance which was passed into this 'create' function.
+			return non_null_ptr_type(new GmlPolygon(polygon_));
+		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GmlPolygon(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GmlPolygon>(clone_impl());
 		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 
 		/**
 		 * Access the GPlatesMaths::PolygonOnSphere which encodes the geometry of this instance.
-		 *
-		 * Note that there is no accessor provided which returns a boost::intrusive_ptr to
-		 * a non-const GPlatesMaths::PolygonOnSphere.  The GPlatesMaths::PolygonOnSphere
-		 * within this instance should not be modified directly; to alter the
-		 * GPlatesMaths::PolygonOnSphere within this instance, set a new value using the
-		 * function @a set_polygon below.
 		 */
 		const internal_polygon_type
-		polygon() const
+		get_polygon() const
 		{
-			return d_polygon;
+			return get_current_revision<Revision>().polygon;
 		}
 
 		/**
@@ -115,12 +110,9 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_polygon(
-				const internal_polygon_type &p)
-		{
-			d_polygon = p;
-			update_instance_id();
-		}
+				const internal_polygon_type &p);
 		
+
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -129,9 +121,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gml("Polygon");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GmlPolygon::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -174,34 +171,93 @@ namespace GPlatesPropertyValues
 		 */
 		GmlPolygon(
 				const internal_polygon_type &polygon_):
-			PropertyValue(),
-			d_polygon(polygon_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(polygon_)))
 		{  }
 
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GmlPolygon(
-				const GmlPolygon &other):
-			PropertyValue(other), /* share instance id */
-			d_polygon(other.d_polygon)
+				const GmlPolygon &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GmlPolygon(*this, context));
+		}
 
 	private:
 
-		internal_polygon_type d_polygon;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision(
+					const internal_polygon_type &polygon_) :
+				polygon(polygon_)
+			{  }
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GmlPolygon &
-		operator=(
-				const GmlPolygon &);
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				// Note there is no need to distinguish between shallow and deep copying because
+				// PolygonOnSphere is immutable and hence there is never a need to deep copy it...
+				polygon(other_.polygon)
+			{  }
 
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const;
+
+			/**
+			 * This is the GPlatesMaths::PolygonOnSphere which contains exactly one exterior ring, and
+			 * zero or more interior rings.
+			 *
+			 * Note that this conflicts with the ESRI Shapefile definition which allows for multiple
+			 * exterior rings.
+			 *
+			 * Also note that the GPlates model creates polygons by implicitly joining the first and last
+			 * vertex fed to it; supplying three points creates a triangle, four points creates a
+			 * quadrilateral. In contrast, the ESRI Shapefile spec and GML Polygons are supposed to be
+			 * read from disk and written to disk with the first and last vertices coincident - four
+			 * points creates a triangle, and three points are invalid. This is especially important
+			 * to keep in mind as GPlates cannot create a GreatCircleArc between coincident points.
+			 */
+			internal_polygon_type polygon;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GmlPolygon> &gml_polygon);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

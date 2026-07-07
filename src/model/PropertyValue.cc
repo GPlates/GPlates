@@ -28,24 +28,6 @@
 #include "PropertyValue.h"
 
 
-GPlatesModel::PropertyValue::instance_id_type
-GPlatesModel::PropertyValue::s_next_instance_id = instance_id_type();
-
-
-bool
-GPlatesModel::PropertyValue::operator==(
-		const PropertyValue &other) const
-{
-	// Note: this does not behave as a true operator==.
-	// It will just check if one PropertyValue is an unmodified clone of the other
-	// PropertyValue.
-	// This suffices for what we're using operator== for: seeing if we should
-	// check in a clone of PropertyValue back into the model.
-	return d_instance_id == other.d_instance_id &&
-		directly_modifiable_fields_equal(other);
-}
-
-
 std::ostream &
 GPlatesModel::operator<<(
 		std::ostream &os,

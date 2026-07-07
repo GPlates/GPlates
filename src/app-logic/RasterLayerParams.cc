@@ -58,7 +58,7 @@ GPlatesAppLogic::RasterLayerParams::set_band_name(
 		{
 			// Set the band name using the default band index of zero.
 			band_name_index = 0;
-			band_name = d_band_names[band_name_index.get()]->value();
+			band_name = d_band_names[band_name_index.get()].get_name()->get_value();
 		}
 	}
 
@@ -131,7 +131,7 @@ GPlatesAppLogic::RasterLayerParams::set_raster_feature(
 		{
 			// Set the band name using the default band index of zero.
 			band_name_index = 0;
-			d_band_name = d_band_names[band_name_index.get()]->value();
+			d_band_name = d_band_names[band_name_index.get()].get_name()->get_value();
 		}
 	}
 

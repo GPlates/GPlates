@@ -27,83 +27,129 @@
 
 #include <algorithm>
 #include <iostream>
-#include <typeinfo>
+#include <boost/foreach.hpp>
 
 #include "GpmlTopologicalLine.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
-namespace
-{
-	bool
-	section_eq(
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &p1,
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &p2)
-	{
-		return *p1 == *p2;
-	}
-}
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/ModelTransaction.h"
+
+#include "scribe/Scribe.h"
 
 
-const GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type
-GPlatesPropertyValues::GpmlTopologicalLine::deep_clone() const
-{
-	GpmlTopologicalLine::non_null_ptr_type dup = clone();
-
-	// Now we need to clear the topological-section vector in the duplicate, before we
-	// push-back the cloned sections.
-	dup->d_sections.clear();
-	sections_const_iterator iter = d_sections.begin();
-	sections_const_iterator end = d_sections.end();
-	for ( ; iter != end; ++iter)
-	{
-		GpmlTopologicalSection::non_null_ptr_type cloned_section =
-				(*iter)->deep_clone_as_topo_section();
-		dup->d_sections.push_back(cloned_section);
-	}
-
-	return dup;
-}
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlTopologicalLine::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalLine");
 
 
 std::ostream &
 GPlatesPropertyValues::GpmlTopologicalLine::print_to(
 		std::ostream &os) const
 {
+	const GPlatesModel::RevisionedVector<GpmlTopologicalSection> &sections_ = sections();
+
 	os << "[ ";
 
-	for (sections_const_iterator iter = d_sections.begin(); iter != d_sections.end(); ++iter)
+	GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator sections_iter = sections_.begin();
+	GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator sections_end = sections_.end();
+	for ( ; sections_iter != sections_end; ++sections_iter)
 	{
-		os << **iter;
+		os << **sections_iter;
 	}
 
 	return os << " ]";
 }
 
 
-bool
-GPlatesPropertyValues::GpmlTopologicalLine::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesModel::Revision::non_null_ptr_type
+GPlatesPropertyValues::GpmlTopologicalLine::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	try
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.sections.get_revisionable())
 	{
-		const GpmlTopologicalLine &other_casted =
-				dynamic_cast<const GpmlTopologicalLine &>(other);
-		if (d_sections.size() == other_casted.d_sections.size())
+		return revision.sections.clone_revision(transaction);
+	}
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalLine::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlTopologicalLine> &gpml_topological_line)
+{
+	if (scribe.is_saving())
+	{
+		GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type sections_ = &gpml_topological_line->sections();
+		scribe.save(TRANSCRIBE_SOURCE, sections_, "sections");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> sections_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "sections");
+		if (!sections_.is_valid())
 		{
-			return std::equal(
-					d_sections.begin(),
-					d_sections.end(),
-					other_casted.d_sections.begin(),
-					&section_eq);
+			return scribe.get_transcribe_result();
 		}
-		else
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_topological_line.construct_object(
+				boost::ref(transaction),  // non-const ref
+				sections_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalLine::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
 		{
-			return false;
+			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type sections_ = &sections();
+			scribe.save(TRANSCRIBE_SOURCE, sections_, "sections");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> sections_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "sections");
+			if (!sections_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+			revision.sections.change(revision_handler.get_model_transaction(), sections_);
+			revision_handler.commit();
 		}
 	}
-	catch (const std::bad_cast &)
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlTopologicalLine>(TRANSCRIBE_SOURCE))
 	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
+		return scribe.get_transcribe_result();
 	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

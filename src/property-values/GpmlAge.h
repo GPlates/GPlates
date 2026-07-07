@@ -36,7 +36,11 @@
 #include "TimescaleName.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -166,24 +170,17 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlAge(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlAge>(clone_impl());
 		}
-
-		const GpmlAge::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Return the absolute age, if such data is explicitly present, of this GpmlAge.
 		 */
 		const boost::optional<double> &
-		get_age_absolute() const;
+		get_age_absolute() const
+		{
+			return get_current_revision<Revision>().age_absolute;
+		}
 
 		/**
 		 * Set the absolute age of this GpmlAge.
@@ -200,7 +197,10 @@ namespace GPlatesPropertyValues
 		 * Return the named (stratigraphic,geomagnetic) age, if such data is explicitly present, of this GpmlAge.
 		 */
 		const boost::optional<TimescaleBand> &
-		get_age_named() const;
+		get_age_named() const
+		{
+			return get_current_revision<Revision>().age_named;
+		}
 
 		/**
 		 * Set the named (stratigraphic,geomagnetic) age of this GpmlAge.
@@ -232,7 +232,10 @@ namespace GPlatesPropertyValues
 		 * used by this GpmlAge.
 		 */
 		const boost::optional<TimescaleName> &
-		get_timescale() const;
+		get_timescale() const
+		{
+			return get_current_revision<Revision>().timescale;
+		}
 
 		/**
 		 * Set the name of the timescale used by this GpmlAge.
@@ -258,7 +261,10 @@ namespace GPlatesPropertyValues
 		 * Presuming it has been set, this method returns the plus-or-minus value.
 		 */
 		const boost::optional<double> &
-		get_uncertainty_plusminus() const;
+		get_uncertainty_plusminus() const
+		{
+			return get_current_revision<Revision>().uncertainty_plusminus;
+		}
 
 		/**
 		 * Set the uncertainty of this GpmlAge to a simple plus-or-minus value expressed in My.
@@ -285,7 +291,10 @@ namespace GPlatesPropertyValues
 		 * uncertainty as an absolute age.
 		 */
 		const boost::optional<double> &
-		get_uncertainty_youngest_absolute() const;
+		get_uncertainty_youngest_absolute() const
+		{
+			return get_current_revision<Revision>().uncertainty_youngest_absolute;
+		}
 
 		/**
 		 * Set the youngest part of the uncertainty range of this GpmlAge to an absolute value in Ma.
@@ -312,7 +321,10 @@ namespace GPlatesPropertyValues
 		 * uncertainty as a named age.
 		 */
 		const boost::optional<TimescaleBand> &
-		get_uncertainty_youngest_named() const;
+		get_uncertainty_youngest_named() const
+		{
+			return get_current_revision<Revision>().uncertainty_youngest_named;
+		}
 
 		/**
 		 * Set the youngest part of the uncertainty range of this GpmlAge to a named value from some timescale.
@@ -346,7 +358,10 @@ namespace GPlatesPropertyValues
 		 * uncertainty as an absolute age.
 		 */
 		const boost::optional<double> &
-		get_uncertainty_oldest_absolute() const;
+		get_uncertainty_oldest_absolute() const
+		{
+			return get_current_revision<Revision>().uncertainty_oldest_absolute;
+		}
 
 		/**
 		 * Set the oldest part of the uncertainty range of this GpmlAge to an absolute value in Ma.
@@ -373,7 +388,10 @@ namespace GPlatesPropertyValues
 		 * uncertainty as a named age.
 		 */
 		const boost::optional<TimescaleBand> &
-		get_uncertainty_oldest_named() const;
+		get_uncertainty_oldest_named() const
+		{
+			return get_current_revision<Revision>().uncertainty_oldest_named;
+		}
 
 		/**
 		 * Set the oldest part of the uncertainty range of this GpmlAge to a named value from some timescale.
@@ -412,9 +430,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("Age");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlAge::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -462,95 +485,172 @@ namespace GPlatesPropertyValues
 					boost::optional<TimescaleBand> uncertainty_youngest_named,
 					boost::optional<double> uncertainty_oldest_absolute,
 					boost::optional<TimescaleBand> uncertainty_oldest_named):
-			PropertyValue(),
-			d_age_absolute(age_absolute),
-			d_age_named(age_named),
-			d_timescale(timescale),
-			d_uncertainty_plusminus(uncertainty_plusminus),
-			d_uncertainty_youngest_absolute(uncertainty_youngest_absolute),
-			d_uncertainty_youngest_named(uncertainty_youngest_named),
-			d_uncertainty_oldest_absolute(uncertainty_oldest_absolute),
-			d_uncertainty_oldest_named(uncertainty_oldest_named)
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(
+									age_absolute,
+									age_named,
+									timescale,
+									uncertainty_plusminus,
+									uncertainty_youngest_absolute,
+									uncertainty_youngest_named,
+									uncertainty_oldest_absolute,
+									uncertainty_oldest_named)))
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlAge(
-				const GpmlAge &other) :
-			PropertyValue(other), /* share instance id */
-			d_age_absolute(other.d_age_absolute),
-			d_age_named(other.d_age_named),
-			d_timescale(other.d_timescale),
-			d_uncertainty_plusminus(other.d_uncertainty_plusminus),
-			d_uncertainty_youngest_absolute(other.d_uncertainty_youngest_absolute),
-			d_uncertainty_youngest_named(other.d_uncertainty_youngest_named),
-			d_uncertainty_oldest_absolute(other.d_uncertainty_oldest_absolute),
-			d_uncertainty_oldest_named(other.d_uncertainty_oldest_named)
+				const GpmlAge &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlAge(*this, context));
+		}
 
 	private:
 
 		/**
-		 * A gpml:Age can have its age specified as an absolute (numeric) age in Ma.
+		 * Property value data that is mutable/revisionable.
 		 */
-		boost::optional<double> d_age_absolute;
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					boost::optional<double> age_absolute_,
+					boost::optional<TimescaleBand> age_named_,
+					boost::optional<TimescaleName> timescale_,
+					boost::optional<double> uncertainty_plusminus_,
+					boost::optional<double> uncertainty_youngest_absolute_,
+					boost::optional<TimescaleBand> uncertainty_youngest_named_,
+					boost::optional<double> uncertainty_oldest_absolute_,
+					boost::optional<TimescaleBand> uncertainty_oldest_named_) :
+				age_absolute(age_absolute_),
+				age_named(age_named_),
+				timescale(timescale_),
+				uncertainty_plusminus(uncertainty_plusminus_),
+				uncertainty_youngest_absolute(uncertainty_youngest_absolute_),
+				uncertainty_youngest_named(uncertainty_youngest_named_),
+				uncertainty_oldest_absolute(uncertainty_oldest_absolute_),
+				uncertainty_oldest_named(uncertainty_oldest_named_)
+			{  }
 
-		/**
-		 * A gpml:Age can also have its age specified as a named (stratigraphic or
-		 * otherwise) age, such as "Paleogene" or "Late Triassic".
-		 *
-		 * Both @a d_age_absolute and @a d_age_named can be present in the data,
-		 * and (sadly) there is potential for conflicting information there.
-		 * While a named stratigraphic age may represent data we are more certain about
-		 * (i.e. "this fossil was found x metres down in the Permian layer"), we cannot
-		 * discount the fact that the user manually assigning an absolute age is a very
-		 * explicit action and they clearly want to use that absolute age. But we don't
-		 * want to just throw out the stratigraphic data either, because that can be
-		 * important metadata. Fearless Leader has also expressed a concern that we must have
-		 * numeric ages available for legacy programs to use.
-		 * In conclusion, no, there is no easy way to say what should be used in the event
-		 * that GPlates gains awareness of timescale bands' age ranges, unless exactly
-		 * one of @a d_age_absolute or @a d_age_named are present.
-		 */
-		boost::optional<TimescaleBand> d_age_named;
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				age_absolute(other_.age_absolute),
+				age_named(other_.age_named),
+				timescale(other_.timescale),
+				uncertainty_plusminus(other_.uncertainty_plusminus),
+				uncertainty_youngest_absolute(other_.uncertainty_youngest_absolute),
+				uncertainty_youngest_named(other_.uncertainty_youngest_named),
+				uncertainty_oldest_absolute(other_.uncertainty_oldest_absolute),
+				uncertainty_oldest_named(other_.uncertainty_oldest_named)
+			{  }
 
-		/**
-		 * A gpml:Age can (and is strongly encouraged to) have a stratigraphic or geomagnetic
-		 * timescale associated with it. This member stores the "well known" name of the timescale,
-		 * such as ICC2012 or GTS2004.
-		 */
-		boost::optional<TimescaleName> d_timescale;
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
 
-		/**
-		 * A gpml:Age can have an associated uncertainty. It can be expressed as a plus-or-minus
-		 * value measured in My.
-		 */
-		boost::optional<double> d_uncertainty_plusminus;
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-		/**
-		 * A gpml:Age can alternatively represent uncertainty information as an asymmetric age
-		 * range, with a 'youngest' and 'oldest' age estimate. Just as with the principal age,
-		 * these can be either absolute ages or named ages.
-		 *
-		 * I'm putting my foot down and saying that this representation of uncertainty will only
-		 * have an (absolute xor named) age for each end of the range; Mostly this is just to retain
-		 * some degree of sanity for the EditAgeWidget UI. --jclark 20150303
-		 */
-		boost::optional<double> d_uncertainty_youngest_absolute;
-		boost::optional<TimescaleBand> d_uncertainty_youngest_named;
-		boost::optional<double> d_uncertainty_oldest_absolute;
-		boost::optional<TimescaleBand> d_uncertainty_oldest_named;
+				return age_absolute == other_revision.age_absolute &&
+						age_named == other_revision.age_named &&
+						timescale == other_revision.timescale &&
+						uncertainty_plusminus == other_revision.uncertainty_plusminus &&
+						uncertainty_youngest_absolute == other_revision.uncertainty_youngest_absolute &&
+						uncertainty_youngest_named == other_revision.uncertainty_youngest_named &&
+						uncertainty_oldest_absolute == other_revision.uncertainty_oldest_absolute &&
+						uncertainty_oldest_named == other_revision.uncertainty_oldest_named &&
+						PropertyValue::Revision::equality(other);
+			}
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlAge &
-		operator=(const GpmlAge &);
 
+			/**
+			 * A gpml:Age can have its age specified as an absolute (numeric) age in Ma.
+			 */
+			boost::optional<double> age_absolute;
+
+			/**
+			 * A gpml:Age can also have its age specified as a named (stratigraphic or
+			 * otherwise) age, such as "Paleogene" or "Late Triassic".
+			 *
+			 * Both @a age_absolute and @a age_named can be present in the data,
+			 * and (sadly) there is potential for conflicting information there.
+			 * While a named stratigraphic age may represent data we are more certain about
+			 * (i.e. "this fossil was found x metres down in the Permian layer"), we cannot
+			 * discount the fact that the user manually assigning an absolute age is a very
+			 * explicit action and they clearly want to use that absolute age. But we don't
+			 * want to just throw out the stratigraphic data either, because that can be
+			 * important metadata. Fearless Leader has also expressed a concern that we must have
+			 * numeric ages available for legacy programs to use.
+			 * In conclusion, no, there is no easy way to say what should be used in the event
+			 * that GPlates gains awareness of timescale bands' age ranges, unless exactly
+			 * one of @a age_absolute or @a age_named are present.
+			 */
+			boost::optional<TimescaleBand> age_named;
+
+			/**
+			 * A gpml:Age can (and is strongly encouraged to) have a stratigraphic or geomagnetic
+			 * timescale associated with it. This member stores the "well known" name of the timescale,
+			 * such as ICC2012 or GTS2004.
+			 */
+			boost::optional<TimescaleName> timescale;
+
+			/**
+			 * A gpml:Age can have an associated uncertainty. It can be expressed as a plus-or-minus
+			 * value measured in My.
+			 */
+			boost::optional<double> uncertainty_plusminus;
+
+			/**
+			 * A gpml:Age can alternatively represent uncertainty information as an asymmetric age
+			 * range, with a 'youngest' and 'oldest' age estimate. Just as with the principal age,
+			 * these can be either absolute ages or named ages.
+			 *
+			 * I'm putting my foot down and saying that this representation of uncertainty will only
+			 * have an (absolute xor named) age for each end of the range; Mostly this is just to retain
+			 * some degree of sanity for the EditAgeWidget UI. --jclark 20150303
+			 */
+			boost::optional<double> uncertainty_youngest_absolute;
+			boost::optional<TimescaleBand> uncertainty_youngest_named;
+			boost::optional<double> uncertainty_oldest_absolute;
+			boost::optional<TimescaleBand> uncertainty_oldest_named;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlAge> &gpml_age);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

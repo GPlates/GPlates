@@ -24,7 +24,6 @@
  */
 
 #include <iostream>
-#include <typeinfo>
 
 #include "OldVersionPropertyValue.h"
 

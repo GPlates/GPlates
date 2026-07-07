@@ -47,7 +47,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	gml_line_string.set_polyline(
-			d_finite_rotation * gml_line_string.polyline());
+			d_finite_rotation * gml_line_string.get_polyline());
 }
 
 
@@ -56,7 +56,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_multi_point(
 		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	gml_multi_point.set_multipoint(
-			d_finite_rotation * gml_multi_point.multipoint());
+			d_finite_rotation * gml_multi_point.get_multipoint());
 }
 
 
@@ -73,7 +73,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	gml_point.set_point(
-			d_finite_rotation * gml_point.point());
+			d_finite_rotation * gml_point.get_point());
 }
 
 
@@ -82,7 +82,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_polygon(
 		GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	gml_polygon.set_polygon(
-			d_finite_rotation * gml_polygon.polygon());
+			d_finite_rotation * gml_polygon.get_polygon());
 }
 
 

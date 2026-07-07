@@ -137,7 +137,7 @@ namespace
 				std::cerr << "Debug log: No cached reconstruction plate ID in RFG,\n"
 						<< "but reconstruction plate ID found in feature." << std::endl;
 			}
-			return QVariant(static_cast<quint32>(recon_plate_id.get()->value()));
+			return QVariant(static_cast<quint32>(recon_plate_id.get()->get_value()));
 		} else {
 			// The feature doesn't have a reconstruction plate ID.
 			return QVariant();
@@ -180,11 +180,11 @@ namespace
 			const GPlatesPropertyValues::GmlTimeInstant &time_instant)
 	{
 		QLocale locale;
-		if (time_instant.time_position().is_real()) {
-			return locale.toString(time_instant.time_position().value());
-		} else if (time_instant.time_position().is_distant_past()) {
+		if (time_instant.get_time_position().is_real()) {
+			return locale.toString(time_instant.get_time_position().value());
+		} else if (time_instant.get_time_position().is_distant_past()) {
 			return QObject::tr("past");
-		} else if (time_instant.time_position().is_distant_future()) {
+		} else if (time_instant.get_time_position().is_distant_future()) {
 			return QObject::tr("future");
 		} else {
 			return QObject::tr("<invalid>");
@@ -275,7 +275,7 @@ namespace
 			{
 				// The feature has one or more name properties.  Use the first one
 				// for now.
-				return GPlatesUtils::make_qstring(name.get()->value());
+				return GPlatesUtils::make_qstring(name.get()->get_value());
 			}
 		}
 		return QVariant();
@@ -300,7 +300,7 @@ namespace
 			{
 				// The feature has one or more description properties.  Use the
 				// first one for now.
-				return GPlatesUtils::make_qstring(description.get()->value());
+				return GPlatesUtils::make_qstring(description.get()->get_value());
 			}
 		}
 		return QVariant();
@@ -498,7 +498,7 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::iterator> property =
 				get_geometry_property_if_valid(geometry);
 		if (property) {
-			return QVariant(convert_qualified_xml_name_to_qstring((**property)->property_name()));
+			return QVariant(convert_qualified_xml_name_to_qstring((**property)->get_property_name()));
 		}
 		return QVariant();
 	}

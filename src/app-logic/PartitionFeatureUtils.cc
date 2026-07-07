@@ -80,7 +80,7 @@ namespace GPlatesAppLogic
 			class PartitionFeatureGeometryProperties :
 					// TODO: Change this to ConstFeatureVisitor once the new bubble-up model
 					// (that doesn't clone non-const visitors) is finished...
-					public GPlatesModel::FeatureVisitorThatGuaranteesNotToModify
+					public GPlatesModel::FeatureVisitor
 			{
 			public:
 
@@ -109,7 +109,7 @@ namespace GPlatesAppLogic
 				visit_gml_line_string(
 						gml_line_string_type &gml_line_string)
 				{
-					add_geometry(gml_line_string.polyline());
+					add_geometry(gml_line_string.get_polyline());
 				}
 
 
@@ -118,7 +118,7 @@ namespace GPlatesAppLogic
 				visit_gml_multi_point(
 						gml_multi_point_type &gml_multi_point)
 				{
-					add_geometry(gml_multi_point.multipoint());
+					add_geometry(gml_multi_point.get_multipoint());
 				}
 
 
@@ -136,7 +136,7 @@ namespace GPlatesAppLogic
 				visit_gml_point(
 						gml_point_type &gml_point)
 				{
-					add_geometry(gml_point.point().get_geometry_on_sphere());
+					add_geometry(gml_point.get_point().get_geometry_on_sphere());
 				}
 
 
@@ -145,7 +145,7 @@ namespace GPlatesAppLogic
 				visit_gml_polygon(
 						gml_polygon_type &gml_polygon)
 				{
-					add_geometry(gml_polygon.polygon());
+					add_geometry(gml_polygon.get_polygon());
 				}
 
 
@@ -214,7 +214,7 @@ namespace GPlatesAppLogic
 						const unsigned int num_domain_points = GeometryUtils::get_num_geometry_exterior_points(*domain_);
 						for (unsigned int s = 0; s < range_.size(); ++s)
 						{
-							if (num_domain_points != range_[s]->coordinates_len())
+							if (num_domain_points != range_[s]->get_coordinates().size())
 							{
 								return false;
 							}
@@ -311,7 +311,7 @@ namespace GPlatesAppLogic
 								geometry_range = boost::in_place(geometry_domain, coverage.range);
 							}
 
-							geometry_range_property_name = (*coverage.range_property)->property_name();
+							geometry_range_property_name = (*coverage.range_property)->get_property_name();
 							// Create a shallow clone of the range property.
 							geometry_range_property_clone = (*coverage.range_property)->clone();
 
@@ -440,21 +440,14 @@ namespace GPlatesAppLogic
 
 					const unsigned int num_partitioned_domain_points = partitioned_domain_points.size();
 
-					// We start with a range of non-const GmlDataBlockCoordinateList and later convert to const.
-					std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> non_const_partitioned_range;
+					std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type> partitioned_range_coordinates;
 
 					// Allocated memory for partitioned range.
 					const unsigned int range_tuple_size = geometry_range.range.size();
-					non_const_partitioned_range.reserve(range_tuple_size);
+					partitioned_range_coordinates.resize(range_tuple_size);
 					for (unsigned int t = 0; t < range_tuple_size; ++t)
 					{
-						const GPlatesPropertyValues::GmlDataBlockCoordinateList &range_tuple_element = *geometry_range.range[t];
-
-						non_const_partitioned_range.push_back(
-								GPlatesPropertyValues::GmlDataBlockCoordinateList::create_empty(
-										range_tuple_element.value_object_type(),
-										range_tuple_element.value_object_xml_attributes(),
-										num_partitioned_domain_points));
+						partitioned_range_coordinates[t].reserve(num_partitioned_domain_points);
 					}
 
 					// Map the geometry domain points to their indices into geometry domain/range and
@@ -472,8 +465,8 @@ namespace GPlatesAppLogic
 							const unsigned int range_scalar_index = iter->second;
 							for (unsigned int t = 0; t < range_tuple_size; ++t)
 							{
-								non_const_partitioned_range[t]->coordinates_push_back(
-										*(geometry_range.range[t]->coordinates_begin() + range_scalar_index));
+								partitioned_range_coordinates[t].push_back(
+										geometry_range.range[t]->get_coordinates()[range_scalar_index]);
 							}
 						}
 						else
@@ -540,14 +533,13 @@ namespace GPlatesAppLogic
 									const unsigned int range_scalar_start_index = closest_segment_index;
 									for (unsigned int t = 0; t < range_tuple_size; ++t)
 									{
-										GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinate_list_type::const_iterator
-												range_scalar_start_iter = geometry_range.range[t]->coordinates_begin() +
-														range_scalar_start_index;
+										const GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type &
+												range_scalars = geometry_range.range[t]->get_coordinates();
 										const double interpolated_scalar =
-												(1.0 - interpolate_ratio) * *range_scalar_start_iter +
-													interpolate_ratio * *(range_scalar_start_iter + 1);
+												(1.0 - interpolate_ratio) * range_scalars[range_scalar_start_index] +
+													interpolate_ratio * range_scalars[range_scalar_start_index + 1];
 
-										non_const_partitioned_range[t]->coordinates_push_back(interpolated_scalar);
+										partitioned_range_coordinates[t].push_back(interpolated_scalar);
 									}
 								}
 								else // zero length segment...
@@ -557,8 +549,8 @@ namespace GPlatesAppLogic
 									const unsigned int range_scalar_index = closest_segment_index;
 									for (unsigned int t = 0; t < range_tuple_size; ++t)
 									{
-										non_const_partitioned_range[t]->coordinates_push_back(
-												*(geometry_range.range[t]->coordinates_begin() + range_scalar_index));
+										partitioned_range_coordinates[t].push_back(
+												geometry_range.range[t]->get_coordinates()[range_scalar_index]);
 									}
 								}
 							}
@@ -570,26 +562,32 @@ namespace GPlatesAppLogic
 								const unsigned int range_scalar_index = closest_domain_index;
 								for (unsigned int t = 0; t < range_tuple_size; ++t)
 								{
-									non_const_partitioned_range[t]->coordinates_push_back(
-											*(geometry_range.range[t]->coordinates_begin() + range_scalar_index));
+									partitioned_range_coordinates[t].push_back(
+											geometry_range.range[t]->get_coordinates()[range_scalar_index]);
 								}
 							}
 							else // geometry_range.domain_type == GPlatesMaths::GeometryType::POINT
 							{
 								for (unsigned int t = 0; t < range_tuple_size; ++t)
 								{
-									non_const_partitioned_range[t]->coordinates_push_back(
-											*(geometry_range.range[t]->coordinates_begin() + 0/*range_scalar_index*/));
+									partitioned_range_coordinates[t].push_back(
+											geometry_range.range[t]->get_coordinates()[0/*range_scalar_index*/]);
 								}
 							}
 						}
 					}
 
-					// Convert non-const GmlDataBlockCoordinateList to const.
-					partitioned_range.insert(
-							partitioned_range.end(),
-							non_const_partitioned_range.begin(),
-							non_const_partitioned_range.end());
+					// Create partitioned GmlDataBlockCoordinateList's.
+					for (unsigned int t = 0; t < range_tuple_size; ++t)
+					{
+						const GPlatesPropertyValues::GmlDataBlockCoordinateList &range_tuple_element = *geometry_range.range[t];
+
+						partitioned_range.push_back(
+								GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+										range_tuple_element.get_value_object_type(),
+										range_tuple_element.get_value_object_xml_attributes(),
+										partitioned_range_coordinates[t]));
+					}
 				}
 			};
 
@@ -926,9 +924,9 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 			{
 				valid_time = GPlatesModel::ModelUtils::create_gml_time_period(
 						d_default_valid_time
-								? d_default_valid_time.get()->begin()->time_position()
+								? d_default_valid_time.get()->begin()->get_time_position()
 								: GPlatesPropertyValues::GeoTimeInstant::create_distant_past(),
-						valid_time.get()->end()->time_position());
+						valid_time.get()->end()->get_time_position());
 			}
 
 			// If only copying time of appearance (not disappearance) then replace the disappearance time
@@ -936,9 +934,9 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 			if (!d_feature_property_types_to_assign.test(AssignPlateIds::TIME_OF_DISAPPEARANCE))
 			{
 				valid_time = GPlatesModel::ModelUtils::create_gml_time_period(
-						valid_time.get()->begin()->time_position(),
+						valid_time.get()->begin()->get_time_position(),
 						d_default_valid_time
-								? d_default_valid_time.get()->end()->time_position()
+								? d_default_valid_time.get()->end()->get_time_position()
 								: GPlatesPropertyValues::GeoTimeInstant::create_distant_future());
 			}
 		}
@@ -1158,7 +1156,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_reconstruction_plate_id_from_feature
 		return boost::none;
 	}
 
-	return recon_plate_id.get()->value();
+	return recon_plate_id.get()->get_value();
 }
 
 
@@ -1205,7 +1203,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_conjugate_plate_id_from_feature(
 		return boost::none;
 	}
 
-	return conjugate_plate_id.get()->value();
+	return conjugate_plate_id.get()->get_value();
 }
 
 
@@ -1276,7 +1274,7 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_valid_time_to_feature(
 	GPlatesModel::ModelUtils::add_property(
 			feature_ref,
 			get_valid_time_property_name(),
-			valid_time.get()->deep_clone(),
+			valid_time.get()->clone(),
 			verify_information_model/*check_property_name_allowed_for_feature_type*/);
 }
 
@@ -1305,14 +1303,15 @@ GPlatesAppLogic::PartitionFeatureUtils::append_geometry_range_to_feature(
 		const GPlatesModel::PropertyName &geometry_range_property_name,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
-	GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type geometry_range_property =
-			GPlatesPropertyValues::GmlDataBlock::create();
+	// Clone to get 'non-const' from 'const'.
+	// Might also need cloning if cannot share child revisionable objects across parents?
+	std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> geometry_range_clone;
 
 	geometry_range_type::const_iterator geometry_range_iter = geometry_range.begin();
 	geometry_range_type::const_iterator geometry_range_end = geometry_range.end();
 	for ( ; geometry_range_iter != geometry_range_end; ++geometry_range_iter)
 	{
-		geometry_range_property->tuple_list_push_back(*geometry_range_iter);
+		geometry_range_clone.push_back((*geometry_range_iter)->clone());
 	}
 
 	// Use 'ModelUtils::add_property()' instead of 'FeatureHandle::add()' to ensure any
@@ -1320,7 +1319,9 @@ GPlatesAppLogic::PartitionFeatureUtils::append_geometry_range_to_feature(
 	GPlatesModel::ModelUtils::add_property(
 			feature_ref,
 			geometry_range_property_name,
-			geometry_range_property);
+			GPlatesPropertyValues::GmlDataBlock::create(
+					geometry_range_clone.begin(),
+					geometry_range_clone.end()));
 }
 
 

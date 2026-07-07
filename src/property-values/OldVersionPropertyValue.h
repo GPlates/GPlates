@@ -88,18 +88,8 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new OldVersionPropertyValue(*this));
+			return GPlatesUtils::dynamic_pointer_cast<OldVersionPropertyValue>(clone_impl());
 		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 
 		/**
@@ -108,7 +98,7 @@ namespace GPlatesPropertyValues
 		 * Note: Since there are no setters methods on this class we don't need revisioning.
 		 */
 		const value_type &
-		value() const
+		get_value() const
 		{
 			return d_value;
 		}
@@ -122,6 +112,13 @@ namespace GPlatesPropertyValues
 		{
 			return d_structural_type;
 		}
+
+		/**
+		 * NOTE: There is no static access to the structural type (eg, as OldVersionPropertyValue::STRUCTURAL_TYPE)
+		 * because it depends on non-static data.
+		 */
+		//static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -164,39 +161,71 @@ namespace GPlatesPropertyValues
 		OldVersionPropertyValue(
 				const StructuralType &structural_type,
 				const value_type &value_) :
-			PropertyValue(),
+			PropertyValue(Revision::non_null_ptr_type(new Revision())),
 			d_structural_type(structural_type),
 			d_value(value_)
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		OldVersionPropertyValue(
-				const OldVersionPropertyValue &other) :
-			PropertyValue(other), /* share instance id */
-			d_structural_type(other.d_structural_type),
-			d_value(other.d_value)
+				const OldVersionPropertyValue &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_))),
+			d_structural_type(other_.d_structural_type),
+			d_value(other_.d_value)
 		{  }
 
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new OldVersionPropertyValue(*this, context));
+		}
+
+		virtual
+		bool
+		equality(
+				const Revisionable &other) const
+		{
+			// TODO: Compare values, but this requires knowing the value type.
+			return false;
+		}
+
 	private:
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision()
+			{  }
+
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+		};
 
 		//! The structural type of the old property value type.
 		StructuralType d_structural_type;
 
 		//! The arbitrary user-defined property 'value'.
 		value_type d_value;
-
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		OldVersionPropertyValue &
-		operator=(
-				const OldVersionPropertyValue &);
 
 	};
 

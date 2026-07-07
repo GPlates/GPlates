@@ -27,83 +27,130 @@
 
 #include <algorithm>
 #include <iostream>
-#include <typeinfo>
+#include <boost/foreach.hpp>
 
 #include "GpmlTopologicalPolygon.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
-namespace
-{
-	bool
-	section_eq(
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &p1,
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &p2)
-	{
-		return *p1 == *p2;
-	}
-}
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/ModelTransaction.h"
+
+#include "scribe/Scribe.h"
 
 
-const GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type
-GPlatesPropertyValues::GpmlTopologicalPolygon::deep_clone() const
-{
-	GpmlTopologicalPolygon::non_null_ptr_type dup = clone();
-
-	// Now we need to clear the topological-section vector in the duplicate, before we
-	// push-back the cloned sections.
-	dup->d_exterior_sections.clear();
-	sections_const_iterator iter = d_exterior_sections.begin();
-	sections_const_iterator end = d_exterior_sections.end();
-	for ( ; iter != end; ++iter)
-	{
-		GpmlTopologicalSection::non_null_ptr_type cloned_section =
-				(*iter)->deep_clone_as_topo_section();
-		dup->d_exterior_sections.push_back(cloned_section);
-	}
-
-	return dup;
-}
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlTopologicalPolygon::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPolygon");
 
 
 std::ostream &
 GPlatesPropertyValues::GpmlTopologicalPolygon::print_to(
 		std::ostream &os) const
 {
+	const GPlatesModel::RevisionedVector<GpmlTopologicalSection> &exterior_sections_ = exterior_sections();
+
 	os << "[ ";
 
-	for (sections_const_iterator iter = d_exterior_sections.begin(); iter != d_exterior_sections.end(); ++iter)
+	GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator exterior_sections_iter = exterior_sections_.begin();
+	GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator exterior_sections_end = exterior_sections_.end();
+	for ( ; exterior_sections_iter != exterior_sections_end; ++exterior_sections_iter)
 	{
-		os << **iter;
+		os << **exterior_sections_iter;
 	}
 
 	return os << " ]";
 }
 
 
-bool
-GPlatesPropertyValues::GpmlTopologicalPolygon::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesModel::Revision::non_null_ptr_type
+GPlatesPropertyValues::GpmlTopologicalPolygon::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	try
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.exterior_sections.get_revisionable())
 	{
-		const GpmlTopologicalPolygon &other_casted =
-				dynamic_cast<const GpmlTopologicalPolygon &>(other);
-		if (d_exterior_sections.size() == other_casted.d_exterior_sections.size())
+		return revision.exterior_sections.clone_revision(transaction);
+	}
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalPolygon::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlTopologicalPolygon> &gpml_topological_polygon)
+{
+	if (scribe.is_saving())
+	{
+		GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type exterior_sections_ =
+				&gpml_topological_polygon->exterior_sections();
+		scribe.save(TRANSCRIBE_SOURCE, exterior_sections_, "exterior_sections");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> exterior_sections_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "exterior_sections");
+		if (!exterior_sections_.is_valid())
 		{
-			return std::equal(
-					d_exterior_sections.begin(),
-					d_exterior_sections.end(),
-					other_casted.d_exterior_sections.begin(),
-					&section_eq);
+			return scribe.get_transcribe_result();
 		}
-		else
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_topological_polygon.construct_object(
+				boost::ref(transaction),  // non-const ref
+				exterior_sections_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalPolygon::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
 		{
-			return false;
+			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type exterior_sections_ = &exterior_sections();
+			scribe.save(TRANSCRIBE_SOURCE, exterior_sections_, "exterior_sections");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> exterior_sections_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "exterior_sections");
+			if (!exterior_sections_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+			revision.exterior_sections.change(revision_handler.get_model_transaction(), exterior_sections_);
+			revision_handler.commit();
 		}
 	}
-	catch (const std::bad_cast &)
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlTopologicalPolygon>(TRANSCRIBE_SOURCE))
 	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
+		return scribe.get_transcribe_result();
 	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

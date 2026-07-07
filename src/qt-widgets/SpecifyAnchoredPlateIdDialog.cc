@@ -70,7 +70,7 @@ namespace
 			if (current_top_level_propname())
 			{
 				QString property_name = convert_qualified_xml_name_to_qstring(current_top_level_propname().get());
-				d_plate_ids.insert(std::make_pair(property_name, gpml_plate_id.value()));
+				d_plate_ids.insert(std::make_pair(property_name, gpml_plate_id.get_value()));
 			}
 		}
 

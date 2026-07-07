@@ -106,19 +106,19 @@ namespace GPlatesFeatureVisitors
 				{
 					// If either of the finite rotations has an axis hint, use it.
 					boost::optional<GPlatesMaths::UnitVector3D> axis_hint;
-					if (gpml_finite_rotation1.finite_rotation().axis_hint())
+					if (gpml_finite_rotation1.get_finite_rotation().axis_hint())
 					{
-						axis_hint = gpml_finite_rotation1.finite_rotation().axis_hint();
+						axis_hint = gpml_finite_rotation1.get_finite_rotation().axis_hint();
 					}
-					else if (gpml_finite_rotation2.get()->finite_rotation().axis_hint())
+					else if (gpml_finite_rotation2.get()->get_finite_rotation().axis_hint())
 					{
-						axis_hint = gpml_finite_rotation2.get()->finite_rotation().axis_hint();
+						axis_hint = gpml_finite_rotation2.get()->get_finite_rotation().axis_hint();
 					}
 
 					d_interpolated_property_value = GPlatesPropertyValues::GpmlFiniteRotation::create(
 							GPlatesMaths::interpolate(
-									gpml_finite_rotation1.finite_rotation(),
-									gpml_finite_rotation2.get()->finite_rotation(),
+									gpml_finite_rotation1.get_finite_rotation(),
+									gpml_finite_rotation2.get()->get_finite_rotation(),
 									d_time1,
 									d_time2,
 									d_target_time,
@@ -149,8 +149,8 @@ namespace GPlatesFeatureVisitors
 					const double interpolation = (d_target_time - d_time1) / (d_time2 - d_time1);
 
 					d_interpolated_property_value = GPlatesPropertyValues::XsDouble::create(
-							(1 - interpolation) * xs_double1.value() +
-								interpolation * xs_double2.get()->value());
+							(1 - interpolation) * xs_double1.get_value() +
+								interpolation * xs_double2.get()->get_value());
 				}
 			}
 
@@ -193,7 +193,7 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 	// property value at nearest time sample (to reconstruction time).
 	//
 
-	const std::vector<GPlatesPropertyValues::GpmlTimeSample> &time_samples =
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample> &time_samples =
 			gpml_irregular_sampling.time_samples();
 	if (time_samples.empty())
 	{
@@ -203,7 +203,7 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 	// Optimisation to avoid interpolating a property value when it's the
 	// wrong type and will just get discarded anyway.
 	{
-		const GPlatesModel::PropertyValue &first_time_sample_value = *time_samples.front().value();
+		const GPlatesModel::PropertyValue &first_time_sample_value = *time_samples.front()->value();
 		if (typeid(first_time_sample_value) != property_value_type_info)
 		{
 			return;
@@ -211,14 +211,14 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 	}
 
 	// Get a list of the *enabled* time samples.
-	std::vector<GPlatesPropertyValues::GpmlTimeSample> enabled_time_samples;
+	std::vector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type> enabled_time_samples;
 
-	for (std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator iter = time_samples.begin();
+	for (GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator iter = time_samples.begin();
 		iter != time_samples.end();
 		++iter)
 	{
-		const GPlatesPropertyValues::GpmlTimeSample &time_sample = *iter;
-		if (!time_sample.is_disabled())
+		GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type time_sample = *iter;
+		if (!time_sample->is_disabled())
 		{
 			enabled_time_samples.push_back(time_sample);
 		}
@@ -232,7 +232,7 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 
 	// If the requested time is later than the first (most-recent) time sample then
 	// it is outside the time range of the time sample sequence.
-	if (reconstruction_time > enabled_time_samples[0].valid_time()->time_position())
+	if (reconstruction_time > enabled_time_samples[0]->valid_time()->get_time_position())
 	{
 		return;
 	}
@@ -240,17 +240,17 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 	// Find adjacent time samples that span the requested time.
 	for (unsigned int i = 1; i < enabled_time_samples.size(); ++i)
 	{
-		if (reconstruction_time >= enabled_time_samples[i].valid_time()->time_position())
+		if (reconstruction_time >= enabled_time_samples[i]->valid_time()->get_time_position())
 		{
 			// The requested time is later than (more recent) or equal to the sample's time...
 
-			const double time1 = enabled_time_samples[i-1].valid_time()->time_position().value();
-			const double time2 = enabled_time_samples[i].valid_time()->time_position().value();
+			const double time1 = enabled_time_samples[i-1]->valid_time()->get_time_position().value();
+			const double time2 = enabled_time_samples[i]->valid_time()->get_time_position().value();
 			const double target_time = reconstruction_time.value();
 
 			InterpolateIrregularSamplingVisitor interpolate_visitor(
-					*enabled_time_samples[i-1].value(),
-					*enabled_time_samples[i].value(),
+					*enabled_time_samples[i-1]->value(),
+					*enabled_time_samples[i]->value(),
 					time1,
 					time2,
 					target_time);
@@ -275,10 +275,10 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_piecewise_aggregation_at_reco
 		GPlatesModel::ConstFeatureVisitor &property_value_finder_visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-		gpml_piecewise_aggregation.time_windows().begin();
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-		gpml_piecewise_aggregation.time_windows().end();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+			gpml_piecewise_aggregation.time_windows().begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+			gpml_piecewise_aggregation.time_windows().end();
 	for ( ; iter != end; ++iter)
 	{
 		// If the time window covers our reconstruction time then visit.

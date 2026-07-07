@@ -180,7 +180,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_point.point().get_geometry_on_sphere()));
+								gml_point.get_point().get_geometry_on_sphere()));
 			}
 
 			virtual
@@ -290,7 +290,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property = *current_top_level_propiter();
 
 				const GPlatesMaths::PointOnSphere reconstructed_point =
-						d_reconstruction_rotation.get()->get_finite_rotation() * gml_point.point();
+						d_reconstruction_rotation.get()->get_finite_rotation() * gml_point.get_point();
 
 				if (current_top_level_propname() == site_name)
 				{
@@ -322,19 +322,19 @@ namespace GPlatesAppLogic
 
 				if (current_top_level_propname() == a95_name)
 				{
-					d_VGP_params.d_a95 = xs_double.value();
+					d_VGP_params.d_a95 = xs_double.get_value();
 				}
 				else if (current_top_level_propname() == dm_name)
 				{
-					d_VGP_params.d_dm = xs_double.value();
+					d_VGP_params.d_dm = xs_double.get_value();
 				}
 				else if (current_top_level_propname() == dp_name)
 				{
-					d_VGP_params.d_dp = xs_double.value();
+					d_VGP_params.d_dp = xs_double.get_value();
 				}
 				else if (current_top_level_propname() == age_name)
 				{
-					d_VGP_params.d_age = xs_double.value();
+					d_VGP_params.d_age = xs_double.get_value();
 				}
 			}
 

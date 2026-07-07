@@ -29,19 +29,10 @@
 
 #include "ChangesetHandle.h"
 #include "FeatureCollectionHandle.h"
+#include "TranscribeIdTypeGenerator.h"
+#include "TranscribeQualifiedXmlName.h"
 
-
-namespace
-{
-	bool
-	new_child_equals_existing(
-			const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &new_child,
-			const boost::intrusive_ptr<GPlatesModel::TopLevelProperty> &existing_child)
-	{
-		// Assume existing_child != NULL.
-		return *new_child == *existing_child;
-	}
-}
+#include "scribe/Scribe.h"
 
 
 const GPlatesModel::FeatureHandle::non_null_ptr_type
@@ -167,14 +158,14 @@ GPlatesModel::FeatureHandle::remove(
 void
 GPlatesModel::FeatureHandle::set(
 		iterator iter,
-		child_type::non_null_ptr_to_const_type new_child)
+		child_type::non_null_ptr_type new_child)
 {
 	ChangesetHandle changeset(model_ptr());
 
 	const boost::intrusive_ptr<child_type> &existing_child = current_revision()->get(iter.index());
-	if (existing_child && !new_child_equals_existing(new_child, existing_child))
+	if (existing_child)
 	{
-		current_revision()->set(iter.index(), new_child->deep_clone());
+		current_revision()->set(iter.index(), new_child);
 
 		notify_listeners_of_modification(false, true);
 
@@ -197,7 +188,7 @@ GPlatesModel::FeatureHandle::remove_properties_by_name(
 {
 	for (iterator iter = begin(); iter != end(); ++iter)
 	{
-		if ((*iter)->property_name() == property_name)
+		if ((*iter)->get_property_name() == property_name)
 		{
 			remove(iter);
 		}
@@ -235,3 +226,89 @@ GPlatesModel::FeatureHandle::FeatureHandle(
 	d_feature_id.set_back_ref_target(*this);
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::FeatureHandle::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<FeatureHandle> &feature)
+{
+	if (scribe.is_saving())
+	{
+		// Save feature type and ID.
+		scribe.save(TRANSCRIBE_SOURCE, feature->feature_type(), "feature_type");
+		scribe.save(TRANSCRIBE_SOURCE, feature->feature_id(), "feature_id");
+	}
+	else // loading
+	{
+		// Load feature type and ID.
+		GPlatesScribe::LoadRef<FeatureType> feature_type_ = scribe.load<FeatureType>(TRANSCRIBE_SOURCE, "feature_type");
+		GPlatesScribe::LoadRef<FeatureId> feature_id_ = scribe.load<FeatureId>(TRANSCRIBE_SOURCE, "feature_id");
+		if (!feature_type_.is_valid() ||
+			!feature_id_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the feature.
+		feature.construct_object(feature_type_, feature_id_, revision_type::create());
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::FeatureHandle::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Save feature type and ID.
+			scribe.save(TRANSCRIBE_SOURCE, feature_type(), "feature_type");
+			scribe.save(TRANSCRIBE_SOURCE, feature_id(), "feature_id");
+		}
+		else // loading
+		{
+			// Load feature type and ID.
+			GPlatesScribe::LoadRef<FeatureType> feature_type_ = scribe.load<FeatureType>(TRANSCRIBE_SOURCE, "feature_type");
+			GPlatesScribe::LoadRef<FeatureId> feature_id_ = scribe.load<FeatureId>(TRANSCRIBE_SOURCE, "feature_id");
+			if (!feature_type_.is_valid() ||
+				!feature_id_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			d_feature_type = feature_type_;
+			d_feature_id = feature_id_;
+		}
+	}
+
+	if (scribe.is_saving())
+	{
+		// Get the current list of properties.
+		const std::vector<TopLevelProperty::non_null_ptr_type> properties(begin(), end());
+
+		// Save the properties.
+		scribe.save(TRANSCRIBE_SOURCE, properties, "properties");
+	}
+	else // loading
+	{
+		// Load the properties.
+		std::vector<TopLevelProperty::non_null_ptr_type> properties;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, properties, "properties"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Add the properties.
+		for (auto property : properties)
+		{
+			add(property);
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

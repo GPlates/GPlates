@@ -35,7 +35,6 @@
 #include "FeatureHandle.h"
 #include "FeatureStoreRootHandle.h"
 #include "HandleTraits.h"
-#include "TopLevelPropertyRef.h"
 #include "WeakReference.h"
 #include "types.h"
 
@@ -464,12 +463,6 @@ namespace GPlatesModel
 	{
 		return d_handle_weak_ref->get(d_index);
 	}
-
-
-	// Template specialisations are in .cc file.
-	template<>
-	RevisionAwareIterator<FeatureHandle>::value_type
-	RevisionAwareIterator<FeatureHandle>::current_element() const;
 
 }
 

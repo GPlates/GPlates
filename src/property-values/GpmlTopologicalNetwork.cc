@@ -25,61 +25,20 @@
 
 #include <algorithm>
 #include <iostream>
-#include <typeinfo>
 
 #include "GpmlTopologicalNetwork.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
-namespace
-{
-	bool
-	section_eq(
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type &p1,
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type &p2)
-	{
-		return *p1 == *p2;
-	}
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/ModelTransaction.h"
 
-	bool
-	delegate_eq(
-			const GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type &d1,
-			const GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type &d2)
-	{
-		return *d1 == *d2;
-	}
-}
+#include "scribe/Scribe.h"
 
 
-const GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type
-GPlatesPropertyValues::GpmlTopologicalNetwork::deep_clone() const
-{
-	GpmlTopologicalNetwork::non_null_ptr_type dup = clone();
-
-	// Now we need to clear the boundary-sections vector in the duplicate, before we
-	// push-back the cloned sections.
-	dup->d_boundary_sections.clear();
-	boundary_sections_const_iterator boundary_sections_iter = d_boundary_sections.begin();
-	const boundary_sections_const_iterator boundary_sections_iter_end = d_boundary_sections.end();
-	for ( ; boundary_sections_iter != boundary_sections_iter_end; ++boundary_sections_iter)
-	{
-		GpmlTopologicalSection::non_null_ptr_type cloned_section =
-				(*boundary_sections_iter)->deep_clone_as_topo_section();
-		dup->d_boundary_sections.push_back(cloned_section);
-	}
-
-	// Now we need to clear the interior-geometries vector in the duplicate, before we
-	// push-back the cloned geometries.
-	dup->d_interior_geometries.clear();
-	interior_geometries_const_iterator interior_geometries_iter = d_interior_geometries.begin();
-	const interior_geometries_const_iterator interior_geometries_iter_end = d_interior_geometries.end();
-	for ( ; interior_geometries_iter != interior_geometries_iter_end; ++interior_geometries_iter)
-	{
-		const GpmlPropertyDelegate::non_null_ptr_type cloned_interior_geometry = (*interior_geometries_iter)->deep_clone();
-		dup->d_interior_geometries.push_back(cloned_interior_geometry);
-	}
-
-	return dup;
-}
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlTopologicalNetwork::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalNetwork");
 
 
 std::ostream &
@@ -88,24 +47,28 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 {
 	os << "[ ";
 
+		const GPlatesModel::RevisionedVector<GpmlTopologicalSection> &boundary_sections_ = boundary_sections();
+
 		os << "{ ";
 
-			for (boundary_sections_const_iterator boundary_sections_iter = d_boundary_sections.begin();
-				boundary_sections_iter != d_boundary_sections.end();
-				++boundary_sections_iter)
+			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator boundary_sections_iter = boundary_sections_.begin();
+			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator boundary_sections_end = boundary_sections_.end();
+			for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 			{
 				os << **boundary_sections_iter;
 			}
 
 		os << " }, ";
 
+		const GPlatesModel::RevisionedVector<GpmlPropertyDelegate> &interior_geometries_ = interior_geometries();
+
 		os << "{ ";
 
-			for (interior_geometries_const_iterator interior_geometries_iter = d_interior_geometries.begin();
-				interior_geometries_iter != d_interior_geometries.end();
-				++interior_geometries_iter)
+			GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::const_iterator interior_geometries_iter = interior_geometries_.begin();
+			GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::const_iterator interior_geometries_end = interior_geometries_.end();
+			for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter)
 			{
-				os << *interior_geometries_iter;
+				os << **interior_geometries_iter;
 			}
 
 		os << " }";
@@ -114,37 +77,122 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 }
 
 
-bool
-GPlatesPropertyValues::GpmlTopologicalNetwork::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesModel::Revision::non_null_ptr_type
+GPlatesPropertyValues::GpmlTopologicalNetwork::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	try
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.boundary_sections.get_revisionable())
 	{
-		const GpmlTopologicalNetwork &other_casted =
-			dynamic_cast<const GpmlTopologicalNetwork &>(other);
-		if (d_boundary_sections.size() == other_casted.d_boundary_sections.size() &&
-			d_interior_geometries.size() == other_casted.d_interior_geometries.size())
+		return revision.boundary_sections.clone_revision(transaction);
+	}
+	if (child_revisionable == revision.interior_geometries.get_revisionable())
+	{
+		return revision.interior_geometries.clone_revision(transaction);
+	}
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalNetwork::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlTopologicalNetwork> &gpml_topological_network)
+{
+	if (scribe.is_saving())
+	{
+		GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type boundary_sections_ =
+				&gpml_topological_network->boundary_sections();
+		scribe.save(TRANSCRIBE_SOURCE, boundary_sections_, "boundary_sections");
+
+		GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type interior_geometries_ =
+				&gpml_topological_network->interior_geometries();
+		scribe.save(TRANSCRIBE_SOURCE, interior_geometries_, "interior_geometries");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> boundary_sections_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "boundary_sections");
+		if (!boundary_sections_.is_valid())
 		{
-			return
-					std::equal(
-							d_boundary_sections.begin(),
-							d_boundary_sections.end(),
-							other_casted.d_boundary_sections.begin(),
-							&section_eq) &&
-					std::equal(
-							d_interior_geometries.begin(),
-							d_interior_geometries.end(),
-							other_casted.d_interior_geometries.begin(),
-							&delegate_eq);
+			return scribe.get_transcribe_result();
 		}
-		else
+
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type> interior_geometries_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "interior_geometries");
+		if (!interior_geometries_.is_valid())
 		{
-			return false;
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_topological_network.construct_object(
+				boost::ref(transaction),  // non-const ref
+				boundary_sections_,
+				interior_geometries_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalNetwork::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type boundary_sections_ = &boundary_sections();
+			scribe.save(TRANSCRIBE_SOURCE, boundary_sections_, "boundary_sections");
+
+			GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type interior_geometries_ =
+					&interior_geometries();
+			scribe.save(TRANSCRIBE_SOURCE, interior_geometries_, "interior_geometries");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type> boundary_sections_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "boundary_sections");
+			if (!boundary_sections_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type> interior_geometries_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "interior_geometries");
+			if (!interior_geometries_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+			revision.boundary_sections.change(revision_handler.get_model_transaction(), boundary_sections_);
+			revision.interior_geometries.change(revision_handler.get_model_transaction(), interior_geometries_);
+			revision_handler.commit();
 		}
 	}
-	catch (const std::bad_cast &)
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlTopologicalNetwork>(TRANSCRIBE_SOURCE))
 	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
+		return scribe.get_transcribe_result();
 	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

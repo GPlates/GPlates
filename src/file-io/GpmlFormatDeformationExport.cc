@@ -114,7 +114,7 @@ namespace
 				deformed_feature_geometry_feature->reference();
 
 		// The domain property name.
-		GPlatesModel::PropertyName domain_property_name = (*deformed_feature_geometry->property())->property_name();
+		GPlatesModel::PropertyName domain_property_name = (*deformed_feature_geometry->property())->get_property_name();
 		// Find the range property name associated with the domain property name.
 		boost::optional<GPlatesModel::PropertyName> range_property_name =
 				GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
@@ -134,9 +134,8 @@ namespace
 			range_property_name = default_domain_range_property_names.second;
 		}
 
-		// The reconstructed range (scalars) property.
-		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type reconstructed_range_property =
-				GPlatesPropertyValues::GmlDataBlock::create();
+		// The reconstructed range (scalars).
+		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> reconstructed_ranges;
 
 		// Include principal strain if requested.
 		if (include_principal_strain)
@@ -174,8 +173,8 @@ namespace
 			principal_angle_xml_attrs.insert(std::make_pair(
 					GPlatesModel::XmlAttributeName::create_gpml("uom"),
 					GPlatesModel::XmlAttributeValue("urn:x-epsg:v0.1:uom:degree")));
-			reconstructed_range_property->tuple_list_push_back(
-					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+			reconstructed_ranges.push_back(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 					include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN
 							? (include_principal_strain->format == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::ANGLE_MAJOR_MINOR
 									? GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMajorAngle")
@@ -188,8 +187,8 @@ namespace
 					principal_angles.end()));
 
 			// Add the principal major scalar values we're exporting.
-			reconstructed_range_property->tuple_list_push_back(
-					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+			reconstructed_ranges.push_back(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 					include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN ?
 							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMajorAxis") :
 							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStretchMajorAxis"),
@@ -199,8 +198,8 @@ namespace
 					principal_majors.end()));
 
 			// Add the principal minor scalar values we're exporting.
-			reconstructed_range_property->tuple_list_push_back(
-					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+			reconstructed_ranges.push_back(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 					include_principal_strain->output == GPlatesFileIO::DeformationExport::PrincipalStrainOptions::STRAIN ?
 							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStrainMinorAxis") :
 							GPlatesPropertyValues::ValueObjectType::create_gpml("PrincipalStretchMinorAxis"),
@@ -227,13 +226,13 @@ namespace
 
 			// Add the dilatation strain scalar values we're exporting.
 			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_strain_range =
-					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 							dilatation_strain_type,
 							dilatation_strain_xml_attrs,
 							dilatation_strains.begin(),
 							dilatation_strains.end());
 
-			reconstructed_range_property->tuple_list_push_back(dilatation_strain_range);
+			reconstructed_ranges.push_back(dilatation_strain_range);
 		}
 
 		// Include dilatation strain rate if requested.
@@ -255,13 +254,13 @@ namespace
 
 			// Add the dilatation strain rate scalar values we're exporting.
 			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type dilatation_strain_rate_range =
-					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 							dilatation_strain_rate_type,
 							dilatation_strain_rate_xml_attrs,
 							dilatation_strain_rates.begin(),
 							dilatation_strain_rates.end());
 
-			reconstructed_range_property->tuple_list_push_back(dilatation_strain_rate_range);
+			reconstructed_ranges.push_back(dilatation_strain_rate_range);
 		}
 
 		// Include second invariant strain rate if requested.
@@ -283,13 +282,13 @@ namespace
 
 			// Add the second invariant strain rate scalar values we're exporting.
 			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type second_invariant_strain_rate_range =
-					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 							second_invariant_strain_rate_type,
 							second_invariant_strain_rate_xml_attrs,
 							second_invariant_strain_rates.begin(),
 							second_invariant_strain_rates.end());
 
-			reconstructed_range_property->tuple_list_push_back(second_invariant_strain_rate_range);
+			reconstructed_ranges.push_back(second_invariant_strain_rate_range);
 		}
 
 		// Include strain rate style if requested.
@@ -308,13 +307,13 @@ namespace
 
 			// Add the strain rate style scalar values we're exporting.
 			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type strain_rate_style_range =
-					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 							strain_rate_style_type,
 							strain_rate_style_xml_attrs,
 							strain_rate_styles.begin(),
 							strain_rate_styles.end());
 
-			reconstructed_range_property->tuple_list_push_back(strain_rate_style_range);
+			reconstructed_ranges.push_back(strain_rate_style_range);
 		}
 
 
@@ -322,6 +321,10 @@ namespace
 		const GPlatesModel::PropertyValue::non_null_ptr_type reconstructed_domain_property =
 				GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						deformed_feature_geometry->reconstructed_geometry());
+
+		// The reconstructed range property.
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type reconstructed_range_property =
+				GPlatesPropertyValues::GmlDataBlock::create(reconstructed_ranges);
 
 
 		// Add the reconstructed domain/range properties.

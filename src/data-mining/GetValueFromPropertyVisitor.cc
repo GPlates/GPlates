@@ -86,7 +86,7 @@ void
 GPlatesDataMining::GetValueFromPropertyVisitor::visit_gpml_plate_id(
 		gpml_plate_id_type &gpml_plate_id)
 {
-	d_data.push_back(QString().setNum(gpml_plate_id.value()));
+	d_data.push_back(QString().setNum(gpml_plate_id.get_value()));
 }
 
 void 
@@ -138,7 +138,7 @@ GPlatesDataMining::GetValueFromPropertyVisitor::visit_gml_point(
 			gml_point_type &gml_point)
 {
 	std::stringstream ss;
-	ss << gml_point.point_in_lat_lon();
+	ss << gml_point.get_point_in_lat_lon();
 	d_data.push_back(QString(ss.str().c_str()));
 }
 

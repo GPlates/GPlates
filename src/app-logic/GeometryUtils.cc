@@ -889,10 +889,10 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				const gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-				gpml_piecewise_aggregation.time_windows().begin();
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-				gpml_piecewise_aggregation.time_windows().end();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+					gpml_piecewise_aggregation.time_windows().begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+					gpml_piecewise_aggregation.time_windows().end();
 			for ( ; iter != end; ++iter)
 			{
 				// If the time window covers our reconstruction time then visit.
@@ -911,7 +911,7 @@ namespace
 		visit_gml_line_string(
 				const gml_line_string_type &gml_line_string)
 		{
-			d_geometry = gml_line_string.polyline();
+			d_geometry = gml_line_string.get_polyline();
 		}
 
 		virtual
@@ -919,7 +919,7 @@ namespace
 		visit_gml_multi_point(
 				const gml_multi_point_type &gml_multi_point)
 		{
-			d_geometry = gml_multi_point.multipoint();
+			d_geometry = gml_multi_point.get_multipoint();
 		}
 
 		virtual
@@ -935,7 +935,7 @@ namespace
 		visit_gml_point(
 				const gml_point_type &gml_point)
 		{
-			d_geometry = gml_point.point().get_geometry_on_sphere();
+			d_geometry = gml_point.get_point().get_geometry_on_sphere();
 		}
 
 		virtual
@@ -943,7 +943,7 @@ namespace
 		visit_gml_polygon(
 				const gml_polygon_type &gml_polygon)
 		{
-			d_geometry = gml_polygon.polygon();
+			d_geometry = gml_polygon.get_polygon();
 		}
 
 

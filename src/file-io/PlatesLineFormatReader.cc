@@ -392,13 +392,14 @@ qDebug() << "use_tail_next = " << use_tail_next;
 			);
 	
 		// create the TimeWindow
-		GPlatesPropertyValues::GpmlTimeWindow tw = GPlatesPropertyValues::GpmlTimeWindow(
-				constant_value, 
-				ttpp,
-				topo_poly_type);
+		GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type tw =
+				GPlatesPropertyValues::GpmlTimeWindow::create(
+						constant_value, 
+						ttpp,
+						topo_poly_type);
 	
 		// use the time window
-		std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows;
+		std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows;
 	
 		time_windows.push_back(tw);
 	
@@ -425,7 +426,7 @@ qDebug() << "use_tail_next = " << use_tail_next;
 		static const boost::int32_t identity_start_tag_length = identity_start_tag.length();
 		static const boost::int32_t identity_end_tag_length = identity_end_tag.length();
 
-		GPlatesUtils::UnicodeString geog_description = header->geographic_description();
+		GPlatesUtils::UnicodeString geog_description = header->get_geographic_description();
 
 		// Search for the identity start tag.
 		// For some reason some files have two "<identity>" tags followed by one "</identity>" tag.
@@ -603,12 +604,12 @@ qDebug() << "use_tail_next = " << use_tail_next;
 		GPlatesModel::FeatureHandle::weak_ref feature_handle =
 				create_feature(feature_type, collection, header);
 
-		const integer_plate_id_type plate_id = header->plate_id_number();
-		const integer_plate_id_type conjugate_plate_id = header->conjugate_plate_id_number();
+		const integer_plate_id_type plate_id = header->get_plate_id_number();
+		const integer_plate_id_type conjugate_plate_id = header->get_conjugate_plate_id_number();
 		const GeoTimeInstant geo_time_instant_begin(
-				create_geo_time_instant(header->age_of_appearance()));
+				create_geo_time_instant(header->get_age_of_appearance()));
 		const GeoTimeInstant geo_time_instant_end(
-				create_geo_time_instant(header->age_of_disappearance()));
+				create_geo_time_instant(header->get_age_of_disappearance()));
 
 		// Ignore a reconstruction plate id of 999 (it's a hard-coded default value for no-plate-id).
 		if (plate_id != 999)
@@ -654,7 +655,7 @@ qDebug() << "use_tail_next = " << use_tail_next;
 
 		// Use the PLATES4 geographic description as the "gml:name" property.
 		XsString::non_null_ptr_type gml_name = 
-				XsString::create(header->geographic_description());
+				XsString::create(header->get_geographic_description());
 		feature_handle->add(
 				TopLevelPropertyInline::create(
 					PropertyName::create_gml("name"),
@@ -2048,7 +2049,7 @@ qDebug() << "use_tail_next = " << use_tail_next;
 		static const warning_map_type &warning_map = build_feature_specific_warning_map();
 		warning_function_type warning_function = null_warning_function;
 
-		warning_map_const_iterator warning_result = warning_map.find(old_plates_header->data_type_code());
+		warning_map_const_iterator warning_result = warning_map.find(old_plates_header->get_data_type_code());
 		if (warning_result != warning_map.end()) {
 			warning_function = warning_result->second;
 		}
@@ -2058,7 +2059,7 @@ qDebug() << "use_tail_next = " << use_tail_next;
 		static const creation_map_type &creation_map = build_feature_creation_map();
 		creation_function_type creation_function = create_unclassified_feature;
 
-		creation_map_const_iterator creation_result = creation_map.find(old_plates_header->data_type_code());	
+		creation_map_const_iterator creation_result = creation_map.find(old_plates_header->get_data_type_code());	
 		if (creation_result != creation_map.end()) {
 			creation_function = creation_result->second;
 		} else {
@@ -2067,7 +2068,7 @@ qDebug() << "use_tail_next = " << use_tail_next;
 
 
 		// Short-cut for Platepolygons (geometry to be resolved each reconstruction)
-		if (old_plates_header->data_type_code() == "PP") 
+		if (old_plates_header->get_data_type_code() == "PP") 
 		{
 			// Empty list of points to make create_common a happy litte function 
 			geometry_seq_type geometry_seq;

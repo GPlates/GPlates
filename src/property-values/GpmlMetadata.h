@@ -33,8 +33,12 @@
 
 #include "file-io/XmlWriter.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/Metadata.h"
 #include "model/PropertyValue.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -69,27 +73,21 @@ namespace GPlatesPropertyValues
 		}
 
 		const non_null_ptr_type
-		deep_clone() const
+		clone() const
 		{
-			return non_null_ptr_type(new GpmlMetadata(d_metadata));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlMetadata>(clone_impl());
 		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 
 		const GPlatesModel::FeatureCollectionMetadata &
 		get_data() const
 		{
-			return d_metadata;
+			return get_current_revision<Revision>().metadata;
 		}
 
 		void
 		set_data(
-				const GPlatesModel::FeatureCollectionMetadata &metadata)
-		{
-			d_metadata = metadata;
-			update_instance_id();
-		}
+				const GPlatesModel::FeatureCollectionMetadata &metadata);
 
 		std::multimap<QString, QString>
 		get_feature_collection_metadata_as_map() const
@@ -110,12 +108,17 @@ namespace GPlatesPropertyValues
 			get_data().serialize(writer);
 		}
 
-		GPlatesPropertyValues::StructuralType
+		StructuralType
 		get_structural_type() const 
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("GpmlMetadata");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlMetadata::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		virtual
 		void
@@ -137,21 +140,105 @@ namespace GPlatesPropertyValues
 		virtual
 		std::ostream &
 		print_to(
-				std::ostream &os) const
-		{
-			qWarning() << "TODO: implement this function.";
-			os << "TODO: implement this function.";
-			return  os;
-		}
+				std::ostream &os) const;
 
 	protected:
-		GPlatesModel::FeatureCollectionMetadata d_metadata;
 
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
 		explicit
 		GpmlMetadata(
 				const GPlatesModel::FeatureCollectionMetadata &metadata) :
-			d_metadata(metadata)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(metadata)))
 		{ }
+
+		//! Constructor used when cloning.
+		GpmlMetadata(
+				const GpmlMetadata &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlMetadata(*this, context));
+		}
+
+	private:
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const GPlatesModel::FeatureCollectionMetadata &metadata_) :
+				metadata(metadata_)
+			{  }
+
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				metadata(other_.metadata)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				// Compare the feature collectin metadata.
+				// TODO: Implement.
+				qWarning() << "GpmlMetadata::Revision::equality not implemented";
+				return false;
+			}
+
+			GPlatesModel::FeatureCollectionMetadata metadata;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlMetadata> &gpml_metadata);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const GpmlMetadata &gpml_metadata);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesModel::FeatureCollectionMetadata &metadata_);
 	};
 
 }

@@ -175,7 +175,7 @@ namespace
 				feature->add(
 						GPlatesModel::TopLevelPropertyInline::create(
 								DOMAIN_RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
-								domain_reconstruction_plate_id_property_value.get()->deep_clone_as_prop_val()));
+								domain_reconstruction_plate_id_property_value.get()->clone()));
 			}
 		}
 
@@ -204,7 +204,7 @@ namespace
 				feature->add(
 						GPlatesModel::TopLevelPropertyInline::create(
 								DOMAIN_NAME_PROPERTY_NAME,
-								name_property_value.get()->deep_clone_as_prop_val()));
+								name_property_value.get()->clone()));
 			}
 		}
 
@@ -228,8 +228,7 @@ namespace
 		//
 		// Set up GmlDataBlock 
 		//
-		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
-				GPlatesPropertyValues::GmlDataBlock::create();
+		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> gml_data_block_tuple_list;
 
 		GPlatesPropertyValues::ValueObjectType velocity_colat_type =
 				GPlatesPropertyValues::ValueObjectType::create_gpml("VelocityColat");
@@ -249,8 +248,10 @@ namespace
 				velocity_field->multi_point()->end();
 		GPlatesAppLogic::MultiPointVectorField::codomain_type::const_iterator codomain_iter =
 				velocity_field->begin();
-		for ( ; domain_iter != domain_end; ++domain_iter, ++codomain_iter) {
-			if ( ! *codomain_iter) {
+		for ( ; domain_iter != domain_end; ++domain_iter, ++codomain_iter)
+		{
+			if ( ! *codomain_iter)
+			{
 				// It's a "null" element.
 				colat_velocity_components.push_back(0);
 				lon_velocity_components.push_back(0);
@@ -266,10 +267,11 @@ namespace
 		}
 
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type velocity_colat =
-				GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 						velocity_colat_type, xml_attrs_velocity_colat,
 						colat_velocity_components.begin(),
 						colat_velocity_components.end());
+		gml_data_block_tuple_list.push_back( velocity_colat );
 
 		GPlatesPropertyValues::ValueObjectType velocity_lon_type =
 				GPlatesPropertyValues::ValueObjectType::create_gpml("VelocityLon");
@@ -277,13 +279,18 @@ namespace
 		xml_attrs_velocity_lon.insert(std::make_pair(uom, cm_per_year));
 
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type velocity_lon =
-				GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 						velocity_lon_type, xml_attrs_velocity_lon,
 						lon_velocity_components.begin(),
 						lon_velocity_components.end());
+		gml_data_block_tuple_list.push_back( velocity_lon );
 
-		gml_data_block->tuple_list_push_back( velocity_colat );
-		gml_data_block->tuple_list_push_back( velocity_lon );
+		//
+		// Create the GmlDataBlock property
+		//
+
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
+				GPlatesPropertyValues::GmlDataBlock::create(gml_data_block_tuple_list);
 
 		//
 		// append the GmlDataBlock property 

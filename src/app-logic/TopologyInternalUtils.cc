@@ -125,7 +125,7 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
 					gpml_piecewise_aggregation.time_windows();
 
 			// NOTE: If there's only one time window then we do not check its time period against the
@@ -150,15 +150,15 @@ namespace
 			// topologies from different time periods will get created instead of just one of them).
 			if (time_windows.size() == 1)
 			{
-				visit_gpml_time_window(time_windows.front());
+				visit_gpml_time_window(*time_windows.front());
 				return;
 			}
 
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter = time_windows.begin();
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end = time_windows.end();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter = time_windows.begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end = time_windows.end();
 			for ( ; iter != end; ++iter) 
 			{
-				GPlatesPropertyValues::GpmlTimeWindow &time_window = *iter;
+				GPlatesPropertyValues::GpmlTimeWindow &time_window = **iter;
 
 				// NOTE: We really should be checking the time period of each time window against the
 				// If the time window period contains the current reconstruction time then visit.
@@ -242,16 +242,16 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator begin =
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator begin =
 					gpml_piecewise_aggregation.time_windows().begin();
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
 					gpml_piecewise_aggregation.time_windows().end();
 
 			// Only need to visit the first time window - all windows have the same template type.
 			if (begin != end)
 			{
-				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *begin;
-				gpml_time_window.time_dependent_value()->accept_visitor(*this);
+				GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type gpml_time_window = *begin;
+				gpml_time_window->time_dependent_value()->accept_visitor(*this);
 			}
 		}
 
@@ -356,7 +356,7 @@ namespace
 			qWarning() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
 					d_geometry_property.handle_weak_ref()->feature_id().get());
 			qWarning() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
-					(*d_geometry_property)->property_name().get_name());
+					(*d_geometry_property)->get_property_name().get_name());
 #endif
 		}
 
@@ -405,15 +405,15 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
 					gpml_piecewise_aggregation.time_windows().begin();
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
 					gpml_piecewise_aggregation.time_windows().end();
 
 			for ( ; iter != end; ++iter) 
 			{
-				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *iter;
-				gpml_time_window.time_dependent_value()->accept_visitor(*this);
+				GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type gpml_time_window = *iter;
+				gpml_time_window->time_dependent_value()->accept_visitor(*this);
 
 				// Break out early if (first) time window has a topological line property.
 				// We only need to know there's a GpmlTopologicalLine present in order to reference it.
@@ -582,15 +582,15 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
 					gpml_piecewise_aggregation.time_windows().begin();
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
 					gpml_piecewise_aggregation.time_windows().end();
 
 			for ( ; iter != end; ++iter) 
 			{
-				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *iter;
-				gpml_time_window.time_dependent_value()->accept_visitor(*this);
+				GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type gpml_time_window = *iter;
+				gpml_time_window->time_dependent_value()->accept_visitor(*this);
 
 				// Break out early if (first) time window has a topological line property.
 				// We only need to know there's a GpmlTopologicalLine present in order to reference it.
@@ -686,7 +686,8 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			const std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows = gpml_piecewise_aggregation.time_windows();
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+					gpml_piecewise_aggregation.time_windows();
 
 			// NOTE: If there's only one time window then we do not check its time period against the
 			// current reconstruction time (if checking reconstruction time).
@@ -694,12 +695,16 @@ namespace
 			// (see 'visit_gpml_piecewise_aggregation()' in those classes for more details).
 			if (time_windows.size() == 1)
 			{
-				time_windows.front().time_dependent_value()->accept_visitor(*this);
+				time_windows.front()->time_dependent_value()->accept_visitor(*this);
 				return;
 			}
 
-			BOOST_FOREACH(const GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter = time_windows.begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end = time_windows.end();
+			for ( ; iter != end; ++iter) 
 			{
+				const GPlatesPropertyValues::GpmlTimeWindow &time_window = **iter;
+
 				// If we have a reconstruction time and the time window period contains it then visit the time window.
 				// The time periods should be mutually exclusive - if we happen to be in
 				// two time periods then we're probably right on the boundary between the two
@@ -734,27 +739,26 @@ namespace
 			}
 
 			// Loop over all the boundary sections.
-			GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator boundary_iter =
-					gpml_topological_network.boundary_sections_begin();
-			GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator boundary_end =
-					gpml_topological_network.boundary_sections_end();
-			for ( ; boundary_iter != boundary_end; ++boundary_iter)
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &boundary_sections = gpml_topological_network.boundary_sections();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_iter = boundary_sections.begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_end = boundary_sections.end();
+			for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 			{
-				const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &topological_section = *boundary_iter;
+				GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *boundary_sections_iter;
+
 				topological_section->accept_visitor(*this);
 			}
 
 			// Loop over all the interior geometries.
-			GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator interior_iter =
-					gpml_topological_network.interior_geometries_begin();
-			GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator interior_end =
-					gpml_topological_network.interior_geometries_end();
-			for ( ; interior_iter != interior_end; ++interior_iter)
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate> &interior_geometries = gpml_topological_network.interior_geometries();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::const_iterator interior_geometries_iter = interior_geometries.begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::const_iterator interior_geometries_end = interior_geometries.end();
+			for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter)
 			{
-				const GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type interior = *interior_iter;
+				GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type interior_geometry = *interior_geometries_iter;
 
 				// Add the feature ID of the interior geometry.
-				d_topological_sections_referenced.insert(interior->feature_id());
+				d_topological_sections_referenced.insert(interior_geometry->get_feature_id());
 			}
 		}
 
@@ -771,13 +775,13 @@ namespace
 			}
 
 			// Loop over all the sections.
-			GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator iter =
-					gpml_topological_line.sections_begin();
-			GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator end =
-					gpml_topological_line.sections_end();
-			for ( ; iter != end; ++iter)
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &sections = gpml_topological_line.sections();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator sections_iter = sections.begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator sections_end = sections.end();
+			for ( ; sections_iter != sections_end; ++sections_iter)
 			{
-				const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &topological_section = *iter;
+				GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *sections_iter;
+
 				topological_section->accept_visitor(*this);
 			}
 		}
@@ -795,13 +799,13 @@ namespace
 			}
 
 			// Loop over all the exterior sections.
-			GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
-					gpml_topological_polygon.exterior_sections_begin();
-			GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator end =
-					gpml_topological_polygon.exterior_sections_end();
-			for ( ; iter != end; ++iter)
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &exterior_sections = gpml_topological_polygon.exterior_sections();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator exterior_sections_iter = exterior_sections.begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator exterior_sections_end = exterior_sections.end();
+			for ( ; exterior_sections_iter != exterior_sections_end; ++exterior_sections_iter)
 			{
-				const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &topological_section = *iter;
+				GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *exterior_sections_iter;
+
 				topological_section->accept_visitor(*this);
 			}
 		}
@@ -813,7 +817,7 @@ namespace
 		{
 			// Add the feature ID of the line section geometry.
 			d_topological_sections_referenced.insert(
-					gpml_topological_line_section.get_source_geometry()->feature_id());
+					gpml_topological_line_section.get_source_geometry()->get_feature_id());
 		}
 
 		virtual
@@ -823,7 +827,7 @@ namespace
 		{
 			// Add the feature ID of the point geometry.
 			d_topological_sections_referenced.insert(
-					gpml_topological_point.get_source_geometry()->feature_id());
+					gpml_topological_point.get_source_geometry()->get_feature_id());
 		}
 
 	private:
@@ -872,7 +876,7 @@ namespace
 									feature_ref, prop);
 					if (name)
 					{
-						qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name.get()->value() );
+						qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name.get()->get_value() );
 					}
 					else
 					{
@@ -948,7 +952,7 @@ namespace
 								found_feature_ref.get(), prop);
 				if (name)
 				{
-					qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name.get()->value() );
+					qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name.get()->get_value() );
 				}
 				else
 				{
@@ -988,11 +992,7 @@ GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value(
 		return boost::none;
 	}
 
-	// Need to clone (for now) since feature iterator is non-const.
-	GPlatesModel::TopLevelProperty::non_null_ptr_type cloned_property = (*property)->clone();
-
-	// Extract PropertyValue our of the cloned TopLevelProperty.
-	return get_topology_geometry_property_value(*cloned_property);
+	return get_topology_geometry_property_value(**property);
 }
 
 
@@ -1061,7 +1061,7 @@ GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
 
 	// Property name obtained from geometry property iterator.
 	const QString property_name = GPlatesUtils::make_qstring_from_icu_string(
-			(*geometry_property)->property_name().get_name());
+			(*geometry_property)->get_property_name().get_name());
 
 	const GPlatesModel::PropertyName prop_name =
 			GPlatesModel::PropertyName::create_gpml(property_name);
@@ -1143,7 +1143,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 	// geometry will get found after restricting the topological sections using the reconstruct handles.
 	//
 	std::vector<GPlatesModel::FeatureHandle::weak_ref> resolved_features;
-	geometry_delegate.feature_id().find_back_ref_targets(
+	geometry_delegate.get_feature_id().find_back_ref_targets(
 			GPlatesModel::append_as_weak_refs(resolved_features));
 
 	// If there are no features with the delegate feature id...
@@ -1154,7 +1154,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 #if 0
 		qWarning() 
 			<< "Missing feature for feature-id = "
-			<< GPlatesUtils::make_qstring_from_icu_string(geometry_delegate.feature_id().get());
+			<< GPlatesUtils::make_qstring_from_icu_string(geometry_delegate.get_feature_id().get());
 #endif
 
 		return boost::none;
@@ -1162,7 +1162,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 
 	// Create a property name from the target_propery.
 	const QString property_name_qstring = GPlatesUtils::make_qstring_from_icu_string(
-			geometry_delegate.target_property().get_name());
+			geometry_delegate.get_target_property_name().get_name());
 	const GPlatesModel::PropertyName property_name = GPlatesModel::PropertyName::create_gpml(
 			property_name_qstring);
 
@@ -1215,7 +1215,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 					rg_finder.found_rgs_begin(),
 					rg_finder.found_rgs_end()),
 			std::vector<GPlatesModel::FeatureHandle::weak_ref>(1, feature_ref),
-			(*geometry_property)->property_name(),
+			(*geometry_property)->get_property_name(),
 			reconstruction_time);
 }
 

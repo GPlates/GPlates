@@ -151,13 +151,13 @@ namespace GPlatesFileIO
 			visit_gpml_irregular_sampling(
 					const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 			{
-				std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
+				GPlatesModel::RevisionedVector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
 					iter = gpml_irregular_sampling.time_samples().begin(),
 					end = gpml_irregular_sampling.time_samples().end();
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->valid_time()->time_position()))
+					if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position()))
 					{
 						iter->value()->accept_visitor(*this);
 					}
@@ -171,10 +171,10 @@ namespace GPlatesFileIO
 			visit_gpml_piecewise_aggregation(
 					const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation) 
 			{
-				std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-					gpml_piecewise_aggregation.time_windows().begin();
-				std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-					gpml_piecewise_aggregation.time_windows().end();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+						gpml_piecewise_aggregation.time_windows().begin();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+						gpml_piecewise_aggregation.time_windows().end();
 				for ( ; iter != end; ++iter)
 				{
 					// If the time window covers our reconstruction time then visit.
@@ -194,20 +194,20 @@ namespace GPlatesFileIO
 				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
 						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
 
-				if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.type()))
+				if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.get_type()))
 				{
 					return;
 				}
 
 				static const GPlatesPropertyValues::EnumerationContent unknown("Unknown");
-				if (unknown.is_equal_to(enumeration.value()))
+				if (unknown.is_equal_to(enumeration.get_value()))
 				{
 					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN;
 					return;
 				}
 
 				static const GPlatesPropertyValues::EnumerationContent left("Left");
-				d_sub_segment_type = left.is_equal_to(enumeration.value())
+				d_sub_segment_type = left.is_equal_to(enumeration.get_value())
 						? SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT
 						: SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
 			}
@@ -226,13 +226,13 @@ namespace GPlatesFileIO
 								old_plates_header_property_name);
 				if (old_plates_header)
 				{
-					if ( old_plates_header.get()->data_type_code() == "sL" )
+					if ( old_plates_header.get()->get_data_type_code() == "sL" )
 					{
 						// set the type
 						d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
 					}
 
-					if ( old_plates_header.get()->data_type_code() == "sR" )
+					if ( old_plates_header.get()->get_data_type_code() == "sR" )
 					{
 						// set the type
 						d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
@@ -349,13 +349,13 @@ namespace GPlatesFileIO
 			visit_gpml_irregular_sampling(
 					const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 			{
-				std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
+				GPlatesModel::RevisionedVector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
 					iter = gpml_irregular_sampling.time_samples().begin(),
 					end = gpml_irregular_sampling.time_samples().end();
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->valid_time()->time_position()))
+					if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position()))
 					{
 						iter->value()->accept_visitor(*this);
 					}
@@ -369,10 +369,10 @@ namespace GPlatesFileIO
 			visit_gpml_piecewise_aggregation(
 					const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation) 
 			{
-				std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-					gpml_piecewise_aggregation.time_windows().begin();
-				std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-					gpml_piecewise_aggregation.time_windows().end();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+						gpml_piecewise_aggregation.time_windows().begin();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+						gpml_piecewise_aggregation.time_windows().end();
 				for ( ; iter != end; ++iter)
 				{
 					// If the time window covers our reconstruction time then visit.
@@ -392,20 +392,20 @@ namespace GPlatesFileIO
 				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
 						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
 
-				if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.type()))
+				if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.get_type()))
 				{
 					return;
 				}
 
 				static const GPlatesPropertyValues::EnumerationContent unknown("Unknown");
-				if (unknown.is_equal_to(enumeration.value()))
+				if (unknown.is_equal_to(enumeration.get_value()))
 				{
 					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN;
 					return;
 				}
 
 				static const GPlatesPropertyValues::EnumerationContent left("Left");
-				d_sub_segment_type = left.is_equal_to(enumeration.value())
+				d_sub_segment_type = left.is_equal_to(enumeration.get_value())
 						? SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING_LEFT
 						: SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING_RIGHT;
 			}
@@ -438,7 +438,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segmen
 					sub_segment_feature_ref, property_name);
 	if (property_value)
 	{
-		const QString slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value.get()->value().get() );
+		const QString slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value.get()->get_value().get() );
 
 		if (slabEdgeType == QString("Leading") ) 
 		{

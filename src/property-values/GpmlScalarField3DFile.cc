@@ -27,12 +27,39 @@
 
 #include "GpmlScalarField3DFile.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/ModelTransaction.h"
+
+#include "scribe/Scribe.h"
+
+
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlScalarField3DFile::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("ScalarField3DFile");
+
 
 const GPlatesPropertyValues::GpmlScalarField3DFile::non_null_ptr_type
 GPlatesPropertyValues::GpmlScalarField3DFile::create(
-		const file_name_type &filename_)
+		XsString::non_null_ptr_type filename_)
 {
-	return non_null_ptr_type(new GpmlScalarField3DFile(filename_));
+	GPlatesModel::ModelTransaction transaction;
+	non_null_ptr_type ptr(new GpmlScalarField3DFile(transaction, filename_));
+	transaction.commit();
+
+	return ptr;
+}
+
+
+void
+GPlatesPropertyValues::GpmlScalarField3DFile::set_file_name(
+		XsString::non_null_ptr_type filename_)
+{
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().filename.change(
+			revision_handler.get_model_transaction(), filename_);
+	revision_handler.commit();
 }
 
 
@@ -41,4 +68,88 @@ GPlatesPropertyValues::GpmlScalarField3DFile::print_to(
 		std::ostream &os) const
 {
 	return os << "GpmlScalarField3DFile";
+}
+
+
+GPlatesModel::Revision::non_null_ptr_type
+GPlatesPropertyValues::GpmlScalarField3DFile::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
+{
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			child_revisionable == revision.filename.get_revisionable(),
+			GPLATES_ASSERTION_SOURCE);
+
+	return revision.filename.clone_revision(transaction);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlScalarField3DFile::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlScalarField3DFile> &gpml_scalar_field_3D_file)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_scalar_field_3D_file->get_file_name(), "file_name");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<XsString::non_null_ptr_type> file_name_ =
+				scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "file_name");
+		if (!file_name_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_scalar_field_3D_file.construct_object(
+				boost::ref(transaction),  // non-const ref
+				file_name_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlScalarField3DFile::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_file_name(), "file_name");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<XsString::non_null_ptr_type> file_name_ =
+					scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "file_name");
+			if (!file_name_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_file_name(file_name_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlScalarField3DFile>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

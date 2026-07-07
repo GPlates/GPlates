@@ -206,7 +206,7 @@ namespace GPlatesFileIO
 				}
 
 				// Just visit the first time window - there should only be one window.
-				gpml_piecewise_aggregation.time_windows().front().time_dependent_value()->accept_visitor(*this);
+				gpml_piecewise_aggregation.time_windows().front()->time_dependent_value()->accept_visitor(*this);
 			}
 
 			virtual
@@ -516,7 +516,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::RemovePropertyFeatureReaderImpl::read_fea
 	GPlatesModel::FeatureHandle::iterator feature_properties_end = feature->end();
 	for ( ; feature_properties_iter != feature_properties_end; ++feature_properties_iter)
 	{
-		if (d_property_name == (*feature_properties_iter)->property_name())
+		if (d_property_name == (*feature_properties_iter)->get_property_name())
 		{
 			feature->remove(feature_properties_iter);
 
@@ -750,7 +750,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 			// Retrieve the topological sections from the old version property value.
 			boundary_topological_sections =
 					boost::any_cast<const topological_sections_seq_type &>(
-							old_version_property_value->value());
+							old_version_property_value->get_value());
 		}
 	}
 
@@ -783,7 +783,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 			// Retrieve the topological sections from the old version property value.
 			const topological_sections_seq_type &interior_topological_sections =
 					boost::any_cast<const topological_sections_seq_type &>(
-							old_version_property_value->value());
+							old_version_property_value->get_value());
 
 			// Convert the topological sections to topological interiors by only retaining the
 			// source geometry property delegate - the other section information was never needed.
@@ -799,7 +799,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 				if (topological_line_section)
 				{
 					topological_interiors->push_back(
-							topological_line_section.get()->get_source_geometry()->deep_clone());
+							topological_line_section.get()->get_source_geometry()->clone());
 				}
 				else
 				{
@@ -810,7 +810,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 					if (topological_point)
 					{
 						topological_interiors->push_back(
-								topological_point.get()->get_source_geometry()->deep_clone());
+								topological_point.get()->get_source_geometry()->clone());
 					}
 				}
 			}
@@ -905,7 +905,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::con
 				GPlatesModel::PropertyName::create_gpml("rangeSet");
 
 		const GPlatesModel::TopLevelProperty &top_level_property = **property_iter;
-		const GPlatesModel::PropertyName &property_name = top_level_property.property_name();
+		const GPlatesModel::PropertyName &property_name = top_level_property.get_property_name();
 		if (property_name == RANGE_SET_PROPERTY_NAME)
 		{
 			// Get the range property value from the range property iterator.
@@ -931,8 +931,12 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::con
 										false/*check_property_value_type*/);
 						if (converted_top_level_property)
 						{
-							// Reset the property iterator to the converted property.
-							*property_iter = converted_top_level_property.get();
+							// Replace the property with the converted property.
+							//
+							// Note: Cannot use '*property_iter = ...' since dereferencing a feature
+							// properties iterator returns a temporary pointer (so assigning to it
+							// does nothing) - instead set the property via the feature.
+							feature->set(property_iter, converted_top_level_property.get());
 
 							updated_crustal_thinning_factors = true;
 						}
@@ -951,20 +955,23 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::con
 		const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_to_const_type &range) const
 {
 	// Iterate over the scalar types until we find a matching one.
-	GPlatesPropertyValues::GmlDataBlock::tuple_list_type::const_iterator range_iter = range->tuple_list_begin();
-	GPlatesPropertyValues::GmlDataBlock::tuple_list_type::const_iterator range_end = range->tuple_list_end();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &
+			range_tuple_list = range->tuple_list();
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator
+			range_iter = range_tuple_list.begin(),
+			range_end = range_tuple_list.end();
 	for ( ; range_iter != range_end; ++range_iter)
 	{
 		static const GPlatesPropertyValues::ValueObjectType CRUSTAL_THINNING_FACTOR_PROPERTY_NAME =
 				GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
 
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type scalar_data = *range_iter;
-		if (scalar_data->value_object_type() == CRUSTAL_THINNING_FACTOR_PROPERTY_NAME)
+		if (scalar_data->get_value_object_type() == CRUSTAL_THINNING_FACTOR_PROPERTY_NAME)
 		{
-			// Extract the thinning factors.
-			std::vector<double> crustal_thinning_factors(
-					scalar_data->coordinates_begin(),
-					scalar_data->coordinates_end());
+			// Extract/copy the thinning factors.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type
+					crustal_thinning_factors = scalar_data->get_coordinates();
 
 			const unsigned int num_crustal_thinning_factors = crustal_thinning_factors.size();
 
@@ -998,33 +1005,44 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::con
 				crustal_thinning_factors[n] = 1.0 - crustal_thinning_factors[n];
 			}
 
-			// The converted range property.
-			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type converted_range =
-					GPlatesPropertyValues::GmlDataBlock::create();
+			// The converted range property tuple list.
+			std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> converted_range_tuple_list;
 
 			// Copy previous coordinates lists into new converted property.
-			GPlatesPropertyValues::GmlDataBlock::tuple_list_type::const_iterator original_range_iter =
-					range->tuple_list_begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator
+					original_range_iter = range_tuple_list.begin();
 			for ( ; original_range_iter != range_iter; ++original_range_iter)
 			{
-				converted_range->tuple_list_push_back(*original_range_iter);
+				converted_range_tuple_list.push_back(
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+								original_range_iter->get_value_object_type(),
+								original_range_iter->get_value_object_xml_attributes(),
+								original_range_iter->get_coordinates()));
 			}
 
 			// Add converted crustal thinning factors.
 			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type converted_crustal_thinning_factor_range =
-					GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 							CRUSTAL_THINNING_FACTOR_PROPERTY_NAME,
-							scalar_data->value_object_xml_attributes(),
+							scalar_data->get_value_object_xml_attributes(),
 							crustal_thinning_factors.begin(),
 							crustal_thinning_factors.end());
-			converted_range->tuple_list_push_back(converted_crustal_thinning_factor_range);
+			converted_range_tuple_list.push_back(converted_crustal_thinning_factor_range);
 
 			// Copy subsequent coordinates lists into new converted property.
 			original_range_iter = range_iter;
 			for (++original_range_iter; original_range_iter != range_end; ++original_range_iter)
 			{
-				converted_range->tuple_list_push_back(*original_range_iter);
+				converted_range_tuple_list.push_back(
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+								original_range_iter->get_value_object_type(),
+								original_range_iter->get_value_object_xml_attributes(),
+								original_range_iter->get_coordinates()));
 			}
+
+			// The converted range property.
+			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type converted_range =
+					GPlatesPropertyValues::GmlDataBlock::create(converted_range_tuple_list);
 
 			return converted_range;
 		}

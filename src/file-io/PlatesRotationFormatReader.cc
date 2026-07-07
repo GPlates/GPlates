@@ -91,7 +91,7 @@ namespace
 			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type t1,
 			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type t2)
 	{
-		return geo_time_instants_are_approx_equal(t1->time_position(), t2->time_position());
+		return geo_time_instants_are_approx_equal(t1->get_time_position(), t2->get_time_position());
 	}
 
 
@@ -170,7 +170,7 @@ namespace
 	 *
 	 * If parsing is unsuccessful, a PoleParsingException will be thrown.
 	 */
-	GPlatesPropertyValues::GpmlTimeSample
+	GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 	parse_pole(
 			QTextStream &line_stream,
 			GPlatesModel::integer_plate_id_type &fixed_plate_id,
@@ -293,10 +293,9 @@ namespace
 		GmlTimeInstant::non_null_ptr_type valid_time =
 				ModelUtils::create_gml_time_instant(geo_time_instant);
 
-		boost::intrusive_ptr<XsString> description;
-		if ( ! comment.isEmpty())
-		{
-			description = XsString::create(GPlatesUtils::UnicodeString(comment)).get();
+		boost::optional<XsString::non_null_ptr_type> description;
+		if ( ! comment.isEmpty()) {
+			description = XsString::create(GPlatesUtils::UnicodeString(comment));
 		}
 
 		StructuralType value_type = 
@@ -306,26 +305,26 @@ namespace
 		// sample should be disabled.
 		if (moving_plate_id == 999)
 		{
-			return GpmlTimeSample(value, valid_time, description, value_type, true);
+			return GpmlTimeSample::create(value, valid_time, description, value_type, true);
 		}
 		else
 		{
-			return GpmlTimeSample(value, valid_time, description, value_type);
+			return GpmlTimeSample::create(value, valid_time, description, value_type);
 		}
 	}
 
 
 	void
 	warn_user_about_new_overlapping_sequence(
-			const GPlatesPropertyValues::GpmlTimeSample &time_sample,
-			const GPlatesPropertyValues::GpmlTimeSample &prev_time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type &time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type &prev_time_sample,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
 			unsigned line_num,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		using namespace GPlatesFileIO;
 
-		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
+		if (gml_time_instants_are_approx_equal(time_sample->valid_time(), prev_time_sample->valid_time())) {
 			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::SamePlateIdsButDuplicateGeoTime;
 			ReadErrors::Result res = ReadErrors::NewOverlappingSequenceBegun;
@@ -347,7 +346,6 @@ namespace
 		{  }
 
 		boost::intrusive_ptr<GPlatesPropertyValues::GpmlIrregularSampling> d_irregular_sampling;
-		GPlatesModel::FeatureHandle::iterator d_irregular_sampling_iter;
 		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
 		GPlatesModel::integer_plate_id_type d_moving_plate_id;
 	};
@@ -358,7 +356,7 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
-			const GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type &time_sample,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id)
 	{
@@ -370,20 +368,15 @@ namespace
 		current_total_recon_seq = GPlatesModel::FeatureHandle::create(rotations, feature_type);
 
 		GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
-				GpmlFiniteRotationSlerp::create(time_sample.value_type());
+				GpmlFiniteRotationSlerp::create(time_sample->get_value_type());
 		GpmlIrregularSampling::non_null_ptr_type gpml_irregular_sampling =
 				GpmlIrregularSampling::create(time_sample,
-						GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp),
-						time_sample.value_type());
+						gpml_finite_rotation_slerp,
+						time_sample->get_value_type());
 
-		// We retain an iterator that points to the property in the model. This is
-		// because we cannot modify the model's copy of the property directly and we
-		// need to modify a copy of the property outside the model. The iterator then
-		// allows us to "set" the property in the feature after we're done with
-		// modifying the property.
 		// Note that the "gpml:totalReconstructionPole" property has to come first
 		// otherwise the PlatesRotationFormatWriter barfs.
-		props_in_current_trs.d_irregular_sampling_iter = current_total_recon_seq->add(
+		current_total_recon_seq->add(
 				TopLevelPropertyInline::create(
 					PropertyName::create_gpml("totalReconstructionPole"),
 					gpml_irregular_sampling));
@@ -416,8 +409,8 @@ namespace
 	 */
 	void
 	add_time_sample(
-			std::vector<GPlatesPropertyValues::GpmlTimeSample> &time_samples,
-			GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample> &time_samples,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type &time_sample,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &data_source,
 			unsigned line_num,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors,
@@ -433,11 +426,11 @@ namespace
 		//
 		// Both poles must be enabled before this adjustment is attempted.
 		//
-		if (!time_sample.is_disabled())
+		if (!time_sample->is_disabled())
 		{
 			GpmlFiniteRotation *curr_gpml_finite_rotation =
 					dynamic_cast<GpmlFiniteRotation *>(
-							time_sample.value().get());
+							time_sample->value().get());
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 					curr_gpml_finite_rotation,
 					GPLATES_ASSERTION_SOURCE);
@@ -449,20 +442,20 @@ namespace
 			//
 			// This avoids modifying the rotation file every time its loaded to no effect, and then
 			// asking the user to save the rotation file every time (because it's marked as modified).
-			if (!GPlatesMaths::represents_identity_rotation(curr_gpml_finite_rotation->finite_rotation().unit_quat()))
+			if (!GPlatesMaths::represents_identity_rotation(curr_gpml_finite_rotation->get_finite_rotation().unit_quat()))
 			{
 				// Search backwards for most recently added time sample (that's enabled).
 				for (unsigned int n = 0; n < time_samples.size(); ++n)
 				{
-					const GpmlTimeSample &prev_enabled_time_sample = time_samples[time_samples.size() - n - 1];
-					if (prev_enabled_time_sample.is_disabled())
+					const GpmlTimeSample::non_null_ptr_type prev_enabled_time_sample = time_samples[time_samples.size() - n - 1];
+					if (prev_enabled_time_sample->is_disabled())
 					{
 						continue;
 					}
 
 					const GpmlFiniteRotation *prev_gpml_finite_rotation =
 							dynamic_cast<const GpmlFiniteRotation *>(
-									prev_enabled_time_sample.value().get());
+									prev_enabled_time_sample->value().get());
 					GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 							prev_gpml_finite_rotation,
 							GPLATES_ASSERTION_SOURCE);
@@ -470,8 +463,8 @@ namespace
 					// Make sure the stage rotation (relative to previous total pole) takes the short path.
 					boost::optional<GPlatesMaths::FiniteRotation> adjusted_curr_finite_rotation =
 							GPlatesAppLogic::RotationUtils::calculate_short_path_final_rotation(
-									curr_gpml_finite_rotation->finite_rotation(),
-									prev_gpml_finite_rotation->finite_rotation());
+									curr_gpml_finite_rotation->get_finite_rotation(),
+									prev_gpml_finite_rotation->get_finite_rotation());
 					if (adjusted_curr_finite_rotation)
 					{
 						// Change the current finite rotation for short path.
@@ -506,7 +499,7 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
-			GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type &time_sample,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
@@ -589,13 +582,12 @@ namespace
 		}
 
 		// The current time samples.
-		std::vector<GpmlTimeSample> &time_samples =
+		RevisionedVector<GpmlTimeSample> &time_samples =
 				props_in_current_trs.d_irregular_sampling->time_samples();
 
-		// The previous time sample (disabled or enabled).
-		const GpmlTimeSample prev_time_sample = time_samples.back();
+		const GpmlTimeSample::non_null_ptr_type prev_time_sample = time_samples.back();
 
-		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time()))
+		if (gml_time_instants_are_approx_equal(time_sample->valid_time(), prev_time_sample->valid_time()))
 		{
 			// We'll assume it's the start of a new sequence.  Since we're cautious
 			// programmers, let's just double-check whether the plate IDs are the same.
@@ -608,7 +600,7 @@ namespace
 			// previous pole is the non-commented-out one.
 			//
 			// FIXME:  Re-read that first sentence.  What does it mean?
-			if (prev_time_sample.is_disabled() &&
+			if (prev_time_sample->is_disabled() &&
 					props_in_current_trs.d_fixed_plate_id == fixed_plate_id &&
 					props_in_current_trs.d_moving_plate_id == moving_plate_id)
 			{
@@ -656,8 +648,8 @@ namespace
 						moving_plate_id);
 			}
 		}
-		else if (time_sample.valid_time()->time_position().value() <
-				prev_time_sample.valid_time()->time_position().value())
+		else if (time_sample->valid_time()->get_time_position().value() <
+				prev_time_sample->valid_time()->get_time_position().value())
 		{
 			// We'll assume it's the start of a new sequence.  Since we're cautious
 			// programmers, let's just double-check whether the plate IDs are the same.
@@ -707,10 +699,7 @@ namespace
 				ReadErrors::Result res = ReadErrors::MovingPlateIdChangedToMatchEarlierSequence;
 				ReadErrorOccurrence read_error(data_source, location, descr, res);
 				read_errors.d_warnings.push_back(read_error);
-				*(props_in_current_trs.d_irregular_sampling_iter) =
-					GPlatesModel::TopLevelPropertyInline::create(
-							GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"),
-							props_in_current_trs.d_irregular_sampling.get());
+
 				return;
 			}
 
@@ -730,13 +719,6 @@ namespace
 				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors, contains_unsaved_changes);
 			}
 		}
-
-		// Now that we've finished modifying the property, let's set the model's
-		// copy of the property to our modified copy.
-		*(props_in_current_trs.d_irregular_sampling_iter) =
-				GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"),
-					props_in_current_trs.d_irregular_sampling.get());
 	}
 
 
@@ -745,7 +727,7 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
-			GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type &time_sample,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
@@ -802,7 +784,7 @@ namespace
 
 			try
 			{
-				GPlatesPropertyValues::GpmlTimeSample time_sample =
+				GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type time_sample =
 						parse_pole(line_stream, fixed_plate_id, moving_plate_id,
 								data_source, line_buffer.line_number(),
 								read_errors);

@@ -37,6 +37,9 @@
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -83,18 +86,8 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GmlTimeInstant(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GmlTimeInstant>(clone_impl());
 		}
-
-		const GmlTimeInstant::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Access the GeoTimeInstant which encodes the temporal position of this GmlTimeInstant.
@@ -104,9 +97,9 @@ namespace GPlatesPropertyValues
 		 * set a new GeoTimeInstant using the method @a set_time_position()
 		 */
 		const GeoTimeInstant &
-		time_position() const
+		get_time_position() const
 		{
-			return d_time_position;
+			return get_current_revision<Revision>().time_position;
 		}
 
 		/**
@@ -114,29 +107,23 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_time_position(
-				const GeoTimeInstant &tp)
-		{
-			d_time_position = tp;
-			update_instance_id();
-		}
+				const GeoTimeInstant &tp);
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
 		const xml_attribute_map_type &
-		time_position_xml_attributes() const
+		get_time_position_xml_attributes() const
 		{
-			return d_time_position_xml_attributes;
+			return get_current_revision<Revision>().time_position_xml_attributes;
 		}
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
-		xml_attribute_map_type &
-		time_position_xml_attributes()
-		{
-			return d_time_position_xml_attributes;
-		}
+		void
+		set_time_position_xml_attributes(
+				const xml_attribute_map_type &tpxa);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -145,9 +132,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gml("TimeInstant");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GmlTimeInstant::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -188,34 +180,89 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GmlTimeInstant(
 				const GeoTimeInstant &time_position_,
-				const xml_attribute_map_type &
-						time_position_xml_attributes_);
+				const xml_attribute_map_type &time_position_xml_attributes_) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(time_position_, time_position_xml_attributes_)))
+		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GmlTimeInstant(
-				const GmlTimeInstant &other);
+				const GmlTimeInstant &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
 
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GmlTimeInstant(*this, context));
+		}
 
 	private:
 
-		GeoTimeInstant d_time_position;
-		xml_attribute_map_type d_time_position_xml_attributes;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision(
+					const GeoTimeInstant &time_position_,
+					const xml_attribute_map_type &time_position_xml_attributes_) :
+				time_position(time_position_),
+				time_position_xml_attributes(time_position_xml_attributes_)
+			{  }
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GmlTimeInstant &
-		operator=(const GmlTimeInstant &);
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				time_position(other_.time_position),
+				time_position_xml_attributes(other_.time_position_xml_attributes)
+			{  }
 
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return time_position == other_revision.time_position &&
+						time_position_xml_attributes == other_revision.time_position_xml_attributes &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			GeoTimeInstant time_position;
+			xml_attribute_map_type time_position_xml_attributes;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GmlTimeInstant> &gml_time_instant);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

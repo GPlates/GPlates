@@ -1,0 +1,96 @@
+{% set name = "pygplates" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  path: ../../
+
+  #url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  #sha256: 24d5eccfb1716d4fd1eb109d0a46cf62a58e247676623ff578d773904b94e645
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - numpy                                  # [build_platform != target_platform]
+    - cmake
+    - make  # [unix]
+    - {{ compiler('c') }}
+    # Note: stdlib("c") should only be specified in the conda-forge feedstock (not for local conda builds).
+    #       Otherwise local conda builds will give a dependency error that "c_win-64 does not exist".
+    #- {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+    - libdrm                             # [linux]
+    - libegl-devel                       # [linux]
+    - libgl-devel                        # [linux]
+    - xorg-libx11                        # [linux]
+    - xorg-libxau                        # [linux]
+    - xorg-libxcomposite                 # [linux]
+    - xorg-libxcursor                    # [linux]
+    - xorg-libxdamage                    # [linux]
+    - xorg-libxext                       # [linux]
+    - xorg-libxi                         # [linux]
+    - xorg-libxrandr                     # [linux]
+    - xorg-libxrender                    # [linux]
+    - xorg-libxscrnsaver                 # [linux]
+    - xorg-libxtst                       # [linux]
+    - xorg-libxxf86vm                    # [linux]
+    - xorg-xorgproto                     # [linux]
+    - {{ cdt('libselinux-devel') }}      # [linux]
+  host:
+    - python
+    - pip
+    - scikit-build-core <0.11  # avoid version 0.11 for now (causing problems with license.file)
+    - numpy
+    - cgal-cpp
+    - gmp
+    - mpfr
+    - glew
+    - libopengl-devel  # [linux]
+    - libgl-devel      # [linux]
+    - libglx-devel     # [linux]
+    - libglu           # [linux]
+    - xorg-libxfixes   # [linux]
+    - qt-main
+    - libboost-devel
+    - libboost-python-devel
+    - libgdal
+    - proj
+    - qwt
+    - zlib
+  run:
+    - python
+    - glew
+    - libglu     # [linux]
+    - qt-main
+    - libgdal
+    - proj
+    - qwt
+    - zlib
+
+test:
+  source_files:
+    - pygplates/test
+  imports:
+    - pygplates
+  commands:
+    - python pygplates/test/test.py
+
+about:
+  home: https://www.gplates.org/
+  summary: 'Python library for fine-grained access to GPlates functionality'
+  license: GPL-2.0-only
+  license_family: GPL
+  license_file: COPYING
+  doc_url: https://www.gplates.org/docs/pygplates/index.html
+  dev_url: https://github.com/GPlates/GPlates
+
+extra:
+  recipe-maintainers:
+    - jcannon-gplates

@@ -78,7 +78,7 @@ bool
 GPlatesQtWidgets::EditWidgetChooser::initialise_pre_property_values(
 		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
 
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
@@ -173,7 +173,7 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_array(
 	// 'gpml:Array' is a *template* type and we currently only support the value type
 	// 'gml:TimePeriod' for it in the form of the Edit Time Sequence widget
 	// (adding and editing 'gpml:Array<gml:TimePeriod>').
-    if (gpml_array.type() == GML_TIME_PERIOD_TYPE)
+    if (gpml_array.get_value_type() == GML_TIME_PERIOD_TYPE)
     {
 		d_edit_widget_group_box_ptr->activate_edit_time_sequence_widget(gpml_array);
 	}

@@ -403,7 +403,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_types()
 			{
 				for (const auto &scalar_data : coverage.range)
 				{
-					unique_scalar_types.insert(scalar_data->value_object_type());
+					unique_scalar_types.insert(scalar_data->get_value_object_type());
 				}
 			}
 		}
@@ -501,11 +501,12 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_topology_reconstruct
 			ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
 			for (const auto &scalar_data : scalar_coverage.range)
 			{
-				const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_data->value_object_type();
+				const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_data->get_value_object_type();
+				const GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type &scalar_values = scalar_data->get_coordinates();
 
 				initial_scalar_coverage[scalar_type].assign(
-						scalar_data->coordinates_begin(),
-						scalar_data->coordinates_end());
+						scalar_values.begin(),
+						scalar_values.end());
 			}
 
 			// Find the geometry time span associated with the geometry property of the current coverage (if any).
@@ -584,11 +585,12 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_non_topology_reconst
 			ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
 			for (const auto &scalar_data : scalar_coverage.range)
 			{
-				const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_data->value_object_type();
+				const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_data->get_value_object_type();
+				const GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type &scalar_values = scalar_data->get_coordinates();
 
 				initial_scalar_coverage[scalar_type].assign(
-						scalar_data->coordinates_begin(),
-						scalar_data->coordinates_end());
+						scalar_values.begin(),
+						scalar_values.end());
 			}
 
 			// Create a time span of only the extracted scalar values (they're not evolved over time).

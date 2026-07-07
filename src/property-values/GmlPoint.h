@@ -38,6 +38,9 @@
 
 #include "model/PropertyValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -150,18 +153,8 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GmlPoint(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GmlPoint>(clone_impl());
 		}
-
-		const GmlPoint::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Access the GPlatesMaths::PointOnSphere which encodes the geometry of this instance.
@@ -171,7 +164,10 @@ namespace GPlatesPropertyValues
 		 * that are not latitude and longitude - see @a create_from_pos_2d for more details.
 		 */
 		const GPlatesMaths::PointOnSphere &
-		point() const;
+		get_point() const
+		{
+			return get_current_revision<Revision>().get_point();
+		}
 
 		/**
 		 * Returns the point as a lat-lon point.
@@ -187,7 +183,7 @@ namespace GPlatesPropertyValues
 		 * that are not latitude and longitude - see @a create_from_pos_2d for more details.
 		 */
 		GPlatesMaths::LatLonPoint
-		point_in_lat_lon() const;
+		get_point_in_lat_lon() const;
 
 		/**
 		 * Returns the point as a 2D (x,y) point.
@@ -199,7 +195,10 @@ namespace GPlatesPropertyValues
 		 * See @a create_from_pos_2d for more details.
 		 */
 		const std::pair<double, double> &
-		point_2d() const;
+		get_point_2d() const
+		{
+			return get_current_revision<Revision>().get_point_2d();
+		}
 
 		/**
 		 * Set the point within this instance to @a p.
@@ -211,16 +210,12 @@ namespace GPlatesPropertyValues
 		GmlProperty
 		gml_property() const
 		{
-			return d_gml_property;
+			return get_current_revision<Revision>().gml_property;
 		}
 
 		void
 		set_gml_property(
-				GmlProperty gml_property_)
-		{
-			d_gml_property = gml_property_;
-			update_instance_id();
-		}
+				GmlProperty gml_property_);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -229,9 +224,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gml("Point");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GmlPoint::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -274,8 +274,7 @@ namespace GPlatesPropertyValues
 		GmlPoint(
 				const std::pair<double, double> &point_2d_,
 				GmlProperty gml_property_) :
-			d_gml_property(gml_property_),
-			d_point_2d(point_2d_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(point_2d_, gml_property_)))
 		{  }
 
 
@@ -285,44 +284,113 @@ namespace GPlatesPropertyValues
 		GmlPoint(
 				const GPlatesMaths::PointOnSphere &point_on_sphere_,
 				GmlProperty gml_property_) :
-			d_gml_property(gml_property_),
-			d_point_on_sphere(point_on_sphere_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(point_on_sphere_, gml_property_)))
 		{  }
 
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GmlPoint(
-				const GmlPoint &other):
-			PropertyValue(other), /* share instance id */
-			d_gml_property(other.d_gml_property),
-			d_point_2d(other.d_point_2d),
-			d_point_on_sphere(other.d_point_on_sphere)
+				const GmlPoint &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GmlPoint(*this, context));
+		}
 
 	private:
 
-		GmlProperty d_gml_property;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const std::pair<double, double> &point_2d_,
+					GmlProperty gml_property_):
+				point_2d(point_2d_),
+				gml_property(gml_property_)
+			{  }
 
-		// One of these will always exist depending on how this instance was created.
+			explicit
+			Revision(
+					const GPlatesMaths::PointOnSphere &point_on_sphere_,
+					GmlProperty gml_property_):
+				point_on_sphere(point_on_sphere_),
+				gml_property(gml_property_)
+			{  }
 
-		mutable boost::optional< std::pair<double, double> > d_point_2d;
-		mutable boost::optional<GPlatesMaths::PointOnSphere> d_point_on_sphere;
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				point_2d(other_.point_2d),
+				// Note there is no need to distinguish between shallow and deep copying because
+				// PointOnSphere is immutable and hence there is never a need to deep copy it...
+				point_on_sphere(other_.point_on_sphere),
+				gml_property(other_.gml_property)
+			{  }
 
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GmlPoint &
-		operator=(
-				const GmlPoint &);
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const;
 
+			const GPlatesMaths::PointOnSphere &
+			get_point() const;
+
+			const std::pair<double, double> &
+			get_point_2d() const;
+
+			// One of these will always exist depending on how this instance was created...
+
+			mutable boost::optional< std::pair<double, double> > point_2d;
+			mutable boost::optional<GPlatesMaths::PointOnSphere> point_on_sphere;
+
+			GmlProperty gml_property;
+
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GmlPoint> &gml_point);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
+
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			GmlPoint::GmlProperty &gml_property,
+			bool transcribed_construct_data);
 }
 
 #endif  // GPLATES_PROPERTYVALUES_GMLPOINT_H

@@ -12,6 +12,8 @@ set(srcs
     BasicHandle.cc
     BasicHandle.h
     BasicRevision.h
+    BubbleUpRevisionHandler.cc
+    BubbleUpRevisionHandler.h
     ChangesetHandle.cc
     ChangesetHandle.h
     FeatureCollectionHandle.cc
@@ -29,7 +31,6 @@ set(srcs
     FeatureStoreRootRevision.cc
     FeatureStoreRootRevision.h
     FeatureType.h
-    FeatureVisitor.cc
     FeatureVisitor.h
     Gpgim.cc
     Gpgim.h
@@ -52,6 +53,8 @@ set(srcs
     Model.h
     ModelInterface.cc
     ModelInterface.h
+    ModelTransaction.cc
+    ModelTransaction.h
     ModelUtils.cc
     ModelUtils.h
     NotificationGuard.cc
@@ -60,9 +63,17 @@ set(srcs
     PropertyValue.cc
     PropertyValue.h
     QualifiedXmlName.h
-    RevisionAwareIterator.cc
+    Revision.h
+    Revisionable.cc
+    Revisionable.h
     RevisionAwareIterator.h
+    RevisionContext.h
+    RevisionedReference.cc
+    RevisionedReference.h
+    RevisionedVector.h
+    RevisionId.cc
     RevisionId.h
+    ScribeExportModel.h
     StringContentTypeGenerator.h
     StringSetSingletons.cc
     StringSetSingletons.h
@@ -70,9 +81,9 @@ set(srcs
     TopLevelProperty.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h
-    TopLevelPropertyRef.cc
-    TopLevelPropertyRef.h
+    TranscribeIdTypeGenerator.h
     TranscribeQualifiedXmlName.h
+    TranscribeRevisionedVector.h
     TranscribeStringContentTypeGenerator.h
     types.h
     WeakObserver.h

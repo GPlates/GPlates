@@ -29,13 +29,21 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLKEYVALUEDICTIONARY_H
 #define GPLATES_PROPERTYVALUES_GPMLKEYVALUEDICTIONARY_H
 
+#include <cstddef>
 #include <vector>
 
 #include "GpmlKeyValueDictionaryElement.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -49,7 +57,8 @@ namespace GPlatesPropertyValues
 	class GpmlKeyValueDictionaryElement;
 
 	class GpmlKeyValueDictionary :
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::RevisionContext
 	{
 
 	public:
@@ -72,38 +81,58 @@ namespace GPlatesPropertyValues
 		non_null_ptr_type
 		create()
 		{
-			return create(std::vector<GpmlKeyValueDictionaryElement>());
+			return create(std::vector<GpmlKeyValueDictionaryElement::non_null_ptr_type>());
 		}
 
 		static
 		non_null_ptr_type
 		create(
-			const std::vector<GpmlKeyValueDictionaryElement> &elements)
+				const std::vector<GpmlKeyValueDictionaryElement::non_null_ptr_type> &elements_)
 		{
-			return non_null_ptr_type(new GpmlKeyValueDictionary(elements));
+			return create(elements_.begin(), elements_.end());
+		}
+
+
+		template <typename GpmlKeyValueDictionaryElementIter>
+		static
+		non_null_ptr_type
+		create(
+				GpmlKeyValueDictionaryElementIter elements_begin,
+				GpmlKeyValueDictionaryElementIter elements_end)
+		{
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(
+					new GpmlKeyValueDictionary(
+							transaction,
+							GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::create(
+									elements_begin,
+									elements_end)));
+			transaction.commit();
+			return ptr;
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlKeyValueDictionary(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlKeyValueDictionary>(clone_impl());
 		}
 
-		const GpmlKeyValueDictionary::non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		const std::vector<GpmlKeyValueDictionaryElement> &
+		/**
+		 * Returns the 'const' vector of elements.
+		 */
+		const GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement> &
 		elements() const
 		{
-				return d_elements;
+			return *get_current_revision<Revision>().elements.get_revisionable();
 		}
 
-		std::vector<GpmlKeyValueDictionaryElement> &
+		/**
+		 * Returns the 'non-const' vector of elements.
+		 */
+		GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement> &
 		elements()
 		{
-				return d_elements;
+			return *get_current_revision<Revision>().elements.get_revisionable();
 		}
 
 		/**
@@ -113,9 +142,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("KeyValueDictionary");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlKeyValueDictionary::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -145,19 +179,6 @@ namespace GPlatesPropertyValues
 			visitor.visit_gpml_key_value_dictionary(*this);
 		}
 
-		bool
-		is_empty() const
-		{
-			return d_elements.empty();
-		}
-
-		// FIXME: Why does this return an 'int', rather than a 'std::vector<T>::size_type'?
-		int
-		num_elements() const
-		{
-			return d_elements.size();
-		}
-
 		virtual
 		std::ostream &
 		print_to(
@@ -167,44 +188,127 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		GpmlKeyValueDictionary():
-			PropertyValue()
+		GpmlKeyValueDictionary(
+				GPlatesModel::ModelTransaction &transaction_,
+				GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::non_null_ptr_type elements_):
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, elements_)))
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
+		//! Constructor used when cloning.
 		GpmlKeyValueDictionary(
-			const std::vector<GpmlKeyValueDictionaryElement> &elements_):
-			PropertyValue(),
-			d_elements(elements_)
-		{  }
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
-		GpmlKeyValueDictionary(
-				const GpmlKeyValueDictionary &other) :
-			PropertyValue(other) /* share instance id */
+				const GpmlKeyValueDictionary &other_,
+				boost::optional<RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlKeyValueDictionary(*this, context));
+		}
 
 	private:
 
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> d_elements;
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlKeyValueDictionary &
-		operator=(const GpmlKeyValueDictionary &);
+		/**
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
 
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					RevisionContext &child_context_,
+					GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::non_null_ptr_type elements_) :
+				elements(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement> >::attach(
+										transaction_, child_context_, elements_))
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
+				elements(other_.elements)
+			{
+				// Clone data members that were not deep copied.
+				elements.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				elements(other_.elements)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<RevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return *elements.get_revisionable() == *other_revision.elements.get_revisionable() &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement> > elements;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlKeyValueDictionary> &gpml_key_value_dictionary);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

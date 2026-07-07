@@ -172,7 +172,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			//
 			// Hence, we'll just fetch the finite rotation now, and the interpolation
 			// and insertion will happen back in 'visit_gpml_irregular_sampling'.
-			d_finite_rotation = gpml_finite_rotation.finite_rotation();
+			d_finite_rotation = gpml_finite_rotation.get_finite_rotation();
 		}
 		d_is_expecting_a_finite_rotation = false;
 	}
@@ -215,13 +215,15 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 		return;
 	}
 
+	RevisionedVector<GpmlTimeSample> &time_samples = gpml_irregular_sampling.time_samples();
+
 	// Otherwise, the reconstruction time is either the present-day, or in the past.
 	// First, let's see whether the reconstruction time matches the time of the most-recent
 	// (non-disabled) time sample.
 
 	// So, let's get to the most-recent non-disabled time sample.
-	std::vector<GpmlTimeSample>::iterator iter = gpml_irregular_sampling.time_samples().begin();
-	std::vector<GpmlTimeSample>::iterator end = gpml_irregular_sampling.time_samples().end();
+	RevisionedVector<GpmlTimeSample>::iterator iter = time_samples.begin();
+	RevisionedVector<GpmlTimeSample>::iterator end = time_samples.end();
 	while (iter != end && iter->is_disabled()) {
 		// This time-sample is disabled.  Let's move to the next one.
 		++iter;
@@ -234,14 +236,14 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 	}
 	// else:  'iter' points to the most-recent non-disabled time sample.
 
-	if (d_recon_time.is_strictly_later_than(iter->valid_time()->time_position())) {
+	if (d_recon_time.is_strictly_later_than(iter->valid_time()->get_time_position())) {
 		// The requested reconstruction time is later than the time of the most-recent
 		// non-disabled time sample.  Hence, it is not valid to reconstruct to the
 		// requested reconstruction time.
 		// FIXME:  Should we complain about this?
 		return;
 	}
-	if (d_recon_time.is_coincident_with((iter->valid_time()->time_position()))) {
+	if (d_recon_time.is_coincident_with((iter->valid_time()->get_time_position()))) {
 		// An exact match!  Hence, we can use the FiniteRotation of this time sample
 		// directly, without need for interpolation.
 
@@ -277,7 +279,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 	// remaining rails and posts.
 
 	// 'prev' is the previous non-disabled time sample.
-	std::vector<GpmlTimeSample>::iterator prev = iter;
+	RevisionedVector<GpmlTimeSample>::iterator prev = iter;
 	for (++iter; iter != end; ++iter) {
 		if (iter->is_disabled()) {
 			// This time-sample is disabled.  Let's move to the next one.
@@ -285,7 +287,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 		}
 		// else:  'iter' points to the most-recent non-disabled time sample.
 
-		if (d_recon_time.is_strictly_later_than(iter->valid_time()->time_position())) {
+		if (d_recon_time.is_strictly_later_than(iter->valid_time()->get_time_position())) {
 			// The requested reconstruction time is later than (ie, less far in the
 			// past than) the time of the current time sample, which must mean that it
 			// lies "on the rail" between the current time sample and the time sample
@@ -328,9 +330,9 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			}
 
 			GPlatesMaths::real_t current_time =
-					iter->valid_time()->time_position().value();
+					iter->valid_time()->get_time_position().value();
 			GPlatesMaths::real_t previous_time =
-					prev->valid_time()->time_position().value();
+					prev->valid_time()->get_time_position().value();
 			GPlatesMaths::real_t target_time =
 					d_recon_time.value();
 
@@ -359,14 +361,15 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 
 			GmlTimeInstant::non_null_ptr_type valid_time =
 					ModelUtils::create_gml_time_instant(d_recon_time);
-			boost::intrusive_ptr<XsString> description =
-					XsString::create(GPlatesUtils::UnicodeString()).get();
+			boost::optional<XsString::non_null_ptr_type> description =
+					XsString::create(GPlatesUtils::UnicodeString());
 			StructuralType value_type =
 					StructuralType::create_gpml("FiniteRotation");
-			GpmlTimeSample new_time_sample(value, valid_time, description, value_type);
+			GpmlTimeSample::non_null_ptr_type new_time_sample =
+					GpmlTimeSample::create(value, valid_time, description, value_type);
 
 			// Now insert the time-sample at the appropriate position.
-			gpml_irregular_sampling.time_samples().insert(iter, new_time_sample);
+			time_samples.insert(iter, new_time_sample);
 			GPlatesFileIO::RotationPoleData data(
 					updated_finite_rotation,
 					d_moving_plate_id,
@@ -382,7 +385,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			// the iterators.
 			return;
 		}
-		if (d_recon_time.is_coincident_with(iter->valid_time()->time_position())) {
+		if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position())) {
 			// An exact match!  Hence, we can use the FiniteRotation of this time
 			// sample directly, without need for interpolation.
 
@@ -417,7 +420,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::update_fini
 		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
 	const GPlatesMaths::FiniteRotation updated_finite_rotation =
-			GPlatesMaths::compose(d_rotation_to_apply, gpml_finite_rotation.finite_rotation());
+			GPlatesMaths::compose(d_rotation_to_apply, gpml_finite_rotation.get_finite_rotation());
 	gpml_finite_rotation.set_finite_rotation(updated_finite_rotation);
 
 	if (d_grot_proxy)
@@ -428,7 +431,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::update_fini
 				d_fixed_plate_id,
 				d_recon_time.value());
 		const GPlatesFileIO::RotationPoleData old_pole(
-				gpml_finite_rotation.finite_rotation(),
+				gpml_finite_rotation.get_finite_rotation(),
 				d_moving_plate_id,
 				d_fixed_plate_id,
 				d_recon_time.value());

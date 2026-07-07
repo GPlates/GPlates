@@ -36,7 +36,14 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -48,7 +55,8 @@ namespace GPlatesPropertyValues
 {
 
 	class GpmlPiecewiseAggregation:
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::RevisionContext
 	{
 
 	public:
@@ -71,44 +79,60 @@ namespace GPlatesPropertyValues
 		static
 		non_null_ptr_type
 		create(
-				const std::vector<GpmlTimeWindow> &time_windows_,
+				const std::vector<GpmlTimeWindow::non_null_ptr_type> &time_windows_,
 				const StructuralType &value_type_)
 		{
-			return non_null_ptr_type(
-					new GpmlPiecewiseAggregation(time_windows_, value_type_));
+			return create(time_windows_.begin(), time_windows_.end(), value_type_);
+		}
+
+		template <typename GpmlTimeWindowIter>
+		static
+		non_null_ptr_type
+		create(
+				GpmlTimeWindowIter time_windows_begin,
+				GpmlTimeWindowIter time_windows_end,
+				const StructuralType &value_type_)
+		{
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(
+					new GpmlPiecewiseAggregation(
+							transaction,
+							GPlatesModel::RevisionedVector<GpmlTimeWindow>::create(
+									time_windows_begin,
+									time_windows_end),
+							value_type_));
+			transaction.commit();
+			return ptr;
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(
-					new GpmlPiecewiseAggregation(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlPiecewiseAggregation>(clone_impl());
 		}
 
-		const GpmlPiecewiseAggregation::non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		const std::vector<GpmlTimeWindow> &
+		/**
+		 * Returns the 'const' vector of time windows.
+		 */
+		const GPlatesModel::RevisionedVector<GpmlTimeWindow> &
 		time_windows() const
 		{
-			return d_time_windows;
+			return *get_current_revision<Revision>().time_windows.get_revisionable();
 		}
 
 		/**
 		 * Returns the 'non-const' vector of time windows.
 		 */
-		std::vector<GpmlTimeWindow> &
+		GPlatesModel::RevisionedVector<GpmlTimeWindow> &
 		time_windows()
 		{
-			return d_time_windows;
+			return *get_current_revision<Revision>().time_windows.get_revisionable();
 		}
 
 		// Note that no "setter" is provided:  The value type of a GpmlPiecewiseAggregation
 		// instance should never be changed.
 		const StructuralType &
-		value_type() const
+		get_value_type() const
 		{
 			return d_value_type;
 		}
@@ -120,9 +144,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("PiecewiseAggregation");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlPiecewiseAggregation::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -162,42 +191,145 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlPiecewiseAggregation(
-				const std::vector<GpmlTimeWindow> &time_windows_,
+				GPlatesModel::ModelTransaction &transaction_,
+				GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type time_windows_,
 				const StructuralType &value_type_):
-			PropertyValue(),
-			d_time_windows(time_windows_),
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, time_windows_))),
 			d_value_type(value_type_)
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlPiecewiseAggregation(
-				const GpmlPiecewiseAggregation &other) :
-			PropertyValue(other), /* share instance id */
-			d_time_windows(other.d_time_windows),
-			d_value_type(other.d_value_type)
+				const GpmlPiecewiseAggregation &other_,
+				boost::optional<RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this))),
+			d_value_type(other_.d_value_type)
 		{  }
 
 		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlPiecewiseAggregation(*this, context));
+		}
+
+		virtual
 		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		equality(
+				const Revisionable &other) const
+		{
+			const GpmlPiecewiseAggregation &other_pv = dynamic_cast<const GpmlPiecewiseAggregation &>(other);
+
+			return d_value_type == other_pv.d_value_type &&
+					// The revisioned data comparisons are handled here...
+					Revisionable::equality(other);
+		}
 
 	private:
 
-		std::vector<GpmlTimeWindow> d_time_windows;
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
+
+		/**
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					RevisionContext &child_context_,
+					GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type time_windows_) :
+				time_windows(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GpmlTimeWindow> >::attach(
+										transaction_, child_context_, time_windows_))
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
+				time_windows(other_.time_windows)
+			{
+				// Clone data members that were not deep copied.
+				time_windows.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				time_windows(other_.time_windows)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<RevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return *time_windows.get_revisionable() == *other_revision.time_windows.get_revisionable() &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GpmlTimeWindow> > time_windows;
+		};
+
+
+		// Immutable, so doesn't need revisioning.
 		StructuralType d_value_type;
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlPiecewiseAggregation &
-		operator=(const GpmlPiecewiseAggregation &);
+	private: // Transcribe...
 
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlPiecewiseAggregation> &gpml_piecewise_aggregation);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

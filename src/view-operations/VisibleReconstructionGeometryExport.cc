@@ -185,19 +185,19 @@ namespace GPlatesViewOperations
 									static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
 											GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
 
-									if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_enum.get()->type()))
+									if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_enum.get()->get_type()))
 									{
 										static const GPlatesPropertyValues::EnumerationContent left("Left");
 										static const GPlatesPropertyValues::EnumerationContent right("Right");
 
-										if (left.is_equal_to(subduction_polarity_enum.get()->value()))
+										if (left.is_equal_to(subduction_polarity_enum.get()->get_value()))
 										{
 											if (export_topological_section_type == EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION_LEFT)
 											{
 												filtered_resolved_topological_section_ptrs.push_back(resolved_topological_section.get());
 											}
 										}
-										else if (right.is_equal_to(subduction_polarity_enum.get()->value()))
+										else if (right.is_equal_to(subduction_polarity_enum.get()->get_value()))
 										{
 											if (export_topological_section_type == EXPORT_TOPOLOGICAL_SECTIONS_SUBDUCTION_RIGHT)
 											{

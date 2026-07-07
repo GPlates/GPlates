@@ -29,12 +29,18 @@
 #define GPLATES_PROPERTYVALUES_GPMLRASTERBANDNAMES_H
 
 #include <vector>
+#include <boost/operators.hpp>
 
 #include "XsString.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -48,7 +54,8 @@ namespace GPlatesPropertyValues
 	 * This class implements the PropertyValue which corresponds to "gpml:RasterBandNames".
 	 */
 	class GpmlRasterBandNames :
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::RevisionContext
 	{
 	public:
 
@@ -63,11 +70,91 @@ namespace GPlatesPropertyValues
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlRasterBandNames> non_null_ptr_to_const_type;
 
+
+		/**
+		 * Raster band name.
+		 */
+		class BandName :
+				public boost::equality_comparable<BandName>
+		{
+		public:
+
+			/**
+			 * BandName has value semantics where each @a BandName instance has its own state.
+			 * So if you create a copy and modify the copy's state then it will not modify the state
+			 * of the original object.
+			 *
+			 * The constructor first clones the property value and then copy-on-write is used to allow
+			 * multiple @a BandName objects to share the same state (until the state is modified).
+			 */
+			BandName(
+					XsString::non_null_ptr_type name) :
+				d_name(name)
+			{  }
+
+			/**
+			 * Returns the 'const' band name.
+			 */
+			const XsString::non_null_ptr_to_const_type
+			get_name() const
+			{
+				return d_name;
+			}
+
+			/**
+			 * Returns the 'non-const' band name.
+			 */
+			const XsString::non_null_ptr_type
+			get_name()
+			{
+				return d_name;
+			}
+
+			void
+			set_name(
+					XsString::non_null_ptr_type name)
+			{
+				d_name = name;
+			}
+
+			/**
+			 * Value equality comparison operator.
+			 *
+			 * Inequality provided by boost equality_comparable.
+			 */
+			bool
+			operator==(
+					const BandName &other) const
+			{
+				return *d_name == *other.d_name;
+			}
+
+		private:
+			XsString::non_null_ptr_type d_name;
+
+		private: // Transcribe...
+
+			friend class GPlatesScribe::Access;
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject<BandName> &band_name);
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+		};
+
+		//! Typedef for a sequence of band names.
+		typedef std::vector<BandName> band_names_list_type;
+
+
 		virtual
 		~GpmlRasterBandNames()
 		{  }
-
-		typedef std::vector<XsString::non_null_ptr_to_const_type> band_names_list_type;
 
 		/**
 		 * Create a GpmlRasterBandNames instance from a collection of @a band_names_.
@@ -75,7 +162,10 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const band_names_list_type &band_names_);
+				const band_names_list_type &band_names_)
+		{
+			return create(band_names_.begin(), band_names_.end());
+		}
 
 		template<typename ForwardIterator>
 		static
@@ -84,29 +174,29 @@ namespace GPlatesPropertyValues
 				ForwardIterator begin,
 				ForwardIterator end)
 		{
-			return new GpmlRasterBandNames(begin, end);
+			return non_null_ptr_type(new GpmlRasterBandNames(begin, end));
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlRasterBandNames(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlRasterBandNames>(clone_impl());
 		}
 
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
+		/**
+		 * Returns the band names.
+		 *
+		 * To modify any band names:
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
+		 * (2) use @a set_band_names to set them.
+		 *
+		 * The returned band names implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
+		 */
 		const band_names_list_type &
-		band_names() const
+		get_band_names() const
 		{
-			return d_band_names;
+			return get_current_revision<Revision>().band_names;
 		}
 
 		/**
@@ -114,11 +204,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_band_names(
-				const band_names_list_type &band_names_)
-		{
-			d_band_names = band_names_;
-			update_instance_id();
-		}
+				const band_names_list_type &band_names_);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -127,9 +213,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("RasterBandNames");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlRasterBandNames::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -168,46 +259,118 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		explicit
-		GpmlRasterBandNames(
-				const band_names_list_type &band_names_) :
-			PropertyValue(),
-			d_band_names(band_names_)
-		{  }
-
-
 		template<typename ForwardIterator>
 		GpmlRasterBandNames(
 				ForwardIterator begin,
 				ForwardIterator end) :
-			PropertyValue(),
-			d_band_names(begin, end)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(*this, begin, end)))
 		{  }
 
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlRasterBandNames(
-				const GpmlRasterBandNames &other) :
-			PropertyValue(other), /* share instance id */
-			d_band_names(other.d_band_names)
+				const GpmlRasterBandNames &other_,
+				boost::optional<RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlRasterBandNames(*this, context));
+		}
 
 	private:
 
-		band_names_list_type d_band_names;
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlRasterBandNames &
-		operator=(
-				const GpmlRasterBandNames &);
+		/**
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
 
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			template<typename ForwardIterator>
+			Revision(
+					RevisionContext &child_context_,
+					ForwardIterator begin_,
+					ForwardIterator end_) :
+				band_names(begin_, end_)
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
+				band_names(other_.band_names)
+			{
+				// Clone data members that were not deep copied.
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				band_names(other_.band_names)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<RevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const;
+
+			band_names_list_type band_names;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlRasterBandNames> &gpml_raster_band_names);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }
