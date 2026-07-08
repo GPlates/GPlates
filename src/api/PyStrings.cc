@@ -234,7 +234,7 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 				bp::object utf8_string = bp::object(bp::handle<>(PyUnicode_AsUTF8String(obj)));
 
 				// Then decode from UTF8 into our unicode QString.
-				new (storage) QString(QString::fromUtf8(bp::extract<const char*>(utf8_string)));
+				new (storage) QString(QString::fromUtf8(bp::extract<const char*>(utf8_string)()));
 #endif
 			}
 #endif

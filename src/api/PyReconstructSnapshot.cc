@@ -22,6 +22,7 @@
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
+#include <QFileInfo>
 #include <QString>
 
 #include "PyReconstructSnapshot.h"
@@ -755,7 +756,7 @@ namespace GPlatesApi
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 		const GPlatesFileIO::ReconstructedFeatureGeometryExport::Format format =
 						GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
-										export_file_name,
+										QFileInfo(export_file_name),
 										file_format_registry);
 
 		// The API docs state that dateline wrapping should be ignored except for Shapefile.
@@ -805,7 +806,7 @@ namespace GPlatesApi
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 		const GPlatesFileIO::ReconstructedMotionPathExport::Format format =
 						GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(
-										export_file_name,
+										QFileInfo(export_file_name),
 										file_format_registry);
 
 		// The API docs state that dateline wrapping should be ignored except for Shapefile.
@@ -852,7 +853,7 @@ namespace GPlatesApi
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 		const GPlatesFileIO::ReconstructedFlowlineExport::Format format =
 						GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(
-										export_file_name,
+										QFileInfo(export_file_name),
 										file_format_registry);
 
 		// The API docs state that dateline wrapping should be ignored except for Shapefile.

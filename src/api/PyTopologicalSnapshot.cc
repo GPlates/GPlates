@@ -28,6 +28,7 @@
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
+#include <QFileInfo>
 #include <QString>
 
 #include "PyTopologicalSnapshot.h"
@@ -1457,7 +1458,7 @@ namespace GPlatesApi
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 		const GPlatesFileIO::ResolvedTopologicalGeometryExport::Format format =
 				GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
-						export_file_name,
+						QFileInfo(export_file_name),
 						file_format_registry);
 
 		// The API docs state that dateline wrapping should be ignored except for Shapefile.
@@ -1580,7 +1581,7 @@ namespace GPlatesApi
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 		const GPlatesFileIO::ResolvedTopologicalGeometryExport::Format format =
 				GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
-						export_file_name,
+						QFileInfo(export_file_name),
 						file_format_registry);
 
 		// The API docs state that dateline wrapping should be ignored except for Shapefile.
