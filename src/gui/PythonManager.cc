@@ -254,56 +254,56 @@ GPlatesGui::PythonManager::init_python_interpreter(
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
-	/*
-	Set the Program name properly.
-	The following info is taken from Python manual.
-	This function should be called before Py_Initialize() is called for the first time, 
-	if it is called at all. It tells the interpreter the value of the argv[0] argument to 
-	the main() function of the program. This is used by Py_GetPath() and some other functions 
-	below to find the Python run-time libraries relative to the interpreter executable. 
-	The default value is 'python'. The argument should point to a zero-terminated character 
-	string in static storage whose contents will not change for the duration of the program's 
-	execution. No code in the Python interpreter will change the contents of this storage.
-	*/
 #if PY_MAJOR_VERSION >= 3
-	// Convert char* to wchar_t*
-	const std::wstring program_name = GPlatesUtils::make_wstring_from_qstring(QString(argv[0]));
-	// Seems Py_SetProgramName accepts a wchar_t* pointer to 'non-const', so make a copy.
-	std::vector<wchar_t> program_name_non_const(program_name.begin(), program_name.end());
-	program_name_non_const.push_back('\0'); // Null terminate the string.
+	// Use the PEP 587 'PyConfig' embedding API in place of the (now deprecated) Py_SetProgramName()
+	// and Py_IgnoreEnvironmentFlag.
+	//
+	// PyConfig_InitPythonConfig() gives the same defaults as Py_Initialize() (as opposed to
+	// PyConfig_InitIsolatedConfig(), which changes several other defaults we don't want to disturb).
+	PyConfig config;
+	PyConfig_InitPythonConfig(&config);
 
-	Py_SetProgramName(&program_name_non_const[0]);
+	// Tells the interpreter the value of the argv[0] argument to the main() function of the program.
+	// This is used to find the Python run-time libraries relative to the interpreter executable.
+	const std::wstring program_name = GPlatesUtils::make_wstring_from_qstring(QString(argv[0]));
+	PyStatus status = PyConfig_SetString(&config, &config.program_name, program_name.c_str());
+	if (PyStatus_Exception(status))
+	{
+		PyConfig_Clear(&config);
+		qWarning() << "Failed to set Python program name:" << status.err_msg;
+		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
+	}
+
+	// If GPlates has bundled the Python standard library then ignore all PYTHON* environment variables
+	// (eg, PYTHONPATH and PYTHONHOME), since they could point to a *wrong* Python installation on the
+	// user's computer and prevent the embedded interpreter from initialising. Instead we want GPlates to
+	// use the directory containing the GPlates executable binary as the Python home (on macOS, the
+	// Python framework inside the application bundle).
+	if (GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory())
+	{
+		config.use_environment = 0;
+	}
+
+	status = Py_InitializeFromConfig(&config);
+	PyConfig_Clear(&config);
+	if (PyStatus_Exception(status))
+	{
+		qWarning() << "Failed to initialize Python interpreter:" << status.err_msg;
+		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
+	}
 #else
 	Py_SetProgramName(argv[0]);
-#endif
-	/*
-	Ignore the environment variables. This is necessary because GPlates only works with the *correct* python version, 
-	which is the version that boost python uses. So, the python version has been determined when compiling 
-	GPlates. A copy of the python standard library files have been included in GPlates package. It is always 
-	safer to use the files in the bundle. However, the PYTHONHOME and PYTHONPATH environment variable setting on user's computer
-	could point	to a *wrong* python installation, which could cause GPlates failed to initialize embeded python 
-	interpreter. We force GPlates to use the directory which contains GPlates executable binary as the python home 
-	by setting Py_IgnoreEnvironmentFlag flag. On Mac OS, it is the python framework inside application bundle.
-	*/
-	// If GPlates has bundled the Python standard library then ignore all PYTHON* environment variables (eg, PYTHONPATH and PYTHONHOME).
+
+	// If GPlates has bundled the Python standard library then ignore all PYTHON* environment variables
+	// (eg, PYTHONPATH and PYTHONHOME).
 	if (GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory())
 	{
 		Py_IgnoreEnvironmentFlag = 1;
 	}
 
-	/* 
-	Info from Python manual.
-	Initialize the Python interpreter. In an application embedding Python, this should be called before 
-	using any other Python/C API functions; with the exception of Py_SetProgramName(), 
-	Py_SetPythonHome(), PyEval_InitThreads(), PyEval_ReleaseLock(), and PyEval_AcquireLock(). 
-	This initializes the table of loaded modules (sys.modules), and creates the fundamental 
-	modules __builtin__ ('builtins' for Python 3), __main__ and sys. It also initializes the module search path (sys.path). 
-	It does not set sys.argv; use PySys_SetArgvEx() for that. This is a no-op when called for a 
-	second time (without calling Py_Finalize() first). There is no return value; it is a fatal error 
-	if the initialization fails.
-	*/
 	Py_Initialize();
-		
+#endif
+
 	// Initialise Python threading support; this grabs the Global Interpreter Lock for this thread.
 	//
 	// Note: For Python >= 3.9 this no longer does anything (and is deprecated).
