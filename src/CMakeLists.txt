@@ -602,6 +602,14 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	target_compile_definitions(${SOURCE_TARGET} PUBLIC _CRT_SECURE_NO_DEPRECATE)
 	# Disable deprecation warnings about renamed POSIX functions (eg, 'dup' renamed to '_dup' but we want to use 'dup' across all platforms).
 	target_compile_definitions(${SOURCE_TARGET} PUBLIC _CRT_NONSTDC_NO_WARNINGS)
+	# Disable warning C4996 / STL4043 (eg, "'stdext::checked_array_iterator<const T *>::_Verify_offset': warning STL4043:
+	# stdext::checked_array_iterator, stdext::unchecked_array_iterator, and related factory functions are non-Standard
+	# extensions and will be removed in the future...").
+	#
+	# This comes from Qt5's own qcompilerdetection.h using the MSVC-specific stdext::checked_array_iterator extension
+	# (via QT_MAKE_CHECKED_ARRAY_ITERATOR/QT_MAKE_UNCHECKED_ARRAY_ITERATOR), which newer MSVC STL versions deprecate.
+	# We have no control over Qt5's internals, so just silence it.
+	target_compile_definitions(${SOURCE_TARGET} PUBLIC _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
 endif()
 
 #
