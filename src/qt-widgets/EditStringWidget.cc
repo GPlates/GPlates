@@ -70,7 +70,7 @@ GPlatesQtWidgets::EditStringWidget::update_widget_from_string(
 	label_code_space->hide();
 	combobox_code_space->hide();
 	line_edit->setText(GPlatesUtils::make_qstring_from_icu_string(
-			xs_string.value().get()));
+			xs_string.get_value().get()));
 	set_clean();
 }
 

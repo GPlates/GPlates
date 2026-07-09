@@ -36,6 +36,9 @@
 #include "model/FeatureType.h"
 #include "model/PropertyValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -80,47 +83,24 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlFeatureReference(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlFeatureReference>(clone_impl());
 		}
 
-		const non_null_ptr_type
-		deep_clone() const
+		const GPlatesModel::FeatureId &
+		get_feature_id() const
 		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
+			return get_current_revision<Revision>().feature;
 		}
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		const GPlatesModel::FeatureId
-		feature_id() const
-		{
-			return d_feature;
-		}
-
-		// Note that, because the copy-assignment operator of PropertyValue is private,
-		// the PropertyValue referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the PropertyValue within this GpmlFeatureReference instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the PropertyValue within this GpmlFeatureReference instance, use the
-		// function @a set_value below.
-		//
-		// (This overload is provided to allow the referenced PropertyValue instance to
-		// accept a FeatureVisitor instance.)
-		const GPlatesModel::FeatureId
-		feature_id()
-		{
-			return d_feature;
-		}
+		void
+		set_feature_id(
+				const GPlatesModel::FeatureId &feature);
 
 
 		// Note that no "setter" is provided:  The value type of a GpmlFeatureReference
 		// instance should never be changed.
 		const GPlatesModel::FeatureType &
-		value_type() const
+		get_value_type() const
 		{
 			return d_value_type;
 		}
@@ -132,9 +112,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("FeatureReference");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlFeatureReference::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -176,48 +161,102 @@ namespace GPlatesPropertyValues
 		GpmlFeatureReference(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::FeatureType &value_type_):
-			PropertyValue(),
-			d_feature(feature_),
+			PropertyValue(Revision::non_null_ptr_type(new Revision(feature_))),
 			d_value_type(value_type_)
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
+		//! Constructor used when cloning.
 		GpmlFeatureReference(
-				const GPlatesModel::FeatureId &feature_,
-				const GPlatesModel::FeatureType &value_type_,
-				const GPlatesUtils::UnicodeString &description_):
-			PropertyValue(),
-			d_feature(feature_),
-			d_value_type(value_type_)
+				const GpmlFeatureReference &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_))),
+			d_value_type(other_.d_value_type)
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
-		GpmlFeatureReference(
-				const GpmlFeatureReference &other) :
-			PropertyValue(other), /* share instance id */
-			d_feature(other.d_feature),
-			d_value_type(other.d_value_type)
-		{  }
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlFeatureReference(*this, context));
+		}
+
+		virtual
+		bool
+		equality(
+				const Revisionable &other) const
+		{
+			const GpmlFeatureReference &other_pv = dynamic_cast<const GpmlFeatureReference &>(other);
+
+			return d_value_type == other_pv.d_value_type &&
+					// The revisioned data comparisons are handled here...
+					Revisionable::equality(other);
+		}
 
 	private:
 
-		GPlatesModel::FeatureId d_feature;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const GPlatesModel::FeatureId &feature_) :
+				feature(feature_)
+			{  }
+
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				feature(other_.feature)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return feature == other_revision.feature &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::FeatureId feature;
+		};
+
+		// Immutable, so doesn't need revisioning.
 		GPlatesModel::FeatureType d_value_type;
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlFeatureReference &
-		operator=(const GpmlFeatureReference &);
+	private: // Transcribe...
 
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlFeatureReference> &gpml_feature_reference);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
-
 }
 
 #endif  // GPLATES_PROPERTYVALUES_GPMLFEATUREREFERENCE_H

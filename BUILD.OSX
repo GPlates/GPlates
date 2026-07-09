@@ -15,8 +15,9 @@ Introduction
 
 This is a guide to building GPlates or pyGPlates from source code in a macOS development environment.
 
-Note: This source code originated from a "gplates" branch of the GPlates GitHub repository
-      (https://github.com/GPlates/GPlates) and should only be used to compile GPlates (not pyGPlates).
+Note: This source code can be used to compile either GPlates or pyGPlates (but not both in the same build).
+      By default GPlates is built. To build pyGPlates instead, set the CMake variable GPLATES_BUILD_GPLATES
+      to FALSE (eg, cmake -DGPLATES_BUILD_GPLATES=FALSE ...). Setting it to TRUE (the default) builds GPlates.
 
 
 Development environment
@@ -47,6 +48,10 @@ Compiling GPlates
 
     cmake .
     make
+
+The GPlates application
+
+If you are compiling pyGPlates source code then please skip this section.
 
 The GPlates application bundle will be called "gplates.app" and is located in the "bin" directory.
 However this will appear simply as 'gplates' in the file explorer (Finder),

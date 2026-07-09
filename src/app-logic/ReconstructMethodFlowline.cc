@@ -91,7 +91,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_multi_point.multipoint()));
+								gml_multi_point.get_multipoint()));
 			}
 
 			virtual
@@ -102,7 +102,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_point.point().get_geometry_on_sphere()));
+								gml_point.get_point().get_geometry_on_sphere()));
 			}
 
 

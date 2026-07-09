@@ -27,6 +27,7 @@
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 
+#include <QtGlobal>
 #include <QDebug>
 #include <QHeaderView>
 #include <QLocale>
@@ -164,7 +165,15 @@ namespace
 		// Add the time cell.
 		
 		QTableWidgetItem *item = new QTableWidgetItem();
-		item->setData(0,QVariant(QVariant::Double));
+		item->setData(
+				0,
+				QVariant(
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+					QMetaType(QMetaType::Double)
+#else
+					QVariant::Double
+#endif
+				));
 		
 		table.setItem(row, COLUMN_TIME, item);
 		// Add the "Action" cell - we need to set this as uneditable.
@@ -429,6 +438,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() co
 	}
 
 	return GPlatesPropertyValues::GpmlArray::create(time_periods, gml_time_period_type);
+
 }
 
 bool
@@ -466,15 +476,15 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
     static const GPlatesPropertyValues::StructuralType gml_time_period_type =
             GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
 
-    if (gpml_array.type() != gml_time_period_type)
+    if (gpml_array.get_value_type() != gml_time_period_type)
     {
         return;
     }
 
 
-    std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator
-            it = gpml_array.members().begin(),
-            end = gpml_array.members().end();
+	const GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &gpml_array_members = gpml_array.members();
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator it = gpml_array_members.begin();
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator end = gpml_array_members.end();
 
 
 
@@ -486,33 +496,33 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
 #endif
 
     // We will use the last gml_time_period_ptr after the loop has completed so declare it now.
-    GPlatesPropertyValues::GmlTimePeriod* gml_time_period_ptr = NULL;
+    const GPlatesPropertyValues::GmlTimePeriod* gml_time_period_ptr = NULL;
 
     for (int row = 0; it != end ; ++it, ++row)
     {
-	try
-	{
-	    gml_time_period_ptr =
-		    dynamic_cast<GPlatesPropertyValues::GmlTimePeriod*>((*it).get());
+		try
+		{
+			gml_time_period_ptr =
+					dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>((*it).get_element().get());
 
-	    GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
-		    gml_time_period_ptr->end()->time_position();
+			GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
+					gml_time_period_ptr->end()->get_time_position();
 
-	    if (geo_time_instant.is_real())
-	    {
-		attempt_to_populate_table_row_from_time(*this,*table_times,geo_time_instant.value());
-	    }
-	}
-	catch(const std::bad_cast &)
-	{
-
-	}
+			if (geo_time_instant.is_real())
+			{
+				attempt_to_populate_table_row_from_time(*this, *table_times, geo_time_instant.value());
+			}
+		}
+		catch (const std::bad_cast &)
+		{
+		}
     }
 
     // And finish off with the begin() time of the last (oldest) time period.
     if (gml_time_period_ptr)
     {
-        GPlatesPropertyValues::GeoTimeInstant geo_time_instant = gml_time_period_ptr->begin()->time_position();
+        GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
+				gml_time_period_ptr->begin()->get_time_position();
         if (geo_time_instant.is_real())
         {
             attempt_to_populate_table_row_from_time(*this,*table_times,geo_time_instant.value());
@@ -528,7 +538,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
 void
 GPlatesQtWidgets::EditTimeSequenceWidget::update_time_array_from_widget()
 {
-	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods;
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &time_periods = d_array_ptr->members();
 
 	static const GPlatesPropertyValues::StructuralType gml_time_period_type =
 		GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
@@ -571,9 +581,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_time_array_from_widget()
 		}
 
 	}
-
-	d_array_ptr->members() = time_periods;
-
 }
 
 void

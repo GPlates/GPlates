@@ -59,7 +59,7 @@ GPlatesQtWidgets::EditDoubleWidget::update_widget_from_double(
 		GPlatesPropertyValues::XsDouble &xs_double)
 {
 	d_double_ptr = &xs_double;
-	spinbox_double->setValue(xs_double.value());
+	spinbox_double->setValue(xs_double.get_value());
 	set_clean();
 }
 

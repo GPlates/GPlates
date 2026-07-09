@@ -479,8 +479,8 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::MetadataContainer&);
 
 		GPlatesPropertyValues::GpmlFiniteRotation *
-		get_gpml_finite_rotation(
-				GPlatesModel::PropertyValue::non_null_ptr_to_const_type);
+		get_gpml_total_reconstruction_pole(
+				GPlatesModel::PropertyValue::non_null_ptr_type);
 
 		void
 		hide_all_opt_gui_widget()

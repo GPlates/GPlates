@@ -1,0 +1,27 @@
+# On Windows, use Visual Studio 2019 (msvc 142) since Proj 9.1 requires it.
+c_compiler:    # [win]
+- vs2019       # [win]
+cxx_compiler:  # [win]
+- vs2019       # [win]
+
+# Associate Python and NumPy versions to avoid dependency conflicts with "conda build".
+# Using same versions as conda-forge.
+#
+# This is only needed for local conda builds. Conda-forge takes care of this (re-rendering feedstock).
+# So the following should not be committed to the conda-forge feedstock.
+#
+# Note: You'll still get a warning like "Falling back to default numpy value of 1.16" but it can be ignored due to:
+#       https://github.com/conda/conda-build/issues/3170
+python:
+- 3.8
+- 3.9
+- 3.10
+- 3.11
+numpy:
+- 1.22
+- 1.22
+- 1.22
+- 1.23
+zip_keys:
+- python
+- numpy

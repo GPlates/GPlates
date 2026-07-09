@@ -27,6 +27,7 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALPOLYGON_H
 #define GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALPOLYGON_H
 
+#include <iosfwd>
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 
@@ -35,7 +36,14 @@
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/FeatureVisitor.h"
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -49,7 +57,8 @@ namespace GPlatesPropertyValues
 	 * This class implements the PropertyValue which corresponds to "gpml:TopologicalPolygon".
 	 */
 	class GpmlTopologicalPolygon:
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::RevisionContext
 	{
 
 	public:
@@ -60,17 +69,26 @@ namespace GPlatesPropertyValues
 		//! A convenience typedef for a shared pointer to a const @a GpmlTopologicalPolygon.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPolygon> non_null_ptr_to_const_type;
 
-		//! Typedef for a sequence of boundary sections.
-		typedef std::vector<GpmlTopologicalSection::non_null_ptr_type> sections_seq_type;
-
-		//! Typedef for a const iterator over the topological sections.
-		typedef sections_seq_type::const_iterator sections_const_iterator;
-
 
 		virtual
 		~GpmlTopologicalPolygon()
 		{  }
 
+
+		/**
+		 * Create a @a GpmlTopologicalPolygon instance from the specified sequence of
+		 * topological sections representing the exterior of the topological polygon.
+		 *
+		 * TODO: Add support for topological interiors where each interior is a reference
+		 * to a topological polygon exterior and represents an interior hole region.
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				const std::vector<GpmlTopologicalSection::non_null_ptr_type> &exterior_sections_)
+		{
+			return create(exterior_sections_.begin(), exterior_sections_.end());
+		}
 
 		/**
 		 * Create a @a GpmlTopologicalPolygon instance from the specified sequence of
@@ -86,40 +104,40 @@ namespace GPlatesPropertyValues
 				const TopologicalSectionsIterator &exterior_sections_begin_,
 				const TopologicalSectionsIterator &exterior_sections_end_)
 		{
-			return non_null_ptr_type(
-					new GpmlTopologicalPolygon(exterior_sections_begin_, exterior_sections_end_));
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(
+					new GpmlTopologicalPolygon(
+							transaction,
+							GPlatesModel::RevisionedVector<GpmlTopologicalSection>::create(
+									exterior_sections_begin_,
+									exterior_sections_end_)));
+			transaction.commit();
+			return ptr;
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlTopologicalPolygon(*this));
-		}
-
-		const non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-		
-
-		/**
-		 * Return the "begin" const iterator to iterate over the exterior topological sections.
-		 */
-		sections_const_iterator
-		exterior_sections_begin() const
-		{
-			return d_exterior_sections.begin();
+			return GPlatesUtils::dynamic_pointer_cast<GpmlTopologicalPolygon>(clone_impl());
 		}
 
 		/**
-		 * Return the "end" const iterator for iterating over the exterior topological sections.
+		 * Returns the 'const' vector of members.
 		 */
-		sections_const_iterator
-		exterior_sections_end() const
+		const GPlatesModel::RevisionedVector<GpmlTopologicalSection> &
+		exterior_sections() const
 		{
-			return d_exterior_sections.end();
+			return *get_current_revision<Revision>().exterior_sections.get_revisionable();
 		}
 
+		/**
+		 * Returns the 'non-const' vector of members.
+		 */
+		GPlatesModel::RevisionedVector<GpmlTopologicalSection> &
+		exterior_sections()
+		{
+			return *get_current_revision<Revision>().exterior_sections.get_revisionable();
+		}
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -128,9 +146,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("TopologicalPolygon");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlTopologicalPolygon::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -169,50 +192,126 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		template <typename TopologicalSectionsIterator>
 		GpmlTopologicalPolygon(
-				const TopologicalSectionsIterator &exterior_sections_begin_,
-				const TopologicalSectionsIterator &exterior_sections_end_) :
-			PropertyValue(), 
-			d_exterior_sections(exterior_sections_begin_, exterior_sections_end_)
+				GPlatesModel::ModelTransaction &transaction_,
+				GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type exterior_sections_):
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, exterior_sections_)))
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlTopologicalPolygon(
-				const GpmlTopologicalPolygon &other) :
-			PropertyValue(other), /* share instance id */
-			d_exterior_sections(other.d_exterior_sections)
+				const GpmlTopologicalPolygon &other_,
+				boost::optional<RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
-		/**
-		 * Need to compare all data members (recursively) since our boundary sections are
-		 * *non-const* non_null_intrusive_ptr and hence can be modified by clients.
-		 *
-		 * FIXME: Use *const* non_null_intrusive_ptr to avoid this.
-		 * Although that means use *const* feature visitors which is currently means changes
-		 * will propagate quite far across GPlates - ie, won't be a trivial task to make this change.
-		 */
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlTopologicalPolygon(*this, context));
+		}
 
 	private:
 
-		sections_seq_type d_exterior_sections;
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlTopologicalPolygon &
-		operator=(
-				const GpmlTopologicalPolygon &);
+		/**
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
 
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					RevisionContext &child_context_,
+					GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type exterior_sections_) :
+				exterior_sections(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GpmlTopologicalSection> >::attach(
+										transaction_, child_context_, exterior_sections_))
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
+				exterior_sections(other_.exterior_sections)
+			{
+				// Clone data members that were not deep copied.
+				exterior_sections.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				exterior_sections(other_.exterior_sections)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<RevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return *exterior_sections.get_revisionable() == *other_revision.exterior_sections.get_revisionable() &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GpmlTopologicalSection> > exterior_sections;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlTopologicalPolygon> &gpml_topological_polygon);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 }
 

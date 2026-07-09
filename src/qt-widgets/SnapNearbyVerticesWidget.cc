@@ -61,7 +61,7 @@ namespace{
 						feature_handle, property_name);
 		if (plate_id)
 		{
-			return boost::optional<GPlatesModel::integer_plate_id_type>(plate_id.get()->value());
+			return boost::optional<GPlatesModel::integer_plate_id_type>(plate_id.get()->get_value());
 		}
 
 		return boost::none;

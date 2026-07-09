@@ -82,21 +82,6 @@ using namespace GPlatesFileIO::GpmlStructuralTypeReaderUtils;
 
 namespace
 {
-	template<typename T>
-	boost::optional<GPlatesUtils::non_null_intrusive_ptr<const T> >
-	to_optional_of_ptr_to_const(
-			const boost::optional<GPlatesUtils::non_null_intrusive_ptr<T> > &opt)
-	{
-		if (opt)
-		{
-			return GPlatesUtils::non_null_intrusive_ptr<const T>(*opt);
-		}
-		else
-		{
-			return boost::none;
-		}
-	}
-	
 	/**
 	 * Given an XML element and attribute name, look for that attribute and attempt to convert it to a double.
 	 * Returns boost::none if no attribute exists or the double conversion does not work.
@@ -217,23 +202,23 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_data_block(
 				EXCEPTION_SOURCE);
 	}
 
-	GmlDataBlock::non_null_ptr_type gml_data_block = GmlDataBlock::create();
+	std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> gml_data_block_tuple_list;
 
 	for (unsigned int tuple_list_index = 0; tuple_list_index < tuple_lists.size(); ++tuple_list_index)
 	{
-		coordinate_list_type &tuple_list = tuple_lists[tuple_list_index];
 		const value_component_type &value_component = range_parameters[tuple_list_index];
+		const coordinate_list_type &tuple_list = tuple_lists[tuple_list_index];
 
 		GmlDataBlockCoordinateList::non_null_ptr_type gml_data_block_coordinate_list =
-				GmlDataBlockCoordinateList::create_swap(
+				GmlDataBlockCoordinateList::create(
 						value_component.first,
 						value_component.second,
 						tuple_list);
 
-		gml_data_block->tuple_list_push_back(gml_data_block_coordinate_list);
+		gml_data_block_tuple_list.push_back(gml_data_block_coordinate_list);
 	}
 
-	return gml_data_block;
+	return GmlDataBlock::create(gml_data_block_tuple_list);
 }
 
 
@@ -270,12 +255,12 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_file(
 			find_and_create_one(elem, &create_xs_string, FILE_STRUCTURE, gpml_version, read_errors);
 
 	// <gml:mimeType>
-	boost::optional<XsString::non_null_ptr_to_const_type> mime_type = to_optional_of_ptr_to_const(
-			find_and_create_optional(elem, &create_xs_string, MIME_TYPE, gpml_version, read_errors));
+	boost::optional<XsString::non_null_ptr_type> mime_type =
+			find_and_create_optional(elem, &create_xs_string, MIME_TYPE, gpml_version, read_errors);
 
 	// <gml:compression>
-	boost::optional<XsString::non_null_ptr_to_const_type> compression = to_optional_of_ptr_to_const(
-			find_and_create_optional(elem, &create_xs_string, COMPRESSION, gpml_version, read_errors));
+	boost::optional<XsString::non_null_ptr_type> compression =
+			find_and_create_optional(elem, &create_xs_string, COMPRESSION, gpml_version, read_errors);
 
 	return GmlFile::create(range_parameters, file_name, file_structure, mime_type, compression, &read_errors);
 }
@@ -632,13 +617,11 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_constant_value
 		find_and_create_from_type(elem, type, VALUE,
 				structural_type_reader, gpml_version, read_errors);
 
-	if (!description_string)
+	boost::optional<GPlatesUtils::UnicodeString> description;
+	if (description_string)
 	{
-		return GPlatesPropertyValues::GpmlConstantValue::create(value, type);
+		description = GPlatesUtils::make_icu_string_from_qstring(*description_string);
 	}
-
-	const GPlatesUtils::UnicodeString description =
-			GPlatesUtils::make_icu_string_from_qstring(description_string.get());
 
 	return GPlatesPropertyValues::GpmlConstantValue::create(value, type, description);
 }
@@ -854,19 +837,16 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_irregular_samp
 		interp_func = find_and_create_optional(elem, &create_gpml_interpolation_function, 
 				INTERPOLATION_FUNCTION, gpml_version, read_errors);
 
-	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
+	std::vector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> time_samples;
 	find_and_create_one_or_more(
 			elem, &create_gpml_time_sample, TIME_SAMPLE, time_samples,
 			structural_type_reader, gpml_version, read_errors);
 
 	if (interp_func) {
 		return GPlatesPropertyValues::GpmlIrregularSampling::create(
-				time_samples, GPlatesUtils::get_intrusive_ptr(*interp_func), type);
+				time_samples, *interp_func, type);
 	}
-	return GPlatesPropertyValues::GpmlIrregularSampling::create(
-				time_samples, 
-				GPlatesPropertyValues::GpmlInterpolationFunction::maybe_null_ptr_type(), 
-				type);
+	return GPlatesPropertyValues::GpmlIrregularSampling::create(time_samples, boost::none, type);
 }
 
 
@@ -884,7 +864,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_key_value_dict
 	GPlatesModel::XmlElementNode::non_null_ptr_type 
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements;
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> elements;
 	find_and_create_one_or_more(
 			elem, &create_gpml_key_value_dictionary_element, ELEMENT, elements,
 			structural_type_reader, gpml_version, read_errors);
@@ -999,7 +979,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_piecewise_aggr
 		type = find_and_create_one(elem, &create_template_type_parameter_type,
 				VALUE_TYPE, gpml_version, read_errors);
 
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows;
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows;
 
 	find_and_create_zero_or_more(
 			elem, &create_gpml_time_window, TIME_WINDOW, time_windows,
@@ -1068,7 +1048,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_raster_band_na
 	std::set<GPlatesUtils::UnicodeString> band_name_set;
 	BOOST_FOREACH(const XsString::non_null_ptr_type &band_name, band_names)
 	{
-		if (!band_name_set.insert(band_name->value().get()).second)
+		if (!band_name_set.insert(band_name->get_value().get()).second)
 		{
 			throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
 					elem, GPlatesFileIO::ReadErrors::DuplicateRasterBandName,

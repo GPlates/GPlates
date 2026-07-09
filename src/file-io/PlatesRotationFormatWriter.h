@@ -111,7 +111,7 @@ namespace GPlatesFileIO
 
 		void
 		write_gpml_time_sample(
-				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
+				const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type &gpml_time_sample);
 
 		struct PlatesRotationFormatAccumulator
 		{

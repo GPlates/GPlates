@@ -3657,7 +3657,7 @@ GPlatesGui::TopologyTools::show_numbers()
 						d_feature_focus_ptr->focused_feature(), name_property_name);
 		if (name)
 		{
-			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name.get()->value());
+			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name.get()->get_value());
 		}
 		else 
 		{

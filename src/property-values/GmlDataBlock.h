@@ -31,11 +31,18 @@
 #include <vector>
 
 #include "GmlDataBlockCoordinateList.h"
+#include "StructuralType.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
-#include "model/FeatureVisitor.h"
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -48,8 +55,9 @@ namespace GPlatesPropertyValues
 	/**
 	 * This class implements the PropertyValue which corresponds to "gml:DataBlock".
 	 */
-	class GmlDataBlock:
-			public GPlatesModel::PropertyValue
+	class GmlDataBlock :
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::RevisionContext
 	{
 	public:
 
@@ -63,11 +71,6 @@ namespace GPlatesPropertyValues
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock> non_null_ptr_to_const_type;
 
-		/**
-		 * The type of the sequence of GmlDataBlockCoordinateList instances.
-		 */
-		typedef std::vector<GmlDataBlockCoordinateList::non_null_ptr_to_const_type>
-				tuple_list_type;
 
 		virtual
 		~GmlDataBlock()
@@ -76,53 +79,61 @@ namespace GPlatesPropertyValues
 
 		static
 		const non_null_ptr_type
-		create()
+		create(
+				const std::vector<GmlDataBlockCoordinateList::non_null_ptr_type> &tuple_list_)
 		{
-			return non_null_ptr_type(new GmlDataBlock);
+			return create(tuple_list_.begin(), tuple_list_.end());
+		}
+
+		template <typename GmlDataBlockCoordinateListIter>
+		static
+		const non_null_ptr_type
+		create(
+				GmlDataBlockCoordinateListIter tuple_list_begin,
+				GmlDataBlockCoordinateListIter tuple_list_end)
+		{
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(
+					new GmlDataBlock(
+							transaction,
+							GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::create(
+									tuple_list_begin,
+									tuple_list_end)));
+			transaction.commit();
+			return ptr;
+		}
+
+		static
+		const non_null_ptr_type
+		create(
+				const GmlDataBlockCoordinateList::non_null_ptr_type &list_)
+		{
+			std::vector<GmlDataBlockCoordinateList::non_null_ptr_type> tuple_list_(1, list_);
+			return create(tuple_list_.begin(), tuple_list_.end());
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GmlDataBlock(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GmlDataBlock>(clone_impl());
 		}
 
-		const non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		bool
-		is_empty() const
+		/**
+		 * Returns the 'const' vector of members.
+		 */
+		const GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> &
+		tuple_list() const
 		{
-			return d_tuple_list.empty();
+			return *get_current_revision<Revision>().tuple_list.get_revisionable();
 		}
 
-		tuple_list_type::const_iterator
-		tuple_list_begin() const
+		/**
+		 * Returns the 'non-const' vector of members.
+		 */
+		GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> &
+		tuple_list()
 		{
-			return d_tuple_list.begin();
-		}
-
-		tuple_list_type::const_iterator
-		tuple_list_end() const
-		{
-			return d_tuple_list.end();
-		}
-
-		void
-		tuple_list_clear()
-		{
-			d_tuple_list.clear();
-			update_instance_id();
-		}
-
-		void
-		tuple_list_push_back(
-				const GmlDataBlockCoordinateList::non_null_ptr_to_const_type &elem)
-		{
-			d_tuple_list.push_back(elem);
-			update_instance_id();
+			return *get_current_revision<Revision>().tuple_list.get_revisionable();
 		}
 
 		/**
@@ -132,9 +143,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gml("DataBlock");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GmlDataBlock::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -171,34 +187,129 @@ namespace GPlatesPropertyValues
 
 	protected:
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		GmlDataBlock():
-			PropertyValue()
-		{  }
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
 		GmlDataBlock(
-				const GmlDataBlock &other):
-			PropertyValue(other), /* share instance id */
-			d_tuple_list(other.d_tuple_list)
+				GPlatesModel::ModelTransaction &transaction_,
+				GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type tuple_list_) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, tuple_list_)))
 		{  }
+
+		//! Constructor used when cloning.
+		GmlDataBlock(
+				const GmlDataBlock &other_,
+				boost::optional<RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
+		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GmlDataBlock(*this, context));
+		}
 
 	private:
 
-		tuple_list_type d_tuple_list;
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GmlDataBlock &
-		operator=(const GmlDataBlock &);
+		/**
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
 
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					RevisionContext &child_context_,
+					GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type tuple_list_) :
+				tuple_list(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> >::attach(
+										transaction_, child_context_, tuple_list_))
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
+				tuple_list(other_.tuple_list)
+			{
+				// Clone data members that were not deep copied.
+				tuple_list.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				tuple_list(other_.tuple_list)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<RevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return *tuple_list.get_revisionable() == *other_revision.tuple_list.get_revisionable() &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> > tuple_list;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GmlDataBlock> &gml_data_block);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

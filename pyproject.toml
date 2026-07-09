@@ -1,0 +1,179 @@
+#
+# Build system.
+#
+[build-system]
+build-backend = "scikit_build_core.build"
+requires = [
+    # Using scikit-build-core backend build system.
+    # Use minimum version 0.10.
+    #
+    # NOTE: Don't use version 0.11 yet.
+    #       This avoids two problems:
+    #       1. Error due to newlines in 'license.file'.
+    #          This is fixed in scikit-build-core but not yet available in a patch release.
+    #          See https://github.com/scikit-build/scikit-build-core/issues/1006.
+    #       2. NumPy is not getting installed as a *runtime* dependency (via 'project.dependencies').
+    #          I don't see a GitHub issue for this though (so might be something I'm doing).
+    # TODO: Remove max version restriction when this is fixed in scikit-build-core.
+    'scikit-build-core>=0.10,<0.11',
+
+    # PyGPlates accesses the NumPy C API.
+    #
+    # Note: We must *build* against NumPy 2.x in order to support both NumPy 1.x and 2.x at *runtime*.
+    #       However the NumPy *runtime* requirement (in 'dependencies' below) needs no version restriction.
+    'numpy>=2.0; python_version>="3.9"',
+    # Note: Python 3.8 is not supported by NumPy 2.0.
+    #       Also note that *building* against NumPy 1.x does NOT support earlier (<1.x) versions at runtime.
+    #       So we use the oldest supported NumPy for the Python version and platform.
+    'oldest-supported-numpy; python_version<"3.9"'
+]
+
+#
+# Project.
+#
+[project]
+name = "pygplates"
+description = "Python library for fine-grained access to GPlates functionality."
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = ["numpy"]
+license.file = "COPYING"
+authors = [
+  { name = "John Cannon", email = "john.cannon@sydney.edu.au" },
+]
+maintainers = [
+  { name = "John Cannon", email = "john.cannon@sydney.edu.au" },
+]
+keywords = ["pygplates", "gplates", "plate", "tectonics"]
+classifiers = [
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: GIS",
+]
+
+#
+# Project URLs.
+#
+[project.urls]
+Homepage = "https://www.gplates.org"
+Documentation = "https://www.gplates.org/docs/pygplates/index.html"
+Source = "https://github.com/GPlates/GPlates"
+Discussions = "https://discourse.gplates.org/"
+
+#
+# Scikit-build-core.
+#
+[tool.scikit-build]
+
+# Scikit-build-core minimum version required.
+minimum-version = "build-system.requires"
+
+# Optionally specify a build directory (uses temp dir by default).
+# This can give rebuild speedups (eg, during development).
+#build-dir = "dist/build/{wheel_tag}"
+
+# Build target is 'pygplates'.
+build.targets = ["pygplates"]
+
+# Optionally enable CMake verbose output (eg, during development).
+# For example, to show compiler command-line flags/options.
+#build.verbose = true
+
+# Make release builds.
+cmake.build-type = "Release"
+
+# Our minimum requirement for CMake.
+# Look up 'cmake_minimum_required' in 'CMakeLists.txt' in root source dir.
+cmake.version = "CMakeLists.txt"
+
+# Scikit-build-core's internal logging level ("DEBUG", "INFO", "WARNING" or "ERROR").
+logging.level = "WARNING"
+
+# Run CMake before building a wheel.
+wheel.cmake = true
+
+# Disable Python file inclusion entirely, and rely only on CMake’s install mechanism.
+# Our 'install' target will install pyGPlates as a package (complete with __init__.py).
+wheel.packages = []
+
+# License file to include in wheel.
+wheel.license-files = ["COPYING"]
+
+#
+# CMake arguments/defines.
+#
+[tool.scikit-build.cmake.define]
+
+
+# Build pyGPlates (not GPlates).
+GPLATES_BUILD_GPLATES = "FALSE"
+
+
+# Optionally determine whether to install binary shared library dependencies of pyGPlates
+# (using the GPLATES_INSTALL_STANDALONE and GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES variables).
+#
+# By default, dependency shared libraries ARE installed when running 'pip wheel ...' or 'pip install ...' directly, but
+# NOT installed when running 'conda install ...' (note that conda uses 'pip install ...' and so also uses scikit-build-core).
+# This is because conda manages binary shared library dependencies itself, whereas a regular pip install does not.
+#
+# This means if you type 'pip install .' (ie, install directly from the source code) then the binary shared library dependencies
+# of pyGPlates also get installed into Python (site-packages). This is necessary, for example, for the Windows platform (for Python >= 3.8)
+# which no longer searches for DLLs using the PATH environment variable.
+#
+# Note that it is better to first build a wheel and then repair it with auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
+# in order to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
+# And then install that repaired wheel (using 'pip wheel ...'). This avoids potential issues with binary dependency conflicts from other
+# installed Python packages that have the same dependencies (eg, the GDAL dependency). This means first creating a wheel *without* copying
+# dependency libraries into it. For example, building a wheel that will subsequently be repaired by auditwheel/delocate/delvewheel can be done with:
+#    "python -m pip wheel --wheel-dir dist -v --config-settings cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=FALSE <source_dir>"
+
+
+# Build in parallel on Windows (in Visual Studio).
+#
+# This is enabled by default (and only used on Windows platforms).
+#GPLATES_MSVC_PARALLEL_BUILD = "TRUE"
+# Specify the number of parallel build processes (default is zero if unspecified, which means use all available CPUs).
+#GPLATES_MSVC_PARALLEL_BUILD_PROCESSES = "0"
+#
+# macOS and Linux: To build in parallel optionally set the CMAKE_BUILD_PARALLEL_LEVEL *environment* variable.
+#                  The 'Unix Makefiles' generator defaults to using a single CPU (if not specified).
+#                  The 'Ninja' generator defaults to using all CPUs (if not specified).
+
+
+# Optionally set the macOS deployment target to a macOS version earlier than your build machine
+# (so users on older systems can still use the wheel).
+#
+# To do this you'll need to set the MACOSX_DEPLOYMENT_TARGET *environment* variable.
+# Note: The CMAKE_OSX_DEPLOYMENT_TARGET define is not actually used (by scikit-build-core) to determine the wheel tag.
+#       But CMake will use MACOSX_DEPLOYMENT_TARGET to set the default value for CMAKE_OSX_DEPLOYMENT_TARGET.
+#
+# Note: If you do this then you'll also need the same deployment target set in your dependency libraries.
+#       For example, with Macports you can specify the following in your "/opt/local/etc/macports/macports.conf" file:
+#           buildfromsource            always
+#           macosx_deployment_target   11.0
+#       ...prior to installing the ports.
+#       This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.
+#       For Apple Silicon, targeting 11.0 is sufficient (since M1/arm64 wasn't introduced until macOS 11.0).
+
+
+#
+# Extract version from 'PYGPLATES_PEP440_VERSION' variable in 'cmake/modules/Version.cmake'.
+#
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "cmake/modules/Version.cmake"
+regex = 'set\(\s*PYGPLATES_PEP440_VERSION\s*(?P<value>\S+)\s*\)'

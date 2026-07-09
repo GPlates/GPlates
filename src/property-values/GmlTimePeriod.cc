@@ -26,12 +26,20 @@
  */
 
 #include <iostream>
-#include <typeinfo>
 
 #include "GmlTimePeriod.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/ModelTransaction.h"
+
+#include "scribe/Scribe.h"
+
+
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlTimePeriod::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
 
 
 const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
@@ -43,11 +51,15 @@ GPlatesPropertyValues::GmlTimePeriod::create(
 	if (check_begin_end_times)
 	{
 		GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
-				begin_->time_position() <= end_->time_position(),
+				begin_->get_time_position() <= end_->get_time_position(),
 				GPLATES_ASSERTION_SOURCE);
 	}
 
-	return non_null_ptr_type(new GmlTimePeriod(begin_, end_));
+	GPlatesModel::ModelTransaction transaction;
+	non_null_ptr_type ptr(new GmlTimePeriod(transaction, begin_, end_));
+	transaction.commit();
+
+	return ptr;
 }
 
 
@@ -59,12 +71,14 @@ GPlatesPropertyValues::GmlTimePeriod::set_begin(
 	if (check_begin_end_times)
 	{
 		GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
-				begin_->time_position() <= end()->time_position(),
+				begin_->get_time_position() <= end()->get_time_position(),
 				GPLATES_ASSERTION_SOURCE);
 	}
 
-	d_begin = begin_;
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().begin.change(
+			revision_handler.get_model_transaction(), begin_);
+	revision_handler.commit();
 }
 
 
@@ -76,26 +90,14 @@ GPlatesPropertyValues::GmlTimePeriod::set_end(
 	if (check_begin_end_times)
 	{
 		GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
-				begin()->time_position() <= end_->time_position(),
+				begin()->get_time_position() <= end_->get_time_position(),
 				GPLATES_ASSERTION_SOURCE);
 	}
 
-	d_end = end_;
-	update_instance_id();
-}
-
-
-const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
-GPlatesPropertyValues::GmlTimePeriod::deep_clone() const
-{
-	GmlTimePeriod::non_null_ptr_type dup = clone();
-
-	GmlTimeInstant::non_null_ptr_type cloned_begin = d_begin->deep_clone();
-	dup->d_begin = cloned_begin;
-	GmlTimeInstant::non_null_ptr_type cloned_end = d_end->deep_clone();
-	dup->d_end = cloned_end;
-
-	return dup;
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().end.change(
+			revision_handler.get_model_transaction(), end_);
+	revision_handler.commit();
 }
 
 
@@ -103,25 +105,112 @@ std::ostream &
 GPlatesPropertyValues::GmlTimePeriod::print_to(
 		std::ostream &os) const
 {
-	return os << *d_begin << " - " << *d_end;
+	return os << *begin() << " - " << *end();
 }
 
 
-bool
-GPlatesPropertyValues::GmlTimePeriod::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesModel::Revision::non_null_ptr_type
+GPlatesPropertyValues::GmlTimePeriod::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	try
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+
+	if (child_revisionable == revision.begin.get_revisionable())
 	{
-		const GmlTimePeriod &other_casted =
-			dynamic_cast<const GmlTimePeriod &>(other);
-		return *d_begin == *other_casted.d_begin &&
-			*d_end == *other_casted.d_end;
+		return revision.begin.clone_revision(transaction);
 	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			child_revisionable == revision.end.get_revisionable(),
+			GPLATES_ASSERTION_SOURCE);
+
+	return revision.end.clone_revision(transaction);
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlTimePeriod::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlTimePeriod> &gml_time_period)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_time_period->begin(), "begin");
+		scribe.save(TRANSCRIBE_SOURCE, gml_time_period->end(), "end");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type> begin_ =
+				scribe.load<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>(TRANSCRIBE_SOURCE, "begin");
+		if (!begin_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type> end_ =
+				scribe.load<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>(TRANSCRIBE_SOURCE, "end");
+		if (!end_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gml_time_period.construct_object(
+				boost::ref(transaction),  // non-const ref
+				begin_,
+				end_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlTimePeriod::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, begin(), "begin");
+			scribe.save(TRANSCRIBE_SOURCE, end(), "end");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type> begin_ =
+					scribe.load<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>(TRANSCRIBE_SOURCE, "begin");
+			if (!begin_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type> end_ =
+					scribe.load<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>(TRANSCRIBE_SOURCE, "end");
+			if (!end_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_begin(begin_);
+			set_end(end_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlTimePeriod>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

@@ -45,7 +45,7 @@ GPlatesUtils::make_qstring_from_wstring(
 	// unsigned shorts and then call QString::fromUtf16.
 	BOOST_STATIC_ASSERT(sizeof(wchar_t) == sizeof(unsigned short));
 
-	boost::scoped_array<unsigned short> utf16(new unsigned short[str.size()]);
+	boost::scoped_array<char16_t> utf16(new char16_t[str.size()]);
 	std::copy(str.begin(), str.end(), utf16.get());
 
 	return QString::fromUtf16(utf16.get(), str.size());

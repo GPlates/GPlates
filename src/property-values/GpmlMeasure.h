@@ -38,6 +38,9 @@
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -75,25 +78,14 @@ namespace GPlatesPropertyValues
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
 						quantity_xml_attributes_)
 		{
-			return non_null_ptr_type(
-					new GpmlMeasure(quantity, quantity_xml_attributes_));
+			return non_null_ptr_type(new GpmlMeasure(quantity, quantity_xml_attributes_));
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlMeasure(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlMeasure>(clone_impl());
 		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Access the quantity contained in this GpmlMeasure.
@@ -104,9 +96,9 @@ namespace GPlatesPropertyValues
 		 * below.
 		 */
 		const double &
-		quantity() const
+		get_quantity() const
 		{
-			return d_quantity;
+			return get_current_revision<Revision>().quantity;
 		}
 
 		/**
@@ -114,29 +106,23 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_quantity(
-				const double &q)
-		{
-			d_quantity = q;
-			update_instance_id();
-		}
+				const double &q);
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
 		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		quantity_xml_attributes() const
+		get_quantity_xml_attributes() const
 		{
-			return d_quantity_xml_attributes;
+			return get_current_revision<Revision>().quantity_xml_attributes;
 		}
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		quantity_xml_attributes()
-		{
-			return d_quantity_xml_attributes;
-		}
+		void
+		set_quantity_xml_attributes(
+				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &qxa);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -145,9 +131,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("measure");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlMeasure::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -190,41 +181,89 @@ namespace GPlatesPropertyValues
 				const double &quantity_,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
 						quantity_xml_attributes_):
-			PropertyValue(),
-			d_quantity(quantity_),
-			d_quantity_xml_attributes(quantity_xml_attributes_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(quantity_, quantity_xml_attributes_)))
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlMeasure(
-				const GpmlMeasure &other) :
-			PropertyValue(other), /* share instance id */
-			d_quantity(other.d_quantity),
-			d_quantity_xml_attributes(other.d_quantity_xml_attributes)
+				const GpmlMeasure &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
 
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlMeasure(*this, context));
+		}
 
 	private:
 
-		double d_quantity;
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-				d_quantity_xml_attributes;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision(
+					const double &quantity_,
+					const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
+						quantity_xml_attributes_) :
+				quantity(quantity_),
+				quantity_xml_attributes(quantity_xml_attributes_)
+			{  }
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlMeasure &
-		operator=(const GpmlMeasure &);
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				quantity(other_.quantity),
+				quantity_xml_attributes(other_.quantity_xml_attributes)
+			{  }
 
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return GPlatesMaths::are_almost_exactly_equal(quantity, other_revision.quantity) &&
+						quantity_xml_attributes == other_revision.quantity_xml_attributes &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			double quantity;
+			std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> quantity_xml_attributes;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlMeasure> &gpml_measure);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

@@ -105,15 +105,17 @@ namespace
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type dictionary =
 					*(finder.found_key_value_dictionaries_begin());
 
-			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-				iter = dictionary->elements().begin(),
-				end = dictionary->elements().end();
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+					dictionary_elements = dictionary->elements();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator
+				 iter = dictionary_elements.begin(),
+				 end = dictionary_elements.end();
 
 			QStringList header_list;
 
 			for (; iter != end; ++iter)
 			{
-				header_list << GPlatesUtils::make_qstring_from_icu_string(iter->key()->value().get());
+				header_list << GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get());
 				//std::cerr << GPlatesUtils::make_qstring_from_icu_string(iter->key()->value().get()).toStdString().c_str() << std::endl;
 			}
 			
@@ -148,9 +150,11 @@ namespace
 				*finder.found_key_value_dictionaries_begin();
 
 			// Loop over the dictionary elements.
-			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-				iter = dictionary->elements().begin(),
-				end = dictionary->elements().end();
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+					dictionary_elements = dictionary->elements();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator
+				 iter = dictionary_elements.begin(),
+				 end = dictionary_elements.end();
 
 			for (int column = 0; iter != end ; ++iter, ++ column)
 			{

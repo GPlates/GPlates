@@ -244,7 +244,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 	if (d_flowline_property_finder->can_process_flowline())
 	{
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
-			FlowlineUtils::reconstruct_flowline_seed_points(gml_multi_point.multipoint(),
+			FlowlineUtils::reconstruct_flowline_seed_points(gml_multi_point.get_multipoint(),
 			d_recon_time.value(),
 			d_reconstruction_tree_creator,
 			(current_top_level_propiter()->handle_weak_ref()));
@@ -256,12 +256,12 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				reconstructed_seed_multipoint_geometry &&
 					reconstructed_seed_multipoint_geometry.get()->number_of_points() ==
-						gml_multi_point.multipoint()->number_of_points(),
+						gml_multi_point.get_multipoint()->number_of_points(),
 				GPLATES_ASSERTION_SOURCE);
 
 		GPlatesMaths::MultiPointOnSphere::const_iterator 
-			seed_multipoint_iter = gml_multi_point.multipoint()->begin(),
-			seed_multipoint_end = gml_multi_point.multipoint()->end();
+			seed_multipoint_iter = gml_multi_point.get_multipoint()->begin(),
+			seed_multipoint_end = gml_multi_point.get_multipoint()->end();
 		GPlatesMaths::MultiPointOnSphere::const_iterator 
 			reconstructed_seed_multipoint_iter = reconstructed_seed_multipoint_geometry.get()->begin();
 
@@ -277,7 +277,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 	}
 	else
 	{
-		reconstruct_seed_geometry_with_recon_plate_id(gml_multi_point.multipoint());
+		reconstruct_seed_geometry_with_recon_plate_id(gml_multi_point.get_multipoint());
 	}
 
 }
@@ -305,7 +305,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_point(
 	{
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
 			FlowlineUtils::reconstruct_flowline_seed_points(
-				gml_point.point().get_geometry_on_sphere(),
+				gml_point.get_point().get_geometry_on_sphere(),
 				d_recon_time.value(),
 				d_reconstruction_tree_creator,
 				(current_top_level_propiter()->handle_weak_ref()));
@@ -318,13 +318,13 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_point(
 				GPLATES_ASSERTION_SOURCE);
 
 		create_flowline_geometry(
-				gml_point.point(),
+				gml_point.get_point(),
 				reconstructed_seed_point.get(),
 				reconstructed_seed_geometry);	
 	}
 	else
 	{
-		reconstruct_seed_geometry_with_recon_plate_id(gml_point.point().get_geometry_on_sphere());
+		reconstruct_seed_geometry_with_recon_plate_id(gml_point.get_point().get_geometry_on_sphere());
 	}
 		 
 }

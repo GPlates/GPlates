@@ -31,6 +31,8 @@
 #include "FeatureStoreRootHandle.h"
 #include "WeakReferenceCallback.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 GPlatesModel::FeatureCollectionHandle::create()
@@ -50,22 +52,48 @@ GPlatesModel::FeatureCollectionHandle::create(
 }
 
 
-GPlatesModel::FeatureCollectionHandle::tags_type &
-GPlatesModel::FeatureCollectionHandle::tags()
-{
-	return d_tags;
-}
-
-
-const GPlatesModel::FeatureCollectionHandle::tags_type &
-GPlatesModel::FeatureCollectionHandle::tags() const
-{
-	return d_tags;
-}
-
-
 GPlatesModel::FeatureCollectionHandle::FeatureCollectionHandle() :
 	BasicHandle<FeatureCollectionHandle>(
 			this,
 			revision_type::create())
-{  }
+{
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::FeatureCollectionHandle::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Transcribe the tags.
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_tags, "tags"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	if (scribe.is_saving())
+	{
+		// Get the current list of features.
+		const std::vector<FeatureHandle::non_null_ptr_type> features(begin(), end());
+
+		// Save the features.
+		scribe.save(TRANSCRIBE_SOURCE, features, "features");
+	}
+	else // loading
+	{
+		// Load the features.
+		std::vector<FeatureHandle::non_null_ptr_type> features;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, features, "features"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Add the features.
+		for (auto feature : features)
+		{
+			add(feature);
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

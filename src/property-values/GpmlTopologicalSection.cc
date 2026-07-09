@@ -29,6 +29,8 @@
 
 #include "GpmlTopologicalSection.h"
 
+#include "scribe/Scribe.h"
+
 
 std::ostream &
 GPlatesPropertyValues::GpmlTopologicalSection::print_to(
@@ -38,3 +40,17 @@ GPlatesPropertyValues::GpmlTopologicalSection::print_to(
 	return os << "{ GpmlTopologicalSection }";
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTopologicalSection::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlTopologicalSection>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

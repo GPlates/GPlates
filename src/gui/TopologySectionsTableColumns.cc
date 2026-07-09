@@ -83,7 +83,7 @@ namespace
 							table_row.get_feature_ref(), valid_time_property_name);
 			if (time_period)
 			{
-				return time_period.get()->begin()->time_position();
+				return time_period.get()->begin()->get_time_position();
 			}
 		}
 
@@ -119,7 +119,7 @@ namespace
 							table_row.get_feature_ref(), valid_time_property_name);
 			if (time_period)
 			{
-				return time_period.get()->end()->time_position();
+				return time_period.get()->end()->get_time_position();
 			}
 		}
 
@@ -232,7 +232,7 @@ namespace
 			if (property_return_value)
 			{
 				// Convert it to something Qt can display.
-				const GPlatesModel::integer_plate_id_type &plate_id = property_return_value.get()->value();
+				const GPlatesModel::integer_plate_id_type &plate_id = property_return_value.get()->get_value();
 				cell.setData(Qt::DisplayRole, QVariant(static_cast<quint32>(plate_id)));
 			}
 			else
@@ -264,7 +264,7 @@ namespace
 			if (property_return_value)
 			{
 				// Convert it to something Qt can display.
-				QString name_qstr = GPlatesUtils::make_qstring(property_return_value.get()->value());
+				QString name_qstr = GPlatesUtils::make_qstring(property_return_value.get()->get_value());
 				cell.setData(Qt::DisplayRole, name_qstr);
 			}
 			else

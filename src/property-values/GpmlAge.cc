@@ -29,6 +29,11 @@
 
 #include "GpmlAge.h"
 
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeStringContentTypeGenerator.h"
+
+#include "scribe/Scribe.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -78,6 +83,10 @@ namespace
 }
 
 
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlAge::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("Age");
+
+
 const GPlatesPropertyValues::GpmlAge::non_null_ptr_type
 GPlatesPropertyValues::GpmlAge::create(
 		boost::optional<double> age_absolute,
@@ -122,187 +131,168 @@ GPlatesPropertyValues::GpmlAge::create()
 }
 
 
-
-const boost::optional<double> &
-GPlatesPropertyValues::GpmlAge::get_age_absolute() const
-{
-	return d_age_absolute;
-}
-
 void
 GPlatesPropertyValues::GpmlAge::set_age_absolute(
 		boost::optional<double> age_maybe)
 {
-	d_age_absolute = age_maybe;
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().age_absolute = age_maybe;
+	revision_handler.commit();
 }
 
-
-const boost::optional<GPlatesPropertyValues::TimescaleBand> &
-GPlatesPropertyValues::GpmlAge::get_age_named() const
-{
-	return d_age_named;
-}
 
 void
 GPlatesPropertyValues::GpmlAge::set_age_named(
 		boost::optional<GPlatesPropertyValues::TimescaleBand> age_maybe)
 {
-	d_age_named = age_maybe;
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().age_named = age_maybe;
+	revision_handler.commit();
 }
 
 void
 GPlatesPropertyValues::GpmlAge::set_age_named(
 		const QString &age)
 {
-	d_age_named = convert_to_band_maybe(age);
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().age_named = convert_to_band_maybe(age);
+	revision_handler.commit();
 }
 
 
 GPlatesPropertyValues::GpmlAge::AgeDefinition::AgeDefinitionType
 GPlatesPropertyValues::GpmlAge::age_type() const
 {
-	if (d_age_named) {
-		if (d_age_absolute) {
+	const Revision &revision = get_current_revision<Revision>();
+
+	if (revision.age_named)
+	{
+		if (revision.age_absolute)
+		{
 			return AgeDefinition::AGE_BOTH;
-		} else {
+		}
+		else
+		{
 			return AgeDefinition::AGE_NAMED;
 		}
-	} else {
-		if (d_age_absolute) {
+	}
+	else
+	{
+		if (revision.age_absolute)
+		{
 			return AgeDefinition::AGE_ABSOLUTE;
-		} else {
+		}
+		else
+		{
 			return AgeDefinition::AGE_NONE;
 		}
 	}
 }
 
 
-const boost::optional<GPlatesPropertyValues::TimescaleName> &
-GPlatesPropertyValues::GpmlAge::get_timescale() const
-{
-	return d_timescale;
-}
-
 void
 GPlatesPropertyValues::GpmlAge::set_timescale(
 		boost::optional<GPlatesPropertyValues::TimescaleName> timescale_maybe)
 {
-	d_timescale = timescale_maybe;
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().timescale = timescale_maybe;
+	revision_handler.commit();
 }
 
 void
 GPlatesPropertyValues::GpmlAge::set_timescale(
 		const QString &timescale)
 {
-	d_timescale = convert_to_name_maybe(timescale);
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().timescale = convert_to_name_maybe(timescale);
+	revision_handler.commit();
 }
 
-
-const boost::optional<double> &
-GPlatesPropertyValues::GpmlAge::get_uncertainty_plusminus() const
-{
-	return d_uncertainty_plusminus;
-}
 
 void
 GPlatesPropertyValues::GpmlAge::set_uncertainty_plusminus(
 		boost::optional<double> uncertainty_maybe)
 {
-	d_uncertainty_plusminus = uncertainty_maybe;
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().uncertainty_plusminus = uncertainty_maybe;
+	revision_handler.commit();
 }
 
-
-const boost::optional<double> &
-GPlatesPropertyValues::GpmlAge::get_uncertainty_youngest_absolute() const
-{
-	return d_uncertainty_youngest_absolute;
-}
 
 void
 GPlatesPropertyValues::GpmlAge::set_uncertainty_youngest_absolute(
 		boost::optional<double> uncertainty_maybe)
 {
-	d_uncertainty_youngest_absolute = uncertainty_maybe;
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().uncertainty_youngest_absolute = uncertainty_maybe;
+	revision_handler.commit();
 }
 
-
-const boost::optional<GPlatesPropertyValues::TimescaleBand> &
-GPlatesPropertyValues::GpmlAge::get_uncertainty_youngest_named() const
-{
-	return d_uncertainty_youngest_named;
-}
 
 void
 GPlatesPropertyValues::GpmlAge::set_uncertainty_youngest_named(
 		boost::optional<GPlatesPropertyValues::TimescaleBand> uncertainty_maybe)
 {
-	d_uncertainty_youngest_named = uncertainty_maybe;
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().uncertainty_youngest_named = uncertainty_maybe;
+	revision_handler.commit();
 }
 
 void
 GPlatesPropertyValues::GpmlAge::set_uncertainty_youngest_named(
 		const QString &uncertainty)
 {
-	d_uncertainty_youngest_named = convert_to_band_maybe(uncertainty);
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().uncertainty_youngest_named = convert_to_band_maybe(uncertainty);
+	revision_handler.commit();
 }
 
-
-const boost::optional<double> &
-GPlatesPropertyValues::GpmlAge::get_uncertainty_oldest_absolute() const
-{
-	return d_uncertainty_oldest_absolute;
-}
 
 void
 GPlatesPropertyValues::GpmlAge::set_uncertainty_oldest_absolute(
 		boost::optional<double> uncertainty_maybe)
 {
-	d_uncertainty_oldest_absolute = uncertainty_maybe;
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().uncertainty_oldest_absolute = uncertainty_maybe;
+	revision_handler.commit();
 }
 
-
-const boost::optional<GPlatesPropertyValues::TimescaleBand> &
-GPlatesPropertyValues::GpmlAge::get_uncertainty_oldest_named() const
-{
-	return d_uncertainty_oldest_named;
-}
 
 void
 GPlatesPropertyValues::GpmlAge::set_uncertainty_oldest_named(
 		boost::optional<GPlatesPropertyValues::TimescaleBand> uncertainty_maybe)
 {
-	d_uncertainty_oldest_named = uncertainty_maybe;
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().uncertainty_oldest_named = uncertainty_maybe;
+	revision_handler.commit();
 }
 
 void
 GPlatesPropertyValues::GpmlAge::set_uncertainty_oldest_named(
 		const QString &uncertainty)
 {
-	d_uncertainty_oldest_named = convert_to_band_maybe(uncertainty);
-	update_instance_id();
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().uncertainty_oldest_named = convert_to_band_maybe(uncertainty);
+	revision_handler.commit();
 }
 
 
 GPlatesPropertyValues::GpmlAge::UncertaintyDefinition::UncertaintyDefinitionType
 GPlatesPropertyValues::GpmlAge::uncertainty_type() const
 {
-	if (d_uncertainty_plusminus) {
+	const Revision &revision = get_current_revision<Revision>();
+
+	if (revision.uncertainty_plusminus)
+	{
 		return UncertaintyDefinition::UNC_PLUS_OR_MINUS;
-	} else if (d_uncertainty_oldest_absolute || d_uncertainty_oldest_named
-	           || d_uncertainty_youngest_absolute || d_uncertainty_youngest_named) {
+	}
+	else if (revision.uncertainty_oldest_absolute || revision.uncertainty_oldest_named ||
+			revision.uncertainty_youngest_absolute || revision.uncertainty_youngest_named)
+	{
 		return UncertaintyDefinition::UNC_RANGE;
-	} else {
+	}
+	else
+	{
 		return UncertaintyDefinition::UNC_NONE;
 	}
 }
@@ -312,26 +302,151 @@ std::ostream &
 GPlatesPropertyValues::GpmlAge::print_to(
 		std::ostream &os) const
 {
-	if (d_age_absolute) {
-		os << *d_age_absolute << " ";
+	const Revision &revision = get_current_revision<Revision>();
+
+	if (revision.age_absolute)
+	{
+		os << revision.age_absolute.get() << " ";
 	}
-	if (d_age_named) {
-		os << "(" << d_age_named.get().get().qstring().toStdString() << ") ";
+	if (revision.age_named)
+	{
+		os << "(" << revision.age_named.get().get().qstring().toStdString() << ") ";
 	}
-	if (d_uncertainty_plusminus) {
-		os << "±" << *d_uncertainty_plusminus;
+	if (revision.uncertainty_plusminus)
+	{
+		os << "±" << revision.uncertainty_plusminus.get();
 	}
-	if (d_uncertainty_youngest_absolute) {
-		os << "[" << *d_uncertainty_youngest_absolute << "-";
+	if (revision.uncertainty_youngest_absolute)
+	{
+		os << "[" << revision.uncertainty_youngest_absolute.get() << "-";
 	}
-	if (d_uncertainty_youngest_named) {
-		os << "[" << d_uncertainty_youngest_named.get().get().qstring().toStdString() << "-";
+	if (revision.uncertainty_youngest_named)
+	{
+		os << "[" << revision.uncertainty_youngest_named.get().get().qstring().toStdString() << "-";
 	}
-	if (d_uncertainty_oldest_absolute) {
-		os << *d_uncertainty_oldest_absolute << "]";
+	if (revision.uncertainty_oldest_absolute)
+	{
+		os << revision.uncertainty_oldest_absolute.get() << "]";
 	}
-	if (d_uncertainty_oldest_named) {
-		os << d_uncertainty_oldest_named.get().get().qstring().toStdString() << "]";
+	if (revision.uncertainty_oldest_named)
+	{
+		os << revision.uncertainty_oldest_named.get().get().qstring().toStdString() << "]";
 	}
+
 	return os;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlAge::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlAge> &gpml_age)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_age->get_age_absolute(), "age_absolute");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_age->get_age_named(), "age_named");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_age->get_timescale(), "timescale");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_age->get_uncertainty_plusminus(), "uncertainty_plusminus");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_age->get_uncertainty_youngest_absolute(), "uncertainty_youngest_absolute");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_age->get_uncertainty_youngest_named(), "uncertainty_youngest_named");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_age->get_uncertainty_oldest_absolute(), "uncertainty_oldest_absolute");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_age->get_uncertainty_oldest_named(), "uncertainty_oldest_named");
+	}
+	else // loading
+	{
+		boost::optional<double> age_absolute_;
+		boost::optional<TimescaleBand> age_named_;
+		boost::optional<TimescaleName> timescale_;
+		boost::optional<double> uncertainty_plusminus_;
+		boost::optional<double> uncertainty_youngest_absolute_;
+		boost::optional<TimescaleBand> uncertainty_youngest_named_;
+		boost::optional<double> uncertainty_oldest_absolute_;
+		boost::optional<TimescaleBand> uncertainty_oldest_named_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, age_absolute_, "age_absolute") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, age_named_, "age_named") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, timescale_, "timescale") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, uncertainty_plusminus_, "uncertainty_plusminus") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, uncertainty_youngest_absolute_, "uncertainty_youngest_absolute") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, uncertainty_youngest_named_, "uncertainty_youngest_named") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, uncertainty_oldest_absolute_, "uncertainty_oldest_absolute") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, uncertainty_oldest_named_, "uncertainty_oldest_named"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gpml_age.construct_object(
+				age_absolute_,
+				age_named_,
+				timescale_,
+				uncertainty_plusminus_,
+				uncertainty_youngest_absolute_,
+				uncertainty_youngest_named_,
+				uncertainty_oldest_absolute_,
+				uncertainty_oldest_named_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlAge::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_age_absolute(), "age_absolute");
+			scribe.save(TRANSCRIBE_SOURCE, get_age_named(), "age_named");
+			scribe.save(TRANSCRIBE_SOURCE, get_timescale(), "timescale");
+			scribe.save(TRANSCRIBE_SOURCE, get_uncertainty_plusminus(), "uncertainty_plusminus");
+			scribe.save(TRANSCRIBE_SOURCE, get_uncertainty_youngest_absolute(), "uncertainty_youngest_absolute");
+			scribe.save(TRANSCRIBE_SOURCE, get_uncertainty_youngest_named(), "uncertainty_youngest_named");
+			scribe.save(TRANSCRIBE_SOURCE, get_uncertainty_oldest_absolute(), "uncertainty_oldest_absolute");
+			scribe.save(TRANSCRIBE_SOURCE, get_uncertainty_oldest_named(), "uncertainty_oldest_named");
+		}
+		else // loading
+		{
+			boost::optional<double> age_absolute_;
+			boost::optional<TimescaleBand> age_named_;
+			boost::optional<TimescaleName> timescale_;
+			boost::optional<double> uncertainty_plusminus_;
+			boost::optional<double> uncertainty_youngest_absolute_;
+			boost::optional<TimescaleBand> uncertainty_youngest_named_;
+			boost::optional<double> uncertainty_oldest_absolute_;
+			boost::optional<TimescaleBand> uncertainty_oldest_named_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, age_absolute_, "age_absolute") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, age_named_, "age_named") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, timescale_, "timescale") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, uncertainty_plusminus_, "uncertainty_plusminus") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, uncertainty_youngest_absolute_, "uncertainty_youngest_absolute") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, uncertainty_youngest_named_, "uncertainty_youngest_named") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, uncertainty_oldest_absolute_, "uncertainty_oldest_absolute") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, uncertainty_oldest_named_, "uncertainty_oldest_named"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			set_age_absolute(age_absolute_);
+			set_age_named(age_named_);
+			set_timescale(timescale_);
+			set_uncertainty_plusminus(uncertainty_plusminus_);
+			set_uncertainty_youngest_absolute(uncertainty_youngest_absolute_);
+			set_uncertainty_youngest_named(uncertainty_youngest_named_);
+			set_uncertainty_oldest_absolute(uncertainty_oldest_absolute_);
+			set_uncertainty_oldest_named(uncertainty_oldest_named_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlAge>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

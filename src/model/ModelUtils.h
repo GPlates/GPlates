@@ -131,7 +131,7 @@ namespace GPlatesModel
 		/**
 		 * Create a total reconstruction pole time sample.
 		 */
-		GPlatesPropertyValues::GpmlTimeSample
+		GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 		create_gml_time_sample(
 				const ModelUtils::TotalReconstructionPole &trp);
 

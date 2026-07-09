@@ -68,13 +68,13 @@ namespace GPlatesMaths
 	 *
 	 *   Greiner, G., Hormann, K., 1998.
 	 *   Efficient clipping of arbitrary polygons.
-	 *   Association for Computing Machinery—Transactions on Graphics 17 (2), 71–83.
+	 *   Association for Computing Machinery-Transactions on Graphics 17 (2), 71-83.
 	 *
 	 * ...and, to a lesser extent,...
 	 *
 	 *   Liu, Y.K.,Wang,X.Q.,Bao,S.Z.,Gombosi, M.,Zalik, B.,2007.
 	 *   An algorithm for polygon clipping, and for determining polygon intersections and unions.
-	 *   Computers&Geosciences33,589–598.
+	 *   Computers&Geosciences33,589-598.
 	 */
 	class DateLineWrapper :
 			public GPlatesUtils::ReferenceCount<DateLineWrapper>

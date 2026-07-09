@@ -94,7 +94,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	
 	QVBoxLayout *edit_layout = new QVBoxLayout;
 	edit_layout->setSpacing(0);
-	edit_layout->setMargin(4);
+	edit_layout->setContentsMargins(4,4,4,4);
 	edit_layout->addWidget(d_edit_age_widget_ptr);
 	edit_layout->addWidget(d_edit_angle_widget_ptr);
 	edit_layout->addWidget(d_edit_boolean_widget_ptr);
@@ -279,7 +279,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
 
 	// Note that we have to make a clone of the property in order to edit it.
 	// We also save the iterator so we can save the modified property back into the model.
-	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->deep_clone();
+	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->clone();
 
 	activate_appropriate_edit_widget(property_clone);
 
@@ -302,7 +302,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::refresh_edit_widget(
 	// Note that we have to make a clone of the property in order to edit it.
 	// We also save the iterator so we can save the modified property back into the model.
 	GPlatesQtWidgets::EditWidgetChooser chooser(*this);
-	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->deep_clone();
+	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->clone();
 	d_current_property = property_clone;
 	d_current_property_iterator = it;
 	property_clone->accept_visitor(chooser);
@@ -724,7 +724,17 @@ GPlatesQtWidgets::EditWidgetGroupBox::commit_property_to_model()
 	{
 		GPlatesModel::FeatureHandle::iterator &it = *d_current_property_iterator;
 		GPlatesModel::TopLevelProperty::non_null_ptr_type &property_clone = *d_current_property;
-		*it = property_clone;
+		if (it.is_still_valid())
+		{
+			// Note: Cannot use '*it = property_clone' since dereferencing a feature properties
+			// iterator returns a temporary pointer (so assigning to it does nothing) - instead
+			// set the property via the feature (which also notifies model listeners, eg, to
+			// flag unsaved changes).
+			//
+			// Commit a clone of our working copy so that subsequent edits to the working copy
+			// (before the next commit) don't modify the property stored in the model.
+			it.handle_weak_ref()->set(it, property_clone->clone());
+		}
 	}
 }
 

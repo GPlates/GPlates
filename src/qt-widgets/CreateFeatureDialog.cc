@@ -479,7 +479,7 @@ namespace
 		{
 			const GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *feature_properties_iter;
 
-			if (feature_property->property_name() != property_name)
+			if (feature_property->get_property_name() != property_name)
 			{
 				continue;
 			}
@@ -498,7 +498,7 @@ namespace
 				continue;
 			}
 
-			return derived_property_value.get()->deep_clone();
+			return derived_property_value.get()->clone();
 		}
 
 		return boost::none;
@@ -751,7 +751,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	QHBoxLayout *plate_id_layout;
 	plate_id_layout = new QHBoxLayout;
 	plate_id_layout->setSpacing(2);
-	plate_id_layout->setMargin(0);
+	plate_id_layout->setContentsMargins(0, 0, 0, 0);
 	plate_id_layout->addWidget(d_plate_id_widget);
 	plate_id_layout->addWidget(d_conjugate_plate_id_widget);
 	plate_id_layout->addWidget(d_relative_plate_id_widget);
@@ -763,7 +763,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	QHBoxLayout *right_and_left_plate_id_layout;
 	right_and_left_plate_id_layout = new QHBoxLayout;
 	right_and_left_plate_id_layout->setSpacing(2);
-	right_and_left_plate_id_layout->setMargin(0);
+	right_and_left_plate_id_layout->setContentsMargins(0, 0, 0, 0);
 	d_left_plate_id->label()->setText(tr("&Left Plate ID:"));
 	d_right_plate_id->label()->setText(tr("&Right Plate ID:"));
 	right_and_left_plate_id_layout->addWidget(d_left_plate_id);
@@ -991,7 +991,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 							d_feature_properties);
 			if (reconstruction_method_property)
 			{
-				if (reconstruction_method_property.get()->value().get() == "ByPlateId")
+				if (reconstruction_method_property.get()->get_value().get() == "ByPlateId")
 				{
 					d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 				}
@@ -1329,7 +1329,7 @@ GPlatesQtWidgets::CreateFeatureDialog::clear_properties_not_allowed_for_current_
 	while (feature_properties_iter != d_feature_properties.end())
 	{
 		const GPlatesModel::PropertyName &feature_property_name =
-				(*feature_properties_iter)->property_name();
+				(*feature_properties_iter)->get_property_name();
 
 		if (gpgim_feature_class.get()->get_feature_property(feature_property_name))
 		{
@@ -1581,7 +1581,7 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_property_into_all_properties(
 	CreateFeaturePropertiesPage::property_seq_type::iterator feature_properties_end = d_feature_properties.end();
 	for ( ; feature_properties_iter != feature_properties_end; ++feature_properties_iter)
 	{
-		if ((*feature_properties_iter)->property_name() == property_name)
+		if ((*feature_properties_iter)->get_property_name() == property_name)
 		{
 			*feature_properties_iter = top_level_property.get();
 			return;
@@ -1610,7 +1610,7 @@ GPlatesQtWidgets::CreateFeatureDialog::remove_common_property_from_all_propertie
 	CreateFeaturePropertiesPage::property_seq_type::iterator feature_properties_end = d_feature_properties.end();
 	for ( ; feature_properties_iter != feature_properties_end; ++feature_properties_iter)
 	{
-		if ((*feature_properties_iter)->property_name() == property_name)
+		if ((*feature_properties_iter)->get_property_name() == property_name)
 		{
 			d_feature_properties.erase(feature_properties_iter);
 			return;
@@ -1640,7 +1640,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 	CreateFeaturePropertiesPage::property_seq_type::iterator it = d_feature_properties.begin();
 	CreateFeaturePropertiesPage::property_seq_type::iterator end = d_feature_properties.end();
 	for ( ; it != end; ++it) {
-		const GPlatesModel::PropertyName &prop_name = (*it)->property_name();
+		const GPlatesModel::PropertyName &prop_name = (*it)->get_property_name();
 		
 		if (prop_name == RECONSTRUCTION_PLATE_ID) {
 			// If we come across a gpml:reconstructionPlateId property in the primary feature,
@@ -1675,7 +1675,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 				
 				// We'd like it as a QString, momentarily, so we can do stuff to it.
 				QString conjugate_name_string = GPlatesUtils::make_qstring_from_icu_string(
-						prop_value_string.get()->value().get());
+						prop_value_string.get()->get_value().get());
 				conjugate_name_string.prepend("Conjugate of ");
 				
 				// Then marshal it back into a property value, and that into a TopLevelProperty, and add it.
@@ -1704,7 +1704,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 				
 				// Depending on what was chosen for the primary feature's gpml:quality, we may want to default
 				// to a different quality setting on the conjugate. Otherwise, we copy the original value.
-				QString enum_value = prop_value_enum.get()->value().get().qstring();
+				QString enum_value = prop_value_enum.get()->get_value().get().qstring();
 				if (enum_value == "OneFlankPreserved") {
 					enum_value = "SyntheticConstrainedByGeology";
 				}
@@ -1712,7 +1712,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 				// Create a new Enumeration property using the maybe-modified content.
 				GPlatesModel::PropertyValue::non_null_ptr_type conjugate_quality_prop_value =
 						GPlatesPropertyValues::Enumeration::create(
-								prop_value_enum.get()->type(), GPlatesUtils::UnicodeString(enum_value));
+								prop_value_enum.get()->get_type(), GPlatesUtils::UnicodeString(enum_value));
 				boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> conjugate_prop_maybe =
 				        generate_conjugate_property(prop_name, conjugate_quality_prop_value);
 				if (conjugate_prop_maybe) {
@@ -1722,7 +1722,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 			
 		} else {
 			// Just an ordinary property we don't need to mess around with. Give the conjugate a clone.
-			GPlatesModel::TopLevelProperty::non_null_ptr_type prop = (*it)->deep_clone();
+			GPlatesModel::TopLevelProperty::non_null_ptr_type prop = (*it)->clone();
 			d_conjugate_properties.push_back(prop);
 		}
 	}
@@ -2376,7 +2376,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_feature(
 			feature_properties)
 	{
 		// Add a clone of the property so we can re-use the properties for the next feature.
-		feature->add(feature_property->deep_clone());
+		feature->add(feature_property->clone());
 	}
 	
 	// Add the (reconstruction-time) geometry property to the feature.
@@ -2412,7 +2412,7 @@ GPlatesQtWidgets::CreateFeatureDialog::add_geometry_property(
 	// Get and clone the geometry property value, since we are potentially re-using it
 	// for a conjugate feature. 
 	GPlatesModel::PropertyValue::non_null_ptr_type geometry_property_value =
-	        d_geometry_property_value.get()->deep_clone_as_prop_val();
+	        d_geometry_property_value.get()->clone();
 
 	// Handle any custom geometry processing.
     if (d_custom_properties_widget)
@@ -2485,7 +2485,7 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 
 	// Get the geometry property value from the geometry property iterator.
 	GPlatesModel::ModelUtils::TopLevelPropertyError::Type get_property_value_error_code;
-	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> geometry_property_value =
+	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_property_value =
 			GPlatesModel::ModelUtils::get_property_value(
 					**geometry_property_iterator,
 					&get_property_value_error_code);
@@ -2589,12 +2589,15 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 					true/*reverse_reconstruct*/);
 
 	// Store the geometry property value back into the geometry property (in the feature).
+	//
+	// Note: Cannot use '*geometry_property_iterator = ...' since dereferencing a feature
+	// properties iterator returns a temporary pointer (so assigning to it does nothing) -
+	// instead set the property via the feature.
 	GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone =
-			(*geometry_property_iterator)->deep_clone();
 			(*geometry_property_iterator)->clone();
 	geometry_setter.set_geometry(geometry_property_clone.get());
-	*geometry_property_iterator = geometry_property_clone;
+	feature->set(geometry_property_iterator, geometry_property_clone);
 
 	return true;
 }

@@ -178,7 +178,11 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatWriter(
 	// Write output to text file as UTF8 encoded (which includes the ASCII character set).
 	// If we don't specify this then (in Qt4) QTextCodec::codecForLocale() will get used
 	// during encoding, which is likely to not be UTF8.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+	d_output_stream->setEncoding(QStringConverter::Utf8);
+#else
 	d_output_stream->setCodec("UTF-8");
+#endif
 }
 
 
@@ -384,13 +388,13 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_finite_rotation(
 		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
 	d_accum.current_pole().metadata = std::vector<GPlatesModel::Metadata::shared_ptr_to_const_type>();
-	const std::vector< boost::shared_ptr<GPlatesModel::Metadata> > &metadata = gpml_finite_rotation.metadata();
+	const std::vector< boost::shared_ptr<GPlatesModel::Metadata> > &metadata = gpml_finite_rotation.get_metadata();
 	for (std::size_t i = 0; i < metadata.size(); ++i)
 	{
 		d_accum.current_pole().metadata->push_back(metadata[i]);
 	}
 
-	d_accum.current_pole().finite_rotation = gpml_finite_rotation.finite_rotation();
+	d_accum.current_pole().finite_rotation = gpml_finite_rotation.get_finite_rotation();
 }
 
 
@@ -400,7 +404,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_irregular_sampling(
 {
 	// Iterate through the time samples (hence finite rotations) in the current
 	// total reconstruction sequence.
-	std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
+	GPlatesModel::RevisionedVector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
 		iter = gpml_irregular_sampling.time_samples().begin(),
 		end = gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter)
@@ -421,11 +425,11 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_plate_id(
 
 	if (*current_top_level_propname() == FIXED_REFERENCE_FRAME)
 	{
-		d_accum.fixed_plate_id = gpml_plate_id.value();
+		d_accum.fixed_plate_id = gpml_plate_id.get_value();
 	}
 	else if (*current_top_level_propname() == MOVING_REFERENCE_FRAME)
 	{
-		d_accum.moving_plate_id = gpml_plate_id.value();
+		d_accum.moving_plate_id = gpml_plate_id.get_value();
 	}
 	// else do nothing: the plate id must not be associated to a finite rotation.
 }
@@ -433,23 +437,23 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_plate_id(
 
 void
 GPlatesFileIO::PlatesRotationFormatWriter::write_gpml_time_sample(
-		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
+		const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type &gpml_time_sample)
 {
 	// Start a new reconstruction pole
 	d_accum.reconstruction_poles.push_back(PlatesRotationFormatAccumulator::ReconstructionPoleData());
 
-	d_accum.current_pole().time = gpml_time_sample.valid_time()->time_position().value();
-	d_accum.current_pole().is_disabled = gpml_time_sample.is_disabled();
+	d_accum.current_pole().time = gpml_time_sample->valid_time()->get_time_position().value();
+	d_accum.current_pole().is_disabled = gpml_time_sample->is_disabled();
 	
 	d_accum.d_is_expecting_a_time_sample = true;
 
 	// Visit the finite rotation inside this time sample.
-	gpml_time_sample.value()->accept_visitor(*this);
+	gpml_time_sample->value()->accept_visitor(*this);
 
 	// Visit the comment.
-	if (gpml_time_sample.description())
+	if (gpml_time_sample->description())
 	{
-		gpml_time_sample.description()->accept_visitor(*this);
+		gpml_time_sample->description().get()->accept_visitor(*this);
 	}
 	
 	d_accum.d_is_expecting_a_time_sample = false;
@@ -465,6 +469,6 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_xs_string(
 	// if we encounter the former (and 'd_accum.reconstruction_poles' is empty).
 	if (d_accum.d_is_expecting_a_time_sample)
 	{
-		d_accum.current_pole().comment = xs_string.value().get();
+		d_accum.current_pole().comment = xs_string.get_value().get();
 	}
 }

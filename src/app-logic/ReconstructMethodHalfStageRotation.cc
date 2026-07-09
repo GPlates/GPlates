@@ -280,7 +280,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_line_string.polyline()));
+								gml_line_string.get_polyline()));
 			}
 
 			virtual
@@ -291,7 +291,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_multi_point.multipoint()));
+								gml_multi_point.get_multipoint()));
 			}
 
 			virtual
@@ -310,7 +310,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_point.point().get_geometry_on_sphere()));
+								gml_point.get_point().get_geometry_on_sphere()));
 			}
 			
 			virtual
@@ -321,7 +321,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_polygon.polygon()));
+								gml_polygon.get_polygon()));
 			}
 
 			virtual
@@ -413,7 +413,7 @@ namespace GPlatesAppLogic
 								d_reconstruction_tree_creator,
 								*property.handle_weak_ref(),
 								property,
-								gml_line_string.polyline(),
+								gml_line_string.get_polyline(),
 								d_reconstruction_rotation.get(),
 								ReconstructMethod::HALF_STAGE_ROTATION,
 								d_reconstruction_params.get_recon_plate_id(),
@@ -435,7 +435,7 @@ namespace GPlatesAppLogic
 								d_reconstruction_tree_creator,
 								*property.handle_weak_ref(),
 								property,
-								gml_multi_point.multipoint(),
+								gml_multi_point.get_multipoint(),
 								d_reconstruction_rotation.get(),
 								ReconstructMethod::HALF_STAGE_ROTATION,
 								d_reconstruction_params.get_recon_plate_id(),
@@ -465,7 +465,7 @@ namespace GPlatesAppLogic
 								d_reconstruction_tree_creator,
 								*property.handle_weak_ref(),
 								property,
-								gml_point.point().get_geometry_on_sphere(),
+								gml_point.get_point().get_geometry_on_sphere(),
 								d_reconstruction_rotation.get(),
 								ReconstructMethod::HALF_STAGE_ROTATION,
 								d_reconstruction_params.get_recon_plate_id(),
@@ -487,7 +487,7 @@ namespace GPlatesAppLogic
 								d_reconstruction_tree_creator,
 								*property.handle_weak_ref(),
 								property,
-								gml_polygon.polygon(),
+								gml_polygon.get_polygon(),
 								d_reconstruction_rotation.get(),
 								ReconstructMethod::HALF_STAGE_ROTATION,
 								d_reconstruction_params.get_recon_plate_id(),

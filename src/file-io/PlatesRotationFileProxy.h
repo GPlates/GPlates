@@ -30,6 +30,7 @@
 
 #include <boost/tuple/tuple.hpp>
 
+#include <QRegExp>
 #include <QTextStream>
 
 #include "File.h"
@@ -588,7 +589,7 @@ namespace GPlatesFileIO
 				const RotationPoleData&,
 				boost::optional<const RotationPoleData&> = boost::none);
 
-		GPlatesPropertyValues::GpmlTimeSample
+		GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 		create_time_sample(
 				const RotationPoleData&);
 
@@ -608,9 +609,9 @@ namespace GPlatesFileIO
 		GPlatesModel::FeatureHandle::weak_ref d_fc_metadata_feature;
 		std::map<QString,QString> DCMeta;
 		boost::optional<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type> d_current_sampling;
-		boost::optional<GPlatesPropertyValues::GpmlTimeSample> d_current_sample;
+		boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> d_current_sample;
 		RotationPoleData d_last_pole;
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> d_mprs_attrs, d_last_mprs;
+		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> d_mprs_attrs, d_last_mprs;
 		std::vector<AttributeSegment> d_attrs;
 		GPlatesModel::FeatureCollectionMetadata d_fc_metadata;
 	};

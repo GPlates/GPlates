@@ -1,11 +1,11 @@
-/* $Id: FeatureCollection.cc 11961 2011-07-07 03:49:38Z mchin $ */
+/* $Id$ */
 
 /**
  * \file 
- * $Revision: 11961 $
- * $Date: 2011-07-07 13:49:38 +1000 (Thu, 07 Jul 2011) $
+ * $Revision$
+ * $Date$
  * 
- * Copyright (C) 2011 The University of Sydney, Australia
+ * Copyright (C) 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,118 +22,152 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#ifndef GPLATES_API_FEATURE_H
-#define GPLATES_API_FEATURE_H
 
+#ifndef GPLATES_API_PYFEATURE_H
+#define GPLATES_API_PYFEATURE_H
+
+#include <tuple>
+#include <vector>
+#include <boost/optional.hpp>
+
+#include "app-logic/TopologyInternalUtils.h"
+
+#include "global/PreconditionViolationError.h"
 #include "global/python.h"
-#include "model/FeatureHandle.h"
-#include "utils/FeatureUtils.h"
-#include "data-mining/DataMiningUtils.h"
-#include "data-mining/OpaqueDataToDouble.h"
-#include "data-mining/OpaqueDataToQString.h"
 
-namespace bp=boost::python;
+#include "maths/GeometryOnSphere.h"
+
+#include "model/FeatureType.h"
+#include "model/PropertyName.h"
+
+#include "property-values/GmlDataBlock.h"
+
 
 namespace GPlatesApi
 {
-	class Feature
+	/**
+	 * This exception can be thrown when there is more than one matching coverage with the same
+	 * number of points (or same number of scalars).
+	 *
+	 * This means it's ambiguous which coverage range belongs to which coverage domain since they
+	 * use the same domain/range property name.
+	 */
+	class AmbiguousGeometryCoverageException :
+			public GPlatesGlobal::PreconditionViolationError
 	{
 	public:
-		Feature(){ }
 
-		Feature(GPlatesModel::FeatureHandle::weak_ref w_ref) :
-			d_handle(w_ref)
-		{ }
+		explicit
+		AmbiguousGeometryCoverageException(
+				const GPlatesUtils::CallStack::Trace &exception_source,
+				const GPlatesModel::PropertyName &domain_property_name) :
+			GPlatesGlobal::PreconditionViolationError(exception_source),
+			d_domain_property_name(domain_property_name)
+		{  }
 
+		~AmbiguousGeometryCoverageException() throw()
+		{  }
 
-		/*
-		* Return all properties in boost::python::list.
-		*/
-		bp::list
-		get_properties();
+	protected:
 
-
-		/*
-		* Return all properties with given name in boost::python::list.
-		*/
-		bp::list
-		get_properties_by_name(
-				bp::object prop_name = bp::str());
-
-		
-		bp::object
-		feature_id();
-
-		
-		
-		bp::tuple
-		valid_time();
-
-
-		bp::object
-		begin_time();
-
-
-		bp::object
-		end_time();
-
-				
-		bp::object
-		feature_type();
-
-		
-		unsigned long
-		plate_id();
-
-		
-
-
-		operator GPlatesModel::FeatureHandle::weak_ref()
+		virtual
+		const char *
+		exception_name() const
 		{
-			return d_handle;
+			return "AmbiguousGeometryCoverageException";
 		}
-	//protected:
-	public:
-		bp::list
-		get_all_property_names();
 
-
-		
-		bp::object
-		get_property(bp::object name_)
-		{
-			using namespace GPlatesDataMining;
-			QString name = QString::fromUtf8(bp::extract<const char*>(name_));
-			OpaqueData data = DataMiningUtils::get_property_value_by_name(d_handle, name);
-			
-			if(is_empty_opaque(data))
-			{
-				data = DataMiningUtils::get_shape_file_value_by_name(d_handle, name);
-
-				if(is_empty_opaque(data))
-					return bp::object();
-			}
-			
-			if(boost::optional<double> int_tmp = 
-				boost::apply_visitor(ConvertOpaqueDataToDouble(), data))
-			{
-				return bp::object(*int_tmp);
-			}
-
-			if(boost::optional<QString> str_tmp = 
-				boost::apply_visitor(ConvertOpaqueDataToString(), data))
-			{
-				const QByteArray buf = str_tmp->toUtf8();
-				return bp::str(buf.data());
-			}
-			
-			return bp::object();
-		}
+		virtual
+		void
+		write_message(
+				std::ostream &os) const;
 
 	private:
-		GPlatesModel::FeatureHandle::weak_ref d_handle;
+
+		GPlatesModel::PropertyName d_domain_property_name;
 	};
+
+
+	/**
+	 * Wrapping an enumeration instead of boolean since 'CoverageReturn.geometry_only' documents
+	 * Python code better than a boolean.
+	 */
+	namespace CoverageReturn
+	{
+		enum Value
+		{
+			GEOMETRY_ONLY,       // Return only geometry.
+			GEOMETRY_AND_SCALARS // Return geometry and scalars which is the coverage domain and range.
+		};
+	};
+
+
+	/**
+	 * Topological geometry property value types (topological line, polygon and network).
+	 */
+	typedef GPlatesAppLogic::TopologyInternalUtils::topological_geometry_property_value_type
+			topological_geometry_property_value_type;
+
+
+	/**
+	 * Returns the default geometry property name associated with the specified feature type.
+	 */
+	boost::optional<GPlatesModel::PropertyName>
+	get_default_geometry_property_name(
+			const GPlatesModel::FeatureType &feature_type);
+
+
+	/**
+	 * Extract one geometry or coverage (geometry + scalars).
+	 *
+	 * 'geometry_or_coverage_object' can be:
+	 *   1) a GeometryOnSphere, or
+	 *   2) a coverage.
+	 *
+	 * ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
+	 * and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
+	 * of (scalar type, sequence of scalar values) 2-tuples.
+	 *
+	 * If @a type_error_string is not specified then it will default to:
+	 *
+	 *   Expected a GeometryOnSphere, or a coverage - where a coverage is a
+	 *   (GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is
+	 *   a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples
+	 */
+	std::tuple<
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
+			boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>
+	extract_geometry_or_coverage(
+			boost::python::object geometry_or_coverage_object,
+			const char *type_error_string = nullptr);
+
+
+	/**
+	 * Extract zero, one or more geometries or coverages (geometry + scalars).
+	 *
+	 * 'geometries_or_coverages_object' can be:
+	 *   1) a GeometryOnSphere, or
+	 *   2) a sequence of GeometryOnSphere's, or
+	 *   3) a coverage, or
+	 *   4) a sequence of coverages.
+	 *
+	 * ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
+	 * and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
+	 * of (scalar type, sequence of scalar values) 2-tuples.
+	 *
+	 * If @a type_error_string is not specified then it will default to:
+	 *
+	 *   Expected a GeometryOnSphere, or a sequence of GeometryOnSphere,
+	 *   or a coverage, or a sequence of coverages - where a coverage is a
+	 *   (GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is
+	 *   a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples
+	 */
+	std::tuple<
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+			boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>>
+	extract_geometries_or_coverages(
+			boost::python::object geometries_or_coverages_object,
+			const char *type_error_string = nullptr);
 }
 
-#endif  // GPLATES_API_FEATURE_H
-
+#endif // GPLATES_API_PYFEATURE_H

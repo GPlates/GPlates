@@ -29,31 +29,14 @@
 #define GPLATES_MODEL_PROPERTYVALUE_H
 
 #include <iosfwd>
-#include <boost/cstdint.hpp>
+#include <boost/optional.hpp>
+
+#include "Revisionable.h"
 
 #include "property-values/StructuralType.h"
 
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
 #include "utils/QtStreamable.h"
 #include "utils/ReferenceCount.h"
-
-
-// This macro is used to define the virtual function 'deep_clone_as_prop_val' inside a class which
-// derives from PropertyValue.  The function definition is exactly identical in every PropertyValue
-// derivation, but the function must be defined in each derived class (rather than in the base)
-// because it invokes the non-virtual member function 'deep_clone' of that specific derived class.
-// (This function 'deep_clone' cannot be moved into the base class, because (i) its return type is
-// the type of the derived class, and (ii) it must perform different actions in different classes.)
-// To define the function, invoke the macro in the class definition.  The macro invocation will
-// expand to a definition of the function.
-#define DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()  \
-		virtual  \
-		const GPlatesModel::PropertyValue::non_null_ptr_type  \
-		deep_clone_as_prop_val() const  \
-		{  \
-			return deep_clone();  \
-		}
 
 
 namespace GPlatesModel
@@ -64,72 +47,25 @@ namespace GPlatesModel
 	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
 	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
 
+
 	/**
 	 * This class is the abstract base of all property values.
 	 *
-	 * It provides pure virtual function declarations for cloning and accepting visitors.  It
-	 * also provides the functions to be used by boost::intrusive_ptr for reference-counting.
+	 * It provides pure virtual function declarations for accepting visitors.
 	 */
 	class PropertyValue :
-			public GPlatesUtils::ReferenceCount<PropertyValue>,
+			public Revisionable,
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
 			public GPlatesUtils::QtStreamable<PropertyValue>
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyValue,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PropertyValue,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValue,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		//! A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue>.
+		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyValue> non_null_ptr_type;
 
-		/**
-		 * Construct a PropertyValue instance.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes. 
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
-		 */
-		PropertyValue() :
-			GPlatesUtils::ReferenceCount<PropertyValue>(),
-			d_instance_id(s_next_instance_id)
-		{
-			++s_next_instance_id;
-		}
+		//! A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PropertyValue>.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValue> non_null_ptr_to_const_type;
 
-		/**
-		 * Construct a PropertyValue instance which is a copy of @a other.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes. 
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
-		 *
-		 * This ctor should only be invoked by the @a clone member function (pure virtual
-		 * in this class; defined in derived classes), which will create a duplicate
-		 * instance and return a new intrusive_ptr reference to the new duplicate.  Since
-		 * initially the only reference to the new duplicate will be the one returned by
-		 * the @a clone function, *before* the new intrusive_ptr is created, the ref-count
-		 * of the new PropertyValue instance should be zero.
-		 *
-		 * Note that this ctor should act exactly the same as the default (auto-generated)
-		 * copy-ctor, except that it should initialise the ref-count to zero.
-		 */
-		PropertyValue(
-				const PropertyValue &other) :
-			GPlatesUtils::ReferenceCount<PropertyValue>(),
-			d_instance_id(other.d_instance_id)
-		{  }
 
 		virtual
 		~PropertyValue()
@@ -138,13 +74,12 @@ namespace GPlatesModel
 		/**
 		 * Create a duplicate of this PropertyValue instance, including a recursive copy
 		 * of any property values this instance might contain.
-		 *
-		 * The Bubble-Up revisioning system @em might make this function redundant
-		 * when it's fully operational.  Until then, however...
 		 */
-		virtual
 		const non_null_ptr_type
-		deep_clone_as_prop_val() const = 0;
+		clone() const
+		{
+			return GPlatesUtils::dynamic_pointer_cast<PropertyValue>(clone_impl());
+		}
 
 		/**
 		 * Returns the structural type associated with the type of the derived property value class.
@@ -191,96 +126,50 @@ namespace GPlatesModel
 		print_to(
 				std::ostream &os) const = 0;
 
-		bool
-		operator==(
-				const PropertyValue &other) const;
-
 	protected:
 
 		/**
-		 * Give this PropertyValue instance a new instance id. If this shared
-		 * an instance id with another PropertyValue instance because this is a
-		 * clone of the other instance, the link between the instances is
-		 * thereby broken by getting a new instance id here.
+		 * Construct a PropertyValue instance.
 		 */
-		void
-		update_instance_id()
-		{
-			d_instance_id = s_next_instance_id;
-			++s_next_instance_id;
-		}
+		explicit
+		PropertyValue(
+				const Revision::non_null_ptr_to_const_type &revision) :
+			Revisionable(revision)
+		{  }
+
 
 		/**
-		 * Reimplement in derived classes where there are instance variables that can
-		 * be modified by client code without using a set_*() function.
-		 * For example, if a derived class has an XML attributes map that can be
-		 * retrieved by non-const reference by client code, or if a derived class has
-		 * nested PropertyValues returned to client code as a non_null_intrusive_ptr,
-		 * it is necessary to reimplement this function, because these instance
-		 * variables may have been modified without the clear_cloned_from() function
-		 * getting called.
+		 * Top-level property data that is mutable/revisionable.
 		 */
-		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const
-		{
-			return true;
-		}
-
-	private:
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		PropertyValue &
-		operator=(
-				const PropertyValue &);
-
-#ifdef BOOST_NO_INT64_T
-		/**
-		 * Just in case we happen to run into a compiler without 64-bit integers.
-		 */
-		class instance_id_type
+		class Revision :
+				public GPlatesModel::Revision
 		{
 		public:
-			instance_id_type() :
-				d_high(0),
-				d_low(0)
-			{
-			}
 
-			instance_id_type &
-			operator++()
-			{
-				++d_low;
-				if (d_low == 0) // integer overflow
-				{
-					++d_high;
-				}
-				return *this;
-			}
+			typedef GPlatesUtils::non_null_intrusive_ptr<Revision> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const Revision> non_null_ptr_to_const_type;
 
-			bool
-			operator==(
-					const instance_id_type &other) const
-			{
-				return d_low == other.d_low && d_high == other.d_high;
-			}
+		protected:
 
-		private:
-			boost::uint32_t d_high, d_low; // This should be portable.
+			/**
+			 * Constructor specified optional (parent) context in which this property value (revision) is nested.
+			 */
+			explicit
+			Revision(
+					boost::optional<RevisionContext &> context = boost::none) :
+				GPlatesModel::Revision(context)
+			{  }
+
+			/**
+			 * Construct a Revision instance using another Revision.
+			 */
+			Revision(
+					const Revision &other,
+					boost::optional<RevisionContext &> context) :
+				GPlatesModel::Revision(context)
+			{  }
+
 		};
-#else
-		// Use built-in 64-bit integers where available.
-		typedef boost::uint64_t instance_id_type;
-#endif
-
-		// Assists in speeding up operator==.
-		instance_id_type d_instance_id;
-
-		static instance_id_type s_next_instance_id;
 
 	};
 

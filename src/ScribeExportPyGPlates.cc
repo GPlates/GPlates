@@ -25,6 +25,10 @@
 
 #include "maths/ScribeExportMaths.h"
 
+#include "model/ScribeExportModel.h"
+
+#include "property-values/ScribeExportPropertyValues.h"
+
 #include "scribe/ScribeExportExternal.h"
 #include "scribe/ScribeExportRegistration.h"
 
@@ -36,6 +40,8 @@
  */
 #define SCRIBE_EXPORT_PYGPLATES \
 		SCRIBE_EXPORT_MATHS \
+		SCRIBE_EXPORT_MODEL \
+		SCRIBE_EXPORT_PROPERTY_VALUES \
 		SCRIBE_EXPORT_EXTERNAL
 
 

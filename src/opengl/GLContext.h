@@ -34,7 +34,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <opengl/OpenGL.h>
-#include <QGLFormat>
+#include <QSurfaceFormat>
 
 #include "GLBuffer.h"
 #include "GLBufferObject.h"
@@ -94,10 +94,15 @@ namespace GPlatesOpenGL
 			void
 			make_current() = 0;
 
-			//! Return the QGLFormat of the QGLContext OpenGL context.
+			//! Return the QSurfaceFormat of the OpenGL context.
 			virtual
-			const QGLFormat
+			const QSurfaceFormat
 			get_qgl_format() const = 0;
+
+			//! Return default framebuffer resource (might not be zero, eg, each QOpenGLWidget has its own framebuffer object).
+			virtual
+			GLuint
+			get_default_framebuffer_object() const = 0;
 
 			//! The width of the frame buffer currently attached to the OpenGL context.
 			virtual
@@ -656,13 +661,13 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the QGLFormat to use when creating a Qt OpenGL context (eg, QGLWidget).
+		 * Returns the QSurfaceFormat to use when creating a Qt OpenGL context (eg, QOpenGLWidget).
 		 *
 		 * This sets various parameters required for OpenGL rendering in GPlates.
 		 * Such as specifying an alpha-channel.
 		 */
 		static
-		QGLFormat
+		QSurfaceFormat
 		get_qgl_format_to_create_context_with();
 
 
@@ -711,14 +716,28 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the QGLFormat of the QGLContext OpenGL context.
+		 * Returns the QSurfaceFormat of the OpenGL context.
 		 *
 		 * This can be used to determine the number of colour/depth/stencil bits in the frame buffer.
 		 */
-		const QGLFormat &
+		const QSurfaceFormat &
 		get_qgl_format() const
 		{
 			return d_qgl_format;
+		}
+
+
+		/**
+		 * Returns the default framebuffer resource.
+		 *
+		 * Note: This might not be zero.
+		 *       For example, each QOpenGLWidget has its own framebuffer object
+		 *       (that we treat as our main framebuffer when rendering into it).
+		 */
+		GLuint
+		get_default_framebuffer_object() const
+		{
+			return d_context_impl->get_default_framebuffer_object();
 		}
 
 
@@ -840,7 +859,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The format of the OpenGL context.
 		 */
-		QGLFormat d_qgl_format;
+		QSurfaceFormat d_qgl_format;
 
 		/**
 		 * OpenGL state that can be shared with another context.

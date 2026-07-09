@@ -49,7 +49,7 @@ namespace GPlatesAppLogic
 	 * Populate a ReconstructionGraph instance (via a ReconstructionGraphBuilder) with total reconstruction sequences.
 	 */
 	class ReconstructionGraphPopulator :
-			public GPlatesModel::FeatureVisitorThatGuaranteesNotToModify,
+			public GPlatesModel::ConstFeatureVisitor,
 			private boost::noncopyable
 	{
 	public:
@@ -79,27 +79,27 @@ namespace GPlatesAppLogic
 		virtual
 		bool
 		initialise_pre_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle);
+				feature_handle_type &feature_handle);
 
 		virtual
 		void
 		finalise_post_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle);
+				feature_handle_type &feature_handle);
 
 		virtual
 		void
 		visit_gpml_finite_rotation(
-				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
+				gpml_finite_rotation_type &gpml_finite_rotation);
 
 		virtual
 		void
 		visit_gpml_irregular_sampling(
-				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
+				gpml_irregular_sampling_type &gpml_irregular_sampling);
 
 		virtual
 		void
 		visit_gpml_plate_id(
-				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+				gpml_plate_id_type &gpml_plate_id);
 
 	private:
 

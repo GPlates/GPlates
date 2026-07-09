@@ -29,12 +29,34 @@
 
 #include "GpmlInterpolationFunction.h"
 
+#include "scribe/Scribe.h"
+
+
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlInterpolationFunction::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("InterpolationFunction");
+
 
 std::ostream &
 GPlatesPropertyValues::GpmlInterpolationFunction::print_to(
 		std::ostream &os) const
 {
-	const GPlatesUtils::UnicodeString &value_type_as_string = d_value_type.build_aliased_name();
+	const GPlatesUtils::UnicodeString &value_type_as_string =
+			get_current_revision<Revision>().value_type.build_aliased_name();
+
 	return os << value_type_as_string;
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlInterpolationFunction::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlInterpolationFunction>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

@@ -106,7 +106,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::set_up_edit_widgets()
 	// to mix Qt Designer UIs with coded-by-hand UIs.
 	QVBoxLayout *edit_layout = new QVBoxLayout;
 	edit_layout->setSpacing(0);
-	edit_layout->setMargin(0);
+	edit_layout->setContentsMargins(0,0,0,0);
 	edit_layout->addWidget(d_edit_widget_group_box_ptr);
 	placeholder_edit_widget->setLayout(edit_layout);
 	

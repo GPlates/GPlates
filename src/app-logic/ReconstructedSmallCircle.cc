@@ -1,7 +1,7 @@
 /**
  * \file 
- * $Revision: 8651 $
- * $Date: 2010-06-06 20:15:55 +0200 (sø, 06 jun 2010) $
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2011 Geological Survey of Norway
  *

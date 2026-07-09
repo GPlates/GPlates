@@ -379,11 +379,16 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 
 		// Since we can have multiple geometry properties per feature we make sure we
 		// set the geometry that the user actually clicked on.
+		//
+		// Note: Cannot use '*iter = geom_top_level_prop_clone' since dereferencing a feature
+		// properties iterator returns a temporary pointer (so assigning to it does nothing) -
+		// instead set the property via the feature (which also notifies model listeners,
+		// eg, to flag unsaved changes).
 		GPlatesModel::FeatureHandle::iterator iter = focused_rfg.get()->property();
-		GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->deep_clone();
+		GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->clone();
 		geometry_setter.set_geometry(geom_top_level_prop_clone.get());
-		*iter = geom_top_level_prop_clone;
-		
+		iter.handle_weak_ref()->set(iter, geom_top_level_prop_clone);
+
 		convert_secondary_geometries_to_features();
 
 		// Announce that we've modified the focused feature.
@@ -416,10 +421,12 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geom
 
 	// Since we can have multiple geometry properties per feature we make sure we
 	// set the geometry that the user actually clicked on.
+	//
+	// Note: Cannot use '*iter = geom_top_level_prop_clone' (see convert_geom_from_builder_to_feature).
 	GPlatesModel::FeatureHandle::iterator iter = (*rfg)->property();
-	GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->deep_clone();
+	GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->clone();
 	geometry_setter.set_geometry(geom_top_level_prop_clone.get());
-	*iter = geom_top_level_prop_clone;
+	iter.handle_weak_ref()->set(iter, geom_top_level_prop_clone);
 }
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type

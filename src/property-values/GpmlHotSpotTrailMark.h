@@ -34,12 +34,19 @@
 #include "GmlTimeInstant.h"
 #include "GmlTimePeriod.h"
 #include "GpmlMeasure.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
-// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_revisionable() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlHotSpotTrailMark, visit_gpml_hot_spot_trail_mark)
@@ -48,7 +55,8 @@ namespace GPlatesPropertyValues
 {
 
 	class GpmlHotSpotTrailMark:
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::RevisionContext
 	{
 
 	public:
@@ -74,28 +82,21 @@ namespace GPlatesPropertyValues
 				const GmlPoint::non_null_ptr_type &position_,
 				const boost::optional<GpmlMeasure::non_null_ptr_type> &trail_width_,
 				const boost::optional<GmlTimeInstant::non_null_ptr_type> &measured_age_,
-				const boost::optional<GmlTimePeriod::non_null_ptr_type> &measured_age_range_)
-		{
-			return non_null_ptr_type(
-					new GpmlHotSpotTrailMark( position_, trail_width_,
-							measured_age_, measured_age_range_));
-		}
+				const boost::optional<GmlTimePeriod::non_null_ptr_type> &measured_age_range_);
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlHotSpotTrailMark(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlHotSpotTrailMark>(clone_impl());
 		}
 
-		const non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
+		/**
+		 * Returns the 'const' position.
+		 */
 		const GmlPoint::non_null_ptr_to_const_type
 		position() const
 		{
-			return d_position;
+			return get_current_revision<Revision>().position.get_revisionable();
 		}
 
 		/**
@@ -104,7 +105,7 @@ namespace GPlatesPropertyValues
 		const GmlPoint::non_null_ptr_type
 		position()
 		{
-			return d_position;
+			return get_current_revision<Revision>().position.get_revisionable();
 		}
 
 		/**
@@ -112,89 +113,64 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_position(
-				GmlPoint::non_null_ptr_type pos)
-		{
-			d_position = pos;
-			update_instance_id();
-		}
+				GmlPoint::non_null_ptr_type pos);
 
-		const boost::optional<GpmlMeasure::non_null_ptr_type>
-		trail_width() const
-		{
-			return d_trail_width;
-		}
+		/**
+		 * Returns the 'const' trail width.
+		 */
+		const boost::optional<GpmlMeasure::non_null_ptr_to_const_type>
+		trail_width() const;
 
 		/**
 		 * Returns the 'non-const' trail width.
 		 */
 		const boost::optional<GpmlMeasure::non_null_ptr_type>
-		trail_width()
-		{
-			return d_trail_width;
-		}
+		trail_width();
 
 		/**
 		 * Sets the internal trail width.
 		 */
 		void
 		set_trail_width(
-				GpmlMeasure::non_null_ptr_type tw)
-		{
-			d_trail_width = tw;
-			update_instance_id();
-		}
+				boost::optional<GpmlMeasure::non_null_ptr_type> tw);
 
-		const boost::optional<GmlTimeInstant::non_null_ptr_type>
-		measured_age() const
-		{
-			return d_measured_age;
-		}
+		/**
+		 * Returns the 'const' measured age.
+		 */
+		const boost::optional<GmlTimeInstant::non_null_ptr_to_const_type>
+		measured_age() const;
 
 		/**
 		 * Returns the 'non-const' measured age.
 		 */
 		const boost::optional<GmlTimeInstant::non_null_ptr_type>
-		measured_age()
-		{
-			return d_measured_age;
-		}
+		measured_age();
 
 		/**
 		 * Sets the internal measured age.
 		 */
 		void
 		set_measured_age(
-				GmlTimeInstant::non_null_ptr_type ti)
-		{
-			d_measured_age = ti;
-			update_instance_id();
-		}
+				boost::optional<GmlTimeInstant::non_null_ptr_type> ti);
 
-		const boost::optional<GmlTimePeriod::non_null_ptr_type>
-		measured_age_range() const
-		{
-			return d_measured_age_range;
-		}
+		/**
+		 * Returns the 'const' measured age range.
+		 */
+		const boost::optional<GmlTimePeriod::non_null_ptr_to_const_type>
+		measured_age_range() const;
 
 		/**
 		 * Returns the 'non-const' measured age range.
 		 */
 		const boost::optional<GmlTimePeriod::non_null_ptr_type>
-		measured_age_range()
-		{
-			return d_measured_age_range;
-		}
+		measured_age_range();
 
 		/**
 		 * Sets the internal measured age range.
 		 */
 		void
 		set_measured_age_range(
-				GmlTimePeriod::non_null_ptr_type tp)
-		{
-			d_measured_age_range = tp;
-			update_instance_id();
-		}
+				boost::optional<GmlTimePeriod::non_null_ptr_type> tp);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -203,9 +179,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("HotSpotTrailMark");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlHotSpotTrailMark::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -240,47 +221,117 @@ namespace GPlatesPropertyValues
 
 	protected:
 
-		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
-
 		GpmlHotSpotTrailMark(
+				GPlatesModel::ModelTransaction &transaction_,
 				const GmlPoint::non_null_ptr_type &position_,
 				const boost::optional<GpmlMeasure::non_null_ptr_type> &trail_width_,
 				const boost::optional<GmlTimeInstant::non_null_ptr_type> &measured_age_,
 				const boost::optional<GmlTimePeriod::non_null_ptr_type> &measured_age_range_) :
-			PropertyValue(),
-			d_position(position_),
-			d_trail_width(trail_width_),
-			d_measured_age(measured_age_),
-			d_measured_age_range(measured_age_range_)
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(transaction_, *this, position_, trail_width_, measured_age_, measured_age_range_)))
 		{  }
 
+		//! Constructor used when cloning.
 		GpmlHotSpotTrailMark(
-				const GpmlHotSpotTrailMark &other) :
-			PropertyValue(other), /* share instance id */
-			d_position(other.d_position),
-			d_trail_width(other.d_trail_width),
-			d_measured_age(other.d_measured_age),
-			d_measured_age_range(other.d_measured_age_range)
+				const GpmlHotSpotTrailMark &other_,
+				boost::optional<RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlHotSpotTrailMark(*this, context));
+		}
 
 	private:
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlPlateId &
-		operator=(const GpmlPlateId &);
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
+		/**
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
 
-		GmlPoint::non_null_ptr_type d_position;
-		boost::optional<GpmlMeasure::non_null_ptr_type> d_trail_width;
-		boost::optional<GmlTimeInstant::non_null_ptr_type> d_measured_age;
-		boost::optional<GmlTimePeriod::non_null_ptr_type> d_measured_age_range;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					RevisionContext &child_context_,
+					const GmlPoint::non_null_ptr_type &position_,
+					const boost::optional<GpmlMeasure::non_null_ptr_type> &trail_width_,
+					const boost::optional<GmlTimeInstant::non_null_ptr_type> &measured_age_,
+					const boost::optional<GmlTimePeriod::non_null_ptr_type> &measured_age_range_);
 
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_);
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_);
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<RevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const;
+
+			GPlatesModel::RevisionedReference<GmlPoint> position;
+			boost::optional<GPlatesModel::RevisionedReference<GpmlMeasure> > trail_width;
+			boost::optional<GPlatesModel::RevisionedReference<GmlTimeInstant> > measured_age;
+			boost::optional<GPlatesModel::RevisionedReference<GmlTimePeriod> > measured_age_range;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlHotSpotTrailMark> &gpml_hot_spot_trail_mark);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

@@ -148,7 +148,11 @@ GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
 	// Write output to text file as UTF8 encoded (which includes the ASCII character set).
 	// If we don't specify this then (in Qt4) QTextCodec::codecForLocale() will get used
 	// during encoding, which is likely to not be UTF8.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+	d_output_stream->setEncoding(QStringConverter::Utf8);
+#else
 	d_output_stream->setCodec("UTF-8");
+#endif
 }
 
 
@@ -275,7 +279,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_line_string(
 	const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	d_feature_accumulator.add_geometry(gml_line_string.polyline());
+	d_feature_accumulator.add_geometry(gml_line_string.get_polyline());
 }
 
 
@@ -283,7 +287,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_multi_point(
 	const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-	d_feature_accumulator.add_geometry(gml_multi_point.multipoint());
+	d_feature_accumulator.add_geometry(gml_multi_point.get_multipoint());
 }
 
 
@@ -299,7 +303,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_point(
 	const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_feature_accumulator.add_geometry(gml_point.point().get_geometry_on_sphere());
+	d_feature_accumulator.add_geometry(gml_point.get_point().get_geometry_on_sphere());
 }
 
 
@@ -307,7 +311,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_polygon(
 	const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	d_feature_accumulator.add_geometry(gml_polygon.polygon());
+	d_feature_accumulator.add_geometry(gml_polygon.get_polygon());
 }
 
 void

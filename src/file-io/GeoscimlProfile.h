@@ -30,7 +30,6 @@
 
 #include <QObject>
 #include <QString>
-#include <QXmlItem>
 
 #include "ArbitraryXmlProfile.h"
 #include "model/FeatureCollectionHandle.h"

@@ -71,7 +71,7 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::initialise_pre_property_values
 {
 	// FIXME:  Why are we comparing QString to string literal rather than PropertyName to (static) PropertyName?
 	QString property_name = GPlatesUtils::make_qstring_from_icu_string(
-			top_level_property_inline.property_name().get_name());
+			top_level_property_inline.get_property_name().get_name());
 
 	if (property_name != "shapefileAttributes") 
 	{
@@ -86,11 +86,13 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gpml_key_value_dictionar
 		const GPlatesPropertyValues::GpmlKeyValueDictionary &dictionary)
 {
 
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-		iter = dictionary.elements().begin(),
-		end = dictionary.elements().end();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = dictionary.elements();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator
+		 iter = elements.begin(),
+		 end = elements.end();
 	for ( ; iter != end; ++iter) {
-		find_shapefile_attribute_in_element(*iter);
+		find_shapefile_attribute_in_element(**iter);
 	}
 
 }
@@ -99,7 +101,7 @@ void
 GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_boolean(
 		const GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
-	d_found_qvariants.push_back(QVariant(xs_boolean.value()));
+	d_found_qvariants.push_back(QVariant(xs_boolean.get_value()));
 }
 
 
@@ -107,21 +109,21 @@ void
 GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_double(
 	const GPlatesPropertyValues::XsDouble& xs_double)
 {
-	d_found_qvariants.push_back(QVariant(xs_double.value()));
+	d_found_qvariants.push_back(QVariant(xs_double.get_value()));
 }
 
 void
 GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_integer(
 	const GPlatesPropertyValues::XsInteger& xs_integer)
 {
-	d_found_qvariants.push_back(QVariant(xs_integer.value()));
+	d_found_qvariants.push_back(QVariant(xs_integer.get_value()));
 }
 
 void
 GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
-	QString qstring = GPlatesUtils::make_qstring(xs_string.value());
+	QString qstring = GPlatesUtils::make_qstring(xs_string.get_value());
 	d_found_qvariants.push_back(QVariant(qstring));
 }
 
@@ -131,10 +133,10 @@ void
 GPlatesFeatureVisitors::ShapefileAttributeFinder::find_shapefile_attribute_in_element(
 		const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
 {
-	QString temp = GPlatesUtils::make_qstring(element.key()->value());
+	QString temp = GPlatesUtils::make_qstring(element.key()->get_value());
 	
 	if (GPlatesUtils::make_qstring(
-		 element.key()->value()) != d_attribute_name)
+		 element.key()->get_value()) != d_attribute_name)
 	{
 		return;
 	}

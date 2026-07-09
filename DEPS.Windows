@@ -40,7 +40,8 @@ and function correctly with newer versions of these dependencies.
 
 Microsoft Visual Studio
 
-  1. Install Visual Studio Community 2019 (version 16) or newer.
+  1. Install Visual Studio Community 2019 (version 16) or newer
+     (the dependency library Qt6 supports Visual Studio 2019 and newer).
      Note: Microsoft Visual C++ uses several different versioning scheme.
            See https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B#Internal_version_numbering
   2. Use the same compiler (major version) to build all library dependencies (listed below).
@@ -82,40 +83,35 @@ CMake
 
 Qt
 
-  1. Download the latest Qt opensource online installer from: https://www.qt.io/download-open-source
+  1. Download the latest Qt6 opensource online installer from: https://www.qt.io/download-open-source
+     Note that *offline* installers are not available for non-commercial use.
      Run the online installer exe:
      - It will ask for the username and password of your Qt account (it will ask you to sign in or create a new account).
      - Accept the obligations of using Qt Open Source (and specify whether you are an individual or a company).
-     - Select 'Custom' installation (we want Qt5, not Qt6 since we don't yet support it).
-     - Under 'Qt 5.15.x' select the compiler you are using.
-       For example, select "MSVC 2019 64-bit" when compiling using Visual Studio 2019.
+     - Select 'Custom' installation.
+     - Under 'Qt' select a version of Qt6 and the compiler you are using.
+       For example, select "6.5.2" and under that select "MSVC 2019 64-bit" when compiling using Visual Studio 2019.
      - Accept the license.
      - Select your Start Menu shortcut.
      - Finish the installation of the pre-built components.
-  2. Alternatively you can download the latest Qt5 opensource *offline* installer from: https://download.qt.io/archive/qt/
-     However, the latest will be Qt 5.14 (not Qt 5.15) since offline installers are no longer supported by Qt (for non-commercial).
-     This is https://download.qt.io/archive/qt/5.14/5.14.2/qt-opensource-windows-x86-5.14.2.exe
-     Note that you now need a Qt account to use the installer (it will ask you to sign in or create a new account).
-     Run the offline installer exe:
-     - Select the pre-built components appropriate for your compiler.
-       For example, select "MSVC 2019 64-bit" when compiling using Visual Studio 2019.
-     - Select the GPL license.
-     - Finish the installation of the pre-built components.
-  3. Alternatively you can compile from source - see https://doc.qt.io/qt-5/windows-building.html
-  4. Add the base of your selected pre-built components directory (assuming you chose step 1 or 2) to the CMAKE_PREFIX_PATH environment variable.
-     For example, "C:\SDK\qt\qt-5.15.15\5.15.15\msvc2019_64".
-  5. Add the Qt \bin directory (associated with your selected pre-built components) to the PATH environment variable.
-     For example, "C:\SDK\qt\qt-5.15.15\5.15.15\msvc2019_64\bin".
-     Note you may need to insert near front of PATH to prioritise over other installed software containing Qt5 DLLs
-     otherwise GPlates/pyGPlates might not start complaining that some symbol in one of the Qt5 DLLs cannot be found.
+  2. Alternatively you can compile from source - see https://doc.qt.io/qt-6/windows-building.html
+  3. Add the base of your selected pre-built components directory (assuming you chose step 1 or 2) to the CMAKE_PREFIX_PATH environment variable.
+     For example, "C:\SDK\qt\6.5.2\msvc2019_64".
+  4. Add the Qt \bin directory (associated with your selected pre-built components) to the PATH environment variable.
+     For example, "C:\SDK\qt\6.5.2\msvc2019_64\bin".
+     Note you may need to insert near front of PATH to prioritise over other installed software containing Qt DLLs
+     otherwise GPlates/pyGPlates might not start complaining that some symbol in one of the Qt DLLs cannot be found.
+    
+    NOTE: Qt 6 uses C++17 features which requires Visual Studio 2017 (version 15.8) or above.
+          But Qt 6 also mentions support for Visual Studio 2019 (or above), so best to use at least Visual Studio 2019.
 
 Qwt
 
-  1. Get the qwt source code zip package from http://sourceforge.net/projects/qwt/files/qwt/6.1.6/
+  1. Get the Qwt 6.2 source code zip package from https://sourceforge.net/projects/qwt/files/qwt/
   2. Extract the files in the package to your preferred location (e.g. C:\SDK\qwt)
-  3. Start a Visual Studio 64-bit command prompt and navigate to your qwt location (e.g. C:\SDK\qwt\qwt-6.1.6 )
+  3. Start a Visual Studio 64-bit command prompt and navigate to your qwt location (e.g. C:\SDK\qwt\qwt-6.2.0 )
   4. Edit the QWT_INSTALL_PREFIX variable in "qwtconfig.pri" to refer to a qwt *install* location that
-     is different than the qwt location, such as a sub-directory (e.g. C:\SDK\qwt\qwt-6.1.6\msvc2019_64 ),
+     is different than the qwt location, such as a sub-directory (e.g. C:\SDK\qwt\qwt-6.2.0\msvc2019_64 ),
      so that 'nmake install' below does not fail (trying to copy the same file on top of itself).
      You should only need to change QWT_INSTALL_PREFIX inside the 'win32 { }' block.
      Note: Qwt should find the Qt installation that was installed in the above step (using qmake found via PATH).
@@ -124,8 +120,8 @@ Qwt
        nmake
   6. Then at the command prompt, run:
        nmake install
-  7. Add the Qwt *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.6\msvc2019_64 ).
-  8. Add the Qwt library location (inside the *install* directory) to your PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.6\msvc2019_64\lib ).
+  7. Add the Qwt *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\qwt\qwt-6.2.0\msvc2019_64 ).
+  8. Add the Qwt library location (inside the *install* directory) to your PATH environment variable (eg, C:\SDK\qwt\qwt-6.2.0\msvc2019_64\lib ).
 
 GLEW
   1. Download and extract glew-2.1.0-win32.zip from: http://glew.sourceforge.net/

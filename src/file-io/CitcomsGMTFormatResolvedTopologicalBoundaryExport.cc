@@ -156,12 +156,12 @@ namespace GPlatesFileIO
 					}
 
 					name = GPlatesUtils::make_qstring_from_icu_string(
-							gpml_old_plates_header->geographic_description());
+							gpml_old_plates_header->get_geographic_description());
 
 					return true;
 				}
 
-				name = GPlatesUtils::make_qstring_from_icu_string(feature_name.get()->value().get());
+				name = GPlatesUtils::make_qstring_from_icu_string(feature_name.get()->get_value().get());
 
 				return true;
 			}
@@ -188,7 +188,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-				name = GPlatesUtils::make_qstring_from_icu_string(feature_name.get()->value().get());
+				name = GPlatesUtils::make_qstring_from_icu_string(feature_name.get()->get_value().get());
 				return true;
 			}
 
@@ -212,7 +212,7 @@ namespace GPlatesFileIO
 				{
 					return false;
 				}
-				double d = property_value.get()->value();
+				double d = property_value.get()->get_value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				age = qs;
@@ -238,7 +238,7 @@ namespace GPlatesFileIO
 				{
 					return false;
 				}
-				double d = property_value.get()->value();
+				double d = property_value.get()->get_value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				age = qs;
@@ -265,7 +265,7 @@ namespace GPlatesFileIO
 				{
 					return false;
 				}
-				double d = property_value.get()->value();
+				double d = property_value.get()->get_value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				dip = qs;
@@ -292,7 +292,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-				double d = property_value.get()->value();
+				double d = property_value.get()->get_value();
 				QString d_as_str( GPlatesUtils::formatted_double_to_string(d, 6, 1).c_str() );
 				depth = d_as_str;
 
@@ -320,7 +320,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-                system = GPlatesUtils::make_qstring_from_icu_string(property_value.get()->value().get());
+                system = GPlatesUtils::make_qstring_from_icu_string(property_value.get()->get_value().get());
 				return true;
 			}
 
@@ -346,7 +346,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-				int i = property_value.get()->value();
+				int i = property_value.get()->get_value();
 				QString i_as_str( GPlatesUtils::formatted_int_to_string(i, 2).c_str() );
 				order = i_as_str;
 				return true;
@@ -374,7 +374,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-				rhea_fault = GPlatesUtils::make_qstring_from_icu_string(property_value.get()->value().get());
+				rhea_fault = GPlatesUtils::make_qstring_from_icu_string(property_value.get()->get_value().get());
 				return true;
 			}
 
@@ -397,7 +397,7 @@ namespace GPlatesFileIO
 				{
 					return false;
 				}
-				flat = property_value.get()->value() ? QString("True") : QString("False");
+				flat = property_value.get()->get_value() ? QString("True") : QString("False");
 				return true;
 			}
 
@@ -420,7 +420,7 @@ namespace GPlatesFileIO
 				{
 					return false;
 				}
-				double d = property_value.get()->value();
+				double d = property_value.get()->get_value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				value = qs;
@@ -489,7 +489,7 @@ namespace GPlatesFileIO
 				if (source_feature_old_plates_header)
 				{
 					return GPlatesUtils::make_qstring_from_icu_string(
-							source_feature_old_plates_header.get()->data_type_code());
+							source_feature_old_plates_header.get()->get_data_type_code());
 				}
 
 				// It's not a subduction zone and it doesn't have an old plates header
@@ -845,7 +845,8 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolve
 	//
 
 	// Used to write in GMT format.
-	GMTFeatureExporter geom_exporter(output_file);
+	const QFileInfo output_file_info(output_file);
+	GMTFeatureExporter geom_exporter(output_file_info);
 
 	// Iterate through the resolved topologies and write to output.
 	for (const ResolvedTopology &resolved_topology : resolved_topologies)
@@ -903,7 +904,8 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_sub_seg
 	//
 
 	// Used to write in GMT format.
-	GMTFeatureExporter geom_exporter(output_file);
+	const QFileInfo output_file_info(output_file);
+	GMTFeatureExporter geom_exporter(output_file_info);
 
 	// Iterate through the subsegment groups and write them out.
 	for (const SubSegmentGroup &sub_segment_group : sub_segments)

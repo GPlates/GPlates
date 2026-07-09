@@ -76,11 +76,11 @@ namespace
 			const GPlatesPropertyValues::GmlTimeInstant &time_instant)
 	{
 		QLocale locale;
-		if (time_instant.time_position().is_real()) {
-			return locale.toString(time_instant.time_position().value());
-		} else if (time_instant.time_position().is_distant_past()) {
+		if (time_instant.get_time_position().is_real()) {
+			return locale.toString(time_instant.get_time_position().value());
+		} else if (time_instant.get_time_position().is_distant_past()) {
 			return QObject::tr("past");
-		} else if (time_instant.time_position().is_distant_future()) {
+		} else if (time_instant.get_time_position().is_distant_future()) {
 			return QObject::tr("future");
 		} else {
 			return QObject::tr("<invalid>");
@@ -104,7 +104,7 @@ namespace
 		{
 			// The feature has a plate ID of the desired kind.
 			
-			field->setText(QString::number(plate_id.get()->value()));
+			field->setText(QString::number(plate_id.get()->get_value()));
 		}
 	}
 
@@ -134,7 +134,7 @@ namespace
 				// first one encountered if this is not true.
 				if (!topology_geometry_property_name)
 				{
-					topology_geometry_property_name = (*iter)->property_name();
+					topology_geometry_property_name = (*iter)->get_property_name();
 				}
 				else
 				{
@@ -447,7 +447,7 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 	if (name)
 	{
 		// The feature has one or more name properties. Use the first one for now.
-		lineedit_name->setText(GPlatesUtils::make_qstring(name.get()->value()));
+		lineedit_name->setText(GPlatesUtils::make_qstring(name.get()->get_value()));
 		lineedit_name->setCursorPosition(0);
 	}
 

@@ -86,16 +86,17 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type &output_kvd,
 		const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type &feature_kvd)
 	{
-
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-			it = feature_kvd->elements().begin(),
-			end = feature_kvd->elements().end();
-
-		for (; it != end ; ++it)
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+				output_elements = output_kvd->elements();
+		const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+				feature_kvd_elements = feature_kvd->elements();
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+				feature_kvd_it = feature_kvd_elements.begin(),
+				feature_kvd_end = feature_kvd_elements.end();
+		for (; feature_kvd_it != feature_kvd_end ; ++feature_kvd_it)
 		{
-			output_kvd->elements().push_back(*it);
+			output_elements.push_back(feature_kvd_it->clone());
 		}
-
 	}
 		
 }

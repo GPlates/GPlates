@@ -122,7 +122,7 @@ GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::edit_property(
 	// Set the property name label.
 	property_name_line_edit->setText(
 			convert_qualified_xml_name_to_qstring(
-					feature_property->property_name()));
+					feature_property->get_property_name()));
 
 	// Populate the property type combobox with the single type of the specified feature property.
 	populate_edit_property_type_combobox(feature_property);

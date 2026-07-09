@@ -24,16 +24,20 @@
  */
 
 #include <cmath>
+#include <QtGlobal>
 #include <QApplication>
 #include <QBrush>
 #include <QColorDialog>
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+#include <QScreen>
+#else
 #include <QDesktopWidget>
+#endif
 #include <QHBoxLayout>
 #include <QPainter>
 #include <QPen>
 #include <QRect>
 #include <QSize>
-#include <QtGlobal>
 
 #include "QtWidgetUtils.h"
 
@@ -61,8 +65,11 @@ GPlatesQtWidgets::QtWidgetUtils::reposition_to_side_of_parent(
 		int new_y = par->pos().y() + (par->frameGeometry().height() - frame_geometry.height()) / 2;
 
 		// Ensure the dialog is not off-screen.
-		QDesktopWidget *desktop = QApplication::desktop();
-		QRect screen_geometry = desktop->screenGeometry(par);
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		QRect screen_geometry = par->screen()->geometry();
+#else
+		QRect screen_geometry = QApplication::desktop()->screenGeometry(par);
+#endif
 		if (new_x + frame_geometry.width() > screen_geometry.right())
 		{
 			new_x = screen_geometry.right() - frame_geometry.width();

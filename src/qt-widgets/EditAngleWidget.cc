@@ -63,7 +63,7 @@ GPlatesQtWidgets::EditAngleWidget::update_widget_from_angle(
 		GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 {
 	d_angle_ptr = &gpml_measure;
-	spinbox_double->setValue(gpml_measure.quantity());
+	spinbox_double->setValue(gpml_measure.get_quantity());
 	set_clean();
 }
 

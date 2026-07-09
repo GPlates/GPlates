@@ -61,7 +61,7 @@ bool
 GPlatesFeatureVisitors::GeometryFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
 
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
@@ -78,8 +78,8 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_line_string(
 		const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	d_found_geometries.push_back(gml_line_string.polyline());
-	d_found_polyline_geometries.push_back(gml_line_string.polyline());
+	d_found_geometries.push_back(gml_line_string.get_polyline());
+	d_found_polyline_geometries.push_back(gml_line_string.get_polyline());
 }
 
 
@@ -87,8 +87,8 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_multi_point(
 		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-	d_found_geometries.push_back(gml_multi_point.multipoint());
-	d_found_multi_point_geometries.push_back(gml_multi_point.multipoint());
+	d_found_geometries.push_back(gml_multi_point.get_multipoint());
+	d_found_multi_point_geometries.push_back(gml_multi_point.get_multipoint());
 }
 
 
@@ -104,8 +104,8 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_found_geometries.push_back(gml_point.point().get_geometry_on_sphere());
-	d_found_point_geometries.push_back(gml_point.point().get_point_geometry_on_sphere());
+	d_found_geometries.push_back(gml_point.get_point().get_geometry_on_sphere());
+	d_found_point_geometries.push_back(gml_point.get_point().get_point_geometry_on_sphere());
 }
 
 
@@ -113,8 +113,8 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	d_found_geometries.push_back(gml_polygon.polygon());
-	d_found_polygon_geometries.push_back(gml_polygon.polygon());
+	d_found_geometries.push_back(gml_polygon.get_polygon());
+	d_found_polygon_geometries.push_back(gml_polygon.get_polygon());
 }
 
 

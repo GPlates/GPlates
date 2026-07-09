@@ -170,7 +170,7 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 
-		GPlatesPropertyValues::GpmlKeyValueDictionaryElement
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type
 		create_gpml_key_value_dictionary_element(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GpmlPropertyStructuralTypeReader &structural_type_reader,
@@ -193,7 +193,7 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 
-		GPlatesPropertyValues::GpmlTimeSample
+		GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 		create_gpml_time_sample(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GpmlPropertyStructuralTypeReader &structural_type_reader,
@@ -201,7 +201,7 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 
-		GPlatesPropertyValues::GpmlTimeWindow
+		GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type
 		create_gpml_time_window(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GpmlPropertyStructuralTypeReader &structural_type_reader,

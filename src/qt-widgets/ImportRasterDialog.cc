@@ -28,6 +28,7 @@
 #include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include <Qt>
@@ -635,11 +636,19 @@ namespace
 		static const XsString::non_null_ptr_to_const_type EMPTY_FILE_STRUCTURE =
 				XsString::create(GPlatesUtils::UnicodeString());
 
+		boost::optional<XsString::non_null_ptr_to_const_type> const_mime_type =
+				get_mime_type(file_info.file_name);
+		boost::optional<XsString::non_null_ptr_type> mime_type;
+		if (const_mime_type)
+		{
+			mime_type = const_mime_type.get()->clone();
+		}
+
 		return GmlFile::create(
 				range_parameters,
 				XsString::create(GPlatesUtils::make_icu_string_from_qstring(file_info.absolute_file_path)),
-				EMPTY_FILE_STRUCTURE,
-				get_mime_type(file_info.file_name),
+				EMPTY_FILE_STRUCTURE->clone(),
+				mime_type,
 				boost::none /* compression */);
 	}
 }
@@ -669,7 +678,7 @@ GPlatesQtWidgets::ImportRasterDialog::create_range_set(
 		// the sequence, and all times should not be boost::none.
 		// We build the sequence from the present day, going back in time.
 		GeoTimeInstant prev_fence_post = GeoTimeInstant::create_distant_future();
-		std::vector<GpmlTimeWindow> time_windows;
+		std::vector<GpmlTimeWindow::non_null_ptr_type> time_windows;
 		for (TimeDependentRasterSequence::sequence_type::const_iterator iter = sequence.begin();
 			iter != sequence.end(); ++iter)
 		{
@@ -693,7 +702,8 @@ GPlatesQtWidgets::ImportRasterDialog::create_range_set(
 			GpmlConstantValue::non_null_ptr_type gml_file_as_constant_value =
 				GpmlConstantValue::create(gml_file, GML_FILE_VALUE_TYPE);
 
-			GpmlTimeWindow time_window(gml_file_as_constant_value, time_period, GML_FILE_VALUE_TYPE);
+			GpmlTimeWindow::non_null_ptr_type time_window =
+					GpmlTimeWindow::create(gml_file_as_constant_value, time_period, GML_FILE_VALUE_TYPE);
 			time_windows.push_back(time_window);
 
 			prev_fence_post = curr_fence_post;
@@ -715,10 +725,10 @@ GPlatesQtWidgets::ImportRasterDialog::create_band_names() const
 {
 	using namespace GPlatesPropertyValues;
 
-	std::vector<XsString::non_null_ptr_to_const_type> xs_strings;
+	std::vector<GpmlRasterBandNames::BandName> xs_strings;
 	BOOST_FOREACH(const QString &band_name, d_band_names)
 	{
-		XsString::non_null_ptr_to_const_type band_name_as_xs_string =
+		XsString::non_null_ptr_type band_name_as_xs_string =
 			XsString::create(GPlatesUtils::make_icu_string_from_qstring(band_name));
 		xs_strings.push_back(band_name_as_xs_string);
 	}
@@ -788,7 +798,7 @@ GPlatesQtWidgets::ImportRasterDialog::create_gpml_file_path(
 	if (time_dependent_raster)
 	{
 		// Strip off the time from the file name if it is there.
-		QStringList tokens = base_name.split(QRegExp("[_-]"),
+		QStringList tokens = base_name.split(QRegularExpression("[_-]"),
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
 			Qt::SkipEmptyParts
 #else

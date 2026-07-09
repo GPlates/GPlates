@@ -31,9 +31,14 @@
 #include "StructuralType.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
-#include "model/PropertyValue.h"
+
 #include "model/FeatureId.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValue.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -79,27 +84,17 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlPropertyDelegate(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlPropertyDelegate>(clone_impl());
 		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const GPlatesModel::FeatureId &
-		feature_id() const
+		get_feature_id() const
 		{
 			return d_feature;
 		}
 
 		const GPlatesModel::PropertyName &
-		target_property() const
+		get_target_property_name() const
 		{
 			return d_property_name;
 		}
@@ -107,7 +102,7 @@ namespace GPlatesPropertyValues
 		// Note that no "setter" is provided:  The value type of a GpmlPropertyDelegate
 		// instance should never be changed.
 		const StructuralType &
-		value_type() const
+		get_value_type() const
 		{
 			return d_value_type;
 		}
@@ -119,9 +114,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("PropertyDelegate");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlPropertyDelegate::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -164,38 +164,90 @@ namespace GPlatesPropertyValues
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::PropertyName &property_name_,
 				const StructuralType &value_type_):
-			PropertyValue(),
+			PropertyValue(Revision::non_null_ptr_type(new Revision())),
 			d_feature(feature_),
 			d_property_name(property_name_),
 			d_value_type(value_type_)
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlPropertyDelegate(
-				const GpmlPropertyDelegate &other) :
-			PropertyValue(other), /* share instance id */
-			d_feature(other.d_feature),
-			d_property_name(other.d_property_name),
-			d_value_type(other.d_value_type)
+				const GpmlPropertyDelegate &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_))),
+			d_feature(other_.d_feature),
+			d_property_name(other_.d_property_name),
+			d_value_type(other_.d_value_type)
 		{  }
 
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlPropertyDelegate(*this, context));
+		}
+
+		virtual
+		bool
+		equality(
+				const Revisionable &other) const
+		{
+			const GpmlPropertyDelegate &other_pv = dynamic_cast<const GpmlPropertyDelegate &>(other);
+
+			return d_feature == other_pv.d_feature &&
+					d_property_name == other_pv.d_property_name &&
+					d_value_type == other_pv.d_value_type &&
+					Revisionable::equality(other);
+		}
+
 	private:
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision()
+			{  }
+
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+		};
 
 		GPlatesModel::FeatureId d_feature;
 		GPlatesModel::PropertyName d_property_name;
 		StructuralType d_value_type;
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlPropertyDelegate &
-		operator=(const GpmlPropertyDelegate &);
+	private: // Transcribe...
 
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlPropertyDelegate> &gpml_property_delegate);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

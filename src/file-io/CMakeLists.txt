@@ -11,10 +11,6 @@
 set(srcs
     AgeModelReader.cc
     AgeModelReader.h
-    ArbitraryNodeProcessor.h
-    ArbitraryXmlProfile.h
-    ArbitraryXmlReader.cc
-    ArbitraryXmlReader.h
     CitcomsFormatVelocityVectorFieldExport.cc
     CitcomsFormatVelocityVectorFieldExport.h
     CitcomsGMTFormatResolvedTopologicalBoundaryExport.cc
@@ -64,8 +60,6 @@ set(srcs
     GdalUtils.cc
     GdalUtils.h
     GeometryExporter.h
-    GeoscimlProfile.cc
-    GeoscimlProfile.h
     GmapReader.cc
     GmapReader.h
     GMTFormatDeformationExport.cc
@@ -117,17 +111,6 @@ set(srcs
     GpmlStructuralTypeReaderUtils.h
     GpmlUpgradeReaderUtils.cc
     GpmlUpgradeReaderUtils.h
-    GsmlConst.h
-    GsmlFeatureHandlers.cc
-    GsmlFeatureHandlers.h
-    GsmlFeaturesDef.h
-    GsmlNodeProcessor.cc
-    GsmlNodeProcessor.h
-    GsmlNodeProcessorFactory.cc
-    GsmlNodeProcessorFactory.h
-    GsmlPropertyDef.h
-    GsmlPropertyHandlers.cc
-    GsmlPropertyHandlers.h
     GzipFile.cc
     GzipFile.h
     HellingerReader.cc
@@ -241,6 +224,32 @@ set(srcs
     XmlWriter.cc
     XmlWriter.h
 )
+
+# Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
+# It has been deprecated since Qt 5.13.
+#
+# TODO: Find a replacement library.
+if (QT_VERSION_MAJOR LESS 6)
+    list(APPEND srcs
+        ArbitraryNodeProcessor.h
+        ArbitraryXmlProfile.h
+        ArbitraryXmlReader.cc
+        ArbitraryXmlReader.h
+        GeoscimlProfile.cc
+        GeoscimlProfile.h
+        GsmlConst.h
+        GsmlFeatureHandlers.cc
+        GsmlFeatureHandlers.h
+        GsmlFeaturesDef.h
+        GsmlNodeProcessor.cc
+        GsmlNodeProcessor.h
+        GsmlNodeProcessorFactory.cc
+        GsmlNodeProcessorFactory.h
+        GsmlPropertyDef.h
+        GsmlPropertyHandlers.cc
+        GsmlPropertyHandlers.h)
+endif()
+
 
 # Add the source files to the gplates static library (or pygplates extension module).
 target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})

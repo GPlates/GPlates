@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QtGlobal>
 #include <QColor>
 #include <QDir>
 #include <QFileDialog>
@@ -56,8 +57,14 @@ GPlatesQtWidgets::MissingSessionFilesDialog::MissingSessionFilesDialog(
 			this, SLOT(abort_load()));
 
     QObject::connect(
-			d_signal_mapper, SIGNAL(mapped(int)),
-            this, SLOT(update(int)));
+			d_signal_mapper,
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				SIGNAL(mappedInt(int))
+#else
+				SIGNAL(mapped(int))
+#endif
+			,
+			this, SLOT(update(int)));
 }
 
 

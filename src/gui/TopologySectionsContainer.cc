@@ -216,7 +216,7 @@ namespace
 		{
 			// Elements of this properties vector can be NULL pointers.  (See the comment in
 			// "model/FeatureRevision.h" for more details.)
-			if (/*it.is_valid() &&*/ (*it)->property_name() == property_name)
+			if (/*it.is_valid() &&*/ (*it)->get_property_name() == property_name)
 			{
 				return it;
 			}

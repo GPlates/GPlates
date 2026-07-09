@@ -192,9 +192,9 @@ namespace GPlatesOpenGL
 		 * cannot, for example, use 'glColorPointer' for colour and 'glVertexAttribPointer(3, ...)'
 		 * for some other vertex attribute at the same time since they both map to the same attribute index.
 		 * nVidia explains this:
-		 * "GLSL attempts to eliminate aliasing of vertex attributes but this is integral to NVIDIA’s "
+		 * "GLSL attempts to eliminate aliasing of vertex attributes but this is integral to NVIDIA's "
 		 * "hardware approach and necessary for maintaining compatibility with existing OpenGL applications "
-		 * "that NVIDIA customers rely on. NVIDIA’s GLSL implementation therefore does not allow built-in "
+		 * "that NVIDIA customers rely on. NVIDIA's GLSL implementation therefore does not allow built-in "
 		 * "vertex attributes to collide with a generic vertex attribute that is assigned to a particular "
 		 * "vertex attribute index with glBindAttribLocation. For example, you should not use gl_Normal "
 		 * "(a built-in vertex attribute) and also use glBindAttribLocation to bind a generic vertex attribute "

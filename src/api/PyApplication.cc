@@ -26,7 +26,7 @@
 
 #include <boost/foreach.hpp>
 
-#include "PyFeatureCollection.h"
+#include "PyOldFeatureCollection.h"
 #include "PythonRunner.h"
 #include "DeferredApiCall.h"
 #include "PythonExecutionMonitor.h"
@@ -157,7 +157,7 @@ namespace GPlatesApi
 				PythonInterpreterLocker lock;
 				//use python class name as catagory name.
 				boost::python::object py_class = style.attr("__class__");
-				QString cata_name	=  QString::fromUtf8(boost::python::extract<const char*>(py_class.attr("__name__")));
+				QString cata_name	=  QString::fromUtf8(boost::python::extract<const char*>(py_class.attr("__name__"))());
 
 				DrawStyleManager* mgr = DrawStyleManager::instance();
 				const StyleCategory* sc = mgr->get_catagory(cata_name);
@@ -231,7 +231,7 @@ namespace GPlatesApi
 				QString file_path = file_ref.get_file_info().get_qfileinfo().absoluteFilePath();
 				if (file_path == qstring_filename)
 				{
-					return object(FeatureCollection::create(file_ref.get_feature_collection()));
+					return object(OldFeatureCollection::create(file_ref.get_feature_collection()));
 				}
 			}
 			return object();
@@ -246,7 +246,7 @@ namespace GPlatesApi
 
 			BOOST_FOREACH(const FeatureCollectionFileState::file_reference &file, file_state.get_loaded_files())
 			{
-				result.append(FeatureCollection::create(file.get_file().get_feature_collection()));
+				result.append(OldFeatureCollection::create(file.get_file().get_feature_collection()));
 			}
 			return result;
 		}

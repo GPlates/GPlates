@@ -248,7 +248,7 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::initialise_widgets()
 							GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
 			if (gpml_reconstruction_plate_id)
 			{
-				reconstruction_plate_id = gpml_reconstruction_plate_id.get()->value();
+				reconstruction_plate_id = gpml_reconstruction_plate_id.get()->get_value();
 			}
 		}
 	}
@@ -417,33 +417,38 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_create()
 		const GPlatesModel::PropertyValue::non_null_ptr_type domain_property =
 				GPlatesAppLogic::GeometryUtils::create_geometry_property_value(present_day_geometry);
 
-		// The range (scalars) property.
-		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type range_property = GPlatesPropertyValues::GmlDataBlock::create();
+		// The range (scalars) property tuple list.
+		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> range_property_tuple_list;
+
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type crustal_scalar_xml_attrs;
 		// Crustal thickness scalars.
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type crustal_thickness_range =
-				GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 						GPML_CRUSTAL_THICKNESS,
 						crustal_scalar_xml_attrs,
 						initial_crustal_thicknesses.begin(),
 						initial_crustal_thicknesses.end());
-		range_property->tuple_list_push_back(crustal_thickness_range);
+		range_property_tuple_list.push_back(crustal_thickness_range);
 		// Crustal thinning factor scalars.
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type crustal_thinning_factor_range =
-				GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 						GPML_CRUSTAL_THINNING_FACTOR,
 						crustal_scalar_xml_attrs,
 						initial_crustal_thinning_factors.begin(),
 						initial_crustal_thinning_factors.end());
-		range_property->tuple_list_push_back(crustal_thinning_factor_range);
+		range_property_tuple_list.push_back(crustal_thinning_factor_range);
 		// Crustal stretching factor scalars.
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type crustal_stretching_factor_range =
-				GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 						GPML_CRUSTAL_STRETCHING_FACTOR,
 						crustal_scalar_xml_attrs,
 						initial_crustal_stretching_factors.begin(),
 						initial_crustal_stretching_factors.end());
-		range_property->tuple_list_push_back(crustal_stretching_factor_range);
+		range_property_tuple_list.push_back(crustal_stretching_factor_range);
+
+		// The range (scalars) property.
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type range_property =
+				GPlatesPropertyValues::GmlDataBlock::create(range_property_tuple_list);
 
 		// The domain/range property names.
 		const std::pair<GPlatesModel::PropertyName/*domain*/, GPlatesModel::PropertyName/*range*/> domain_range_property_names =
@@ -595,7 +600,7 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::setup_pages()
 	QHBoxLayout *plate_id_layout;
 	plate_id_layout = new QHBoxLayout;
 	plate_id_layout->setSpacing(2);
-	plate_id_layout->setMargin(0);
+	plate_id_layout->setContentsMargins(0,0,0,0);
 	plate_id_layout->addWidget(d_plate_id_widget);
 
 	QVBoxLayout *edit_layout;

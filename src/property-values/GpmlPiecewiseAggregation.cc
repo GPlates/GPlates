@@ -26,26 +26,21 @@
  */
 
 #include <iostream>
-#include <typeinfo>
+#include <boost/foreach.hpp>
 
 #include "GpmlPiecewiseAggregation.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
-const GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
-GPlatesPropertyValues::GpmlPiecewiseAggregation::deep_clone() const
-{
-	GpmlPiecewiseAggregation::non_null_ptr_type dup = clone();
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeQualifiedXmlName.h"
 
-	// Now we need to clear the time sample vector in the duplicate, before we push-back the
-	// cloned time samples.
-	dup->d_time_windows.clear();
-	std::vector<GpmlTimeWindow>::const_iterator iter, end = d_time_windows.end();
-	for (iter = d_time_windows.begin(); iter != end; ++iter) {
-		dup->d_time_windows.push_back((*iter).deep_clone());
-	}
+#include "scribe/Scribe.h"
 
-	return dup;
-}
+
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlPiecewiseAggregation::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("PiecewiseAggregation");
 
 
 std::ostream &
@@ -54,29 +49,127 @@ GPlatesPropertyValues::GpmlPiecewiseAggregation::print_to(
 {
 	os << "[ ";
 
-	typedef std::vector<GpmlTimeWindow>::const_iterator iterator_type;
-	for (iterator_type iter = d_time_windows.begin(); iter != d_time_windows.end(); ++iter)
+	for (GpmlTimeWindow::non_null_ptr_to_const_type time_window : time_windows())
 	{
-		os << *iter;
+		os << *time_window;
 	}
 
 	return os << " ]";
 }
 
 
-bool
-GPlatesPropertyValues::GpmlPiecewiseAggregation::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesModel::Revision::non_null_ptr_type
+GPlatesPropertyValues::GpmlPiecewiseAggregation::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	try
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.time_windows.get_revisionable())
 	{
-		const GpmlPiecewiseAggregation &other_casted =
-			dynamic_cast<const GpmlPiecewiseAggregation &>(other);
-		return d_time_windows == other_casted.d_time_windows;
+		return revision.time_windows.clone_revision(transaction);
 	}
-	catch (const std::bad_cast &)
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlPiecewiseAggregation::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlPiecewiseAggregation> &gpml_piecewise_aggregation)
+{
+	if (scribe.is_saving())
 	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
+		// Get the current list of time windows.
+		GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type time_windows_ = &gpml_piecewise_aggregation->time_windows();
+		scribe.save(TRANSCRIBE_SOURCE, time_windows_, "time_windows");
+
+		scribe.save(TRANSCRIBE_SOURCE, gpml_piecewise_aggregation->get_value_type(), "value_type");
 	}
+	else // loading
+	{
+		// Load the time windows.
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type> time_windows_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "time_windows");
+		if (!time_windows_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+		if (!value_type_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_piecewise_aggregation.construct_object(
+				boost::ref(transaction),  // non-const ref
+				time_windows_,
+				value_type_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlPiecewiseAggregation::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Get the current list of time windows.
+			GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type time_windows_ = &time_windows();
+			scribe.save(TRANSCRIBE_SOURCE, time_windows_, "time_windows");
+
+			scribe.save(TRANSCRIBE_SOURCE, get_value_type(), "value_type");
+		}
+		else // loading
+		{
+			// Load the time windows.
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type> time_windows_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "time_windows");
+			if (!time_windows_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+			if (!value_type_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			{
+				// Set the time windows.
+				GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+				Revision &revision = revision_handler.get_revision<Revision>();
+				revision.time_windows.change(revision_handler.get_model_transaction(), time_windows_);
+				revision_handler.commit();
+			}
+			d_value_type = value_type_;
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlPiecewiseAggregation>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

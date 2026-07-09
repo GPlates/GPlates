@@ -26,28 +26,37 @@
  */
 
 #include <iostream>
-#include <typeinfo>
 
 #include "GmlTimeInstant.h"
 
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeQualifiedXmlName.h"
+#include "model/TranscribeStringContentTypeGenerator.h"
 
-GPlatesPropertyValues::GmlTimeInstant::GmlTimeInstant(
-		const GeoTimeInstant &time_position_,
-		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-				time_position_xml_attributes_):
-	PropertyValue(),
-	d_time_position(time_position_),
-	d_time_position_xml_attributes(time_position_xml_attributes_)
+#include "scribe/Scribe.h"
+
+
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlTimeInstant::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("TimeInstant");
+
+
+void
+GPlatesPropertyValues::GmlTimeInstant::set_time_position(
+		const GeoTimeInstant &tp)
 {
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().time_position = tp;
+	revision_handler.commit();
 }
 
 
-GPlatesPropertyValues::GmlTimeInstant::GmlTimeInstant(
-		const GmlTimeInstant &other) :
-	PropertyValue(other), /* share instance id */
-	d_time_position(other.d_time_position),
-	d_time_position_xml_attributes(other.d_time_position_xml_attributes)
+void
+GPlatesPropertyValues::GmlTimeInstant::set_time_position_xml_attributes(
+		const xml_attribute_map_type &tpxa)
 {
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().time_position_xml_attributes = tpxa;
+	revision_handler.commit();
 }
 
 
@@ -55,24 +64,83 @@ std::ostream &
 GPlatesPropertyValues::GmlTimeInstant::print_to(
 		std::ostream &os) const
 {
-	return os << d_time_position;
+	return os << get_current_revision<Revision>().time_position;
 }
 
 
-bool
-GPlatesPropertyValues::GmlTimeInstant::directly_modifiable_fields_equal(
-		const PropertyValue &other) const
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlTimeInstant::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlTimeInstant> &gml_time_instant)
 {
-	try
+	if (scribe.is_saving())
 	{
-		const GmlTimeInstant &other_casted =
-			dynamic_cast<const GmlTimeInstant &>(other);
-		return d_time_position_xml_attributes == other_casted.d_time_position_xml_attributes;
+		scribe.save(TRANSCRIBE_SOURCE, gml_time_instant->get_time_position(), "time");
+		scribe.save(TRANSCRIBE_SOURCE, gml_time_instant->get_time_position_xml_attributes(), "xml_attributes");
 	}
-	catch (const std::bad_cast &)
+	else // loading
 	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
+		GPlatesScribe::LoadRef<GPlatesPropertyValues::GeoTimeInstant> time =
+				scribe.load<GPlatesPropertyValues::GeoTimeInstant>(TRANSCRIBE_SOURCE, "time");
+		if (!time.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesPropertyValues::GmlTimeInstant::xml_attribute_map_type xml_attributes;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, xml_attributes, "xml_attributes"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gml_time_instant.construct_object(
+				time,
+				xml_attributes);
 	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlTimeInstant::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_time_position(), "time");
+			scribe.save(TRANSCRIBE_SOURCE, get_time_position_xml_attributes(), "xml_attributes");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesPropertyValues::GeoTimeInstant> time =
+					scribe.load<GPlatesPropertyValues::GeoTimeInstant>(TRANSCRIBE_SOURCE, "time");
+			if (!time.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesPropertyValues::GmlTimeInstant::xml_attribute_map_type xml_attributes;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, xml_attributes, "xml_attributes"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_time_position(time);
+			set_time_position_xml_attributes(xml_attributes);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlTimeInstant>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

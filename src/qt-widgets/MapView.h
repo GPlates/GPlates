@@ -33,7 +33,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <QGraphicsView>
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include <QMouseEvent>
 
 #include "gui/ColourScheme.h"
@@ -115,7 +115,7 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent,
-				const QGLWidget *share_gl_widget,
+				const QOpenGLWidget *share_gl_widget,
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &share_gl_context,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &share_gl_visual_layers);
 
@@ -373,24 +373,19 @@ namespace GPlatesQtWidgets
 	private:
 
 		/**
-		 * A QGLWidget used as the viewport widget and modified slightly to not automatically swap
-		 * OpenGL front and back buffers at 'QPainter::end()'.
+		 * A QOpenGLWidget used as the viewport widget.
 		 *
-		 * We need to inherit QGLWidget because 'setAutoBufferSwap()' is a protected method.
+		 * QOpenGLWidget renders into an internal framebuffer object and composites it
+		 * automatically, so there is no manual front/back buffer swapping to manage.
 		 */
 		class MapViewport :
-				public QGLWidget
+				public QOpenGLWidget
 		{
 		public:
 
 			MapViewport(
-					const QGLFormat &format_,
 					QWidget *parent_ = 0,
-					const QGLWidget *shareWidget_ = 0,
 					Qt::WindowFlags flags_ = Qt::WindowFlags());
-
-			void
-			swap_buffers_if_necessary();
 
 		};
 

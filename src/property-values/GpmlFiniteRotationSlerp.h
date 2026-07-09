@@ -29,7 +29,11 @@
 #define GPLATES_PROPERTYVALUES_GPMLFINITEROTATIONSLERP_H
 
 #include "GpmlInterpolationFunction.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -71,20 +75,8 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlFiniteRotationSlerp(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlFiniteRotationSlerp>(clone_impl());
 		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_INTERP_FUNC()
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -121,28 +113,40 @@ namespace GPlatesPropertyValues {
 		explicit
 		GpmlFiniteRotationSlerp(
 				const StructuralType &value_type_):
-			GpmlInterpolationFunction(value_type_)
+			GpmlInterpolationFunction(Revision::non_null_ptr_type(new Revision(value_type_)))
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlFiniteRotationSlerp(
-				const GpmlFiniteRotationSlerp &other) :
-			GpmlInterpolationFunction(other)
+				const GpmlFiniteRotationSlerp &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			GpmlInterpolationFunction(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
 
-	private:
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlFiniteRotationSlerp(*this, context));
+		}
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlFiniteRotationSlerp &
-		operator=(const GpmlFiniteRotationSlerp &);
+	private: // Transcribe...
 
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlFiniteRotationSlerp> &gpml_finite_rotation_slerp);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

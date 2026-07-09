@@ -169,6 +169,12 @@ namespace GPlatesAppLogic
 				bool clear_unsaved_changes = true);
 
 
+		// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
+		// It has been deprecated since Qt 5.13.
+		//
+		// TODO: Find a replacement library.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+
 		/*
 		* Returns the number of features in the xml data @a data;
 		*/
@@ -183,6 +189,9 @@ namespace GPlatesAppLogic
 		load_xml_data(
 				const QString& filename,
 				QByteArray &data);
+
+#endif // QT_VERSION < QT_VERSION_CHECK(6,0,0)
+
 
 	Q_SIGNALS:
 		// NOTE: all signals/slots should use namespace scope for all arguments

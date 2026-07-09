@@ -33,6 +33,15 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "model/BubbleUpRevisionHandler.h"
+
+#include "scribe/Scribe.h"
+
+
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GmlGridEnvelope::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("GridEnvelope");
+
+
 const GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
 GPlatesPropertyValues::GmlGridEnvelope::create(
 		const integer_list_type &low_,
@@ -53,10 +62,14 @@ GPlatesPropertyValues::GmlGridEnvelope::set_low_and_high(
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			low_.size() == high_.size(), GPLATES_ASSERTION_SOURCE);
 
-	d_low = low_;
-	d_high = high_;
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 
-	update_instance_id();
+	Revision &revision = revision_handler.get_revision<Revision>();
+
+	revision.low = low_;
+	revision.high = high_;
+
+	revision_handler.commit();
 }
 
 
@@ -64,16 +77,18 @@ std::ostream &
 GPlatesPropertyValues::GmlGridEnvelope::print_to(
 		std::ostream &os) const
 {
+	const Revision &revision = get_current_revision<Revision>();
+
 	os << "{ ";
 
-	BOOST_FOREACH(int d, d_low)
+	BOOST_FOREACH(int d, revision.low)
 	{
 		os << d << " ";
 	}
 
 	os << "} { ";
 
-	BOOST_FOREACH(int d, d_high)
+	BOOST_FOREACH(int d, revision.high)
 	{
 		os << d << " ";
 	}
@@ -83,3 +98,66 @@ GPlatesPropertyValues::GmlGridEnvelope::print_to(
 	return os;
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlGridEnvelope::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlGridEnvelope> &gml_grid_envelope)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_grid_envelope->get_low(), "low");
+		scribe.save(TRANSCRIBE_SOURCE, gml_grid_envelope->get_high(), "high");
+	}
+	else // loading
+	{
+		integer_list_type low_;
+		integer_list_type high_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, low_, "low") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, high_, "high"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gml_grid_envelope.construct_object(low_, high_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlGridEnvelope::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_low(), "low");
+			scribe.save(TRANSCRIBE_SOURCE, get_high(), "high");
+		}
+		else // loading
+		{
+			integer_list_type low_;
+			integer_list_type high_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, low_, "low") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, high_, "high"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			set_low_and_high(low_, high_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlGridEnvelope>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

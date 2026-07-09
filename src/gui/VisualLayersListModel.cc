@@ -24,6 +24,7 @@
  */
 
 #include <boost/foreach.hpp>
+#include <QIODevice>
 #include <QMimeData>
 #include <QByteArray>
 #include <QDataStream>

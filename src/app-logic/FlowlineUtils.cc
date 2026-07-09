@@ -57,25 +57,25 @@ GPlatesAppLogic::FlowlineUtils::get_times_from_time_period_array(
 	static const GPlatesPropertyValues::StructuralType gml_time_period_type =
 		GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");	
 
-	if (gpml_array.type() != gml_time_period_type)
+	if (gpml_array.get_value_type() != gml_time_period_type)
 	{
 		return;
 	}
 	
-	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator 
-		iter = gpml_array.members().begin(),
-		end = gpml_array.members().end();
+	const GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &gpml_array_members = gpml_array.members();
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator iter = gpml_array_members.begin();
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator end = gpml_array_members.end();
 
 	// We will use the last gml_time_period_ptr after the loop has completed so declare it now.
-        GPlatesPropertyValues::GmlTimePeriod* gml_time_period_ptr = NULL;
+       const GPlatesPropertyValues::GmlTimePeriod* gml_time_period_ptr = NULL;
 
 		for (; iter != end ; ++iter)
 		{
 			gml_time_period_ptr =
-				dynamic_cast<GPlatesPropertyValues::GmlTimePeriod*>((*iter).get());
+				dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>((*iter).get_element().get());
 
 			GPlatesPropertyValues::GeoTimeInstant geo_time_instant = 
-				gml_time_period_ptr->end()->time_position();
+				gml_time_period_ptr->end()->get_time_position();
 
 			if (geo_time_instant.is_real())
 			{
@@ -85,7 +85,7 @@ GPlatesAppLogic::FlowlineUtils::get_times_from_time_period_array(
 		if (gml_time_period_ptr)
 		{
 			GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
-				gml_time_period_ptr->begin()->time_position();
+				gml_time_period_ptr->begin()->get_time_position();
 			if (geo_time_instant.is_real())
 			{
 				times.push_back(geo_time_instant.value());
@@ -164,15 +164,15 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::visit_gpml_plate_id(
 
 	if (current_top_level_propname() == reconstruction_plate_id_property_name)
 	{
-		d_reconstruction_plate_id.reset(gpml_plate_id.value());
+		d_reconstruction_plate_id.reset(gpml_plate_id.get_value());
 	}
 	else if (current_top_level_propname() == left_plate_id_property_name)
 	{
-		d_left_plate.reset(gpml_plate_id.value());
+		d_left_plate.reset(gpml_plate_id.get_value());
 	}
 	else if (current_top_level_propname() == right_plate_id_property_name)
 	{
-		d_right_plate.reset(gpml_plate_id.value());
+		d_right_plate.reset(gpml_plate_id.get_value());
 	}
 
 }
@@ -194,8 +194,8 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::visit_gml_time_period(
 		    d_feature_is_defined_at_recon_time = false;
 	    }
 	    // Also, cache the time of appearance/disappearance.
-	    d_time_of_appearance = gml_time_period.begin()->time_position();
-	    d_time_of_dissappearance = gml_time_period.end()->time_position();
+	    d_time_of_appearance = gml_time_period.begin()->get_time_position();
+	    d_time_of_dissappearance = gml_time_period.end()->get_time_position();
 	}
 }
 
@@ -209,7 +209,7 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::visit_xs_string(
 
 	if (current_top_level_propname() && *current_top_level_propname() == name_property_name)
 	{
-		d_name = GPlatesUtils::make_qstring(xs_string.value());
+		d_name = GPlatesUtils::make_qstring(xs_string.get_value());
 	}
 }
 

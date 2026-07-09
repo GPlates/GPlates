@@ -87,20 +87,24 @@ namespace
 		virtual
 		void
 		visit_gpml_irregular_sampling(
-				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+				gpml_irregular_sampling_type &gpml_irregular_sampling)
 		{
-			BOOST_FOREACH(
-					const GPlatesPropertyValues::GpmlTimeSample &time_sample,
-					gpml_irregular_sampling.time_samples())
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample> &time_samples =
+					gpml_irregular_sampling.time_samples();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator
+					time_sample_iter = time_samples.begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator
+					time_sample_end = time_samples.end();
+			for ( ; time_sample_iter != time_sample_end; ++time_sample_iter) 
 			{
-				time_sample.value()->accept_visitor(*this);
+				time_sample_iter->value()->accept_visitor(*this);
 			}
 		}
 
 		virtual
 		void
 		visit_gpml_finite_rotation(
-				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
+				gpml_finite_rotation_type &gpml_finite_rotation)
 		{
 			d_has_finite_rotation = true;
 		}
@@ -108,7 +112,7 @@ namespace
 		virtual
 		void
 		visit_gpml_plate_id(
-				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+				gpml_plate_id_type &gpml_plate_id)
 		{
 			static const GPlatesModel::PropertyName fixed_ref_frame_property_name =
 				GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame");
@@ -154,7 +158,7 @@ GPlatesAppLogic::ReconstructionGraphPopulator::ReconstructionGraphPopulator(
 
 bool
 GPlatesAppLogic::ReconstructionGraphPopulator::initialise_pre_feature_properties(
-		GPlatesModel::FeatureHandle &feature_handle)
+		feature_handle_type &feature_handle)
 {
 	d_accumulator.reset();
 
@@ -164,7 +168,7 @@ GPlatesAppLogic::ReconstructionGraphPopulator::initialise_pre_feature_properties
 
 void
 GPlatesAppLogic::ReconstructionGraphPopulator::finalise_post_feature_properties(
-		GPlatesModel::FeatureHandle &feature_handle)
+		feature_handle_type &feature_handle)
 {
 	// So now we've visited the contents of this Total Recon Seq feature.  Let's find out if we
 	// were able to obtain all the information we need.
@@ -203,7 +207,7 @@ GPlatesAppLogic::ReconstructionGraphPopulator::finalise_post_feature_properties(
 
 void
 GPlatesAppLogic::ReconstructionGraphPopulator::visit_gpml_finite_rotation(
-		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
+		gpml_finite_rotation_type &gpml_finite_rotation)
 {
 	if (d_accumulator.d_is_expecting_a_finite_rotation)
 	{
@@ -211,7 +215,7 @@ GPlatesAppLogic::ReconstructionGraphPopulator::visit_gpml_finite_rotation(
 		// Total Reconstruction Sequence is (more or less) correct.
 		const ReconstructionGraphBuilder::total_reconstruction_pole_time_sample_type pole_sample(
 				d_accumulator.d_finite_rotation_time_instant.get(),
-				gpml_finite_rotation.finite_rotation());
+				gpml_finite_rotation.get_finite_rotation());
 
 		// Add the current pole sample to the sequence.
 		d_accumulator.d_total_reconstruction_pole.push_back(pole_sample);
@@ -224,7 +228,7 @@ GPlatesAppLogic::ReconstructionGraphPopulator::visit_gpml_finite_rotation(
 
 void
 GPlatesAppLogic::ReconstructionGraphPopulator::visit_gpml_irregular_sampling(
-		GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+		gpml_irregular_sampling_type &gpml_irregular_sampling)
 {
 	// It is assumed that an IrregularSampling instance which has been reached by the visit function
 	// of a ReconstructionGraphPopulator instance will only ever contain FiniteRotation instances.
@@ -234,11 +238,13 @@ GPlatesAppLogic::ReconstructionGraphPopulator::visit_gpml_irregular_sampling(
 	// get inserted into the reconstruction graph builder.
 
 	// Iterate over the time samples and collect the enabled ones.
-	std::vector<GPlatesPropertyValues::GpmlTimeSample>::iterator time_sample_iter =
-			gpml_irregular_sampling.time_samples().begin();
-	std::vector<GPlatesPropertyValues::GpmlTimeSample>::iterator time_sample_end =
-			gpml_irregular_sampling.time_samples().end();
-	for ( ; time_sample_iter != time_sample_end; ++time_sample_iter)
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample> &time_samples =
+			gpml_irregular_sampling.time_samples();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator
+			time_sample_iter = time_samples.begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator
+			time_sample_end = time_samples.end();
+	for ( ; time_sample_iter != time_sample_end; ++time_sample_iter) 
 	{
 		if (time_sample_iter->is_disabled())
 		{
@@ -247,7 +253,7 @@ GPlatesAppLogic::ReconstructionGraphPopulator::visit_gpml_irregular_sampling(
 		}
 
 		// Let's visit the time sample, to collect (what we expect to be) the FiniteRotation inside it.
-		d_accumulator.d_finite_rotation_time_instant = time_sample_iter->valid_time()->time_position();
+		d_accumulator.d_finite_rotation_time_instant = time_sample_iter->valid_time()->get_time_position();
 		d_accumulator.d_is_expecting_a_finite_rotation = true;
 		time_sample_iter->value()->accept_visitor(*this);
 	}
@@ -256,7 +262,7 @@ GPlatesAppLogic::ReconstructionGraphPopulator::visit_gpml_irregular_sampling(
 
 void
 GPlatesAppLogic::ReconstructionGraphPopulator::visit_gpml_plate_id(
-		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+		gpml_plate_id_type &gpml_plate_id)
 {
 	static const GPlatesModel::PropertyName fixed_ref_frame_property_name =
 		GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame");
@@ -267,12 +273,12 @@ GPlatesAppLogic::ReconstructionGraphPopulator::visit_gpml_plate_id(
 	if (*current_top_level_propname() == fixed_ref_frame_property_name)
 	{
 		// We're dealing with the fixed ref-frame of the Total Reconstruction Sequence.
-		d_accumulator.d_fixed_ref_frame = gpml_plate_id.value();
+		d_accumulator.d_fixed_ref_frame = gpml_plate_id.get_value();
 	}
 	else if (*current_top_level_propname() == moving_ref_frame_property_name)
 	{
 		// We're dealing with the moving ref-frame of the Total Reconstruction Sequence.
-		d_accumulator.d_moving_ref_frame = gpml_plate_id.value();
+		d_accumulator.d_moving_ref_frame = gpml_plate_id.get_value();
 	}
 }
 

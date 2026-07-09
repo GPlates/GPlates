@@ -51,12 +51,12 @@ namespace GPlatesGui
 	 * until the hierarchy is assembled.
 	 *
 	 * Originally this was done on the assumption that adding all children to a QTreeWidgetItem
-	 * in one call was a lot faster than adding each child individually – but it turned out the
+	 * in one call was a lot faster than adding each child individually - but it turned out the
 	 * slow down was due to expanding all the QTreeWidgetItems.
 	 * This class is still useful for adding functions to call later (when the QTreeWidgetItems
-	 * are attached to a QTreeWidget) as some calls, like ‘setExpanded()’, will silently fail
+	 * are attached to a QTreeWidget) as some calls, like 'setExpanded()', will silently fail
 	 * unless attached .
-	 * For example TreeWidgetBuilder will only call ‘setExpanded()’ on a QTreeWidgetItem once
+	 * For example TreeWidgetBuilder will only call 'setExpanded()' on a QTreeWidgetItem once
 	 * it is linked directly or indirectly to a QTreeWidget.
 	 */
 	class TreeWidgetBuilder :

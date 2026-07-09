@@ -26,57 +26,135 @@
  */
 
 #include <iostream>
-#include <typeinfo>
 
 #include "GpmlKeyValueDictionary.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
-const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
-GPlatesPropertyValues::GpmlKeyValueDictionary::deep_clone() const
-{
-	GpmlKeyValueDictionary::non_null_ptr_type dup = clone();
+#include "model/BubbleUpRevisionHandler.h"
 
-	// Now we need to clear the dictionary-element vector in the duplicate, before we push-back
-	// the cloned elements.
-	dup->d_elements.clear();
-	std::vector<GpmlKeyValueDictionaryElement>::const_iterator iter, end = d_elements.end();
-	for (iter = d_elements.begin(); iter != end; ++iter) {
-		dup->d_elements.push_back((*iter).deep_clone());
-	}
+#include "scribe/Scribe.h"
 
-	return dup;
-}
+
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlKeyValueDictionary::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("KeyValueDictionary");
 
 
 std::ostream &
 GPlatesPropertyValues::GpmlKeyValueDictionary::print_to(
 		std::ostream &os) const
 {
+	const GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement> &elements_ = elements();
+
 	os << "[ ";
 
-	typedef std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator iterator_type;
-	for (iterator_type iter = d_elements.begin(); iter != d_elements.end(); ++iter)
+	GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::const_iterator elements_iter =
+			elements_.begin();
+	GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::const_iterator elements_end =
+			elements_.end();
+	for ( ; elements_iter != elements_end; ++elements_iter)
 	{
-		os << *iter << ", ";
+		os << **elements_iter << ", ";
 	}
 
 	return os << " ]";
 }
 
 
-bool
-GPlatesPropertyValues::GpmlKeyValueDictionary::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesModel::Revision::non_null_ptr_type
+GPlatesPropertyValues::GpmlKeyValueDictionary::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	try
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.elements.get_revisionable())
 	{
-		const GpmlKeyValueDictionary &other_casted =
-			dynamic_cast<const GpmlKeyValueDictionary &>(other);
-		return d_elements == other_casted.d_elements;
+		return revision.elements.clone_revision(transaction);
 	}
-	catch (const std::bad_cast &)
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlKeyValueDictionary::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlKeyValueDictionary> &gpml_key_value_dictionary)
+{
+	if (scribe.is_saving())
 	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
+		// Save the elements.
+		GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::non_null_ptr_type elements_ =
+				&gpml_key_value_dictionary->elements();
+		scribe.save(TRANSCRIBE_SOURCE, elements_, "elements");
 	}
+	else // loading
+	{
+		// Load the elements.
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::non_null_ptr_type> elements_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "elements");
+		if (!elements_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_key_value_dictionary.construct_object(
+				boost::ref(transaction),  // non-const ref
+				elements_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlKeyValueDictionary::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Save the elements.
+			GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::non_null_ptr_type elements_ = &elements();
+			scribe.save(TRANSCRIBE_SOURCE, elements_, "elements");
+		}
+		else // loading
+		{
+			// Load the elements.
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::non_null_ptr_type> elements_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "elements");
+			if (!elements_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			revision_handler.get_revision<Revision>().elements.change(
+					revision_handler.get_model_transaction(),
+					elements_);
+			revision_handler.commit();
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlKeyValueDictionary>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

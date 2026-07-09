@@ -27,11 +27,24 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLARRAY_H
 #define GPLATES_PROPERTYVALUES_GPMLARRAY_H
 
+#include <vector>
+
 #include "StructuralType.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/FeatureVisitor.h"
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
+#include "utils/QtStreamable.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -42,7 +55,8 @@ namespace GPlatesPropertyValues
 {
 
 	class GpmlArray:
-		public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::RevisionContext
 	{
 
 	public:
@@ -65,39 +79,62 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members,
+				const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members_,
 				const StructuralType &value_type_)
 		{
-			return non_null_ptr_type(new GpmlArray(members, value_type_));
+			return create(members_.begin(), members_.end(), value_type_);
+		}
+
+		template<typename PropertyValueIter>
+		static
+		const non_null_ptr_type
+		create(
+				PropertyValueIter members_begin,
+				PropertyValueIter members_end,
+				const StructuralType &value_type)
+		{
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(
+					new GpmlArray(
+							transaction,
+							GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::create(
+									members_begin,
+									members_end),
+							value_type));
+			transaction.commit();
+			return ptr;
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlArray(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlArray>(clone_impl());
 		}
 
-		const non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &
+		/**
+		 * Returns the 'const' vector of members.
+		 */
+		const GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &
 		members() const
 		{
-			return d_members;
+			return *get_current_revision<Revision>().members.get_revisionable();
 		}
 
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &
+		/**
+		 * Returns the 'non-const' vector of members.
+		 */
+		GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &
 		members()
 		{
-			return d_members;
+			return *get_current_revision<Revision>().members.get_revisionable();
 		}
 
-		const StructuralType &
-		type() const
+		// Note that no "setter" is provided:  The value type of a GpmlArray
+		// instance should never be changed.
+		StructuralType
+		get_value_type() const
 		{
-			return d_type;
+			return d_value_type;
 		}
 
 		/**
@@ -107,9 +144,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("Array");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlArray::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -139,28 +181,10 @@ namespace GPlatesPropertyValues
 			visitor.visit_gpml_array(*this);
 		}
 
-		bool
-		is_empty() const
-		{
-			return d_members.empty();
-		}
-
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::size_type
-		num_elements() const
-		{
-		    return d_members.size();
-		}
-
 		virtual
 		std::ostream &
 		print_to(
 				std::ostream &os) const;
-
-
-		virtual
-		bool
-		directly_modifiable_fields_equal(
-			const PropertyValue &other) const;
 
 	protected:
 
@@ -168,38 +192,142 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlArray(
-				const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members_,
-				const StructuralType &value_type_):
-			PropertyValue(),
-			d_members(members_),
-			d_type(value_type_)
+				GPlatesModel::ModelTransaction &transaction_,
+				GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type members_,
+				const StructuralType &value_type) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, members_))),
+			d_value_type(value_type)
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlArray(
-			const GpmlArray &other) :
-				PropertyValue(other),
-				d_members(other.d_members),
-				d_type(other.d_type)
+				const GpmlArray &other_,
+				boost::optional<RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this))),
+			d_value_type(other_.d_value_type)
 		{  }
 
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlArray(*this, context));
+		}
+
+		virtual
+		bool
+		equality(
+				const Revisionable &other) const
+		{
+			const GpmlArray &other_pv = dynamic_cast<const GpmlArray &>(other);
+
+			return d_value_type == other_pv.d_value_type &&
+					// The revisioned data comparisons are handled here...
+					Revisionable::equality(other);
+		}
 
 	private:
 
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> d_members;
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
-		StructuralType d_type;
+		/**
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlArray &
-			operator=(const GpmlArray &);
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					RevisionContext &child_context_,
+					GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type members_) :
+				members(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> >::attach(
+										transaction_, child_context_, members_))
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
+				members(other_.members)
+			{
+				// Clone data members that were not deep copied.
+				members.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				members(other_.members)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<RevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return *members.get_revisionable() == *other_revision.members.get_revisionable() &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> > members;
+		};
+
+		StructuralType d_value_type;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlArray> &gpml_array);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 }
 

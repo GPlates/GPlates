@@ -145,9 +145,9 @@ GPlatesFileIO::GMTFormatVerboseHeader::initialise_pre_property_values(
 	d_line_stream
 		<< ' '
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			top_level_property_inline.property_name().get_name());
+			top_level_property_inline.get_property_name().get_name());
 
-	format_attributes(top_level_property_inline.xml_attributes());
+	format_attributes(top_level_property_inline.get_xml_attributes());
 
 	return true;
 }
@@ -159,7 +159,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::finalise_post_property_values(
 	// If the current property is the reconstruction plate id then simplify the printing
 	// of it so it's not too hard to parse with awk/sed.
 	if (d_property_accumulator.is_reconstruction_plate_id_property(
-			top_level_property_inline.property_name()))
+			top_level_property_inline.get_property_name()))
 	{
 		// Clear what we've written so far for the current property.
 		clear_header_line();
@@ -184,7 +184,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_enumeration(
 {
 	start_header_line();
 
-	d_line_stream << GPlatesUtils::make_qstring_from_icu_string(enumeration.value().get());
+	d_line_stream << GPlatesUtils::make_qstring_from_icu_string(enumeration.get_value().get());
 
 	end_header_line();
 }
@@ -237,7 +237,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gml_time_instant(
 	d_line_stream << " <timePosition>";
 
 	const GPlatesPropertyValues::GeoTimeInstant &time_position = 
-		gml_time_instant.time_position();
+		gml_time_instant.get_time_position();
 	if (time_position.is_real()) {
 		d_line_stream << time_position.value();
 	} else if (time_position.is_distant_past()) {
@@ -306,7 +306,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_constant_value(
 	d_line_stream
 		<< " <valueType>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-				gpml_constant_value.value_type().get_name())
+				gpml_constant_value.get_value_type().get_name())
 		<< "</valueType>";
 
 	end_header_line();
@@ -323,13 +323,13 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_feature_reference(
 	d_line_stream
 		<< " <targetFeature>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_feature_reference.feature_id().get())
+			gpml_feature_reference.get_feature_id().get())
 		<< "</targetFeature>";
 	
 	d_line_stream
 		<< " <valueType>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_feature_reference.value_type().get_name())
+			gpml_feature_reference.get_value_type().get_name())
 		<< "</valueType>";
 
 	end_header_line();
@@ -346,19 +346,19 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_feature_snapshot_reference(
 	d_line_stream
 		<< " <targetFeature>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_feature_snapshot_reference.feature_id().get())
+			gpml_feature_snapshot_reference.get_feature_id().get())
 		<< "</targetFeature>";
 	
 	d_line_stream
 		<< " <targetRevision>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_feature_snapshot_reference.revision_id().get())
+			gpml_feature_snapshot_reference.get_revision_id().get())
 		<< "</targetRevision>";
 	
 	d_line_stream
 		<< " <valueType>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_feature_snapshot_reference.value_type().get_name())
+			gpml_feature_snapshot_reference.get_value_type().get_name())
 		<< "</valueType>";
 
 	end_header_line();
@@ -375,19 +375,19 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_property_delegate(
 	d_line_stream
 		<< " <targetFeature>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_property_delegate.feature_id().get())
+			gpml_property_delegate.get_feature_id().get())
 		<< "</targetFeature>";
 	
 	d_line_stream
 		<< " <targetProperty>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_property_delegate.target_property().get_name())
+			gpml_property_delegate.get_target_property_name().get_name())
 		<< "</targetProperty>";
 	
 	d_line_stream
 		<< " <valueType>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_property_delegate.value_type().get_name())
+			gpml_property_delegate.get_value_type().get_name())
 		<< "</valueType>";
 
 	end_header_line();
@@ -401,12 +401,14 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_key_value_dictionary(
 
 	d_line_stream << " KeyValueDictionary";
 
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-		iter = gpml_key_value_dictionary.elements().begin(),
-		end = gpml_key_value_dictionary.elements().end();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &elements =
+			gpml_key_value_dictionary.elements();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+			iter = elements.begin(),
+			end = elements.end();
 	for ( ; iter != end; ++iter)
 	{
-		write_gpml_key_value_dictionary_element(*iter);
+		write_gpml_key_value_dictionary_element(**iter);
 	}
 
 	end_header_line();
@@ -423,17 +425,17 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_piecewise_aggregation(
 	d_line_stream
 		<< " <valueType>"
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_piecewise_aggregation.value_type().get_name())
+			gpml_piecewise_aggregation.get_value_type().get_name())
 		<< "</valueType>";
 
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-		gpml_piecewise_aggregation.time_windows().begin();
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-		gpml_piecewise_aggregation.time_windows().end();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+			gpml_piecewise_aggregation.time_windows().begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+			gpml_piecewise_aggregation.time_windows().end();
 	for ( ; iter != end; ++iter) 
 	{
 		d_line_stream << " <timeWindow>";
-		write_gpml_time_window(*iter);
+		write_gpml_time_window(**iter);
 		d_line_stream << "</timeWindow>";
 	}
 
@@ -477,9 +479,9 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_measure(
 {
 	start_header_line();
 
-	format_attributes(gpml_measure.quantity_xml_attributes());
+	format_attributes(gpml_measure.get_quantity_xml_attributes());
 
-	d_line_stream << ' ' << gpml_measure.quantity();
+	d_line_stream << ' ' << gpml_measure.get_quantity();
 
 	end_header_line();
 }
@@ -494,28 +496,28 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_old_plates_header(
 
 	d_line_stream
 		<< ' '
-		<< gpml_old_plates_header.region_number()
-		<< gpml_old_plates_header.reference_number()
+		<< gpml_old_plates_header.get_region_number()
+		<< gpml_old_plates_header.get_reference_number()
 		<< "  "
-		<< gpml_old_plates_header.string_number()
+		<< gpml_old_plates_header.get_string_number()
 		<< ' '
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_old_plates_header.geographic_description())
+			gpml_old_plates_header.get_geographic_description())
 		<< ' '
-		<< gpml_old_plates_header.plate_id_number()
+		<< gpml_old_plates_header.get_plate_id_number()
 		<< "   "
-		<< gpml_old_plates_header.age_of_appearance()
+		<< gpml_old_plates_header.get_age_of_appearance()
 		<< ' '
-		<< gpml_old_plates_header.age_of_disappearance()
+		<< gpml_old_plates_header.get_age_of_disappearance()
 		<< ' '
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_old_plates_header.data_type_code())
+			gpml_old_plates_header.get_data_type_code())
 		<< "   "
-		<< gpml_old_plates_header.data_type_code_number()
+		<< gpml_old_plates_header.get_data_type_code_number()
 		<< ' '
-		<< gpml_old_plates_header.conjugate_plate_id_number()
+		<< gpml_old_plates_header.get_conjugate_plate_id_number()
 		<< "   "
-		<< gpml_old_plates_header.colour_code();
+		<< gpml_old_plates_header.get_colour_code();
 
 	end_header_line();
 }
@@ -536,7 +538,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::write_gpml_time_window(
 
 	d_line_stream << " <valueType>";
 	d_line_stream << GPlatesUtils::make_qstring_from_icu_string(
-			gpml_time_window.value_type().get_name());
+			gpml_time_window.get_value_type().get_name());
 	d_line_stream << "</valueType>";
 }
 
@@ -548,28 +550,28 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_irregular_sampling(
 
 	d_line_stream << " IrregularSampling";
 
-	std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator iter =
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator iter =
 		gpml_irregular_sampling.time_samples().begin();
-	std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator end =
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator end =
 		gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter) 
 	{
 		d_line_stream << " <timeSample>";
-		write_gpml_time_sample(*iter);
+		write_gpml_time_sample(**iter);
 		d_line_stream << "</timeSample>";
 	}
 
 	// The interpolation function is optional.
-	if (gpml_irregular_sampling.interpolation_function() != NULL)
+	if (gpml_irregular_sampling.interpolation_function())
 	{
 		d_line_stream << " <interpolationFunction>";
-		gpml_irregular_sampling.interpolation_function()->accept_visitor(*this);
+		gpml_irregular_sampling.interpolation_function().get()->accept_visitor(*this);
 		d_line_stream << "</interpolationFunction>";
 	}
 
 	d_line_stream << " <valueType>";
 	d_line_stream << GPlatesUtils::make_qstring_from_icu_string(
-			gpml_irregular_sampling.value_type().get_name());
+			gpml_irregular_sampling.get_value_type().get_name());
 	d_line_stream << "</valueType>";
 
 	end_header_line();
@@ -583,12 +585,12 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_plate_id(
 
 	d_line_stream
 		<< ' '
-		<< gpml_plate_id.value();
+		<< gpml_plate_id.get_value();
 
 	end_header_line();
 
 	// Also store the plate id in case we decide to rewrite in a simpler format.
-	d_property_accumulator.set_plate_id(gpml_plate_id.value());
+	d_property_accumulator.set_plate_id(gpml_plate_id.get_value());
 }
 
 void
@@ -600,7 +602,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_revision_id(
 	d_line_stream
 		<< ' '
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			gpml_revision_id.value().get());
+			gpml_revision_id.get_value().get());
 
 	end_header_line();
 }
@@ -620,16 +622,16 @@ GPlatesFileIO::GMTFormatVerboseHeader::write_gpml_time_sample(
 	d_line_stream << "</validTime>";
 
 	// The description is optional.
-	if (gpml_time_sample.description() != NULL) 
+	if (gpml_time_sample.description())
 	{
 		d_line_stream << " <description>";
-		gpml_time_sample.description()->accept_visitor(*this);
+		gpml_time_sample.description().get()->accept_visitor(*this);
 		d_line_stream << "</description>";
 	}
 
 	d_line_stream << " <valueType>";
 	d_line_stream << GPlatesUtils::make_qstring_from_icu_string(
-			gpml_time_sample.value_type().get_name());
+			gpml_time_sample.get_value_type().get_name());
 	d_line_stream << "</valueType>";
 }
 
@@ -642,7 +644,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_xs_string(
 	d_line_stream
 		<< ' '
 		<< GPlatesUtils::make_qstring_from_icu_string(
-			xs_string.value().get());
+			xs_string.get_value().get());
 
 	end_header_line();
 }
@@ -653,7 +655,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_xs_boolean(
 {
 	start_header_line();
 
-	d_line_stream << ' ' << xs_boolean.value();
+	d_line_stream << ' ' << xs_boolean.get_value();
 
 	end_header_line();
 }
@@ -664,7 +666,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_xs_double(
 {
 	start_header_line();
 
-	d_line_stream << ' ' << xs_double.value();
+	d_line_stream << ' ' << xs_double.get_value();
 
 	end_header_line();
 }
@@ -675,7 +677,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_xs_integer(
 {
 	start_header_line();
 
-	d_line_stream << ' ' << xs_integer.value();
+	d_line_stream << ' ' << xs_integer.get_value();
 
 	end_header_line();
 }

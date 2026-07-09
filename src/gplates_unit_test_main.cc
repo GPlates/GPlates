@@ -123,6 +123,7 @@ bool init_unit_test()
 	Q_INIT_RESOURCE(python);
 	Q_INIT_RESOURCE(gpgim);
 	Q_INIT_RESOURCE(qt_widgets);
+	Q_INIT_RESOURCE(python);
 
 	// Sanity check: Proceed only if we have access to infinity and NaN.
 	// This should pass on all systems that we support.

@@ -5,5 +5,13 @@
     <file>python/scripts/colouring/draw_style_demo.py</file>
 
     <file>python/scripts/hellinger/hellinger.py</file>
+
+    <file>python/api/Crossovers.py</file>
+    <file>python/api/Feature.py</file>
+    <file>python/api/GeometriesOnSphere.py</file>
+    <file>python/api/PlatePartitioning.py</file>
+    <file>python/api/Property.py</file>
+    <file>python/api/PropertyValues.py</file>
+    <file>python/api/ReconstructionGeometries.py</file>
   </qresource>
 </RCC>

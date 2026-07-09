@@ -25,7 +25,7 @@
 #include "global/python.h"
 
 #include "PythonUtils.h"
-#include "PyFeature.h"
+#include "PyOldFeature.h"
 
 #include "gui/Colour.h"
 #include "gui/ColourPalette.h"

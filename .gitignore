@@ -29,6 +29,7 @@ __pycache__/
 #
 # /
 #
+/build*/
 /INSTALL
 /gmon.out
 /_CPack_Packages/

@@ -24,9 +24,11 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <iostream>
-#include <typeinfo>
+
 #include <algorithm>
+#include <iostream>
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 
 // Suppress warning being emitted from Boost 1.35 header.
 #include "global/CompilerWarnings.h"
@@ -35,39 +37,19 @@ DISABLE_MSVC_WARNING(4181)
 #include <boost/lambda/lambda.hpp>
 
 #include "TopLevelPropertyInline.h"
+
+#include "BubbleUpRevisionHandler.h"
 #include "FeatureVisitor.h"
+#include "ModelTransaction.h"
+#include "TranscribeQualifiedXmlName.h"
+#include "TranscribeStringContentTypeGenerator.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "scribe/Scribe.h"
 
 #include "utils/UnicodeStringUtils.h"
-
-
-const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
-GPlatesModel::TopLevelPropertyInline::create(
-		const PropertyName &property_name_,
-		const container_type &values_,
-		const xml_attributes_type &xml_attributes_)
-{
-	non_null_ptr_type ptr(
-			new TopLevelPropertyInline(
-				property_name_,
-				values_,
-				xml_attributes_));
-	return ptr;
-}
-
-
-const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
-GPlatesModel::TopLevelPropertyInline::create(
-		const PropertyName &property_name_,
-		PropertyValue::non_null_ptr_type value_,
-		const xml_attributes_type &xml_attributes_)
-{
-	non_null_ptr_type ptr(
-			new TopLevelPropertyInline(
-				property_name_,
-				value_,
-				xml_attributes_));
-	return ptr;
-}
 
 
 const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
@@ -92,33 +74,6 @@ GPlatesModel::TopLevelPropertyInline::create(
 }
 
 
-const GPlatesModel::TopLevelProperty::non_null_ptr_type
-GPlatesModel::TopLevelPropertyInline::clone() const
-{
-	TopLevelProperty::non_null_ptr_type dup(
-			new TopLevelPropertyInline(*this));
-	return dup;
-}
-
-
-const GPlatesModel::TopLevelProperty::non_null_ptr_type
-GPlatesModel::TopLevelPropertyInline::deep_clone() const 
-{
-	TopLevelPropertyInline::non_null_ptr_type dup = create(
-			property_name(),
-			container_type(),
-			xml_attributes());
-
-	container_type::const_iterator iter = d_values.begin(), end_ = d_values.end();
-	for ( ; iter != end_; ++iter)
-	{
-		PropertyValue::non_null_ptr_type cloned_pval = (*iter)->deep_clone_as_prop_val();
-		dup->d_values.push_back(cloned_pval);
-	}
-	return TopLevelProperty::non_null_ptr_type(dup);
-}
-
-
 void
 GPlatesModel::TopLevelPropertyInline::accept_visitor(
 		ConstFeatureVisitor &visitor) const 
@@ -139,10 +94,10 @@ std::ostream &
 GPlatesModel::TopLevelPropertyInline::print_to(
 		std::ostream &os) const
 {
-	os << property_name().build_aliased_name() << " [ ";
+	os << get_property_name().build_aliased_name() << " [ ";
 
 	bool first = true;
-	for (container_type::const_iterator iter = d_values.begin(); iter != d_values.end(); ++iter)
+	for (const_iterator iter = begin(); iter != end(); ++iter)
 	{
 		if (first)
 		{
@@ -160,33 +115,203 @@ GPlatesModel::TopLevelPropertyInline::print_to(
 }
 
 
-bool
-GPlatesModel::TopLevelPropertyInline::operator==(
-		const TopLevelProperty &other) const
+GPlatesModel::Revision::non_null_ptr_type
+GPlatesModel::TopLevelPropertyInline::bubble_up(
+		ModelTransaction &transaction,
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	try
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+
+	boost::optional<GPlatesModel::Revision::non_null_ptr_type> child_revision;
+
+	// Search for the child property value in our property value list.
+	property_value_container_type::iterator values_iter = revision.values.begin();
+	property_value_container_type::iterator values_end = revision.values.end();
+	for ( ; values_iter != values_end; ++values_iter)
 	{
-		const TopLevelPropertyInline &other_inline = dynamic_cast<const TopLevelPropertyInline &>(other);
-		if (property_name() == other.property_name() &&
-			xml_attributes() == other.xml_attributes() &&
-			d_values.size() == other_inline.d_values.size())
+		RevisionedReference<PropertyValue> &revisioned_reference = *values_iter;
+
+		if (child_revisionable == revisioned_reference.get_revisionable())
 		{
-			return std::equal(
-					d_values.begin(),
-					d_values.end(),
-					other_inline.d_values.begin(),
-					// Compare PropertyValues, not pointers to PropertyValues.
-					*boost::lambda::_1 == *boost::lambda::_2);
+			// Create a new revision for the child property value.
+			child_revision = revisioned_reference.clone_revision(transaction);
+			break;
 		}
-		else
+	}
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			child_revision,
+			GPLATES_ASSERTION_SOURCE);
+
+	return child_revision.get();
+}
+
+#include "property-values/GpmlPlateId.h"
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::TopLevelPropertyInline::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<TopLevelPropertyInline> &top_level_property_inline)
+{
+	if (scribe.is_saving())
+	{
+		// Save the property name.
+		scribe.save(TRANSCRIBE_SOURCE, top_level_property_inline->get_property_name(), "property_name");
+
+		// Save the property values.
+		const std::vector<PropertyValue::non_null_ptr_type> property_values(
+				top_level_property_inline->begin(),
+				top_level_property_inline->end());
+		scribe.save(TRANSCRIBE_SOURCE, property_values, "property_values");
+
+		// Save the XML attributes.
+		scribe.save(TRANSCRIBE_SOURCE, top_level_property_inline->get_xml_attributes(), "xml_attributes");
+	}
+	else // loading
+	{
+		// Load the property name.
+		GPlatesScribe::LoadRef<PropertyName> property_name = scribe.load<PropertyName>(TRANSCRIBE_SOURCE, "property_name");
+		if (!property_name.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the property values.
+		std::vector<PropertyValue::non_null_ptr_type> property_values;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, property_values, "property_values"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the XML attributes.
+		xml_attributes_type xml_attributes;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, xml_attributes, "xml_attributes"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property.
+		GPlatesModel::ModelTransaction transaction;
+		top_level_property_inline.construct_object(
+				boost::ref(transaction),  // non-const ref
+				property_name,
+				property_values.begin(),
+				property_values.end(),
+				xml_attributes);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::TopLevelPropertyInline::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Save the property name.
+			scribe.save(TRANSCRIBE_SOURCE, get_property_name(), "property_name");
+
+			// Save the property values.
+			const std::vector<PropertyValue::non_null_ptr_type> property_values(begin(), end());
+			scribe.save(TRANSCRIBE_SOURCE, property_values, "property_values");
+
+			// Save the XML attributes.
+			scribe.save(TRANSCRIBE_SOURCE, get_xml_attributes(), "xml_attributes");
+		}
+		else // loading
+		{
+			// Load the property name.
+			GPlatesScribe::LoadRef<PropertyName> property_name = scribe.load<PropertyName>(TRANSCRIBE_SOURCE, "property_name");
+			if (!property_name.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+			d_property_name = property_name;
+
+			// Load the property values.
+			std::vector<PropertyValue::non_null_ptr_type> property_values;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, property_values, "property_values"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the XML attributes.
+			xml_attributes_type xml_attributes;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, xml_attributes, "xml_attributes"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Modify 'this' TopLevelPropertyInline object.
+			//
+			// There's no set method for assigning revisioned property values and XML attributes.
+			// So we do the equivalent inline here.
+			BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+
+			// Set the XML attributes.
+			revision.xml_attributes = xml_attributes;
+
+			// First remove any property values.
+			for (auto &revisioned_property_value : revision.values)
+			{
+				revisioned_property_value.detach(revision_handler.get_model_transaction());
+			}
+			revision.values.clear();
+
+			// Then add our loaded property values.
+			for (auto property_value : property_values)
+			{
+				revision.values.push_back(
+						RevisionedReference<PropertyValue>::attach(
+								revision_handler.get_model_transaction(), *this, property_value));
+			}
+
+			revision_handler.commit();
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::TopLevelProperty, TopLevelPropertyInline>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+bool
+GPlatesModel::TopLevelPropertyInline::Revision::equality(
+		const GPlatesModel::Revision &other) const
+{
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+	if (values.size() != other_revision.values.size())
+	{
+		return false;
+	}
+
+	for (std::size_t n = 0; n < values.size(); ++n)
+	{
+		// Compare PropertyValues, not pointers to PropertyValues...
+		if (*values[n].get_revisionable() != *other_revision.values[n].get_revisionable())
 		{
 			return false;
 		}
 	}
-	catch (const std::bad_cast &)
-	{
-		return false;
-	}
+
+	return TopLevelProperty::Revision::equality(other);
 }
 
 

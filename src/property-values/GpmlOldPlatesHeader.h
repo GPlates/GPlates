@@ -39,8 +39,13 @@
 
 #include "global/unicode.h"
 
+#include "maths/MathsUtils.h"
+
 #include "model/PropertyValue.h"
 #include "model/types.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 #include "utils/UnicodeString.h"
 #include "utils/UnicodeStringUtils.h"
@@ -104,23 +109,13 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const 
 		{
-			return non_null_ptr_type(new GpmlOldPlatesHeader(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlOldPlatesHeader>(clone_impl());
 		}
-
-		const non_null_ptr_type
-		deep_clone() const 
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		unsigned int
-		region_number() const 
+		get_region_number() const 
 		{
-			return d_region_number;
+			return get_current_revision<Revision>().region_number;
 		}
 		
 		/**
@@ -128,17 +123,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_region_number(
-				const unsigned int &i)
-		{
-			d_region_number = i;
-			update_instance_id();
-		}
+				const unsigned int &i);
 
 
 		unsigned int
-		reference_number() const 
+		get_reference_number() const 
 		{
-			return d_reference_number;
+			return get_current_revision<Revision>().reference_number;
 		}
 
 		/**
@@ -146,17 +137,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_reference_number(
-				const unsigned int &i)
-		{
-			d_reference_number = i;
-			update_instance_id();
-		}
+				const unsigned int &i);
 
 		
 		unsigned int
-		string_number() const 
+		get_string_number() const 
 		{
-			return d_string_number;
+			return get_current_revision<Revision>().string_number;
 		}
 		
 		/**
@@ -164,17 +151,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_string_number(
-				const unsigned int &i)
-		{
-			d_string_number = i;
-			update_instance_id();
-		}
+				const unsigned int &i);
 
 		
 		const GPlatesUtils::UnicodeString &
-		geographic_description() const 
+		get_geographic_description() const 
 		{
-			return d_geographic_description.get();
+			return get_current_revision<Revision>().geographic_description.get();
 		}
 
 		/**
@@ -182,17 +165,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_geographic_description(
-				const GPlatesUtils::UnicodeString &us)
-		{
-			d_geographic_description = TextContent(us);
-			update_instance_id();
-		}
+				const GPlatesUtils::UnicodeString &us);
 
 		
 		GPlatesModel::integer_plate_id_type
-		plate_id_number() const 
+		get_plate_id_number() const 
 		{
-			return d_plate_id_number;
+			return get_current_revision<Revision>().plate_id_number;
 		}
 
 		/**
@@ -200,17 +179,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_plate_id_number(
-				const GPlatesModel::integer_plate_id_type &i)
-		{
-			d_plate_id_number = i;
-			update_instance_id();
-		}
+				const GPlatesModel::integer_plate_id_type &i);
 
 		
 		const double &
-		age_of_appearance() const 
+		get_age_of_appearance() const 
 		{
-			return d_age_of_appearance;
+			return get_current_revision<Revision>().age_of_appearance;
 		}
 
 		/**
@@ -218,17 +193,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_age_of_appearance(
-				const double &d)
-		{
-			d_age_of_appearance = d;
-			update_instance_id();
-		}
+				const double &d);
 
 		
 		const double &
-		age_of_disappearance() const 
+		get_age_of_disappearance() const 
 		{
-			return d_age_of_disappearance;
+			return get_current_revision<Revision>().age_of_disappearance;
 		}
 
 		/**
@@ -236,17 +207,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_age_of_disappearance(
-				const double &d)
-		{
-			d_age_of_disappearance = d;
-			update_instance_id();
-		}
+				const double &d);
 
 		
 		const GPlatesUtils::UnicodeString & 
-		data_type_code() const 
+		get_data_type_code() const 
 		{
-			return d_data_type_code.get();
+			return get_current_revision<Revision>().data_type_code.get();
 		}
 
 		/**
@@ -254,17 +221,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_data_type_code(
-				const GPlatesUtils::UnicodeString &us)
-		{
-			d_data_type_code = TextContent(us);
-			update_instance_id();
-		}
+				const GPlatesUtils::UnicodeString &us);
 
 		
 		unsigned int
-		data_type_code_number() const 
+		get_data_type_code_number() const 
 		{
-			return d_data_type_code_number;
+			return get_current_revision<Revision>().data_type_code_number;
 		}
 
 		/**
@@ -272,17 +235,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_data_type_code_number(
-				const unsigned int &i)
-		{
-			d_data_type_code_number = i;
-			update_instance_id();
-		}
+				const unsigned int &i);
 
 		
 		const GPlatesUtils::UnicodeString & 
-		data_type_code_number_additional() const 
+		get_data_type_code_number_additional() const 
 		{
-			return d_data_type_code_number_additional.get();
+			return get_current_revision<Revision>().data_type_code_number_additional.get();
 		}
 
 		/**
@@ -290,17 +249,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_data_type_code_number_additional(
-				const GPlatesUtils::UnicodeString &us)
-		{
-			d_data_type_code_number_additional = TextContent(us);
-			update_instance_id();
-		}
+				const GPlatesUtils::UnicodeString &us);
 
 		
 		GPlatesModel::integer_plate_id_type
-		conjugate_plate_id_number() const 
+		get_conjugate_plate_id_number() const 
 		{
-			return d_conjugate_plate_id_number;
+			return get_current_revision<Revision>().conjugate_plate_id_number;
 		}
 
 		/**
@@ -308,17 +263,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_conjugate_plate_id_number(
-				const GPlatesModel::integer_plate_id_type &i)
-		{
-			d_conjugate_plate_id_number = i;
-			update_instance_id();
-		}
+				const GPlatesModel::integer_plate_id_type &i);
 		
 		
 		unsigned int
-		colour_code() const 
+		get_colour_code() const 
 		{
-			return d_colour_code;
+			return get_current_revision<Revision>().colour_code;
 		}
 		
 		/**
@@ -326,17 +277,13 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_colour_code(
-				const unsigned int &i)
-		{
-			d_colour_code = i;
-			update_instance_id();
-		}
+				const unsigned int &i);
 
 			
 		unsigned int
-		number_of_points() const 
+		get_number_of_points() const 
 		{
-			return d_number_of_points;
+			return get_current_revision<Revision>().number_of_points;
 		}
 
 		/**
@@ -344,11 +291,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_number_of_points(
-				const unsigned int &i)
-		{
-			d_number_of_points = i;
-			update_instance_id();
-		}
+				const unsigned int &i);
 
 
 		/**
@@ -358,9 +301,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("OldPlatesHeader");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlOldPlatesHeader::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -420,68 +368,151 @@ namespace GPlatesPropertyValues
 				const GPlatesUtils::UnicodeString &data_type_code_number_additional_,
 				GPlatesModel::integer_plate_id_type conjugate_plate_id_number_,
 				unsigned int colour_code_,
-				unsigned int number_of_points_):
-			PropertyValue(),
-			d_region_number(region_number_),
-			d_reference_number(reference_number_),
-			d_string_number(string_number_),
-			d_geographic_description(geographic_description_),
-			d_plate_id_number(plate_id_number_),
-			d_age_of_appearance(age_of_appearance_),
-			d_age_of_disappearance(age_of_disappearance_),
-			d_data_type_code(data_type_code_),
-			d_data_type_code_number(data_type_code_number_),
-			d_data_type_code_number_additional(data_type_code_number_additional_),
-			d_conjugate_plate_id_number(conjugate_plate_id_number_),
-			d_colour_code(colour_code_),
-			d_number_of_points(number_of_points_)
+				unsigned int number_of_points_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(
+									region_number_, reference_number_, 
+									string_number_, geographic_description_, plate_id_number_, 
+									age_of_appearance_, age_of_disappearance_, data_type_code_,
+									data_type_code_number_, data_type_code_number_additional_,
+									conjugate_plate_id_number_, colour_code_, number_of_points_)))
 		{ }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlOldPlatesHeader(
-				const GpmlOldPlatesHeader &other) :
-			PropertyValue(other), /* share instance id */
-			d_region_number(other.d_region_number),
-			d_reference_number(other.d_reference_number),
-			d_string_number(other.d_string_number),
-			d_geographic_description(other.d_geographic_description),
-			d_plate_id_number(other.d_plate_id_number),
-			d_age_of_appearance(other.d_age_of_appearance),
-			d_age_of_disappearance(other.d_age_of_disappearance),
-			d_data_type_code(other.d_data_type_code),
-			d_data_type_code_number(other.d_data_type_code_number),
-			d_data_type_code_number_additional(other.d_data_type_code_number_additional),
-			d_conjugate_plate_id_number(other.d_conjugate_plate_id_number),
-			d_colour_code(other.d_colour_code),
-			d_number_of_points(other.d_number_of_points)
-		{ }
+				const GpmlOldPlatesHeader &other_,
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlOldPlatesHeader(*this, context));
+		}
 
 	private:
-		unsigned int d_region_number;
-		unsigned int d_reference_number;
-		unsigned int d_string_number;
-		TextContent d_geographic_description;
-		GPlatesModel::integer_plate_id_type d_plate_id_number;
-		double d_age_of_appearance;
-		double d_age_of_disappearance;
-		TextContent d_data_type_code;
-		unsigned int d_data_type_code_number;
-		TextContent d_data_type_code_number_additional;
-		GPlatesModel::integer_plate_id_type d_conjugate_plate_id_number;
-		unsigned int d_colour_code;
-		unsigned int d_number_of_points;
-		
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlOldPlatesHeader &
-		operator=(
-				const GpmlOldPlatesHeader &);
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision(
+					unsigned int region_number_,
+					unsigned int reference_number_,
+					unsigned int string_number_,
+					const GPlatesUtils::UnicodeString &geographic_description_,
+					GPlatesModel::integer_plate_id_type plate_id_number_,
+					const double &age_of_appearance_,
+					const double &age_of_disappearance_,
+					const GPlatesUtils::UnicodeString &data_type_code_,
+					unsigned int data_type_code_number_,
+					const GPlatesUtils::UnicodeString &data_type_code_number_additional_,
+					GPlatesModel::integer_plate_id_type conjugate_plate_id_number_,
+					unsigned int colour_code_,
+					unsigned int number_of_points_) :
+				region_number(region_number_),
+				reference_number(reference_number_),
+				string_number(string_number_),
+				geographic_description(geographic_description_),
+				plate_id_number(plate_id_number_),
+				age_of_appearance(age_of_appearance_),
+				age_of_disappearance(age_of_disappearance_),
+				data_type_code(data_type_code_),
+				data_type_code_number(data_type_code_number_),
+				data_type_code_number_additional(data_type_code_number_additional_),
+				conjugate_plate_id_number(conjugate_plate_id_number_),
+				colour_code(colour_code_),
+				number_of_points(number_of_points_)
+			{  }
+
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				region_number(other_.region_number),
+				reference_number(other_.reference_number),
+				string_number(other_.string_number),
+				geographic_description(other_.geographic_description),
+				plate_id_number(other_.plate_id_number),
+				age_of_appearance(other_.age_of_appearance),
+				age_of_disappearance(other_.age_of_disappearance),
+				data_type_code(other_.data_type_code),
+				data_type_code_number(other_.data_type_code_number),
+				data_type_code_number_additional(other_.data_type_code_number_additional),
+				conjugate_plate_id_number(other_.conjugate_plate_id_number),
+				colour_code(other_.colour_code),
+				number_of_points(other_.number_of_points)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::RevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return region_number == other_revision.region_number &&
+						reference_number == other_revision.reference_number &&
+						string_number == other_revision.string_number &&
+						geographic_description == other_revision.geographic_description &&
+						plate_id_number == other_revision.plate_id_number &&
+						GPlatesMaths::are_almost_exactly_equal(age_of_appearance, other_revision.age_of_appearance) &&
+						GPlatesMaths::are_almost_exactly_equal(age_of_disappearance, other_revision.age_of_disappearance) &&
+						data_type_code == other_revision.data_type_code &&
+						data_type_code_number == other_revision.data_type_code_number &&
+						data_type_code_number_additional == other_revision.data_type_code_number_additional &&
+						conjugate_plate_id_number == other_revision.conjugate_plate_id_number &&
+						colour_code == other_revision.colour_code &&
+						number_of_points == other_revision.number_of_points &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			unsigned int region_number;
+			unsigned int reference_number;
+			unsigned int string_number;
+			TextContent geographic_description;
+			GPlatesModel::integer_plate_id_type plate_id_number;
+			double age_of_appearance;
+			double age_of_disappearance;
+			TextContent data_type_code;
+			unsigned int data_type_code_number;
+			TextContent data_type_code_number_additional;
+			GPlatesModel::integer_plate_id_type conjugate_plate_id_number;
+			unsigned int colour_code;
+			unsigned int number_of_points;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlOldPlatesHeader> &gpml_old_plates_header);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 }
 

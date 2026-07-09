@@ -64,7 +64,7 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gml_time_instant(
 	if (current_top_level_propname() == geometry_import_time_property_name)
 	{
 		// Cache the geometry import time.
-		d_geometry_import_time = gml_time_instant.time_position();
+		d_geometry_import_time = gml_time_instant.get_time_position();
 	}
 }
 
@@ -80,8 +80,8 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gml_time_period(
 	if (current_top_level_propname() == valid_time_property_name)
 	{
 		// Cache the time of appearance/disappearance.
-		d_valid_time.time_of_appearance = gml_time_period.begin()->time_position();
-		d_valid_time.time_of_disappearance = gml_time_period.end()->time_position();
+		d_valid_time.time_of_appearance = gml_time_period.begin()->get_time_position();
+		d_valid_time.time_of_disappearance = gml_time_period.end()->get_time_position();
 	}
 }
 
@@ -111,15 +111,15 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gpml_plate_id(
 	if (current_top_level_propname() == reconstruction_plate_id_property_name)
 	{
 		// This plate ID is the reconstruction plate ID.
-		d_recon_plate_id = gpml_plate_id.value();
+		d_recon_plate_id = gpml_plate_id.get_value();
 	}
 	else if (current_top_level_propname() == right_plate_id_property_name)
 	{
-		d_right_plate_id = gpml_plate_id.value();
+		d_right_plate_id = gpml_plate_id.get_value();
 	}
 	else if (current_top_level_propname() == left_plate_id_property_name)
 	{
-		d_left_plate_id = gpml_plate_id.value();
+		d_left_plate_id = gpml_plate_id.get_value();
 	}
 }
 
@@ -134,7 +134,7 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_xs_double(
 	// Note that we're going to assume that we're in a property...
 	if (current_top_level_propname() == spreading_asymmetry_property_name)
 	{
-		d_spreading_asymmetry = xs_double.value();
+		d_spreading_asymmetry = xs_double.get_value();
 	}
 }
 
@@ -149,7 +149,7 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_enumeration(
 	// Note that we're going to assume that we're in a property...
 	if (current_top_level_propname() == reconstruction_method_name)
 	{
-		d_recon_method = enumeration.value();
+		d_recon_method = enumeration.get_value();
 	}
 }
 

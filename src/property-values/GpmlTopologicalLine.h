@@ -27,15 +27,22 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALLINE_H
 #define GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALLINE_H
 
+#include <iosfwd>
 #include <vector>
-#include <boost/intrusive_ptr.hpp>
 
 #include "GpmlTopologicalSection.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/FeatureVisitor.h"
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -48,7 +55,8 @@ namespace GPlatesPropertyValues
 	 * This class implements the PropertyValue which corresponds to "gpml:TopologicalLine".
 	 */
 	class GpmlTopologicalLine:
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::RevisionContext
 	{
 	public:
 
@@ -58,17 +66,22 @@ namespace GPlatesPropertyValues
 		//! A convenience typedef for a shared pointer to a const @a GpmlTopologicalLine.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLine> non_null_ptr_to_const_type;
 
-		//! Typedef for a sequence of topological sections.
-		typedef std::vector<GpmlTopologicalSection::non_null_ptr_type> sections_seq_type;
-
-		//! Typedef for a const iterator over the topological sections.
-		typedef sections_seq_type::const_iterator sections_const_iterator;
-
 
 		virtual
 		~GpmlTopologicalLine()
 		{  }
 
+
+		/**
+		 * Create a @a GpmlTopologicalLine instance from the specified sequence of topological sections.
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				const std::vector<GpmlTopologicalSection::non_null_ptr_type> &topological_sections_)
+		{
+			return create(topological_sections_.begin(), topological_sections_.end());
+		}
 
 		/**
 		 * Create a @a GpmlTopologicalLine instance from the specified sequence of topological sections.
@@ -80,40 +93,40 @@ namespace GPlatesPropertyValues
 				const TopologicalSectionsIterator &sections_begin_,
 				const TopologicalSectionsIterator &sections_end_)
 		{
-			return non_null_ptr_type(
-					new GpmlTopologicalLine(sections_begin_, sections_end_));
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(
+					new GpmlTopologicalLine(
+							transaction,
+							GPlatesModel::RevisionedVector<GpmlTopologicalSection>::create(
+									sections_begin_,
+									sections_end_)));
+			transaction.commit();
+			return ptr;
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlTopologicalLine(*this));
-		}
-
-		const non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-		
-
-		/**
-		 * Return the "begin" const iterator to iterate over the topological sections.
-		 */
-		sections_const_iterator
-		sections_begin() const
-		{
-			return d_sections.begin();
+			return GPlatesUtils::dynamic_pointer_cast<GpmlTopologicalLine>(clone_impl());
 		}
 
 		/**
-		 * Return the "end" const iterator for iterating over the topological sections.
+		 * Returns the 'const' vector of members.
 		 */
-		sections_const_iterator
-		sections_end() const
+		const GPlatesModel::RevisionedVector<GpmlTopologicalSection> &
+		sections() const
 		{
-			return d_sections.end();
+			return *get_current_revision<Revision>().sections.get_revisionable();
 		}
 
+		/**
+		 * Returns the 'non-const' vector of members.
+		 */
+		GPlatesModel::RevisionedVector<GpmlTopologicalSection> &
+		sections()
+		{
+			return *get_current_revision<Revision>().sections.get_revisionable();
+		}
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -122,9 +135,14 @@ namespace GPlatesPropertyValues
 		StructuralType
 		get_structural_type() const
 		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("TopologicalLine");
 			return STRUCTURAL_TYPE;
 		}
+
+		/**
+		 * Static access to the structural type as GpmlTopologicalLine::STRUCTURAL_TYPE.
+		 */
+		static const StructuralType STRUCTURAL_TYPE;
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -163,50 +181,126 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		template <typename TopologicalSectionsIterator>
 		GpmlTopologicalLine(
-				const TopologicalSectionsIterator &sections_begin_,
-				const TopologicalSectionsIterator &sections_end_) :
-			PropertyValue(), 
-			d_sections(sections_begin_, sections_end_)
+				GPlatesModel::ModelTransaction &transaction_,
+				GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type sections_):
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, sections_)))
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlTopologicalLine(
-				const GpmlTopologicalLine &other) :
-			PropertyValue(other), /* share instance id */
-			d_sections(other.d_sections)
+				const GpmlTopologicalLine &other_,
+				boost::optional<RevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
-		/**
-		 * Need to compare all data members (recursively) since our sections are
-		 * *non-const* non_null_intrusive_ptr and hence can be modified by clients.
-		 *
-		 * FIXME: Use *const* non_null_intrusive_ptr to avoid this.
-		 * Although that means use *const* feature visitors which is currently means changes
-		 * will propagate quite far across GPlates - ie, won't be a trivial task to make this change.
-		 */
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<RevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlTopologicalLine(*this, context));
+		}
 
 	private:
 
-		sections_seq_type d_sections;
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlTopologicalLine &
-		operator=(
-				const GpmlTopologicalLine &);
+		/**
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
 
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public PropertyValue::Revision
+		{
+			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					RevisionContext &child_context_,
+					GPlatesModel::RevisionedVector<GpmlTopologicalSection>::non_null_ptr_type sections_) :
+				sections(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GpmlTopologicalSection> >::attach(
+										transaction_, child_context_, sections_))
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
+				sections(other_.sections)
+			{
+				// Clone data members that were not deep copied.
+				sections.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
+				sections(other_.sections)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<RevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return *sections.get_revisionable() == *other_revision.sections.get_revisionable() &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GpmlTopologicalSection> > sections;
+		};
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlTopologicalLine> &gpml_topological_line);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 }
 

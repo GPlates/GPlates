@@ -22,71 +22,159 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QDebug>
-#include <boost/lambda/lambda.hpp>
+#include <iostream>
 
 #include "GpmlArray.h"
 
-#include "model/PropertyValue.h"
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
-const GPlatesPropertyValues::GpmlArray::non_null_ptr_type
-GPlatesPropertyValues::GpmlArray::deep_clone() const
-{
-	GpmlArray::non_null_ptr_type dup = clone();
+#include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeQualifiedXmlName.h"
 
-	// Now we need to clear the property value vector in the duplicate, before we push-back the
-	// cloned property values.
-	dup->d_members.clear();
+#include "scribe/Scribe.h"
 
-	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator iter, end = d_members.end();
-	for (iter = d_members.begin(); iter != end; ++iter) {
-		dup->d_members.push_back((*iter)->deep_clone_as_prop_val());
-	}
 
-    return dup;
-}
+const GPlatesPropertyValues::StructuralType
+GPlatesPropertyValues::GpmlArray::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("Array");
+
 
 std::ostream &
 GPlatesPropertyValues::GpmlArray::print_to(
                 std::ostream &os) const
 {
-        return os;
+	os << "[ ";
+
+	bool first = true;
+	for (GPlatesModel::PropertyValue::non_null_ptr_to_const_type property_value : members())
+	{
+		if (first)
+		{
+			first = false;
+		}
+		else
+		{
+			os << " , ";
+		}
+		os << *property_value;
+	}
+
+	return os << " ]";
 }
 
-bool
-GPlatesPropertyValues::GpmlArray::directly_modifiable_fields_equal(
-	const PropertyValue &other) const
+
+GPlatesModel::Revision::non_null_ptr_type
+GPlatesPropertyValues::GpmlArray::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
 
-	try
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.members.get_revisionable())
 	{
-		const GpmlArray &other_casted =
-			dynamic_cast<const GpmlArray &>(other);
-
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator
-			iter = d_members.begin(),
-			end = d_members.end(),
-			o_iter = other_casted.d_members.begin();
-			//o_end = other_casted.d_members.end();
-
-		if (d_members.size() != other_casted.d_members.size())
-		{
-		    return false;
-		}
-		for (; iter != end ; ++iter, ++o_iter)
-		{
-		    if (! (**iter == **o_iter))
-		    {
-			return false;
-		    }
-		}
-		return true;
-
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
+		return revision.members.clone_revision(transaction);
 	}
 
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlArray::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlArray> &gpml_array)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_array->get_value_type(), "value_type");
+
+		// Save the members.
+		GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type members_ = &gpml_array->members();
+		scribe.save(TRANSCRIBE_SOURCE, members_, "members");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+		if (!value_type_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the members.
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type> members_ =
+				scribe.load<GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "members");
+		if (!members_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_array.construct_object(
+				boost::ref(transaction),  // non-const ref
+				members_,
+				value_type_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlArray::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_value_type(), "value_type");
+
+			// Save the members.
+			GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type members_ = &members();
+			scribe.save(TRANSCRIBE_SOURCE, members_, "members");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+			if (!value_type_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the members.
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type> members_ =
+					scribe.load<GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "members");
+			if (!members_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			d_value_type = value_type_;
+			{
+				GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+				revision_handler.get_revision<Revision>().members.change(
+						revision_handler.get_model_transaction(),
+						members_);
+				revision_handler.commit();
+			}
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlArray>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

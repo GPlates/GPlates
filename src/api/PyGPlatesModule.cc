@@ -1,0 +1,435 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * $Revision$
+ * $Date$
+ * 
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#include <boost/shared_ptr.hpp>
+#include <QString>
+
+#include "global/config.h"  // GPLATES_HAVE_NUMPY_C_API, etc
+
+// We are going to import the numpy C-API in this file.
+// This tells 'global/python.h' not to define NO_IMPORT_ARRAY.
+#define PYGPLATES_IMPORT_NUMPY_ARRAY_API
+#include "global/python.h"
+
+#include "file-io/StandaloneBundle.h"
+
+#include "maths/MathsUtils.h"
+
+#include "utils/Profile.h"
+
+
+// Exceptions
+void export_exceptions();
+
+// Pickle
+void export_pickle();
+
+// utils namespace
+void export_earth();
+void export_strings();
+
+// maths namespace
+void export_date_line_wrapper();
+void export_finite_rotation();
+void export_float();
+void export_geometries_on_sphere();
+void export_great_circle_arc();
+void export_integer();
+void export_lat_lon_point();
+void export_local_cartesian();
+void export_real();
+void export_vector_3d();
+
+// file-io namespace
+void export_feature_collection_file_format_registry();
+
+// model namespace
+void export_feature();
+void export_feature_collection();
+void export_feature_collection_function_argument();
+void export_file_path_function_argument();
+void export_topological_feature_collection_function_argument();
+void export_geo_time_instant();
+void export_ids();
+void export_information_model();
+void export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
+void export_old_feature_collection();
+void export_property_values();
+void export_property_value_visitor();
+void export_qualified_xml_names();
+void export_top_level_property();
+
+// app-logic namespace
+void export_calculate_velocities();
+void export_strain();
+void export_net_rotation();
+void export_network_triangulation();
+void export_plate_partitioner();
+void export_reconstruct();
+void export_reconstruct_model();
+void export_reconstruct_snapshot();
+void export_reconstruction_geometries();
+void export_reconstruction_tree();
+void export_resolve_topologies();
+void export_resolve_topology_parameters();
+void export_rotation_model();
+void export_topological_model();
+void export_topological_snapshot();
+
+// api directory.
+void export_version();
+void export_console_reader();
+void export_console_writer();
+
+// presentation directory.
+void export_instance();
+
+void export_style();
+
+// qt-widgets directory.
+void export_main_window();
+
+void export_co_registration();
+
+void export_colour();
+void export_topology_tools();
+
+void export_coregistration_layer_proxy();
+
+
+/**
+ * Export the part of the python API consisting of C++ python bindings (ie, not pure python).
+ */
+void
+export_cpp_python_api()
+{
+	// Register python exceptions.
+	//
+	// By default our GPlates C++ exceptions are translated to python's 'RuntimeError' exception with
+	// a string message from 'exc.what()' - if they inherit (indirectly) from 'std::exception'
+	// (which they all should do) - otherwise they get translated to 'RuntimeError' with a message of
+	// "unidentifiable C++ exception".
+	// So we only need to explicitly register exceptions that we don't want translated to 'RuntimeError'.
+	// This is usually an exception we want the python user to be able to catch as a specific error,
+	// as opposed to 'RuntimeError' which could be caused by anything really. For example:
+	//
+	//   try:
+	//       feature_collection_file_format_registry.read(filename)
+	//   except pygplates.FileFormatNotSupportedError:
+	//       # Handle unrecognised file format.
+	//       ...
+	//
+	export_exceptions();
+
+	export_pickle();
+
+
+#ifdef GPLATES_PYTHON_EMBEDDING
+	// api directory.
+	export_console_reader();
+	export_console_writer();
+	
+	// presentation directory.
+	export_instance();
+
+	// qt-widgets directory.
+	export_main_window();
+
+	export_style();
+	
+	//export_topology_tools();
+
+	export_coregistration_layer_proxy();
+#endif	
+	// utils namespace
+	export_earth();
+    export_strings();
+
+	// api directory
+    export_version(); // Must be called after 'export_strings()'.
+
+    // maths namespace
+	export_float(); // Must be called before 'export_geometries_on_sphere()'.
+	export_real(); // Must be called before 'export_geometries_on_sphere()'.
+	export_finite_rotation();
+	export_great_circle_arc();
+	export_geometries_on_sphere();
+	export_integer();
+	export_lat_lon_point();
+	export_date_line_wrapper();
+	export_vector_3d();
+	export_local_cartesian();
+
+	// file-io namespace
+	export_feature_collection_file_format_registry();
+	
+    // model namespace
+	export_geo_time_instant(); // Must be called before 'export_feature()'.
+	export_ids(); // Must be called before 'export_feature()'.
+	export_information_model(); // Must be called before 'export_feature()'.
+	export_qualified_xml_names(); // Must be called before 'export_feature()'.
+	export_feature();
+	export_feature_collection();
+	export_feature_collection_function_argument();
+	export_file_path_function_argument();
+	export_topological_feature_collection_function_argument();
+	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
+	export_old_feature_collection();
+	export_property_values();
+	export_property_value_visitor();
+	export_top_level_property();
+
+	// app-logic namespace
+	export_calculate_velocities();  // Must be called before 'export_topological_model', 'export_topological_snapshot' and 'export_net_rotation'.
+	export_strain();
+	export_plate_partitioner();
+	export_reconstruct();
+	export_reconstruct_model();
+	export_reconstruct_snapshot();
+	export_network_triangulation();  // Must be called for 'export_reconstruction_geometries'.
+	export_reconstruction_geometries();
+	export_reconstruction_tree();
+	export_resolve_topologies();
+	export_resolve_topology_parameters();
+	export_rotation_model();
+	export_topological_model();
+	export_topological_snapshot();
+	export_net_rotation(); // Must be called after 'export_reconstruction_geometries()'.
+
+	//export_co_registration();
+	export_colour();
+}
+
+
+
+// Export the part of the python API that is *pure* python code (ie, not C++ python bindings).
+void export_pure_python_api();
+
+
+//
+// Wrap the numpy C-API 'import_array()' macro.
+//
+// We only need to call 'import_array()' once and it should be done during our module initialisation.
+//
+#ifdef GPLATES_HAVE_NUMPY_C_API
+#	if PY_MAJOR_VERSION < 3
+	static
+	void
+	pygplates_numpy_c_api_import_array()
+	{
+		// For Python 2 the 'import_array()' macro is defined as:
+		//
+		//   if (_import_array() < 0) { ...; return; }
+		//
+		// ...so our function signature should not have a return type and therefore we don't need to
+		// return anything (even if macro condition fails).
+		import_array();
+	}
+#	else
+	static
+	void *
+	pygplates_numpy_c_api_import_array()
+	{
+		import_array();
+		// For Python 3 the 'import_array()' macro is defined as:
+		//
+		//   if (_import_array() < 0) { ...; return NULL; }
+		//
+		// ...so our function signature must have a *pointer* return type and therefore we need to return
+		// something (in case macro condition fails).
+		return nullptr;
+	}
+#	endif
+#endif
+
+namespace
+{
+	/**
+	 * Report profiling information to a file when Python exits normally.
+	 *
+	 * This is a no-op if a profile build has not been selected (see "Profile.h").
+	 */
+	void
+	pygplates_profile_report_to_file()
+	{
+		PROFILE_REPORT_TO_FILE("profile.txt");
+	}
+}
+
+#if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
+	namespace
+	{
+		/**
+		 * When pygplates is imported into an *external* Python interpreter (ie, not the interpreter
+		 * *embedded* in GPlates) the '__init__.py' of the pygplates package will call us to let us
+		 * know the directory we're being imported from.
+		 *
+		 * In fact that was the whole reason for creating a "Python package" (with '__init__.py')
+		 * because we cannot easily find the runtime import directory from a C++ extension module.
+		 * In the package '__init__.py' file we have access to the '__file__' attribute which serves
+		 * this purpose. Note that PEP 489 ("Multi-phase extension module initialization":
+		 * https://www.python.org/dev/peps/pep-0489/) addresses this difference between pure Python
+		 * and C extensions, but it is not clear how to achieve this with boost-python.
+		 */
+		void
+		pygplates_post_import(
+				QString pygplates_import_directory)
+		{
+			// Initialise standalone bundle information (and let it know where the bundle location is).
+			GPlatesFileIO::StandaloneBundle::initialise(pygplates_import_directory);
+		}
+	}
+#endif
+
+BOOST_PYTHON_MODULE(pygplates)
+{
+	namespace bp = boost::python;
+
+	//
+	// Note: Unlike GPlates, pyGPlates does not need to initialize Qt resources that exist in 'src/qt-resources'.
+	//       According to the QtResources documentation, calls to Q_INIT_RESOURCE are not needed if
+	//       the resources are compiled into a shared library. Further, if resources only accessed from
+	//       within shared library then there's also no issue with the shared library not being loaded yet.
+	//       So Q_INIT_RESOURCE is not called for the python (API) shared library, but that's no problem since
+	//       the python shared library is used externally (ie, used by an external python interpreter, not the
+	//       GPlates embedded interpreter) and so the resources are only accessed internally by the shared library.
+	//
+
+	//
+	// Apparently Py_Initialize should be called before initialising numpy.
+	//
+	// According to the docs for Py_Initialize:
+	// 
+	//   "This is a no-op when called for a second time (without calling Py_FinalizeEx() first)."
+	//   
+	//...so it should be OK to call twice.
+	//
+	// Calling twice happens when embedding pyGPlates into GPlates (as opposed to loading pyGPlates
+	// into an external Python interpreter) because PyImport_AppendInittab("pygplates", &PyInit_pygplates)
+	// is called (which calls us) and then Py_Initialize() is called (after calling us). However I don't
+	// know if it's a problem to call Py_Initialize() here before PyImport_AppendInittab() has returned.
+	//
+	// Also this seems to upset the order of things because the docs state that other functions,
+	// like Py_SetProgramName(), should be called before Py_Initialize(). But that won't happen if
+	// Py_Initialize() is called here (because Py_SetProgramName() is called after
+	// PyImport_AppendInittab() has returned and hence Py_Initialize() has already been called).
+	//
+	Py_Initialize();
+	//
+	// We're importing the numpy C-API directly because we use it to register converters from
+	// numpy integers/floats to C++ integers/floats.
+	//
+#ifdef GPLATES_HAVE_NUMPY_C_API
+	pygplates_numpy_c_api_import_array();
+#endif
+	//
+	// In future we will also use boost::python::numpy to return numpy arrays (from C++ to Python).
+	// Note that boost::python::numpy also needs initialisation (and it also internally imports the numpy C-API).
+	//
+	// Only available for Boost >= 1.63, and if boost.python.numpy installed since it's currently optional
+	// (because we don't actually use it yet).
+#ifdef GPLATES_HAVE_BOOST_PYTHON_NUMPY
+	bp::numpy::initialize();
+#endif
+
+	// Sanity check: Proceed only if we have access to infinity and NaN.
+	// This should pass on all systems that we support.
+	if (!GPlatesMaths::has_infinity_and_nan())
+	{
+		PyErr_SetString(
+				PyExc_ImportError,
+				"Python implementation must support infinity, quiet NaN and signaling NaN for float and double types.");
+		bp::throw_error_already_set();
+	}
+
+	//
+	// Specify the 'pygplates' module's docstring options.
+	//
+	// Note that we *disable* python and C++ signatures since we explicitly specify the
+	// signatures in the first line of each function's (or class method's) docstring.
+	// Sphinx is used to generate API documentation (see http://sphinx-doc.org) and it
+	// uses the first docstring line as the function signature (if it looks like a signature).
+	//
+	bp::docstring_options module_docstring_options(
+			true/*show_user_defined*/,
+			false/*show_py_signatures*/,
+			false/*show_cpp_signatures*/);
+
+	// Set the 'pygplates' module docstring.
+	bp::scope().attr("__doc__") =
+			"**GPlates Python Application Programming Interface (API)**\n"
+			"\n"
+			"  A Python module consisting of classes and functions providing access to "
+			"GPlates functionality.\n";
+
+	// Inject the __builtin__ module into the 'pygplates' module's __dict__.
+	//
+	// This enables us to pass the 'pygplates' __dict__ as the globals/locals parameter
+	// of 'bp::exec' in order to add pure python source code to the python API (to complement our
+	// our C++ bindings API). The reason for injecting __builtin__ is our boost-python 'pygplates'
+	// module doesn't have it by default (like pure python modules do) and it is needed if
+	// our pure python code is using the 'import' statement for example.
+	// And by using 'pygplates's __dict__ instead of __main__'s __dict__ the classes/functions
+	// in our pure python code will get automatically added to the 'pygplates' module, whereas this
+	// would need to be done explicitly for each pure python function/class defined (if we used __main__).
+	// It also means our pure python functions/classes have a '__module__' attribute of 'pygplates'.
+	// It also means our pure python API code does not need to prefix 'pygplates.' when it calls the
+	// 'pygplates' API (whether that is, in turn, pure python or C++ bindings doesn't matter).
+	bp::scope().attr("__dict__")["__builtins__"] =
+#if PY_MAJOR_VERSION < 3
+			bp::import("__builtin__");
+#else
+			bp::import("builtins");
+#endif
+
+	// Export the part of the python API that consists of C++ python bindings (ie, not pure python).
+	export_cpp_python_api();
+
+	// Export any *pure* python code that contributes to the python API.
+	//
+	// We've already exported all the C++ python bindings - this is important because the pure python
+	// code injects methods into the python classes already defined by the C++ python bindings.
+	export_pure_python_api();
+
+	// If pygplates is being built as a profile build (see "Profile.h") then register a function to
+	// report profiled information to a file when Python exits normally.
+	//
+	// Note that it's possible some boost python objects are still alive when atexit calls this function,
+	// but we're assuming that any profiled code has already run (and hence been profiled) before this happens.
+#if defined(GPLATES_PROFILE_CODE)
+	bp::import("atexit").attr("register")(bp::make_function(&pygplates_profile_report_to_file));
+#endif
+
+#if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
+	// Wrap the 'pygplates_post_import()' function so it can be called by the pygplates "Python package" '__init__.py'
+	// just after it imports this pygplates shared library to let us know our runtime import location.
+	//
+	// Note that this only happens when pygplates is imported into an *external* Python interpreter
+	// (ie, not the interpreter *embedded* in GPlates).
+	bp::def("_post_import",
+			&pygplates_post_import,
+			(bp::arg("pygplates_import_directory")));
+#endif
+}
