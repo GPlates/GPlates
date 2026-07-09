@@ -157,6 +157,14 @@ Installing GPlates
   4. There should now be a "gplates.exe" in the directory '<install_dir>'.
      Note that, unlike Linux, on Windows GPlates is installed as a standalone application.
      This means the dependency libraries are included along with "gplates.exe".
+     Note: If you built GPlates in a conda environment then, for the embedded Python interpreter
+           to work in the standalone install, that environment's BLAS/LAPACK backend must be
+           OpenBLAS rather than MKL (numpy uses BLAS/LAPACK). MKL's runtime is very large
+           (hundreds of MB) and loads its compute kernels dynamically, so it cannot be bundled
+           reliably; OpenBLAS is a single self-contained DLL that is bundled automatically.
+           Select the OpenBLAS variant in your conda environment with, for example:
+               conda install "libblas=*=*openblas"
+           (numpy will then fail to import from the standalone "gplates.exe" if MKL is used).
 
 
 Build the pyGPlates Python package

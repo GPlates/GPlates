@@ -116,6 +116,9 @@ install(
         CODE "set(QT_PLUGINS_INSTALLED \"${QT_PLUGINS_INSTALLED}\")"
         CODE "set(GDAL_PLUGINS_INSTALLED \"${GDAL_PLUGINS_INSTALLED}\")"
         CODE "set(GPLATES_BUILD_GPLATES [[${GPLATES_BUILD_GPLATES}]])"
+        # Needed to locate the bundled Python site-packages (only installed for the 'gplates' target).
+        CODE "set(STANDALONE_BASE_INSTALL_DIR [[${STANDALONE_BASE_INSTALL_DIR}]])"
+        CODE "set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX [[${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}]])"
         # Need to set any relevant CMake policies here since install code apparently does not have access to the
         # max policy version specified in cmake_minimum_required().
         # Policy CMP0207 was introduced in CMake 4.3...
@@ -137,6 +140,57 @@ install(
             else()  # pyGPlates ...
                 # Add pygplates to the list of modules to search.
                 set(ARGUMENT_MODULES ${ARGUMENT_MODULES} "${_target_file}")  # pygplates
+            endif()
+
+            # For the 'gplates' target (which embeds a Python interpreter) also search the bundled
+            # Python extension modules (eg, numpy's '.pyd' on Windows or '.so' on macOS/Linux) so
+            # that their native dependency libraries get discovered and installed. The Python standard
+            # library (including 'site-packages') is copied wholesale into the standalone bundle (see
+            # Install.cmake), but is not otherwise scanned for dependencies. Without this, eg, numpy
+            # fails to import when running gplates outside the environment it was built in (because
+            # its BLAS/LAPACK backend library was never bundled).
+            #
+            # Note: This is gated on GPLATES_BUILD_GPLATES because only 'gplates' installs the
+            #       Python standard library (and hence site-packages); 'pygplates' does not (so
+            #       there is nothing to search), and its dependencies are handled separately (eg,
+            #       by auditwheel/delocate/delvewheel when building pyGPlates wheels).
+            unset(_python_backend_libraries)
+            if (GPLATES_BUILD_GPLATES)
+                # The bundled site-packages directory (already installed by this point).
+                set(_installed_site_packages "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}/site-packages")
+                if (EXISTS "${_installed_site_packages}")
+                    # Python extension modules are '.pyd' on Windows and '.so' on macOS/Linux
+                    # (only the platform-appropriate suffix will actually match anything).
+                    file(GLOB_RECURSE _site_packages_modules
+                        "${_installed_site_packages}/*.pyd"
+                        "${_installed_site_packages}/*.so")
+                    if (_site_packages_modules)
+                        set(ARGUMENT_MODULES ${ARGUMENT_MODULES} ${_site_packages_modules})
+                    endif()
+                endif()
+
+                # On Windows, numpy (from conda) reaches its BLAS/LAPACK backend (OpenBLAS) through the
+                # netlib shim DLLs (libblas/libcblas/liblapack), which use *export forwarding* to reach
+                # 'openblas.dll'. Export forwarders are invisible to file(GET_RUNTIME_DEPENDENCIES) (it
+                # reads import tables), so the backend is not discovered by scanning the '.pyd' modules
+                # alone. Locate it explicitly in the dependency search directories so we can (a) search
+                # it for *its* dependencies (below) and (b) install it (further below).
+                #
+                # Note: This is only needed on Windows. On macOS/Linux the extension modules link their
+                #       backend ('.dylib'/'.so') directly (no export forwarders), so scanning the
+                #       modules above is sufficient to discover it.
+                if (WIN32)
+                    foreach(_search_directory ${GET_RUNTIME_DEPENDENCIES_DIRECTORIES})
+                        file(GLOB _backend_in_directory "${_search_directory}/*openblas*.dll")
+                        if (_backend_in_directory)
+                            list(APPEND _python_backend_libraries ${_backend_in_directory})
+                        endif()
+                    endforeach()
+                    if (_python_backend_libraries)
+                        list(REMOVE_DUPLICATES _python_backend_libraries)
+                        set(ARGUMENT_MODULES ${ARGUMENT_MODULES} ${_python_backend_libraries})
+                    endif()
+                endif()
             endif()
 
             # Only specify arguments to file(GET_RUNTIME_DEPENDENCIES) if we have them.
@@ -204,6 +258,13 @@ install(
                         ${_conflicting_candidates}")
                 endif()
             endforeach()
+
+            # Install the Python BLAS/LAPACK backend DLL(s) (eg, OpenBLAS) themselves.
+            # file(GET_RUNTIME_DEPENDENCIES) searched them (above) for *their* dependencies, but a
+            # searched module is not itself added to the resolved dependencies - so add them here.
+            if (_python_backend_libraries)
+                list(APPEND _resolved_dependencies ${_python_backend_libraries})
+            endif()
         ]]
 )
 
@@ -648,24 +709,36 @@ elseif (APPLE)
                 # (and hence that framework got added to the list multiple times).
                 list(REMOVE_DUPLICATES _installed_frameworks)
 
-                # Codesign the installed frameworks (after codesigning any shared '.so' libraries contained within them).
+                # Fix dependency install names in, and codesign, the shared '.so' libraries contained within the installed frameworks
+                # (after which we codesign the frameworks themselves).
                 #
                 # For example, there are some shared '.so' libraries in the Python framework that are not dependencies of GPlates/pyGPlates
-                # (and hence have not been codesigned). However, they still need code signing (otherwise Apple notarization fails).
+                # (and hence have not had their dependency install names fixed, nor been codesigned).
                 # An example is a directory called 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that contains '.so' libraries (and is in 'sys.path').
                 # There's also site packages (eg, in 'Python.framework/Versions/3.8/lib/python3.8/site-packages/') like NumPy that contain '.so' libraries.
+                #
+                # These '.so' libraries need:
+                #   - their dependency install names fixed, so that any *non-system* dependencies (eg, numpy's BLAS/LAPACK backend, which we
+                #     now bundle by scanning these '.so' modules in the file(GET_RUNTIME_DEPENDENCIES) step above) are referenced from inside
+                #     the bundle (eg, "@executable_path/../MacOS/...") rather than from their original (eg, Macports "/opt/local/lib/...")
+                #     location - otherwise, eg, 'import numpy' fails when running gplates outside the environment it was built in.
+                #     Extension modules that only depend on system libraries (eg, in '/usr/lib' or '/System') are left unchanged.
+                #   - code signing (otherwise Apple notarization fails).
+                # Note that fixing the dependency install names must happen *before* codesigning (since we cannot modify after signing).
                 #
                 # Originally we only applied this logic to the Python framework (since the other frameworks, like the Qt frameworks, don't typically have '.so' libraries).
                 # However, we now apply the same logic to all installed frameworks (just in case the other frameworks add '.so' libraries in the future).
                 #
                 # Note: The Python standard library is only installed for the 'gplates' target which has an embedded Python interpreter
                 #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
-                #       So it will only get installed (and therefore codesigned) for the 'gplates' target.
+                #       So it will only get installed (and therefore processed here) for the 'gplates' target.
                 #
                 foreach(_installed_framework ${_installed_frameworks})
                     # Recursively search for '.so' files within the installed framework (if any).
                     file(GLOB_RECURSE _installed_framework_shared_libs "${_installed_framework}/*.so")
                     foreach(_shared_lib ${_installed_framework_shared_libs})
+                        # Fix dependency install names *before* codesigning (since we cannot modify after signing).
+                        fix_dependency_install_names(${_shared_lib})
                         codesign(${_shared_lib})
                     endforeach()
 
@@ -795,6 +868,8 @@ else()  # Linux
             #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS_INSTALLED). And a side note, it does this at install time...
             CODE "set(QT_PLUGINS_INSTALLED \"${QT_PLUGINS_INSTALLED}\")"
             CODE "set(GDAL_PLUGINS_INSTALLED \"${GDAL_PLUGINS_INSTALLED}\")"
+            CODE "set(GPLATES_BUILD_GPLATES [[${GPLATES_BUILD_GPLATES}]])"
+            CODE "set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX [[${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}]])"
             # The *build* target filename: executable (for gplates) or module library (for pygplates).
             CODE "set(_target_file_name \"$<TARGET_FILE_NAME:${BUILD_TARGET}>\")"
             #
@@ -813,6 +888,26 @@ else()  # Linux
                 foreach(_plugin ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
                     set_rpath(${_plugin})
                 endforeach()
+
+                # Set the RPATH in the bundled Python extension modules (eg, numpy's '.so' files in the
+                # installed Python standard library / site-packages) so that they can find their now-bundled
+                # native dependencies (eg, the BLAS/LAPACK backend) in the 'lib/' sub-directory - otherwise,
+                # eg, 'import numpy' fails when running gplates outside the environment it was built in.
+                # Their non-system dependencies are discovered and bundled by scanning these modules in the
+                # file(GET_RUNTIME_DEPENDENCIES) step above.
+                #
+                # Note: The Python standard library is only installed for the 'gplates' target which has an
+                #       embedded Python interpreter (not 'pygplates'). So it will only get processed here for
+                #       the 'gplates' target.
+                if (GPLATES_BUILD_GPLATES)
+                    set(_installed_python_stdlib "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}")
+                    if (EXISTS "${_installed_python_stdlib}")
+                        file(GLOB_RECURSE _installed_python_shared_libs "${_installed_python_stdlib}/*.so")
+                        foreach(_shared_lib ${_installed_python_shared_libs})
+                            set_rpath(${_shared_lib})
+                        endforeach()
+                    endif()
+                endif()
 
                 # Set the RPATH in the installed gplates executable (or pygplates library).
                 set_rpath(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${_target_file_name})
