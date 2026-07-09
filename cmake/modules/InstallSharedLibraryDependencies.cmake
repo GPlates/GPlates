@@ -57,6 +57,13 @@ if (MSVC)
     include(InstallRequiredSystemLibraries)
     # Install the runtime libraries in same location as gplates.exe (or pygplates.pyd) so they can be found when executing gplates (or importing pygplates).
     install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
+    #
+    # Note: A system runtime library installed here (eg, VCRUNTIME140.dll) can subsequently be
+    #       overwritten by a copy found by file(GET_RUNTIME_DEPENDENCIES) below, since both install
+    #       to the same destination and the dependency install runs afterwards. This happens in a
+    #       conda environment (which ships its own VCRUNTIME140.dll on the PATH). It's benign because
+    #       both are valid MSVC runtimes, but be aware the installed copy may not be the Visual Studio
+    #       redistributable one that InstallRequiredSystemLibraries provides.
 endif()
 
 
@@ -160,15 +167,43 @@ install(
                 ${ARGUMENT_PRE_EXCLUDE_REGEXES}  # Can evaluate to empty.
                 ${ARGUMENT_POST_EXCLUDE_REGEXES})  # Can evaluate to empty.
 
-            # Fail if any unresolved/conflicting dependencies.
+            # Fail if any unresolved dependencies.
             if (_unresolved_dependencies)
                 message(FATAL_ERROR "There were unresolved dependencies of \"${_target_file}\":
                     ${_unresolved_dependencies}")
             endif()
-            if (_conflicting_dependencies)
-                message(FATAL_ERROR "There were conflicting dependencies of \"${_target_file}\":
-                    ${_conflicting_dependencies}")
-            endif()
+
+            # Resolve conflicting dependencies (same DLL basename found in more than one search
+            # directory). This is normal for conda, which ships some DLLs (eg, zlib.dll) in both
+            # the environment root, beside python.exe, and in Library/bin. A conflicting dependency
+            # is *not* added to the resolved dependencies by file(GET_RUNTIME_DEPENDENCIES), so we
+            # must handle it ourselves (otherwise it would silently be omitted from the install).
+            # If all copies of a conflicting dependency are byte-identical then we simply install
+            # one of them; if they genuinely differ then we fail (eg, an accidental mix of Qt5 and
+            # Qt6 libraries in the search directories).
+            #
+            # Note: file(GET_RUNTIME_DEPENDENCIES) sets '<prefix>_FILENAMES' (and one
+            #       '<prefix>_<filename>' list per conflicting filename), but does not set a
+            #       variable named '<prefix>' itself.
+            foreach(_conflicting_filename ${_conflicting_dependencies_FILENAMES})
+                set(_conflicting_candidates ${_conflicting_dependencies_${_conflicting_filename}})
+                list(GET _conflicting_candidates 0 _chosen_candidate)
+                file(SHA256 "${_chosen_candidate}" _chosen_candidate_hash)
+                set(_conflicting_candidates_identical TRUE)
+                foreach(_conflicting_candidate ${_conflicting_candidates})
+                    file(SHA256 "${_conflicting_candidate}" _conflicting_candidate_hash)
+                    if (NOT _conflicting_candidate_hash STREQUAL _chosen_candidate_hash)
+                        set(_conflicting_candidates_identical FALSE)
+                    endif()
+                endforeach()
+                if (_conflicting_candidates_identical)
+                    message(STATUS "Multiple identical copies of dependency \"${_conflicting_filename}\" found; installing \"${_chosen_candidate}\".")
+                    list(APPEND _resolved_dependencies "${_chosen_candidate}")
+                else()
+                    message(FATAL_ERROR "Conflicting dependency \"${_conflicting_filename}\" of \"${_target_file}\" resolves to differing libraries:
+                        ${_conflicting_candidates}")
+                endif()
+            endforeach()
         ]]
 )
 
