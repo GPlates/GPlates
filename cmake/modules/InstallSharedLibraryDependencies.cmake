@@ -126,6 +126,18 @@ install(
             if(POLICY CMP0207)
                 cmake_policy(SET CMP0207 NEW)
             endif()
+            # Allow the CMP0009 policy change below to be made inside this included install script
+            # without a CMP0011 warning (CMP0011 NEW gives included scripts automatic policy push/pop).
+            if(POLICY CMP0011)
+                cmake_policy(SET CMP0011 NEW)
+            endif()
+            # Don't follow symlinks in file(GLOB_RECURSE) below (eg, when scanning bundled Python
+            # extension modules, and later the installed frameworks which contain 'Versions/Current'
+            # symlinks). This avoids the CMP0009 developer warning and avoids visiting the same '.so'
+            # files twice (once via the real versioned path and once via the 'Current' symlink).
+            if(POLICY CMP0009)
+                cmake_policy(SET CMP0009 NEW)
+            endif()
         ]]
         CODE [[
             unset(ARGUMENT_EXECUTABLES)
@@ -646,12 +658,20 @@ elseif (APPLE)
                     endforeach()
 
                     # Run 'install_name_tool -change <installed-dependency-file-install-name> <installed-dependency-file> ... <installed-file>' .
-                    execute_process(
-                        COMMAND ${INSTALL_NAME_TOOL} ${_change_installed_dependency_file_install_names_options} ${installed_file}
-                        RESULT_VARIABLE _install_name_tool_result
-                        ERROR_VARIABLE _install_name_tool_error)
-                    if (_install_name_tool_result)
-                        message(FATAL_ERROR "${INSTALL_NAME_TOOL} failed: ${_install_name_tool_error}")
+                    #
+                    # Only run this if there's at least one '-change' option (ie, at least one non-system dependency to fix up).
+                    # Some installed files (eg, Python standard library extension modules such as '_datetime.cpython-*.so')
+                    # depend *only* on system libraries (in '/usr/lib' or '/System'), which we skip above. In that case the
+                    # options list is empty and running 'install_name_tool <installed-file>' with no operations would fail
+                    # (install_name_tool prints its usage message and returns a non-zero exit code when given no operations).
+                    if (_change_installed_dependency_file_install_names_options)
+                        execute_process(
+                            COMMAND ${INSTALL_NAME_TOOL} ${_change_installed_dependency_file_install_names_options} ${installed_file}
+                            RESULT_VARIABLE _install_name_tool_result
+                            ERROR_VARIABLE _install_name_tool_error)
+                        if (_install_name_tool_result)
+                            message(FATAL_ERROR "${INSTALL_NAME_TOOL} failed: ${_install_name_tool_error}")
+                        endif()
                     endif()
 
                     # Get the install name for the installed file itself (as opposed to its dependencies).
@@ -687,6 +707,17 @@ elseif (APPLE)
             # At the same time code sign GPlates (or pyGPlates), its Qt/GDAL plugins and their installed dependencies with a valid Developer ID certificate (if available).
             #
             CODE [[
+                # Don't follow symlinks when recursively globbing '.so' files in the installed frameworks below.
+                # Frameworks contain a 'Versions/Current' symlink, so following symlinks would visit each '.so'
+                # twice (and emit the CMP0009 developer warning).
+                # (CMP0011 NEW avoids a warning about changing a policy inside this included install script.)
+                if(POLICY CMP0011)
+                    cmake_policy(SET CMP0011 NEW)
+                endif()
+                if(POLICY CMP0009)
+                    cmake_policy(SET CMP0009 NEW)
+                endif()
+
                 # Fix the dependency install names in each installed dependency, and then codesign the dependency.
                 foreach(_installed_dependency ${_installed_dependencies})
                     fix_dependency_install_names(${_installed_dependency})
@@ -879,6 +910,17 @@ else()  # Linux
             # dependencies (also in 'lib/').
             #
             CODE [[
+                # Don't follow symlinks when recursively globbing '.so' files in the installed Python
+                # standard library below (avoids the CMP0009 developer warning and visiting the same
+                # '.so' twice via any symlinks).
+                # (CMP0011 NEW avoids a warning about changing a policy inside this included install script.)
+                if(POLICY CMP0011)
+                    cmake_policy(SET CMP0011 NEW)
+                endif()
+                if(POLICY CMP0009)
+                    cmake_policy(SET CMP0009 NEW)
+                endif()
+
                 # Set the RPATH in each installed dependency.
                 foreach(_installed_dependency ${_installed_dependencies})
                     set_rpath(${_installed_dependency})
