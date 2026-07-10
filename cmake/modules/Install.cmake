@@ -11,29 +11,11 @@
 include(GNUInstallDirs)
 
 #
-# The following shows how to configure CMake for either 'gplates' or 'pygplates', build it and then
-# install it into a 'staging' sub-directory. It assumes the source code is in a directory 'gplates-src'
-# and that you are creating a sibling directory 'gplates-build' or 'pygplates-build' (or both).
+# See the top-level BUILD-Windows.md / BUILD-macOS.md / BUILD-Linux.md for how to configure, build and
+# install 'gplates' or 'pygplates' (including the GPLATES_BUILD_GPLATES and GPLATES_INSTALL_STANDALONE
+# options used below).
 #
-# For 'gplates':
-#
-#   mkdir gplates-build  # You should now see 'gplates-src/' and 'gplates-build/' side-by-side
-#   cd gplates-build
-#   cmake -D GPLATES_BUILD_GPLATES:BOOL=TRUE ../gplates-src  # Note the TRUE for building gplates
-#   cmake --build .
-#   cmake --install . --prefix staging  # Should now have a 'gplates-build/staging/' directory
-#
-# For 'pygplates':
-#
-#   mkdir pygplates-build  # You should now see 'gplates-src/' and 'pygplates-build/' side-by-side
-#   cd pygplates-build
-#   cmake -D GPLATES_BUILD_GPLATES:BOOL=FALSE ../gplates-src  # Note the FALSE for building pygplates
-#   cmake --build .
-#   cmake --install . --prefix staging  # Should now have a 'pygplates-build/staging/' directory
-#
-# For GPlates, in most cases you wouldn't typically install directly like this. More likely you'd create a package
-# using CPack (see Package.cmake) which will, in turn, install to its own staging area prior to creating a package.
-# However for pyGPlates, the install phase is used by scikit-build-core to create a Python wheel (see pyproject.toml).
+# For pyGPlates, the install phase is also used by scikit-build-core to create a Python wheel (see pyproject.toml).
 #
 
 #
