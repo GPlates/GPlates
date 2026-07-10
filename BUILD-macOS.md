@@ -89,10 +89,11 @@ On macOS, GPlates is installed as a **standalone bundle**: the dependency librar
 > bundled into the app automatically (along with its numpy extension modules' other native
 > dependencies), whereas MKL cannot be bundled reliably.
 
-> **Note (conda Python):** installing a standalone bundle requires a build in which the macOS
-> Python-framework requirement has been relaxed — conda's Python is *not* packaged as a
-> `Python.framework`. If `cmake --install` reports that Python must be a framework, that relaxation
-> still needs to be applied (see `cmake/modules/Install.cmake`).
+> **Note (conda Python):** conda's Python is *not* packaged as a `Python.framework`. The standalone
+> build handles this: the Python standard library is bundled under
+> `gplates.app/Contents/Frameworks/lib/pythonX.Y` and the embedded interpreter is given its home
+> explicitly (a framework Python, eg MacPorts, locates its home via dyld instead). No extra steps are
+> required.
 
 ## Build pyGPlates
 

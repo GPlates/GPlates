@@ -781,6 +781,28 @@ elseif (APPLE)
                     codesign(${_installed_framework})
                 endforeach()
 
+                # For a non-framework (eg, conda) bundled Python, the standard library is installed
+                # *outside* any '.framework' (eg, in 'gplates.app/Contents/Frameworks/lib/python3.14'),
+                # so its extension modules ('.so') were not covered by the installed-frameworks loop above.
+                # Fix their dependency install names (so any *non-system* dependencies - eg, numpy's
+                # BLAS/LAPACK backend, which we now bundle - reference inside the bundle rather than their
+                # original build-machine location) and codesign them (otherwise Apple notarization fails).
+                # For a framework Python this is skipped (its '.so' files were already handled above).
+                #
+                # Note: The Python standard library is only installed for the 'gplates' target (which has an
+                #       embedded Python interpreter), so this only applies there.
+                if (GPLATES_BUILD_GPLATES AND NOT GPLATES_PYTHON_STDLIB_INSTALL_PREFIX MATCHES "\\.framework/")
+                    set(_installed_python_stdlib "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}")
+                    if (EXISTS "${_installed_python_stdlib}")
+                        file(GLOB_RECURSE _installed_python_shared_libs "${_installed_python_stdlib}/*.so")
+                        foreach(_shared_lib ${_installed_python_shared_libs})
+                            # Fix dependency install names *before* codesigning (since we cannot modify after signing).
+                            fix_dependency_install_names(${_shared_lib})
+                            codesign(${_shared_lib})
+                        endforeach()
+                    endif()
+                endif()
+
                 # Fix the dependency install names in each installed plugin (Qt and GDAL).
                 foreach(_plugin ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
                     fix_dependency_install_names(${_plugin})

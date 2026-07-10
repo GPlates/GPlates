@@ -60,13 +60,19 @@ set(GPLATES_STANDALONE_GDAL_PLUGINS_DIR gdal_plugins)
 #       non-embedded Python interpreter that has its own Python standard library).
 if (GPLATES_INSTALL_STANDALONE AND GPLATES_BUILD_GPLATES)
   if (APPLE)
-    # On Apple we're expecting Python to be a framework.
+    # On Apple, Python may either be a framework (eg, MacPorts) or a normal prefix layout (eg, conda).
     if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
+        # Framework Python (eg, MacPorts).
         # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
         # 'Python.framework/Versions/3.8/lib/python3.8'.
         string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "\\1" GPLATES_STANDALONE_PYTHON_STDLIB_DIR ${GPLATES_PYTHON_STDLIB_DIR})
     else()
-        message(FATAL_ERROR "Expected Python to be a framework")
+        # Non-framework Python (eg, conda).
+        # Use the path of the standard library relative to the Python prefix (eg, 'lib/python3.14').
+        # This gets installed under 'gplates.app/Contents/Frameworks/' (see Install.cmake) and is located
+        # there at runtime (see 'src/file-io/StandaloneBundle.cc'). Since it is not a framework, the embedded
+        # interpreter is told its home explicitly (see 'src/gui/PythonManager.cc').
+        file(RELATIVE_PATH GPLATES_STANDALONE_PYTHON_STDLIB_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
     endif()
   else() # Windows or Linux
     # Find the relative path from the Python prefix directory to the standard library directory.

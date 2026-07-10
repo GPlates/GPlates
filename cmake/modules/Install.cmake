@@ -356,14 +356,21 @@ if (GPLATES_INSTALL_STANDALONE)
         # Find the relative path from the Python prefix directory to the standard library directory.
         # We'll use this as the standard library install location relative to our install prefix.
         if (APPLE)
-            # On Apple we're expecting Python to be a framework. Later on, if we're also installing shared library dependencies, we will also
-            # install the Python framework library itself (and its Resources directory).
+            # On Apple, Python may either be a framework (eg, MacPorts) or a normal prefix layout (eg, conda).
             if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
+                # Framework Python (eg, MacPorts). Later on, if we're also installing shared library dependencies,
+                # we will also install the Python framework library itself (and its Resources directory).
                 # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
                 # 'gplates.app/Contents/Frameworks/Python.framework/Versions/3.8/lib/python3.8'.
                 string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "gplates.app/Contents/Frameworks/\\1" GPLATES_PYTHON_STDLIB_INSTALL_PREFIX ${GPLATES_PYTHON_STDLIB_DIR})
             else()
-                message(FATAL_ERROR "Expected Python to be a framework")
+                # Non-framework Python (eg, conda). Install the standard library under 'gplates.app/Contents/Frameworks/'
+                # using its path relative to the Python prefix (eg, 'gplates.app/Contents/Frameworks/lib/python3.14').
+                # This must match GPLATES_STANDALONE_PYTHON_STDLIB_DIR in Config_h.cmake and the runtime location in
+                # 'src/file-io/StandaloneBundle.cc'. The non-framework libpython itself is a regular '.dylib' and is
+                # copied into 'Contents/MacOS/' via the shared-library-dependency install below.
+                file(RELATIVE_PATH _python_stdlib_relative_to_prefix ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
+                set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX gplates.app/Contents/Frameworks/${_python_stdlib_relative_to_prefix})
             endif()
         else() # Windows or Linux
             file(RELATIVE_PATH GPLATES_PYTHON_STDLIB_INSTALL_PREFIX ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
