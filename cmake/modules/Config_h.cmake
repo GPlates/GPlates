@@ -69,9 +69,10 @@ if (GPLATES_INSTALL_STANDALONE AND GPLATES_BUILD_GPLATES)
     else()
         # Non-framework Python (eg, conda).
         # Use the path of the standard library relative to the Python prefix (eg, 'lib/python3.14').
-        # This gets installed under 'gplates.app/Contents/Frameworks/' (see Install.cmake) and is located
-        # there at runtime (see 'src/file-io/StandaloneBundle.cc'). Since it is not a framework, the embedded
-        # interpreter is told its home explicitly (see 'src/gui/PythonManager.cc').
+        # This gets installed under 'gplates.app/Contents/Resources/' (see Install.cmake) and is located
+        # there at runtime (see 'src/file-io/StandaloneBundle.cc') - a loose directory tree cannot go under
+        # the code-signed 'Contents/Frameworks/'. Since it is not a framework, the embedded interpreter is
+        # told its home explicitly (see 'src/gui/PythonManager.cc').
         file(RELATIVE_PATH GPLATES_STANDALONE_PYTHON_STDLIB_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
     endif()
   else() # Windows or Linux

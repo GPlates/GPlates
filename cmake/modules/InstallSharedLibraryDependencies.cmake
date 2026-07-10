@@ -802,7 +802,7 @@ elseif (APPLE)
                 endforeach()
 
                 # For a non-framework (eg, conda) bundled Python, the standard library is installed
-                # *outside* any '.framework' (eg, in 'gplates.app/Contents/Frameworks/lib/python3.14'),
+                # *outside* any '.framework' (eg, in 'gplates.app/Contents/Resources/lib/python3.14'),
                 # so its extension modules ('.so') were not covered by the installed-frameworks loop above.
                 # Fix their dependency install names (so any *non-system* dependencies - eg, numpy's
                 # BLAS/LAPACK backend, which we now bundle - reference inside the bundle rather than their

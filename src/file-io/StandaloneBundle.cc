@@ -246,9 +246,18 @@ GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory()
 	}
 	QString bundle_python_stdlib_dir = bundle_root_dir.get();
 
-	// On macOS the bundle Python standard library is relative to the frameworks directory.
+	// On macOS a framework Python (eg, MacPorts) is bundled inside 'Contents/Frameworks' (as a proper
+	// framework), whereas a non-framework Python (eg, conda) is bundled as a plain directory tree under
+	// 'Contents/Resources' (a loose '.py'/'.so' tree is not permitted in the code-signed 'Contents/Frameworks').
 #		if defined(Q_OS_MACOS)
-	bundle_python_stdlib_dir += "/gplates.app/Contents/Frameworks";
+	if (QString(GPLATES_STANDALONE_PYTHON_STDLIB_DIR).contains("Python.framework"))
+	{
+		bundle_python_stdlib_dir += "/gplates.app/Contents/Frameworks";
+	}
+	else
+	{
+		bundle_python_stdlib_dir += "/gplates.app/Contents/Resources";
+	}
 #		endif
 
 	bundle_python_stdlib_dir = bundle_python_stdlib_dir + "/" + GPLATES_STANDALONE_PYTHON_STDLIB_DIR;
@@ -303,15 +312,15 @@ GPlatesFileIO::StandaloneBundle::get_python_home_directory()
 		return boost::none;
 	}
 
-	// The non-framework standard library is bundled at '<bundle>/gplates.app/Contents/Frameworks/lib/pythonX.Y'
-	// (see Config_h.cmake / Install.cmake), so the Python home (prefix) is the 'Contents/Frameworks' directory.
+	// The non-framework standard library is bundled at '<bundle>/gplates.app/Contents/Resources/lib/pythonX.Y'
+	// (see Config_h.cmake / Install.cmake), so the Python home (prefix) is the 'Contents/Resources' directory.
 	boost::optional<QString> bundle_root_dir = get_bundle_root_directory();
 	if (!bundle_root_dir)
 	{
 		return boost::none;
 	}
 
-	return bundle_root_dir.get() + "/gplates.app/Contents/Frameworks";
+	return bundle_root_dir.get() + "/gplates.app/Contents/Resources";
 
 #		else  // Windows or Linux
 

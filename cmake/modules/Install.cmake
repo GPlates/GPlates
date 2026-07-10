@@ -364,13 +364,16 @@ if (GPLATES_INSTALL_STANDALONE)
                 # 'gplates.app/Contents/Frameworks/Python.framework/Versions/3.8/lib/python3.8'.
                 string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "gplates.app/Contents/Frameworks/\\1" GPLATES_PYTHON_STDLIB_INSTALL_PREFIX ${GPLATES_PYTHON_STDLIB_DIR})
             else()
-                # Non-framework Python (eg, conda). Install the standard library under 'gplates.app/Contents/Frameworks/'
-                # using its path relative to the Python prefix (eg, 'gplates.app/Contents/Frameworks/lib/python3.14').
+                # Non-framework Python (eg, conda). Install the standard library under 'gplates.app/Contents/Resources/'
+                # using its path relative to the Python prefix (eg, 'gplates.app/Contents/Resources/lib/python3.14').
+                # It must go under 'Contents/Resources/' (not 'Contents/Frameworks/') because a plain directory tree of
+                # '.py'/'.so' files is neither a framework nor a dylib, and code-signing rejects such content in the
+                # reserved 'Contents/Frameworks/' directory ("bundle format unrecognized, invalid, or unsuitable").
                 # This must match GPLATES_STANDALONE_PYTHON_STDLIB_DIR in Config_h.cmake and the runtime location in
                 # 'src/file-io/StandaloneBundle.cc'. The non-framework libpython itself is a regular '.dylib' and is
                 # copied into 'Contents/MacOS/' via the shared-library-dependency install below.
                 file(RELATIVE_PATH _python_stdlib_relative_to_prefix ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
-                set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX gplates.app/Contents/Frameworks/${_python_stdlib_relative_to_prefix})
+                set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX gplates.app/Contents/Resources/${_python_stdlib_relative_to_prefix})
             endif()
         else() # Windows or Linux
             file(RELATIVE_PATH GPLATES_PYTHON_STDLIB_INSTALL_PREFIX ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
