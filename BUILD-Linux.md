@@ -50,6 +50,8 @@ when configuring (shown below).
 The dependencies are also available as Ubuntu packages. The minimum supported release is
 **Ubuntu 22.04 (Jammy)**; the commands below have been written for 22.04 and later. This route uses
 **Qt5** (Ubuntu does not currently package Qwt for Qt6); use the conda option above for a Qt6 build.
+Qt5 remains supported for now but will be removed in a future release, at which point this apt route
+will need Qt6 packages.
 
 ```bash
 sudo apt-get update

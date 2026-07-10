@@ -14,6 +14,7 @@ library) from source on Windows, using [conda](https://docs.conda.io/) to instal
 3. [Build GPlates](#build-gplates)
 4. [Build pyGPlates](#build-pygplates)
 5. [Developers](#developers)
+   - [Choosing a terminal](#choosing-a-terminal)
    - [Using the Visual Studio IDE](#using-the-visual-studio-ide)
    - [Using PowerShell](#using-powershell)
 
@@ -21,8 +22,10 @@ library) from source on Windows, using [conda](https://docs.conda.io/) to instal
 
 - **Visual Studio 2022** (the free Community edition is fine), or the standalone *Build Tools for
   Visual Studio 2022*, with the **Desktop development with C++** workload installed. GPlates requires
-  the MSVC compiler. The conda environment below activates this compiler for you (via the
-  `vs2022_win-64` package) — but Visual Studio itself must already be installed.
+  the MSVC compiler. In the **Anaconda Prompt** (Command Prompt), the conda environment below activates
+  this compiler for you (via the `vs2022_win-64` package); from PowerShell you use a Visual Studio
+  developer shell instead (see [Choosing a terminal](#choosing-a-terminal)). Either way, Visual Studio
+  itself must already be installed.
 
   > Visual Studio 2019 (version 16) also works; if you use it, install `vs2019_win-64` instead of
   > `vs2022_win-64` in the environment file.
@@ -58,9 +61,7 @@ Keep this environment activated for all the build commands below.
 
 > **Note:** In a plain Command Prompt / Anaconda Prompt, `conda deactivate` may not fully restore
 > `PATH` afterward (a known interaction with the `vs2022_win-64` compiler activation) — this doesn't
-> affect the build itself, but if you need a clean shell afterward, close and reopen the terminal, or
-> use PowerShell instead (see [Using PowerShell](#using-powershell)), where `conda deactivate` restores
-> `PATH` correctly.
+> affect the build itself, but if you need a clean shell afterward, just close and reopen the terminal.
 
 ## Build GPlates
 
@@ -132,6 +133,23 @@ A `pygplates` package should then be importable in the environment (`python -m p
 
 ## Developers
 
+### Choosing a terminal
+
+The build commands on this page assume the **Anaconda Prompt** (Command Prompt) — the default below.
+Which terminal you use matters on Windows, because the MSVC compiler is activated differently in each:
+
+| Terminal | Ninja build (needs MSVC on `PATH`) | `devenv` available |
+|---|---|---|
+| Anaconda Prompt (cmd) — *the documented default* | ✅ conda `vs2022_win-64` sets up MSVC | ✅ |
+| Plain PowerShell / Anaconda PowerShell Prompt | ❌ conda can't propagate the MSVC env | ❌ |
+| Developer PowerShell for VS 2022 | ✅ VS sets up MSVC (+ conda deps via `activate`) | ✅ |
+| Developer Command Prompt for VS 2022 | ✅ VS sets up MSVC (+ conda deps) | ✅ |
+
+In short: use the **Anaconda Prompt**, or — if you prefer PowerShell — **"Developer PowerShell for VS
+2022"** (see [Using PowerShell](#using-powershell)). A *plain* PowerShell can't configure a Ninja build
+at all. In every working terminal, activate the conda environment (`conda activate gplates`) so the
+dependency libraries are on `PATH`.
+
 ### Using the Visual Studio IDE
 
 The Ninja build above does not create a Visual Studio solution. If you want to work in the Visual
@@ -151,31 +169,33 @@ the correct dependency DLLs (via the environment's `PATH`) when it runs GPlates:
 devenv build-gplates-vs\GPlates.sln
 ```
 
+> `devenv` is on `PATH` in the Anaconda Prompt and in "Developer PowerShell for VS 2022", but *not* in
+> a plain PowerShell (see [Choosing a terminal](#choosing-a-terminal)).
+
 ### Using PowerShell
 
 The commands on this page are written for the Anaconda Prompt (Command Prompt). If you'd rather
-build from PowerShell, open **"Anaconda Powershell Prompt"** from the Start menu, then activate the
-conda environment inside it:
+build from PowerShell, open **"Developer PowerShell for VS 2022"** from the Start menu, then activate
+the conda environment inside it:
 
 ```powershell
 conda activate gplates
 ```
 
-This gives you both the MSVC compiler and the conda dependencies in the same shell.
+> **Why the Developer shell, and not a plain PowerShell** (see the table in [Choosing a
+> terminal](#choosing-a-terminal)): the `vs2022_win-64` package sets up the MSVC compiler by running the
+> equivalent of `vcvarsall.bat`. In Command Prompt that runs directly and works, but in PowerShell
+> `conda activate` runs it in a nested `cmd.exe` subprocess whose environment changes never make it back
+> — so a plain PowerShell (including "Anaconda Powershell Prompt") can't find the compiler and CMake
+> fails with "No CMAKE_C_COMPILER could be found". "Developer PowerShell for VS 2022" sets up the
+> compiler itself, independent of conda; `conda activate gplates` on top of that still adds the conda
+> dependency paths correctly, since — unlike the compiler — most conda packages (Qt, GDAL, PROJ, etc.)
+> activate the same way in every shell.
 
-> There's no need for a Visual-Studio-specific shell (e.g. "Developer PowerShell for VS 2022"). That
-> shell exists to run `vcvarsall.bat`, which sets up the compiler environment (`PATH`, plus `INCLUDE` and
-> `LIB` so the compiler and linker can find system headers and libraries). The `vs2022_win-64` package
-> activated above does this itself as part of `conda activate gplates` — that's why it's in the
-> environment (see Prerequisites) — so a separate Developer shell would just repeat it. The Visual Studio
-> generator / `devenv` path (see [Using the Visual Studio IDE](#using-the-visual-studio-ide) above)
-> doesn't need any of this in the first place: Visual Studio resolves its own compiler toolset
-> internally, regardless of `PATH`; the conda environment there is only needed for the dependency DLLs,
-> so `devenv` can run/debug `gplates.exe`.
-
-The build commands are otherwise the same, with two PowerShell-specific changes: use a backtick `` ` ``
-instead of `^` to continue a command onto the next line, and `$env:CONDA_PREFIX` instead of `%CONDA_PREFIX%`
-to refer to the activated environment. For example, the GPlates configure step becomes:
+This gives you both the MSVC compiler and the conda dependencies in the same shell. The build commands
+are otherwise the same, with two PowerShell-specific changes: use a backtick `` ` `` instead of `^` to
+continue a command onto the next line, and `$env:CONDA_PREFIX` instead of `%CONDA_PREFIX%` to refer to
+the activated environment. For example, the GPlates configure step becomes:
 
 ```powershell
 cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release `
@@ -186,3 +206,6 @@ cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release `
 > **Careful:** `%CONDA_PREFIX%` is Command Prompt syntax. PowerShell won't error on it — it just
 > passes the literal text through unexpanded — so CMake silently fails to find the environment instead
 > of giving an obvious error.
+
+Since "Developer PowerShell for VS 2022" already puts `devenv` on `PATH`, the [Using the Visual Studio
+IDE](#using-the-visual-studio-ide) commands above work unchanged in this shell too.
