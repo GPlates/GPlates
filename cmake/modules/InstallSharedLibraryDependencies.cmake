@@ -512,11 +512,27 @@ elseif (APPLE)
                             # Get '${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/lib/dependency.dylib' from resolved dependency.
                             string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/lib/\\1" _installed_dependency "${_resolved_dependency}")
                         endif()
+
+                        # A resolved dependency is often referenced (and hence resolved) via a symlink rather than the
+                        # real library file. For example, consumers link '@rpath/libFoo.6.dylib' and conda ships
+                        # 'libFoo.6.dylib -> libFoo.6.11.1.dylib' (and similarly 'libopenblasp-r0.3.33.dylib -> libopenblas.0.dylib').
+                        # FOLLOW_SYMLINK_CHAIN copied both the symlink and its real target, so resolve to the *real* file
+                        # here and fix/sign that (leaving the symlink a symlink). This matters for code signing: if we
+                        # instead process the symlink, 'install_name_tool' replaces it with a second modified *real* file
+                        # (which we then sign) while the true versioned library is left untouched - keeping its original,
+                        # now-invalidated ad-hoc signature - so 'codesign --deep' and notarization reject the bundle with
+                        # "code or signature have been modified". Resolving to the real file ensures it is the one signed.
+                        get_filename_component(_installed_dependency "${_installed_dependency}" REALPATH)
                     endif()
 
                     # Add installed dependency to the list.
                     list(APPEND _installed_dependencies "${_installed_dependency}")
                 endforeach()
+
+                # Several resolved dependencies can be symlinks to the same real library (eg, openblas ships multiple
+                # differently-named symlinks pointing at 'libopenblas.0.dylib'), which now collapse to the same real
+                # file above, so remove duplicates to avoid fixing/signing (and later RPATH-ing) the same file twice.
+                list(REMOVE_DUPLICATES _installed_dependencies)
             ]]
     )
 
