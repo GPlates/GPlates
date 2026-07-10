@@ -16,6 +16,17 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 #
 include (Version)
 
+# Generate a 'compile_commands.json' compilation database by default, for clangd / IDE code
+# intelligence (see the committed '.clangd' at the repo root). Honoured by the Ninja and Makefile
+# generators (all our documented builds use Ninja); silently ignored by the Visual Studio and Xcode
+# generators. Override with '-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF' if not wanted.
+#
+# This must precede 'project()' below: 'project()' creates the CMAKE_EXPORT_COMPILE_COMMANDS cache
+# entry itself, so a 'set(... CACHE ...)' default placed after it would be a silent no-op. Setting it
+# before 'project()' makes the default apply, while a user's '-D' still wins (that populates the cache
+# before this file is processed, so the 'set()' here becomes the no-op instead).
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Generate compile_commands.json (for clangd/IDE tooling).")
+
 #
 # Build either GPlates or pyGPlates.
 #

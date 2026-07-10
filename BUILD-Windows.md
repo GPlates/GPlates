@@ -17,6 +17,7 @@ library) from source on Windows, using [conda](https://docs.conda.io/) to instal
    - [Choosing a terminal](#choosing-a-terminal)
    - [Using the Visual Studio IDE](#using-the-visual-studio-ide)
    - [Using PowerShell](#using-powershell)
+6. [Code intelligence (clangd)](#code-intelligence-clangd)
 
 ## Prerequisites
 
@@ -209,3 +210,27 @@ cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release `
 
 Since "Developer PowerShell for VS 2022" already puts `devenv` on `PATH`, the [Using the Visual Studio
 IDE](#using-the-visual-studio-ide) commands above work unchanged in this shell too.
+
+## Code intelligence (clangd)
+
+Editors and IDEs that use [clangd](https://clangd.llvm.org/) (including the Claude Code `clangd-lsp`
+plugin) provide code navigation, diagnostics and completion. clangd needs a `compile_commands.json`
+compilation database, which the **Ninja** build generates automatically:
+`CMAKE_EXPORT_COMPILE_COMMANDS` is enabled by default (override with
+`-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF`). The committed `.clangd` at the repo root points clangd at the
+`build-gplates` tree, so once you have configured the Ninja `build-gplates` (above) there is nothing
+else to set up. clangd understands the MSVC (`cl.exe`) command lines that CMake records.
+
+- **clangd binary:** install LLVM — `winget install LLVM.LLVM` (then add its `bin` to `PATH`) or
+  download from the [LLVM releases](https://github.com/llvm/llvm-project/releases). Or from
+  conda-forge: `conda install clangdev`.
+- The database lives inside the (git-ignored) `build-gplates` directory and is refreshed on each
+  configure/build. It is portable across git worktrees (the `.clangd` path is relative).
+- To edit against the pyGPlates tree instead, change `CompilationDatabase` in `.clangd` to
+  `build-pygplates`.
+
+> **Visual Studio generator caveat:** the optional `build-gplates-vs` tree
+> ([Using the Visual Studio IDE](#using-the-visual-studio-ide)) uses the "Visual Studio 17 2022"
+> generator, which does **not** emit `compile_commands.json` — the flag above only affects the Ninja
+> (and Makefile) generators. That is fine: keep a Ninja `build-gplates` configured for clangd, and use
+> Visual Studio's own IntelliSense inside the IDE.

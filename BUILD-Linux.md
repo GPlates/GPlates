@@ -16,6 +16,7 @@ manager.
    - [Option B: Ubuntu system packages](#option-b-ubuntu-system-packages)
 2. [Build GPlates](#build-gplates)
 3. [Build pyGPlates](#build-pygplates)
+4. [Code intelligence (clangd)](#code-intelligence-clangd)
 
 ## Install the dependencies
 
@@ -173,3 +174,21 @@ A `pygplates` package should then be importable in the environment (`python -m p
 > Python binary wheels can also be built for distribution to other computers — see
 > `pygplates/wheel/README.md`. These are manylinux wheels compatible with a broad range of Linux
 > distributions.
+
+## Code intelligence (clangd)
+
+Editors and IDEs that use [clangd](https://clangd.llvm.org/) (including the Claude Code `clangd-lsp`
+plugin) provide code navigation, diagnostics and completion. clangd needs a `compile_commands.json`
+compilation database, which the build generates automatically: the Ninja generator emits it and
+`CMAKE_EXPORT_COMPILE_COMMANDS` is enabled by default (override with
+`-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF`). The committed `.clangd` at the repo root points clangd at the
+`build-gplates` tree, so once you have configured `build-gplates` (above) there is nothing else to set
+up.
+
+- **clangd binary:** install it via your package manager — Ubuntu/Debian `sudo apt install clangd`,
+  Fedora `sudo dnf install clang-tools-extra`, Arch `sudo pacman -S clang`. Or from conda-forge:
+  `conda install clangdev` (provides `clangd` in the environment).
+- The database lives inside the (git-ignored) `build-gplates` directory and is refreshed on each
+  configure/build. It is portable across git worktrees (the `.clangd` path is relative).
+- To edit against the pyGPlates tree instead, change `CompilationDatabase` in `.clangd` to
+  `build-pygplates`.

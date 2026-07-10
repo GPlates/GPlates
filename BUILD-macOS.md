@@ -13,6 +13,7 @@ library) from source on macOS, using [conda](https://docs.conda.io/) to install 
 2. [Install the dependencies with conda](#install-the-dependencies-with-conda)
 3. [Build GPlates](#build-gplates)
 4. [Build pyGPlates](#build-pygplates)
+5. [Code intelligence (clangd)](#code-intelligence-clangd)
 
 ## Prerequisites
 
@@ -123,3 +124,20 @@ A `pygplates` package should then be importable in the environment (`python -m p
 
 > Python binary wheels can also be built for distribution to other computers — see
 > `pygplates/wheel/README.md`.
+
+## Code intelligence (clangd)
+
+Editors and IDEs that use [clangd](https://clangd.llvm.org/) (including the Claude Code `clangd-lsp`
+plugin) provide code navigation, diagnostics and completion. clangd needs a `compile_commands.json`
+compilation database, which the build generates automatically: the Ninja generator emits it and
+`CMAKE_EXPORT_COMPILE_COMMANDS` is enabled by default (override with
+`-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF`). The committed `.clangd` at the repo root points clangd at the
+`build-gplates` tree, so once you have configured `build-gplates` (above) there is nothing else to set
+up.
+
+- **clangd binary:** the Xcode command-line tools already provide `clangd` (`/usr/bin/clangd`). For a
+  newer version, `brew install llvm` and add `"$(brew --prefix llvm)/bin"` to your `PATH`.
+- The database lives inside the (git-ignored) `build-gplates` directory and is refreshed on each
+  configure/build. It is portable across git worktrees (the `.clangd` path is relative).
+- To edit against the pyGPlates tree instead, change `CompilationDatabase` in `.clangd` to
+  `build-pygplates`.
