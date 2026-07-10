@@ -92,9 +92,11 @@ On macOS, GPlates is installed as a **standalone bundle**: the dependency librar
 
 > **Note (conda Python):** conda's Python is *not* packaged as a `Python.framework`. The standalone
 > build handles this: the Python standard library is bundled under
-> `gplates.app/Contents/Frameworks/lib/pythonX.Y` and the embedded interpreter is given its home
-> explicitly (a framework Python, eg MacPorts, locates its home via dyld instead). No extra steps are
-> required.
+> `gplates.app/Contents/Resources/lib/pythonX.Y` and the embedded interpreter is given its home
+> explicitly (a framework Python, eg MacPorts, is bundled under `Contents/Frameworks` and locates its
+> home via dyld instead). A non-framework stdlib must live under `Contents/Resources`, not
+> `Contents/Frameworks` — macOS bundle code-signing rejects a plain directory tree placed in the
+> reserved `Contents/Frameworks`. No extra steps are required.
 
 ## Build pyGPlates
 
