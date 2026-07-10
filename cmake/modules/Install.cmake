@@ -615,6 +615,13 @@ if (GPLATES_INSTALL_STANDALONE)
         list(APPEND _installed_gdal_plugin_list "${_installed_gdal_plugin}")
         # Set caller's plugin list.
         set(GDAL_PLUGINS_INSTALLED ${_installed_gdal_plugin_list} PARENT_SCOPE)
+
+        # Also record the *source* plugin file. We scan the source plugins (not the installed copies)
+        # for their runtime dependencies, because some libraries (eg, from conda) use relative rpaths
+        # (eg, '@loader_path/...') that only resolve at the source location, not the install location.
+        set(_source_gdal_plugin_list ${GDAL_PLUGINS_SOURCE})
+        list(APPEND _source_gdal_plugin_list "${_gdal_plugin_path}")
+        set(GDAL_PLUGINS_SOURCE ${_source_gdal_plugin_list} PARENT_SCOPE)
     endfunction()
     #
     # Install the GDAL plugins (if not already compiled into the core GDAL library).
@@ -718,6 +725,13 @@ if (GPLATES_INSTALL_STANDALONE)
             list(APPEND _installed_qt_plugin_list "${_installed_qt_plugin}")
             # Set caller's plugin list.
             set(QT_PLUGINS_INSTALLED ${_installed_qt_plugin_list} PARENT_SCOPE)
+
+            # Also record the *source* plugin file. We scan the source plugins (not the installed copies)
+            # for their runtime dependencies, because some libraries (eg, from conda) use relative rpaths
+            # (eg, '@loader_path/...') that only resolve at the source location, not the install location.
+            set(_source_qt_plugin_list ${QT_PLUGINS_SOURCE})
+            list(APPEND _source_qt_plugin_list "${_qt_plugin_path}")
+            set(QT_PLUGINS_SOURCE ${_source_qt_plugin_list} PARENT_SCOPE)
         else()
             message(FATAL_ERROR "Qt plugin ${qt_plugin_target} not found")
         endif()

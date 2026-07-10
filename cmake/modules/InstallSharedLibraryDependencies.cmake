@@ -111,6 +111,12 @@ install(CODE "set(_target_file \"$<TARGET_FILE:${BUILD_TARGET}>\")")
 install(
         CODE "set(GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[${GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES}]])"
         CODE "set(GET_RUNTIME_DEPENDENCIES_DIRECTORIES [[${GET_RUNTIME_DEPENDENCIES_DIRECTORIES}]])"
+        # The *source* Qt/GDAL plugin files (not the installed copies). We scan these for their runtime
+        # dependencies because some libraries (eg, from conda) use relative rpaths (eg, '@loader_path/...')
+        # that only resolve at the source location, not the (as-yet unpopulated) install location. These
+        # are plain absolute paths (no ${CMAKE_INSTALL_PREFIX}), so use square brackets.
+        CODE "set(QT_PLUGINS_SOURCE [[${QT_PLUGINS_SOURCE}]])"
+        CODE "set(GDAL_PLUGINS_SOURCE [[${GDAL_PLUGINS_SOURCE}]])"
         # Note: Using \"${QT_PLUGINS_INSTALLED}\"" instead of [[${QT_PLUGINS_INSTALLED}]] because install code needs to evaluate
         #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS_INSTALLED). And a side note, it does this at install time...
         CODE "set(QT_PLUGINS_INSTALLED \"${QT_PLUGINS_INSTALLED}\")"
@@ -119,6 +125,9 @@ install(
         # Needed to locate the bundled Python site-packages (only installed for the 'gplates' target).
         CODE "set(STANDALONE_BASE_INSTALL_DIR [[${STANDALONE_BASE_INSTALL_DIR}]])"
         CODE "set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX [[${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}]])"
+        # The *source* Python standard library directory (not the installed copy) - used to scan the
+        # source Python extension modules for dependencies (same relative-rpath reason as the plugins above).
+        CODE "set(GPLATES_PYTHON_STDLIB_DIR [[${GPLATES_PYTHON_STDLIB_DIR}]])"
         # Need to set any relevant CMake policies here since install code apparently does not have access to the
         # max policy version specified in cmake_minimum_required().
         # Policy CMP0207 was introduced in CMake 4.3...
@@ -143,7 +152,15 @@ install(
             unset(ARGUMENT_EXECUTABLES)
             unset(ARGUMENT_BUNDLE_EXECUTABLE)
             # Search the Qt/GDAL plugins regardless of whether installing gplates or pygplates.
-            set(ARGUMENT_MODULES MODULES ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
+            #
+            # Note: We search the *source* plugin files (not the installed copies). Their runtime
+            #       dependencies are the same, but some libraries (eg, from conda) use relative rpaths
+            #       (eg, '@loader_path/...') that resolve to the dependency libraries only at the source
+            #       location; at the install location those libraries are not present yet (they are what
+            #       we are about to discover and copy), so scanning the installed copies would leave those
+            #       dependencies unresolved. The installed copies still get their dependency paths fixed
+            #       up (and are codesigned) further below.
+            set(ARGUMENT_MODULES MODULES ${QT_PLUGINS_SOURCE} ${GDAL_PLUGINS_SOURCE})
             # Target 'gplates' is an executable and target 'pygplates' is a module.
             if (GPLATES_BUILD_GPLATES)  # GPlates ...
                 # Add gplates to the list of executables to search.
@@ -168,14 +185,17 @@ install(
             #       by auditwheel/delocate/delvewheel when building pyGPlates wheels).
             unset(_python_backend_libraries)
             if (GPLATES_BUILD_GPLATES)
-                # The bundled site-packages directory (already installed by this point).
-                set(_installed_site_packages "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}/site-packages")
-                if (EXISTS "${_installed_site_packages}")
+                # The *source* site-packages directory (the one copied wholesale into the bundle). We scan
+                # the source extension modules (not the installed copies) for the same relative-rpath reason
+                # as the plugins above - eg, numpy's '.so' reaches its BLAS/LAPACK backend via an
+                # '@loader_path'-relative rpath that only resolves at the source location.
+                set(_source_site_packages "${GPLATES_PYTHON_STDLIB_DIR}/site-packages")
+                if (EXISTS "${_source_site_packages}")
                     # Python extension modules are '.pyd' on Windows and '.so' on macOS/Linux
                     # (only the platform-appropriate suffix will actually match anything).
                     file(GLOB_RECURSE _site_packages_modules
-                        "${_installed_site_packages}/*.pyd"
-                        "${_installed_site_packages}/*.so")
+                        "${_source_site_packages}/*.pyd"
+                        "${_source_site_packages}/*.so")
                     if (_site_packages_modules)
                         set(ARGUMENT_MODULES ${ARGUMENT_MODULES} ${_site_packages_modules})
                     endif()
