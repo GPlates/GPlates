@@ -145,7 +145,7 @@ namespace GPlatesUnitTest
 			GPlatesScribe::TranscribeResult
 			transcribe(
 					GPlatesScribe::Scribe &scribe,
-					Enum2 &e,
+					Enum2 &enum2,
 					bool transcribed_construct_data)
 			{
 				// WARNING: Changing the string ids will break backward/forward compatibility.
@@ -160,7 +160,7 @@ namespace GPlatesUnitTest
 				return GPlatesScribe::transcribe_enum_protocol(
 						TRANSCRIBE_SOURCE,
 						scribe,
-						e,
+						enum2,
 						enum_values,
 						enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 			}

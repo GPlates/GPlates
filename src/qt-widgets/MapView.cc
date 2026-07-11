@@ -280,8 +280,8 @@ GPlatesQtWidgets::MapView::mousePressEvent(
 
 	d_mouse_press_info =
 			MousePressInfo(
-					press_event->x(),
-					press_event->y(),
+					qRound(press_event->position().x()),
+					qRound(press_event->position().y()),
 					mouse_pointer_scene_coords(),
 					mouse_pointer_llp(),
 					mouse_pointer_is_on_surface(),
@@ -326,8 +326,8 @@ GPlatesQtWidgets::MapView::mouseReleaseEvent(
 		return;
 	}
 
-	if (abs(release_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
-			abs(release_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
+	if (abs(qRound(release_event->position().x()) - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
+			abs(qRound(release_event->position().y()) - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
 		d_mouse_press_info->d_is_mouse_drag = true;
 	}
 	if ((d_mouse_press_info->d_is_mouse_drag))
@@ -378,8 +378,8 @@ GPlatesQtWidgets::MapView::mouseMoveEvent(
 
 	if (d_mouse_press_info)
 	{
-		int x_dist = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
-		int y_dist = move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
+		int x_dist = qRound(move_event->position().x()) - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
+		int y_dist = qRound(move_event->position().y()) - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
 		if (x_dist*x_dist + y_dist*y_dist > 4)
 		{
 			d_mouse_press_info->d_is_mouse_drag = true;

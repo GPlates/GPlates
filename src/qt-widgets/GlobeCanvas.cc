@@ -1225,8 +1225,8 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 	}
 	d_mouse_press_info =
 			MousePressInfo(
-					press_event->x(),
-					press_event->y(),
+					qRound(press_event->position().x()),
+					qRound(press_event->position().y()),
 					virtual_mouse_pointer_pos_on_globe(),
 					mouse_pointer_is_on_globe(),
 					press_event->button(),
@@ -1254,8 +1254,8 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		//  * the mouse moved at least 3 pixels in one direction.
 		//
 		// Otherwise, the user just has shaky hands or a very high-res screen.
-		int mouse_delta_x = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
-		int mouse_delta_y = move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
+		int mouse_delta_x = qRound(move_event->position().x()) - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
+		int mouse_delta_y = qRound(move_event->position().y()) - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
 		if (mouse_delta_x*mouse_delta_x + mouse_delta_y*mouse_delta_y > 4) {
 			d_mouse_press_info->d_is_mouse_drag = true;
 		}
@@ -1313,8 +1313,8 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 		return;
 	}
 
-	if (abs(release_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
-			abs(release_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
+	if (abs(qRound(release_event->position().x()) - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
+			abs(qRound(release_event->position().y()) - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
 		d_mouse_press_info->d_is_mouse_drag = true;
 	}
 	if (d_mouse_press_info->d_is_mouse_drag) {

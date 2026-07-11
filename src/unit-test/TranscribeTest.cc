@@ -931,23 +931,23 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::check_equality(
 	BOOST_CHECK(bv == other.bv);
 	BOOST_CHECK(bv2 == other.bv2);
 	BOOST_CHECK(qv == other.qv);
-	BOOST_CHECK(qv_reg.type() == QVariant::UserType && other.qv_reg.type() == QVariant::UserType &&
+	BOOST_CHECK(qv_reg.typeId() == QMetaType::User && other.qv_reg.typeId() == QMetaType::User &&
 			qv_reg.userType() == other.qv_reg.userType() &&
 			qv_reg.canConvert<StringWithEmbeddedZeros>() && other.qv_reg.canConvert<StringWithEmbeddedZeros>() &&
 			qv_reg.value<StringWithEmbeddedZeros>() == other.qv_reg.value<StringWithEmbeddedZeros>());
 	BOOST_CHECK(lqv.size() == other.lqv.size());
 	// 'qv_list' is just a QVariant wrapped around 'lqv'.
-	BOOST_CHECK(qv_list.type() == QVariant::List && other.qv_list.type() == QVariant::List &&
+	BOOST_CHECK(qv_list.typeId() == QMetaType::QVariantList && other.qv_list.typeId() == QMetaType::QVariantList &&
 			qv_list.canConvert< QList<QVariant> >() && other.qv_list.canConvert< QList<QVariant> >() &&
 			qv_list.value< QList<QVariant> >().size() == lqv.size() &&
 			other.qv_list.value< QList<QVariant> >().size() == other.lqv.size());
 	for (int n = 0; n < lqv.size(); ++n)
 	{
-		BOOST_CHECK(lqv[n].type() == other.lqv[n].type());
+		BOOST_CHECK(lqv[n].typeId() == other.lqv[n].typeId());
 		// 'qv_list' is just a QVariant wrapped around 'lqv'.
-		BOOST_CHECK(qv_list.value< QList<QVariant> >()[n].type() == other.qv_list.value< QList<QVariant> >()[n].type());
+		BOOST_CHECK(qv_list.value< QList<QVariant> >()[n].typeId() == other.qv_list.value< QList<QVariant> >()[n].typeId());
 
-		if (lqv[n].type() == QVariant::UserType)
+		if (lqv[n].typeId() == QMetaType::User)
 		{
 			BOOST_CHECK(
 					lqv[n].canConvert<StringWithEmbeddedZeros>() && other.lqv[n].canConvert<StringWithEmbeddedZeros>() &&
@@ -1812,8 +1812,13 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_2_read(
 	BOOST_CHECK(!after_data_weak_ptr.expired());
 	BOOST_CHECK(after_data_weak_ptr.lock() == after_data_ptr);
 	BOOST_CHECK(after_data_ptr2);
-	BOOST_CHECK(after_data_ptr && (typeid(*after_data_ptr) == typeid(D)));
-	BOOST_CHECK(after_data_ptr2 && (typeid(*after_data_ptr2) == typeid(D)));
+	// Apply typeid through a raw pointer, not the smart-pointer operator* (a
+	// function call), so Clang does not flag -Wpotentially-evaluated-expression;
+	// the operand is still evaluated to obtain the dynamic (RTTI) type.
+	const B *after_data_ptr_raw = after_data_ptr.get();
+	BOOST_CHECK(after_data_ptr_raw && (typeid(*after_data_ptr_raw) == typeid(D)));
+	const D *after_data_ptr2_raw = after_data_ptr2.get();
+	BOOST_CHECK(after_data_ptr2_raw && (typeid(*after_data_ptr2_raw) == typeid(D)));
 	if (after_data_ptr)
 	{
 		static_cast<D &>(*after_data_ptr).check_equality(static_cast<const D &>(*before_data_ptr));
