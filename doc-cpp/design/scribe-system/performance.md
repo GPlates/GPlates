@@ -104,7 +104,10 @@ scribe commits plus a fix:
    its pointers. Also relaxes rules around untracked pointers/references to *untracked* objects.
 5. **`remove_all_const_t<>` metafunction** (`10d1cc737`, a cherry-pick of the original
    `6a65b5ef3`) replacing a large block of boost-preprocessor-generated const-stripping overloads
-   (mainly compile-time/maintainability).
+   (mainly compile-time/maintainability). *This one is functionality-neutral and has been
+   cherry-picked onto `feature/pickle-fast-path` as `6b73c3518` (re-targeted at this branch's
+   internal names: `has_object_been_transcribed`, `get_or_create_class_id`, no `options` on
+   `transcribe_base_object`), so it is no longer unique to the rework branch.*
 6. **Untrack children of a finished untracked object** (`d8ebaa580`, new in the rewrite): restores,
    in the new data structures, cleanup that commit 1 had removed — see next subsection.
 
