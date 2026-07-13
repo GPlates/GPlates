@@ -233,7 +233,9 @@ parked rework itself.
 
 ## Future directions
 
-*This is the work of this branch (`feature/pickle-fast-path`); nothing here is implemented yet.*
+*This is the work of this branch (`feature/pickle-fast-path`); nothing here is implemented yet.
+The design has since been worked out in full — see [fast-path-plan.md](fast-path-plan.md) for the
+approved design and phased implementation plan (2026-07-14).*
 
 The working idea is a **fast path through the scribe system** for situations that don't need the
 general machinery, while leaving the general path intact for complex cases:

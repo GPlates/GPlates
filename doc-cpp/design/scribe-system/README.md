@@ -50,6 +50,7 @@ Everything in the system flows through the same two stages:
 | [compatibility.md](compatibility.md) | Error-handling philosophy (exceptions vs `TranscribeResult`), backward/forward compatibility mechanisms, versioning levers, why not `boost::serialization` |
 | [usage.md](usage.md) | How sessions/project files and pyGPlates pickling use the system, the deep transcribe chain for `RotationModel`/`FeatureCollection`, test coverage, and an inventory of all users |
 | [performance.md](performance.md) | Where the per-object costs are, what is already optimized, the parked tracking-rework branch (`backup/pickle-perf-rewritten`) with its measured impact, and future directions (the fast path — this branch's work) |
+| [fast-path-plan.md](fast-path-plan.md) | The approved fast-path ("raw lane") design and phased implementation plan: a scoped streamed mode inside `Scribe`, the `RAW_STREAM` transcription kind, codec and versioning layers, shared-owner backrefs, and per-phase verification |
 
 ## Who uses it
 
