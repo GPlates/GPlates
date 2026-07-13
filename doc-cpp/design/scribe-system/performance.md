@@ -185,7 +185,7 @@ Takeaways:
   come from the fast path below — which also bounds how much more effort per-object tracking
   optimisation deserves.
 
-### Known issue: pathological load time in one test (unresolved)
+### Known issue: pathological load time in one test (confirmed regression, undiagnosed)
 
 `test_model.test.FeatureCase.test_pickle_property_values_not_in_pygplates` passes but takes a
 pathologically long — and *wildly variable* — time at the rework branch's tip. Measured
@@ -208,12 +208,12 @@ pathologically long — and *wildly variable* — time at the rework branch's ti
   longer deduplicates untracked saves, so tip-written pickles contain more duplicate subtrees),
   possibly amplified by `c9f19a821`'s object-load re-try machinery into super-linear re-loading
   of nested subtrees.
-- **Not verified whether the branch point (`268580d1f` — the code on *this* branch) shares
-  this** — the test passes there, but its timing was never captured before the rework build
-  replaced it, and the pickle being loaded differs anyway (untracked-save dedup). Left
+- **Confirmed to be a rework regression, not pre-existing** (measured 2026-07-13 on a build of
+  *this* branch — `cb3bcd61d`, i.e. the branch-point code): the same `pickle.loads` takes
+  **1.7 ms** in isolation (vs ~13.5 s at the rework tip — ~8000×), and two full-suite runs were
+  both ~6.8 s with this test not even in the slowest 15 (< ~75 ms). The mechanism itself is left
   undiagnosed because the rework branch is parked in favour of the fast-path work here; diagnose
-  before ever merging that branch. (Timing this test on a build of *this* branch would settle the
-  pre-existing-or-regression question.)
+  before ever merging that branch.
 
 ### Companion branches
 
