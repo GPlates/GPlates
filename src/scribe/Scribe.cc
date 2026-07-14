@@ -2108,6 +2108,24 @@ GPlatesScribe::Scribe::transcribe_raw(
 }
 
 
+// Floating-point uses a fixed-width encoding, unlike integers which use the self-describing
+// canonical codec (see 'transcribe_raw_integer'). This means a floating-point value must be saved
+// and loaded through the *same* type in the raw lane (whereas an integer may be saved through one
+// integral type and loaded through another). We deliberately do not mirror the general path's full
+// float<->double cross-matrix here because:
+//   - No transcribe handler actually saves through one floating-point type and loads through
+//     another (unlike the integer asymmetries the canonical codec was written for), so it would be
+//     guarding a purely hypothetical case.
+//   - There is no varint-style space win for floating-point, so a self-describing form would add a
+//     discriminator byte to *every* value. Raw-lane payloads are heavily double-dominated (eg,
+//     rotation poles and angles), so that is a direct storage and speed hit on the exact hot path
+//     the raw lane exists to accelerate - all cost, no benefit.
+//   - It is not a silent-corruption risk: a save-float/load-double mismatch would write 4 bytes and
+//     read 8, desyncing the stream cursor and failing loudly (as the integer width mismatches did
+//     before the canonical codec) rather than returning wrong data.
+// If a genuine cross-width floating-point case ever arises, bump CURRENT_RAW_STREAM_CODEC_VERSION
+// and make float/double self-describing like the integer codec (mirroring the general path,
+// including its Inf/NaN handling for the narrowing double->float cast).
 void
 GPlatesScribe::Scribe::transcribe_raw(
 		float &object)

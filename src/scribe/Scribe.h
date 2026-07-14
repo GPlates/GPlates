@@ -2895,9 +2895,9 @@ namespace GPlatesScribe
 		 *
 		 * Crucially the encoding does not depend on the static width of 'ObjectType': a value saved
 		 * through one integral type can be loaded through another (as the general path allows via
-		 * its canonical signed/unsigned storage), which the transcribe handlers rely on (eg, saving
-		 * 'int' and loading 'GPlatesModel::integer_plate_id_type'). On loading, a value outside the
-		 * range of 'ObjectType' throws.
+		 * its canonical signed/unsigned storage), keeping the raw lane robust to the integral-type
+		 * asymmetries a transcribe handler can introduce between its save and load paths. On loading,
+		 * a value outside the range of 'ObjectType' throws.
 		 */
 		template <typename ObjectType>
 		void
@@ -2909,6 +2909,14 @@ namespace GPlatesScribe
 		 *
 		 * Used for floating-point types (integers use @a transcribe_raw_integer). On loading, a
 		 * value outside the range of 'ObjectType' throws.
+		 *
+		 * Unlike the self-describing integer codec, this fixed-width encoding is not type-independent:
+		 * a floating-point value must be saved and loaded through the *same* type in the raw lane.
+		 * This is deliberate - raw-lane payloads are heavily double-dominated, so a self-describing
+		 * form (a discriminator byte per value) would cost storage and speed on the hot path for a
+		 * cross-width float case that no handler actually exercises. If one ever arises, bump
+		 * CURRENT_RAW_STREAM_CODEC_VERSION and make float/double self-describing like the integer
+		 * codec (see the note at the 'transcribe_raw(float&/double&)' definitions).
 		 */
 		template <typename EncodedType, typename ObjectType>
 		void

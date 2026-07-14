@@ -67,7 +67,7 @@ GPlatesPropertyValues::XsInteger::transcribe_construct_data(
 	}
 	else // loading
 	{
-		GPlatesModel::integer_plate_id_type value;
+		int value;
 		if (!scribe.transcribe(TRANSCRIBE_SOURCE, value, "value"))
 		{
 			return scribe.get_transcribe_result();
@@ -94,7 +94,7 @@ GPlatesPropertyValues::XsInteger::transcribe(
 		}
 		else // loading
 		{
-			GPlatesModel::integer_plate_id_type value;
+			int value;
 			if (!scribe.transcribe(TRANSCRIBE_SOURCE, value, "value"))
 			{
 				return scribe.get_transcribe_result();
