@@ -493,6 +493,36 @@ namespace GPlatesScribe
 					object_id_type object_id,
 					unsigned int options) const = 0;
 
+
+			/**
+			 * Saves the specified object (on the heap) directly into the raw stream ("raw lane")
+			 * currently being saved by @a scribe (no object ids, tags or tracking).
+			 *
+			 * @a object_ptr must be the object's *dynamic* (full object) address and the object
+			 * is expected to be the same type used by the derived @a TranscribeOwningPointerTemplate class.
+			 */
+			virtual
+			void
+			save_object_raw(
+					Scribe &scribe,
+					void *object_ptr) const = 0;
+
+
+			/**
+			 * Creates a new object on the heap and loads it directly from the raw stream
+			 * ("raw lane") currently being loaded by @a scribe (no object ids, tags or tracking).
+			 *
+			 * Returns the address of the newly created object (of the same type used by the
+			 * derived @a TranscribeOwningPointerTemplate class), with ownership passing to the
+			 * caller (which is then responsible for calling 'delete').
+			 *
+			 * Returns NULL if transcribing failed (in which case the object is destroyed).
+			 */
+			virtual
+			void *
+			load_object_raw(
+					Scribe &scribe) const = 0;
+
 		};
 
 
@@ -548,6 +578,31 @@ namespace GPlatesScribe
 					Scribe &scribe,
 					object_id_type object_id,
 					unsigned int options) const;
+
+
+			/**
+			 * Saves the specified object of type 'ObjectType' (on the heap) directly into the
+			 * raw stream ("raw lane") currently being saved by @a scribe.
+			 *
+			 * Implementation is in "ScribeInternalUtilsImpl.h" since it includes heavyweight "Scribe.h".
+			 */
+			virtual
+			void
+			save_object_raw(
+					Scribe &scribe,
+					void *object_ptr) const;
+
+
+			/**
+			 * Creates a new object of type 'ObjectType' on the heap and loads it directly from
+			 * the raw stream ("raw lane") currently being loaded by @a scribe.
+			 *
+			 * Implementation is in "ScribeInternalUtilsImpl.h" since it includes heavyweight "Scribe.h".
+			 */
+			virtual
+			void *
+			load_object_raw(
+					Scribe &scribe) const;
 
 		private:
 

@@ -811,6 +811,10 @@ namespace GPlatesUnitTest
 		void
 		test_case_raw_64_bit_integers();
 
+		//! Raw round trip of owning pointers (inline, NULL, polymorphic, shared-owner backrefs).
+		void
+		test_case_raw_pointers();
+
 		//! Loading between transcriptions saved with and without the RAW option.
 		void
 		test_case_raw_compatibility();
@@ -885,6 +889,151 @@ namespace GPlatesUnitTest
 			boost::optional<double> opt_some;
 			boost::optional<double> opt_none;
 			NestedData nested; // Transcribed via save/load construction.
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+
+		//! First polymorphic base of @a Derived (raw-lane owning pointer tests).
+		class BaseA
+		{
+		public:
+			virtual
+			~BaseA()
+			{  }
+
+			BaseA() :
+				a(0)
+			{  }
+
+			int a;
+
+		protected:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+		/**
+		 * Second polymorphic base of @a Derived (raw-lane owning pointer tests).
+		 *
+		 * Being the *second* base gives it a non-zero pointer offset within @a Derived, which
+		 * exercises the multiple-inheritance pointer fix-ups of shared-object backrefs.
+		 */
+		class BaseB
+		{
+		public:
+			virtual
+			~BaseB()
+			{  }
+
+			BaseB() :
+				b(0)
+			{  }
+
+			int b;
+
+		protected:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+		/**
+		 * A multiply-inherited polymorphic class transcribed via (owning) base class pointers
+		 * in the raw lane - its class name is transcribed as a unique-string-pool index
+		 * (it is export registered in "ScribeExportUnitTest.h").
+		 */
+		class Derived :
+				public BaseA,
+				public BaseB
+		{
+		public:
+
+			Derived() :
+				d(0)
+			{  }
+
+			int d;
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+		/**
+		 * An intrusively reference-counted class (raw-lane owning pointer tests) - its reference
+		 * count is passed as a use-count hint that selects between the deduplicated (shared) and
+		 * inline (sole owner) raw-lane pointer encodings.
+		 */
+		class RefCountedData :
+				public GPlatesUtils::ReferenceCount<RefCountedData>
+		{
+		public:
+
+			typedef GPlatesUtils::non_null_intrusive_ptr<RefCountedData> non_null_ptr_type;
+
+			explicit
+			RefCountedData(
+					int value_ = 0) :
+				value(value_)
+			{  }
+
+			int value;
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+		//! An object graph of owning pointers (raw-lane owning pointer tests).
+		struct PointerData
+		{
+			PointerData();
+
+			~PointerData();
+
+			void
+			initialise();
+
+			void
+			check_equality(
+					const PointerData &other) const;
+
+			boost::scoped_ptr<int> scoped;         // Exclusive owner - streamed inline.
+			int *raw_owned;                        // EXCLUSIVE_OWNER raw pointer - streamed inline.
+			boost::shared_ptr<BaseA> shared_a;     // A Derived object shared with 'shared_b' and 'weak_a'.
+			boost::shared_ptr<BaseB> shared_b;     // Same Derived object - backref (with pointer offset).
+			boost::weak_ptr<BaseA> weak_a;         // Weak pointer to the same Derived object - backref.
+			boost::shared_ptr<BaseA> shared_null;  // NULL pointer.
+			RefCountedData::non_null_ptr_type intrusive_1;    // Shared with 'intrusive_2' (use count 2 - deduplicated).
+			RefCountedData::non_null_ptr_type intrusive_2;    // Same object - backref.
+			RefCountedData::non_null_ptr_type intrusive_solo; // Sole owner (use count 1 - streamed inline).
 
 		private:
 

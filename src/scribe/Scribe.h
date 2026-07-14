@@ -1483,6 +1483,30 @@ namespace GPlatesScribe
 		static const unsigned int CURRENT_RAW_STREAM_CODEC_VERSION = 0;
 
 		/**
+		 * Marker byte written before each *owning* pointer's pointed-to object in a raw stream.
+		 *
+		 * Owning pointers stream their pointed-to object inline (there are no object ids inside
+		 * a raw stream to link a pointer to a separately transcribed object). Shared owners are
+		 * deduplicated: the first owner encountered streams the object (RAW_POINTER_SHARED) and
+		 * subsequent owners reference it by its index in the encounter order of
+		 * RAW_POINTER_SHARED objects (RAW_POINTER_SHARED_BACKREF) - preserving aliasing.
+		 */
+		enum RawPointerMarker
+		{
+			//! NULL pointer (nothing follows the marker).
+			RAW_POINTER_NULL = 0,
+
+			//! Pointed-to object streamed inline; cannot be back-referenced (sole owner).
+			RAW_POINTER_INLINE = 1,
+
+			//! Pointed-to object streamed inline *and* registered for back-references.
+			RAW_POINTER_SHARED = 2,
+
+			//! Back-reference: a varint index of a previous RAW_POINTER_SHARED object follows.
+			RAW_POINTER_SHARED_BACKREF = 3
+		};
+
+		/**
 		 * The state of the raw stream ("raw lane") currently being transcribed (see the RAW option
 		 * in "ScribeOptions.h").
 		 *
@@ -1512,6 +1536,65 @@ namespace GPlatesScribe
 			 * The current decode position within @a load_data.
 			 */
 			std::size_t load_cursor;
+
+			//! Typedef for a map of *shared* pointed-to objects (saved so far) to their backref indices.
+			typedef std::map<
+					InternalUtils::ObjectAddress,
+					boost::uint64_t,
+					InternalUtils::SortObjectAddressPredicate>
+							save_shared_object_index_map_type;
+
+			/**
+			 * Save path: the *shared* pointed-to objects streamed into the raw stream so far
+			 * (marker RAW_POINTER_SHARED), mapped to their backref indices (encounter order).
+			 *
+			 * The key is the *dynamic* (full) object address-and-type so that distinct objects
+			 * that happen to share an address (eg, an object and its first data member) cannot
+			 * be conflated.
+			 */
+			save_shared_object_index_map_type save_shared_object_indices;
+
+			//! The dynamic address and type of a *shared* pointed-to object loaded from the raw stream.
+			struct LoadSharedObject
+			{
+				LoadSharedObject(
+						void *object_address_,
+						const std::type_info &object_type_) :
+					object_address(object_address_),
+					object_type(&object_type_)
+				{  }
+
+				void *object_address;
+				const std::type_info *object_type;
+			};
+
+			/**
+			 * Load path: the *shared* pointed-to objects loaded from the raw stream so far
+			 * (marker RAW_POINTER_SHARED), in encounter order.
+			 *
+			 * Loading replays the save order, so backref indices index directly into this.
+			 */
+			std::vector<LoadSharedObject> load_shared_objects;
+
+			//! Typedef for a cache of pointee class types (and their string pool indices) on the save path.
+			typedef std::map<
+					const std::type_info *,
+					std::pair<const ExportClassType *, boost::uint64_t/*string pool index*/>,
+					InternalUtils::SortTypeInfoPredicate>
+							save_export_class_type_cache_type;
+
+			/**
+			 * Save path: cache of export-registered class types (and their class name indices in
+			 * the transcription's unique-string pool) for polymorphic pointed-to object types -
+			 * avoids an ExportRegistry lookup and a string pool search per pointed-to object.
+			 */
+			save_export_class_type_cache_type save_export_class_types;
+
+			/**
+			 * Load path: cache of export-registered class types keyed by their class name indices
+			 * in the transcription's unique-string pool.
+			 */
+			std::map<boost::uint64_t, const ExportClassType *> load_export_class_types;
 		};
 
 		/**
@@ -1798,17 +1881,25 @@ namespace GPlatesScribe
 		 *
 		 * If @a shared_owner is true then ownership is shared amongst one or more pointers,
 		 * otherwise ownership is exclusive to a single pointer.
+		 *
+		 * @a use_count_hint is the number of owners of the pointed-to object on the *save* path
+		 * (or none if unknown). It is only used inside a raw stream ("raw lane") subtree - a hint
+		 * of 1 (sole owner) skips shared-object deduplication for the pointed-to object.
+		 * IMPORTANT: only pass a hint that counts *all* owners of the pointed-to object
+		 * (eg, an intrusive reference count) - an under-count breaks aliasing in the raw lane.
 		 */
 		template <typename ObjectType>
 		bool
 		transcribe_smart_pointer(
 				ObjectType *&object_ptr,
-				bool shared_owner)
+				bool shared_owner,
+				boost::optional<unsigned int> use_count_hint = boost::none)
 		{
 			return transcribe_smart_pointer_object(
 					// Remove all 'const' from 'ObjectType *' (if const)...
 					const_cast<remove_all_const_t<ObjectType *> &>(object_ptr),
-					shared_owner);
+					shared_owner,
+					use_count_hint);
 		}
 
 
@@ -1964,7 +2055,8 @@ namespace GPlatesScribe
 		bool
 		transcribe_smart_pointer_object(
 				ObjectType *&object_ptr,
-				bool shared_ownership);
+				bool shared_ownership,
+				boost::optional<unsigned int> use_count_hint);
 
 
 		/**
@@ -1976,6 +2068,178 @@ namespace GPlatesScribe
 				ObjectType *&object_ptr,
 				bool shared_ownership,
 				boost::optional<object_id_type &> return_object_id = boost::none);
+
+
+		/**
+		 * Transcribe an owning pointer's pointed-to object inside a raw stream ("raw lane") subtree.
+		 *
+		 * The pointed-to object is streamed inline, preceded by a marker byte
+		 * (see @a RawPointerMarker) and, if 'ObjectType' is polymorphic, the export-registered
+		 * class name of the actual (dynamic) pointed-to type (as a unique-string-pool index).
+		 *
+		 * Shared owners are deduplicated via backrefs, preserving aliasing (a @a use_count_hint
+		 * of 1 means we are the sole owner and deduplication can be skipped).
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_pointer_owned_object_raw(
+				ObjectType *&object_ptr,
+				bool shared_ownership,
+				boost::optional<unsigned int> use_count_hint);
+
+
+		/**
+		 * Raw stream ("raw lane") analogue of @a transcribe_pointed_to_class_name_if_polymorphic.
+		 *
+		 * Determines how to transcribe the actual pointed-to object of an *owning* pointer inside
+		 * a raw stream subtree, transcribing the export-registered class name of the actual
+		 * (dynamic) pointed-to type (as a unique-string-pool index) if 'ObjectType' is polymorphic.
+		 *
+		 * On success @a transcribe_owning_pointer transcribes the actual pointed-to type and
+		 * @a pointee_type_info identifies that type (used for backref registration/up-casts).
+		 *
+		 * Returns false (on the load path) if the transcribed class name is not export registered
+		 * (an archive created by a future version) - transcribe result is TRANSCRIBE_UNKNOWN_TYPE.
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_raw_pointee_class(
+				ObjectType *object_ptr,
+				boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+				const std::type_info *&pointee_type_info);
+
+		//! Overload when 'ObjectType' is polymorphic (transcribes the dynamic type's class name).
+		template <typename ObjectType>
+		bool
+		transcribe_raw_pointee_class(
+				ObjectType *object_ptr,
+				boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+				const std::type_info *&pointee_type_info,
+				boost::mpl::true_/*'ObjectType' is polymorphic*/);
+
+		//! Overload when 'ObjectType' is *not* polymorphic (no class name is transcribed).
+		template <typename ObjectType>
+		bool
+		transcribe_raw_pointee_class(
+				ObjectType *object_ptr,
+				boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+				const std::type_info *&pointee_type_info,
+				boost::mpl::false_/*'ObjectType' is *not* polymorphic*/);
+
+
+		/**
+		 * Set the pointer to point to an object loaded from a raw stream (raw lane analogue of
+		 * @a set_pointer_to_object - does multiple-inheritance pointer fix-ups via the void cast
+		 * registry).
+		 *
+		 * Returns false (with transcribe result TRANSCRIBE_INCOMPATIBLE) if the object's actual
+		 * type @a object_type_info does not inherit directly or indirectly from 'ObjectType'.
+		 */
+		template <typename ObjectType>
+		bool
+		set_raw_pointer_to_object(
+				void *object_address,
+				const std::type_info &object_type_info,
+				ObjectType *&object_ptr);
+
+
+		/**
+		 * Save/load construct and transcribe an owning pointer's pointed-to object inside a
+		 * raw stream subtree (used by TranscribeOwningPointerTemplate save/load_object_raw).
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_construct_raw(
+				ConstructObject<ObjectType> &construct_object)
+		{
+			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+					d_is_raw,
+					GPLATES_ASSERTION_SOURCE,
+					"Attempted to transcribe a raw-lane owned object outside a raw stream subtree.");
+
+			return transcribe_construct_raw(
+					construct_object,
+					// Dispatch at compile time so that streaming code is not instantiated for
+					// pointed-to objects that are themselves pointers (eg, pointer-to-pointer)...
+					typename boost::is_pointer<ObjectType>::type());
+		}
+
+		//! Overload for a pointed-to object that is *not* itself a pointer.
+		template <typename ObjectType>
+		bool
+		transcribe_construct_raw(
+				ConstructObject<ObjectType> &construct_object,
+				boost::mpl::false_/*'ObjectType' is *not* a pointer*/)
+		{
+			return stream_construct_object(
+					// Remove all 'const' from 'ObjectType' (if const)...
+					reinterpret_cast<ConstructObject<remove_all_const_t<ObjectType>> &>(construct_object));
+		}
+
+		//! Overload for a pointed-to object that is itself a pointer (eg, pointer-to-pointer).
+		template <typename ObjectType>
+		bool
+		transcribe_construct_raw(
+				ConstructObject<ObjectType> &construct_object,
+				boost::mpl::true_/*'ObjectType' is a pointer*/)
+		{
+			// A pointed-to object that is itself a pointer (via pointer-to-pointer) is a
+			// *non-owning* pointer (pointer ownership options do not propagate through
+			// pointers-to-pointers), which is not supported inside a raw stream subtree.
+			throw Exceptions::InvalidRawTranscribeOperation(
+					GPLATES_EXCEPTION_SOURCE,
+					"Non-owning pointers (via pointer-to-pointer) cannot be transcribed inside a raw stream subtree.");
+		}
+
+
+		//! Write an owning pointer marker byte to the raw stream being saved.
+		void
+		write_raw_pointer_marker(
+				RawPointerMarker marker);
+
+		//! Read an owning pointer marker byte from the raw stream being loaded (throws if invalid).
+		RawPointerMarker
+		read_raw_pointer_marker();
+
+		/**
+		 * Write the class name of a raw-lane pointed-to object (as a unique-string-pool index)
+		 * and return its export registered class type.
+		 *
+		 * Throws Exceptions::UnregisteredClassType if @a pointee_type_info was not export registered.
+		 */
+		const ExportClassType &
+		save_raw_pointee_class_name(
+				const std::type_info &pointee_type_info);
+
+		/**
+		 * Read the class name of a raw-lane pointed-to object (as a unique-string-pool index)
+		 * and return its export registered class type.
+		 *
+		 * Returns none (with transcribe result TRANSCRIBE_UNKNOWN_TYPE) if the class name is not
+		 * export registered (an archive created by a future version).
+		 */
+		boost::optional<const ExportClassType &>
+		load_raw_pointee_class_name();
+
+		/**
+		 * If the specified *shared* pointed-to object has already been streamed into the raw
+		 * stream then returns its backref index, otherwise registers it (with the next index in
+		 * encounter order) and returns none (in which case the caller streams the object inline).
+		 */
+		boost::optional<boost::uint64_t>
+		save_raw_shared_object_backref(
+				const InternalUtils::ObjectAddress &object_address);
+
+		//! Register a *shared* pointed-to object loaded from the raw stream (for later backrefs).
+		void
+		add_raw_shared_object_on_load(
+				void *object_address,
+				const std::type_info &object_type);
+
+		//! Return the *shared* pointed-to object registered for a backref index (throws if invalid).
+		const RawContext::LoadSharedObject &
+		get_raw_shared_object_on_load(
+				boost::uint64_t backref_index);
 
 
 		/**
@@ -3436,16 +3700,26 @@ namespace GPlatesScribe
 			const ObjectTag &object_tag,
 			unsigned int options)
 	{
-		// Pointers are not currently supported inside a raw stream ("raw lane") subtree.
+		// Inside a raw stream ("raw lane") subtree there are no object ids, tags or tracking.
 		//
-		// Owning pointers will be supported (encoded as marker bytes plus the pointed-to
-		// object streamed inline). Non-owning pointers cannot be supported - they require
-		// object tracking to link up with their pointed-to object, and the raw lane omits
-		// all tracking.
-		GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
-				!d_is_raw,
-				GPLATES_ASSERTION_SOURCE,
-				"Pointers are not currently supported inside a raw stream subtree.");
+		// An *owning* pointer streams its pointed-to object inline (preceded by a marker byte
+		// and, if 'ObjectType' is polymorphic, the class name of the actual pointed-to type).
+		// Shared owners are deduplicated via backrefs (preserving aliasing).
+		//
+		// A *non-owning* pointer cannot be supported - it requires object tracking to link up
+		// with its pointed-to object, and the raw lane omits all tracking.
+		if (d_is_raw)
+		{
+			GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
+					(options & (EXCLUSIVE_OWNER | SHARED_OWNER)) != 0,
+					GPLATES_ASSERTION_SOURCE,
+					"Non-owning pointers cannot be transcribed inside a raw stream subtree.");
+
+			return transcribe_pointer_owned_object_raw(
+					object_ptr,
+					(options & SHARED_OWNER) != 0/*shared_ownership*/,
+					boost::none/*use_count_hint*/);
+		}
 
 		// If loading then set the pointer to NULL in case it doesn't get initialised later.
 		// This can happen when the pointer does not own the pointed-to object and the pointed-to
@@ -3489,18 +3763,20 @@ namespace GPlatesScribe
 		// Compile-time assertion to ensure that 'ObjectType' is not const.
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
 
-		// Pointers are not currently supported in the raw stream ("raw lane") - neither inside
-		// a raw subtree nor as a raw stream boundary (the RAW option on a pointer).
-		//
-		// Owning pointers will be supported (encoded as marker bytes plus the pointed-to
-		// object streamed inline). Non-owning pointers cannot be supported - they require
-		// object tracking to link up with their pointed-to object, and the raw lane omits
-		// all tracking.
-		GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
-				!d_is_raw &&
-					(options & RAW) == 0,
+		// Safety net: in raw ("raw lane") mode pointers are handled entirely in the *tag*
+		// overload (they never transcribe an object id) so we should not be able to get here.
+		GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+				!d_is_raw,
 				GPLATES_ASSERTION_SOURCE,
-				"Pointers are not currently supported in the raw stream (raw lane).");
+				"Attempted to transcribe a pointer object id inside a raw stream subtree.");
+
+		// The RAW option cannot be specified directly on a pointer (a raw stream boundary is
+		// a non-pointer object) - a pointer inside a raw subtree is instead handled by the
+		// enclosing boundary's raw mode.
+		GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
+				(options & RAW) == 0,
+				GPLATES_ASSERTION_SOURCE,
+				"The RAW option cannot be specified directly on a pointer.");
 
 		// Should not have both pointer ownership options specified together.
 		GPlatesGlobal::Assert<Exceptions::InvalidTranscribeOptions>(
@@ -4000,10 +4276,297 @@ namespace GPlatesScribe
 
 	template <typename ObjectType>
 	bool
+	Scribe::transcribe_pointer_owned_object_raw(
+			ObjectType *&object_ptr,
+			bool shared_ownership,
+			boost::optional<unsigned int> use_count_hint)
+	{
+		// Compile-time assertion to ensure that 'ObjectType' is not const.
+		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
+
+		if (is_saving())
+		{
+			if (object_ptr == NULL)
+			{
+				write_raw_pointer_marker(RAW_POINTER_NULL);
+				return true;
+			}
+
+			// We need the *dynamic* object address since we want the full dynamic object
+			// instead of a (potential) base class sub-object (referenced by pointer).
+			// It also identifies the pointed-to object for shared-owner deduplication
+			// (all owners of the same object agree on its dynamic address).
+			const object_address_type object_address = InternalUtils::get_dynamic_object_address(object_ptr);
+
+			if (shared_ownership &&
+				// A use count of 1 means we are the *sole* owner - the pointed-to object cannot
+				// be streamed again via another owner so deduplication can be skipped (this is
+				// the common case - most shared-owner pointers are not actually shared).
+				//
+				// An unknown use count falls back to always deduplicating (conservative).
+				// IMPORTANT: the hint must count *all* owners of the pointed-to object
+				// (eg, an intrusive reference count) - an under-count breaks aliasing.
+				(!use_count_hint || use_count_hint.get() != 1))
+			{
+				// If the pointed-to object has already been streamed (by another shared owner)
+				// then just write a backref to it, otherwise register it and stream it inline.
+				const boost::optional<boost::uint64_t> backref_index =
+						save_raw_shared_object_backref(object_address);
+				if (backref_index)
+				{
+					write_raw_pointer_marker(RAW_POINTER_SHARED_BACKREF);
+					write_raw_varint(backref_index.get());
+
+					return true;
+				}
+
+				write_raw_pointer_marker(RAW_POINTER_SHARED);
+			}
+			else
+			{
+				// Sole (or exclusive) owner - the pointed-to object cannot be back-referenced.
+				write_raw_pointer_marker(RAW_POINTER_INLINE);
+			}
+
+			// Find out how to transcribe the actual pointed-to object (transcribing its class
+			// name, as a unique-string-pool index, if 'ObjectType' is polymorphic).
+			boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> transcribe_owning_pointer;
+			const std::type_info *pointee_type_info = NULL;
+			if (!transcribe_raw_pointee_class(object_ptr, transcribe_owning_pointer, pointee_type_info))
+			{
+				return false;
+			}
+
+			// Stream the pointed-to object inline.
+			//
+			// Note: We pass the *dynamic* object address (instead of the potentially different
+			// base class pointer under multiple inheritance) since that's the address of the
+			// full dynamic object (whose type 'transcribe_owning_pointer' transcribes).
+			transcribe_owning_pointer->save_object_raw(*this, object_address.address);
+
+			return true;
+		}
+
+		// Loading...
+
+		// Set the pointer to NULL in case it doesn't get initialised below.
+		// Also it might actually be a NULL pointer (ie, save path transcribed a NULL pointer).
+		object_ptr = NULL;
+
+		const RawPointerMarker marker = read_raw_pointer_marker();
+
+		if (marker == RAW_POINTER_NULL)
+		{
+			// Nothing left to do - pointer has already been set to NULL.
+			return true;
+		}
+
+		if (marker == RAW_POINTER_SHARED_BACKREF)
+		{
+			// The pointed-to object was already loaded (via a previous shared owner).
+			const RawContext::LoadSharedObject &shared_object =
+					get_raw_shared_object_on_load(read_raw_varint());
+
+			return set_raw_pointer_to_object(
+					shared_object.object_address,
+					*shared_object.object_type,
+					object_ptr);
+		}
+
+		// Marker is RAW_POINTER_INLINE or RAW_POINTER_SHARED - the pointed-to object follows inline.
+
+		// Find out how to transcribe the actual pointed-to object (transcribing its class
+		// name, as a unique-string-pool index, if 'ObjectType' is polymorphic).
+		boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> transcribe_owning_pointer;
+		const std::type_info *pointee_type_info = NULL;
+		if (!transcribe_raw_pointee_class(object_ptr, transcribe_owning_pointer, pointee_type_info))
+		{
+			// The pointed-to object type does not match anything we've export registered - the
+			// archive was created by a future version with a class name we don't know about
+			// (or one we have since removed). Note that, unlike the general path, the raw
+			// stream is positional so this failure cannot be recovered from by the caller
+			// (the unknown object's bytes cannot be skipped) - the whole raw load will fail.
+			return false;
+		}
+
+		// Create the pointed-to object on the heap and load it from the raw stream.
+		// We (the owning pointer being transcribed) take ownership.
+		void *const object_address = transcribe_owning_pointer->load_object_raw(*this);
+		if (object_address == NULL)
+		{
+			// The pointed-to object failed to load (eg, transcription incompatibility).
+			return false;
+		}
+
+		if (marker == RAW_POINTER_SHARED)
+		{
+			// Register the loaded object so later backrefs (from other shared owners) find it.
+			add_raw_shared_object_on_load(object_address, *pointee_type_info);
+		}
+
+		return set_raw_pointer_to_object(object_address, *pointee_type_info, object_ptr);
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::transcribe_raw_pointee_class(
+			ObjectType *object_ptr,
+			boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+			const std::type_info *&pointee_type_info)
+	{
+		return transcribe_raw_pointee_class(
+				object_ptr,
+				transcribe_owning_pointer,
+				pointee_type_info,
+				// We only want to instantiate polymorphic code for polymorphic 'ObjectType' and
+				// non-polymorphic code for non-polymorphic 'ObjectType' (see the equivalent
+				// general path 'transcribe_pointed_to_class_name_if_polymorphic()')...
+				typename boost::is_polymorphic<ObjectType>::type());
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::transcribe_raw_pointee_class(
+			ObjectType *object_ptr,
+			boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+			const std::type_info *&pointee_type_info,
+			boost::mpl::true_/*'ObjectType' is polymorphic*/)
+	{
+		if (is_saving())
+		{
+			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+					object_ptr,
+					GPLATES_ASSERTION_SOURCE,
+					"Expecting non-null pointer in save path.");
+
+			// The actual (polymorphic) type of the pointed-to object could differ from
+			// 'ObjectType' so we transcribe the class name (as a unique-string-pool index).
+			//
+			// We expect the actual type to have been export registered
+			// (see 'ScribeExportRegistration.h') - if not this throws.
+			const ExportClassType &export_class_type = save_raw_pointee_class_name(typeid(*object_ptr));
+
+			transcribe_owning_pointer = export_class_type.transcribe_owning_pointer.get();
+			pointee_type_info = export_class_type.type_info.get_pointer();
+
+			return true;
+		}
+
+		// Loading...
+
+		// Load the class name (as a unique-string-pool index) of the actual type of the
+		// pointed-to object and look up its export registered class type.
+		const boost::optional<const ExportClassType &> export_class_type = load_raw_pointee_class_name();
+		if (!export_class_type)
+		{
+			// The class name does not match anything we've export registered
+			// (transcribe result is TRANSCRIBE_UNKNOWN_TYPE).
+			return false;
+		}
+
+		transcribe_owning_pointer = export_class_type->transcribe_owning_pointer.get();
+		pointee_type_info = export_class_type->type_info.get_pointer();
+
+		return true;
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::transcribe_raw_pointee_class(
+			ObjectType *object_ptr,
+			boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+			const std::type_info *&pointee_type_info,
+			boost::mpl::false_/*'ObjectType' is *not* polymorphic*/)
+	{
+		// The actual type of the pointed-to object is 'ObjectType' (in both the save and load
+		// paths) so, like the general path, we don't transcribe a class name - if 'ObjectType'
+		// differs in the save and load paths then loading will only succeed if both are
+		// transcription-compatible.
+		//
+		// Note: If the actual object type is not 'ObjectType' then it'll get sliced when
+		// transcribed - however there's no way to detect slicing (transcribing a derived
+		// class object through a *non-polymorphic* base class pointer only transcribes
+		// the base class sub-object).
+		const class_id_type class_id = register_object_type<ObjectType>();
+
+		const boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type>
+				class_transcribe_owning_pointer = get_class_info(class_id).transcribe_owning_pointer;
+
+		// We know that 'ObjectType' cannot be an abstract class because if it was abstract
+		// then it would have run-time type information (RTTI) since it would have (pure)
+		// virtual methods. Hence it would be polymorphic and we wouldn't be able to get here.
+		// So since 'ObjectType' is not abstract then 'register_object_type<>()' would
+		// have created a valid TranscribeOwningPointer for it.
+		GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+				class_transcribe_owning_pointer,
+				GPLATES_ASSERTION_SOURCE,
+				"Expecting non-abstract, non-array pointed-to object in raw stream.");
+
+		transcribe_owning_pointer = class_transcribe_owning_pointer->get();
+		pointee_type_info = &typeid(ObjectType);
+
+		return true;
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::set_raw_pointer_to_object(
+			void *object_address,
+			const std::type_info &object_type_info,
+			ObjectType *&object_ptr)
+	{
+		// We need to do any pointer fix ups in the presence of multiple inheritance.
+		// It's possible that the pointer refers to a base class of a multiply-inherited
+		// derived class object and there can be pointer offsets.
+		// So we need to use the void cast registry to apply any necessary pointer offsets.
+		//
+		// Note that the up-cast path should be available because the pointed-to object has
+		// already been streamed (which records base<->derived relationships - the inheritance
+		// registration in 'transcribe_base_object()' still runs in raw mode).
+		const boost::optional<void *> referenced_object_address =
+				d_void_cast_registry.up_cast(
+						// Actual type of the pointed-to object...
+						object_type_info,
+						// Our pointer points to this type...
+						typeid(ObjectType),
+						// Address of the actual pointed-to object...
+						object_address);
+		if (!referenced_object_address)
+		{
+			// The up-cast failed because the actual pointed-to object type does not inherit
+			// directly or indirectly from 'ObjectType' and so we can't legally reference it
+			// (see the equivalent general path 'set_pointer_to_object()' for an example of
+			// how this can happen).
+			set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_INCOMPATIBLE);
+
+			return false;
+		}
+
+		// Set the pointer.
+		object_ptr = static_cast<ObjectType *>(referenced_object_address.get());
+
+		return true;
+	}
+
+
+	template <typename ObjectType>
+	bool
 	Scribe::transcribe_smart_pointer_object(
 			ObjectType *&object_ptr,
-			bool shared_ownership)
+			bool shared_ownership,
+			boost::optional<unsigned int> use_count_hint)
 	{
+		// Inside a raw stream ("raw lane") subtree there are no object ids, tags or tracking -
+		// the pointed-to object is streamed inline (with shared owners deduplicated via backrefs).
+		if (d_is_raw)
+		{
+			return transcribe_pointer_owned_object_raw(object_ptr, shared_ownership, use_count_hint);
+		}
+
 		// Note: We don't mark the pointed-to object as referenced by an untracked pointer because
 		// relocating the pointed-to object means a new smart pointer is being created with a new
 		// pointed-to object. In this case we don't want the original smart pointer to point to
@@ -4045,6 +4608,20 @@ namespace GPlatesScribe
 		if (!transcribe_base_object<BaseType, DerivedType>())
 		{
 			return false;
+		}
+
+		// Inside a raw stream ("raw lane") subtree there are no object ids, tags or tracking -
+		// the base class sub-object is streamed directly (positionally) into the enclosing raw
+		// stream and there is no base-class sub-object bookkeeping.
+		//
+		// Note that the base/derived inheritance registration (above) still runs - it is needed
+		// to up-cast shared pointed-to objects resolved via backrefs on load.
+		if (d_is_raw)
+		{
+			return stream_object(
+					// Remove all 'const' from 'BaseType' (if const)...
+					const_cast<remove_all_const_t<BaseType> &>(
+							static_cast<BaseType &>(derived_object)));
 		}
 
 		// Get the derived object info.

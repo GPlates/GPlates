@@ -215,12 +215,18 @@ namespace GPlatesScribe
 	{
 		T *raw_ptr = NULL;
 
+		// The intrusive reference count (counting *all* owners) of the pointed-to object, if it
+		// has one (eg, derives from GPlatesUtils::ReferenceCount) - used (only inside a raw
+		// stream subtree) to skip shared-object deduplication when we are the sole owner.
+		boost::optional<unsigned int> use_count_hint;
+
 		if (scribe.is_saving())
 		{
 			raw_ptr = intrusive_ptr_object.get();
+			use_count_hint = get_intrusive_use_count_hint(raw_ptr);
 		}
 
-		if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/))
+		if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/, use_count_hint))
 		{
 			return scribe.get_transcribe_result();
 		}
@@ -404,6 +410,12 @@ namespace GPlatesScribe
 			raw_ptr = shared_ptr_object.get();
 		}
 
+		// Note: We deliberately do *not* pass boost::shared_ptr's use count as a use count hint
+		// (see 'transcribe_smart_pointer_protocol') because it does not count weak pointers - a
+		// boost::weak_ptr to the same object could be transcribed later (inside the same raw
+		// stream subtree) and it locks to a boost::shared_ptr, so a use count of 1 here does not
+		// prove sole ownership. The pointed-to object is always deduplicated instead (which is
+		// what preserves aliasing between shared and weak pointers in the raw lane).
 		if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/))
 		{
 			return scribe.get_transcribe_result();

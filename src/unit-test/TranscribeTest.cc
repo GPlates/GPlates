@@ -2894,6 +2894,297 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_64_bit_integers()
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::BaseA::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "a"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::BaseB::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::Derived::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Note: In raw mode 'transcribe_base' still registers the base/derived inheritance links
+	// (needed to up-cast shared-object backrefs) but streams the base class sub-objects inline.
+	if (!scribe.transcribe_base<BaseA>(TRANSCRIBE_SOURCE, *this, "BaseA") ||
+		!scribe.transcribe_base<BaseB>(TRANSCRIBE_SOURCE, *this, "BaseB") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d, "d"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::RefCountedData::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, value, "value"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesUnitTest::TranscribeRawTest::PointerData::PointerData() :
+	raw_owned(NULL),
+	intrusive_1(new RefCountedData()),
+	intrusive_2(intrusive_1),
+	intrusive_solo(new RefCountedData())
+{
+}
+
+
+GPlatesUnitTest::TranscribeRawTest::PointerData::~PointerData()
+{
+	delete raw_owned;
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::PointerData::initialise()
+{
+	scoped.reset(new int(123));
+
+	raw_owned = new int(-456);
+
+	// A single Derived object shared (with aliasing) by 'shared_a', 'shared_b' and 'weak_a'.
+	const boost::shared_ptr<Derived> derived(new Derived());
+	derived->a = 10;
+	derived->b = 20;
+	derived->d = 30;
+	shared_a = derived;
+	shared_b = derived;
+	weak_a = shared_a;
+
+	// 'shared_null' remains NULL.
+
+	// A single RefCountedData object shared by 'intrusive_1' and 'intrusive_2'
+	// (reference count 2 - exercises the deduplicated raw-lane pointer encoding).
+	intrusive_1 = RefCountedData::non_null_ptr_type(new RefCountedData(7));
+	intrusive_2 = intrusive_1;
+
+	// Sole owner (reference count 1 - exercises the inline raw-lane pointer encoding).
+	intrusive_solo = RefCountedData::non_null_ptr_type(new RefCountedData(8));
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::PointerData::check_equality(
+		const PointerData &other) const
+{
+	// Note: The aliasing (and reference count) checks are made on *both* objects - notably on
+	// 'other' which, in the test cases, is the *loaded* object.
+
+	BOOST_CHECK(scoped && other.scoped && *scoped == *other.scoped);
+	BOOST_CHECK(raw_owned && other.raw_owned && *raw_owned == *other.raw_owned);
+
+	// 'shared_a' and 'shared_b' should reference the *same* Derived object (aliasing preserved).
+	BOOST_CHECK(shared_a && shared_b && other.shared_a && other.shared_b);
+	if (shared_a && shared_b && other.shared_a && other.shared_b)
+	{
+		const Derived *derived = dynamic_cast<const Derived *>(shared_a.get());
+		BOOST_CHECK(derived);
+		BOOST_CHECK(derived == dynamic_cast<const Derived *>(shared_b.get()));
+
+		const Derived *other_derived = dynamic_cast<const Derived *>(other.shared_a.get());
+		BOOST_CHECK(other_derived);
+		BOOST_CHECK(other_derived == dynamic_cast<const Derived *>(other.shared_b.get()));
+
+		BOOST_CHECK_EQUAL(shared_a->a, other.shared_a->a);
+		BOOST_CHECK_EQUAL(shared_b->b, other.shared_b->b);
+		if (derived && other_derived)
+		{
+			BOOST_CHECK_EQUAL(derived->d, other_derived->d);
+		}
+	}
+
+	// 'weak_a' should reference the same object as 'shared_a' (aliasing preserved).
+	BOOST_CHECK(!weak_a.expired() && weak_a.lock() == shared_a);
+	BOOST_CHECK(!other.weak_a.expired() && other.weak_a.lock() == other.shared_a);
+
+	BOOST_CHECK(!shared_null && !other.shared_null);
+
+	// 'intrusive_1' and 'intrusive_2' should reference the *same* object (aliasing preserved)
+	// and hence its reference count should be exactly 2 (its only owners).
+	BOOST_CHECK(intrusive_1 == intrusive_2);
+	BOOST_CHECK(other.intrusive_1 == other.intrusive_2);
+	BOOST_CHECK_EQUAL(intrusive_1->get_reference_count(), 2);
+	BOOST_CHECK_EQUAL(other.intrusive_1->get_reference_count(), 2);
+	BOOST_CHECK_EQUAL(intrusive_1->value, other.intrusive_1->value);
+
+	BOOST_CHECK_EQUAL(intrusive_solo->get_reference_count(), 1);
+	BOOST_CHECK_EQUAL(other.intrusive_solo->get_reference_count(), 1);
+	BOOST_CHECK_EQUAL(intrusive_solo->value, other.intrusive_solo->value);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::PointerData::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Note: The weak pointer is transcribed *after* a shared pointer to the same object
+	// (a requirement of the general path - see the boost::weak_ptr transcribe overload).
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, scoped, "scoped", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, raw_owned, "raw_owned", GPlatesScribe::EXCLUSIVE_OWNER | GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, shared_a, "shared_a", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, shared_b, "shared_b", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, weak_a, "weak_a", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, shared_null, "shared_null", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, intrusive_1, "intrusive_1", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, intrusive_2, "intrusive_2", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, intrusive_solo, "intrusive_solo", GPlatesScribe::TRACK))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_pointers()
+{
+	try
+	{
+		//
+		// Raw round trip of the owning pointer graph.
+		//
+		{
+			PointerData before_data;
+			before_data.initialise();
+
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
+
+			QDataStream binary_stream_writer(&binary_archive);
+
+			{
+				GPlatesScribe::Scribe scribe;
+
+				scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
+
+				BOOST_CHECK(scribe.is_transcription_complete());
+
+				// The entire pointer graph (markers, class names, backrefs and pointed-to
+				// objects) should be inside a single raw stream.
+				BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
+
+				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+						*scribe.get_transcription());
+			}
+
+			binary_archive.close();
+
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
+
+			QDataStream binary_stream_reader(&binary_archive);
+
+			PointerData after_data;
+
+			{
+				GPlatesScribe::Scribe scribe(
+						GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+				BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+			}
+
+			// Note: The equality check is made *after* the load scribe is destroyed so that the
+			// scribe's internal boost::shared_ptr map no longer contributes to reference counts.
+			before_data.check_equality(after_data);
+		}
+
+		//
+		// Compatibility: save the same pointer graph via the *general* path (like an older
+		// version without the raw lane) and load *with* the RAW option - the boundary falls
+		// back to the general path.
+		//
+		// Note: The boundary object is *tracked* here - on the general path an untracked
+		// boundary would untrack the (owned, tracked) pointed-to objects inside it, which
+		// throws because pointers still reference them. (The raw lane has no tracking at
+		// all, so the first test case above doesn't need TRACK.)
+		//
+		{
+			PointerData before_data;
+			before_data.initialise();
+
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
+
+			QDataStream binary_stream_writer(&binary_archive);
+
+			{
+				GPlatesScribe::Scribe scribe;
+
+				scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::TRACK);
+
+				BOOST_CHECK(scribe.is_transcription_complete());
+
+				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+						*scribe.get_transcription());
+			}
+
+			binary_archive.close();
+
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
+
+			QDataStream binary_stream_reader(&binary_archive);
+
+			PointerData after_data;
+
+			{
+				GPlatesScribe::Scribe scribe(
+						GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+				BOOST_CHECK(scribe.transcribe(
+						TRANSCRIBE_SOURCE, after_data, "data",
+						GPlatesScribe::RAW | GPlatesScribe::TRACK));
+			}
+
+			before_data.check_equality(after_data);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
 void
 GPlatesUnitTest::TranscribeRawTest::test_case_raw_compatibility()
 {
@@ -3032,8 +3323,8 @@ namespace GPlatesUnitTest
 			return GPlatesScribe::TRANSCRIBE_SUCCESS;
 		}
 
-		//! A transcribe handler that (incorrectly) transcribes a raw *pointer* in raw mode.
-		struct PointerData
+		//! A transcribe handler that (incorrectly) transcribes a *non-owning* pointer in raw mode.
+		struct NonOwningPointerData
 		{
 			int value;
 			int *value_ptr;
@@ -3042,16 +3333,40 @@ namespace GPlatesUnitTest
 		GPlatesScribe::TranscribeResult
 		transcribe(
 				GPlatesScribe::Scribe &scribe,
-				PointerData &pointer_data,
+				NonOwningPointerData &pointer_data,
 				bool transcribed_construct_data)
 		{
 			if (!scribe.transcribe(TRANSCRIBE_SOURCE, pointer_data.value, "value", GPlatesScribe::TRACK) ||
+				// A non-owning pointer (no EXCLUSIVE_OWNER/SHARED_OWNER option)...
 				!scribe.transcribe(TRANSCRIBE_SOURCE, pointer_data.value_ptr, "value_ptr", GPlatesScribe::TRACK))
 			{
 				return scribe.get_transcribe_result();
 			}
 
 			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
+
+		/**
+		 * Adds a single raw stream object (with the specified raw stream data) tagged "data"
+		 * to the transcription - as if saved by 'transcribe(..., "data", RAW)'.
+		 */
+		void
+		add_raw_stream_to_transcription(
+				GPlatesScribe::Transcription &transcription,
+				const std::vector<char> &raw_stream_data)
+		{
+			GPlatesScribe::Transcription::CompositeObject &root_composite_object =
+					transcription.add_composite_object(
+							GPlatesScribe::TranscriptionScribeContext::ROOT_OBJECT_ID);
+
+			const GPlatesScribe::Transcription::object_id_type raw_stream_object_id =
+					GPlatesScribe::TranscriptionScribeContext::ROOT_OBJECT_ID + 1;
+
+			root_composite_object.set_child(
+					transcription.get_or_create_object_key("data", 0),
+					raw_stream_object_id);
+
+			transcription.add_raw_stream(raw_stream_object_id, raw_stream_data);
 		}
 
 		/**
@@ -3065,18 +3380,7 @@ namespace GPlatesUnitTest
 			GPlatesScribe::Transcription::non_null_ptr_type transcription =
 					GPlatesScribe::Transcription::create();
 
-			GPlatesScribe::Transcription::CompositeObject &root_composite_object =
-					transcription->add_composite_object(
-							GPlatesScribe::TranscriptionScribeContext::ROOT_OBJECT_ID);
-
-			const GPlatesScribe::Transcription::object_id_type raw_stream_object_id =
-					GPlatesScribe::TranscriptionScribeContext::ROOT_OBJECT_ID + 1;
-
-			root_composite_object.set_child(
-					transcription->get_or_create_object_key("data", 0),
-					raw_stream_object_id);
-
-			transcription->add_raw_stream(raw_stream_object_id, raw_stream_data);
+			add_raw_stream_to_transcription(*transcription, raw_stream_data);
 
 			return transcription;
 		}
@@ -3105,12 +3409,13 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 	}
 
 	//
-	// Transcribing a raw *pointer* inside a raw subtree should throw an exception.
+	// Transcribing a *non-owning* pointer inside a raw subtree should throw an exception
+	// (owning pointers are supported - see 'test_case_raw_pointers').
 	//
 	{
 		GPlatesScribe::Scribe scribe;
 
-		TranscribeRawTestImpl::PointerData pointer_data;
+		TranscribeRawTestImpl::NonOwningPointerData pointer_data;
 		pointer_data.value = 1;
 		pointer_data.value_ptr = &pointer_data.value;
 
@@ -3202,6 +3507,69 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 		BOOST_CHECK(after_double == 0);
 	}
 
+	//
+	// A pointed-to class name that is not export registered (eg, an archive created by a
+	// future version) fails the load *softly* (like the general path) - it does not throw.
+	//
+	{
+		GPlatesScribe::Transcription::non_null_ptr_type transcription =
+				GPlatesScribe::Transcription::create();
+
+		// Register the unknown class name in the transcription's unique-string pool.
+		const unsigned int unknown_class_name_index =
+				transcription->get_or_create_unique_string_index(
+						"GPlatesUnitTest::TranscribeRawTest::RemovedInThisVersion");
+		BOOST_REQUIRE(unknown_class_name_index < 128); // Fits in a single varint byte.
+
+		std::vector<char> raw_stream_data;
+		raw_stream_data.push_back(0x00); // Codec version 0.
+		raw_stream_data.push_back(0x01); // RAW_POINTER_INLINE.
+		raw_stream_data.push_back(static_cast<char>(unknown_class_name_index)); // Class name.
+
+		TranscribeRawTestImpl::add_raw_stream_to_transcription(*transcription, raw_stream_data);
+
+		GPlatesScribe::Scribe scribe(transcription);
+
+		boost::shared_ptr<TranscribeRawTest::BaseA> after_ptr;
+		BOOST_CHECK(!scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW));
+		BOOST_CHECK(scribe.get_transcribe_result() == GPlatesScribe::TRANSCRIBE_UNKNOWN_TYPE);
+	}
+
+	//
+	// An invalid owning pointer marker byte should throw.
+	//
+	{
+		std::vector<char> raw_stream_data;
+		raw_stream_data.push_back(0x00); // Codec version 0.
+		raw_stream_data.push_back(static_cast<char>(0xff)); // Invalid marker.
+
+		GPlatesScribe::Scribe scribe(
+				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
+
+		boost::shared_ptr<TranscribeRawTest::BaseA> after_ptr;
+		BOOST_CHECK_THROW(
+				scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW),
+				GPlatesScribe::Exceptions::RawStreamError);
+	}
+
+	//
+	// An owning pointer backref referencing a shared object that was never streamed should throw.
+	//
+	{
+		std::vector<char> raw_stream_data;
+		raw_stream_data.push_back(0x00); // Codec version 0.
+		raw_stream_data.push_back(0x03); // RAW_POINTER_SHARED_BACKREF.
+		raw_stream_data.push_back(0x00); // Backref index 0 (but no shared objects streamed).
+
+		GPlatesScribe::Scribe scribe(
+				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
+
+		boost::shared_ptr<TranscribeRawTest::BaseA> after_ptr;
+		BOOST_CHECK_THROW(
+				scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW),
+				GPlatesScribe::Exceptions::RawStreamError);
+	}
+
 #endif // GPLATES_DEBUG
 }
 
@@ -3251,6 +3619,7 @@ GPlatesUnitTest::TranscribeTestSuite::construct_transcribe_raw_test()
 	boost::shared_ptr<TranscribeRawTest> instance(new TranscribeRawTest());
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_1);
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_64_bit_integers);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_pointers);
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_compatibility);
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_errors);
 }

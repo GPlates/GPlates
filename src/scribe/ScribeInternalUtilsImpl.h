@@ -120,6 +120,47 @@ namespace GPlatesScribe
 
 			return true;
 		}
+
+
+		template <typename ObjectType>
+		void
+		TranscribeOwningPointerTemplate<ObjectType>::save_object_raw(
+				Scribe &scribe,
+				void *object_memory) const
+		{
+			// The 'void *' passed in is expected to point to an object of type 'ObjectType'.
+			// In other words it points to the entire object (and doesn't need any multiple
+			// inheritance pointer fix-ups).
+			ObjectType &object = *static_cast<ObjectType *>(object_memory);
+
+			// Mirror the load path.
+			SaveConstructObject<ObjectType> construct_object(object);
+
+			// On the save path this should always succeed (raw stream failures throw).
+			ScribeInternalAccess::transcribe_construct_raw(scribe, construct_object);
+		}
+
+
+		template <typename ObjectType>
+		void *
+		TranscribeOwningPointerTemplate<ObjectType>::load_object_raw(
+				Scribe &scribe) const
+		{
+			// Construct the object on the heap.
+			LoadConstructObjectOnHeap<ObjectType> construct_object;
+
+			// Transcribe the pointer-owned object directly from the raw stream.
+			// This requires private access to class Scribe.
+			if (!ScribeInternalAccess::transcribe_construct_raw(scribe, construct_object))
+			{
+				// The object (if constructed) is destroyed by 'LoadConstructObjectOnHeap'.
+				return NULL;
+			}
+
+			// On success release ownership of the constructed object from 'LoadConstructObjectOnHeap'.
+			// It will now be owned by the pointer we are transcribing for.
+			return construct_object.release();
+		}
 	}
 }
 

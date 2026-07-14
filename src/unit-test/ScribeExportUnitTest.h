@@ -49,6 +49,9 @@
 		(((GPlatesUnitTest::TranscribeCompatibilityTest::Derived), \
 			"GPlatesUnitTest::TranscribeCompatibilityTest::Derived")) \
 		\
+		(((GPlatesUnitTest::TranscribeRawTest::Derived), \
+			"GPlatesUnitTest::TranscribeRawTest::Derived")) \
+		\
 
 
 #endif // GPLATES_UNIT_TEST_SCRIBEEXPORTUNITTEST_H

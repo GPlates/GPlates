@@ -2053,3 +2053,165 @@ GPlatesScribe::Scribe::transcribe_raw(
 				static_cast<unsigned int>(unique_string_index));
 	}
 }
+
+
+void
+GPlatesScribe::Scribe::write_raw_pointer_marker(
+		RawPointerMarker marker)
+{
+	const boost::uint8_t marker_byte = static_cast<boost::uint8_t>(marker);
+
+	write_raw_bytes(&marker_byte, sizeof(marker_byte));
+}
+
+
+GPlatesScribe::Scribe::RawPointerMarker
+GPlatesScribe::Scribe::read_raw_pointer_marker()
+{
+	boost::uint8_t marker_byte;
+	read_raw_bytes(&marker_byte, sizeof(marker_byte));
+
+	GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+			marker_byte <= RAW_POINTER_SHARED_BACKREF,
+			GPLATES_ASSERTION_SOURCE,
+			"Invalid owning pointer marker in raw stream.");
+
+	return static_cast<RawPointerMarker>(marker_byte);
+}
+
+
+const GPlatesScribe::ExportClassType &
+GPlatesScribe::Scribe::save_raw_pointee_class_name(
+		const std::type_info &pointee_type_info)
+{
+	// Look up the per-raw-stream cache first - avoids an ExportRegistry lookup and a
+	// unique-string-pool search per pointed-to object.
+	std::pair<RawContext::save_export_class_type_cache_type::iterator, bool> cache_entry_inserted =
+			d_raw_context.save_export_class_types.insert(
+					RawContext::save_export_class_type_cache_type::value_type(
+							&pointee_type_info,
+							std::make_pair(
+									static_cast<const ExportClassType *>(nullptr),
+									boost::uint64_t(0)/*dummy*/)));
+
+	if (cache_entry_inserted.second)
+	{
+		// Find the export registered class type for the pointed-to object.
+		const boost::optional<const ExportClassType &> export_class_type =
+				ExportRegistry::instance().get_class_type(pointee_type_info);
+
+		// Throw exception if the object's type has not been export registered.
+		//
+		// If this assertion is triggered then it means:
+		//   * The object's derived type was not export registered (see 'ScribeExportRegistration.h').
+		//
+		// This mirrors the general path (see 'transcribe_class_name()').
+		GPlatesGlobal::Assert<Exceptions::UnregisteredClassType>(
+				export_class_type,
+				GPLATES_ASSERTION_SOURCE,
+				pointee_type_info);
+
+		cache_entry_inserted.first->second.first = &export_class_type.get();
+		cache_entry_inserted.first->second.second =
+				d_transcription->get_or_create_unique_string_index(export_class_type->type_id_name);
+	}
+
+	// Write the class name as its index into the transcription's unique-string pool.
+	write_raw_varint(cache_entry_inserted.first->second.second);
+
+	return *cache_entry_inserted.first->second.first;
+}
+
+
+boost::optional<const GPlatesScribe::ExportClassType &>
+GPlatesScribe::Scribe::load_raw_pointee_class_name()
+{
+	// Read the class name as its index into the transcription's unique-string pool.
+	const boost::uint64_t unique_string_index = read_raw_varint();
+
+	// Look up the per-raw-stream cache first.
+	std::map<boost::uint64_t, const ExportClassType *>::const_iterator cache_iter =
+			d_raw_context.load_export_class_types.find(unique_string_index);
+	if (cache_iter != d_raw_context.load_export_class_types.end())
+	{
+		return *cache_iter->second;
+	}
+
+	GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+			unique_string_index < d_transcription->get_num_unique_string_objects(),
+			GPLATES_ASSERTION_SOURCE,
+			"Class name in raw stream references an invalid unique-string-pool index.");
+
+	const std::string &class_name = d_transcription->get_unique_string_object(
+			static_cast<unsigned int>(unique_string_index));
+
+	// Find the export registered class type associated with the class name.
+	const boost::optional<const ExportClassType &> export_class_type =
+			ExportRegistry::instance().get_class_type(class_name);
+
+	// If the class name has not been export registered then it means either:
+	//   * the archive was created by a future GPlates with a class name we don't know about, or
+	//   * the archive was created by an old GPlates with a class name we have since removed.
+	//
+	// This mirrors the general path (see 'transcribe_class_name()').
+	if (!export_class_type)
+	{
+		// Record the reason for transcribe failure.
+		set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_UNKNOWN_TYPE);
+
+		return boost::none;
+	}
+
+	d_raw_context.load_export_class_types.insert(
+			std::make_pair(unique_string_index, &export_class_type.get()));
+
+	return export_class_type;
+}
+
+
+boost::optional<boost::uint64_t>
+GPlatesScribe::Scribe::save_raw_shared_object_backref(
+		const InternalUtils::ObjectAddress &object_address)
+{
+	// The next backref index is the number of shared objects registered so far
+	// (backref indices are assigned in encounter order - loading replays this order).
+	const boost::uint64_t next_backref_index = d_raw_context.save_shared_object_indices.size();
+
+	const std::pair<RawContext::save_shared_object_index_map_type::iterator, bool> inserted =
+			d_raw_context.save_shared_object_indices.insert(
+					RawContext::save_shared_object_index_map_type::value_type(
+							object_address,
+							next_backref_index));
+
+	if (inserted.second)
+	{
+		// First encounter - the caller streams the pointed-to object inline.
+		return boost::none;
+	}
+
+	// Already streamed - return its backref index.
+	return inserted.first->second;
+}
+
+
+void
+GPlatesScribe::Scribe::add_raw_shared_object_on_load(
+		void *object_address,
+		const std::type_info &object_type)
+{
+	d_raw_context.load_shared_objects.push_back(
+			RawContext::LoadSharedObject(object_address, object_type));
+}
+
+
+const GPlatesScribe::Scribe::RawContext::LoadSharedObject &
+GPlatesScribe::Scribe::get_raw_shared_object_on_load(
+		boost::uint64_t backref_index)
+{
+	GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+			backref_index < d_raw_context.load_shared_objects.size(),
+			GPLATES_ASSERTION_SOURCE,
+			"Owning pointer backref in raw stream references an invalid shared object index.");
+
+	return d_raw_context.load_shared_objects[static_cast<std::size_t>(backref_index)];
+}

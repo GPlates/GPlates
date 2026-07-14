@@ -59,6 +59,13 @@ namespace GPlatesScribe
 	// so fields cannot be individually skipped, reordered or probed on load - any evolution of
 	// the transcribed layout must be gated by a version transcribed at the front of the stream.
 	//
+	// *Owning* pointers (EXCLUSIVE_OWNER/SHARED_OWNER and the smart pointer protocol) are
+	// supported: the pointed-to object is streamed inline, preceded by a marker byte and,
+	// for polymorphic pointee types, the export-registered class name of the actual (dynamic)
+	// pointed-to type (encoded as an index into the transcription's unique-string pool).
+	// Shared owners are deduplicated - the first owner streams the pointed-to object and
+	// subsequent owners back-reference it - preserving aliasing across the raw subtree.
+	//
 	// Object references (Scribe::save_reference/load_reference) and *non-owning* pointers are
 	// not supported inside a raw subtree (they require object tracking) - attempting to
 	// transcribe them will throw Exceptions::InvalidRawTranscribeOperation.
