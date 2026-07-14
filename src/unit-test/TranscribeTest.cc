@@ -2894,6 +2894,103 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_64_bit_integers()
 }
 
 
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_cross_type_integers()
+{
+	// The raw lane encodes integers in a canonical, type-independent form (a sign discriminator
+	// followed by a varint), so - as on the general path - a value saved through one integral type
+	// can be loaded through another. The transcribe handlers rely on this (eg, saving an 'int' and
+	// loading a 'GPlatesModel::integer_plate_id_type', which is an 'unsigned long').
+	const int before_int = 42;
+	const unsigned int before_uint = 300;
+
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_int, "signed", GPlatesScribe::RAW);
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_uint, "unsigned", GPlatesScribe::RAW);
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			// Load through *different* integral types than were saved.
+			unsigned long after_ulong = 0;   // 'int' saved -> 'unsigned long' loaded.
+			long long after_llong = 0;        // 'unsigned int' saved -> 'long long' loaded.
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_ulong, "signed", GPlatesScribe::RAW));
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_llong, "unsigned", GPlatesScribe::RAW));
+
+			BOOST_CHECK_EQUAL(after_ulong, static_cast<unsigned long>(before_int));
+			BOOST_CHECK_EQUAL(after_llong, static_cast<long long>(before_uint));
+		}
+
+		//
+		// Loading a negative value through an unsigned type is out of range and must fail cleanly
+		// (a RawStreamError, mirroring the general path's range check).
+		//
+		QBuffer negative_archive;
+		negative_archive.open(QBuffer::WriteOnly);
+
+		QDataStream negative_stream_writer(&negative_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			const int before_negative = -1;
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_negative, "negative", GPlatesScribe::RAW);
+
+			GPlatesScribe::BinaryArchiveWriter::create(negative_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		negative_archive.close();
+
+		negative_archive.open(QBuffer::ReadOnly);
+		negative_archive.seek(0);
+
+		QDataStream negative_stream_reader(&negative_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(negative_stream_reader)->read_transcription());
+
+			unsigned int after_negative = 0;
+			BOOST_CHECK_THROW(
+					scribe.transcribe(TRANSCRIBE_SOURCE, after_negative, "negative", GPlatesScribe::RAW),
+					GPlatesScribe::Exceptions::RawStreamError);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
 GPlatesScribe::TranscribeResult
 GPlatesUnitTest::TranscribeRawTest::BaseA::transcribe(
 		GPlatesScribe::Scribe &scribe,
@@ -2945,7 +3042,11 @@ GPlatesUnitTest::TranscribeRawTest::RefCountedData::transcribe(
 		GPlatesScribe::Scribe &scribe,
 		bool transcribed_construct_data)
 {
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, value, "value"))
+	// The nested child is an intrusive (shared-owner) pointer - when a child object is itself
+	// shared (referenced elsewhere too) this exercises backref ordering for a shared object
+	// nested inside another shared object.
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, value, "value") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, child, "child"))
 	{
 		return scribe.get_transcribe_result();
 	}
@@ -3174,6 +3275,94 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_pointers()
 
 			before_data.check_equality(after_data);
 		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_nested_shared_objects()
+{
+	// A shared object nested inside another shared object.
+	//
+	// The save path registers a shared object (for backrefs) *before* streaming its contents, so
+	// a nested shared object is assigned a *higher* backref index than its parent. The load path
+	// must reserve the parent's backref slot before loading its contents (rather than registering
+	// it afterwards) so that the indices match - otherwise the nested child would be registered
+	// before its parent on load but after it on save, misaligning every subsequent backref.
+	try
+	{
+		RefCountedData::non_null_ptr_type child(new RefCountedData(100));
+		RefCountedData::non_null_ptr_type parent(new RefCountedData(200));
+		parent->child = child;
+
+		// 'parent' is the first shared object (backref index 0); its nested 'child' is the second
+		// (backref index 1). The repeated entries then back-reference both.
+		std::vector<RefCountedData::non_null_ptr_type> before_data;
+		before_data.push_back(parent);  // Streams 'parent' (and, nested, 'child').
+		before_data.push_back(parent);  // Backref to 'parent'.
+		before_data.push_back(child);   // Backref to the nested 'child'.
+
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+			BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		std::vector<RefCountedData::non_null_ptr_type> after_data;
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+		}
+
+		// Note: The aliasing/reference-count checks are made after the load scribe is destroyed
+		// (its internal shared-object bookkeeping no longer contributes to reference counts).
+		BOOST_REQUIRE_EQUAL(after_data.size(), 3u);
+
+		// References (not copies) so they do not contribute to the reference counts checked below.
+		const RefCountedData::non_null_ptr_type &after_parent = after_data[0];
+		const RefCountedData::non_null_ptr_type &after_child = after_data[2];
+
+		// The repeated 'parent' entry resolved to the same object (aliasing preserved).
+		BOOST_CHECK(after_data[0] == after_data[1]);
+		BOOST_CHECK_EQUAL(after_parent->value, 200);
+
+		// The nested child aliases the separately-owned 'child' entry (nested backref resolved).
+		BOOST_REQUIRE(static_cast<bool>(after_parent->child));
+		BOOST_CHECK(*after_parent->child == after_child);
+		BOOST_CHECK_EQUAL(after_child->value, 100);
+
+		// 'parent' is owned by 'after_data[0]' and 'after_data[1]' (reference count 2).
+		BOOST_CHECK_EQUAL(after_parent->get_reference_count(), 2);
+		// 'child' is owned by 'parent->child' and 'after_data[2]' (reference count 2).
+		BOOST_CHECK_EQUAL(after_child->get_reference_count(), 2);
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
 	{
@@ -3619,7 +3808,9 @@ GPlatesUnitTest::TranscribeTestSuite::construct_transcribe_raw_test()
 	boost::shared_ptr<TranscribeRawTest> instance(new TranscribeRawTest());
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_1);
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_64_bit_integers);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_cross_type_integers);
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_pointers);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_nested_shared_objects);
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_compatibility);
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_errors);
 }

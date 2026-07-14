@@ -2230,9 +2230,23 @@ namespace GPlatesScribe
 		save_raw_shared_object_backref(
 				const InternalUtils::ObjectAddress &object_address);
 
-		//! Register a *shared* pointed-to object loaded from the raw stream (for later backrefs).
+		/**
+		 * Reserve the backref slot for a *shared* pointed-to object about to be loaded, returning
+		 * its backref index.
+		 *
+		 * The slot is reserved *before* the object's contents are loaded (and filled in afterwards
+		 * via @a set_raw_shared_object_on_load) so that the index matches the save path, which
+		 * registers the object before streaming its contents. This keeps the parent/child
+		 * registration order consistent when shared objects are nested (the parent is assigned a
+		 * lower index than the shared objects nested within it, on both the save and load paths).
+		 */
+		boost::uint64_t
+		reserve_raw_shared_object_on_load();
+
+		//! Fill in a backref slot reserved by @a reserve_raw_shared_object_on_load once the object is loaded.
 		void
-		add_raw_shared_object_on_load(
+		set_raw_shared_object_on_load(
+				boost::uint64_t backref_index,
 				void *object_address,
 				const std::type_info &object_type);
 
@@ -2847,11 +2861,54 @@ namespace GPlatesScribe
 		boost::uint64_t
 		read_raw_varint();
 
+		//! Write a signed integer to the raw stream (sign discriminator byte + zig-zag varint).
+		void
+		write_raw_signed_integer(
+				boost::int64_t value);
+
+		//! Write an unsigned integer to the raw stream (sign discriminator byte + varint).
+		void
+		write_raw_unsigned_integer(
+				boost::uint64_t value);
+
+		/**
+		 * A canonical integer read from the raw stream, tagged with its saved signedness.
+		 *
+		 * The signedness is that of the *save-side* type (recorded in the stream), independent of
+		 * the load-side type - so the same conversion tolerance as the general path is available
+		 * regardless of which integral type saved the value and which is loading it.
+		 */
+		struct RawInteger
+		{
+			bool is_signed;
+			boost::int64_t signed_value;    // Valid when 'is_signed'.
+			boost::uint64_t unsigned_value; // Valid when '!is_signed'.
+		};
+
+		//! Read a canonical integer (sign discriminator byte + varint) from the raw stream.
+		RawInteger
+		read_raw_integer();
+
+		/**
+		 * Transcribe an integral @a object to/from the raw stream in a canonical, type-independent
+		 * encoding (a sign discriminator byte followed by a - zig-zag, if signed - varint).
+		 *
+		 * Crucially the encoding does not depend on the static width of 'ObjectType': a value saved
+		 * through one integral type can be loaded through another (as the general path allows via
+		 * its canonical signed/unsigned storage), which the transcribe handlers rely on (eg, saving
+		 * 'int' and loading 'GPlatesModel::integer_plate_id_type'). On loading, a value outside the
+		 * range of 'ObjectType' throws.
+		 */
+		template <typename ObjectType>
+		void
+		transcribe_raw_integer(
+				ObjectType &object);
+
 		/**
 		 * Transcribe @a object to/from the raw stream as the fixed-width type 'EncodedType'.
 		 *
-		 * On loading, a value outside the range of 'ObjectType' throws (eg, a 64-bit encoded
-		 * 'long' loaded on a platform with a 32-bit 'long').
+		 * Used for floating-point types (integers use @a transcribe_raw_integer). On loading, a
+		 * value outside the range of 'ObjectType' throws.
 		 */
 		template <typename EncodedType, typename ObjectType>
 		void
@@ -4389,6 +4446,17 @@ namespace GPlatesScribe
 			return false;
 		}
 
+		// For a shared object, reserve its backref slot *before* loading its contents so that its
+		// index matches the save path (which registers the object before streaming its contents).
+		// This keeps the parent/child registration order consistent when shared objects are nested
+		// (otherwise a shared object nested inside another shared object would be registered before
+		// its parent on load but after it on save, misaligning all subsequent backref indices).
+		boost::optional<boost::uint64_t> shared_object_backref_index;
+		if (marker == RAW_POINTER_SHARED)
+		{
+			shared_object_backref_index = reserve_raw_shared_object_on_load();
+		}
+
 		// Create the pointed-to object on the heap and load it from the raw stream.
 		// We (the owning pointer being transcribed) take ownership.
 		void *const object_address = transcribe_owning_pointer->load_object_raw(*this);
@@ -4398,10 +4466,12 @@ namespace GPlatesScribe
 			return false;
 		}
 
-		if (marker == RAW_POINTER_SHARED)
+		if (shared_object_backref_index)
 		{
-			// Register the loaded object so later backrefs (from other shared owners) find it.
-			add_raw_shared_object_on_load(object_address, *pointee_type_info);
+			// Now that the object is loaded, fill in the slot reserved above so later backrefs
+			// (from other shared owners) resolve to it.
+			set_raw_shared_object_on_load(
+					shared_object_backref_index.get(), object_address, *pointee_type_info);
 		}
 
 		return set_raw_pointer_to_object(object_address, *pointee_type_info, object_ptr);

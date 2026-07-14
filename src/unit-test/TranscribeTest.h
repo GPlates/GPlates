@@ -36,6 +36,7 @@
 #include <utility>
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
@@ -811,9 +812,17 @@ namespace GPlatesUnitTest
 		void
 		test_case_raw_64_bit_integers();
 
+		//! Raw round trip of an integer saved through one integral type and loaded through another.
+		void
+		test_case_raw_cross_type_integers();
+
 		//! Raw round trip of owning pointers (inline, NULL, polymorphic, shared-owner backrefs).
 		void
 		test_case_raw_pointers();
+
+		//! Raw round trip of a shared object nested inside another shared object (backref ordering).
+		void
+		test_case_raw_nested_shared_objects();
 
 		//! Loading between transcriptions saved with and without the RAW option.
 		void
@@ -1000,6 +1009,10 @@ namespace GPlatesUnitTest
 			{  }
 
 			int value;
+
+			// An optional nested (shared) child - used to test backref ordering when a shared
+			// object is nested inside another shared object.
+			boost::optional<non_null_ptr_type> child;
 
 		private:
 

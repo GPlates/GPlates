@@ -24,6 +24,7 @@
  */
 
 #include <cstring>
+#include <limits>
 #include <boost/checked_delete.hpp>
 #include <boost/foreach.hpp>
 #include <boost/numeric/conversion/cast.hpp>
@@ -1817,6 +1818,134 @@ GPlatesScribe::Scribe::read_raw_varint()
 }
 
 
+namespace
+{
+	//
+	// The sign discriminator byte that prefixes every canonical integer in the raw stream.
+	//
+	// It records the signedness of the *save-side* type so the load side can decode the value
+	// (and range-check it against its own, possibly different, integral type) without knowing
+	// which integral type saved it.
+	//
+	const boost::uint8_t RAW_INTEGER_SIGNED = 0;
+	const boost::uint8_t RAW_INTEGER_UNSIGNED = 1;
+
+	//! Zig-zag encode a signed integer so that small-magnitude negatives varint-encode compactly.
+	boost::uint64_t
+	zigzag_encode(
+			boost::int64_t value)
+	{
+		return (static_cast<boost::uint64_t>(value) << 1) ^
+				static_cast<boost::uint64_t>(value >> 63);
+	}
+
+	//! Reverse @a zigzag_encode.
+	boost::int64_t
+	zigzag_decode(
+			boost::uint64_t value)
+	{
+		return static_cast<boost::int64_t>((value >> 1) ^ (~(value & 1) + 1));
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::write_raw_signed_integer(
+		boost::int64_t value)
+{
+	write_raw_bytes(&RAW_INTEGER_SIGNED, 1);
+	write_raw_varint(zigzag_encode(value));
+}
+
+
+void
+GPlatesScribe::Scribe::write_raw_unsigned_integer(
+		boost::uint64_t value)
+{
+	write_raw_bytes(&RAW_INTEGER_UNSIGNED, 1);
+	write_raw_varint(value);
+}
+
+
+GPlatesScribe::Scribe::RawInteger
+GPlatesScribe::Scribe::read_raw_integer()
+{
+	boost::uint8_t sign;
+	read_raw_bytes(&sign, 1);
+
+	RawInteger raw_integer;
+
+	if (sign == RAW_INTEGER_SIGNED)
+	{
+		raw_integer.is_signed = true;
+		raw_integer.signed_value = zigzag_decode(read_raw_varint());
+		raw_integer.unsigned_value = 0;
+	}
+	else if (sign == RAW_INTEGER_UNSIGNED)
+	{
+		raw_integer.is_signed = false;
+		raw_integer.signed_value = 0;
+		raw_integer.unsigned_value = read_raw_varint();
+	}
+	else
+	{
+		GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+				false,
+				GPLATES_ASSERTION_SOURCE,
+				"Invalid integer sign discriminator in raw stream.");
+		// Unreachable (the assert above always throws) - silences a compiler warning.
+		throw Exceptions::RawStreamError(
+				GPLATES_EXCEPTION_SOURCE,
+				"Invalid integer sign discriminator in raw stream.");
+	}
+
+	return raw_integer;
+}
+
+
+template <typename ObjectType>
+void
+GPlatesScribe::Scribe::transcribe_raw_integer(
+		ObjectType &object)
+{
+	if (is_saving())
+	{
+		// The signedness of the encoding is that of the save-side type.
+		if (std::numeric_limits<ObjectType>::is_signed)
+		{
+			write_raw_signed_integer(static_cast<boost::int64_t>(object));
+		}
+		else
+		{
+			write_raw_unsigned_integer(static_cast<boost::uint64_t>(object));
+		}
+	}
+	else // loading...
+	{
+		// Decode using the signedness recorded in the stream (the save-side signedness), not the
+		// load-side type - so a value saved through one integral type loads through another.
+		const RawInteger raw_integer = read_raw_integer();
+
+		try
+		{
+			// Guard against the value being outside the range of 'ObjectType' (eg, a negative
+			// value saved as 'int' being loaded into an unsigned type, or a large value being
+			// loaded into a narrower type).
+			object = raw_integer.is_signed
+					? boost::numeric_cast<ObjectType>(raw_integer.signed_value)
+					: boost::numeric_cast<ObjectType>(raw_integer.unsigned_value);
+		}
+		catch (boost::numeric::bad_numeric_cast &)
+		{
+			GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					"Value in raw stream is out of range of the object type being loaded.");
+		}
+	}
+}
+
+
 template <typename EncodedType, typename ObjectType>
 void
 GPlatesScribe::Scribe::transcribe_raw_fixed_width(
@@ -1855,16 +1984,18 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		bool &object)
 {
+	// Encode 'bool' through the canonical integer codec (as 0 or 1) so that - as on the general
+	// path - a value saved as 'bool' can be loaded as an integer, and vice versa.
 	if (is_saving())
 	{
-		const boost::uint8_t encoded_object = object ? 1 : 0;
-		write_raw_bytes(&encoded_object, sizeof(encoded_object));
+		write_raw_unsigned_integer(object ? 1 : 0);
 	}
 	else // loading...
 	{
-		boost::uint8_t encoded_object;
-		read_raw_bytes(&encoded_object, sizeof(encoded_object));
-		object = (encoded_object != 0);
+		const RawInteger raw_integer = read_raw_integer();
+		object = raw_integer.is_signed
+				? (raw_integer.signed_value != 0)
+				: (raw_integer.unsigned_value != 0);
 	}
 }
 
@@ -1898,7 +2029,7 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		signed char &object)
 {
-	transcribe_raw_fixed_width<boost::int8_t>(object);
+	transcribe_raw_integer(object);
 }
 
 
@@ -1906,7 +2037,7 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		unsigned char &object)
 {
-	transcribe_raw_fixed_width<boost::uint8_t>(object);
+	transcribe_raw_integer(object);
 }
 
 
@@ -1914,7 +2045,7 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		short &object)
 {
-	transcribe_raw_fixed_width<boost::int16_t>(object);
+	transcribe_raw_integer(object);
 }
 
 
@@ -1922,7 +2053,7 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		unsigned short &object)
 {
-	transcribe_raw_fixed_width<boost::uint16_t>(object);
+	transcribe_raw_integer(object);
 }
 
 
@@ -1930,7 +2061,7 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		int &object)
 {
-	transcribe_raw_fixed_width<boost::int32_t>(object);
+	transcribe_raw_integer(object);
 }
 
 
@@ -1938,7 +2069,7 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		unsigned int &object)
 {
-	transcribe_raw_fixed_width<boost::uint32_t>(object);
+	transcribe_raw_integer(object);
 }
 
 
@@ -1946,11 +2077,10 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		long &object)
 {
-	// 'long' is 32-bit or 64-bit depending on the platform - encode full 64-bit width.
-	//
-	// Note this differs from the general path (which restricts 'long' to 32-bit range and
-	// throws outside it) - the raw lane encodes 64-bit integer types full-width.
-	transcribe_raw_fixed_width<boost::int64_t>(object);
+	// Note: The canonical integer codec encodes the full 64-bit value, so - unlike the general
+	// path (which restricts 'long' to 32-bit range and throws outside it) - the raw lane
+	// round-trips 64-bit 'long' values.
+	transcribe_raw_integer(object);
 }
 
 
@@ -1958,7 +2088,7 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		unsigned long &object)
 {
-	transcribe_raw_fixed_width<boost::uint64_t>(object);
+	transcribe_raw_integer(object);
 }
 
 
@@ -1966,7 +2096,7 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		long long &object)
 {
-	transcribe_raw_fixed_width<boost::int64_t>(object);
+	transcribe_raw_integer(object);
 }
 
 
@@ -1974,7 +2104,7 @@ void
 GPlatesScribe::Scribe::transcribe_raw(
 		unsigned long long &object)
 {
-	transcribe_raw_fixed_width<boost::uint64_t>(object);
+	transcribe_raw_integer(object);
 }
 
 
@@ -2194,13 +2324,37 @@ GPlatesScribe::Scribe::save_raw_shared_object_backref(
 }
 
 
+boost::uint64_t
+GPlatesScribe::Scribe::reserve_raw_shared_object_on_load()
+{
+	const boost::uint64_t backref_index = d_raw_context.load_shared_objects.size();
+
+	// Reserve a placeholder slot - it is filled in (with the object's address and type) once the
+	// object has been loaded, in 'set_raw_shared_object_on_load()'.
+	d_raw_context.load_shared_objects.push_back(
+			RawContext::LoadSharedObject(NULL, typeid(void)));
+
+	return backref_index;
+}
+
+
 void
-GPlatesScribe::Scribe::add_raw_shared_object_on_load(
+GPlatesScribe::Scribe::set_raw_shared_object_on_load(
+		boost::uint64_t backref_index,
 		void *object_address,
 		const std::type_info &object_type)
 {
-	d_raw_context.load_shared_objects.push_back(
-			RawContext::LoadSharedObject(object_address, object_type));
+	// The slot was reserved by 'reserve_raw_shared_object_on_load()' immediately before the
+	// object was loaded, so the index is always valid here.
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			backref_index < d_raw_context.load_shared_objects.size(),
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to fill an unreserved shared object backref slot.");
+
+	RawContext::LoadSharedObject &shared_object =
+			d_raw_context.load_shared_objects[static_cast<std::size_t>(backref_index)];
+	shared_object.object_address = object_address;
+	shared_object.object_type = &object_type;
 }
 
 

@@ -38,6 +38,33 @@ namespace GPlatesApi
 	namespace PythonPickle
 	{
 		/**
+		 * The pickle "section version" written at the front of every pickle payload (as a top-level
+		 * transcription object) by the entry-point below, and checked on unpickle.
+		 *
+		 * This is the client-owned coarse version gate described in the fast-path ("raw lane") design
+		 * (see "doc-cpp/design/scribe-system/fast-path-plan.md"). It sits *above* the two lower-level
+		 * gates that already protect a pickle:
+		 *   - the raw-stream *codec* version (scribe-owned, written at the head of each raw blob), and
+		 *   - the binary *archive* format version (bumped to 1 only when a raw stream is present, so an
+		 *     older build reading a newer raw pickle fails cleanly rather than mis-parsing).
+		 * Bump this only when the *layout of what PythonPickle itself writes* changes in a way not
+		 * already covered by those gates. A newer pickle carrying a higher section version is rejected
+		 * here with a clean 'UnsupportedVersion' (rather than mis-loaded).
+		 *
+		 * Note: Pickles written by an older pygplates (before the raw lane existed) do *not* contain
+		 *       this object at all - the unpickle path detects its absence and treats it as version 0,
+		 *       and the object itself loads via the raw-lane's general-path fallback (the boundary
+		 *       object was saved as COMPOSITE, not RAW_STREAM). See 'Impl::unpickle'.
+		 */
+		const unsigned int CURRENT_PICKLE_SECTION_VERSION = 0;
+
+		/**
+		 * The transcription tag under which @a CURRENT_PICKLE_SECTION_VERSION is stored.
+		 */
+		const char *const PICKLE_SECTION_VERSION_TAG = "pickle_section_version";
+
+
+		/**
 		 * The default method of transcribing (loading/saving) an object to be used when picking/unpickling an object.
 		 *
 		 * This just delegates transcribing directly to the object itself (via its holder pointer 'ObjectHolderType'),
@@ -66,7 +93,12 @@ namespace GPlatesApi
 			{
 				// This saves the object holder pointer which in turns saves the object
 				// (because the holder pointer should be an owning pointer).
-				scribe.save(TRANSCRIBE_SOURCE, object, "object");
+				//
+				// The 'RAW' option streams the entire object subtree into a single raw-stream blob
+				// (the "raw lane") instead of the usual one-transcription-object-per-child encoding -
+				// this is the fast path for pickling (see "scribe/ScribeOptions.h" and
+				// "doc-cpp/design/scribe-system/fast-path-plan.md").
+				scribe.save(TRANSCRIBE_SOURCE, object, "object", GPlatesScribe::RAW);
 			}
 
 			static
@@ -76,7 +108,14 @@ namespace GPlatesApi
 			{
 				// This loads the object holder pointer which in turns loads the object
 				// (because the holder pointer should be an owning pointer).
-				GPlatesScribe::LoadRef<ObjectHolderType> object = scribe.load<ObjectHolderType>(TRANSCRIBE_SOURCE, "object");
+				//
+				// The 'RAW' option is the counterpart to the 'RAW' save above. Note that it is safe
+				// to pass on load even for pickles that were *not* saved with it (eg, pickles written
+				// by an older pygplates without the raw lane): the boundary object dispatches on its
+				// transcription kind, so a COMPOSITE boundary transparently falls back to the general
+				// path (see "scribe/ScribeOptions.h").
+				GPlatesScribe::LoadRef<ObjectHolderType> object =
+						scribe.load<ObjectHolderType>(TRANSCRIBE_SOURCE, "object", GPlatesScribe::RAW);
 				// If transcribing (loading) the object failed then it is due to backwards/forwards
 				// compatibility differences between the object that was pickled into the byte stream and
 				// the object we are attempting to unpickle. This shouldn't happen unless the version of
@@ -139,6 +178,11 @@ namespace GPlatesApi
 				// The scribe used to save the object to a transcription.
 				GPlatesScribe::Scribe scribe;
 
+				// Write the pickle section version at the front of the pickle payload (as a top-level
+				// transcription object) so that a future layout change can be detected on unpickle.
+				const unsigned int pickle_section_version = CURRENT_PICKLE_SECTION_VERSION;
+				scribe.save(TRANSCRIBE_SOURCE, pickle_section_version, PICKLE_SECTION_VERSION_TAG);
+
 				// Transcribe the object.
 				Transcribe<ObjectHolderType>::pickle(scribe, object);
 
@@ -163,6 +207,29 @@ namespace GPlatesApi
 
 				// The scribe used to load the object from the transcription.
 				GPlatesScribe::Scribe scribe(object_transcription);
+
+				// Check the pickle section version at the front of the pickle payload.
+				//
+				// Pickles written by an older pygplates (before the raw lane existed) do not contain
+				// this object - treat its absence as version 0. Using 'is_in_transcription' (a pure
+				// query that does not touch the load state) avoids attempting - and failing - a load
+				// of a tag that isn't present.
+				unsigned int pickle_section_version = 0;
+				if (scribe.is_in_transcription(PICKLE_SECTION_VERSION_TAG))
+				{
+					GPlatesScribe::LoadRef<unsigned int> loaded_section_version =
+							scribe.load<unsigned int>(TRANSCRIBE_SOURCE, PICKLE_SECTION_VERSION_TAG);
+					GPlatesGlobal::Assert<GPlatesScribe::Exceptions::UnsupportedVersion>(
+							loaded_section_version.is_valid(),
+							GPLATES_ASSERTION_SOURCE);
+					pickle_section_version = loaded_section_version.get();
+				}
+
+				// A pickle written by a *newer* pygplates may use a layout this version does not
+				// understand - reject it cleanly rather than mis-loading it.
+				GPlatesGlobal::Assert<GPlatesScribe::Exceptions::UnsupportedVersion>(
+						pickle_section_version <= CURRENT_PICKLE_SECTION_VERSION,
+						GPLATES_ASSERTION_SOURCE);
 
 				// Transcribe the object.
 				return Transcribe<ObjectHolderType>::unpickle(scribe);
