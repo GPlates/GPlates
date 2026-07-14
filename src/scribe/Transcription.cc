@@ -269,12 +269,11 @@ GPlatesScribe::Transcription::get_string(
 }
 
 
-void
-GPlatesScribe::Transcription::add_string(
-		object_id_type object_id,
+unsigned int
+GPlatesScribe::Transcription::get_or_create_unique_string_index(
 		const std::string &value)
 {
-	// Find the object tag in the list of unique tags encountered so far.
+	// Find the string in the list of unique strings encountered so far.
 	const std::pair<string_object_index_map_type::iterator, bool> string_object_inserted =
 			d_string_object_index_map.insert(
 					string_object_index_map_type::value_type(
@@ -293,9 +292,46 @@ GPlatesScribe::Transcription::add_string(
 		string_object_inserted.first->second = string_object_index;
 	}
 
-	const unsigned int unique_string_index = string_object_inserted.first->second;
+	return string_object_inserted.first->second;
+}
+
+
+void
+GPlatesScribe::Transcription::add_string(
+		object_id_type object_id,
+		const std::string &value)
+{
+	const unsigned int unique_string_index = get_or_create_unique_string_index(value);
 
 	add_string_object(object_id, unique_string_index);
+}
+
+
+const std::vector<char> &
+GPlatesScribe::Transcription::get_raw_stream(
+		object_id_type object_id) const
+{
+	const ObjectLocation &object_location = get_object_location(object_id, RAW_STREAM);
+
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			object_location.index < d_raw_stream_objects.size(),
+			GPLATES_ASSERTION_SOURCE,
+			"Object index out of bounds.");
+
+	return d_raw_stream_objects[object_location.index];
+}
+
+
+void
+GPlatesScribe::Transcription::add_raw_stream(
+		object_id_type object_id,
+		std::vector<char> raw_stream_data)
+{
+	ObjectLocation &object_location = add_object_location(object_id, RAW_STREAM);
+
+	object_location.index = d_raw_stream_objects.size();
+
+	d_raw_stream_objects.push_back(std::move(raw_stream_data));
 }
 
 
@@ -710,6 +746,16 @@ GPlatesScribe::Transcription::operator==(
 
 		case STRING:
 			if (get_string_object(object_id) != other.get_string_object(object_id))
+			{
+				return false;
+			}
+			break;
+
+		case RAW_STREAM:
+			// Bit-exact comparison (unlike FLOAT/DOUBLE, which compare with tolerance) - fine for
+			// pickling (the only current raw-lane consumer); flag if sessions ever adopt the raw
+			// lane, since that would make change-detection stricter than the general path.
+			if (get_raw_stream(object_id) != other.get_raw_stream(object_id))
 			{
 				return false;
 			}

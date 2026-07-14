@@ -35,7 +35,8 @@
 
 GPlatesScribe::BinaryArchiveWriter::BinaryArchiveWriter(
 		QDataStream &output_stream) :
-	d_output_stream(output_stream)
+	d_output_stream(output_stream),
+	d_header_written(false)
 {
 	//
 	// Set up the archive stream.
@@ -45,7 +46,7 @@ GPlatesScribe::BinaryArchiveWriter::BinaryArchiveWriter(
 	d_output_stream.setByteOrder(ArchiveCommon::BINARY_ARCHIVE_QT_STREAM_BYTE_ORDER);
 
 	//
-	// Write out the archive header.
+	// Write out the archive signature (the rest of the header is deferred - see @a write_header_if_necessary).
 	//
 
 	// Write the archive signature string.
@@ -68,14 +69,32 @@ GPlatesScribe::BinaryArchiveWriter::BinaryArchiveWriter(
 				GPLATES_ASSERTION_SOURCE,
 				"Archive stream error detected writing archive signature.");
 	}
+}
 
-	// Write the binary archive format version.
-	const unsigned int binary_archive_format_version = ArchiveCommon::BINARY_ARCHIVE_FORMAT_VERSION;
+
+void
+GPlatesScribe::BinaryArchiveWriter::write_header_if_necessary(
+		const Transcription &transcription)
+{
+	if (d_header_written)
+	{
+		return;
+	}
+
+	// Only bump the binary archive format version for archives that actually contain raw stream
+	// data - so archives without one (sessions, projects) keep writing the original version and
+	// stay byte-identical to (and readable by) older archive readers.
+	const unsigned int binary_archive_format_version =
+			(transcription.get_num_raw_stream_objects() > 0)
+					? ArchiveCommon::BINARY_ARCHIVE_FORMAT_VERSION_RAW_STREAM
+					: ArchiveCommon::BINARY_ARCHIVE_FORMAT_VERSION;
 	write(binary_archive_format_version);
 
 	// Write the scribe version.
 	const unsigned int scribe_version = Scribe::get_current_scribe_version();
 	write(scribe_version);
+
+	d_header_written = true;
 }
 
 
@@ -83,6 +102,8 @@ void
 GPlatesScribe::BinaryArchiveWriter::write_transcription(
 		const Transcription &transcription)
 {
+	write_header_if_necessary(transcription);
+
 	//
 	// Write out the object tags.
 	//
@@ -219,6 +240,11 @@ GPlatesScribe::BinaryArchiveWriter::write_object_group(
 		case Transcription::COMPOSITE:
 			write(ArchiveCommon::COMPOSITE_CODE);
 			write(transcription.get_composite_object(object_id_in_group));
+			break;
+
+		case Transcription::RAW_STREAM:
+			write(ArchiveCommon::RAW_STREAM_CODE);
+			write(transcription.get_raw_stream(object_id_in_group));
 			break;
 
 		default: // Transcription::UNUSED ...
@@ -386,5 +412,25 @@ GPlatesScribe::BinaryArchiveWriter::write(
 					GPLATES_ASSERTION_SOURCE,
 					"Archive stream error detected writing string.");
 		}
+	}
+}
+
+
+void
+GPlatesScribe::BinaryArchiveWriter::write(
+		const std::vector<char> &object)
+{
+	const quint32 size = object.size();
+	write(size);
+
+	if (size > 0)
+	{
+		const qint64 num_bytes_written = d_output_stream.writeRawData(object.data(), size);
+
+		GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
+				d_output_stream.status() == QDataStream::Ok &&
+					num_bytes_written == static_cast<qint64>(size),
+				GPLATES_ASSERTION_SOURCE,
+				"Archive stream error detected writing raw stream.");
 	}
 }

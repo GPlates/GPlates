@@ -26,6 +26,7 @@
 #ifndef GPLATES_SCRIBE_SCRIBEBINARYARCHIVEREADER_H
 #define GPLATES_SCRIBE_SCRIBEBINARYARCHIVEREADER_H
 
+#include <vector>
 #include <QDataStream>
 #include <QtGlobal>
 
@@ -110,6 +111,9 @@ namespace GPlatesScribe
 
 		std::string
 		read_string();
+
+		std::vector<char>
+		read_raw_stream();
 
 
 		QDataStream &d_input_stream;

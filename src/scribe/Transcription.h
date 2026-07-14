@@ -239,6 +239,7 @@ namespace GPlatesScribe
 			DOUBLE,
 			STRING,
 			COMPOSITE,
+			RAW_STREAM, // A raw (uninterpreted) block of bytes - see @a add_raw_stream.
 
 			UNUSED // Associated with an unused object id.
 		};
@@ -338,6 +339,48 @@ namespace GPlatesScribe
 		add_string(
 				object_id_type object_id,
 				const std::string &value);
+
+		/**
+		 * Returns the unique-string-pool index for @a value, adding it to the pool if not already present.
+		 *
+		 * This is the interning half of @a add_string exposed separately so that other primitives
+		 * (eg, the raw lane's strings and class names) can share the same unique-string pool without
+		 * going through a per-object @a ObjectType slot.
+		 */
+		unsigned int
+		get_or_create_unique_string_index(
+				const std::string &value);
+
+
+		/**
+		 * Returns the raw (uninterpreted) block of bytes associated with @a object_id.
+		 */
+		const std::vector<char> &
+		get_raw_stream(
+				object_id_type object_id) const;
+
+		/**
+		 * Adds a raw (uninterpreted) block of bytes associated with @a object_id.
+		 *
+		 * Unlike strings, raw stream data is not interned/deduplicated - each object id gets its
+		 * own copy (a raw stream is typically one large, essentially unique, blob per subtree).
+		 */
+		void
+		add_raw_stream(
+				object_id_type object_id,
+				std::vector<char> raw_stream_data);
+
+		/**
+		 * Returns the total number of raw stream objects added so far.
+		 *
+		 * Used (eg, by the binary archive writer) to cheaply determine whether this transcription
+		 * contains any raw stream data at all.
+		 */
+		unsigned int
+		get_num_raw_stream_objects() const
+		{
+			return d_raw_stream_objects.size();
+		}
 
 
 		CompositeObject &
@@ -560,6 +603,9 @@ namespace GPlatesScribe
 		std::vector<std::string> d_unique_string_objects;
 		std::vector<unsigned int> d_string_objects; // Indices into 'd_unique_string_objects'
 		string_object_index_map_type d_string_object_index_map;
+
+		// Primitive raw stream objects (not interned - one entry per object id).
+		std::vector<std::vector<char> > d_raw_stream_objects;
 
 		// Composite objects.
 		composite_object_pool_type d_composite_object_pool;

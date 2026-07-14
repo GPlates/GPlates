@@ -278,6 +278,11 @@ GPlatesScribe::XmlArchiveReader::read_transcription()
 			transcription->add_composite_object(object_id);
 			read_composite(transcription->get_composite_object(object_id));
 		}
+		else if (object_element_name == ArchiveCommon::XML_RAW_STREAM_OBJECT_ELEMENT_NAME)
+		{
+			transcription->add_raw_stream(object_id, read_raw_stream());
+			read_end_element(ArchiveCommon::XML_RAW_STREAM_OBJECT_ELEMENT_NAME, true/*require*/);
+		}
 		else
 		{
 			GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
@@ -482,8 +487,28 @@ GPlatesScribe::XmlArchiveReader::read_string()
 
 	// Convert the QString to a string.
 	const QByteArray object_byte_array = object_qstring.toLatin1();
-	
+
 	return std::string(object_byte_array.constData(), object_byte_array.size());
+}
+
+
+std::vector<char>
+GPlatesScribe::XmlArchiveReader::read_raw_stream()
+{
+	read_next_token();
+
+	// We should be at text/characters.
+	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
+			d_input_stream.isCharacters(),
+			GPLATES_ASSERTION_SOURCE,
+			"Archive stream error detected before reading raw stream.");
+
+	// Read the current XML element (base64-encoded raw bytes).
+	const QByteArray base64_data = d_input_stream.text().toString().toLatin1();
+
+	const QByteArray decoded_data = QByteArray::fromBase64(base64_data);
+
+	return std::vector<char>(decoded_data.constData(), decoded_data.constData() + decoded_data.size());
 }
 
 

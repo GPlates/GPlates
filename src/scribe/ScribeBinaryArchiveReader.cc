@@ -75,8 +75,11 @@ GPlatesScribe::BinaryArchiveReader::BinaryArchiveReader(
 	const unsigned int binary_archive_format_version = read_unsigned();
 
 	// Throw exception if the binary archive format version used to write the archive is a future version.
+	//
+	// Note: ArchiveCommon::BINARY_ARCHIVE_FORMAT_VERSION_RAW_STREAM (written only for archives
+	// containing raw stream data) is the highest version this reader currently understands.
 	GPlatesGlobal::Assert<Exceptions::UnsupportedVersion>(
-			binary_archive_format_version <= ArchiveCommon::BINARY_ARCHIVE_FORMAT_VERSION,
+			binary_archive_format_version <= ArchiveCommon::BINARY_ARCHIVE_FORMAT_VERSION_RAW_STREAM,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Read the version of the Scribe used to create the archive being read.
@@ -180,6 +183,10 @@ GPlatesScribe::BinaryArchiveReader::read_object_group(
 		{
 			transcription.add_composite_object(object_id_in_group);
 			read(transcription.get_composite_object(object_id_in_group));
+		}
+		else if (object_type_code == ArchiveCommon::RAW_STREAM_CODE)
+		{
+			transcription.add_raw_stream(object_id_in_group, read_raw_stream());
 		}
 		else
 		{
@@ -364,6 +371,30 @@ GPlatesScribe::BinaryArchiveReader::read_string()
 
 			object[n] = static_cast<char>(elem);
 		}
+	}
+
+	return object;
+}
+
+
+std::vector<char>
+GPlatesScribe::BinaryArchiveReader::read_raw_stream()
+{
+	std::vector<char> object;
+
+	const unsigned int size = read_unsigned();
+
+	if (size > 0)
+	{
+		object.resize(size);
+
+		const qint64 num_bytes_read = d_input_stream.readRawData(object.data(), size);
+
+		GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
+				d_input_stream.status() == QDataStream::Ok &&
+					num_bytes_read == static_cast<qint64>(size),
+				GPLATES_ASSERTION_SOURCE,
+				"Archive stream error detected reading raw stream.");
 	}
 
 	return object;

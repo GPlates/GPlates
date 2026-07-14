@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <limits>
 #include <locale>
+#include <QByteArray>
 
 #include "ScribeTextArchiveWriter.h"
 
@@ -223,6 +224,11 @@ GPlatesScribe::TextArchiveWriter::write_object_group(
 			write(transcription.get_composite_object(object_id_in_group));
 			break;
 
+		case Transcription::RAW_STREAM:
+			write(ArchiveCommon::RAW_STREAM_CODE);
+			write(transcription.get_raw_stream(object_id_in_group));
+			break;
+
 		default: // Transcription::UNUSED ...
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 					false,
@@ -387,4 +393,14 @@ GPlatesScribe::TextArchiveWriter::write(
 				GPLATES_ASSERTION_SOURCE,
 				"Archive stream error detected writing string.");
 	}
+}
+
+
+void
+GPlatesScribe::TextArchiveWriter::write(
+		const std::vector<char> &object)
+{
+	const QByteArray base64_data = QByteArray(object.data(), object.size()).toBase64();
+
+	write(std::string(base64_data.constData(), base64_data.size()));
 }

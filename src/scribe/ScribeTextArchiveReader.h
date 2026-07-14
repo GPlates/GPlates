@@ -27,6 +27,7 @@
 #define GPLATES_SCRIBE_SCRIBETEXTARCHIVEREADER_H
 
 #include <istream>
+#include <vector>
 #include <boost/io/ios_state.hpp>
 
 #include "ScribeArchiveReader.h"
@@ -99,6 +100,10 @@ namespace GPlatesScribe
 		template <typename ObjectType>
 		ObjectType
 		read();
+
+		//! Base64-decodes the raw stream bytes written by @a TextArchiveWriter::write(const std::vector<char> &).
+		std::vector<char>
+		read_raw_stream();
 
 
 		std::istream &d_input_stream;

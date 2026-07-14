@@ -78,6 +78,19 @@ namespace GPlatesScribe
 		const unsigned int BINARY_ARCHIVE_FORMAT_VERSION = 0;
 
 		/**
+		 * Binary archive format version written instead of @a BINARY_ARCHIVE_FORMAT_VERSION when the
+		 * transcription being written contains raw stream data (see Transcription::RAW_STREAM).
+		 *
+		 * The binary archive writer only bumps up to this version for archives that actually contain
+		 * a raw stream, so archives without one (eg, sessions, projects) keep writing
+		 * @a BINARY_ARCHIVE_FORMAT_VERSION unchanged and stay byte-identical to (and readable by)
+		 * older archive readers. An older archive reader - that doesn't recognise this version -
+		 * cleanly raises UnsupportedVersion instead of failing confusingly on an unknown object type
+		 * code (RAW_STREAM_CODE) it has never heard of.
+		 */
+		const unsigned int BINARY_ARCHIVE_FORMAT_VERSION_RAW_STREAM = 1;
+
+		/**
 		 * Version of the *XML* archive format.
 		 *
 		 * This version gets incremented when modifications are made to the XML archive format
@@ -96,6 +109,7 @@ namespace GPlatesScribe
 		const unsigned int DOUBLE_CODE = 3;
 		const unsigned int STRING_CODE = 4;
 		const unsigned int COMPOSITE_CODE = 5;
+		const unsigned int RAW_STREAM_CODE = 6;
 
 		//
 		// XML element names for the primitive types (and composite type).
@@ -106,6 +120,7 @@ namespace GPlatesScribe
 		const QString XML_DOUBLE_OBJECT_ELEMENT_NAME = QString::fromLatin1("double");
 		const QString XML_STRING_OBJECT_ELEMENT_NAME = QString::fromLatin1("string");
 		const QString XML_COMPOSITE_OBJECT_ELEMENT_NAME = QString::fromLatin1("composite");
+		const QString XML_RAW_STREAM_OBJECT_ELEMENT_NAME = QString::fromLatin1("raw_stream");
 
 		// All the above element names in a list.
 		const QStringList XML_OBJECT_ELEMENT_NAMES = QStringList()
@@ -114,7 +129,8 @@ namespace GPlatesScribe
 				<< XML_FLOAT_OBJECT_ELEMENT_NAME
 				<< XML_DOUBLE_OBJECT_ELEMENT_NAME
 				<< XML_STRING_OBJECT_ELEMENT_NAME
-				<< XML_COMPOSITE_OBJECT_ELEMENT_NAME;
+				<< XML_COMPOSITE_OBJECT_ELEMENT_NAME
+				<< XML_RAW_STREAM_OBJECT_ELEMENT_NAME;
 
 
 		/**

@@ -27,6 +27,7 @@
 #define GPLATES_SCRIBE_SCRIBETEXTARCHIVEWRITER_H
 
 #include <ostream>
+#include <vector>
 #include <boost/io/ios_state.hpp>
 
 #include "ScribeArchiveWriter.h"
@@ -118,6 +119,11 @@ namespace GPlatesScribe
 		void
 		write(
 				const std::string &object);
+
+		//! Base64-encodes the raw bytes so they're safe to embed in the (mostly) plain-text archive.
+		void
+		write(
+				const std::vector<char> &object);
 
 
 		std::ostream &d_output_stream;
