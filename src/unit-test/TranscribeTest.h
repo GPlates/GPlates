@@ -794,13 +794,134 @@ namespace GPlatesUnitTest
 	};
 
 
+	/**
+	 * Test transcribing via the raw stream ("raw lane") - the RAW option.
+	 */
+	class TranscribeRawTest
+	{
+	public:
+		TranscribeRawTest()
+		{ }
+
+		//! Raw round trip of primitives/strings/containers through all archive types.
+		void
+		test_case_raw_1();
+
+		//! Raw round trip of full-width 64-bit integers (general path restricts to 32-bit range).
+		void
+		test_case_raw_64_bit_integers();
+
+		//! Loading between transcriptions saved with and without the RAW option.
+		void
+		test_case_raw_compatibility();
+
+		//! Errors: unsupported operations in raw mode, codec version rejection, positional mismatches.
+		void
+		test_case_raw_errors();
+
+
+		//! Tests save/load construction (non-default constructor) inside a raw subtree.
+		struct NestedData
+		{
+			explicit
+			NestedData(
+					int value_) :
+				value(value_)
+			{  }
+
+			int value;
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject<NestedData> &nested_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+		enum Enum
+		{
+			ENUM_VALUE_1,
+			ENUM_VALUE_2,
+			ENUM_VALUE_3
+		};
+
+		struct Data
+		{
+			Data();
+
+			void
+			initialise();
+
+			void
+			check_equality(
+					const Data &other) const;
+
+			bool b;
+			char c;
+			short s;
+			int i;
+			unsigned int ui;
+			long l;
+			float f;
+			double d;
+			GPlatesMaths::Real real; // Transcribes via the delegate protocol.
+			Enum e;
+			std::string str1;
+			std::string str2; // Same value as 'str1' (tests string interning).
+			std::string str3;
+			QString qstr;
+			std::vector<int> int_vec; // Transcribed with a nested RAW option (which is ignored).
+			std::vector<std::string> str_vec;
+			std::map<int, std::string> int_str_map;
+			boost::optional<double> opt_some;
+			boost::optional<double> opt_none;
+			NestedData nested; // Transcribed via save/load construction.
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+	private:
+
+		void
+		test_case_raw_1_write(
+				const GPlatesScribe::ArchiveWriter::non_null_ptr_type &archive_writer,
+				Data &before_data);
+
+		void
+		test_case_raw_1_read(
+				const GPlatesScribe::ArchiveReader::non_null_ptr_type &archive_reader,
+				Data &before_data);
+	};
+
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			TranscribeRawTest::Enum &e,
+			bool transcribed_construct_data);
+
 
 	//
 	// To run only Transcribe test suite:
 	//
 	// gplates-unit-test.exe --G_test_to_run=*/Transcribe
 	//
-	class TranscribeTestSuite : 
+	class TranscribeTestSuite :
 		public GPlatesUnitTest::GPlatesTestSuite
 	{
 	public:
@@ -808,7 +929,7 @@ namespace GPlatesUnitTest
 				unsigned depth);
 
 	protected:
-		void 
+		void
 		construct_maps();
 
 	private:
@@ -823,6 +944,9 @@ namespace GPlatesUnitTest
 
 		void
 		construct_transcribe_compatibility_test();
+
+		void
+		construct_transcribe_raw_test();
 	};
 }
 

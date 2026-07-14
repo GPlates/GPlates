@@ -97,6 +97,34 @@ GPlatesScribe::Exceptions::InvalidTranscribeOptions::write_message(
 
 
 void
+GPlatesScribe::Exceptions::UnsupportedRawStreamVersion::write_message(
+		std::ostream &os) const
+{
+	os << "Scribe raw stream was written using an unsupported future version "
+		<< d_raw_stream_codec_version
+		<< " of the raw stream codec (current version is "
+		<< d_current_raw_stream_codec_version
+		<< ").";
+}
+
+
+void
+GPlatesScribe::Exceptions::RawStreamError::write_message(
+		std::ostream &os) const
+{
+	os << "Error decoding Scribe raw stream: " << d_message;
+}
+
+
+void
+GPlatesScribe::Exceptions::InvalidRawTranscribeOperation::write_message(
+		std::ostream &os) const
+{
+	os << "Transcribe operation not supported in a raw stream subtree: " << d_message;
+}
+
+
+void
 GPlatesScribe::Exceptions::UnexpectedXmlElementName::write_message(
 		std::ostream &os) const
 {

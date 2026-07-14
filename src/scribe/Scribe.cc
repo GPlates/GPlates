@@ -23,12 +23,24 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cstring>
 #include <boost/checked_delete.hpp>
 #include <boost/foreach.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
+#include <QtGlobal>
 
 #include "Scribe.h"
+
+
+// The raw stream ("raw lane") codec encodes multi-byte values by memcpy of their native
+// (little-endian) representations - all platforms GPlates currently targets are little-endian.
+// A big-endian target would need byte-swapping added to the codec (and a codec version bump
+// is *not* required since the encoded byte order would remain little-endian).
+#if Q_BYTE_ORDER != Q_LITTLE_ENDIAN
+#error "The raw stream (raw lane) codec assumes a little-endian target."
+#endif
 
 
 // We give names that are unlikely to conflict with names used by scribe clients.
@@ -41,6 +53,7 @@ GPlatesScribe::Scribe::Scribe() :
 	d_is_saving(true),
 	d_transcription(Transcription::create()),
 	d_transcription_context(d_transcription, d_is_saving),
+	d_is_raw(false),
 	d_transcribe_result(TRANSCRIBE_SUCCESS),
 	// This is only here to force 'ScribeAccess.o' object file to get referenced and included by linker...
 	d_exported_registered_classes(Access::EXPORT_REGISTERED_CLASSES)
@@ -53,6 +66,7 @@ GPlatesScribe::Scribe::Scribe(
 	d_is_saving(false),
 	d_transcription(transcription),
 	d_transcription_context(transcription, d_is_saving),
+	d_is_raw(false),
 	d_transcribe_result(TRANSCRIBE_SUCCESS),
 	// This is only here to force 'ScribeAccess.o' object file to get referenced and included by linker...
 	d_exported_registered_classes(Access::EXPORT_REGISTERED_CLASSES)
@@ -338,6 +352,15 @@ GPlatesScribe::Scribe::transcribe_object_id(
 		const ObjectTag &object_tag,
 		boost::optional<object_id_type &> return_object_id)
 {
+	// Object ids are never transcribed inside a raw stream ("raw lane") subtree - there are no
+	// per-object ids in the raw lane. All raw-mode transcribe paths either bypass object ids or
+	// throw before reaching here - so getting here indicates an error in the Scribe library
+	// (a transcribe path that was not re-routed for raw mode).
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			!d_is_raw,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to transcribe an object id inside a raw stream subtree.");
+
 	object_id_type object_id;
 
 	if (is_saving())
@@ -1692,4 +1715,341 @@ GPlatesScribe::Scribe::unresolve_pointer_reference_to_object(
 
 	// Mark the pointer as uninitialised.
 	pointer_object_info.is_object_post_initialised = false;
+}
+
+
+//
+// The raw stream ("raw lane") codec.
+//
+
+
+void
+GPlatesScribe::Scribe::write_raw_bytes(
+		const void *data,
+		std::size_t num_bytes)
+{
+	const char *const bytes = static_cast<const char *>(data);
+
+	d_raw_context.save_data.insert(d_raw_context.save_data.end(), bytes, bytes + num_bytes);
+}
+
+
+void
+GPlatesScribe::Scribe::read_raw_bytes(
+		void *data,
+		std::size_t num_bytes)
+{
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			d_raw_context.load_data,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to read from a raw stream that has not been bound for loading.");
+
+	const std::vector<char> &load_data = *d_raw_context.load_data;
+
+	// Note: 'load_cursor <= load_data.size()' is an invariant, so no overflow below.
+	GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+			num_bytes <= load_data.size() - d_raw_context.load_cursor,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to read past the end of the raw stream.");
+
+	std::memcpy(data, load_data.data() + d_raw_context.load_cursor, num_bytes);
+
+	d_raw_context.load_cursor += num_bytes;
+}
+
+
+void
+GPlatesScribe::Scribe::write_raw_varint(
+		boost::uint64_t value)
+{
+	// Unsigned LEB128: 7 bits per byte (least significant first), high bit set on all but the
+	// last byte. A 64-bit value encodes to at most 10 bytes.
+	char encoded[10];
+	unsigned int num_encoded_bytes = 0;
+
+	do
+	{
+		boost::uint8_t byte = value & 0x7f;
+		value >>= 7;
+		if (value != 0)
+		{
+			byte |= 0x80;
+		}
+		encoded[num_encoded_bytes] = static_cast<char>(byte);
+		++num_encoded_bytes;
+	}
+	while (value != 0);
+
+	write_raw_bytes(encoded, num_encoded_bytes);
+}
+
+
+boost::uint64_t
+GPlatesScribe::Scribe::read_raw_varint()
+{
+	boost::uint64_t value = 0;
+	unsigned int shift = 0;
+
+	for (;;)
+	{
+		// A 64-bit value encodes to at most 10 bytes (of 7 bits each).
+		GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+				shift < 64,
+				GPLATES_ASSERTION_SOURCE,
+				"Variable-width integer in raw stream is too long.");
+
+		char byte;
+		read_raw_bytes(&byte, 1);
+
+		const boost::uint8_t byte_value = static_cast<boost::uint8_t>(byte);
+
+		value |= static_cast<boost::uint64_t>(byte_value & 0x7f) << shift;
+
+		if ((byte_value & 0x80) == 0)
+		{
+			break;
+		}
+
+		shift += 7;
+	}
+
+	return value;
+}
+
+
+template <typename EncodedType, typename ObjectType>
+void
+GPlatesScribe::Scribe::transcribe_raw_fixed_width(
+		ObjectType &object)
+{
+	if (is_saving())
+	{
+		// This is a widening (or same-width) conversion - it cannot overflow.
+		const EncodedType encoded_object = static_cast<EncodedType>(object);
+		write_raw_bytes(&encoded_object, sizeof(encoded_object));
+	}
+	else // loading...
+	{
+		EncodedType encoded_object;
+		read_raw_bytes(&encoded_object, sizeof(encoded_object));
+
+		try
+		{
+			// Guard against overflow when 'ObjectType' is narrower than 'EncodedType' - can only
+			// happen cross-platform (eg, a 64-bit encoded 'long', saved on a platform with a
+			// 64-bit 'long', loaded on a platform with a 32-bit 'long').
+			object = boost::numeric_cast<ObjectType>(encoded_object);
+		}
+		catch (boost::numeric::bad_numeric_cast &)
+		{
+			GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					"Value in raw stream is out of range of the object type being loaded.");
+		}
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		bool &object)
+{
+	if (is_saving())
+	{
+		const boost::uint8_t encoded_object = object ? 1 : 0;
+		write_raw_bytes(&encoded_object, sizeof(encoded_object));
+	}
+	else // loading...
+	{
+		boost::uint8_t encoded_object;
+		read_raw_bytes(&encoded_object, sizeof(encoded_object));
+		object = (encoded_object != 0);
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		char &object)
+{
+	// Treat 'char' as 'signed char' (mirrors the general path).
+	//
+	// Note we convert by assignment (rather than encoding 'char' directly) so that platforms
+	// where 'char' is unsigned still round-trip values above 127 (they wrap through the
+	// signed representation and back, exactly like the general path).
+	signed char signed_char_object;
+
+	if (is_saving())
+	{
+		signed_char_object = object;
+	}
+
+	transcribe_raw(signed_char_object);
+
+	if (is_loading())
+	{
+		object = signed_char_object;
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		signed char &object)
+{
+	transcribe_raw_fixed_width<boost::int8_t>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		unsigned char &object)
+{
+	transcribe_raw_fixed_width<boost::uint8_t>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		short &object)
+{
+	transcribe_raw_fixed_width<boost::int16_t>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		unsigned short &object)
+{
+	transcribe_raw_fixed_width<boost::uint16_t>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		int &object)
+{
+	transcribe_raw_fixed_width<boost::int32_t>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		unsigned int &object)
+{
+	transcribe_raw_fixed_width<boost::uint32_t>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		long &object)
+{
+	// 'long' is 32-bit or 64-bit depending on the platform - encode full 64-bit width.
+	//
+	// Note this differs from the general path (which restricts 'long' to 32-bit range and
+	// throws outside it) - the raw lane encodes 64-bit integer types full-width.
+	transcribe_raw_fixed_width<boost::int64_t>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		unsigned long &object)
+{
+	transcribe_raw_fixed_width<boost::uint64_t>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		long long &object)
+{
+	transcribe_raw_fixed_width<boost::int64_t>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		unsigned long long &object)
+{
+	transcribe_raw_fixed_width<boost::uint64_t>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		float &object)
+{
+	transcribe_raw_fixed_width<float>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		double &object)
+{
+	transcribe_raw_fixed_width<double>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		long double &object)
+{
+	// Treat 'long double' as 'double' (mirrors the general path).
+	double double_object;
+
+	if (is_saving())
+	{
+		// If we get any 'long double' values that are greater than the range of 'double'
+		// then we'll get a 'boost::numeric::bad_numeric_cast' exception.
+		try
+		{
+			double_object = boost::numeric_cast<double>(object);
+		}
+		catch (boost::numeric::bad_numeric_cast &)
+		{
+			// Throw as one of our exceptions instead (mirrors the general path).
+			GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					"'long double' value is out of range of 'double'.");
+		}
+	}
+
+	transcribe_raw(double_object);
+
+	if (is_loading())
+	{
+		object = double_object;
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		std::string &object)
+{
+	// Strings are interned into the transcription's existing unique-string pool (shared with
+	// the general path) and encoded as a variable-width pool index. The binary archive writes
+	// the pool before the objects (and the reader populates it before parsing objects) so the
+	// pool strings are always available when a raw stream is decoded.
+	if (is_saving())
+	{
+		write_raw_varint(d_transcription->get_or_create_unique_string_index(object));
+	}
+	else // loading...
+	{
+		const boost::uint64_t unique_string_index = read_raw_varint();
+
+		GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+				unique_string_index < d_transcription->get_num_unique_string_objects(),
+				GPLATES_ASSERTION_SOURCE,
+				"String in raw stream references an invalid unique-string-pool index.");
+
+		object = d_transcription->get_unique_string_object(
+				static_cast<unsigned int>(unique_string_index));
+	}
 }

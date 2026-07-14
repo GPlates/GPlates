@@ -24,6 +24,7 @@
  */
 
 #include <sstream>
+#include <utility>
 #include <boost/cast.hpp>
 
 #include "TranscriptionScribeContext.h"
@@ -395,6 +396,56 @@ GPlatesScribe::TranscriptionScribeContext::transcribe(
 	transcribed_object.object_category = TranscribedObject::PRIMITIVE;
 
 	return true;
+}
+
+
+void
+GPlatesScribe::TranscriptionScribeContext::save_raw_stream(
+		std::vector<char> &raw_stream_data)
+{
+	GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+			is_saving(),
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to save a raw stream when loading an archive.");
+
+	TranscribedObject &transcribed_object = d_transcribed_object_stack.top();
+
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			!transcribed_object.object_category,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to transcribe the same object twice.");
+
+	d_transcription->add_raw_stream(transcribed_object.object_id, std::move(raw_stream_data));
+
+	transcribed_object.object_category = TranscribedObject::PRIMITIVE;
+}
+
+
+boost::optional<const std::vector<char> &>
+GPlatesScribe::TranscriptionScribeContext::load_raw_stream()
+{
+	GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+			is_loading(),
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to load a raw stream when saving an archive.");
+
+	TranscribedObject &transcribed_object = d_transcribed_object_stack.top();
+
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			!transcribed_object.object_category,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to transcribe the same object twice.");
+
+	if (d_transcription->get_object_type(transcribed_object.object_id) != Transcription::RAW_STREAM)
+	{
+		// Not a raw stream (eg, saved via the general path by an older version).
+		// Leave the current object untouched so the caller can fall back to the general path.
+		return boost::none;
+	}
+
+	transcribed_object.object_category = TranscribedObject::PRIMITIVE;
+
+	return d_transcription->get_raw_stream(transcribed_object.object_id);
 }
 
 

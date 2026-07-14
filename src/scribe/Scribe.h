@@ -34,6 +34,7 @@
 #include <utility>
 #include <vector>
 #include <boost/cast.hpp>
+#include <boost/cstdint.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/mpl/equal_to.hpp>
 #include <boost/mpl/eval_if.hpp>
@@ -1470,6 +1471,93 @@ namespace GPlatesScribe
 		static const unsigned int CURRENT_SCRIBE_VERSION = 0;
 
 		/**
+		 * The current version of the raw stream ("raw lane") codec.
+		 *
+		 * This version is written (as a variable-width integer) at the front of every raw stream.
+		 * Increment it when the codec encoding changes (value encodings, pointer markers, etc) -
+		 * such changes are internal to the Scribe library and invisible to scribe clients, but
+		 * older Scribe versions cannot decode them (a raw stream is positional so decoding cannot
+		 * skip unknown encodings) and will fail cleanly with
+		 * Exceptions::UnsupportedRawStreamVersion.
+		 */
+		static const unsigned int CURRENT_RAW_STREAM_CODEC_VERSION = 0;
+
+		/**
+		 * The state of the raw stream ("raw lane") currently being transcribed (see the RAW option
+		 * in "ScribeOptions.h").
+		 *
+		 * This state only applies while in raw mode (see @a d_is_raw) - it is reset on entering
+		 * and exiting a raw stream boundary (see @a RawStreamScope).
+		 */
+		struct RawContext
+		{
+			RawContext() :
+				load_data(nullptr),
+				load_cursor(0)
+			{  }
+
+			/**
+			 * The bytes encoded so far for the raw stream currently being saved.
+			 *
+			 * On success this is *moved* into the transcription (bound to the boundary object id).
+			 */
+			std::vector<char> save_data;
+
+			/**
+			 * The raw stream currently being loaded (references data inside the Transcription).
+			 */
+			const std::vector<char> *load_data;
+
+			/**
+			 * The current decode position within @a load_data.
+			 */
+			std::size_t load_cursor;
+		};
+
+		/**
+		 * RAII scope that enters raw ("raw lane") mode on construction and exits on destruction.
+		 *
+		 * This ensures the scribe returns to normal (general path) mode even if an exception
+		 * propagates out of a raw subtree, and that the raw context does not leak state from
+		 * one raw stream boundary to the next.
+		 */
+		class RawStreamScope :
+				private boost::noncopyable
+		{
+		public:
+
+			explicit
+			RawStreamScope(
+					Scribe &scribe) :
+				d_scribe(scribe)
+			{
+				// Nested raw scopes should not be possible - the RAW option is ignored on
+				// transcribe calls made inside a raw subtree (everything inside is already
+				// streaming into the enclosing raw stream).
+				GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+						!scribe.d_is_raw,
+						GPLATES_ASSERTION_SOURCE,
+						"Attempted to enter raw stream mode when already in raw stream mode.");
+
+				scribe.d_raw_context = RawContext();
+				scribe.d_is_raw = true;
+			}
+
+			~RawStreamScope()
+			{
+				d_scribe.d_is_raw = false;
+
+				// Release the raw stream buffer memory (on a successful save the buffer was
+				// moved into the transcription; on failure it is discarded here).
+				d_scribe.d_raw_context = RawContext();
+			}
+
+		private:
+
+			Scribe &d_scribe;
+		};
+
+		/**
 		 * The object ID used to identify NULL pointers.
 		 */
 		static const object_id_type NULL_POINTER_OBJECT_ID = TranscriptionScribeContext::NULL_POINTER_OBJECT_ID;
@@ -1499,6 +1587,20 @@ namespace GPlatesScribe
 		 * Used to save/load to/from the transcription.
 		 */
 		TranscriptionScribeContext d_transcription_context;
+
+		/**
+		 * Is the scribe currently transcribing inside a raw stream ("raw lane") subtree ?
+		 *
+		 * While this is true, transcribe calls stream positionally into a single raw stream
+		 * (see @a d_raw_context) with no object ids, tags or tracking.
+		 * This is entered/exited at a raw stream boundary (see @a stream_raw_boundary).
+		 */
+		bool d_is_raw;
+
+		/**
+		 * The state of the raw stream currently being transcribed (only valid when @a d_is_raw).
+		 */
+		RawContext d_raw_context;
 
 		/**
 		 * Used to cast a derived class 'void *' to a base class 'void *' or vice versa.
@@ -2424,6 +2526,99 @@ namespace GPlatesScribe
 				StreamTranscribeTag);
 
 
+		/**
+		 * Stream the subtree of the current (boundary) object as a single raw stream (the "raw lane").
+		 *
+		 * The boundary object's id/tag/tracking bookkeeping (pre/post transcribe) is done by the
+		 * caller exactly as for the general path - only the streaming step differs:
+		 *  - On the *save* path the subtree is streamed (via @a stream_subtree, in raw mode) into
+		 *    a raw byte buffer that is then bound to the boundary object id in the transcription.
+		 *  - On the *load* path the boundary object's transcription kind selects the lane: a
+		 *    RAW_STREAM decodes via @a stream_subtree in raw mode, while anything else (eg, a
+		 *    COMPOSITE saved by an older version without the RAW option) falls back to streaming
+		 *    via the general path.
+		 *
+		 * @a stream_subtree is a nullary callable that streams the boundary object
+		 * (eg, calls @a stream_object or @a stream_construct_object) and returns bool.
+		 */
+		template <typename StreamSubtreeFunction>
+		bool
+		stream_raw_boundary(
+				StreamSubtreeFunction stream_subtree);
+
+
+		//
+		// The raw stream ("raw lane") codec.
+		//
+		// Values are encoded positionally (no per-object ids, tags or type slots):
+		//  - Arithmetic types: fixed-width little-endian; 64-bit integer types are encoded
+		//    full-width (unlike the general path which restricts them to 32-bit range).
+		//  - bool: one byte.
+		//  - Strings: a variable-width integer index into the transcription's existing
+		//    unique-string pool (so strings remain interned/deduplicated in the raw lane).
+		//  - Counts/sizes/indices internal to the codec: variable-width integers (LEB128).
+		//
+		// Unlike the general path these cannot fail softly - a raw stream is positional so
+		// decoding cannot re-synchronise - failures throw Exceptions::RawStreamError instead.
+		//
+
+		//! Append bytes to the raw stream being saved.
+		void
+		write_raw_bytes(
+				const void *data,
+				std::size_t num_bytes);
+
+		//! Read bytes from the raw stream being loaded (throws if reading past the end).
+		void
+		read_raw_bytes(
+				void *data,
+				std::size_t num_bytes);
+
+		//! Write an unsigned integer to the raw stream as a variable-width integer (LEB128).
+		void
+		write_raw_varint(
+				boost::uint64_t value);
+
+		//! Read a variable-width integer (LEB128) from the raw stream.
+		boost::uint64_t
+		read_raw_varint();
+
+		/**
+		 * Transcribe @a object to/from the raw stream as the fixed-width type 'EncodedType'.
+		 *
+		 * On loading, a value outside the range of 'ObjectType' throws (eg, a 64-bit encoded
+		 * 'long' loaded on a platform with a 32-bit 'long').
+		 */
+		template <typename EncodedType, typename ObjectType>
+		void
+		transcribe_raw_fixed_width(
+				ObjectType &object);
+
+		//
+		// Transcribe primitives directly to/from the raw stream.
+		//
+		// This overload set mirrors the TranscriptionScribeContext::transcribe() overloads
+		// (which handle the same types on the general path).
+		//
+
+		void transcribe_raw(bool &object);
+		void transcribe_raw(char &object);
+		void transcribe_raw(signed char &object);
+		void transcribe_raw(unsigned char &object);
+		void transcribe_raw(short &object);
+		void transcribe_raw(unsigned short &object);
+		void transcribe_raw(int &object);
+		void transcribe_raw(unsigned int &object);
+		void transcribe_raw(long &object);
+		void transcribe_raw(unsigned long &object);
+		void transcribe_raw(long long &object);
+		void transcribe_raw(unsigned long long &object);
+		void transcribe_raw(float &object);
+		void transcribe_raw(double &object);
+		void transcribe_raw(long double &object);
+		void transcribe_raw(std::string &object);
+
+
 		//! Helper function for transcribing boost::shared_ptr.
 		template <typename T>
 		void
@@ -2761,6 +2956,16 @@ namespace GPlatesScribe
 				typename boost::remove_const<ObjectFirstQualifiedType>::type,
 				typename boost::remove_const<ObjectSecondQualifiedType>::type>::value));
 
+		// Inside a raw stream ("raw lane") subtree, objects are not tracked so there is nothing
+		// to relocate - this is a harmless no-op. This allows the sequence/mapping/etc protocols,
+		// whose load paths relocate each transcribed element into its container, to work
+		// unchanged in raw mode. (In the general path, relocating an untracked object throws
+		// Exceptions::RelocatedUntrackedObject - hence this early return.)
+		if (d_is_raw)
+		{
+			return;
+		}
+
 		// Remove all 'const' from 'ObjectFirstQualifiedType' and 'ObjectSecondQualifiedType' (if const)...
 		relocated_transcribed_object(
 				const_cast<remove_all_const_t<ObjectFirstQualifiedType> &>(relocated_object),
@@ -3020,6 +3225,14 @@ namespace GPlatesScribe
 			const ObjectTag &object_tag,
 			unsigned int options)
 	{
+		// Inside a raw stream ("raw lane") subtree there are no object ids, tags or tracking -
+		// the object is streamed directly (positionally) into the enclosing raw stream.
+		// Note that this means all options (including a nested RAW option) are ignored here.
+		if (d_is_raw)
+		{
+			return stream_object(object);
+		}
+
 		//
 		// Transcribe the object id.
 		//
@@ -3078,8 +3291,23 @@ namespace GPlatesScribe
 		// Transcribe object.
 		//
 
-		// This streams directly to ObjectType to transcribe the object.
-		const bool streamed = stream_object(object);
+		bool streamed;
+		if ((options & RAW) != 0)
+		{
+			// Stream the object's entire subtree into a single raw stream (the "raw lane")
+			// bound to this (boundary) object id - or fall back to the general path when
+			// loading a transcription that was saved without the RAW option.
+			//
+			// Note that this (boundary) object itself is still transcribed normally (object id,
+			// tag and pre/post transcribe bookkeeping) - only the streaming step differs.
+			streamed = stream_raw_boundary(
+					[&]() { return stream_object(object); });
+		}
+		else
+		{
+			// This streams directly to ObjectType to transcribe the object.
+			streamed = stream_object(object);
+		}
 
 		//
 		// Perform operations *after* streaming object.
@@ -3098,6 +3326,15 @@ namespace GPlatesScribe
 			const ObjectTag &object_tag,
 			unsigned int options)
 	{
+		// Inside a raw stream ("raw lane") subtree there are no object ids, tags or tracking -
+		// the object is save/load constructed and streamed directly (positionally) into the
+		// enclosing raw stream.
+		// Note that this means all options (including a nested RAW option) are ignored here.
+		if (d_is_raw)
+		{
+			return stream_construct_object(construct_object);
+		}
+
 		//
 		// Transcribe the object id.
 		//
@@ -3164,8 +3401,23 @@ namespace GPlatesScribe
 		// Transcribe object.
 		//
 
-		// This streams a ConstructObject<ObjectType> to both save/load construct the object and to transcribe it.
-		const bool streamed = stream_construct_object(construct_object);
+		bool streamed;
+		if ((options & RAW) != 0)
+		{
+			// Stream the object's entire subtree into a single raw stream (the "raw lane")
+			// bound to this (boundary) object id - or fall back to the general path when
+			// loading a transcription that was saved without the RAW option.
+			//
+			// Note that this (boundary) object itself is still transcribed normally (object id,
+			// tag and pre/post transcribe bookkeeping) - only the streaming step differs.
+			streamed = stream_raw_boundary(
+					[&]() { return stream_construct_object(construct_object); });
+		}
+		else
+		{
+			// This streams a ConstructObject<ObjectType> to both save/load construct the object and to transcribe it.
+			streamed = stream_construct_object(construct_object);
+		}
 
 		//
 		// Perform operations *after* streaming object.
@@ -3184,6 +3436,17 @@ namespace GPlatesScribe
 			const ObjectTag &object_tag,
 			unsigned int options)
 	{
+		// Pointers are not currently supported inside a raw stream ("raw lane") subtree.
+		//
+		// Owning pointers will be supported (encoded as marker bytes plus the pointed-to
+		// object streamed inline). Non-owning pointers cannot be supported - they require
+		// object tracking to link up with their pointed-to object, and the raw lane omits
+		// all tracking.
+		GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
+				!d_is_raw,
+				GPLATES_ASSERTION_SOURCE,
+				"Pointers are not currently supported inside a raw stream subtree.");
+
 		// If loading then set the pointer to NULL in case it doesn't get initialised later.
 		// This can happen when the pointer does not own the pointed-to object and the pointed-to
 		// object has not yet been transcribed. So in the meantime we set it to NULL in case the
@@ -3225,6 +3488,19 @@ namespace GPlatesScribe
 	{
 		// Compile-time assertion to ensure that 'ObjectType' is not const.
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
+
+		// Pointers are not currently supported in the raw stream ("raw lane") - neither inside
+		// a raw subtree nor as a raw stream boundary (the RAW option on a pointer).
+		//
+		// Owning pointers will be supported (encoded as marker bytes plus the pointed-to
+		// object streamed inline). Non-owning pointers cannot be supported - they require
+		// object tracking to link up with their pointed-to object, and the raw lane omits
+		// all tracking.
+		GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
+				!d_is_raw &&
+					(options & RAW) == 0,
+				GPLATES_ASSERTION_SOURCE,
+				"Pointers are not currently supported in the raw stream (raw lane).");
 
 		// Should not have both pointer ownership options specified together.
 		GPlatesGlobal::Assert<Exceptions::InvalidTranscribeOptions>(
@@ -3860,6 +4136,13 @@ namespace GPlatesScribe
 		// Compile-time assertion to ensure that 'ObjectType' is not const.
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
 
+		// Object references require object tracking (to find the referenced object), which the
+		// raw lane omits, so they cannot be transcribed inside a raw stream subtree.
+		GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
+				!d_is_raw,
+				GPLATES_ASSERTION_SOURCE,
+				"Object references cannot be transcribed inside a raw stream subtree.");
+
 		GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
 				is_saving(),
 				GPLATES_ASSERTION_SOURCE,
@@ -3916,6 +4199,13 @@ namespace GPlatesScribe
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
 			const ObjectTag &object_tag)
 	{
+		// Object references require object tracking (to find the referenced object), which the
+		// raw lane omits, so they cannot be transcribed inside a raw stream subtree.
+		GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
+				!d_is_raw,
+				GPLATES_ASSERTION_SOURCE,
+				"Object references cannot be transcribed inside a raw stream subtree.");
+
 		GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
 				is_loading(),
 				GPLATES_ASSERTION_SOURCE,
@@ -4538,6 +4828,80 @@ namespace GPlatesScribe
 	}
 
 
+	template <typename StreamSubtreeFunction>
+	bool
+	Scribe::stream_raw_boundary(
+			StreamSubtreeFunction stream_subtree)
+	{
+		if (is_saving())
+		{
+			// Enter raw mode for the duration of streaming the subtree.
+			RawStreamScope raw_stream_scope(*this);
+
+			// Every raw stream starts with the codec version so that future codec changes can
+			// be detected (and rejected cleanly) by older Scribe versions.
+			write_raw_varint(CURRENT_RAW_STREAM_CODEC_VERSION);
+
+			if (!stream_subtree())
+			{
+				// Client 'transcribe()' handlers do not fail on the save path, but remain
+				// defensive and mirror the general path (the caller will discard the object).
+				return false;
+			}
+
+			// Bind the streamed subtree bytes to the boundary object id (like a primitive).
+			//
+			// Note this is done while still inside the raw scope so that the save buffer is
+			// still alive - the buffer is *moved* into the transcription (not copied).
+			d_transcription_context.save_raw_stream(d_raw_context.save_data);
+
+			return true;
+		}
+		else // loading...
+		{
+			// Dispatch on the transcription kind of the (boundary) object: if it is not a raw
+			// stream then it was saved via the general path (eg, by an older version without
+			// the RAW option) so fall back to loading via the general path.
+			boost::optional<const std::vector<char> &> raw_stream_data =
+					d_transcription_context.load_raw_stream();
+			if (!raw_stream_data)
+			{
+				return stream_subtree();
+			}
+
+			// Enter raw mode for the duration of streaming the subtree.
+			RawStreamScope raw_stream_scope(*this);
+
+			d_raw_context.load_data = &raw_stream_data.get();
+
+			// Every raw stream starts with the codec version.
+			// A version we don't know about cannot be decoded (a raw stream is positional so
+			// decoding cannot skip unknown encodings) - fail cleanly.
+			const boost::uint64_t raw_stream_codec_version = read_raw_varint();
+			GPlatesGlobal::Assert<Exceptions::UnsupportedRawStreamVersion>(
+					raw_stream_codec_version <= CURRENT_RAW_STREAM_CODEC_VERSION,
+					GPLATES_ASSERTION_SOURCE,
+					static_cast<unsigned int>(raw_stream_codec_version),
+					CURRENT_RAW_STREAM_CODEC_VERSION);
+
+			if (!stream_subtree())
+			{
+				return false;
+			}
+
+			// The entire raw stream should have been consumed - if not then the load path
+			// transcribe calls do not match the save path (a positional mismatch that would
+			// otherwise go undetected).
+			GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+					d_raw_context.load_cursor == raw_stream_data->size(),
+					GPLATES_ASSERTION_SOURCE,
+					"Raw stream was not fully consumed on load.");
+
+			return true;
+		}
+	}
+
+
 	template <typename ObjectType>
 	bool
 	Scribe::stream(
@@ -4570,6 +4934,22 @@ namespace GPlatesScribe
 			bool transcribed_construct_data,
 			StreamPrimitiveTag)
 	{
+		// Inside a raw stream ("raw lane") subtree, primitives are encoded directly into the
+		// raw stream (no per-object ids or type slots).
+		//
+		// This branch is essential (rather than an optimisation) because the delegate protocol
+		// streams directly (via 'stream_object()'), bypassing the 'transcribe_object()' branches.
+		//
+		// Note that raw decoding failures *throw* (a raw stream is positional so decoding cannot
+		// re-synchronise) rather than failing softly like the general path below.
+		if (d_is_raw)
+		{
+			transcribe_raw(object);
+
+			set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_SUCCESS);
+			return true;
+		}
+
 		// Re-direct types handled specifically by the transcription context directly to it.
 		// Instead of the general non-member 'GPlatesScribe::transcribe()' mechanism.
 		if (!d_transcription_context.transcribe(object))
