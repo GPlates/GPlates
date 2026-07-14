@@ -201,6 +201,65 @@ namespace GPlatesScribe
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
+		// Fast path for the raw lane: items stream positionally, so there are no per-element tags to
+		// build and 'relocated' is a no-op (tracked object addresses don't exist in a raw stream).
+		// The plain string tags below hit the 'const char *' Scribe overloads which do not construct
+		// an ObjectTag in raw mode.
+		if (scribe.is_transcribing_raw())
+		{
+			if (scribe.is_saving())
+			{
+				const unsigned int map_size = TranscribeMap<MapType>::get_length(map);
+				scribe.save(TRANSCRIBE_SOURCE, map_size, "size");
+
+				const std::pair<map_iterator, map_iterator> items = TranscribeMap<MapType>::get_items(map);
+				for (map_iterator items_iter = items.first; items_iter != items.second; ++items_iter)
+				{
+					const key_type &key = TranscribeMap<MapType>::get_key(items_iter);
+					const mapped_type &value = TranscribeMap<MapType>::get_value(items_iter);
+
+					scribe.save(TRANSCRIBE_SOURCE, key, "item_key");
+					// No TRACK: tracking is a no-op in the raw lane (there are no object ids and
+					// 'relocated' does nothing), so the option would just be ignored downstream.
+					scribe.save(TRANSCRIBE_SOURCE, value, "item_value");
+				}
+			}
+			else // loading...
+			{
+				// Make sure map starts out empty.
+				TranscribeMap<MapType>::clear(map);
+
+				LoadRef<unsigned int> map_size = scribe.load<unsigned int>(TRANSCRIBE_SOURCE, "size");
+				if (!map_size.is_valid())
+				{
+					return scribe.get_transcribe_result();
+				}
+
+				for (unsigned int n = 0; n < map_size.get(); ++n)
+				{
+					LoadRef<key_type> item_key = scribe.load<key_type>(TRANSCRIBE_SOURCE, "item_key");
+					if (!item_key.is_valid())
+					{
+						TranscribeMap<MapType>::clear(map);
+						return scribe.get_transcribe_result();
+					}
+
+					// No TRACK (see the save path above): tracking is a no-op in the raw lane.
+					LoadRef<mapped_type> item_value = scribe.load<mapped_type>(TRANSCRIBE_SOURCE, "item_value");
+					if (!item_value.is_valid())
+					{
+						TranscribeMap<MapType>::clear(map);
+						return scribe.get_transcribe_result();
+					}
+
+					// Add the item to the map. No relocation needed (see above).
+					TranscribeMap<MapType>::add_item(map, item_key.get(), item_value.get());
+				}
+			}
+
+			return TRANSCRIBE_SUCCESS;
+		}
+
 		if (scribe.is_saving())
 		{
 			const unsigned int map_size = TranscribeMap<MapType>::get_length(map);

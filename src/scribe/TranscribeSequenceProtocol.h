@@ -191,6 +191,59 @@ namespace GPlatesScribe
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
+		// Fast path for the raw lane: items stream positionally, so there are no per-element tags to
+		// build, and 'relocated' is a no-op (tracked object addresses don't exist in a raw stream and
+		// items never move) - so the whole relocate array is skipped. The plain string tags below hit
+		// the 'const char *' Scribe overloads which do not construct an ObjectTag in raw mode.
+		if (scribe.is_transcribing_raw())
+		{
+			if (scribe.is_saving())
+			{
+				const unsigned int sequence_size = TranscribeSequence<SequenceType>::get_length(sequence);
+				scribe.save(TRANSCRIBE_SOURCE, sequence_size, "size");
+
+				const std::pair<sequence_iterator, sequence_iterator> items =
+						TranscribeSequence<SequenceType>::get_items(sequence);
+				for (sequence_iterator items_iter = items.first; items_iter != items.second; ++items_iter)
+				{
+					const item_type &item = *items_iter;
+					// No TRACK: tracking is a no-op in the raw lane (there are no object ids and
+					// 'relocated' does nothing), so the option would just be ignored downstream.
+					scribe.save(TRANSCRIBE_SOURCE, item, "item");
+				}
+			}
+			else // loading...
+			{
+				// Make sure sequence starts out empty.
+				TranscribeSequence<SequenceType>::clear(sequence);
+
+				LoadRef<unsigned int> sequence_size =
+						scribe.load<unsigned int>(TRANSCRIBE_SOURCE, "size");
+				if (!sequence_size.is_valid())
+				{
+					return scribe.get_transcribe_result();
+				}
+
+				for (unsigned int n = 0; n < sequence_size.get(); ++n)
+				{
+					// No TRACK (see the save path above): tracking is a no-op in the raw lane.
+					LoadRef<item_type> item = scribe.load<item_type>(TRANSCRIBE_SOURCE, "item");
+					if (!item.is_valid())
+					{
+						TranscribeSequence<SequenceType>::clear(sequence);
+						return scribe.get_transcribe_result();
+					}
+
+					// Copy the loaded item into the sequence. No relocation needed (see above); the
+					// per-iteration LoadRef is safe to drop - any shared pointee it introduced is kept
+					// alive by the sequence's copy, and raw-lane LoadRef destruction does not untrack.
+					TranscribeSequence<SequenceType>::add_item(sequence, item.get());
+				}
+			}
+
+			return TRANSCRIBE_SUCCESS;
+		}
+
 		if (scribe.is_saving())
 		{
 			// 'sequence_size' won't be referenced by other objects.

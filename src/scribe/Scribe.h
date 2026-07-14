@@ -161,6 +161,22 @@ namespace GPlatesScribe
 		}
 
 
+		/**
+		 * Is the scribe currently transcribing inside a raw stream ("raw lane") subtree.
+		 *
+		 * Client code generally need not care (the same handlers drive both lanes), but the
+		 * sequence/mapping protocols use this to take a leaner positional path: inside a raw stream
+		 * there are no tags to build per element and @a relocated is a no-op (items are streamed
+		 * positionally and never move), so the per-element ObjectTag construction and the load-side
+		 * relocation bookkeeping are pure overhead that can be skipped.
+		 */
+		bool
+		is_transcribing_raw() const
+		{
+			return d_is_raw;
+		}
+
+
 		//
 		// Transcribe methods.
 		//
@@ -329,6 +345,28 @@ namespace GPlatesScribe
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 				ObjectType &object,
 				const ObjectTag &object_tag,
+				unsigned int options = 0);
+
+		/**
+		 * Overload taking the tag as a plain 'const char *' - the common case at call sites (a
+		 * string literal such as "value").
+		 *
+		 * This exists purely as a fast path for the raw lane: an 'ObjectTag' owns a
+		 * 'std::vector<Section>' and constructing one from a string literal heap-allocates, which
+		 * happens caller-side (before this Scribe sees @a d_is_raw) on the previous 'const ObjectTag &'
+		 * overload. In the positional raw lane the tag is never used, so here we skip building it (an
+		 * empty ObjectTag allocates nothing). This is the dominant residual per-call pickling cost.
+		 *
+		 * Overload resolution picks this over the 'const ObjectTag &' overload for a string literal
+		 * (array-to-pointer decay beats the user-defined ObjectTag conversion); an actual 'ObjectTag'
+		 * or 'std::string' argument still binds the 'const ObjectTag &' overload as before.
+		 */
+		template <typename ObjectType>
+		Bool
+		transcribe(
+				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
+				ObjectType &object,
+				const char *object_tag,
 				unsigned int options = 0);
 
 		/**
@@ -601,6 +639,18 @@ namespace GPlatesScribe
 				const ObjectTag &object_tag,
 				unsigned int options = 0);
 
+		/**
+		 * Overload taking the tag as a plain 'const char *' - see the 'transcribe' overload of the
+		 * same form for why this is a raw-lane fast path.
+		 */
+		template <typename ObjectType>
+		void
+		save(
+				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
+				const ObjectType &object,
+				const char *object_tag,
+				unsigned int options = 0);
+
 
 		/**
 		 * Loads an object from the archive.
@@ -669,6 +719,17 @@ namespace GPlatesScribe
 		load(
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 				const ObjectTag &object_tag,
+				unsigned int options = 0);
+
+		/**
+		 * Overload taking the tag as a plain 'const char *' - see the 'transcribe' overload of the
+		 * same form for why this is a raw-lane fast path.
+		 */
+		template <typename ObjectType>
+		LoadRef<ObjectType>
+		load(
+				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
+				const char *object_tag,
 				unsigned int options = 0);
 
 
@@ -3081,6 +3142,25 @@ namespace GPlatesScribe
 	}
 
 
+	template <typename ObjectType>
+	Bool
+	Scribe::transcribe(
+			const GPlatesUtils::CallStack::Trace &transcribe_source,
+			ObjectType &object,
+			const char *object_tag,
+			unsigned int options)
+	{
+		// In the positional raw lane the tag is never used, so avoid the heap allocation of building
+		// an ObjectTag from the string literal (an empty ObjectTag allocates nothing). Delegate to
+		// the 'const ObjectTag &' overload either way.
+		return transcribe(
+				transcribe_source,
+				object,
+				d_is_raw ? ObjectTag() : ObjectTag(object_tag),
+				options);
+	}
+
+
 	template <class BaseType, class DerivedType>
 	Bool
 	Scribe::transcribe_base(
@@ -3175,6 +3255,23 @@ namespace GPlatesScribe
 
 
 	template <typename ObjectType>
+	void
+	Scribe::save(
+			const GPlatesUtils::CallStack::Trace &transcribe_source,
+			const ObjectType &object,
+			const char *object_tag,
+			unsigned int options)
+	{
+		// See the 'const char *' transcribe overload - skip building the ObjectTag in the raw lane.
+		save(
+				transcribe_source,
+				object,
+				d_is_raw ? ObjectTag() : ObjectTag(object_tag),
+				options);
+	}
+
+
+	template <typename ObjectType>
 	LoadRef<ObjectType>
 	Scribe::load(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
@@ -3207,6 +3304,21 @@ namespace GPlatesScribe
 				load_construct_object.release(),
 				// Transferring ownership...
 				true/*release*/);
+	}
+
+
+	template <typename ObjectType>
+	LoadRef<ObjectType>
+	Scribe::load(
+			const GPlatesUtils::CallStack::Trace &transcribe_source,
+			const char *object_tag,
+			unsigned int options)
+	{
+		// See the 'const char *' transcribe overload - skip building the ObjectTag in the raw lane.
+		return load<ObjectType>(
+				transcribe_source,
+				d_is_raw ? ObjectTag() : ObjectTag(object_tag),
+				options);
 	}
 
 
