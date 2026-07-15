@@ -2698,6 +2698,133 @@ GPlatesUnitTest::TranscribeRawTest::Data::transcribe(
 }
 
 
+GPlatesUnitTest::TranscribeRawTest::ArrayData::ArrayData() :
+	doubles(),
+	floats(),
+	ints()
+{  }
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::ArrayData::initialise()
+{
+	doubles[0] = 1.5;
+	doubles[1] = -2.25;
+	doubles[2] = 0.0;
+	doubles[3] = 123456.789;
+
+	floats[0] = 1.5f;
+	floats[1] = -2.25f;
+	floats[2] = 3.0f;
+
+	ints[0] = 0;
+	ints[1] = -1;
+	ints[2] = 2147483647;
+	ints[3] = -2147483647 - 1;
+	ints[4] = 42;
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::ArrayData::check_equality(
+		const ArrayData &other) const
+{
+	for (unsigned int n = 0; n < 4; ++n)
+	{
+		BOOST_CHECK_EQUAL(doubles[n], other.doubles[n]);
+	}
+	for (unsigned int n = 0; n < 3; ++n)
+	{
+		BOOST_CHECK_EQUAL(floats[n], other.floats[n]);
+	}
+	for (unsigned int n = 0; n < 5; ++n)
+	{
+		BOOST_CHECK_EQUAL(ints[n], other.ints[n]);
+	}
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::ArrayData::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, doubles, 4, "doubles") ||
+		!scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, floats, 3, "floats") ||
+		!scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, ints, 5, "ints"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesUnitTest::TranscribeRawTest::FixedArrayData::FixedArrayData() :
+	nums(),
+	matrix(),
+	strs()
+{  }
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::FixedArrayData::initialise()
+{
+	nums[0] = 0;
+	nums[1] = -7;
+	nums[2] = 2147483647;
+	nums[3] = 42;
+
+	matrix[0][0] = 1.5;
+	matrix[0][1] = -2.25;
+	matrix[0][2] = 0.0;
+	matrix[1][0] = 123456.789;
+	matrix[1][1] = -0.001;
+	matrix[1][2] = 3.0;
+
+	strs[0] = "hello";
+	strs[1] = "world";
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::FixedArrayData::check_equality(
+		const FixedArrayData &other) const
+{
+	for (unsigned int n = 0; n < 4; ++n)
+	{
+		BOOST_CHECK_EQUAL(nums[n], other.nums[n]);
+	}
+	for (unsigned int i = 0; i < 2; ++i)
+	{
+		for (unsigned int j = 0; j < 3; ++j)
+		{
+			BOOST_CHECK_EQUAL(matrix[i][j], other.matrix[i][j]);
+		}
+	}
+	for (unsigned int n = 0; n < 2; ++n)
+	{
+		BOOST_CHECK_EQUAL(strs[n], other.strs[n]);
+	}
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::FixedArrayData::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, nums, "nums") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, matrix, "matrix") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, strs, "strs"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 void
 GPlatesUnitTest::TranscribeRawTest::test_case_raw_1()
 {
@@ -3764,6 +3891,205 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 
 
 void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_array()
+{
+	ArrayData before_data;
+	before_data.initialise();
+
+	// Round trip through the raw lane - exercises 'transcribe_raw_array's bulk fixed-width path.
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			ArrayData after_data;
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+
+			before_data.check_equality(after_data);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+
+	// Round trip through the general path (no RAW option) - exercises 'transcribe_raw_array's
+	// per-element fallback loop (see the method's doc comment in "Scribe.h").
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data");
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			ArrayData after_data;
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
+
+			before_data.check_equality(after_data);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_fixed_array()
+{
+	FixedArrayData before_data;
+	before_data.initialise();
+
+	// Round trip through the raw lane - exercises "TranscribeArray.h"'s raw-lane fast path (for
+	// 'nums' and 'matrix') and its general-path fallback (for 'strs', a non-arithmetic array).
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			FixedArrayData after_data;
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+
+			before_data.check_equality(after_data);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+
+	// Round trip through the general path (no RAW option) - exercises the per-element fallback
+	// loop for all three members.
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data");
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			FixedArrayData after_data;
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
+
+			before_data.check_equality(after_data);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
+void
 GPlatesUnitTest::TranscribeTestSuite::construct_maps()
 {
 	construct_transcribe_primitives_test();
@@ -3813,4 +4139,6 @@ GPlatesUnitTest::TranscribeTestSuite::construct_transcribe_raw_test()
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_nested_shared_objects);
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_compatibility);
 	ADD_TESTCASE(TranscribeRawTest,test_case_raw_errors);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_array);
+	ADD_TESTCASE(TranscribeRawTest,test_case_fixed_array);
 }

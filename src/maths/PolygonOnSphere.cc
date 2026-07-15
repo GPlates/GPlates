@@ -886,6 +886,68 @@ GPlatesMaths::PolygonOnSphere::get_interior_ring_bounding_tree(
 }
 
 
+namespace
+{
+	/**
+	 * Raw-lane fast path (save): write one ring's vertices as one bulk array of doubles
+	 * (x, y, z per vertex) instead of the general per-vertex PointOnSphere/UnitVector3D/Real
+	 * transcription chain - this is the dominant per-vertex cost for large polygons.
+	 */
+	void
+	save_raw_ring(
+			GPlatesScribe::Scribe &scribe,
+			const std::vector<GPlatesMaths::PointOnSphere> &ring_vertices)
+	{
+		std::vector<double> coords;
+		coords.reserve(3 * ring_vertices.size());
+		for (std::vector<GPlatesMaths::PointOnSphere>::const_iterator iter = ring_vertices.begin();
+				iter != ring_vertices.end(); ++iter)
+		{
+			const GPlatesMaths::UnitVector3D &position_vector = iter->position_vector();
+			coords.push_back(position_vector.x().dval());
+			coords.push_back(position_vector.y().dval());
+			coords.push_back(position_vector.z().dval());
+		}
+
+		const unsigned int num_vertices = ring_vertices.size();
+		scribe.save(TRANSCRIBE_SOURCE, num_vertices, "num_vertices");
+		scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, coords.data(), coords.size(), "vertex_coords");
+	}
+
+	/**
+	 * Raw-lane fast path (load): counterpart to @a save_raw_ring.
+	 */
+	bool
+	load_raw_ring(
+			GPlatesScribe::Scribe &scribe,
+			std::vector<GPlatesMaths::PointOnSphere> &ring_vertices)
+	{
+		GPlatesScribe::LoadRef<unsigned int> num_vertices =
+				scribe.load<unsigned int>(TRANSCRIBE_SOURCE, "num_vertices");
+		if (!num_vertices.is_valid())
+		{
+			return false;
+		}
+
+		std::vector<double> coords(3 * num_vertices.get());
+		if (!scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, coords.data(), coords.size(), "vertex_coords"))
+		{
+			return false;
+		}
+
+		ring_vertices.clear();
+		ring_vertices.reserve(num_vertices.get());
+		for (unsigned int n = 0; n < num_vertices.get(); ++n)
+		{
+			ring_vertices.push_back(GPlatesMaths::PointOnSphere(
+					GPlatesMaths::UnitVector3D(coords[3 * n], coords[3 * n + 1], coords[3 * n + 2])));
+		}
+
+		return true;
+	}
+}
+
+
 GPlatesScribe::TranscribeResult
 GPlatesMaths::PolygonOnSphere::transcribe(
 		GPlatesScribe::Scribe &scribe,
@@ -893,7 +955,74 @@ GPlatesMaths::PolygonOnSphere::transcribe(
 {
 	// Transcribe the vertices of each ring instead of segments because the segments (great circle arcs)
 	// contain duplicate vertices (end of segment contains same vertex as start of next segment).
-	if (scribe.is_saving())
+	if (scribe.is_transcribing_raw())
+	{
+		if (scribe.is_saving())
+		{
+			// Exterior ring.
+			const std::vector<PointOnSphere> exterior_ring_vertices_(exterior_ring_vertex_begin(), exterior_ring_vertex_end());
+			save_raw_ring(scribe, exterior_ring_vertices_);
+
+			// Number of interior rings.
+			const unsigned int num_interior_rings = number_of_interior_rings();
+			scribe.save(TRANSCRIBE_SOURCE, num_interior_rings, "num_interior_rings");
+
+			// Interior rings.
+			for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+			{
+				const std::vector<PointOnSphere> interior_vertices_(
+						interior_ring_vertex_begin(interior_ring_index),
+						interior_ring_vertex_end(interior_ring_index));
+				save_raw_ring(scribe, interior_vertices_);
+			}
+		}
+		else // loading
+		{
+			// Exterior ring.
+			std::vector<PointOnSphere> exterior_ring_vertices_;
+			if (!load_raw_ring(scribe, exterior_ring_vertices_))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Number of interior rings.
+			GPlatesScribe::LoadRef<unsigned int> num_interior_rings =
+					scribe.load<unsigned int>(TRANSCRIBE_SOURCE, "num_interior_rings");
+			if (!num_interior_rings.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			if (num_interior_rings.get() > 0)
+			{
+				// Interior rings.
+				std::vector<std::vector<PointOnSphere>> interior_rings;
+				interior_rings.resize(num_interior_rings.get());
+
+				for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings.get(); ++interior_ring_index)
+				{
+					if (!load_raw_ring(scribe, interior_rings[interior_ring_index]))
+					{
+						return scribe.get_transcribe_result();
+					}
+				}
+
+				// Add the exterior and interior rings (as great circle arc segments).
+				generate_rings_and_swap(
+						*this,
+						exterior_ring_vertices_.begin(), exterior_ring_vertices_.end(),
+						interior_rings.begin(), interior_rings.end());
+			}
+			else // num_interior_rings == 0 ...
+			{
+				// Add the exterior ring only (as great circle arc segments).
+				generate_rings_and_swap(
+						*this,
+						exterior_ring_vertices_.begin(), exterior_ring_vertices_.end());
+			}
+		}
+	}
+	else if (scribe.is_saving())
 	{
 		// Exterior ring.
 		const std::vector<PointOnSphere> exterior_ring_vertices_(exterior_ring_vertex_begin(), exterior_ring_vertex_end());

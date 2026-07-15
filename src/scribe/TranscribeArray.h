@@ -26,7 +26,10 @@
 #ifndef GPLATES_SCRIBE_TRANSCRIBEARRAY_H
 #define GPLATES_SCRIBE_TRANSCRIBEARRAY_H
 
+#include <boost/mpl/eval_if.hpp>
+#include <boost/mpl/identity.hpp>
 #include <boost/type_traits/is_array.hpp>
+#include <boost/type_traits/is_arithmetic.hpp>
 #include <boost/utility/enable_if.hpp>
 
 #include "ScribeConstructObject.h"
@@ -199,25 +202,27 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Implementation path when 'T' is *not* an array.
+		 * Tag types used to select the leaf transcription path for the terminal (non-array)
+		 * element type of a (possibly multidimensional) array - mirrors the
+		 * 'StreamPrimitiveTag'/'StreamTranscribeTag' dispatch used by 'Scribe::stream'.
+		 */
+		class LeafArithmeticTag { };
+		class LeafObjectTag { };
+
+
+		/**
+		 * General (non-raw-lane) per-element leaf transcription.
 		 *
-		 * This path is the final (recursion) terminating path for multidimensional arrays.
 		 * This path uses ConstructObject since it is supported for non-array 'T' objects and we
-		 * don't know if 'T' is default-constructable or not.
+		 * don't know if 'T' is default-constructable or not. Shared by both the arithmetic leaf
+		 * path (outside the raw lane) and the non-arithmetic leaf path (always).
 		 */
 		template <typename T, int N>
-		typename boost::disable_if< boost::is_array<T>, TranscribeResult >::type
-		transcribe_impl(
+		TranscribeResult
+		transcribe_impl_leaf_general(
 				Scribe &scribe,
 				T (&array)[N])
 		{
-			TranscribeResult transcribe_result = transcribe_array_size(scribe, array);
-			if (transcribe_result != TRANSCRIBE_SUCCESS)
-			{
-				return transcribe_result;
-			}
-
-			// Transcribe each object in the array which is *not*, in turn, another array.
 			if (scribe.is_saving())
 			{
 				for (unsigned int n = 0; n < N; ++n)
@@ -245,6 +250,80 @@ namespace GPlatesScribe
 			}
 
 			return TRANSCRIBE_SUCCESS;
+		}
+
+
+		/**
+		 * Leaf transcription when the element type 'T' is arithmetic.
+		 *
+		 * In the raw lane, streams the whole array as one bulk block (see
+		 * 'Scribe::transcribe_raw_array') instead of N per-element scalar raw calls - this is the
+		 * dominant per-element cost for large fixed-size arithmetic arrays. Outside the raw lane,
+		 * falls back to the general per-element path (encoding unchanged).
+		 */
+		template <typename T, int N>
+		TranscribeResult
+		transcribe_impl_leaf(
+				Scribe &scribe,
+				T (&array)[N],
+				LeafArithmeticTag)
+		{
+			if (scribe.is_transcribing_raw())
+			{
+				if (!scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, array, N))
+				{
+					return scribe.get_transcribe_result();
+				}
+
+				return TRANSCRIBE_SUCCESS;
+			}
+
+			return transcribe_impl_leaf_general(scribe, array);
+		}
+
+
+		/**
+		 * Leaf transcription when the element type 'T' is *not* arithmetic.
+		 *
+		 * 'Scribe::transcribe_raw_array' only supports arithmetic element types, so there is no
+		 * raw-lane fast path here; if 'T' itself has raw-lane behaviour, the recursive
+		 * 'scribe.save()'/'scribe.load()' calls in the general path pick that up.
+		 */
+		template <typename T, int N>
+		TranscribeResult
+		transcribe_impl_leaf(
+				Scribe &scribe,
+				T (&array)[N],
+				LeafObjectTag)
+		{
+			return transcribe_impl_leaf_general(scribe, array);
+		}
+
+
+		/**
+		 * Implementation path when 'T' is *not* an array.
+		 *
+		 * This path is the final (recursion) terminating path for multidimensional arrays.
+		 */
+		template <typename T, int N>
+		typename boost::disable_if< boost::is_array<T>, TranscribeResult >::type
+		transcribe_impl(
+				Scribe &scribe,
+				T (&array)[N])
+		{
+			TranscribeResult transcribe_result = transcribe_array_size(scribe, array);
+			if (transcribe_result != TRANSCRIBE_SUCCESS)
+			{
+				return transcribe_result;
+			}
+
+			return transcribe_impl_leaf(
+					scribe,
+					array,
+					typename boost::mpl::eval_if<
+							boost::is_arithmetic<T>,
+							boost::mpl::identity<LeafArithmeticTag>,
+							boost::mpl::identity<LeafObjectTag> >::type());
 		}
 	}
 

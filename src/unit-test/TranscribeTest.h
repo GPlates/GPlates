@@ -832,6 +832,15 @@ namespace GPlatesUnitTest
 		void
 		test_case_raw_errors();
 
+		//! Raw round trip of 'Scribe::transcribe_raw_array' - bulk fixed-size arithmetic arrays.
+		void
+		test_case_raw_array();
+
+		//! Raw round trip of native C arrays through "TranscribeArray.h" (1D, multidimensional and
+		//! non-arithmetic element types).
+		void
+		test_case_fixed_array();
+
 
 		//! Tests save/load construction (non-default constructor) inside a raw subtree.
 		struct NestedData
@@ -898,6 +907,66 @@ namespace GPlatesUnitTest
 			boost::optional<double> opt_some;
 			boost::optional<double> opt_none;
 			NestedData nested; // Transcribed via save/load construction.
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+
+		//! Fixed-size arithmetic arrays transcribed with 'Scribe::transcribe_raw_array'.
+		struct ArrayData
+		{
+			ArrayData();
+
+			void
+			initialise();
+
+			void
+			check_equality(
+					const ArrayData &other) const;
+
+			double doubles[4];
+			float floats[3];
+			int ints[5];
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+
+		/**
+		 * Fixed-size native C arrays transcribed via 'scribe.transcribe()' (ie, through
+		 * "TranscribeArray.h" rather than calling 'Scribe::transcribe_raw_array' directly like
+		 * @a ArrayData does). Covers a 1D arithmetic array (raw-lane fast path), a multidimensional
+		 * arithmetic array (recurses down to the same fast path) and a non-arithmetic array
+		 * (general per-element path only - 'transcribe_raw_array' doesn't support class types).
+		 */
+		struct FixedArrayData
+		{
+			FixedArrayData();
+
+			void
+			initialise();
+
+			void
+			check_equality(
+					const FixedArrayData &other) const;
+
+			int nums[4];
+			double matrix[2][3];
+			std::string strs[2];
 
 		private:
 

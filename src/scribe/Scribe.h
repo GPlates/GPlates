@@ -370,6 +370,35 @@ namespace GPlatesScribe
 				unsigned int options = 0);
 
 		/**
+		 * Bulk-transcribe 'count' contiguous, trivially-copyable arithmetic values (eg, the
+		 * flattened xyz coordinates of a point sequence) in a single call.
+		 *
+		 * 'count' is *not* itself written/read here - the caller already knows it on both the
+		 * save and load sides (eg, from a separately transcribed size, or a compile-time-fixed
+		 * length) - only the 'count' values pointed to by @a array are transcribed.
+		 *
+		 * In the raw lane the whole span streams as one fixed-width block - a single bulk copy
+		 * instead of 'count' individual transcribe calls, which is the dominant per-element cost
+		 * this method exists to avoid. As with the scalar 'transcribe_raw(float&)' /
+		 * 'transcribe_raw(double&)' overloads, this is a fixed-width encoding: every element must
+		 * be saved and loaded through the same 'ArithmeticType'.
+		 *
+		 * Outside the raw lane this is a plain per-element transcribe loop (tagged
+		 * 'object_tag[0]', 'object_tag[1]', ...), so the method is well-defined - and safe to call
+		 * unconditionally - in both lanes. In practice all current call sites only use it inside an
+		 * 'is_transcribing_raw()' branch, leaving the general-path encoding of the caller's class
+		 * (eg, 'PolylineOnSphere') completely unchanged, since the raw/general choice is made once,
+		 * for the whole subtree, at the pickle boundary - not per field.
+		 */
+		template <typename ArithmeticType>
+		Bool
+		transcribe_raw_array(
+				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
+				ArithmeticType *array,
+				std::size_t count,
+				const ObjectTag &object_tag = ObjectTag());
+
+		/**
 		 * Transcribe the base object sub-part (with type 'BaseType') of the specified derived object
 		 * (with type 'DerivedType').
 		 *
@@ -3158,6 +3187,50 @@ namespace GPlatesScribe
 				object,
 				d_is_raw ? ObjectTag() : ObjectTag(object_tag),
 				options);
+	}
+
+
+	template <typename ArithmeticType>
+	Bool
+	Scribe::transcribe_raw_array(
+			const GPlatesUtils::CallStack::Trace &transcribe_source,
+			ArithmeticType *array,
+			std::size_t count,
+			const ObjectTag &object_tag)
+	{
+		BOOST_STATIC_ASSERT(boost::is_arithmetic<ArithmeticType>::value);
+
+		// Track the file/line of the call site for exception messages.
+		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
+
+		if (d_is_raw)
+		{
+			// Bulk fixed-width block - a single memcpy-style call instead of 'count' individual
+			// transcribe calls. Raw stream reads/writes cannot fail softly (see 'read_raw_bytes') -
+			// they throw on error instead - so this always succeeds if it returns at all.
+			if (is_saving())
+			{
+				write_raw_bytes(array, count * sizeof(ArithmeticType));
+			}
+			else // loading...
+			{
+				read_raw_bytes(array, count * sizeof(ArithmeticType));
+			}
+
+			return Bool(transcribe_source, true, is_loading()/*require_check*/);
+		}
+
+		// General path: a plain per-element transcribe loop (see the class doc comment above -
+		// no current call site relies on this, but the method is well-defined here regardless).
+		for (std::size_t n = 0; n < count; ++n)
+		{
+			if (!transcribe(transcribe_source, array[n], object_tag[n]))
+			{
+				return Bool(transcribe_source, false, is_loading()/*require_check*/);
+			}
+		}
+
+		return Bool(transcribe_source, true, is_loading()/*require_check*/);
 	}
 
 
