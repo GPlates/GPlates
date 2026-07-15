@@ -231,31 +231,89 @@ preserves the original 8-commit history that the 2026-07-13 rewrite replaced;
 `backup/pickle-perf-rewritten` (local, formerly `feature/improve-pickle-performance`) is the
 parked rework itself.
 
-## Future directions
+## The fast path ("raw lane"): implemented
 
-*This is the work of this branch (`feature/pickle-fast-path`); nothing here is implemented yet.
-The design has since been worked out in full — see [fast-path-plan.md](fast-path-plan.md) for the
-approved design and phased implementation plan (2026-07-14).*
+*This was the future-facing proposal in this section; it is now implemented, on this branch
+(`feature/pickle-fast-path`), across phases 0–6 (2026-07-14 to 2026-07-16). See
+[fast-path.md](fast-path.md) for the full design: the `RAW` option, the `RAW_STREAM` transcription
+kind, the raw codec and its versioning layers, shared-owner backrefs, bulk-array/geometry
+adoption, and the constraints anyone touching this code must respect.*
 
-The working idea is a **fast path through the scribe system** for situations that don't need the
-general machinery, while leaving the general path intact for complex cases:
+The working idea was a **fast path through the scribe system** for situations that don't need the
+general machinery, while leaving the general path intact for complex cases — realised as a
+switchable mode inside the existing `Scribe` (the "raw lane") rather than a parallel serialization
+scheme:
 
 - Much of the transcribed data is bulk and homogeneous (e.g. millions of rotation samples, point
   arrays, time windows) with no need for per-element tracking, per-element tags, or polymorphism.
-  Such data could be dumped/read as contiguous raw data rather than as one composite object per
-  element.
+  Such data is now dumped/read as contiguous raw data rather than as one composite object per
+  element (see "Bulk arrays and geometry" in [fast-path.md](fast-path.md)).
 - The general path stays authoritative for structure, headers, heterogeneous/polymorphic parts,
   and anything needing pointer fix-ups — preserving the compatibility story
-  ([compatibility.md](compatibility.md)).
-- Pointer fix-ups are not currently exercised by GPlates/pyGPlates transcriptions (though the
-  capability must remain available), which suggests the fast path can assume no tracking by
-  default.
+  ([compatibility.md](compatibility.md)); the raw lane is switched on only where it's been
+  deliberately adopted (currently pyGPlates pickling), never for sessions/projects.
+- Pointer fix-ups turned out to still matter inside the raw lane itself (shared/aliased owning
+  pointers, e.g. `XmlElementNode`'s shared alias maps) even though object *tracking* in the general-
+  path sense (address-keyed, for external references) is unused on the pickle graph and stays
+  unavailable in raw mode — see the backref scheme in [fast-path.md](fast-path.md).
 
-Intended consumers, in order: pyGPlates pickling (`RotationModel`, `FeatureCollection`, …), the
-new time-dependent 3D volume visualisation format, and a binary `.gpml` alternative — the latter
-two combining the general path (flexibility, backward/forward compatibility) with the fast path
-(raw-data speed) in one archive.
+Intended consumers, in order: pyGPlates pickling (`RotationModel`, `FeatureCollection`, …, **done**),
+the planned time-dependent 3D volume visualisation format, and a binary `.gpml` alternative — the
+latter two (not yet started) would combine the general path (flexibility, backward/forward
+compatibility) with the fast path (raw-data speed) in one archive.
 
 Benchmark harness: `RotationModelTestCase.test_pickle`
 (`pygplates/test/test_app_logic/test.py:2586`) pickles a `RotationModel` loaded from a real
-rotation file and is the natural starting point for profiling and regression timing.
+rotation file and was the primary target for profiling and regression timing throughout.
+
+### Phase-by-phase results
+
+Same method as the table above (Release build, MSVC, median of repeats after warm-up,
+`RotationModel(rotations.rot)` / `FeatureCollection(topologies.gpml)` fixtures):
+
+| Stage | dumps | loads | pickle size | Notes |
+|---|---|---|---|---|
+| Phase 0 (baseline, this branch's start point) | 151 ms | 159–165 ms | 1,588,009 bytes | Confirms no drift from the pre-branch numbers above |
+| Phase 4 (raw lane live for pickling) | ~26 ms | ~41 ms | 345 KB | Three bug classes surfaced by real object graphs, all fixed in this phase (see below) |
+| Phase 5 (hot-path call-site trims) | ~20 ms | ~35 ms | 345 KB | `const char *` tag overloads + raw sequence/mapping protocol branches |
+| Phase 6 (bulk-array API + geometry) | ~23 ms | ~37 ms | 345 KB | Within noise of phase 5 for *this* fixture — `rotations.rot` is heterogeneous property-value structs, not homogeneous geometry, so it was never phase 6's target |
+
+Overall: **~7.5× on save, ~4.7× on load** for `RotationModel(rotations.rot)` (from phase 0), short
+of the ~10×/~7–11× target because the residual cost is per-object owning-pointer machinery
+(~9,000 heterogeneous property-value pointers: marker byte + class-name cache + heap construct +
+backref) that a bulk API cannot touch — there is no homogeneous array to bulk-transfer in this
+fixture. `topologies.gpml` (99 KB source): ~0.74–0.86 ms dumps / ~1.35–1.43 ms loads throughout
+phases 4–6 (unchanged, since it's small enough that per-call overhead already dominated less).
+The pathological fixture (`feature_with_properties_not_in_pygplates.gpml`, see above): the backref
+pre-order fix (phase 4) brought its `pickle.loads` from the rework's ~13.5 s down to ~0.4–0.7 ms,
+holding steady through phases 5–6 — the actual fix for the regression this section documents.
+
+For **homogeneous point geometry** — phase 6's actual target — the win is much larger: an ad-hoc
+50,000-point synthetic `Polyline`/`MultiPoint` benchmark measured ~1.2–2.3 ms dumps/loads at that
+scale (vs. tens of milliseconds on the old per-point path), with zero round-trip coordinate error.
+Large, homogeneous `FeatureCollection`s (dense geometry, not rotation-sample metadata) are expected
+to see gains closer to the original ~10× target than `RotationModel` does.
+
+### What each phase surfaced
+
+Rolling the raw lane out in stages, rather than all at once, caught real bugs the tag-keyed general
+path had been silently tolerating:
+
+- **Phase 4** (enabling the lane for real pickle graphs) surfaced three bug classes, all specific
+  to a *positional* stream having no tags to paper over mismatches: (1) a handler saving through
+  one integral type and loading through another (harmless with tags; fatal positionally) — fixed
+  with the self-describing integer codec in [fast-path.md](fast-path.md); (2) save/load call order
+  mismatches in two handlers (harmless with tags; fatal positionally) — fixed by reordering the
+  loads to match the saves; (3) shared/nested owning-pointer backref indices computed in a
+  different order on save vs load — fixed by reserving a placeholder backref slot before loading a
+  shared object's contents (pre-order), matching the save-side registration order. Bug (3) is also
+  the actual fix for this section's pathological-load regression.
+- **Phase 5** profiling ruled out per-item heap allocation on load as a significant cost (an
+  in-place-construction experiment measured <0.5 ms gain and was reverted) — the dominant residual
+  turned out to be `ObjectTag` construction at call sites, not object construction itself.
+- **Phase 6** confirmed the opposite of a plausible hypothesis: `RotationModel`'s load being slower
+  than its save is *not* mainly the load-only cached-reconstruction-tree build (measured at ~1 ms,
+  3–4% of the load-side gap) — the ~13 ms load>save asymmetry is intrinsic to heap-constructing
+  ~9,000 property values and wiring their owning/backref pointers on load, versus merely walking an
+  already-built model on save. This is exactly the per-object cost a bulk API cannot address for a
+  heterogeneous fixture.

@@ -49,8 +49,8 @@ Everything in the system flows through the same two stages:
 | [tracking-and-pointers.md](tracking-and-pointers.md) | Object tracking, pointer fix-ups, relocation, polymorphism via the export registry, the void-cast registry, smart-pointer support |
 | [compatibility.md](compatibility.md) | Error-handling philosophy (exceptions vs `TranscribeResult`), backward/forward compatibility mechanisms, versioning levers, why not `boost::serialization` |
 | [usage.md](usage.md) | How sessions/project files and pyGPlates pickling use the system, the deep transcribe chain for `RotationModel`/`FeatureCollection`, test coverage, and an inventory of all users |
-| [performance.md](performance.md) | Where the per-object costs are, what is already optimized, the parked tracking-rework branch (`backup/pickle-perf-rewritten`) with its measured impact, and future directions (the fast path — this branch's work) |
-| [fast-path-plan.md](fast-path-plan.md) | The approved fast-path ("raw lane") design and phased implementation plan: a scoped streamed mode inside `Scribe`, the `RAW_STREAM` transcription kind, codec and versioning layers, shared-owner backrefs, and per-phase verification |
+| [performance.md](performance.md) | Where the per-object costs are, what is already optimized, the parked tracking-rework branch (`backup/pickle-perf-rewritten`) with its measured impact, and the fast path's phase-by-phase history and final benchmarks |
+| [fast-path.md](fast-path.md) | The fast path ("raw lane"): a scoped streamed mode inside `Scribe`, the `RAW_STREAM` transcription kind, the raw codec and its versioning layers, shared-owner backrefs, bulk-array/geometry adoption, and the constraints (no references/probing inside raw sections, evolution discipline) anyone touching this code must respect |
 
 ## Who uses it
 
