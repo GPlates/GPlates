@@ -92,6 +92,17 @@ cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release
 
 > You can ignore the CMake warning that `CGAL_DATA_DIR cannot be deduced`.
 
+> **WSL note (Ubuntu system packages):** WSL inherits the Windows `PATH`, so CMake can pick up a Windows
+> dependency build (e.g. under `/mnt/c/SDK/...`) instead of the Ubuntu system libraries — usually seen at
+> [Compile](#compile) as a `DSO missing from command line` linker error naming a `/mnt/c/...` library.
+> Prevent it by disabling Windows `PATH` inheritance: add this to `/etc/wsl.conf`, then run
+> `wsl --shutdown` (from Windows) and reopen the shell.
+>
+> ```ini
+> [interop]
+> appendWindowsPath = false
+> ```
+
 ### Compile
 
 ```bash
@@ -99,6 +110,9 @@ cmake --build build-gplates
 ```
 
 This produces the `gplates` executable under `build-gplates/bin`.
+
+> If the link step fails with `DSO missing from command line` referencing a `/mnt/c/...` library, see the
+> WSL note under [Configure](#configure).
 
 ### Install
 
