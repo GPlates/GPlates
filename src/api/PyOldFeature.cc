@@ -134,7 +134,8 @@ GPlatesApi::OldFeature::get_properties_by_name(
 				}
 
 				QVariant data = *visitor.found_qvariants_begin();
-				switch (data.typeId())
+				// Note: QVariant::userType() works on both Qt5 and Qt6 (Qt6's typeId() is Qt6-only).
+				switch (data.userType())
 				{
 					case QMetaType::Bool:
 						ret.append(data.toBool());

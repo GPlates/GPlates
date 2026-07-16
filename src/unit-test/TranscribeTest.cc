@@ -931,23 +931,23 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::check_equality(
 	BOOST_CHECK(bv == other.bv);
 	BOOST_CHECK(bv2 == other.bv2);
 	BOOST_CHECK(qv == other.qv);
-	BOOST_CHECK(qv_reg.typeId() == QMetaType::User && other.qv_reg.typeId() == QMetaType::User &&
+	BOOST_CHECK(qv_reg.userType() == QMetaType::User && other.qv_reg.userType() == QMetaType::User &&
 			qv_reg.userType() == other.qv_reg.userType() &&
 			qv_reg.canConvert<StringWithEmbeddedZeros>() && other.qv_reg.canConvert<StringWithEmbeddedZeros>() &&
 			qv_reg.value<StringWithEmbeddedZeros>() == other.qv_reg.value<StringWithEmbeddedZeros>());
 	BOOST_CHECK(lqv.size() == other.lqv.size());
 	// 'qv_list' is just a QVariant wrapped around 'lqv'.
-	BOOST_CHECK(qv_list.typeId() == QMetaType::QVariantList && other.qv_list.typeId() == QMetaType::QVariantList &&
+	BOOST_CHECK(qv_list.userType() == QMetaType::QVariantList && other.qv_list.userType() == QMetaType::QVariantList &&
 			qv_list.canConvert< QList<QVariant> >() && other.qv_list.canConvert< QList<QVariant> >() &&
 			qv_list.value< QList<QVariant> >().size() == lqv.size() &&
 			other.qv_list.value< QList<QVariant> >().size() == other.lqv.size());
 	for (int n = 0; n < lqv.size(); ++n)
 	{
-		BOOST_CHECK(lqv[n].typeId() == other.lqv[n].typeId());
+		BOOST_CHECK(lqv[n].userType() == other.lqv[n].userType());
 		// 'qv_list' is just a QVariant wrapped around 'lqv'.
-		BOOST_CHECK(qv_list.value< QList<QVariant> >()[n].typeId() == other.qv_list.value< QList<QVariant> >()[n].typeId());
+		BOOST_CHECK(qv_list.value< QList<QVariant> >()[n].userType() == other.qv_list.value< QList<QVariant> >()[n].userType());
 
-		if (lqv[n].typeId() == QMetaType::User)
+		if (lqv[n].userType() == QMetaType::User)
 		{
 			BOOST_CHECK(
 					lqv[n].canConvert<StringWithEmbeddedZeros>() && other.lqv[n].canConvert<StringWithEmbeddedZeros>() &&
