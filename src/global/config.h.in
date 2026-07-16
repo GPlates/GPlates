@@ -33,11 +33,6 @@
  */
 #cmakedefine GPLATES_PROFILE_CODE
 
-// Define if have the <proj.h> header file (Proj5+).
-#cmakedefine GPLATES_HAVE_PROJ_H
-// Define if have the <proj_api.h> header file (Proj4).
-#cmakedefine GPLATES_HAVE_PROJ_API_H
-
 // Define if have boost.python.numpy (NumPy extension package of Boost.Python).
 #cmakedefine GPLATES_HAVE_BOOST_PYTHON_NUMPY
 

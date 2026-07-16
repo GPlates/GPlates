@@ -323,6 +323,14 @@ find_package(GDAL 2.0 REQUIRED)
 #############
 # Find PROJ #
 #
+# GPlates requires PROJ 6 or above (see README.md) and uses only the modern 'proj.h' API.
+# We use our own FindPROJ.cmake module: it prefers PROJ's CMake config package (eg, conda) but
+# falls back to a manual library search for distributions that ship no config package. Either way
+# it provides the PROJ::proj target (linked below).
+#
+# Note: FindPROJ.cmake is kept only for Ubuntu 22.04, whose 'libproj-dev' ships no CMake config
+# package (and CMake has no built-in FindPROJ), so the manual fallback is the only way to locate
+# PROJ there. Remove this module once our minimum Ubuntu LTS provides a PROJ config package.
 find_package(PROJ REQUIRED)
 
 

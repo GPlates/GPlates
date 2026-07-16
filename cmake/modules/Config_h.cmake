@@ -2,25 +2,6 @@
 # Set some variables needed when generating 'global/config.h' file from 'global/config.h.in'.
 #
 
-# Determine which PROJ header to include.
-#
-# For Proj5+ we should include 'proj.h' (the modern API).
-# For Proj4 we can only include 'proj_api.h' (the old API).
-#
-# Note that Proj8 removed the Proj4 header ('proj_api.h') but both headers
-# exist in Proj versions 5, 6 and 7 (where we choose 'proj.h').
-FOREACH(_PROJ_INCLUDE_DIR ${PROJ_INCLUDE_DIRS})
-  # If have the Proj5+ header ("proj.h").
-  IF (EXISTS "${_PROJ_INCLUDE_DIR}/proj.h")
-    set(GPLATES_HAVE_PROJ_H 1)
-  ENDIF()
-  
-  # If have the Proj4 header ("proj_api.h").
-  IF (EXISTS "${_PROJ_INCLUDE_DIR}/proj_api.h")
-    set(GPLATES_HAVE_PROJ_API_H 1)
-  ENDIF()
-ENDFOREACH()
-
 # Do we have boost.python.numpy?
 #
 # Only available for Boost >= 1.63, and if boost.python.numpy installed since

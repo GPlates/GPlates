@@ -94,13 +94,8 @@ GPlatesGui::MapProjection::get_display_name(
 
 
 GPlatesGui::MapProjection::MapProjection():
-#if defined(GPLATES_USING_PROJ4)
-	d_projection(0),
-	d_latlon_projection(0),
-#else // using proj5+...
 	d_transformation(0),
 	d_proj_info(proj_info()),
-#endif
 	d_scale(1.),
 	d_projection_type(ORTHOGRAPHIC),
 	d_central_meridian(0)
@@ -110,13 +105,8 @@ GPlatesGui::MapProjection::MapProjection():
 
 GPlatesGui::MapProjection::MapProjection(
 		MapProjection::Type projection_type_):
-#if defined(GPLATES_USING_PROJ4)
-	d_projection(0),
-	d_latlon_projection(0),
-#else // using proj5+...
 	d_transformation(0),
 	d_proj_info(proj_info()),
-#endif
 	d_scale(1.),
 	d_projection_type(ORTHOGRAPHIC),
 	d_central_meridian(0)
@@ -126,13 +116,8 @@ GPlatesGui::MapProjection::MapProjection(
 
 GPlatesGui::MapProjection::MapProjection(
 		const MapProjectionSettings &projection_settings):
-#if defined(GPLATES_USING_PROJ4)
-	d_projection(0),
-	d_latlon_projection(0),
-#else // using proj5+...
 	d_transformation(0),
 	d_proj_info(proj_info()),
-#endif
 	d_scale(1.),
 	d_projection_type(ORTHOGRAPHIC),
 	d_central_meridian(projection_settings.get_central_meridian())
@@ -142,21 +127,10 @@ GPlatesGui::MapProjection::MapProjection(
 
 GPlatesGui::MapProjection::~MapProjection()
 {
-#if defined(GPLATES_USING_PROJ4)
-	if (d_projection)
-	{
-		pj_free(d_projection);
-	}
-	if (d_latlon_projection)
-	{
-		pj_free(d_latlon_projection);
-	}
-#else // using proj5+...
 	if (d_transformation)
 	{
 		proj_destroy(d_transformation);
 	}
-#endif
 }
 
 
@@ -207,32 +181,6 @@ GPlatesGui::MapProjection::set_projection_type(
 	{
 		latlon_args[n] = &latlon_arg_strings[n][0];
 	}
-
-#if defined(GPLATES_USING_PROJ4)
-
-	if (d_projection)
-	{
-		pj_free(d_projection);
-		pj_free(d_latlon_projection);
-		d_projection = 0;
-		d_latlon_projection = 0;
-	}
-
-	if (!(d_projection = pj_init(num_projection_args,projection_args)))
-	{
-		QString message = QString("Proj4 initialisation failed. ");
-		message.append(projection_args[0]);
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,message.toStdString().c_str());
-	}
-
-	if (!(d_latlon_projection = pj_init(num_latlon_args,latlon_args)))
-	{
-		QString message = QString("Proj4 initialisation failed. ");
-		message.append(latlon_args[0]);
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,message.toStdString().c_str());
-	}
-
-#else // using proj5+...
 
 	if (d_transformation)
 	{
@@ -298,8 +246,6 @@ GPlatesGui::MapProjection::set_projection_type(
 #endif
 	}
 
-#endif
-
 	d_scale = projection_table[projection_type_].scaling_factor;
 	if (d_scale < MIN_SCALE_FACTOR)
 	{
@@ -341,17 +287,10 @@ GPlatesGui::MapProjection::forward_transform(
 		double &input_longitude_output_x,
 		double &input_latitude_output_y) const
 {
-#if defined(GPLATES_USING_PROJ4)
-	if (!d_projection)
-	{
-		return;
-	}
-#else // using proj5+...
 	if (!d_transformation)
 	{
 		return;
 	}
-#endif
 
 	// Input (longitude, latitude).
 	double longitude = input_longitude_output_x;
@@ -430,34 +369,9 @@ GPlatesGui::MapProjection::forward_proj_transform(
 		double &x,
 		double &y) const
 {
-#if defined(GPLATES_USING_PROJ4)
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_projection,
-			GPLATES_ASSERTION_SOURCE);
-#else // using proj5+...
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_transformation,
 			GPLATES_ASSERTION_SOURCE);
-#endif
-
-#if defined(GPLATES_USING_PROJ4)
-
-	// Convert degrees to radians.
-	// DEG_TO_RAD is defined in the <proj_api.h> header. 
-	longitude *= DEG_TO_RAD;
-	latitude *= DEG_TO_RAD;
-
-	// Output (x, y).
-	x = longitude;
-	y = latitude;
-
-	// Projection transformation.
-	if (0 != pj_transform(d_latlon_projection, d_projection, 1, 0, &x, &y, NULL))
-	{
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE, "Error in pj_transform.");
-	}
-
-#else // using proj5+...
 
 	if (d_proj_info.major == 5)
 	{
@@ -487,8 +401,6 @@ GPlatesGui::MapProjection::forward_proj_transform(
 	//	proj_errno_reset(d_transformation);
 	//}
 
-#endif
-
 	if (GPlatesMaths::is_infinity(x) || GPlatesMaths::is_infinity(y))
 	{
 		throw ProjectionException(GPLATES_EXCEPTION_SOURCE, "HUGE_VAL returned from proj transform.");
@@ -516,17 +428,10 @@ GPlatesGui::MapProjection::inverse_transform(
 		double &input_x_output_longitude,
 		double &input_y_output_latitude) const
 {
-#if defined(GPLATES_USING_PROJ4)
-	if (!d_projection)
-	{
-		return false;
-	}
-#else // using proj5+...
 	if (!d_transformation)
 	{
 		return false;
 	}
-#endif
 
 	// Input (x, y).
 	double x = input_x_output_longitude;
@@ -605,34 +510,9 @@ GPlatesGui::MapProjection::inverse_proj_transform(
 		double &longitude,
 		double &latitude) const
 {
-#if defined(GPLATES_USING_PROJ4)
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_projection,
-			GPLATES_ASSERTION_SOURCE);
-#else // using proj5+...
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_transformation,
 			GPLATES_ASSERTION_SOURCE);
-#endif
-
-#if defined(GPLATES_USING_PROJ4)
-
-	// Output (longitude, latitude).
-	longitude = x;
-	latitude = y;
-
-	// Projection inverse transformation.
-	if (0 != pj_transform(d_projection,d_latlon_projection,1,0,&longitude,&latitude,NULL))
-	{
-		return false;
-	}
-
-	// Convert radians to degrees.
-	// RAD_TO_DEG is defined in the <proj_api.h> header. 
-	longitude *= RAD_TO_DEG;
-	latitude *= RAD_TO_DEG;
-
-#else // using proj5+...
 
 	// Projection inverse transformation.
 	PJ_COORD c = proj_coord(x, y, 0, 0);
@@ -661,8 +541,6 @@ GPlatesGui::MapProjection::inverse_proj_transform(
 	//	qDebug() << proj_errno_string(err);
 	//	proj_errno_reset(d_transformation);
 	//}
-
-#endif
 
 	if (GPlatesMaths::is_infinity(longitude) || GPlatesMaths::is_infinity(latitude))
 	{
