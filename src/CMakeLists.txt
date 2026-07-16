@@ -28,7 +28,8 @@ find_package(GLEW REQUIRED)
 #############
 # Find ZLIB #
 #
-# We use our own "FindZLIB.cmake" module so we can find contrib-built zlibwapi on Windows, which also defines the ZLIB::ZLIB imported target.
+# Use CMake's built-in FindZLIB module (which defines the ZLIB::ZLIB imported target).
+# Note: Windows and macOS get zlib from conda; only Linux also offers it as a system package.
 find_package(ZLIB REQUIRED)
 
 #############
