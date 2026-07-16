@@ -200,17 +200,29 @@ endif()
 #
 
 # Extract version information from PYGPLATES_PEP440_VERSION.
-if (NOT PYGPLATES_PEP440_VERSION MATCHES [[^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$]])
+#
+# NOTE: The pre/post/dev *number* subexpressions use a plain "[0-9]+" rather than a capturing
+#       "(0|[1-9][0-9]*)". This keeps the total number of capture groups down to 7, because CMake's
+#       regex engine (cmsys) supports at most 9 capture groups (CMAKE_MATCH_1 to CMAKE_MATCH_9), and
+#       older CMake versions (eg, 3.22) fail to even *compile* a regex with more than 9 capture groups
+#       ("Too many parentheses"). Newer CMake (eg, 4.4) raised that limit, which is why it accepts the
+#       previous 10-capture-group form.
+#
+#       Unlike "(0|[1-9][0-9]*)", the plainer "[0-9]+" also accepts leading zeros (eg, ".dev0010"), but
+#       that is harmless: PEP 440 integer normalization treats numeric segments as integers and drops any
+#       leading zeros (eg, ".dev0010" normalizes to ".dev10"), so such a version is still valid PEP 440.
+#       (Major/Minor/Patch keep the stricter "(0|[1-9][0-9]*)" form; they must be capture groups anyway.)
+if (NOT PYGPLATES_PEP440_VERSION MATCHES [[^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)((a|b|rc)[0-9]+)?(\.post[0-9]+)?(\.dev[0-9]+)?$]])
 	message(FATAL_ERROR "${PYGPLATES_PEP440_VERSION} should match X.Y.Z[{a|b|rc}N][.postN][.devN]")
 endif()
 
 # Copy capture groups in a list.
 #
-# NOTE: Our regular expression actually has 10 capture groups (excluding CMAKE_MATCH_0 which captures entire expression).
-#       However, CMake only has capture groups CMAKE_MATCH_1 to CMAKE_MATCH_9.
-#       So we can't capture the last group (if all pre/post/dev version segments are specified in the version).
-#       For example, "1.0.0rc1.post1.dev1" would normally capture 1, 0, 0, rc1, rc, 1, .post1, 1, .dev1, 1, but the last '1' isn't captured.
-#       But that's OK because we're only interested in 1, 0, 0, rc1, .post1 and .dev1 (groups 1, 2, 3, 4, 7 and 9).
+# NOTE: Our regular expression has 7 capture groups (excluding CMAKE_MATCH_0 which captures the entire match):
+#       1, 2, 3 are Major, Minor, Patch; 4 is the pre-release suffix "{a|b|rc}N" (with a nested group 5 for "{a|b|rc}");
+#       6 is the post-release suffix ".postN"; 7 is the dev-release suffix ".devN".
+#       For example, "1.0.0rc1.post1.dev1" captures 1, 0, 0, rc1, rc, .post1, .dev1.
+#       Major/Minor/Patch are read by index below; the pre/post/dev segments are then classified in the loop further down.
 set(_VERSION_SEGMENT_LIST)
 set(_VERSION_SEGMENT_INDEX 1)
 while (_VERSION_SEGMENT_INDEX LESS_EQUAL ${CMAKE_MATCH_COUNT})
