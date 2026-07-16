@@ -148,6 +148,12 @@ cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_P
 then compile and install as above. This copies the conda dependency libraries alongside the installed
 `gplates` executable, so it runs without an activated conda environment.
 
+> **Standalone bundles are for the conda route only.** With the [Ubuntu system packages](#option-b-ubuntu-system-packages)
+> the dependencies are always present system-wide, so a plain install already runs anywhere on the
+> machine. Bundling also can't fully work here: Debian/Ubuntu split Python packages across two locations
+> (numpy lives in `dist-packages`, outside the standard library the bundle copies), whereas conda keeps
+> everything under one prefix. So to package GPlates for another machine (e.g. with CPack), use conda.
+
 > **Standalone numpy / BLAS note:** the embedded Python interpreter's numpy needs a BLAS/LAPACK
 > backend. Use **OpenBLAS** (the `"libblas=*=*openblas"` package above), *not* MKL. OpenBLAS is a
 > single self-contained shared library that is bundled automatically; MKL's runtime is very large and
