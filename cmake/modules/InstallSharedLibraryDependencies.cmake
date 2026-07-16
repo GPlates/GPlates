@@ -832,9 +832,13 @@ elseif (APPLE)
                     if (EXISTS "${_installed_python_stdlib}")
                         file(GLOB_RECURSE _installed_python_shared_libs "${_installed_python_stdlib}/*.so")
                         foreach(_shared_lib ${_installed_python_shared_libs})
-                            # Fix dependency install names *before* codesigning (since we cannot modify after signing).
-                            fix_dependency_install_names(${_shared_lib})
-                            codesign(${_shared_lib})
+                            # Skip symlinks - operate on the real target files (which the glob returns
+                            # directly) and avoid any symlink that dangles within the bundle.
+                            if (NOT IS_SYMLINK "${_shared_lib}")
+                                # Fix dependency install names *before* codesigning (since we cannot modify after signing).
+                                fix_dependency_install_names(${_shared_lib})
+                                codesign(${_shared_lib})
+                            endif()
                         endforeach()
                     endif()
                 endif()
@@ -1004,7 +1008,14 @@ else()  # Linux
                     if (EXISTS "${_installed_python_stdlib}")
                         file(GLOB_RECURSE _installed_python_shared_libs "${_installed_python_stdlib}/*.so")
                         foreach(_shared_lib ${_installed_python_shared_libs})
-                            set_rpath(${_shared_lib})
+                            # Skip symlinks. 'patchelf' follows them to their target, but some are dangling
+                            # within the bundle - eg, Ubuntu's 'config-*/libpython3.10.so' points to
+                            # '../../x86_64-linux-gnu/libpython3.10.so.1', which lives outside the bundled
+                            # standard library - which makes patchelf fail. The real extension modules are
+                            # regular files and are still patched directly by this loop.
+                            if (NOT IS_SYMLINK "${_shared_lib}")
+                                set_rpath(${_shared_lib})
+                            endif()
                         endforeach()
                     endif()
                 endif()
