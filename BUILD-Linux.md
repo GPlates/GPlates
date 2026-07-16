@@ -59,7 +59,7 @@ sudo apt-get update
 sudo apt-get install \
     cmake ninja-build g++ \
     libgl1-mesa-dev libglu1-mesa-dev libglew-dev \
-    python3-dev python3-numpy \
+    python3-dev python3-numpy python3-pip \
     libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev \
     libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libqwt-qt5-dev \
     libgdal-dev libcgal-dev libproj-dev zlib1g-dev
@@ -166,13 +166,13 @@ directory:
 
 ```bash
 # conda dependencies:
-python -m pip install . -C cmake.define.CMAKE_PREFIX_PATH=$CONDA_PREFIX
+python3 -m pip install . -C cmake.define.CMAKE_PREFIX_PATH=$CONDA_PREFIX
 
 # Ubuntu system packages (no CMAKE_PREFIX_PATH needed):
-python -m pip install .
+python3 -m pip install .
 ```
 
-A `pygplates` package should then be importable in the environment (`python -m pip list` shows
+A `pygplates` package should then be importable in the environment (`python3 -m pip list` shows
 `pygplates`).
 
 > **Developers** who prefer to build the `pygplates` target directly (rather than via `pip`) can
