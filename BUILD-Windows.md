@@ -15,27 +15,25 @@ library) from source on Windows, using [conda](https://docs.conda.io/) to instal
 4. [Build pyGPlates](#build-pygplates)
 5. [Developers](#developers)
    - [Choosing a terminal](#choosing-a-terminal)
-   - [Using the Visual Studio IDE](#using-the-visual-studio-ide)
    - [Using PowerShell](#using-powershell)
+   - [Using the Visual Studio IDE](#using-the-visual-studio-ide)
 6. [Code intelligence (clangd)](#code-intelligence-clangd)
 
 ## Prerequisites
 
 - **Visual Studio 2022** (the free Community edition is fine), or the standalone *Build Tools for
   Visual Studio 2022*, with the **Desktop development with C++** workload installed. GPlates requires
-  the MSVC compiler. In the **Anaconda Prompt** (Command Prompt), the conda environment below activates
-  this compiler for you (via the `vs2022_win-64` package); from PowerShell you use a Visual Studio
-  developer shell instead (see [Choosing a terminal](#choosing-a-terminal)). Either way, Visual Studio
-  itself must already be installed.
+  the MSVC compiler.
 
-  > Visual Studio 2019 (version 16) also works; if you use it, install `vs2019_win-64` instead of
-  > `vs2022_win-64` in the environment file.
+  > You don't need to set the compiler up yourself — activating the conda environment below does that
+  > for you (via the `vs2022_win-64` package). Visual Studio itself must already be installed, though.
 
 - **Miniconda** (or Anaconda / Miniforge). Download and install
-  [Miniconda](https://docs.conda.io/en/latest/miniconda.html), then open the **Anaconda Prompt** from
-  the Start menu to run the commands below.
+  [Miniconda](https://docs.conda.io/en/latest/miniconda.html).
 
-  > Prefer PowerShell? See [Using PowerShell](#using-powershell) in the Developers section below.
+Then open the **Anaconda Prompt** from the Start menu to run the commands below.
+
+> Prefer PowerShell? See [Choosing a terminal](#choosing-a-terminal) in the Developers section below.
 
 ## Install the dependencies with conda
 
@@ -55,8 +53,9 @@ conda activate gplates
 ```
 
 > **Qt version:** the environment installs **Qt6** (recommended). To build against Qt5 instead,
-> replace `qt6-main` with `"qt-main<6"` and `qwt` with `"qwt<=6.2.0"`. Qt5 remains supported for now
-> but will be removed in a future release.
+> replace `qt6-main` with `"qt-main<6"` and `qwt` with `"qwt<=6.2.0"`. Qt5 also works with Visual
+> Studio 2019, if you'd rather use that — install `vs2019_win-64` instead of `vs2022_win-64` (Qt6
+> requires Visual Studio 2022). Qt5 remains supported for now but will be removed in a future release.
 
 Keep this environment activated for all the build commands below.
 
@@ -142,36 +141,16 @@ Which terminal you use matters on Windows, because the MSVC compiler is activate
 | Terminal | Ninja build (needs MSVC on `PATH`) | `devenv` available |
 |---|---|---|
 | Anaconda Prompt (cmd) — *the documented default* | ✅ conda `vs2022_win-64` sets up MSVC | ✅ |
+| Plain Command Prompt | ✅ conda `vs2022_win-64` sets up MSVC | ✅ |
 | Plain PowerShell / Anaconda PowerShell Prompt | ❌ conda can't propagate the MSVC env | ❌ |
-| Developer PowerShell for VS 2022 | ✅ VS sets up MSVC (+ conda deps via `activate`) | ✅ |
-| Developer Command Prompt for VS 2022 | ✅ VS sets up MSVC (+ conda deps) | ✅ |
+| Developer PowerShell for VS 2022 | ✅ VS sets up MSVC | ✅ |
+| Developer Command Prompt for VS 2022 | ✅ VS sets up MSVC | ✅ |
 
 In short: use the **Anaconda Prompt**, or — if you prefer PowerShell — **"Developer PowerShell for VS
 2022"** (see [Using PowerShell](#using-powershell)). A *plain* PowerShell can't configure a Ninja build
 at all. In every working terminal, activate the conda environment (`conda activate gplates`) so the
-dependency libraries are on `PATH`.
-
-### Using the Visual Studio IDE
-
-The Ninja build above does not create a Visual Studio solution. If you want to work in the Visual
-Studio IDE, configure a *separate* build tree with the Visual Studio generator:
-
-```bat
-cmake -S . -B build-gplates-vs -G "Visual Studio 17 2022" -A x64 ^
-    -DCMAKE_PREFIX_PATH="%CONDA_PREFIX%;%CONDA_PREFIX%\Library" ^
-    -DBoost_ROOT="%CONDA_PREFIX%\Library"
-```
-
-This produces `GPlates.sln` (or `PyGPlates.sln` when configured with `-DGPLATES_BUILD_GPLATES=FALSE`)
-under `build-gplates-vs`. Open it **from an activated conda environment** so that Visual Studio finds
-the correct dependency DLLs (via the environment's `PATH`) when it runs GPlates:
-
-```bat
-devenv build-gplates-vs\GPlates.sln
-```
-
-> `devenv` is on `PATH` in the Anaconda Prompt and in "Developer PowerShell for VS 2022", but *not* in
-> a plain PowerShell (see [Choosing a terminal](#choosing-a-terminal)).
+dependency libraries are on `PATH`; outside the Anaconda Prompt this first needs conda hooked into the
+shell (`conda init cmd.exe` or `conda init powershell`).
 
 ### Using PowerShell
 
@@ -209,7 +188,29 @@ cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release `
 > of giving an obvious error.
 
 Since "Developer PowerShell for VS 2022" already puts `devenv` on `PATH`, the [Using the Visual Studio
-IDE](#using-the-visual-studio-ide) commands above work unchanged in this shell too.
+IDE](#using-the-visual-studio-ide) commands below work unchanged in this shell too.
+
+### Using the Visual Studio IDE
+
+The Ninja build above does not create a Visual Studio solution. If you want to work in the Visual
+Studio IDE, configure a *separate* build tree with the Visual Studio generator:
+
+```bat
+cmake -S . -B build-gplates-vs -G "Visual Studio 17 2022" -A x64 ^
+    -DCMAKE_PREFIX_PATH="%CONDA_PREFIX%;%CONDA_PREFIX%\Library" ^
+    -DBoost_ROOT="%CONDA_PREFIX%\Library"
+```
+
+This produces `GPlates.sln` (or `PyGPlates.sln` when configured with `-DGPLATES_BUILD_GPLATES=FALSE`)
+under `build-gplates-vs`. Open it **from an activated conda environment** so that Visual Studio finds
+the correct dependency DLLs (via the environment's `PATH`) when it runs GPlates:
+
+```bat
+devenv build-gplates-vs\GPlates.sln
+```
+
+> `devenv` is on `PATH` in the Anaconda Prompt and in "Developer PowerShell for VS 2022", but *not* in
+> a plain PowerShell (see [Choosing a terminal](#choosing-a-terminal)).
 
 ## Code intelligence (clangd)
 
