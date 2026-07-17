@@ -11,9 +11,8 @@ fi
 #
 # Pip uses the scikit-build-core build backend to compile/install pyGPlates using CMake (see pyproject.toml).
 #
-# Note that CMAKE_FIND_FRAMEWORK (macOS) is set to LAST to avoid finding frameworks
-#      (like Python and Qwt) outside the conda environment (it seems conda doesn't use frameworks).
+# CMake auto-detects the active conda environment (it prepends $CONDA_PREFIX to CMAKE_PREFIX_PATH and, on
+# macOS, sets CMAKE_FIND_FRAMEWORK=LAST so conda libraries are preferred over system frameworks), so no
+# '-C cmake.define.CMAKE_PREFIX_PATH'/'CMAKE_FIND_FRAMEWORK' flags are needed here.
 CMAKE_BUILD_PARALLEL_LEVEL=$CPU_COUNT $PYTHON -m pip install -vv \
-      -C "cmake.define.CMAKE_PREFIX_PATH=$PREFIX" \
-      -C cmake.define.CMAKE_FIND_FRAMEWORK=LAST \
       "$SRC_DIR"

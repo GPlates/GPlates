@@ -43,8 +43,9 @@ conda activate gplates
 > replace `qt6-main` with `"qt-main<6"` and `qwt` with `"qwt<=6.2.0"`. Qt5 remains supported for now
 > but will be removed in a future release.
 
-Keep this environment activated for the build commands below, and pass `-DCMAKE_PREFIX_PATH=$CONDA_PREFIX`
-when configuring (shown below).
+Keep this environment activated for the build commands below. While it is activated, CMake auto-detects
+the conda environment and adds it to the dependency search path, so you do **not** need to pass
+`-DCMAKE_PREFIX_PATH=$CONDA_PREFIX`.
 
 ### Option B: Ubuntu system packages
 
@@ -78,17 +79,13 @@ by git). Run them from the root source directory.
 
 ### Configure
 
-Using conda dependencies:
-
-```bash
-cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
-```
-
-Using Ubuntu system packages (no `CMAKE_PREFIX_PATH`):
-
 ```bash
 cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release
 ```
+
+> The same command works for both dependency routes: an activated conda environment is auto-detected
+> (its prefix is added to CMake's search path), and Ubuntu system packages are found in the standard
+> system locations.
 
 > You can ignore the CMake warning that `CGAL_DATA_DIR cannot be deduced`.
 
@@ -141,8 +138,7 @@ If you'd rather not activate conda every time you run GPlates, you can instead b
 bundle (as on Windows and macOS) by adding `-DGPLATES_INSTALL_STANDALONE=TRUE` to the configure step:
 
 ```bash
-cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-    -DGPLATES_INSTALL_STANDALONE=TRUE
+cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DGPLATES_INSTALL_STANDALONE=TRUE
 ```
 
 then compile and install as above. This copies the conda dependency libraries alongside the installed
@@ -165,12 +161,11 @@ pyGPlates is built and installed into the active Python environment with `pip`. 
 directory:
 
 ```bash
-# conda dependencies:
-python3 -m pip install . -C cmake.define.CMAKE_PREFIX_PATH=$CONDA_PREFIX
-
-# Ubuntu system packages (no CMAKE_PREFIX_PATH needed):
 python3 -m pip install .
 ```
+
+> This works for both dependency routes: an activated conda environment is auto-detected, and Ubuntu
+> system packages are found in the standard system locations.
 
 A `pygplates` package should then be importable in the environment (`python3 -m pip list` shows
 `pygplates`).
@@ -180,11 +175,6 @@ A `pygplates` package should then be importable in the environment (`python3 -m 
 > `-DGPLATES_BUILD_GPLATES=FALSE`:
 >
 > ```bash
-> # conda dependencies:
-> cmake -S . -B build-pygplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DGPLATES_BUILD_GPLATES=FALSE \
->     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
->
-> # Ubuntu system packages (no CMAKE_PREFIX_PATH needed):
 > cmake -S . -B build-pygplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DGPLATES_BUILD_GPLATES=FALSE
 > ```
 >

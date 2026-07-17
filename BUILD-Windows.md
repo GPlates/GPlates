@@ -57,7 +57,9 @@ conda activate gplates
 > Studio 2019, if you'd rather use that — install `vs2019_win-64` instead of `vs2022_win-64` (Qt6
 > requires Visual Studio 2022). Qt5 remains supported for now but will be removed in a future release.
 
-Keep this environment activated for all the build commands below.
+Keep this environment activated for all the build commands below. While it is activated, CMake
+auto-detects the conda environment and adds both `%CONDA_PREFIX%` and its `%CONDA_PREFIX%\Library`
+sub-directory to the dependency search path, so you do **not** need to pass `-DCMAKE_PREFIX_PATH`.
 
 > **Note:** In a plain Command Prompt / Anaconda Prompt, `conda deactivate` may not fully restore
 > `PATH` afterward (a known interaction with the `vs2022_win-64` compiler activation) — this doesn't
@@ -72,12 +74,12 @@ by git). Run them from the root source directory.
 
 ```bat
 cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release ^
-    -DCMAKE_PREFIX_PATH="%CONDA_PREFIX%;%CONDA_PREFIX%\Library" ^
     -DBoost_ROOT="%CONDA_PREFIX%\Library"
 ```
 
-`%CONDA_PREFIX%` points at the activated environment; conda places most Windows libraries under its
-`Library` sub-directory, which is why both paths are on `CMAKE_PREFIX_PATH`.
+The activated conda environment is auto-detected (see above), so `-DCMAKE_PREFIX_PATH` is not needed.
+`Boost_ROOT` is still passed explicitly to point CMake's Boost search at conda's `Library`
+sub-directory.
 
 ### Compile
 
@@ -108,7 +110,6 @@ pyGPlates is built and installed into the active Python (conda) environment with
 
 ```bat
 python -m pip install . ^
-    -C cmake.define.CMAKE_PREFIX_PATH="%CONDA_PREFIX%;%CONDA_PREFIX%\Library" ^
     -C cmake.define.Boost_ROOT="%CONDA_PREFIX%\Library"
 ```
 
@@ -121,7 +122,6 @@ A `pygplates` package should then be importable in the environment (`python -m p
 >
 > ```bat
 > cmake -S . -B build-pygplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DGPLATES_BUILD_GPLATES=FALSE ^
->     -DCMAKE_PREFIX_PATH="%CONDA_PREFIX%;%CONDA_PREFIX%\Library" ^
 >     -DBoost_ROOT="%CONDA_PREFIX%\Library"
 > ```
 >
@@ -179,7 +179,6 @@ the activated environment. For example, the GPlates configure step becomes:
 
 ```powershell
 cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release `
-    -DCMAKE_PREFIX_PATH="$env:CONDA_PREFIX;$env:CONDA_PREFIX\Library" `
     -DBoost_ROOT="$env:CONDA_PREFIX\Library"
 ```
 
@@ -197,7 +196,6 @@ Studio IDE, configure a *separate* build tree with the Visual Studio generator:
 
 ```bat
 cmake -S . -B build-gplates-vs -G "Visual Studio 17 2022" -A x64 ^
-    -DCMAKE_PREFIX_PATH="%CONDA_PREFIX%;%CONDA_PREFIX%\Library" ^
     -DBoost_ROOT="%CONDA_PREFIX%\Library"
 ```
 

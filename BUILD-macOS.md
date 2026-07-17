@@ -48,7 +48,10 @@ conda activate gplates
 > replace `qt6-main` with `"qt-main<6"` and `qwt` with `"qwt<=6.2.0"`. Qt5 remains supported for now
 > but will be removed in a future release.
 
-Keep this environment activated for all the build commands below.
+Keep this environment activated for all the build commands below. While it is activated, CMake
+auto-detects the conda environment: it adds the environment to the dependency search path and prefers
+conda's libraries over similarly-named macOS system frameworks. So you do **not** need to pass
+`-DCMAKE_PREFIX_PATH=$CONDA_PREFIX` or `-DCMAKE_FIND_FRAMEWORK=LAST`.
 
 ## Build GPlates
 
@@ -58,13 +61,8 @@ by git). Run them from the root source directory.
 ### Configure
 
 ```bash
-cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-    -DCMAKE_FIND_FRAMEWORK=LAST
+cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release
 ```
-
-`CMAKE_FIND_FRAMEWORK=LAST` tells CMake to prefer the conda libraries over any similarly-named macOS
-system frameworks.
 
 ### Compile
 
@@ -103,9 +101,7 @@ On macOS, GPlates is installed as a **standalone bundle**: the dependency librar
 pyGPlates is built and installed into the active Python (conda) environment with `pip`:
 
 ```bash
-python -m pip install . \
-    -C cmake.define.CMAKE_PREFIX_PATH=$CONDA_PREFIX \
-    -C cmake.define.CMAKE_FIND_FRAMEWORK=LAST
+python -m pip install .
 ```
 
 A `pygplates` package should then be importable in the environment (`python -m pip list` shows
@@ -116,9 +112,7 @@ A `pygplates` package should then be importable in the environment (`python -m p
 > `-DGPLATES_BUILD_GPLATES=FALSE`:
 >
 > ```bash
-> cmake -S . -B build-pygplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DGPLATES_BUILD_GPLATES=FALSE \
->     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
->     -DCMAKE_FIND_FRAMEWORK=LAST
+> cmake -S . -B build-pygplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DGPLATES_BUILD_GPLATES=FALSE
 > ```
 >
 > then `cmake --build build-pygplates`. Using a separate build directory (rather than reusing
