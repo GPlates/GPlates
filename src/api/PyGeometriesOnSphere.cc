@@ -640,8 +640,11 @@ namespace GPlatesApi
 					bp::converter::rvalue_from_python_storage<GPlatesMaths::Real> *>(
 							data)->storage.bytes;
 
+			// Note: The extractor is kept as a named local (rather than a temporary) to avoid a
+			// spurious '-Wdangling-reference' warning from GCC when binding the reference below.
+			bp::extract<const GPlatesMaths::PointGeometryOnSphere &> extract_point_geometry_on_sphere(obj);
 			const GPlatesMaths::PointGeometryOnSphere &point_geometry_on_sphere =
-					bp::extract<const GPlatesMaths::PointGeometryOnSphere &>(obj);
+					extract_point_geometry_on_sphere;
 
 			new (storage) GPlatesMaths::PointOnSphere(point_geometry_on_sphere.position());
 
