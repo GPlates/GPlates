@@ -69,6 +69,22 @@ if (_GPLATES_CONDA_PREFIX)
         set(CMAKE_PREFIX_PATH "${_GPLATES_CONDA_PREFIX}" ${CMAKE_PREFIX_PATH})
     endif()
 
+    # Point CMake's Boost search at the conda environment. find_package()'s <Package>_ROOT variable is
+    # consulted before CMAKE_PREFIX_PATH and, importantly, before the BOOST_ROOT *environment* variable
+    # (honoured under policy CMP0074, NEW for our CMake >= 3.22). Users who built Boost from source
+    # (rather than using conda) often still have a BOOST_ROOT env var pointing at that old location;
+    # setting the CMake variable here makes conda's Boost win without requiring them to unset the env var
+    # (they may still occasionally build without conda, where the env var is wanted). On Windows conda
+    # puts Boost under the 'Library' sub-directory; elsewhere it's directly under the prefix.
+    # Guarded so an explicit '-DBoost_ROOT=...' on the command line still overrides this.
+    if (NOT DEFINED Boost_ROOT)
+        if (CMAKE_HOST_WIN32)
+            set(Boost_ROOT "${_GPLATES_CONDA_PREFIX}/Library")
+        else()
+            set(Boost_ROOT "${_GPLATES_CONDA_PREFIX}")
+        endif()
+    endif()
+
     if (CMAKE_HOST_APPLE)
         # Prefer conda's libraries over similarly-named frameworks elsewhere on the system (eg, a
         # MacPorts/Homebrew Qt5 'qwt.framework' that would otherwise be chosen for a conda Qt6 build).
@@ -77,7 +93,7 @@ if (_GPLATES_CONDA_PREFIX)
         set(CMAKE_FIND_FRAMEWORK LAST CACHE STRING "Search macOS frameworks last, so conda (and other non-framework) libraries are preferred.")
     endif()
 
-    message(STATUS "Detected active conda environment - prepended '${_GPLATES_CONDA_PREFIX}' to CMAKE_PREFIX_PATH")
+    message(STATUS "Detected active conda environment - prepended '${_GPLATES_CONDA_PREFIX}' to CMAKE_PREFIX_PATH (and set Boost_ROOT to it)")
     unset(_GPLATES_CONDA_PREFIX)
 endif()
 

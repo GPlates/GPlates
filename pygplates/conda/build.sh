@@ -14,5 +14,4 @@ fi
 # CMake auto-detects the active conda environment (it prepends $CONDA_PREFIX to CMAKE_PREFIX_PATH and, on
 # macOS, sets CMAKE_FIND_FRAMEWORK=LAST so conda libraries are preferred over system frameworks), so no
 # '-C cmake.define.CMAKE_PREFIX_PATH'/'CMAKE_FIND_FRAMEWORK' flags are needed here.
-CMAKE_BUILD_PARALLEL_LEVEL=$CPU_COUNT $PYTHON -m pip install -vv \
-      "$SRC_DIR"
+CMAKE_BUILD_PARALLEL_LEVEL=$CPU_COUNT $PYTHON -m pip install -vv "$SRC_DIR"

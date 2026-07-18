@@ -73,13 +73,14 @@ by git). Run them from the root source directory.
 ### Configure
 
 ```bat
-cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release ^
-    -DBoost_ROOT="%CONDA_PREFIX%\Library"
+cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release
 ```
 
-The activated conda environment is auto-detected (see above), so `-DCMAKE_PREFIX_PATH` is not needed.
-`Boost_ROOT` is still passed explicitly to point CMake's Boost search at conda's `Library`
-sub-directory.
+The activated conda environment is auto-detected (see above), so neither `-DCMAKE_PREFIX_PATH` nor
+`-DBoost_ROOT` is needed — Boost, like the other dependencies, is found in the conda environment. This
+holds even if you still have a `BOOST_ROOT` *environment* variable left over from a from-source build:
+the auto-detection points CMake's Boost search at the conda environment, so it no longer interferes
+with conda builds.
 
 ### Compile
 
@@ -109,8 +110,7 @@ alongside `gplates.exe`, so it runs without an activated conda environment (you 
 pyGPlates is built and installed into the active Python (conda) environment with `pip`:
 
 ```bat
-python -m pip install . ^
-    -C cmake.define.Boost_ROOT="%CONDA_PREFIX%\Library"
+python -m pip install .
 ```
 
 A `pygplates` package should then be importable in the environment (`python -m pip list` shows
@@ -121,8 +121,7 @@ A `pygplates` package should then be importable in the environment (`python -m p
 > `-DGPLATES_BUILD_GPLATES=FALSE`:
 >
 > ```bat
-> cmake -S . -B build-pygplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DGPLATES_BUILD_GPLATES=FALSE ^
->     -DBoost_ROOT="%CONDA_PREFIX%\Library"
+> cmake -S . -B build-pygplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DGPLATES_BUILD_GPLATES=FALSE
 > ```
 >
 > then `cmake --build build-pygplates`. Using a separate build directory (rather than reusing
@@ -173,18 +172,10 @@ conda activate gplates
 > activate the same way in every shell.
 
 This gives you both the MSVC compiler and the conda dependencies in the same shell. The build commands
-are otherwise the same, with two PowerShell-specific changes: use a backtick `` ` `` instead of `^` to
-continue a command onto the next line, and `$env:CONDA_PREFIX` instead of `%CONDA_PREFIX%` to refer to
-the activated environment. For example, the GPlates configure step becomes:
-
-```powershell
-cmake -S . -B build-gplates -G Ninja -DCMAKE_BUILD_TYPE=Release `
-    -DBoost_ROOT="$env:CONDA_PREFIX\Library"
-```
-
-> **Careful:** `%CONDA_PREFIX%` is Command Prompt syntax. PowerShell won't error on it — it just
-> passes the literal text through unexpanded — so CMake silently fails to find the environment instead
-> of giving an obvious error.
+on this page work unchanged in PowerShell. If you do add your own multi-line flags, note two
+PowerShell-specific differences: use a backtick `` ` `` instead of `^` to continue a command onto the
+next line, and `$env:CONDA_PREFIX` instead of `%CONDA_PREFIX%` to refer to the activated environment
+(PowerShell won't error on `%CONDA_PREFIX%` — it passes the literal text through unexpanded).
 
 Since "Developer PowerShell for VS 2022" already puts `devenv` on `PATH`, the [Using the Visual Studio
 IDE](#using-the-visual-studio-ide) commands below work unchanged in this shell too.
@@ -195,8 +186,7 @@ The Ninja build above does not create a Visual Studio solution. If you want to w
 Studio IDE, configure a *separate* build tree with the Visual Studio generator:
 
 ```bat
-cmake -S . -B build-gplates-vs -G "Visual Studio 17 2022" -A x64 ^
-    -DBoost_ROOT="%CONDA_PREFIX%\Library"
+cmake -S . -B build-gplates-vs -G "Visual Studio 17 2022" -A x64
 ```
 
 This produces `GPlates.sln` (or `PyGPlates.sln` when configured with `-DGPLATES_BUILD_GPLATES=FALSE`)
