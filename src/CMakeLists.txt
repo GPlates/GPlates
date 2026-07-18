@@ -151,6 +151,39 @@ file(TO_CMAKE_PATH ${GPLATES_PYTHON_EXECUTABLE} GPLATES_PYTHON_EXECUTABLE)
 file(TO_CMAKE_PATH ${GPLATES_PYTHON_STDLIB_DIR} GPLATES_PYTHON_STDLIB_DIR)
 file(TO_CMAKE_PATH ${GPLATES_PYTHON_PREFIX_DIR} GPLATES_PYTHON_PREFIX_DIR)
 
+# Reject a virtual environment (venv/virtualenv) when building the embedded-Python GPlates application.
+#
+# GPlates embeds a Python interpreter and, for a standalone install, copies the Python standard library
+# wholesale from GPLATES_PYTHON_STDLIB_DIR. A venv has no standard library of its own - on Windows
+# 'venv/Lib' holds only 'site-packages', while the real stdlib (eg, the 'encodings' module) stays in the
+# base Python and is reached at runtime only via the venv's redirection. Since we derive the prefix/stdlib
+# from sys.prefix / Python_STDLIB (which point at the venv) and the embedding test forces PYTHONHOME to
+# that prefix, the embedded interpreter can't find its stdlib and dies with an obscure
+# "ModuleNotFoundError: No module named 'encodings'". Detect it here and fail with a clear message.
+#
+# This is gated on GPLATES_BUILD_GPLATES (like the embedding test below): building the pyGPlates *module*
+# with 'pip install .' is a normal, supported use of a venv - only the embedded application needs a full
+# Python. A venv is detected by sys.prefix differing from sys.base_prefix (conda environments, being full
+# prefixes, are not flagged).
+if (GPLATES_BUILD_GPLATES)
+	execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix != getattr(sys, 'base_prefix', sys.prefix));"
+		RESULT_VARIABLE _PYTHON_VENV_RESULT
+		OUTPUT_VARIABLE _PYTHON_IS_VENV
+		ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (NOT _PYTHON_VENV_RESULT AND _PYTHON_IS_VENV STREQUAL "True")
+		message(FATAL_ERROR
+			"The Python interpreter selected for the embedded GPlates build is a virtual environment "
+			"(venv/virtualenv):\n"
+			"    ${GPLATES_PYTHON_PREFIX_DIR}\n"
+			"A venv has no standard library of its own, so the embedded interpreter cannot locate its "
+			"stdlib (you would get \"ModuleNotFoundError: No module named 'encodings'\") and the standalone "
+			"install has no stdlib to bundle. Build GPlates against a full Python installation instead - "
+			"point CMake at it with, eg, -DPython${GPLATES_PYTHON_VERSION_MAJOR}_EXECUTABLE=/path/to/python "
+			"- and curate that installation's site-packages (eg, numpy only) to keep the standalone "
+			"dependency scan clean. (A venv is fine for building the pyGPlates module via 'pip install .'.)")
+	endif()
+endif()
+
 # Find the Python NumPy include directories (and store in GPLATES_PYTHON_NUMPY_INCLUDE_DIRS if found).
 if (GPLATES_CONDA_BUILD)
 	# Get the 'host' prefix Python to import numpy and then print out the numpy include directory.
