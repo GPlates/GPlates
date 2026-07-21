@@ -564,19 +564,30 @@ elseif (APPLE)
 
                     get_filename_component(_installed_file_dir ${installed_file} DIRECTORY)
 
-                    # Need to optionally convert relative paths to absolute paths (required by file(RELATIVE_PATH)) because it's possible that
+                    # Need to convert to absolute paths (required by file(RELATIVE_PATH)) because it's possible that
                     # CMAKE_INSTALL_PREFIX (embedded in install paths) is a relative path (eg, 'staging' if installing with
                     # 'cmake --install . --prefix staging').
                     #
-                    # Note that both the installed file and installed dependency will have paths starting with CMAKE_INSTALL_PREFIX so the
-                    # relative path will be unaffected by whatever absolute prefix we use, so we don't need to specify BASE_DIR
-                    # (it will default to 'CMAKE_CURRENT_SOURCE_DIR' which defaults to the current working directory when this
-                    # install code is finally run in cmake script mode '-P' but, as mentioned, it doesn't matter what this is).
-                    get_filename_component(_installed_file_dir ${_installed_file_dir} ABSOLUTE)
-                    get_filename_component(installed_dependency ${installed_dependency} ABSOLUTE)
+                    # We use REALPATH (rather than just ABSOLUTE) to resolve any symbolic links so that both directories
+                    # are in a *canonical* form before computing the relative path between them. This matters because these
+                    # two paths do not necessarily arrive here in the same form: the installed dependency list is built with
+                    # symlinks resolved (see the REALPATH used when populating '_installed_dependencies') whereas the
+                    # dependency path passed in is built directly from CMAKE_INSTALL_PREFIX (symlinks *not* resolved).
+                    # If CMAKE_INSTALL_PREFIX lies under a symlinked directory then the two forms disagree - eg, when
+                    # pip/scikit-build-core installs into a macOS temporary staging directory under '/var/...' (which is
+                    # itself a symlink to '/private/var/...'). Without canonicalising both here they would share only '/'
+                    # as a common prefix and file(RELATIVE_PATH) would emit a long, broken '@loader_path/../../../..' path.
+                    #
+                    # We resolve symlinks on the *directories* only (keeping the dependency's original filename) so that a
+                    # dependency referenced via a versioned symlink (eg, 'libFoo.6.dylib' -> 'libFoo.6.11.dylib') keeps its
+                    # original install name.
+                    get_filename_component(_installed_dependency_dir ${installed_dependency} DIRECTORY)
+                    get_filename_component(_installed_dependency_name ${installed_dependency} NAME)
+                    get_filename_component(_installed_file_dir ${_installed_file_dir} REALPATH)
+                    get_filename_component(_installed_dependency_dir ${_installed_dependency_dir} REALPATH)
 
                     # Get the relative path.
-                    file(RELATIVE_PATH _installed_dependency_relative_path ${_installed_file_dir} ${installed_dependency})
+                    file(RELATIVE_PATH _installed_dependency_relative_path ${_installed_file_dir} ${_installed_dependency_dir}/${_installed_dependency_name})
 
                     # Set caller's relative path.
                     set(${installed_dependency_relative_path} ${_installed_dependency_relative_path} PARENT_SCOPE)
@@ -832,9 +843,13 @@ elseif (APPLE)
                     if (EXISTS "${_installed_python_stdlib}")
                         file(GLOB_RECURSE _installed_python_shared_libs "${_installed_python_stdlib}/*.so")
                         foreach(_shared_lib ${_installed_python_shared_libs})
-                            # Fix dependency install names *before* codesigning (since we cannot modify after signing).
-                            fix_dependency_install_names(${_shared_lib})
-                            codesign(${_shared_lib})
+                            # Skip symlinks - operate on the real target files (which the glob returns
+                            # directly) and avoid any symlink that dangles within the bundle.
+                            if (NOT IS_SYMLINK "${_shared_lib}")
+                                # Fix dependency install names *before* codesigning (since we cannot modify after signing).
+                                fix_dependency_install_names(${_shared_lib})
+                                codesign(${_shared_lib})
+                            endif()
                         endforeach()
                     endif()
                 endif()
@@ -1004,7 +1019,14 @@ else()  # Linux
                     if (EXISTS "${_installed_python_stdlib}")
                         file(GLOB_RECURSE _installed_python_shared_libs "${_installed_python_stdlib}/*.so")
                         foreach(_shared_lib ${_installed_python_shared_libs})
-                            set_rpath(${_shared_lib})
+                            # Skip symlinks. 'patchelf' follows them to their target, but some are dangling
+                            # within the bundle - eg, Ubuntu's 'config-*/libpython3.10.so' points to
+                            # '../../x86_64-linux-gnu/libpython3.10.so.1', which lives outside the bundled
+                            # standard library - which makes patchelf fail. The real extension modules are
+                            # regular files and are still patched directly by this loop.
+                            if (NOT IS_SYMLINK "${_shared_lib}")
+                                set_rpath(${_shared_lib})
+                            endif()
                         endforeach()
                     endif()
                 endif()

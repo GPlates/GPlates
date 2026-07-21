@@ -189,6 +189,14 @@ namespace
 	{
 		GPlatesQtWidgets::SaveFileDialog::filter_list_type result;
 
+		// GCC's '-Warray-bounds' triggers a false positive here (with no diagnostic possible
+		// through '-isystem' since it's raised by the optimizer, not the front end) when it
+		// inlines Qt's QArrayDataPointer copy constructor through FileDialogFilter's single-
+		// element vector construction/push_back of QString extensions below.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
 		GPlatesQtWidgets::FileDialogFilter html_filter(
 				GPlatesQtWidgets::PythonConsoleDialog::tr("HTML Document"),
 				"html");
@@ -199,6 +207,9 @@ namespace
 				GPlatesQtWidgets::PythonConsoleDialog::tr("Text Document"),
 				"txt");
 		result.push_back(txt_filter);
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 		return result;
 	}

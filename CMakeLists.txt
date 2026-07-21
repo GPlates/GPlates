@@ -28,6 +28,76 @@ include (Version)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Generate compile_commands.json (for clangd/IDE tooling).")
 
 #
+# Make an active conda environment discoverable to CMake's dependency search.
+#
+# When building inside an activated conda environment - whether a manual "cmake ..."/"pip install ..." build
+# or an automated "conda build ..." - the environment root is exposed to us as an environment variable.
+# Conda activation does NOT set CMAKE_PREFIX_PATH, so without help CMake won't look in the conda environment
+# for dependencies (Qt, Qwt, Boost, PROJ, GDAL, ...) and can silently fall back to system/MacPorts/Homebrew
+# libraries (eg, picking a Qt5 'qwt.framework' for a conda Qt6 build).
+#
+# Which variable holds the right root depends on the build:
+#  - An automated "conda build ..." recipe installs the target/host dependencies under the 'host' prefix,
+#    exposed as PREFIX, while CONDA_PREFIX points at the separate build (activation) environment. We detect
+#    this case exactly as ConfigDefault.cmake does (CONDA_BUILD=1 -> GPLATES_CONDA_BUILD) and use PREFIX.
+#  - A plain activated environment (manual "cmake ..."/"pip install ...") uses CONDA_PREFIX.
+#
+# Handling it here (rather than requiring the user to pass '-DCMAKE_PREFIX_PATH=$CONDA_PREFIX' etc) makes it
+# work for every entry point with no extra flags. It is especially important for 'pip install ...':
+# scikit-build-core builds the CMake command line itself (populating CMAKE_PREFIX_PATH from site-packages and
+# overriding any CMAKE_PREFIX_PATH passed via 'cmake.define'), but these *environment* variables still reach
+# the CMake process.
+#
+# This must precede 'project()':
+#  - On macOS, CMAKE_FIND_FRAMEWORK only reliably affects the later find_library()/find_path() calls when set
+#    before the project languages are configured (matching how a command-line '-DCMAKE_FIND_FRAMEWORK=LAST'
+#    behaves); setting it afterwards is silently too late.
+#  - We therefore test CMAKE_HOST_WIN32/CMAKE_HOST_APPLE (available at startup) rather than WIN32/APPLE, which
+#    are not set until 'project()'.
+if (DEFINED ENV{CONDA_BUILD} AND ("$ENV{CONDA_BUILD}" EQUAL 1))
+    # A "conda build ..." recipe: use the 'host' prefix where the target dependencies are installed.
+    set(_GPLATES_CONDA_PREFIX "$ENV{PREFIX}")
+elseif (DEFINED ENV{CONDA_PREFIX})
+    set(_GPLATES_CONDA_PREFIX "$ENV{CONDA_PREFIX}")
+endif()
+
+if (_GPLATES_CONDA_PREFIX)
+    if (CMAKE_HOST_WIN32)
+        # Conda installs most Windows libraries under a 'Library' sub-directory of the environment.
+        set(CMAKE_PREFIX_PATH "${_GPLATES_CONDA_PREFIX}" "${_GPLATES_CONDA_PREFIX}/Library" ${CMAKE_PREFIX_PATH})
+    else()
+        set(CMAKE_PREFIX_PATH "${_GPLATES_CONDA_PREFIX}" ${CMAKE_PREFIX_PATH})
+    endif()
+
+    # Point CMake's Boost search at the conda environment. find_package()'s <Package>_ROOT variable is
+    # consulted before CMAKE_PREFIX_PATH and, importantly, before the BOOST_ROOT *environment* variable
+    # (honoured under policy CMP0074, NEW for our CMake >= 3.22). Users who built Boost from source
+    # (rather than using conda) often still have a BOOST_ROOT env var pointing at that old location;
+    # setting the CMake variable here makes conda's Boost win without requiring them to unset the env var
+    # (they may still occasionally build without conda, where the env var is wanted). On Windows conda
+    # puts Boost under the 'Library' sub-directory; elsewhere it's directly under the prefix.
+    # Guarded so an explicit '-DBoost_ROOT=...' on the command line still overrides this.
+    if (NOT DEFINED Boost_ROOT)
+        if (CMAKE_HOST_WIN32)
+            set(Boost_ROOT "${_GPLATES_CONDA_PREFIX}/Library")
+        else()
+            set(Boost_ROOT "${_GPLATES_CONDA_PREFIX}")
+        endif()
+    endif()
+
+    if (CMAKE_HOST_APPLE)
+        # Prefer conda's libraries over similarly-named frameworks elsewhere on the system (eg, a
+        # MacPorts/Homebrew Qt5 'qwt.framework' that would otherwise be chosen for a conda Qt6 build).
+        # Set WITHOUT 'FORCE' so a user-supplied '-DCMAKE_FIND_FRAMEWORK=...' still wins (that populates the
+        # cache before this file is processed, making this a no-op).
+        set(CMAKE_FIND_FRAMEWORK LAST CACHE STRING "Search macOS frameworks last, so conda (and other non-framework) libraries are preferred.")
+    endif()
+
+    message(STATUS "Detected active conda environment - prepended '${_GPLATES_CONDA_PREFIX}' to CMAKE_PREFIX_PATH (and set Boost_ROOT to it)")
+    unset(_GPLATES_CONDA_PREFIX)
+endif()
+
+#
 # Build either GPlates or pyGPlates.
 #
 # We don't build both because CPack debian packages do not allow a separate version for each component package.
