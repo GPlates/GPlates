@@ -129,17 +129,20 @@ GPlatesGui::PythonStyleAdapter::init_configuration()
 			QString value = QString::fromUtf8(bp::extract<const char*>(t[1])());
 			QString sub_key = key.right(key.length() - key.indexOf('/') -1);
 			key.chop(key.length() - key.indexOf('/'));
-			if(key == cfg_name)
+			if(key != cfg_name)
 			{
-				cfg_map[sub_key] = value;
-			}
-			else
-			{
-				cfg_map[sub_key] = value;
-				cfg_name = key;
-				d_cfg.set(cfg_name, create_cfg_item(cfg_map));
+				if (!cfg_name.isEmpty())
+				{
+					d_cfg.set(cfg_name, create_cfg_item(cfg_map));
+				}
 				cfg_map.clear();
+				cfg_name = key;
 			}
+			cfg_map[sub_key] = value;
+		}
+		if (!cfg_name.isEmpty())
+		{
+			d_cfg.set(cfg_name, create_cfg_item(cfg_map));
 		}
 	}
 	catch(const  boost::python::error_already_set&)
@@ -270,16 +273,25 @@ GPlatesGui::PythonStyleAdapter::create_cfg_item(const std::map<QString, QString>
 		qWarning() << "No type found in python configuration definition.";
 		return NULL;
 	}
+	std::map<QString, QString>::const_iterator default_it = data.find("default");
+	const QString default_value =
+			(default_it == data.end()) ? QString() : default_it->second;
 
 	if(it->second == "Color")
 	{
-		return new PythonCfgColor("Color", "white");
+		return new PythonCfgColor(
+				"Color",
+				default_value.isEmpty() ? QString("white") : default_value);
 	}
 	else if(it->second == "Palette")
 	{
-		return new PythonCfgPalette("Palette", "DeaultPalette");
+		return new PythonCfgPalette(
+				"Palette",
+				default_value.isEmpty() ? QString("DeaultPalette") : default_value);
 	} 
-	return new PythonCfgString("String", " ");
+	return new PythonCfgString(
+			"String",
+			default_it == data.end() ? QString(" ") : default_value);
 }
 
 
