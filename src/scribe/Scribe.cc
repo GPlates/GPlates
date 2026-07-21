@@ -23,12 +23,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cstring>
+#include <limits>
 #include <boost/checked_delete.hpp>
 #include <boost/foreach.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
+#include <QtGlobal>
 
 #include "Scribe.h"
+
+
+// The raw stream ("raw lane") codec encodes multi-byte values by memcpy of their native
+// (little-endian) representations - all platforms GPlates currently targets are little-endian.
+// A big-endian target would need byte-swapping added to the codec (and a codec version bump
+// is *not* required since the encoded byte order would remain little-endian).
+#if Q_BYTE_ORDER != Q_LITTLE_ENDIAN
+#error "The raw stream (raw lane) codec assumes a little-endian target."
+#endif
 
 
 // We give names that are unlikely to conflict with names used by scribe clients.
@@ -41,6 +54,7 @@ GPlatesScribe::Scribe::Scribe() :
 	d_is_saving(true),
 	d_transcription(Transcription::create()),
 	d_transcription_context(d_transcription, d_is_saving),
+	d_is_raw(false),
 	d_transcribe_result(TRANSCRIBE_SUCCESS),
 	// This is only here to force 'ScribeAccess.o' object file to get referenced and included by linker...
 	d_exported_registered_classes(Access::EXPORT_REGISTERED_CLASSES)
@@ -53,6 +67,7 @@ GPlatesScribe::Scribe::Scribe(
 	d_is_saving(false),
 	d_transcription(transcription),
 	d_transcription_context(transcription, d_is_saving),
+	d_is_raw(false),
 	d_transcribe_result(TRANSCRIBE_SUCCESS),
 	// This is only here to force 'ScribeAccess.o' object file to get referenced and included by linker...
 	d_exported_registered_classes(Access::EXPORT_REGISTERED_CLASSES)
@@ -338,6 +353,15 @@ GPlatesScribe::Scribe::transcribe_object_id(
 		const ObjectTag &object_tag,
 		boost::optional<object_id_type &> return_object_id)
 {
+	// Object ids are never transcribed inside a raw stream ("raw lane") subtree - there are no
+	// per-object ids in the raw lane. All raw-mode transcribe paths either bypass object ids or
+	// throw before reaching here - so getting here indicates an error in the Scribe library
+	// (a transcribe path that was not re-routed for raw mode).
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			!d_is_raw,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to transcribe an object id inside a raw stream subtree.");
+
 	object_id_type object_id;
 
 	if (is_saving())
@@ -1692,4 +1716,674 @@ GPlatesScribe::Scribe::unresolve_pointer_reference_to_object(
 
 	// Mark the pointer as uninitialised.
 	pointer_object_info.is_object_post_initialised = false;
+}
+
+
+//
+// The raw stream ("raw lane") codec.
+//
+
+
+void
+GPlatesScribe::Scribe::write_raw_bytes(
+		const void *data,
+		std::size_t num_bytes)
+{
+	const char *const bytes = static_cast<const char *>(data);
+
+	d_raw_context.save_data.insert(d_raw_context.save_data.end(), bytes, bytes + num_bytes);
+}
+
+
+void
+GPlatesScribe::Scribe::read_raw_bytes(
+		void *data,
+		std::size_t num_bytes)
+{
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			d_raw_context.load_data,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to read from a raw stream that has not been bound for loading.");
+
+	const std::vector<char> &load_data = *d_raw_context.load_data;
+
+	// Note: 'load_cursor <= load_data.size()' is an invariant, so no overflow below.
+	GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+			num_bytes <= load_data.size() - d_raw_context.load_cursor,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to read past the end of the raw stream.");
+
+	std::memcpy(data, load_data.data() + d_raw_context.load_cursor, num_bytes);
+
+	d_raw_context.load_cursor += num_bytes;
+}
+
+
+void
+GPlatesScribe::Scribe::write_raw_varint(
+		boost::uint64_t value)
+{
+	// Unsigned LEB128: 7 bits per byte (least significant first), high bit set on all but the
+	// last byte. A 64-bit value encodes to at most 10 bytes.
+	char encoded[10];
+	unsigned int num_encoded_bytes = 0;
+
+	do
+	{
+		boost::uint8_t byte = value & 0x7f;
+		value >>= 7;
+		if (value != 0)
+		{
+			byte |= 0x80;
+		}
+		encoded[num_encoded_bytes] = static_cast<char>(byte);
+		++num_encoded_bytes;
+	}
+	while (value != 0);
+
+	write_raw_bytes(encoded, num_encoded_bytes);
+}
+
+
+boost::uint64_t
+GPlatesScribe::Scribe::read_raw_varint()
+{
+	boost::uint64_t value = 0;
+	unsigned int shift = 0;
+
+	for (;;)
+	{
+		// A 64-bit value encodes to at most 10 bytes (of 7 bits each).
+		GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+				shift < 64,
+				GPLATES_ASSERTION_SOURCE,
+				"Variable-width integer in raw stream is too long.");
+
+		char byte;
+		read_raw_bytes(&byte, 1);
+
+		const boost::uint8_t byte_value = static_cast<boost::uint8_t>(byte);
+
+		value |= static_cast<boost::uint64_t>(byte_value & 0x7f) << shift;
+
+		if ((byte_value & 0x80) == 0)
+		{
+			break;
+		}
+
+		shift += 7;
+	}
+
+	return value;
+}
+
+
+namespace
+{
+	//
+	// The sign discriminator byte that prefixes every canonical integer in the raw stream.
+	//
+	// It records the signedness of the *save-side* type so the load side can decode the value
+	// (and range-check it against its own, possibly different, integral type) without knowing
+	// which integral type saved it.
+	//
+	const boost::uint8_t RAW_INTEGER_SIGNED = 0;
+	const boost::uint8_t RAW_INTEGER_UNSIGNED = 1;
+
+	//! Zig-zag encode a signed integer so that small-magnitude negatives varint-encode compactly.
+	boost::uint64_t
+	zigzag_encode(
+			boost::int64_t value)
+	{
+		return (static_cast<boost::uint64_t>(value) << 1) ^
+				static_cast<boost::uint64_t>(value >> 63);
+	}
+
+	//! Reverse @a zigzag_encode.
+	boost::int64_t
+	zigzag_decode(
+			boost::uint64_t value)
+	{
+		return static_cast<boost::int64_t>((value >> 1) ^ (~(value & 1) + 1));
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::write_raw_signed_integer(
+		boost::int64_t value)
+{
+	write_raw_bytes(&RAW_INTEGER_SIGNED, 1);
+	write_raw_varint(zigzag_encode(value));
+}
+
+
+void
+GPlatesScribe::Scribe::write_raw_unsigned_integer(
+		boost::uint64_t value)
+{
+	write_raw_bytes(&RAW_INTEGER_UNSIGNED, 1);
+	write_raw_varint(value);
+}
+
+
+GPlatesScribe::Scribe::RawInteger
+GPlatesScribe::Scribe::read_raw_integer()
+{
+	boost::uint8_t sign;
+	read_raw_bytes(&sign, 1);
+
+	RawInteger raw_integer;
+
+	if (sign == RAW_INTEGER_SIGNED)
+	{
+		raw_integer.is_signed = true;
+		raw_integer.signed_value = zigzag_decode(read_raw_varint());
+		raw_integer.unsigned_value = 0;
+	}
+	else if (sign == RAW_INTEGER_UNSIGNED)
+	{
+		raw_integer.is_signed = false;
+		raw_integer.signed_value = 0;
+		raw_integer.unsigned_value = read_raw_varint();
+	}
+	else
+	{
+		GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+				false,
+				GPLATES_ASSERTION_SOURCE,
+				"Invalid integer sign discriminator in raw stream.");
+		// Unreachable (the assert above always throws) - silences a compiler warning.
+		throw Exceptions::RawStreamError(
+				GPLATES_EXCEPTION_SOURCE,
+				"Invalid integer sign discriminator in raw stream.");
+	}
+
+	return raw_integer;
+}
+
+
+template <typename ObjectType>
+void
+GPlatesScribe::Scribe::transcribe_raw_integer(
+		ObjectType &object)
+{
+	if (is_saving())
+	{
+		// The signedness of the encoding is that of the save-side type.
+		if (std::numeric_limits<ObjectType>::is_signed)
+		{
+			write_raw_signed_integer(static_cast<boost::int64_t>(object));
+		}
+		else
+		{
+			write_raw_unsigned_integer(static_cast<boost::uint64_t>(object));
+		}
+	}
+	else // loading...
+	{
+		// Decode using the signedness recorded in the stream (the save-side signedness), not the
+		// load-side type - so a value saved through one integral type loads through another.
+		const RawInteger raw_integer = read_raw_integer();
+
+		try
+		{
+			// Guard against the value being outside the range of 'ObjectType' (eg, a negative
+			// value saved as 'int' being loaded into an unsigned type, or a large value being
+			// loaded into a narrower type).
+			object = raw_integer.is_signed
+					? boost::numeric_cast<ObjectType>(raw_integer.signed_value)
+					: boost::numeric_cast<ObjectType>(raw_integer.unsigned_value);
+		}
+		catch (boost::numeric::bad_numeric_cast &)
+		{
+			GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					"Value in raw stream is out of range of the object type being loaded.");
+		}
+	}
+}
+
+
+template <typename EncodedType, typename ObjectType>
+void
+GPlatesScribe::Scribe::transcribe_raw_fixed_width(
+		ObjectType &object)
+{
+	if (is_saving())
+	{
+		// This is a widening (or same-width) conversion - it cannot overflow.
+		const EncodedType encoded_object = static_cast<EncodedType>(object);
+		write_raw_bytes(&encoded_object, sizeof(encoded_object));
+	}
+	else // loading...
+	{
+		EncodedType encoded_object;
+		read_raw_bytes(&encoded_object, sizeof(encoded_object));
+
+		try
+		{
+			// Guard against overflow when 'ObjectType' is narrower than 'EncodedType' - can only
+			// happen cross-platform (eg, a 64-bit encoded 'long', saved on a platform with a
+			// 64-bit 'long', loaded on a platform with a 32-bit 'long').
+			object = boost::numeric_cast<ObjectType>(encoded_object);
+		}
+		catch (boost::numeric::bad_numeric_cast &)
+		{
+			GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					"Value in raw stream is out of range of the object type being loaded.");
+		}
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		bool &object)
+{
+	// Encode 'bool' through the canonical integer codec (as 0 or 1) so that - as on the general
+	// path - a value saved as 'bool' can be loaded as an integer, and vice versa.
+	if (is_saving())
+	{
+		write_raw_unsigned_integer(object ? 1 : 0);
+	}
+	else // loading...
+	{
+		const RawInteger raw_integer = read_raw_integer();
+		object = raw_integer.is_signed
+				? (raw_integer.signed_value != 0)
+				: (raw_integer.unsigned_value != 0);
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		char &object)
+{
+	// Treat 'char' as 'signed char' (mirrors the general path).
+	//
+	// Note we convert by assignment (rather than encoding 'char' directly) so that platforms
+	// where 'char' is unsigned still round-trip values above 127 (they wrap through the
+	// signed representation and back, exactly like the general path).
+	signed char signed_char_object;
+
+	if (is_saving())
+	{
+		signed_char_object = object;
+	}
+
+	transcribe_raw(signed_char_object);
+
+	if (is_loading())
+	{
+		object = signed_char_object;
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		signed char &object)
+{
+	transcribe_raw_integer(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		unsigned char &object)
+{
+	transcribe_raw_integer(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		short &object)
+{
+	transcribe_raw_integer(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		unsigned short &object)
+{
+	transcribe_raw_integer(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		int &object)
+{
+	transcribe_raw_integer(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		unsigned int &object)
+{
+	transcribe_raw_integer(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		long &object)
+{
+	// Note: The canonical integer codec encodes the full 64-bit value, so - unlike the general
+	// path (which restricts 'long' to 32-bit range and throws outside it) - the raw lane
+	// round-trips 64-bit 'long' values.
+	transcribe_raw_integer(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		unsigned long &object)
+{
+	transcribe_raw_integer(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		long long &object)
+{
+	transcribe_raw_integer(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		unsigned long long &object)
+{
+	transcribe_raw_integer(object);
+}
+
+
+// Floating-point uses a fixed-width encoding, unlike integers which use the self-describing
+// canonical codec (see 'transcribe_raw_integer'). This means a floating-point value must be saved
+// and loaded through the *same* type in the raw lane (whereas an integer may be saved through one
+// integral type and loaded through another). We deliberately do not mirror the general path's full
+// float<->double cross-matrix here because:
+//   - No transcribe handler actually saves through one floating-point type and loads through
+//     another (unlike the integer asymmetries the canonical codec was written for), so it would be
+//     guarding a purely hypothetical case.
+//   - There is no varint-style space win for floating-point, so a self-describing form would add a
+//     discriminator byte to *every* value. Raw-lane payloads are heavily double-dominated (eg,
+//     rotation poles and angles), so that is a direct storage and speed hit on the exact hot path
+//     the raw lane exists to accelerate - all cost, no benefit.
+//   - It is not a silent-corruption risk: a save-float/load-double mismatch would write 4 bytes and
+//     read 8, desyncing the stream cursor and failing loudly (as the integer width mismatches did
+//     before the canonical codec) rather than returning wrong data.
+// If a genuine cross-width floating-point case ever arises, bump CURRENT_RAW_STREAM_CODEC_VERSION
+// and make float/double self-describing like the integer codec (mirroring the general path,
+// including its Inf/NaN handling for the narrowing double->float cast).
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		float &object)
+{
+	transcribe_raw_fixed_width<float>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		double &object)
+{
+	transcribe_raw_fixed_width<double>(object);
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		long double &object)
+{
+	// Treat 'long double' as 'double' (mirrors the general path).
+	double double_object;
+
+	if (is_saving())
+	{
+		// If we get any 'long double' values that are greater than the range of 'double'
+		// then we'll get a 'boost::numeric::bad_numeric_cast' exception.
+		try
+		{
+			double_object = boost::numeric_cast<double>(object);
+		}
+		catch (boost::numeric::bad_numeric_cast &)
+		{
+			// Throw as one of our exceptions instead (mirrors the general path).
+			GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					"'long double' value is out of range of 'double'.");
+		}
+	}
+
+	transcribe_raw(double_object);
+
+	if (is_loading())
+	{
+		object = double_object;
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::transcribe_raw(
+		std::string &object)
+{
+	// Strings are interned into the transcription's existing unique-string pool (shared with
+	// the general path) and encoded as a variable-width pool index. The binary archive writes
+	// the pool before the objects (and the reader populates it before parsing objects) so the
+	// pool strings are always available when a raw stream is decoded.
+	if (is_saving())
+	{
+		write_raw_varint(d_transcription->get_or_create_unique_string_index(object));
+	}
+	else // loading...
+	{
+		const boost::uint64_t unique_string_index = read_raw_varint();
+
+		GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+				unique_string_index < d_transcription->get_num_unique_string_objects(),
+				GPLATES_ASSERTION_SOURCE,
+				"String in raw stream references an invalid unique-string-pool index.");
+
+		object = d_transcription->get_unique_string_object(
+				static_cast<unsigned int>(unique_string_index));
+	}
+}
+
+
+void
+GPlatesScribe::Scribe::write_raw_pointer_marker(
+		RawPointerMarker marker)
+{
+	const boost::uint8_t marker_byte = static_cast<boost::uint8_t>(marker);
+
+	write_raw_bytes(&marker_byte, sizeof(marker_byte));
+}
+
+
+GPlatesScribe::Scribe::RawPointerMarker
+GPlatesScribe::Scribe::read_raw_pointer_marker()
+{
+	boost::uint8_t marker_byte;
+	read_raw_bytes(&marker_byte, sizeof(marker_byte));
+
+	GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+			marker_byte <= RAW_POINTER_SHARED_BACKREF,
+			GPLATES_ASSERTION_SOURCE,
+			"Invalid owning pointer marker in raw stream.");
+
+	return static_cast<RawPointerMarker>(marker_byte);
+}
+
+
+const GPlatesScribe::ExportClassType &
+GPlatesScribe::Scribe::save_raw_pointee_class_name(
+		const std::type_info &pointee_type_info)
+{
+	// Look up the per-raw-stream cache first - avoids an ExportRegistry lookup and a
+	// unique-string-pool search per pointed-to object.
+	std::pair<RawContext::save_export_class_type_cache_type::iterator, bool> cache_entry_inserted =
+			d_raw_context.save_export_class_types.insert(
+					RawContext::save_export_class_type_cache_type::value_type(
+							&pointee_type_info,
+							std::make_pair(
+									static_cast<const ExportClassType *>(nullptr),
+									boost::uint64_t(0)/*dummy*/)));
+
+	if (cache_entry_inserted.second)
+	{
+		// Find the export registered class type for the pointed-to object.
+		const boost::optional<const ExportClassType &> export_class_type =
+				ExportRegistry::instance().get_class_type(pointee_type_info);
+
+		// Throw exception if the object's type has not been export registered.
+		//
+		// If this assertion is triggered then it means:
+		//   * The object's derived type was not export registered (see 'ScribeExportRegistration.h').
+		//
+		// This mirrors the general path (see 'transcribe_class_name()').
+		GPlatesGlobal::Assert<Exceptions::UnregisteredClassType>(
+				export_class_type,
+				GPLATES_ASSERTION_SOURCE,
+				pointee_type_info);
+
+		cache_entry_inserted.first->second.first = &export_class_type.get();
+		cache_entry_inserted.first->second.second =
+				d_transcription->get_or_create_unique_string_index(export_class_type->type_id_name);
+	}
+
+	// Write the class name as its index into the transcription's unique-string pool.
+	write_raw_varint(cache_entry_inserted.first->second.second);
+
+	return *cache_entry_inserted.first->second.first;
+}
+
+
+boost::optional<const GPlatesScribe::ExportClassType &>
+GPlatesScribe::Scribe::load_raw_pointee_class_name()
+{
+	// Read the class name as its index into the transcription's unique-string pool.
+	const boost::uint64_t unique_string_index = read_raw_varint();
+
+	// Look up the per-raw-stream cache first.
+	std::map<boost::uint64_t, const ExportClassType *>::const_iterator cache_iter =
+			d_raw_context.load_export_class_types.find(unique_string_index);
+	if (cache_iter != d_raw_context.load_export_class_types.end())
+	{
+		return *cache_iter->second;
+	}
+
+	GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+			unique_string_index < d_transcription->get_num_unique_string_objects(),
+			GPLATES_ASSERTION_SOURCE,
+			"Class name in raw stream references an invalid unique-string-pool index.");
+
+	const std::string &class_name = d_transcription->get_unique_string_object(
+			static_cast<unsigned int>(unique_string_index));
+
+	// Find the export registered class type associated with the class name.
+	const boost::optional<const ExportClassType &> export_class_type =
+			ExportRegistry::instance().get_class_type(class_name);
+
+	// If the class name has not been export registered then it means either:
+	//   * the archive was created by a future GPlates with a class name we don't know about, or
+	//   * the archive was created by an old GPlates with a class name we have since removed.
+	//
+	// This mirrors the general path (see 'transcribe_class_name()').
+	if (!export_class_type)
+	{
+		// Record the reason for transcribe failure.
+		set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_UNKNOWN_TYPE);
+
+		return boost::none;
+	}
+
+	d_raw_context.load_export_class_types.insert(
+			std::make_pair(unique_string_index, &export_class_type.get()));
+
+	return export_class_type;
+}
+
+
+boost::optional<boost::uint64_t>
+GPlatesScribe::Scribe::save_raw_shared_object_backref(
+		const InternalUtils::ObjectAddress &object_address)
+{
+	// The next backref index is the number of shared objects registered so far
+	// (backref indices are assigned in encounter order - loading replays this order).
+	const boost::uint64_t next_backref_index = d_raw_context.save_shared_object_indices.size();
+
+	const std::pair<RawContext::save_shared_object_index_map_type::iterator, bool> inserted =
+			d_raw_context.save_shared_object_indices.insert(
+					RawContext::save_shared_object_index_map_type::value_type(
+							object_address,
+							next_backref_index));
+
+	if (inserted.second)
+	{
+		// First encounter - the caller streams the pointed-to object inline.
+		return boost::none;
+	}
+
+	// Already streamed - return its backref index.
+	return inserted.first->second;
+}
+
+
+boost::uint64_t
+GPlatesScribe::Scribe::reserve_raw_shared_object_on_load()
+{
+	const boost::uint64_t backref_index = d_raw_context.load_shared_objects.size();
+
+	// Reserve a placeholder slot - it is filled in (with the object's address and type) once the
+	// object has been loaded, in 'set_raw_shared_object_on_load()'.
+	d_raw_context.load_shared_objects.push_back(
+			RawContext::LoadSharedObject(NULL, typeid(void)));
+
+	return backref_index;
+}
+
+
+void
+GPlatesScribe::Scribe::set_raw_shared_object_on_load(
+		boost::uint64_t backref_index,
+		void *object_address,
+		const std::type_info &object_type)
+{
+	// The slot was reserved by 'reserve_raw_shared_object_on_load()' immediately before the
+	// object was loaded, so the index is always valid here.
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			backref_index < d_raw_context.load_shared_objects.size(),
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to fill an unreserved shared object backref slot.");
+
+	RawContext::LoadSharedObject &shared_object =
+			d_raw_context.load_shared_objects[static_cast<std::size_t>(backref_index)];
+	shared_object.object_address = object_address;
+	shared_object.object_type = &object_type;
+}
+
+
+const GPlatesScribe::Scribe::RawContext::LoadSharedObject &
+GPlatesScribe::Scribe::get_raw_shared_object_on_load(
+		boost::uint64_t backref_index)
+{
+	GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+			backref_index < d_raw_context.load_shared_objects.size(),
+			GPLATES_ASSERTION_SOURCE,
+			"Owning pointer backref in raw stream references an invalid shared object index.");
+
+	return d_raw_context.load_shared_objects[static_cast<std::size_t>(backref_index)];
 }

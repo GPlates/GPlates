@@ -34,6 +34,7 @@
 #include <utility>
 #include <vector>
 #include <boost/cast.hpp>
+#include <boost/cstdint.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/mpl/equal_to.hpp>
 #include <boost/mpl/eval_if.hpp>
@@ -45,27 +46,10 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/pool/object_pool.hpp>
-#include <boost/preprocessor/arithmetic/dec.hpp>
-#include <boost/preprocessor/arithmetic/div.hpp>
-#include <boost/preprocessor/arithmetic/inc.hpp>
-#include <boost/preprocessor/arithmetic/mod.hpp>
-#include <boost/preprocessor/arithmetic/mul.hpp>
-#include <boost/preprocessor/comparison/greater.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/control/expr_iif.hpp>
-#include <boost/preprocessor/control/if.hpp>
-#include <boost/preprocessor/control/iif.hpp>
-#include <boost/preprocessor/enum_shifted.hpp>
-#include <boost/preprocessor/enum_shifted_params.hpp>
-#include <boost/preprocessor/facilities/empty.hpp>
-#include <boost/preprocessor/facilities/identity.hpp>
-#include <boost/preprocessor/repetition/for.hpp>
-#include <boost/preprocessor/repetition/repeat.hpp>
-#include <boost/preprocessor/repetition/repeat_from_to.hpp>
-#include <boost/preprocessor/seq/enum.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/type_traits/add_pointer.hpp>
 #include <boost/type_traits/is_array.hpp>
 #include <boost/type_traits/is_abstract.hpp>
 #include <boost/type_traits/is_const.hpp>
@@ -77,6 +61,7 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
+#include <boost/type_traits/type_identity.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include "ScribeAccess.h"
@@ -100,34 +85,6 @@
 #include "utils/ObjectPool.h"
 #include "utils/ReferenceCount.h"
 #include "utils/SmartNodeLinkedList.h"
-
-
-/**
- * The maximum dimension of transcribable multi-level pointers.
- *
- * For example, 'const int *const *' has dimension 2.
- *
- * NOTE: Setting this above 5 slows down compilation noticeably.
- * And at 7, on the MSVC2005 compiler, we get the following error:
- *   "fatal error C1009: compiler limit : macros nested too deeply"
- * Setting this to 4 on Ubuntu 14.04 causes the compiler to use up to 2Gb of memory and
- * bringing it down to 3 takes that down to 1Gb.
- *
- * Each increment of 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION' doubles the number of combinations.
- * So the slowdown/memory-usage is exponential.
- */
-#define GPLATES_SCRIBE_MAX_POINTER_DIMENSION 2
-
-/**
- * The maximum dimension of transcribable native arrays.
- *
- * For example, 'const int [3][3]' has dimension 2.
- *
- * Actually 'rank' might be a better term than 'dimension'.
- *
- * This doesn't have as much impact on compilation time as 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION'.
- */
-#define GPLATES_SCRIBE_MAX_ARRAY_DIMENSION 3
 
 
 /**
@@ -201,6 +158,22 @@ namespace GPlatesScribe
 		is_loading() const
 		{
 			return !is_saving();
+		}
+
+
+		/**
+		 * Is the scribe currently transcribing inside a raw stream ("raw lane") subtree.
+		 *
+		 * Client code generally need not care (the same handlers drive both lanes), but the
+		 * sequence/mapping protocols use this to take a leaner positional path: inside a raw stream
+		 * there are no tags to build per element and @a relocated is a no-op (items are streamed
+		 * positionally and never move), so the per-element ObjectTag construction and the load-side
+		 * relocation bookkeeping are pure overhead that can be skipped.
+		 */
+		bool
+		is_transcribing_raw() const
+		{
+			return d_is_raw;
 		}
 
 
@@ -373,6 +346,57 @@ namespace GPlatesScribe
 				ObjectType &object,
 				const ObjectTag &object_tag,
 				unsigned int options = 0);
+
+		/**
+		 * Overload taking the tag as a plain 'const char *' - the common case at call sites (a
+		 * string literal such as "value").
+		 *
+		 * This exists purely as a fast path for the raw lane: an 'ObjectTag' owns a
+		 * 'std::vector<Section>' and constructing one from a string literal heap-allocates, which
+		 * happens caller-side (before this Scribe sees @a d_is_raw) on the previous 'const ObjectTag &'
+		 * overload. In the positional raw lane the tag is never used, so here we skip building it (an
+		 * empty ObjectTag allocates nothing). This is the dominant residual per-call pickling cost.
+		 *
+		 * Overload resolution picks this over the 'const ObjectTag &' overload for a string literal
+		 * (array-to-pointer decay beats the user-defined ObjectTag conversion); an actual 'ObjectTag'
+		 * or 'std::string' argument still binds the 'const ObjectTag &' overload as before.
+		 */
+		template <typename ObjectType>
+		Bool
+		transcribe(
+				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
+				ObjectType &object,
+				const char *object_tag,
+				unsigned int options = 0);
+
+		/**
+		 * Bulk-transcribe 'count' contiguous, trivially-copyable arithmetic values (eg, the
+		 * flattened xyz coordinates of a point sequence) in a single call.
+		 *
+		 * 'count' is *not* itself written/read here - the caller already knows it on both the
+		 * save and load sides (eg, from a separately transcribed size, or a compile-time-fixed
+		 * length) - only the 'count' values pointed to by @a array are transcribed.
+		 *
+		 * In the raw lane the whole span streams as one fixed-width block - a single bulk copy
+		 * instead of 'count' individual transcribe calls, which is the dominant per-element cost
+		 * this method exists to avoid. As with the scalar 'transcribe_raw(float&)' /
+		 * 'transcribe_raw(double&)' overloads, this is a fixed-width encoding: every element must
+		 * be saved and loaded through the same 'ArithmeticType'.
+		 *
+		 * Outside the raw lane this is a plain per-element transcribe loop (tagged
+		 * 'object_tag[0]', 'object_tag[1]', ...), so the method is well-defined - and safe to call
+		 * unconditionally - in both lanes. In practice all current call sites only use it inside an
+		 * 'is_transcribing_raw()' branch, leaving the general-path encoding of the caller's class
+		 * (eg, 'PolylineOnSphere') completely unchanged, since the raw/general choice is made once,
+		 * for the whole subtree, at the pickle boundary - not per field.
+		 */
+		template <typename ArithmeticType>
+		Bool
+		transcribe_raw_array(
+				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
+				ArithmeticType *array,
+				std::size_t count,
+				const ObjectTag &object_tag = ObjectTag());
 
 		/**
 		 * Transcribe the base object sub-part (with type 'BaseType') of the specified derived object
@@ -644,6 +668,18 @@ namespace GPlatesScribe
 				const ObjectTag &object_tag,
 				unsigned int options = 0);
 
+		/**
+		 * Overload taking the tag as a plain 'const char *' - see the 'transcribe' overload of the
+		 * same form for why this is a raw-lane fast path.
+		 */
+		template <typename ObjectType>
+		void
+		save(
+				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
+				const ObjectType &object,
+				const char *object_tag,
+				unsigned int options = 0);
+
 
 		/**
 		 * Loads an object from the archive.
@@ -712,6 +748,17 @@ namespace GPlatesScribe
 		load(
 				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 				const ObjectTag &object_tag,
+				unsigned int options = 0);
+
+		/**
+		 * Overload taking the tag as a plain 'const char *' - see the 'transcribe' overload of the
+		 * same form for why this is a raw-lane fast path.
+		 */
+		template <typename ObjectType>
+		LoadRef<ObjectType>
+		load(
+				const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
+				const char *object_tag,
 				unsigned int options = 0);
 
 
@@ -1514,6 +1561,176 @@ namespace GPlatesScribe
 		static const unsigned int CURRENT_SCRIBE_VERSION = 0;
 
 		/**
+		 * The current version of the raw stream ("raw lane") codec.
+		 *
+		 * This version is written (as a variable-width integer) at the front of every raw stream.
+		 * Increment it when the codec encoding changes (value encodings, pointer markers, etc) -
+		 * such changes are internal to the Scribe library and invisible to scribe clients, but
+		 * older Scribe versions cannot decode them (a raw stream is positional so decoding cannot
+		 * skip unknown encodings) and will fail cleanly with
+		 * Exceptions::UnsupportedRawStreamVersion.
+		 */
+		static const unsigned int CURRENT_RAW_STREAM_CODEC_VERSION = 0;
+
+		/**
+		 * Marker byte written before each *owning* pointer's pointed-to object in a raw stream.
+		 *
+		 * Owning pointers stream their pointed-to object inline (there are no object ids inside
+		 * a raw stream to link a pointer to a separately transcribed object). Shared owners are
+		 * deduplicated: the first owner encountered streams the object (RAW_POINTER_SHARED) and
+		 * subsequent owners reference it by its index in the encounter order of
+		 * RAW_POINTER_SHARED objects (RAW_POINTER_SHARED_BACKREF) - preserving aliasing.
+		 */
+		enum RawPointerMarker
+		{
+			//! NULL pointer (nothing follows the marker).
+			RAW_POINTER_NULL = 0,
+
+			//! Pointed-to object streamed inline; cannot be back-referenced (sole owner).
+			RAW_POINTER_INLINE = 1,
+
+			//! Pointed-to object streamed inline *and* registered for back-references.
+			RAW_POINTER_SHARED = 2,
+
+			//! Back-reference: a varint index of a previous RAW_POINTER_SHARED object follows.
+			RAW_POINTER_SHARED_BACKREF = 3
+		};
+
+		/**
+		 * The state of the raw stream ("raw lane") currently being transcribed (see the RAW option
+		 * in "ScribeOptions.h").
+		 *
+		 * This state only applies while in raw mode (see @a d_is_raw) - it is reset on entering
+		 * and exiting a raw stream boundary (see @a RawStreamScope).
+		 */
+		struct RawContext
+		{
+			RawContext() :
+				load_data(nullptr),
+				load_cursor(0)
+			{  }
+
+			/**
+			 * The bytes encoded so far for the raw stream currently being saved.
+			 *
+			 * On success this is *moved* into the transcription (bound to the boundary object id).
+			 */
+			std::vector<char> save_data;
+
+			/**
+			 * The raw stream currently being loaded (references data inside the Transcription).
+			 */
+			const std::vector<char> *load_data;
+
+			/**
+			 * The current decode position within @a load_data.
+			 */
+			std::size_t load_cursor;
+
+			//! Typedef for a map of *shared* pointed-to objects (saved so far) to their backref indices.
+			typedef std::map<
+					InternalUtils::ObjectAddress,
+					boost::uint64_t,
+					InternalUtils::SortObjectAddressPredicate>
+							save_shared_object_index_map_type;
+
+			/**
+			 * Save path: the *shared* pointed-to objects streamed into the raw stream so far
+			 * (marker RAW_POINTER_SHARED), mapped to their backref indices (encounter order).
+			 *
+			 * The key is the *dynamic* (full) object address-and-type so that distinct objects
+			 * that happen to share an address (eg, an object and its first data member) cannot
+			 * be conflated.
+			 */
+			save_shared_object_index_map_type save_shared_object_indices;
+
+			//! The dynamic address and type of a *shared* pointed-to object loaded from the raw stream.
+			struct LoadSharedObject
+			{
+				LoadSharedObject(
+						void *object_address_,
+						const std::type_info &object_type_) :
+					object_address(object_address_),
+					object_type(&object_type_)
+				{  }
+
+				void *object_address;
+				const std::type_info *object_type;
+			};
+
+			/**
+			 * Load path: the *shared* pointed-to objects loaded from the raw stream so far
+			 * (marker RAW_POINTER_SHARED), in encounter order.
+			 *
+			 * Loading replays the save order, so backref indices index directly into this.
+			 */
+			std::vector<LoadSharedObject> load_shared_objects;
+
+			//! Typedef for a cache of pointee class types (and their string pool indices) on the save path.
+			typedef std::map<
+					const std::type_info *,
+					std::pair<const ExportClassType *, boost::uint64_t/*string pool index*/>,
+					InternalUtils::SortTypeInfoPredicate>
+							save_export_class_type_cache_type;
+
+			/**
+			 * Save path: cache of export-registered class types (and their class name indices in
+			 * the transcription's unique-string pool) for polymorphic pointed-to object types -
+			 * avoids an ExportRegistry lookup and a string pool search per pointed-to object.
+			 */
+			save_export_class_type_cache_type save_export_class_types;
+
+			/**
+			 * Load path: cache of export-registered class types keyed by their class name indices
+			 * in the transcription's unique-string pool.
+			 */
+			std::map<boost::uint64_t, const ExportClassType *> load_export_class_types;
+		};
+
+		/**
+		 * RAII scope that enters raw ("raw lane") mode on construction and exits on destruction.
+		 *
+		 * This ensures the scribe returns to normal (general path) mode even if an exception
+		 * propagates out of a raw subtree, and that the raw context does not leak state from
+		 * one raw stream boundary to the next.
+		 */
+		class RawStreamScope :
+				private boost::noncopyable
+		{
+		public:
+
+			explicit
+			RawStreamScope(
+					Scribe &scribe) :
+				d_scribe(scribe)
+			{
+				// Nested raw scopes should not be possible - the RAW option is ignored on
+				// transcribe calls made inside a raw subtree (everything inside is already
+				// streaming into the enclosing raw stream).
+				GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+						!scribe.d_is_raw,
+						GPLATES_ASSERTION_SOURCE,
+						"Attempted to enter raw stream mode when already in raw stream mode.");
+
+				scribe.d_raw_context = RawContext();
+				scribe.d_is_raw = true;
+			}
+
+			~RawStreamScope()
+			{
+				d_scribe.d_is_raw = false;
+
+				// Release the raw stream buffer memory (on a successful save the buffer was
+				// moved into the transcription; on failure it is discarded here).
+				d_scribe.d_raw_context = RawContext();
+			}
+
+		private:
+
+			Scribe &d_scribe;
+		};
+
+		/**
 		 * The object ID used to identify NULL pointers.
 		 */
 		static const object_id_type NULL_POINTER_OBJECT_ID = TranscriptionScribeContext::NULL_POINTER_OBJECT_ID;
@@ -1543,6 +1760,20 @@ namespace GPlatesScribe
 		 * Used to save/load to/from the transcription.
 		 */
 		TranscriptionScribeContext d_transcription_context;
+
+		/**
+		 * Is the scribe currently transcribing inside a raw stream ("raw lane") subtree ?
+		 *
+		 * While this is true, transcribe calls stream positionally into a single raw stream
+		 * (see @a d_raw_context) with no object ids, tags or tracking.
+		 * This is entered/exited at a raw stream boundary (see @a stream_raw_boundary).
+		 */
+		bool d_is_raw;
+
+		/**
+		 * The state of the raw stream currently being transcribed (only valid when @a d_is_raw).
+		 */
+		RawContext d_raw_context;
 
 		/**
 		 * Used to cast a derived class 'void *' to a base class 'void *' or vice versa.
@@ -1587,841 +1818,85 @@ namespace GPlatesScribe
 		const Access::export_registered_classes_type &d_exported_registered_classes;
 
 
-		////////////////////////////////
-		// Const conversion delegates //
-		////////////////////////////////
-
-		//
-		// The methods cast away 'const'ness in the objects passed in via this class's public interface.
-		//
-
-		//
-		// Why is const conversion needed ?
-		//
-		// Const conversion is necessary because objects are tracked based on both their address and
-		// their *type*. The *type* tracking assumes all 'const's have been removed. This is because
-		// we need to be able to link pointers to the objects that they point to as the following
-		// example demonstrates...
-		//
-		//     int var = 1;
-		// 	   int *var_ptr = &var;
-		//     const int *const *const var_ptr_ptr1 = &var_ptr; // Needs const conversion to link up.
-		//     int * *const var_ptr_ptr2 = &var_ptr;            // Happens to be fine without const conversion.
-		//
-		// ...where the type of the object that both 'var_ptr_ptr1' and 'var_ptr_ptr2' points to
-		// (ie, 'var_ptr') is 'int *'. However when 'var_ptr_ptr1' is transcribed, the scribe system
-		// sees that it points to an object of type 'const int *const' (the type of '*var_ptr_ptr1')
-		// and records this (as well as the address of 'var_ptr' which it gets from the value of 'var_ptr_ptr1').
-		// If 'var_ptr' is subsequently transcribed (after 'var_ptr_ptr1') then the scribe system will
-		// register its address and the type 'int *'. Even though the addresses are the same,
-		// the types are different and so the scribe system will not link 'var_ptr_ptr1' to 'var_ptr'
-		// and will complain that the object pointed to by 'var_ptr_ptr1' was never transcribed
-		// (with tracking enabled). The other pointer-to-pointer, 'var_ptr_ptr2', just happens to
-		// get lucky because the type of '*var_ptr_ptr2' is the same as the type of 'var_ptr'.
-		//
-		// Removing all 'const's from 'const int *const' to get 'int *' solves the problem.
-		//
-		// And the reason *type*s are used (as well as addresses) to link pointers to their pointed-to
-		// objects is there can be multiple objects at the same address. For example the first
-		// data member of a class object has the same address as the class object itself.
-		// Another example is the first inherited base class object and the derived class object.
-		// But the types at the same address are always guaranteed to be different so we can use
-		// the address *and* the type to distinguish between different objects.
-		// This is why the Empty Base Optimisation cannot always optimise away empty base classes
-		// (see http://en.cppreference.com/w/cpp/language/ebo).
-		//
-
-		//
-		// A typical delegate const-cast looks like (for a pointer-to-pointer-to-2D-array)...
-		// 
-		//    template <typename ObjectType, int N1, int N2>
-		//    void transcribe_const_cast(
-		//            const ObjectType (*const *const &object_array)[N1][N2],
-		//            const ObjectTag &object_tag,
-		//            unsigned int options)
-		//    {
-		//        // Delegate to non-const version.
-		//        transcribe_object(
-		//                const_cast<ObjectType (**&)[N1][N2]>(object_array),
-		//                object_tag,
-		//                options);
-		//    }
-		//
-
-		//
-		// Due to the existence of (multi-level) pointers and multi-dimensional native arrays
-		// we end up with quite a large number of functions to cover all the 'const' combinations.
-		//
-		// So we resort to using the power of the boost preprocessor library to do all the heavy
-		// lifting for us. The parameters 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION' and
-		// 'GPLATES_SCRIBE_MAX_ARRAY_DIMENSION' determine the number of combinations.
-		//
-
-		//
-		// Preprocessor technical detail:
-		//
-		// It appears *empty* macro arguments are not guaranteed to be supported in C++98 according to...
-		//
-		//   http://boost.2283326.n4.nabble.com/preprocessor-missing-IS-EMPTY-documentation-tp2663247p2663248.html
-		//
-		// ...specifically the part (in the above link) that mentions...
-		// 
-		//    #define BLANK
-		//
-		//    #define A(x) x
-		//
-		//    A(BLANK) // valid, even in C90 and C++98
-		//    A()      // invalid in C90/C++98
-		//             //   but valid in C99/C++0x
-		//
-		//    #define B(x) A(x)
-		//
-		//    B(BLANK) // invalid in C90/C++98
-		//             //   but valid in C99/C++0x
-		//
-		// ...so while we could use 'BOOST_PP_EMPTY()' in place of 'BLANK', it would fail (for C++98)
-		// if we, in turn, passed that argument onto another macro call as seen with 'BLANK' in the
-		// 'B()' macro in the above example.
-		//
-		// So our solution is to use 'BOOST_PP_EMPTY' *without* the parentheses, pass that through
-		// multiple macro calls and only expand (using parentheses) it in the final macro that
-		// uses the parameter. So the above example would then be...
-		//
-		//    #define A(x) x
-		//
-		//    A(BOOST_PP_EMPTY)   // valid, even in C90 and C++98
-		//
-		//    #define B(x) A(x)() // note the extra parentheses
-		//
-		//    B(BOOST_PP_EMPTY)   // now valid, even in C90 and C++98
-		//
-		// ...and to pass non-empty parameters we use BOOST_PP_IDENTITY which is defined as...
-		//
-		//    #define BOOST_PP_IDENTITY(item) item BOOST_PP_EMPTY
-		//
-		// ...which eventually gets expanded using 'BOOST_PP_IDENTITY(item)()' which is the same as
-		// 'item BOOST_PP_EMPTY()' which is just 'item'.
-		//
-
-
-		/////////////////////////////////////////////
-		// Begin boost preprocessor library macros //
-		//                                         //
-
-		// Predicate for GPLATES_SCRIBE_POW2.
-		#define GPLATES_SCRIBE_POW2_PRED(d, state) \
-				BOOST_PP_TUPLE_ELEM(2, 1, state) \
-				/**/
-
-		// Operation for GPLATES_SCRIBE_POW2.
-		#define GPLATES_SCRIBE_POW2_MUL_BY_2(d, state) \
-				( \
-						BOOST_PP_MUL_D(d, BOOST_PP_TUPLE_ELEM(2, 0, state), 2), \
-						BOOST_PP_DEC(BOOST_PP_TUPLE_ELEM(2, 1, state)) \
-				) \
-				/**/
-
-		// This is just pow(2,n) implemented as 1*2*2*2*, ie, repeated 'n' times...
-		#define GPLATES_SCRIBE_POW2(n) \
-				BOOST_PP_TUPLE_ELEM( \
-						2, \
-						0, \
-						BOOST_PP_WHILE( \
-								GPLATES_SCRIBE_POW2_PRED, \
-								GPLATES_SCRIBE_POW2_MUL_BY_2, \
-								(1, n)) \
-						) \
-				/**/
-
-		// Predicate tests if array dimension decremented to zero.
-		#define GPLATES_SCRIBE_ARRAY_INDICES_PRED(r, state) \
-				BOOST_PP_TUPLE_ELEM(2, 1, state) \
-				/**/
-
-		// Increment array index and decrements predicate counter.
-		#define GPLATES_SCRIBE_ARRAY_INDICES_OP(r, state) \
-				( \
-						BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 0, state)), \
-						BOOST_PP_DEC(BOOST_PP_TUPLE_ELEM(2, 1, state)) \
-				) \
-				/**/
-
-		// Returns array template index as, eg, '[N3]'.
-		#define GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES_MACRO(r, state) \
-				[BOOST_PP_CAT(N, BOOST_PP_TUPLE_ELEM(2, 0, state))] \
-				/**/
-
-		// Array template template indices (eg, '[N1] [N2] [N3]').
-		//
-		// NOTE: We can't use BOOST_PP_REPEAT because we've exceeded its maximum nested depth of 3.
-		// So we use BOOST_PP_FOR instead.
-		#define GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES(array_dim) \
-				BOOST_PP_FOR( \
-						(1, array_dim), \
-						GPLATES_SCRIBE_ARRAY_INDICES_PRED, \
-						GPLATES_SCRIBE_ARRAY_INDICES_OP, \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES_MACRO) \
-				/**/
-
-		// Returns array template parameter index as, eg, '(int N3)'.
-		// The parenthesis are because we're building up a boost preprocessor 'sequence'.
-		#define GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES_MACRO(r, state) \
-				(BOOST_PP_CAT(int N, BOOST_PP_TUPLE_ELEM(2, 0, state))) \
-				/**/
-
-		// Array template parameter indices returned as a sequence (eg, '(int N1) (int N2) (int N3)').
-		// Later the sequence will get converted to, eg, 'int N1, int N2, int N3'.
-		// Using a sequence avoids problem of commas in a macro argument.
-		//
-		// NOTE: We can't use BOOST_PP_REPEAT because we've exceeded its maximum nested depth of 3.
-		// So we use BOOST_PP_FOR instead.
-		#define GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES(array_dim) \
-				BOOST_PP_FOR( \
-						(1, array_dim), \
-						GPLATES_SCRIBE_ARRAY_INDICES_PRED, \
-						GPLATES_SCRIBE_ARRAY_INDICES_OP, \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES_MACRO) \
-				/**/
-
-		// Returns 'const' if least-significant bit of 'index' is set, otherwise nothing.
-		#define GPLATES_SCRIBE_QUALIFIED_OBJECT(index) \
-				BOOST_PP_EXPR_IIF( \
-						BOOST_PP_MOD(index, 2), \
-						const) \
-				/**/
-
-		#define GPLATES_SCRIBE_PRINT(z, n, text) text
-
-		// Repeat '*' character 'pointer_level' times.
-		//
-		// NOTE: Returns nothing when 'pointer_level' is 0.
-		#define GPLATES_SCRIBE_UNQUALIFIED_POINTER(z, pointer_level) \
-				BOOST_PP_CAT(BOOST_PP_REPEAT_,z)(pointer_level, GPLATES_SCRIBE_PRINT, *) \
-				/**/
-
-		// Predicate tests if pointer-level counter is zero.
-		#define GPLATES_SCRIBE_QUALIFIED_POINTER_PRED(r, state) \
-				BOOST_PP_TUPLE_ELEM(3, 2, state) \
-				/**/
-
-		// Right shifts by one bit and tests the least-significant bit (that was shifted out).
-		// Also decrements pointer-level counter for predicate.
-		#define GPLATES_SCRIBE_QUALIFIED_POINTER_OP(r, state) \
-				( \
-						BOOST_PP_DIV(BOOST_PP_TUPLE_ELEM(3, 0, state), 2), \
-						BOOST_PP_MOD(BOOST_PP_TUPLE_ELEM(3, 0, state), 2), \
-						BOOST_PP_DEC(BOOST_PP_TUPLE_ELEM(3, 2, state)) \
-				) \
-				/**/
-
-		// Return '*const' or '*' depending on the state.
-		#define GPLATES_SCRIBE_QUALIFIED_POINTER_MACRO(r, state) \
-				BOOST_PP_IIF( \
-						BOOST_PP_TUPLE_ELEM(3, 1, state), \
-						*const, \
-						*) \
-				/**/
-
-		// Repeat '*const' or '*' character 'pointer_level' times depending on
-		// 'pointer_level' number of bit flags in 'index'.
-		//
-		// NOTE: Returns nothing when 'pointer_level' is 0.
-		#define GPLATES_SCRIBE_QUALIFIED_POINTER(index, pointer_level) \
-				BOOST_PP_FOR( \
-						( \
-								BOOST_PP_DIV(index, 2), \
-								BOOST_PP_MOD(index, 2), \
-								pointer_level \
-						), \
-						GPLATES_SCRIBE_QUALIFIED_POINTER_PRED, \
-						GPLATES_SCRIBE_QUALIFIED_POINTER_OP, \
-						GPLATES_SCRIBE_QUALIFIED_POINTER_MACRO) \
-				/**/
-
-		// Generates single argument function delegate overloads for *non-arrays* for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_NON_ARRAY_CALL( \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				\
-				template <typename ObjectType> \
-				bool \
-				transcribe_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &object, \
-						const ObjectTag &object_tag, \
-						unsigned int options) \
-				{ \
-					return transcribe_object( \
-							const_cast<ObjectType unqualified_pointer() &>(object), \
-							object_tag, \
-							options); \
-				} \
-				\
-				template <typename ObjectType> \
-				bool \
-				transcribe_construct_const_cast( \
-						ConstructObject<qualified_object() ObjectType qualified_pointer()> &construct_object, \
-						const ObjectTag &object_tag, \
-						unsigned int options) \
-				{ \
-					return transcribe_construct_object( \
-							reinterpret_cast<ConstructObject<ObjectType unqualified_pointer()> &>(construct_object), \
-							object_tag, \
-							options); \
-				} \
-				\
-				template <typename ObjectType> \
-				bool \
-				transcribe_construct_const_cast( \
-						ConstructObject<qualified_object() ObjectType qualified_pointer()> &construct_object, \
-						object_id_type object_id, \
-						unsigned int options) \
-				{ \
-					return transcribe_construct_object( \
-							reinterpret_cast<ConstructObject<ObjectType unqualified_pointer()> &>(construct_object), \
-							object_id, \
-							options); \
-				} \
-				\
-				/* Note that we get a non-pointer overload in this set but it never gets used \
-				because 'transcribe_smart_pointer_object()' expects a pointer. */ \
-				template <typename ObjectType> \
-				bool \
-				transcribe_smart_pointer_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &object, \
-						bool shared_owner) \
-				{ \
-					return transcribe_smart_pointer_object( \
-							const_cast<ObjectType unqualified_pointer() &>(object), \
-							shared_owner); \
-				} \
-				\
-				template <typename ObjectType> \
-				bool \
-				has_been_transcribed_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &object) \
-				{ \
-					return has_object_been_transcribed( \
-							const_cast<ObjectType unqualified_pointer() &>(object)); \
-				} \
-				\
-				template <typename ObjectType> \
-				void \
-				untrack_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &object, \
-						bool discard) \
-				{ \
-					untrack_object( \
-							const_cast<ObjectType unqualified_pointer() &>(object), \
-							discard); \
-				} \
-				\
-				template <typename ObjectType> \
-				void \
-				save_reference_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &object_reference, \
-						const ObjectTag &object_tag) \
-				{ \
-					save_object_reference( \
-							const_cast<ObjectType unqualified_pointer() &>(object_reference), \
-							object_tag); \
-				} \
-				/**/
-
-		// Generates single argument function delegate overloads for native *arrays* for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY_CALL( \
-						array_template_parameter_indices, \
-						array_template_indices, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				bool \
-				transcribe_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &array) array_template_indices, \
-						const ObjectTag &object_tag, \
-						unsigned int options) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					return transcribe_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(array), \
-							object_tag, \
-							options); \
-				} \
-				\
-				/* Exclude 'transcribe_construct_const_cast()' since not allowing it for native arrays. \
-				If it does get used by client then it'll either get trapped in a compile-time 'const'
-				assertion check in 'transcribe_construct_object()' or a run-time assertion in 'transcribe_construct_data()'
-				in 'TranscribeArray.h'. */ \
-				\
-				/* We also exclude 'transcribe_smart_pointer_const_cast()' since we're not expecting \
-				arrays to be heap-allocated (perhaps support in future though). */ \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				bool \
-				has_been_transcribed_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &array) array_template_indices) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					return has_object_been_transcribed( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(array)); \
-				}  \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				untrack_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &array) array_template_indices, \
-						bool discard) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					untrack_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(array), \
-							discard); \
-				} \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				save_reference_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &array_reference) array_template_indices, \
-						const ObjectTag &object_tag) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					save_object_reference( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(array_reference), \
-							object_tag); \
-				} \
-				/**/
-
-		// Generates single argument function delegate overloads for native *arrays* for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY(z, array_dim, data) \
-				GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY_CALL( \
-						/* This is actually a sequence, eg, '(int N1) (int N2) (int N3)' \
-						so that we can pass to macro without worrying about commas... */ \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES(array_dim), \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES(array_dim), \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_TUPLE_ELEM(3, 0, data), /*qualified_object*/ \
-						BOOST_PP_TUPLE_ELEM(3, 1, data), /*qualified_pointer*/ \
-						BOOST_PP_TUPLE_ELEM(3, 2, data) /*unqualified_pointer*/) \
-				/**/
-
-		// Generates single argument function delegate overloads for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_CALL( \
-						z, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				\
-				/* Delegate non-arrays... */ \
-				GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_NON_ARRAY_CALL( \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				/* Delegate arrays by looping over array dimensions [1, GPLATES_SCRIBE_MAX_ARRAY_DIMENSION] ... */ \
-				BOOST_PP_CAT(BOOST_PP_REPEAT_FROM_TO_,z)( \
-						1, \
-						BOOST_PP_INC(GPLATES_SCRIBE_MAX_ARRAY_DIMENSION), \
-						GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						(qualified_object, qualified_pointer, unqualified_pointer)) \
-				/**/
-
-		// Generates single argument function delegate overloads for
-		// a multi-level pointer of dimension 'pointer_level'.
-		//
-		// Note: The 'BOOST_PP_DIV(index, 2)' shifts out the least-significant bit of 'index' used by
-		// 'GPLATES_SCRIBE_QUALIFIED_OBJECT()' - the remaining bits are used for the multi-level
-		// pointer levels in 'GPLATES_SCRIBE_QUALIFIED_POINTER()'.
-		//
-		// Note: Calculating 'GPLATES_SCRIBE_QUALIFIED_OBJECT',
-		// 'GPLATES_SCRIBE_UNQUALIFIED_POINTER()' and
-		// 'GPLATES_SCRIBE_QUALIFIED_POINTER' only once here (instead of once per
-		// delegated function) reduces time spent in the preprocessor noticeably.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_INDEX(z, index, pointer_level) \
-				GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_CALL( \
-						z, \
-						/* Using BOOST_PP_IDENTITY since the following macros may return nothing. */ \
-						/* This causes the following to end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_IDENTITY(GPLATES_SCRIBE_QUALIFIED_OBJECT(index)), \
-						BOOST_PP_IDENTITY(GPLATES_SCRIBE_QUALIFIED_POINTER(BOOST_PP_DIV(index, 2), pointer_level)), \
-						BOOST_PP_IDENTITY(GPLATES_SCRIBE_UNQUALIFIED_POINTER(z, pointer_level))) \
-				/**/
-
-		// Iterate over half-open range [ 0, 2*pow(2,pointer_level) ) and generate all const/non-const
-		// multi-level pointer combinations for a particular pointer-level.
-		// Pass 'pointer_level' as auxiliary data.
-		//
-		// Note: The 'BOOST_PP_INC(pointer_level)' is because we need two times as many combinations
-		// of 'const' due to the const/non-const of the final pointed-to object type.
-		// 'GPLATES_SCRIBE_QUALIFIED(index)'.
-		#define GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS(z, pointer_level, _) \
-				BOOST_PP_CAT(BOOST_PP_REPEAT_,z)( \
-						GPLATES_SCRIBE_POW2(BOOST_PP_INC(pointer_level)), \
-						GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_INDEX, \
-						pointer_level) \
-				/**/
-
-
-		// Generate single argument function delegate overloads for
-		// all multi-level pointer levels up to maximum pointer dimension.
-		//
-		// NOTE: If the following compile-time assertion is triggered here...
-		//
-		//    "use of undefined type 'boost::STATIC_ASSERTION_FAILURE<x>'"
-		//
-		// ...then a native array with dimension (actually rank) greater than
-		// 'GPLATES_SCRIBE_MAX_ARRAY_DIMENSION' was transcribed, etc.
-		//
-		BOOST_PP_REPEAT( \
-				BOOST_PP_INC(GPLATES_SCRIBE_MAX_POINTER_DIMENSION), \
-				GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS, \
-				_)
-
-
-		// Generates double argument function delegate overloads for *non-arrays*
-		// for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_NON_ARRAY_CALL( \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				\
-				template <typename ObjectType> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &relocated_object, \
-						qualified_object() ObjectType qualified_pointer() &transcribed_object) \
-				{ \
-					relocated_transcribed_object( \
-							const_cast<ObjectType unqualified_pointer() &>(relocated_object), \
-							const_cast<ObjectType unqualified_pointer() &>(transcribed_object)); \
-				} \
-				\
-				template <typename ObjectType> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType qualified_pointer() const &relocated_object, \
-						qualified_object() ObjectType qualified_pointer() &transcribed_object) \
-				{ \
-					relocated_transcribed_object( \
-							const_cast<ObjectType unqualified_pointer() &>(relocated_object), \
-							const_cast<ObjectType unqualified_pointer() &>(transcribed_object)); \
-				} \
-				\
-				template <typename ObjectType> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType qualified_pointer() &relocated_object, \
-						qualified_object() ObjectType qualified_pointer() const &transcribed_object) \
-				{ \
-					relocated_transcribed_object( \
-							const_cast<ObjectType unqualified_pointer() &>(relocated_object), \
-							const_cast<ObjectType unqualified_pointer() &>(transcribed_object)); \
-				} \
-				\
-				template <typename ObjectType> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType qualified_pointer() const &relocated_object, \
-						qualified_object() ObjectType qualified_pointer() const &transcribed_object) \
-				{ \
-					relocated_transcribed_object( \
-							const_cast<ObjectType unqualified_pointer() &>(relocated_object), \
-							const_cast<ObjectType unqualified_pointer() &>(transcribed_object)); \
-				} \
-				/**/
-
-		// Generates double argument function delegate overloads for native *arrays*
-		// for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_ARRAY_CALL( \
-						array_template_parameter_indices, \
-						array_template_indices, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_object_const, \
-						qualified_pointer, \
-						qualified_pointer_const, \
-						unqualified_pointer) \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &relocated_array) array_template_indices, \
-						qualified_object() ObjectType (qualified_pointer() &transcribed_array) array_template_indices) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					relocated_transcribed_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(relocated_array), \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(transcribed_array)); \
-				} \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				relocated_const_cast( \
-						qualified_object_const() ObjectType (qualified_pointer_const() &relocated_array) array_template_indices, \
-						qualified_object() ObjectType (qualified_pointer() &transcribed_array) array_template_indices) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					relocated_transcribed_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(relocated_array), \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(transcribed_array)); \
-				} \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				relocated_const_cast( \
-						qualified_object() ObjectType (qualified_pointer() &relocated_array) array_template_indices, \
-						qualified_object_const() ObjectType (qualified_pointer_const() &transcribed_array) array_template_indices) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					relocated_transcribed_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(relocated_array), \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(transcribed_array)); \
-				} \
-				\
-				template <typename ObjectType, BOOST_PP_SEQ_ENUM(array_template_parameter_indices)> \
-				void \
-				relocated_const_cast( \
-						qualified_object_const() ObjectType (qualified_pointer_const() &relocated_array) array_template_indices, \
-						qualified_object_const() ObjectType (qualified_pointer_const() &transcribed_array) array_template_indices) \
-				{ \
-					/* Check array dimension (rank) does not exceed GPLATES_SCRIBE_MAX_ARRAY_DIMENSION... */ \
-					BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value); \
-					\
-					relocated_transcribed_object( \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(relocated_array), \
-							const_cast<ObjectType (unqualified_pointer() &) array_template_indices>(transcribed_array)); \
-				} \
-				/**/
-
-		// Generates double *non-pointer* argument function delegate overloads for native *arrays*.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS_ARRAY(z, array_dim, _) \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_ARRAY_CALL( \
-						/* This is actually a sequence, eg, '(int N1) (int N2) (int N3)' \
-						so that we can pass to macro without worrying about commas... */ \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES(array_dim), \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES(array_dim), \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_EMPTY,           /*qualified_object*/ \
-						/* For arrays the const goes on the the final pointed-to object. */ \
-						/* However two of the four functions generated will never get used because \
-						only the top-level const can differ (due to compile-time assertion in \
-						public 'relocated()' method) and with arrays this means the actual array \
-						objects will be the same type (same const-ness). \
-						But we'll keep them anyway since it's easier to code. */ \
-						BOOST_PP_IDENTITY(const), /*qualified_object_const*/ \
-						BOOST_PP_EMPTY,           /*qualified_pointer*/ \
-						BOOST_PP_EMPTY,           /*qualified_pointer_const*/ \
-						BOOST_PP_EMPTY)           /*unqualified_pointer*/ \
-				/**/
-
-		// Double *non-pointer* argument function delegates.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS() \
-				/* Delegate non-arrays... */ \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_NON_ARRAY_CALL( \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_EMPTY, /*qualified_object*/ \
-						BOOST_PP_EMPTY, /*qualified_pointer*/ \
-						BOOST_PP_EMPTY) /*unqualified_pointer*/ \
-				/* Delegate arrays by looping over array dimensions [1, GPLATES_SCRIBE_MAX_ARRAY_DIMENSION] ... */ \
-				BOOST_PP_REPEAT_FROM_TO( \
-						1, \
-						BOOST_PP_INC(GPLATES_SCRIBE_MAX_ARRAY_DIMENSION), \
-						GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS_ARRAY, \
-						_) \
-				/**/
-
-		// Generates double pointer argument function delegate overloads for native *arrays*
-		// for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_ARRAY(z, array_dim, data) \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_ARRAY_CALL( \
-						/* This is actually a sequence, eg, '(int N1) (int N2) (int N3)' \
-						so that we can pass to macro without worrying about commas... */ \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES(array_dim), \
-						GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES(array_dim), \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_TUPLE_ELEM(3, 0, data),       /*qualified_object*/ \
-						/* For pointers-to-arrays the const goes on the pointer not the final pointed-to object... */ \
-						BOOST_PP_TUPLE_ELEM(3, 0, data),       /*qualified_object_const*/ \
-						BOOST_PP_TUPLE_ELEM(3, 1, data),       /*qualified_pointer*/ \
-						/* For pointers-to-arrays the const goes on the pointer not the final pointed-to object... */ \
-						BOOST_PP_IDENTITY(BOOST_PP_TUPLE_ELEM(3, 1, data)() const), /*qualified_pointer_const*/ \
-						BOOST_PP_TUPLE_ELEM(3, 2, data))       /*unqualified_pointer*/ \
-				/**/
-
-		// Generates double pointer argument function delegate overloads for a specific multi-level pointer level.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_CALL( \
-						z, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				\
-				/* Delegate non-arrays... */ \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_NON_ARRAY_CALL( \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						qualified_object, \
-						qualified_pointer, \
-						unqualified_pointer) \
-				/* Delegate arrays by looping over array dimensions [1, GPLATES_SCRIBE_MAX_ARRAY_DIMENSION] ... */ \
-				BOOST_PP_CAT(BOOST_PP_REPEAT_FROM_TO_,z)( \
-						1, \
-						BOOST_PP_INC(GPLATES_SCRIBE_MAX_ARRAY_DIMENSION), \
-						GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_ARRAY, \
-						/* The following end with BOOST_PP_EMPTY... */ \
-						(qualified_object, qualified_pointer, unqualified_pointer)) \
-				/**/
-
-		// Generates double argument pointer function delegate overloads for
-		// a multi-level pointer of dimension 'pointer_level'.
-		//
-		// Note: The 'BOOST_PP_DIV(index, 2)' shifts out the least-significant bit of 'index' used by
-		// 'GPLATES_SCRIBE_QUALIFIED_OBJECT()' - the remaining bits are used for the multi-level
-		// pointer levels in 'GPLATES_SCRIBE_QUALIFIED_POINTER()'.
-		//
-		// Note: The 'BOOST_PP_DEC(pointer_level)' is there because the last pointer '*'
-		// (which is explicitly concatenated below) is always non-const - its const-ness is
-		// manually enumerated in 'GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_CALL()'.
-		//
-		// Note: Calculating 'GPLATES_SCRIBE_QUALIFIED_OBJECT',
-		// 'GPLATES_SCRIBE_UNQUALIFIED_POINTER()' and
-		// 'GPLATES_SCRIBE_QUALIFIED_POINTER' only once here (instead of once per
-		// delegated function) reduces time spent in the preprocessor noticeably.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_INDEX(z, index, pointer_level) \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_CALL( \
-						z, \
-						/* Using BOOST_PP_IDENTITY since the following macros may return nothing. */ \
-						/* This causes the following to end with BOOST_PP_EMPTY... */ \
-						BOOST_PP_IDENTITY(GPLATES_SCRIBE_QUALIFIED_OBJECT(index)), \
-						BOOST_PP_IDENTITY( \
-								GPLATES_SCRIBE_QUALIFIED_POINTER( \
-										BOOST_PP_DIV(index, 2), \
-										BOOST_PP_DEC(pointer_level)) \
-								*), \
-						BOOST_PP_IDENTITY(GPLATES_SCRIBE_UNQUALIFIED_POINTER(z, pointer_level))) \
-				/**/
-
-		// Double *pointer* argument function delegates.
-		// Iterate over half-open range [ 0, pow(2,pointer_level) ) and generate all const/non-const
-		// multi-level pointer combinations for a particular pointer-level.
-		// Pass 'pointer_level' as auxiliary data.
-		#define GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS(z, pointer_level, _) \
-				BOOST_PP_CAT(BOOST_PP_REPEAT_,z)( \
-						GPLATES_SCRIBE_POW2(pointer_level), \
-						GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_INDEX, \
-						pointer_level) \
-				/**/
-
-
-		// Generate double argument function delegate overloads for
-		// all multi-level pointer levels up to maximum pointer dimension.
-		//
-		// NOTE: If the following compile-time assertion is triggered here...
-		//
-		//    "use of undefined type 'boost::STATIC_ASSERTION_FAILURE<x>'"
-		//
-		// ...then a native array with dimension (actually rank) greater than
-		// 'GPLATES_SCRIBE_MAX_ARRAY_DIMENSION' was transcribed, etc.
-		//
-		GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS() /* Handle *non-pointer* case. */
-		BOOST_PP_REPEAT_FROM_TO( \
-				1, \
-				BOOST_PP_INC(GPLATES_SCRIBE_MAX_POINTER_DIMENSION), \
-				GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS, \
-				_) /* Handle *pointer* cases. */
-
-
-		#undef GPLATES_SCRIBE_POW2_PRED
-		#undef GPLATES_SCRIBE_POW2_MUL_BY_2
-		#undef GPLATES_SCRIBE_POW2
-		#undef GPLATES_SCRIBE_ARRAY_INDICES_PRED
-		#undef GPLATES_SCRIBE_ARRAY_INDICES_OP
-		#undef GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES_MACRO
-		#undef GPLATES_SCRIBE_ARRAY_TEMPLATE_INDICES
-		#undef GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES_MACRO
-		#undef GPLATES_SCRIBE_ARRAY_TEMPLATE_PARAMETER_INDICES
-		#undef GPLATES_SCRIBE_QUALIFIED_OBJECT
-		#undef GPLATES_SCRIBE_PRINT
-		#undef GPLATES_SCRIBE_UNQUALIFIED_POINTER
-		#undef GPLATES_SCRIBE_QUALIFIED_POINTER_PRED
-		#undef GPLATES_SCRIBE_QUALIFIED_POINTER_OP
-		#undef GPLATES_SCRIBE_QUALIFIED_POINTER_MACRO
-		#undef GPLATES_SCRIBE_QUALIFIED_POINTER
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_NON_ARRAY_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_ARRAY
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS_INDEX
-		#undef GPLATES_SCRIBE_DELEGATE_SINGLE_ARG_FUNCTIONS
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_NON_ARRAY_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_FUNCTIONS_ARRAY_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS_ARRAY
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_NON_POINTER_FUNCTIONS
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_ARRAY
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_CALL
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS_INDEX
-		#undef GPLATES_SCRIBE_DELEGATE_DOUBLE_ARG_POINTER_FUNCTIONS
-
-		//                                       //
-		// End boost preprocessor library macros //
-		///////////////////////////////////////////
-
-
 		/**
-		 * A metafunction used to catch (at compile-time) any transcribed objects that are
-		 * pointers with a dimension greater than 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION'.
+		 * A metafunction used to remove all 'const' from an object type.
 		 *
-		 * These high dimension multi-level pointer objects cannot be properly const-cast and
-		 * hence are not supported for transcribing.
+		 * To remove all 'const' from 'ObjectType' use 'remove_all_const_t<ObjectType>'.
 		 *
-		 * Can be used like:
+		 * The type can be a (multi-dimensional) pointer to an object
+		 * (which in turn can be a multi-dimensional native array).
+		 * For example:
 		 *
-		 *    BOOST_STATIC_ASSERT(boost::mpl::not_< UnsupportedPointerType<ObjectType> >::value);
+		 *   const int var[2][3] = { };
+		 *   const int (*const pvar)[2][3] = &var;
+		 *   const int (*const *const ppvar)[2][3] = &pvar;
 		 *
+		 * ...will result in 'decltype(ppvar)' giving 'const int (*const *)[2][3]' and
+		 * 'remove_all_const_t<decltype(ppvar)>' giving 'int (**)[2][3]'.
+		 *
+		 *
+		 * Why is const conversion needed ?
+		 *
+		 * Const conversion is necessary because objects are tracked based on both their address and
+		 * their *type*. The *type* tracking assumes all 'const's have been removed. This is because
+		 * we need to be able to link pointers to the objects that they point to as the following
+		 * example demonstrates...
+		 *
+		 *     int var = 1;
+		 * 	   int *var_ptr = &var;
+		 *     const int *const *const var_ptr_ptr1 = &var_ptr; // Needs const conversion to link up.
+		 *     int * *const var_ptr_ptr2 = &var_ptr;            // Happens to be fine without const conversion.
+		 *
+		 * ...where the type of the object that both 'var_ptr_ptr1' and 'var_ptr_ptr2' points to
+		 * (ie, 'var_ptr') is 'int *'. However when 'var_ptr_ptr1' is transcribed, the scribe system
+		 * sees that it points to an object of type 'const int *const' (the type of '*var_ptr_ptr1')
+		 * and records this (as well as the address of 'var_ptr' which it gets from the value of 'var_ptr_ptr1').
+		 * If 'var_ptr' is subsequently transcribed (after 'var_ptr_ptr1') then the scribe system will
+		 * register its address and the type 'int *'. Even though the addresses are the same,
+		 * the types are different and so the scribe system will not link 'var_ptr_ptr1' to 'var_ptr'
+		 * and will complain that the object pointed to by 'var_ptr_ptr1' was never transcribed
+		 * (with tracking enabled). The other pointer-to-pointer, 'var_ptr_ptr2', just happens to
+		 * get lucky because the type of '*var_ptr_ptr2' is the same as the type of 'var_ptr'.
+		 *
+		 * Removing all 'const's from 'const int *const' to get 'int *' solves the problem.
+		 *
+		 * And the reason *type*s are used (as well as addresses) to link pointers to their pointed-to
+		 * objects is there can be multiple objects at the same address. For example the first
+		 * data member of a class object has the same address as the class object itself.
+		 * Another example is the first inherited base class object and the derived class object.
+		 * But the types at the same address are always guaranteed to be different so we can use
+		 * the address *and* the type to distinguish between different objects.
+		 * This is why the Empty Base Optimisation cannot always optimise away empty base classes
+		 * (see http://en.cppreference.com/w/cpp/language/ebo).
 		 */
-		template <typename ObjectType, int Dim=0> // Primary template.
-		struct UnsupportedPointerType :
-				public boost::mpl::eval_if<
-						boost::is_pointer<ObjectType>,
-						UnsupportedPointerType<typename boost::remove_pointer<ObjectType>::type, Dim+1>,
-						boost::mpl::false_>
-		{  };
-		template <typename ObjectType> // Partial specialisation to terminate recursion.
-		struct UnsupportedPointerType<ObjectType, GPLATES_SCRIBE_MAX_POINTER_DIMENSION+1> :
-				public boost::mpl::true_
+		template <typename ObjectType>
+		struct RemoveAllConst :
+				public boost::type_identity<ObjectType>
 		{  };
 
-		// 		template <typename ObjectType, int Dim=0>
-		// 		struct UnsupportedPointerType :
-		// 				public boost::mpl::eval_if<
-		// 						boost::is_pointer<ObjectType>,
-		// 						boost::mpl::eval_if<
-		// 								boost::mpl::greater<
-		// 										boost::mpl::int_<Dim+1>,
-		// 										boost::mpl::int_<GPLATES_SCRIBE_MAX_POINTER_DIMENSION> >,
-		// 								boost::mpl::true_,
-		// 								UnsupportedPointerType<typename boost::remove_pointer<ObjectType>::type, Dim+1> >,
-		// 						boost::mpl::false_>
-		// 		{  };
+		template <typename ObjectType>
+		struct RemoveAllConst<const ObjectType> :
+				public RemoveAllConst<ObjectType>
+		{  };
+
+		template <typename ObjectType>
+		struct RemoveAllConst<volatile ObjectType> :
+				public RemoveAllConst<ObjectType>
+		{  };
+
+		template <typename ObjectType>
+		struct RemoveAllConst<const volatile ObjectType> :
+				public RemoveAllConst<ObjectType>
+		{  };
+
+		template <typename ObjectType>
+		struct RemoveAllConst<ObjectType *> :
+				public boost::add_pointer<typename RemoveAllConst<ObjectType>::type>
+		{  };
+
+		template <typename ObjectType>
+		using remove_all_const_t = typename RemoveAllConst<ObjectType>::type;
+
 
 
 		/**
@@ -2437,7 +1912,13 @@ namespace GPlatesScribe
 		void
 		untrack(
 				ObjectType &object,
-				bool discard);
+				bool discard)
+		{
+			untrack_object(
+					// Remove all 'const' from 'ObjectType' (if const)...
+					const_cast<remove_all_const_t<ObjectType> &>(object),
+					discard);
+		}
 
 
 		/**
@@ -2450,11 +1931,15 @@ namespace GPlatesScribe
 		template <typename ObjectType>
 		bool
 		transcribe_construct(
-				ConstructObject<ObjectType> &object,
+				ConstructObject<ObjectType> &construct_object,
 				const ObjectTag &object_tag,
 				unsigned int options)
 		{
-			return transcribe_construct_const_cast(object, object_tag, options);
+			return transcribe_construct_object(
+					// Remove all 'const' from 'ObjectType' (if const)...
+					reinterpret_cast<ConstructObject<remove_all_const_t<ObjectType>> &>(construct_object),
+					object_tag,
+					options);
 		}
 
 
@@ -2466,11 +1951,15 @@ namespace GPlatesScribe
 		template <typename ObjectType>
 		bool
 		transcribe_construct(
-				ConstructObject<ObjectType> &object,
+				ConstructObject<ObjectType> &construct_object,
 				object_id_type object_id,
 				unsigned int options)
 		{
-			return transcribe_construct_const_cast(object, object_id, options);
+			return transcribe_construct_object(
+					// Remove all 'const' from 'ObjectType' (if const)...
+					reinterpret_cast<ConstructObject<remove_all_const_t<ObjectType>> &>(construct_object),
+					object_id,
+					options);
 		}
 
 
@@ -2482,14 +1971,25 @@ namespace GPlatesScribe
 		 *
 		 * If @a shared_owner is true then ownership is shared amongst one or more pointers,
 		 * otherwise ownership is exclusive to a single pointer.
+		 *
+		 * @a use_count_hint is the number of owners of the pointed-to object on the *save* path
+		 * (or none if unknown). It is only used inside a raw stream ("raw lane") subtree - a hint
+		 * of 1 (sole owner) skips shared-object deduplication for the pointed-to object.
+		 * IMPORTANT: only pass a hint that counts *all* owners of the pointed-to object
+		 * (eg, an intrusive reference count) - an under-count breaks aliasing in the raw lane.
 		 */
 		template <typename ObjectType>
 		bool
 		transcribe_smart_pointer(
 				ObjectType *&object_ptr,
-				bool shared_owner)
+				bool shared_owner,
+				boost::optional<unsigned int> use_count_hint = boost::none)
 		{
-			return transcribe_smart_pointer_const_cast(object_ptr, shared_owner);
+			return transcribe_smart_pointer_object(
+					// Remove all 'const' from 'ObjectType *' (if const)...
+					const_cast<remove_all_const_t<ObjectType *> &>(object_ptr),
+					shared_owner,
+					use_count_hint);
 		}
 
 
@@ -2528,33 +2028,6 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Delegates to @a transcribe_delegate_object.
-		 *
-		 * We don't have to worry about const-casting pointers and native arrays.
-		 */
-		template <typename ObjectType>
-		bool
-		transcribe_delegate_const_cast(
-				ObjectType &object)
-		{
-			return transcribe_delegate_object(object);
-		}
-
-		/**
-		 * Delegates to @a transcribe_delegate_object.
-		 *
-		 * We don't have to worry about const-casting pointers and native arrays.
-		 */
-		template <typename ObjectType>
-		bool
-		transcribe_delegate_const_cast(
-				const ObjectType &object)
-		{
-			return transcribe_delegate_object(const_cast<ObjectType &>(object));
-		}
-
-
-		/**
 		 * A transcribed object type has delegated transcribing to another object type.
 		 */
 		template <typename ObjectType>
@@ -2564,99 +2037,12 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Delegates to @a transcribe_delegate_construct_object.
-		 *
-		 * We don't have to worry about const-casting pointers and native arrays.
-		 */
-		template <typename ObjectType>
-		bool
-		transcribe_delegate_construct_const_cast(
-				ConstructObject<ObjectType> &construct_object)
-		{
-			return transcribe_delegate_construct_object(construct_object);
-		}
-
-		/**
-		 * Delegates to @a transcribe_delegate_construct_object.
-		 *
-		 * We don't have to worry about const-casting pointers and native arrays.
-		 */
-		template <typename ObjectType>
-		bool
-		transcribe_delegate_construct_const_cast(
-				ConstructObject<const ObjectType> &construct_object)
-		{
-			return transcribe_delegate_construct_object(
-					reinterpret_cast<ConstructObject<ObjectType> &>(construct_object));
-		}
-
-
-		/**
 		 * A transcribed object type has delegated transcribing to another object type.
 		 */
 		template <typename ObjectType>
 		bool
 		transcribe_delegate_construct_object(
 				ConstructObject<ObjectType> &construct_object);
-
-
-		/**
-		 * Delegates to @a transcribe_base_object.
-		 *
-		 * We don't have to worry about const-casting pointers, etc, because BaseType and DerivedType
-		 * are always classes (ie, not pointers).
-		 */
-		template <class BaseType, class DerivedType>
-		bool
-		transcribe_base_const_cast(
-				DerivedType &derived_object,
-				const ObjectTag &base_object_tag)
-		{
-			return transcribe_base_object<
-					// Remove 'const' from 'BaseType' (if needed)...
-					typename boost::remove_const<BaseType>::type>(
-							derived_object,
-							base_object_tag);
-		}
-
-		/**
-		 * Delegates to @a transcribe_base_object.
-		 *
-		 * We don't have to worry about const-casting pointers, etc, because BaseType and DerivedType
-		 * are always classes (ie, not pointers).
-		 */
-		template <class BaseType, class DerivedType>
-		bool
-		transcribe_base_const_cast(
-				const DerivedType &derived_object,
-				const ObjectTag &base_object_tag)
-		{
-			return transcribe_base_object<
-					// Remove 'const' from 'BaseType' (if needed)...
-					typename boost::remove_const<BaseType>::type>(
-							const_cast<DerivedType &>(derived_object),
-							base_object_tag);
-		}
-
-
-		/**
-		 * Delegates to @a transcribe_base_object.
-		 *
-		 * This overload just registers the base-derived inheritance.
-		 * It doesn't also transcribe base sub-object.
-		 *
-		 * We don't have to worry about const-casting pointers, etc, because BaseType and DerivedType
-		 * are always classes (ie, not pointers).
-		 */
-		template <class BaseType, class DerivedType>
-		bool
-		transcribe_base_const_cast()
-		{
-			return transcribe_base_object<
-					// Remove 'const' from 'BaseType' and 'DerivedType' (if needed)...
-					typename boost::remove_const<BaseType>::type,
-					typename boost::remove_const<DerivedType>::type>();
-		}
 
 
 		/**
@@ -2759,7 +2145,8 @@ namespace GPlatesScribe
 		bool
 		transcribe_smart_pointer_object(
 				ObjectType *&object_ptr,
-				bool shared_ownership);
+				bool shared_ownership,
+				boost::optional<unsigned int> use_count_hint);
 
 
 		/**
@@ -2771,6 +2158,192 @@ namespace GPlatesScribe
 				ObjectType *&object_ptr,
 				bool shared_ownership,
 				boost::optional<object_id_type &> return_object_id = boost::none);
+
+
+		/**
+		 * Transcribe an owning pointer's pointed-to object inside a raw stream ("raw lane") subtree.
+		 *
+		 * The pointed-to object is streamed inline, preceded by a marker byte
+		 * (see @a RawPointerMarker) and, if 'ObjectType' is polymorphic, the export-registered
+		 * class name of the actual (dynamic) pointed-to type (as a unique-string-pool index).
+		 *
+		 * Shared owners are deduplicated via backrefs, preserving aliasing (a @a use_count_hint
+		 * of 1 means we are the sole owner and deduplication can be skipped).
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_pointer_owned_object_raw(
+				ObjectType *&object_ptr,
+				bool shared_ownership,
+				boost::optional<unsigned int> use_count_hint);
+
+
+		/**
+		 * Raw stream ("raw lane") analogue of @a transcribe_pointed_to_class_name_if_polymorphic.
+		 *
+		 * Determines how to transcribe the actual pointed-to object of an *owning* pointer inside
+		 * a raw stream subtree, transcribing the export-registered class name of the actual
+		 * (dynamic) pointed-to type (as a unique-string-pool index) if 'ObjectType' is polymorphic.
+		 *
+		 * On success @a transcribe_owning_pointer transcribes the actual pointed-to type and
+		 * @a pointee_type_info identifies that type (used for backref registration/up-casts).
+		 *
+		 * Returns false (on the load path) if the transcribed class name is not export registered
+		 * (an archive created by a future version) - transcribe result is TRANSCRIBE_UNKNOWN_TYPE.
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_raw_pointee_class(
+				ObjectType *object_ptr,
+				boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+				const std::type_info *&pointee_type_info);
+
+		//! Overload when 'ObjectType' is polymorphic (transcribes the dynamic type's class name).
+		template <typename ObjectType>
+		bool
+		transcribe_raw_pointee_class(
+				ObjectType *object_ptr,
+				boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+				const std::type_info *&pointee_type_info,
+				boost::mpl::true_/*'ObjectType' is polymorphic*/);
+
+		//! Overload when 'ObjectType' is *not* polymorphic (no class name is transcribed).
+		template <typename ObjectType>
+		bool
+		transcribe_raw_pointee_class(
+				ObjectType *object_ptr,
+				boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+				const std::type_info *&pointee_type_info,
+				boost::mpl::false_/*'ObjectType' is *not* polymorphic*/);
+
+
+		/**
+		 * Set the pointer to point to an object loaded from a raw stream (raw lane analogue of
+		 * @a set_pointer_to_object - does multiple-inheritance pointer fix-ups via the void cast
+		 * registry).
+		 *
+		 * Returns false (with transcribe result TRANSCRIBE_INCOMPATIBLE) if the object's actual
+		 * type @a object_type_info does not inherit directly or indirectly from 'ObjectType'.
+		 */
+		template <typename ObjectType>
+		bool
+		set_raw_pointer_to_object(
+				void *object_address,
+				const std::type_info &object_type_info,
+				ObjectType *&object_ptr);
+
+
+		/**
+		 * Save/load construct and transcribe an owning pointer's pointed-to object inside a
+		 * raw stream subtree (used by TranscribeOwningPointerTemplate save/load_object_raw).
+		 */
+		template <typename ObjectType>
+		bool
+		transcribe_construct_raw(
+				ConstructObject<ObjectType> &construct_object)
+		{
+			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+					d_is_raw,
+					GPLATES_ASSERTION_SOURCE,
+					"Attempted to transcribe a raw-lane owned object outside a raw stream subtree.");
+
+			return transcribe_construct_raw(
+					construct_object,
+					// Dispatch at compile time so that streaming code is not instantiated for
+					// pointed-to objects that are themselves pointers (eg, pointer-to-pointer)...
+					typename boost::is_pointer<ObjectType>::type());
+		}
+
+		//! Overload for a pointed-to object that is *not* itself a pointer.
+		template <typename ObjectType>
+		bool
+		transcribe_construct_raw(
+				ConstructObject<ObjectType> &construct_object,
+				boost::mpl::false_/*'ObjectType' is *not* a pointer*/)
+		{
+			return stream_construct_object(
+					// Remove all 'const' from 'ObjectType' (if const)...
+					reinterpret_cast<ConstructObject<remove_all_const_t<ObjectType>> &>(construct_object));
+		}
+
+		//! Overload for a pointed-to object that is itself a pointer (eg, pointer-to-pointer).
+		template <typename ObjectType>
+		bool
+		transcribe_construct_raw(
+				ConstructObject<ObjectType> &construct_object,
+				boost::mpl::true_/*'ObjectType' is a pointer*/)
+		{
+			// A pointed-to object that is itself a pointer (via pointer-to-pointer) is a
+			// *non-owning* pointer (pointer ownership options do not propagate through
+			// pointers-to-pointers), which is not supported inside a raw stream subtree.
+			throw Exceptions::InvalidRawTranscribeOperation(
+					GPLATES_EXCEPTION_SOURCE,
+					"Non-owning pointers (via pointer-to-pointer) cannot be transcribed inside a raw stream subtree.");
+		}
+
+
+		//! Write an owning pointer marker byte to the raw stream being saved.
+		void
+		write_raw_pointer_marker(
+				RawPointerMarker marker);
+
+		//! Read an owning pointer marker byte from the raw stream being loaded (throws if invalid).
+		RawPointerMarker
+		read_raw_pointer_marker();
+
+		/**
+		 * Write the class name of a raw-lane pointed-to object (as a unique-string-pool index)
+		 * and return its export registered class type.
+		 *
+		 * Throws Exceptions::UnregisteredClassType if @a pointee_type_info was not export registered.
+		 */
+		const ExportClassType &
+		save_raw_pointee_class_name(
+				const std::type_info &pointee_type_info);
+
+		/**
+		 * Read the class name of a raw-lane pointed-to object (as a unique-string-pool index)
+		 * and return its export registered class type.
+		 *
+		 * Returns none (with transcribe result TRANSCRIBE_UNKNOWN_TYPE) if the class name is not
+		 * export registered (an archive created by a future version).
+		 */
+		boost::optional<const ExportClassType &>
+		load_raw_pointee_class_name();
+
+		/**
+		 * If the specified *shared* pointed-to object has already been streamed into the raw
+		 * stream then returns its backref index, otherwise registers it (with the next index in
+		 * encounter order) and returns none (in which case the caller streams the object inline).
+		 */
+		boost::optional<boost::uint64_t>
+		save_raw_shared_object_backref(
+				const InternalUtils::ObjectAddress &object_address);
+
+		/**
+		 * Reserve the backref slot for a *shared* pointed-to object about to be loaded, returning
+		 * its backref index.
+		 *
+		 * The slot is reserved *before* the object's contents are loaded (and filled in afterwards
+		 * via @a set_raw_shared_object_on_load) so that the index matches the save path, which
+		 * registers the object before streaming its contents. This keeps the parent/child
+		 * registration order consistent when shared objects are nested (the parent is assigned a
+		 * lower index than the shared objects nested within it, on both the save and load paths).
+		 */
+		boost::uint64_t
+		reserve_raw_shared_object_on_load();
+
+		//! Fill in a backref slot reserved by @a reserve_raw_shared_object_on_load once the object is loaded.
+		void
+		set_raw_shared_object_on_load(
+				boost::uint64_t backref_index,
+				void *object_address,
+				const std::type_info &object_type);
+
+		//! Return the *shared* pointed-to object registered for a backref index (throws if invalid).
+		const RawContext::LoadSharedObject &
+		get_raw_shared_object_on_load(
+				boost::uint64_t backref_index);
 
 
 		/**
@@ -2830,9 +2403,11 @@ namespace GPlatesScribe
 
 		/**
 		 * Load a *reference* to an object.
+		 *
+		 * Returns NULL on failure.
 		 */
 		template <typename ObjectType>
-		LoadRef<ObjectType>
+		ObjectType *
 		load_object_reference(
 				const GPlatesUtils::CallStack::Trace &transcribe_source,
 				const ObjectTag &object_tag);
@@ -3319,6 +2894,150 @@ namespace GPlatesScribe
 				StreamTranscribeTag);
 
 
+		/**
+		 * Stream the subtree of the current (boundary) object as a single raw stream (the "raw lane").
+		 *
+		 * The boundary object's id/tag/tracking bookkeeping (pre/post transcribe) is done by the
+		 * caller exactly as for the general path - only the streaming step differs:
+		 *  - On the *save* path the subtree is streamed (via @a stream_subtree, in raw mode) into
+		 *    a raw byte buffer that is then bound to the boundary object id in the transcription.
+		 *  - On the *load* path the boundary object's transcription kind selects the lane: a
+		 *    RAW_STREAM decodes via @a stream_subtree in raw mode, while anything else (eg, a
+		 *    COMPOSITE saved by an older version without the RAW option) falls back to streaming
+		 *    via the general path.
+		 *
+		 * @a stream_subtree is a nullary callable that streams the boundary object
+		 * (eg, calls @a stream_object or @a stream_construct_object) and returns bool.
+		 */
+		template <typename StreamSubtreeFunction>
+		bool
+		stream_raw_boundary(
+				StreamSubtreeFunction stream_subtree);
+
+
+		//
+		// The raw stream ("raw lane") codec.
+		//
+		// Values are encoded positionally (no per-object ids, tags or type slots):
+		//  - Arithmetic types: fixed-width little-endian; 64-bit integer types are encoded
+		//    full-width (unlike the general path which restricts them to 32-bit range).
+		//  - bool: one byte.
+		//  - Strings: a variable-width integer index into the transcription's existing
+		//    unique-string pool (so strings remain interned/deduplicated in the raw lane).
+		//  - Counts/sizes/indices internal to the codec: variable-width integers (LEB128).
+		//
+		// Unlike the general path these cannot fail softly - a raw stream is positional so
+		// decoding cannot re-synchronise - failures throw Exceptions::RawStreamError instead.
+		//
+
+		//! Append bytes to the raw stream being saved.
+		void
+		write_raw_bytes(
+				const void *data,
+				std::size_t num_bytes);
+
+		//! Read bytes from the raw stream being loaded (throws if reading past the end).
+		void
+		read_raw_bytes(
+				void *data,
+				std::size_t num_bytes);
+
+		//! Write an unsigned integer to the raw stream as a variable-width integer (LEB128).
+		void
+		write_raw_varint(
+				boost::uint64_t value);
+
+		//! Read a variable-width integer (LEB128) from the raw stream.
+		boost::uint64_t
+		read_raw_varint();
+
+		//! Write a signed integer to the raw stream (sign discriminator byte + zig-zag varint).
+		void
+		write_raw_signed_integer(
+				boost::int64_t value);
+
+		//! Write an unsigned integer to the raw stream (sign discriminator byte + varint).
+		void
+		write_raw_unsigned_integer(
+				boost::uint64_t value);
+
+		/**
+		 * A canonical integer read from the raw stream, tagged with its saved signedness.
+		 *
+		 * The signedness is that of the *save-side* type (recorded in the stream), independent of
+		 * the load-side type - so the same conversion tolerance as the general path is available
+		 * regardless of which integral type saved the value and which is loading it.
+		 */
+		struct RawInteger
+		{
+			bool is_signed;
+			boost::int64_t signed_value;    // Valid when 'is_signed'.
+			boost::uint64_t unsigned_value; // Valid when '!is_signed'.
+		};
+
+		//! Read a canonical integer (sign discriminator byte + varint) from the raw stream.
+		RawInteger
+		read_raw_integer();
+
+		/**
+		 * Transcribe an integral @a object to/from the raw stream in a canonical, type-independent
+		 * encoding (a sign discriminator byte followed by a - zig-zag, if signed - varint).
+		 *
+		 * Crucially the encoding does not depend on the static width of 'ObjectType': a value saved
+		 * through one integral type can be loaded through another (as the general path allows via
+		 * its canonical signed/unsigned storage), keeping the raw lane robust to the integral-type
+		 * asymmetries a transcribe handler can introduce between its save and load paths. On loading,
+		 * a value outside the range of 'ObjectType' throws.
+		 */
+		template <typename ObjectType>
+		void
+		transcribe_raw_integer(
+				ObjectType &object);
+
+		/**
+		 * Transcribe @a object to/from the raw stream as the fixed-width type 'EncodedType'.
+		 *
+		 * Used for floating-point types (integers use @a transcribe_raw_integer). On loading, a
+		 * value outside the range of 'ObjectType' throws.
+		 *
+		 * Unlike the self-describing integer codec, this fixed-width encoding is not type-independent:
+		 * a floating-point value must be saved and loaded through the *same* type in the raw lane.
+		 * This is deliberate - raw-lane payloads are heavily double-dominated, so a self-describing
+		 * form (a discriminator byte per value) would cost storage and speed on the hot path for a
+		 * cross-width float case that no handler actually exercises. If one ever arises, bump
+		 * CURRENT_RAW_STREAM_CODEC_VERSION and make float/double self-describing like the integer
+		 * codec (see the note at the 'transcribe_raw(float&/double&)' definitions).
+		 */
+		template <typename EncodedType, typename ObjectType>
+		void
+		transcribe_raw_fixed_width(
+				ObjectType &object);
+
+		//
+		// Transcribe primitives directly to/from the raw stream.
+		//
+		// This overload set mirrors the TranscriptionScribeContext::transcribe() overloads
+		// (which handle the same types on the general path).
+		//
+
+		void transcribe_raw(bool &object);
+		void transcribe_raw(char &object);
+		void transcribe_raw(signed char &object);
+		void transcribe_raw(unsigned char &object);
+		void transcribe_raw(short &object);
+		void transcribe_raw(unsigned short &object);
+		void transcribe_raw(int &object);
+		void transcribe_raw(unsigned int &object);
+		void transcribe_raw(long &object);
+		void transcribe_raw(unsigned long &object);
+		void transcribe_raw(long long &object);
+		void transcribe_raw(unsigned long long &object);
+		void transcribe_raw(float &object);
+		void transcribe_raw(double &object);
+		void transcribe_raw(long double &object);
+		void transcribe_raw(std::string &object);
+
+
 		//! Helper function for transcribing boost::shared_ptr.
 		template <typename T>
 		void
@@ -3443,8 +3162,75 @@ namespace GPlatesScribe
 		// Wrap in a Bool object to force caller to check return code.
 		return Bool(
 				transcribe_source,
-				transcribe_const_cast(object, object_tag, options),
+				transcribe_object(
+						// Remove all 'const' from 'ObjectType' (if const)...
+						const_cast<remove_all_const_t<ObjectType> &>(object),
+						object_tag,
+						options),
 				is_loading()/*require_check*/);
+	}
+
+
+	template <typename ObjectType>
+	Bool
+	Scribe::transcribe(
+			const GPlatesUtils::CallStack::Trace &transcribe_source,
+			ObjectType &object,
+			const char *object_tag,
+			unsigned int options)
+	{
+		// In the positional raw lane the tag is never used, so avoid the heap allocation of building
+		// an ObjectTag from the string literal (an empty ObjectTag allocates nothing). Delegate to
+		// the 'const ObjectTag &' overload either way.
+		return transcribe(
+				transcribe_source,
+				object,
+				d_is_raw ? ObjectTag() : ObjectTag(object_tag),
+				options);
+	}
+
+
+	template <typename ArithmeticType>
+	Bool
+	Scribe::transcribe_raw_array(
+			const GPlatesUtils::CallStack::Trace &transcribe_source,
+			ArithmeticType *array,
+			std::size_t count,
+			const ObjectTag &object_tag)
+	{
+		BOOST_STATIC_ASSERT(boost::is_arithmetic<ArithmeticType>::value);
+
+		// Track the file/line of the call site for exception messages.
+		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
+
+		if (d_is_raw)
+		{
+			// Bulk fixed-width block - a single memcpy-style call instead of 'count' individual
+			// transcribe calls. Raw stream reads/writes cannot fail softly (see 'read_raw_bytes') -
+			// they throw on error instead - so this always succeeds if it returns at all.
+			if (is_saving())
+			{
+				write_raw_bytes(array, count * sizeof(ArithmeticType));
+			}
+			else // loading...
+			{
+				read_raw_bytes(array, count * sizeof(ArithmeticType));
+			}
+
+			return Bool(transcribe_source, true, is_loading()/*require_check*/);
+		}
+
+		// General path: a plain per-element transcribe loop (see the class doc comment above -
+		// no current call site relies on this, but the method is well-defined here regardless).
+		for (std::size_t n = 0; n < count; ++n)
+		{
+			if (!transcribe(transcribe_source, array[n], object_tag[n]))
+			{
+				return Bool(transcribe_source, false, is_loading()/*require_check*/);
+			}
+		}
+
+		return Bool(transcribe_source, true, is_loading()/*require_check*/);
 	}
 
 
@@ -3461,7 +3247,10 @@ namespace GPlatesScribe
 		// Wrap in a Bool object to force caller to check return code.
 		return Bool(
 				transcribe_source,
-				transcribe_base_const_cast<BaseType>(derived_object, base_object_tag),
+				// Remove 'const' from 'BaseType' and 'DerivedType' (if const)...
+				transcribe_base_object<remove_all_const_t<BaseType>>(
+						const_cast<remove_all_const_t<DerivedType> &>(derived_object),
+						base_object_tag),
 				is_loading()/*require_check*/);
 	}
 
@@ -3474,7 +3263,8 @@ namespace GPlatesScribe
 		// Wrap in a Bool object to force caller to check return code.
 		return Bool(
 				transcribe_source,
-				transcribe_base_const_cast<BaseType, DerivedType>(),
+				// Remove 'const' from 'BaseType' and 'DerivedType' (if const)...
+				transcribe_base_object<remove_all_const_t<BaseType>, remove_all_const_t<DerivedType>>(),
 				is_loading()/*require_check*/);
 	}
 
@@ -3538,6 +3328,23 @@ namespace GPlatesScribe
 
 
 	template <typename ObjectType>
+	void
+	Scribe::save(
+			const GPlatesUtils::CallStack::Trace &transcribe_source,
+			const ObjectType &object,
+			const char *object_tag,
+			unsigned int options)
+	{
+		// See the 'const char *' transcribe overload - skip building the ObjectTag in the raw lane.
+		save(
+				transcribe_source,
+				object,
+				d_is_raw ? ObjectTag() : ObjectTag(object_tag),
+				options);
+	}
+
+
+	template <typename ObjectType>
 	LoadRef<ObjectType>
 	Scribe::load(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
@@ -3574,6 +3381,21 @@ namespace GPlatesScribe
 
 
 	template <typename ObjectType>
+	LoadRef<ObjectType>
+	Scribe::load(
+			const GPlatesUtils::CallStack::Trace &transcribe_source,
+			const char *object_tag,
+			unsigned int options)
+	{
+		// See the 'const char *' transcribe overload - skip building the ObjectTag in the raw lane.
+		return load<ObjectType>(
+				transcribe_source,
+				d_is_raw ? ObjectTag() : ObjectTag(object_tag),
+				options);
+	}
+
+
+	template <typename ObjectType>
 	void
 	Scribe::save_reference(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
@@ -3583,7 +3405,10 @@ namespace GPlatesScribe
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
-		save_reference_const_cast(object_reference, object_tag);
+		save_object_reference(
+				// Remove all 'const' from 'ObjectType' (if const)...
+				const_cast<remove_all_const_t<ObjectType> &>(object_reference),
+				object_tag);
 	}
 
 
@@ -3596,7 +3421,24 @@ namespace GPlatesScribe
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
-		return load_object_reference<ObjectType>(transcribe_source, object_tag);
+		// Remove all 'const' from 'ObjectType' (if const)...
+		remove_all_const_t<ObjectType> *referenced_object_ptr =
+				load_object_reference<remove_all_const_t<ObjectType>>(
+						transcribe_source,
+						object_tag);
+		if (referenced_object_ptr == nullptr)
+		{
+			// Return NULL reference.
+			return LoadRef<ObjectType>();
+		}
+
+		// Return reference to the object.
+		return LoadRef<ObjectType>(
+				transcribe_source,
+				*this,
+				static_cast<ObjectType *>(referenced_object_ptr),
+				// Referencing an existing object (not transferring ownership)...
+				false/*release*/);
 	}
 
 
@@ -3628,7 +3470,20 @@ namespace GPlatesScribe
 				typename boost::remove_const<ObjectFirstQualifiedType>::type,
 				typename boost::remove_const<ObjectSecondQualifiedType>::type>::value));
 
-		relocated_const_cast(relocated_object, transcribed_object);
+		// Inside a raw stream ("raw lane") subtree, objects are not tracked so there is nothing
+		// to relocate - this is a harmless no-op. This allows the sequence/mapping/etc protocols,
+		// whose load paths relocate each transcribed element into its container, to work
+		// unchanged in raw mode. (In the general path, relocating an untracked object throws
+		// Exceptions::RelocatedUntrackedObject - hence this early return.)
+		if (d_is_raw)
+		{
+			return;
+		}
+
+		// Remove all 'const' from 'ObjectFirstQualifiedType' and 'ObjectSecondQualifiedType' (if const)...
+		relocated_transcribed_object(
+				const_cast<remove_all_const_t<ObjectFirstQualifiedType> &>(relocated_object),
+				const_cast<remove_all_const_t<ObjectSecondQualifiedType> &>(transcribed_object));
 	}
 
 
@@ -3637,7 +3492,9 @@ namespace GPlatesScribe
 	Scribe::has_been_transcribed(
 			ObjectType &object)
 	{
-		return has_been_transcribed_const_cast(object);
+		// Remove all 'const' from 'ObjectType' (if const)...
+		return has_object_been_transcribed(
+				const_cast<remove_all_const_t<ObjectType> &>(object));
 	}
 
 
@@ -3688,7 +3545,7 @@ namespace GPlatesScribe
 		// And we want this to work with non-transcribed, non-registered object types.
 		const class_id_type class_id =
 				get_or_create_class_id(
-						// Remove 'const' from the object type (if needed)...
+						// Remove 'const' from the object type (if const)...
 						typeid(typename boost::remove_const<ObjectType>::type));
 
 		// Get the class info.
@@ -3706,7 +3563,7 @@ namespace GPlatesScribe
 	boost::optional<TranscribeContext<ObjectType> &>
 	Scribe::get_transcribe_context()
 	{
-		// Remove 'const' from the object type (if needed).
+		// Remove 'const' from the object type (if const).
 		typedef typename boost::remove_const<ObjectType>::type non_const_object_type;
 
 		const std::type_info &class_type_info = typeid(non_const_object_type);
@@ -3735,7 +3592,7 @@ namespace GPlatesScribe
 	void
 	Scribe::pop_transcribe_context()
 	{
-		// Remove 'const' from the object type (if needed).
+		// Remove 'const' from the object type (if const).
 		typedef typename boost::remove_const<ObjectType>::type non_const_object_type;
 
 		const std::type_info &class_type_info = typeid(non_const_object_type);
@@ -3783,7 +3640,9 @@ namespace GPlatesScribe
 				GPLATES_ASSERTION_SOURCE,
 				object);
 
-		return transcribe_delegate_const_cast(object);
+		return transcribe_delegate_object(
+				// Remove all 'const' from 'ObjectType' (if const)...
+				const_cast<remove_all_const_t<ObjectType> &>(object));
 	}
 
 
@@ -3815,7 +3674,9 @@ namespace GPlatesScribe
 		// Mirror the load path.
 		SaveConstructObject<ObjectType> save_construct_object(object);
 		// We're on the *save* path so no need to check return value.
-		transcribe_delegate_construct_const_cast(save_construct_object);
+		transcribe_delegate_construct_object(
+				// Remove all 'const' from 'ObjectType' (if const)...
+				reinterpret_cast<SaveConstructObject<remove_all_const_t<ObjectType>> &>(save_construct_object));
 	}
 
 
@@ -3833,7 +3694,9 @@ namespace GPlatesScribe
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_array<ObjectType> >::value);
 
 		LoadConstructObjectOnHeap<ObjectType> load_construct_object;
-		if (!transcribe_delegate_construct_const_cast(load_construct_object))
+		if (!transcribe_delegate_construct_object(
+				// Remove all 'const' from 'ObjectType' (if const)...
+				reinterpret_cast<LoadConstructObjectOnHeap<remove_all_const_t<ObjectType>> &>(load_construct_object)))
 		{
 			// Heap-allocated object destructed/deallocated by construct object 'load_construct_object' on returning...
 			return LoadRef<ObjectType>();
@@ -3876,6 +3739,14 @@ namespace GPlatesScribe
 			const ObjectTag &object_tag,
 			unsigned int options)
 	{
+		// Inside a raw stream ("raw lane") subtree there are no object ids, tags or tracking -
+		// the object is streamed directly (positionally) into the enclosing raw stream.
+		// Note that this means all options (including a nested RAW option) are ignored here.
+		if (d_is_raw)
+		{
+			return stream_object(object);
+		}
+
 		//
 		// Transcribe the object id.
 		//
@@ -3934,8 +3805,23 @@ namespace GPlatesScribe
 		// Transcribe object.
 		//
 
-		// This streams directly to ObjectType to transcribe the object.
-		const bool streamed = stream_object(object);
+		bool streamed;
+		if ((options & RAW) != 0)
+		{
+			// Stream the object's entire subtree into a single raw stream (the "raw lane")
+			// bound to this (boundary) object id - or fall back to the general path when
+			// loading a transcription that was saved without the RAW option.
+			//
+			// Note that this (boundary) object itself is still transcribed normally (object id,
+			// tag and pre/post transcribe bookkeeping) - only the streaming step differs.
+			streamed = stream_raw_boundary(
+					[&]() { return stream_object(object); });
+		}
+		else
+		{
+			// This streams directly to ObjectType to transcribe the object.
+			streamed = stream_object(object);
+		}
 
 		//
 		// Perform operations *after* streaming object.
@@ -3954,6 +3840,15 @@ namespace GPlatesScribe
 			const ObjectTag &object_tag,
 			unsigned int options)
 	{
+		// Inside a raw stream ("raw lane") subtree there are no object ids, tags or tracking -
+		// the object is save/load constructed and streamed directly (positionally) into the
+		// enclosing raw stream.
+		// Note that this means all options (including a nested RAW option) are ignored here.
+		if (d_is_raw)
+		{
+			return stream_construct_object(construct_object);
+		}
+
 		//
 		// Transcribe the object id.
 		//
@@ -4020,8 +3915,23 @@ namespace GPlatesScribe
 		// Transcribe object.
 		//
 
-		// This streams a ConstructObject<ObjectType> to both save/load construct the object and to transcribe it.
-		const bool streamed = stream_construct_object(construct_object);
+		bool streamed;
+		if ((options & RAW) != 0)
+		{
+			// Stream the object's entire subtree into a single raw stream (the "raw lane")
+			// bound to this (boundary) object id - or fall back to the general path when
+			// loading a transcription that was saved without the RAW option.
+			//
+			// Note that this (boundary) object itself is still transcribed normally (object id,
+			// tag and pre/post transcribe bookkeeping) - only the streaming step differs.
+			streamed = stream_raw_boundary(
+					[&]() { return stream_construct_object(construct_object); });
+		}
+		else
+		{
+			// This streams a ConstructObject<ObjectType> to both save/load construct the object and to transcribe it.
+			streamed = stream_construct_object(construct_object);
+		}
 
 		//
 		// Perform operations *after* streaming object.
@@ -4040,6 +3950,27 @@ namespace GPlatesScribe
 			const ObjectTag &object_tag,
 			unsigned int options)
 	{
+		// Inside a raw stream ("raw lane") subtree there are no object ids, tags or tracking.
+		//
+		// An *owning* pointer streams its pointed-to object inline (preceded by a marker byte
+		// and, if 'ObjectType' is polymorphic, the class name of the actual pointed-to type).
+		// Shared owners are deduplicated via backrefs (preserving aliasing).
+		//
+		// A *non-owning* pointer cannot be supported - it requires object tracking to link up
+		// with its pointed-to object, and the raw lane omits all tracking.
+		if (d_is_raw)
+		{
+			GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
+					(options & (EXCLUSIVE_OWNER | SHARED_OWNER)) != 0,
+					GPLATES_ASSERTION_SOURCE,
+					"Non-owning pointers cannot be transcribed inside a raw stream subtree.");
+
+			return transcribe_pointer_owned_object_raw(
+					object_ptr,
+					(options & SHARED_OWNER) != 0/*shared_ownership*/,
+					boost::none/*use_count_hint*/);
+		}
+
 		// If loading then set the pointer to NULL in case it doesn't get initialised later.
 		// This can happen when the pointer does not own the pointed-to object and the pointed-to
 		// object has not yet been transcribed. So in the meantime we set it to NULL in case the
@@ -4079,15 +4010,23 @@ namespace GPlatesScribe
 			object_id_type pointer_object_id,
 			unsigned int options)
 	{
-		// Ensure maximum supported pointer dimension has not been exceeded.
-		//
-		// If this assertion is triggered then a multi-level pointer with dimension greater than
-		// 'GPLATES_SCRIBE_MAX_POINTER_DIMENSION' is being transcribed.
-		//
-		BOOST_STATIC_ASSERT(boost::mpl::not_< UnsupportedPointerType<ObjectType*> >::value);
-
 		// Compile-time assertion to ensure that 'ObjectType' is not const.
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
+
+		// Safety net: in raw ("raw lane") mode pointers are handled entirely in the *tag*
+		// overload (they never transcribe an object id) so we should not be able to get here.
+		GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+				!d_is_raw,
+				GPLATES_ASSERTION_SOURCE,
+				"Attempted to transcribe a pointer object id inside a raw stream subtree.");
+
+		// The RAW option cannot be specified directly on a pointer (a raw stream boundary is
+		// a non-pointer object) - a pointer inside a raw subtree is instead handled by the
+		// enclosing boundary's raw mode.
+		GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
+				(options & RAW) == 0,
+				GPLATES_ASSERTION_SOURCE,
+				"The RAW option cannot be specified directly on a pointer.");
 
 		// Should not have both pointer ownership options specified together.
 		GPlatesGlobal::Assert<Exceptions::InvalidTranscribeOptions>(
@@ -4587,10 +4526,310 @@ namespace GPlatesScribe
 
 	template <typename ObjectType>
 	bool
+	Scribe::transcribe_pointer_owned_object_raw(
+			ObjectType *&object_ptr,
+			bool shared_ownership,
+			boost::optional<unsigned int> use_count_hint)
+	{
+		// Compile-time assertion to ensure that 'ObjectType' is not const.
+		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
+
+		if (is_saving())
+		{
+			if (object_ptr == NULL)
+			{
+				write_raw_pointer_marker(RAW_POINTER_NULL);
+				return true;
+			}
+
+			// We need the *dynamic* object address since we want the full dynamic object
+			// instead of a (potential) base class sub-object (referenced by pointer).
+			// It also identifies the pointed-to object for shared-owner deduplication
+			// (all owners of the same object agree on its dynamic address).
+			const object_address_type object_address = InternalUtils::get_dynamic_object_address(object_ptr);
+
+			if (shared_ownership &&
+				// A use count of 1 means we are the *sole* owner - the pointed-to object cannot
+				// be streamed again via another owner so deduplication can be skipped (this is
+				// the common case - most shared-owner pointers are not actually shared).
+				//
+				// An unknown use count falls back to always deduplicating (conservative).
+				// IMPORTANT: the hint must count *all* owners of the pointed-to object
+				// (eg, an intrusive reference count) - an under-count breaks aliasing.
+				(!use_count_hint || use_count_hint.get() != 1))
+			{
+				// If the pointed-to object has already been streamed (by another shared owner)
+				// then just write a backref to it, otherwise register it and stream it inline.
+				const boost::optional<boost::uint64_t> backref_index =
+						save_raw_shared_object_backref(object_address);
+				if (backref_index)
+				{
+					write_raw_pointer_marker(RAW_POINTER_SHARED_BACKREF);
+					write_raw_varint(backref_index.get());
+
+					return true;
+				}
+
+				write_raw_pointer_marker(RAW_POINTER_SHARED);
+			}
+			else
+			{
+				// Sole (or exclusive) owner - the pointed-to object cannot be back-referenced.
+				write_raw_pointer_marker(RAW_POINTER_INLINE);
+			}
+
+			// Find out how to transcribe the actual pointed-to object (transcribing its class
+			// name, as a unique-string-pool index, if 'ObjectType' is polymorphic).
+			boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> transcribe_owning_pointer;
+			const std::type_info *pointee_type_info = NULL;
+			if (!transcribe_raw_pointee_class(object_ptr, transcribe_owning_pointer, pointee_type_info))
+			{
+				return false;
+			}
+
+			// Stream the pointed-to object inline.
+			//
+			// Note: We pass the *dynamic* object address (instead of the potentially different
+			// base class pointer under multiple inheritance) since that's the address of the
+			// full dynamic object (whose type 'transcribe_owning_pointer' transcribes).
+			transcribe_owning_pointer->save_object_raw(*this, object_address.address);
+
+			return true;
+		}
+
+		// Loading...
+
+		// Set the pointer to NULL in case it doesn't get initialised below.
+		// Also it might actually be a NULL pointer (ie, save path transcribed a NULL pointer).
+		object_ptr = NULL;
+
+		const RawPointerMarker marker = read_raw_pointer_marker();
+
+		if (marker == RAW_POINTER_NULL)
+		{
+			// Nothing left to do - pointer has already been set to NULL.
+			return true;
+		}
+
+		if (marker == RAW_POINTER_SHARED_BACKREF)
+		{
+			// The pointed-to object was already loaded (via a previous shared owner).
+			const RawContext::LoadSharedObject &shared_object =
+					get_raw_shared_object_on_load(read_raw_varint());
+
+			return set_raw_pointer_to_object(
+					shared_object.object_address,
+					*shared_object.object_type,
+					object_ptr);
+		}
+
+		// Marker is RAW_POINTER_INLINE or RAW_POINTER_SHARED - the pointed-to object follows inline.
+
+		// Find out how to transcribe the actual pointed-to object (transcribing its class
+		// name, as a unique-string-pool index, if 'ObjectType' is polymorphic).
+		boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> transcribe_owning_pointer;
+		const std::type_info *pointee_type_info = NULL;
+		if (!transcribe_raw_pointee_class(object_ptr, transcribe_owning_pointer, pointee_type_info))
+		{
+			// The pointed-to object type does not match anything we've export registered - the
+			// archive was created by a future version with a class name we don't know about
+			// (or one we have since removed). Note that, unlike the general path, the raw
+			// stream is positional so this failure cannot be recovered from by the caller
+			// (the unknown object's bytes cannot be skipped) - the whole raw load will fail.
+			return false;
+		}
+
+		// For a shared object, reserve its backref slot *before* loading its contents so that its
+		// index matches the save path (which registers the object before streaming its contents).
+		// This keeps the parent/child registration order consistent when shared objects are nested
+		// (otherwise a shared object nested inside another shared object would be registered before
+		// its parent on load but after it on save, misaligning all subsequent backref indices).
+		boost::optional<boost::uint64_t> shared_object_backref_index;
+		if (marker == RAW_POINTER_SHARED)
+		{
+			shared_object_backref_index = reserve_raw_shared_object_on_load();
+		}
+
+		// Create the pointed-to object on the heap and load it from the raw stream.
+		// We (the owning pointer being transcribed) take ownership.
+		void *const object_address = transcribe_owning_pointer->load_object_raw(*this);
+		if (object_address == NULL)
+		{
+			// The pointed-to object failed to load (eg, transcription incompatibility).
+			return false;
+		}
+
+		if (shared_object_backref_index)
+		{
+			// Now that the object is loaded, fill in the slot reserved above so later backrefs
+			// (from other shared owners) resolve to it.
+			set_raw_shared_object_on_load(
+					shared_object_backref_index.get(), object_address, *pointee_type_info);
+		}
+
+		return set_raw_pointer_to_object(object_address, *pointee_type_info, object_ptr);
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::transcribe_raw_pointee_class(
+			ObjectType *object_ptr,
+			boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+			const std::type_info *&pointee_type_info)
+	{
+		return transcribe_raw_pointee_class(
+				object_ptr,
+				transcribe_owning_pointer,
+				pointee_type_info,
+				// We only want to instantiate polymorphic code for polymorphic 'ObjectType' and
+				// non-polymorphic code for non-polymorphic 'ObjectType' (see the equivalent
+				// general path 'transcribe_pointed_to_class_name_if_polymorphic()')...
+				typename boost::is_polymorphic<ObjectType>::type());
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::transcribe_raw_pointee_class(
+			ObjectType *object_ptr,
+			boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+			const std::type_info *&pointee_type_info,
+			boost::mpl::true_/*'ObjectType' is polymorphic*/)
+	{
+		if (is_saving())
+		{
+			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+					object_ptr,
+					GPLATES_ASSERTION_SOURCE,
+					"Expecting non-null pointer in save path.");
+
+			// The actual (polymorphic) type of the pointed-to object could differ from
+			// 'ObjectType' so we transcribe the class name (as a unique-string-pool index).
+			//
+			// We expect the actual type to have been export registered
+			// (see 'ScribeExportRegistration.h') - if not this throws.
+			const ExportClassType &export_class_type = save_raw_pointee_class_name(typeid(*object_ptr));
+
+			transcribe_owning_pointer = export_class_type.transcribe_owning_pointer.get();
+			pointee_type_info = export_class_type.type_info.get_pointer();
+
+			return true;
+		}
+
+		// Loading...
+
+		// Load the class name (as a unique-string-pool index) of the actual type of the
+		// pointed-to object and look up its export registered class type.
+		const boost::optional<const ExportClassType &> export_class_type = load_raw_pointee_class_name();
+		if (!export_class_type)
+		{
+			// The class name does not match anything we've export registered
+			// (transcribe result is TRANSCRIBE_UNKNOWN_TYPE).
+			return false;
+		}
+
+		transcribe_owning_pointer = export_class_type->transcribe_owning_pointer.get();
+		pointee_type_info = export_class_type->type_info.get_pointer();
+
+		return true;
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::transcribe_raw_pointee_class(
+			ObjectType *object_ptr,
+			boost::intrusive_ptr<const InternalUtils::TranscribeOwningPointer> &transcribe_owning_pointer,
+			const std::type_info *&pointee_type_info,
+			boost::mpl::false_/*'ObjectType' is *not* polymorphic*/)
+	{
+		// The actual type of the pointed-to object is 'ObjectType' (in both the save and load
+		// paths) so, like the general path, we don't transcribe a class name - if 'ObjectType'
+		// differs in the save and load paths then loading will only succeed if both are
+		// transcription-compatible.
+		//
+		// Note: If the actual object type is not 'ObjectType' then it'll get sliced when
+		// transcribed - however there's no way to detect slicing (transcribing a derived
+		// class object through a *non-polymorphic* base class pointer only transcribes
+		// the base class sub-object).
+		const class_id_type class_id = register_object_type<ObjectType>();
+
+		const boost::optional<InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type>
+				class_transcribe_owning_pointer = get_class_info(class_id).transcribe_owning_pointer;
+
+		// We know that 'ObjectType' cannot be an abstract class because if it was abstract
+		// then it would have run-time type information (RTTI) since it would have (pure)
+		// virtual methods. Hence it would be polymorphic and we wouldn't be able to get here.
+		// So since 'ObjectType' is not abstract then 'register_object_type<>()' would
+		// have created a valid TranscribeOwningPointer for it.
+		GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+				class_transcribe_owning_pointer,
+				GPLATES_ASSERTION_SOURCE,
+				"Expecting non-abstract, non-array pointed-to object in raw stream.");
+
+		transcribe_owning_pointer = class_transcribe_owning_pointer->get();
+		pointee_type_info = &typeid(ObjectType);
+
+		return true;
+	}
+
+
+	template <typename ObjectType>
+	bool
+	Scribe::set_raw_pointer_to_object(
+			void *object_address,
+			const std::type_info &object_type_info,
+			ObjectType *&object_ptr)
+	{
+		// We need to do any pointer fix ups in the presence of multiple inheritance.
+		// It's possible that the pointer refers to a base class of a multiply-inherited
+		// derived class object and there can be pointer offsets.
+		// So we need to use the void cast registry to apply any necessary pointer offsets.
+		//
+		// Note that the up-cast path should be available because the pointed-to object has
+		// already been streamed (which records base<->derived relationships - the inheritance
+		// registration in 'transcribe_base_object()' still runs in raw mode).
+		const boost::optional<void *> referenced_object_address =
+				d_void_cast_registry.up_cast(
+						// Actual type of the pointed-to object...
+						object_type_info,
+						// Our pointer points to this type...
+						typeid(ObjectType),
+						// Address of the actual pointed-to object...
+						object_address);
+		if (!referenced_object_address)
+		{
+			// The up-cast failed because the actual pointed-to object type does not inherit
+			// directly or indirectly from 'ObjectType' and so we can't legally reference it
+			// (see the equivalent general path 'set_pointer_to_object()' for an example of
+			// how this can happen).
+			set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_INCOMPATIBLE);
+
+			return false;
+		}
+
+		// Set the pointer.
+		object_ptr = static_cast<ObjectType *>(referenced_object_address.get());
+
+		return true;
+	}
+
+
+	template <typename ObjectType>
+	bool
 	Scribe::transcribe_smart_pointer_object(
 			ObjectType *&object_ptr,
-			bool shared_ownership)
+			bool shared_ownership,
+			boost::optional<unsigned int> use_count_hint)
 	{
+		// Inside a raw stream ("raw lane") subtree there are no object ids, tags or tracking -
+		// the pointed-to object is streamed inline (with shared owners deduplicated via backrefs).
+		if (d_is_raw)
+		{
+			return transcribe_pointer_owned_object_raw(object_ptr, shared_ownership, use_count_hint);
+		}
+
 		// Note: We don't mark the pointed-to object as referenced by an untracked pointer because
 		// relocating the pointed-to object means a new smart pointer is being created with a new
 		// pointed-to object. In this case we don't want the original smart pointer to point to
@@ -4634,6 +4873,20 @@ namespace GPlatesScribe
 			return false;
 		}
 
+		// Inside a raw stream ("raw lane") subtree there are no object ids, tags or tracking -
+		// the base class sub-object is streamed directly (positionally) into the enclosing raw
+		// stream and there is no base-class sub-object bookkeeping.
+		//
+		// Note that the base/derived inheritance registration (above) still runs - it is needed
+		// to up-cast shared pointed-to objects resolved via backrefs on load.
+		if (d_is_raw)
+		{
+			return stream_object(
+					// Remove all 'const' from 'BaseType' (if const)...
+					const_cast<remove_all_const_t<BaseType> &>(
+							static_cast<BaseType &>(derived_object)));
+		}
+
 		// Get the derived object info.
 		//
 		// Note: We assume the currently transcribed object is the derived object because we don't
@@ -4651,10 +4904,12 @@ namespace GPlatesScribe
 		//
 		// Note: We don't call 'transcribe()' directly because it would require the object's
 		// actual type to be 'BaseType' (but it's really 'DerivedType' or some derivation of that).
-		// And we don't call 'transcribe_object()' directly because that bypasses the const conversions
+		// Instead we call 'transcribe_object()' and remove 'const' from 'BaseType'
 		// (although in our case we use non-const classes so it wouldn't actually matter).
-		if (!transcribe_const_cast(
-				static_cast<BaseType &>(derived_object),
+		if (!transcribe_object(
+				// Remove all 'const' from 'ObjectType' (if const)...
+				const_cast<remove_all_const_t<BaseType> &>(
+						static_cast<BaseType &>(derived_object)),
 				base_object_tag,
 				// The tracking of base class object should always be enabled even if the client requested
 				// tracking be disabled for the derived class object.
@@ -4721,6 +4976,13 @@ namespace GPlatesScribe
 		// Compile-time assertion to ensure that 'ObjectType' is not const.
 		BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_const<ObjectType> >::value);
 
+		// Object references require object tracking (to find the referenced object), which the
+		// raw lane omits, so they cannot be transcribed inside a raw stream subtree.
+		GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
+				!d_is_raw,
+				GPLATES_ASSERTION_SOURCE,
+				"Object references cannot be transcribed inside a raw stream subtree.");
+
 		GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
 				is_saving(),
 				GPLATES_ASSERTION_SOURCE,
@@ -4772,11 +5034,18 @@ namespace GPlatesScribe
 
 
 	template <typename ObjectType>
-	LoadRef<ObjectType>
+	ObjectType *
 	Scribe::load_object_reference(
 			const GPlatesUtils::CallStack::Trace &transcribe_source,
 			const ObjectTag &object_tag)
 	{
+		// Object references require object tracking (to find the referenced object), which the
+		// raw lane omits, so they cannot be transcribed inside a raw stream subtree.
+		GPlatesGlobal::Assert<Exceptions::InvalidRawTranscribeOperation>(
+				!d_is_raw,
+				GPLATES_ASSERTION_SOURCE,
+				"Object references cannot be transcribed inside a raw stream subtree.");
+
 		GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
 				is_loading(),
 				GPLATES_ASSERTION_SOURCE,
@@ -4789,7 +5058,7 @@ namespace GPlatesScribe
 		if (!transcribe_object_id(object_address_type(), object_tag, object_id))
 		{
 			// Return NULL reference.
-			return LoadRef<ObjectType>();
+			return nullptr;
 		}
 
 		// Get the referenced object info.
@@ -4812,7 +5081,7 @@ namespace GPlatesScribe
 			set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_UNKNOWN_TYPE);
 
 			// Return NULL reference.
-			return LoadRef<ObjectType>();
+			return nullptr;
 		}
 
 		// We need to do any pointer fix ups in the presence of multiple inheritance.
@@ -4831,7 +5100,7 @@ namespace GPlatesScribe
 				referenced_object_ptr))
 		{
 			// Return NULL reference.
-			return LoadRef<ObjectType>();
+			return nullptr;
 		}
 
 		// Mark the referenced object as referenced so we can raise an error if an attempt
@@ -4842,12 +5111,7 @@ namespace GPlatesScribe
 		object_info.is_load_object_bound_to_a_reference_or_untracked_pointer = true;
 
 		// Return reference to the object.
-		return LoadRef<ObjectType>(
-				transcribe_source,
-				*this,
-				static_cast<ObjectType *>(referenced_object_ptr),
-				// Referencing an existing object (not transferring ownership)...
-				false/*release*/);
+		return referenced_object_ptr;
 	}
 
 
@@ -4939,16 +5203,6 @@ namespace GPlatesScribe
 		// This is unlikely though since the parent must be tracked for relocations to work and
 		// leaving an unused but tracked (parent) object lying around can be problematic.
 		add_or_remove_relocated_child_as_sub_object_if_inside_or_outside_parent(transcribed_object_id.get());
-	}
-
-
-	template <typename ObjectType>
-	void
-	Scribe::untrack(
-			ObjectType &object,
-			bool discard)
-	{
-		untrack_const_cast(object, discard);
 	}
 
 
@@ -5414,6 +5668,80 @@ namespace GPlatesScribe
 	}
 
 
+	template <typename StreamSubtreeFunction>
+	bool
+	Scribe::stream_raw_boundary(
+			StreamSubtreeFunction stream_subtree)
+	{
+		if (is_saving())
+		{
+			// Enter raw mode for the duration of streaming the subtree.
+			RawStreamScope raw_stream_scope(*this);
+
+			// Every raw stream starts with the codec version so that future codec changes can
+			// be detected (and rejected cleanly) by older Scribe versions.
+			write_raw_varint(CURRENT_RAW_STREAM_CODEC_VERSION);
+
+			if (!stream_subtree())
+			{
+				// Client 'transcribe()' handlers do not fail on the save path, but remain
+				// defensive and mirror the general path (the caller will discard the object).
+				return false;
+			}
+
+			// Bind the streamed subtree bytes to the boundary object id (like a primitive).
+			//
+			// Note this is done while still inside the raw scope so that the save buffer is
+			// still alive - the buffer is *moved* into the transcription (not copied).
+			d_transcription_context.save_raw_stream(d_raw_context.save_data);
+
+			return true;
+		}
+		else // loading...
+		{
+			// Dispatch on the transcription kind of the (boundary) object: if it is not a raw
+			// stream then it was saved via the general path (eg, by an older version without
+			// the RAW option) so fall back to loading via the general path.
+			boost::optional<const std::vector<char> &> raw_stream_data =
+					d_transcription_context.load_raw_stream();
+			if (!raw_stream_data)
+			{
+				return stream_subtree();
+			}
+
+			// Enter raw mode for the duration of streaming the subtree.
+			RawStreamScope raw_stream_scope(*this);
+
+			d_raw_context.load_data = &raw_stream_data.get();
+
+			// Every raw stream starts with the codec version.
+			// A version we don't know about cannot be decoded (a raw stream is positional so
+			// decoding cannot skip unknown encodings) - fail cleanly.
+			const boost::uint64_t raw_stream_codec_version = read_raw_varint();
+			GPlatesGlobal::Assert<Exceptions::UnsupportedRawStreamVersion>(
+					raw_stream_codec_version <= CURRENT_RAW_STREAM_CODEC_VERSION,
+					GPLATES_ASSERTION_SOURCE,
+					static_cast<unsigned int>(raw_stream_codec_version),
+					CURRENT_RAW_STREAM_CODEC_VERSION);
+
+			if (!stream_subtree())
+			{
+				return false;
+			}
+
+			// The entire raw stream should have been consumed - if not then the load path
+			// transcribe calls do not match the save path (a positional mismatch that would
+			// otherwise go undetected).
+			GPlatesGlobal::Assert<Exceptions::RawStreamError>(
+					d_raw_context.load_cursor == raw_stream_data->size(),
+					GPLATES_ASSERTION_SOURCE,
+					"Raw stream was not fully consumed on load.");
+
+			return true;
+		}
+	}
+
+
 	template <typename ObjectType>
 	bool
 	Scribe::stream(
@@ -5446,6 +5774,22 @@ namespace GPlatesScribe
 			bool transcribed_construct_data,
 			StreamPrimitiveTag)
 	{
+		// Inside a raw stream ("raw lane") subtree, primitives are encoded directly into the
+		// raw stream (no per-object ids or type slots).
+		//
+		// This branch is essential (rather than an optimisation) because the delegate protocol
+		// streams directly (via 'stream_object()'), bypassing the 'transcribe_object()' branches.
+		//
+		// Note that raw decoding failures *throw* (a raw stream is positional so decoding cannot
+		// re-synchronise) rather than failing softly like the general path below.
+		if (d_is_raw)
+		{
+			transcribe_raw(object);
+
+			set_transcribe_result(TRANSCRIBE_SOURCE, TRANSCRIBE_SUCCESS);
+			return true;
+		}
+
 		// Re-direct types handled specifically by the transcription context directly to it.
 		// Instead of the general non-member 'GPlatesScribe::transcribe()' mechanism.
 		if (!d_transcription_context.transcribe(object))

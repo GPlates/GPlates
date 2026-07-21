@@ -232,7 +232,52 @@ GPlatesMaths::MultiPointOnSphere::transcribe(
 		GPlatesScribe::Scribe &scribe,
 		bool transcribed_construct_data)
 {
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_points, "points"))
+	if (scribe.is_transcribing_raw())
+	{
+		// Fast path for the raw lane: stream the point coordinates as one bulk array of doubles
+		// (x, y, z per point) instead of the general per-point PointOnSphere/UnitVector3D/Real
+		// transcription chain - this is the dominant per-point cost for large multi-points.
+		if (scribe.is_saving())
+		{
+			std::vector<double> coords;
+			coords.reserve(3 * d_points.size());
+			for (point_container_type::const_iterator iter = d_points.begin(); iter != d_points.end(); ++iter)
+			{
+				const UnitVector3D &position_vector = iter->position_vector();
+				coords.push_back(position_vector.x().dval());
+				coords.push_back(position_vector.y().dval());
+				coords.push_back(position_vector.z().dval());
+			}
+
+			const unsigned int num_points = d_points.size();
+			scribe.save(TRANSCRIBE_SOURCE, num_points, "num_points");
+			scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, coords.data(), coords.size(), "point_coords");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<unsigned int> num_points =
+					scribe.load<unsigned int>(TRANSCRIBE_SOURCE, "num_points");
+			if (!num_points.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			std::vector<double> coords(3 * num_points.get());
+			if (!scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, coords.data(), coords.size(), "point_coords"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			d_points.clear();
+			d_points.reserve(num_points.get());
+			for (unsigned int n = 0; n < num_points.get(); ++n)
+			{
+				d_points.push_back(PointOnSphere(
+						UnitVector3D(coords[3 * n], coords[3 * n + 1], coords[3 * n + 2])));
+			}
+		}
+	}
+	else if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_points, "points"))
 	{
 		return scribe.get_transcribe_result();
 	}

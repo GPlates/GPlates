@@ -24,6 +24,7 @@
  */
 
 #include <limits>
+#include <QByteArray>
 #include <QString>
 
 #include "ScribeXmlArchiveWriter.h"
@@ -310,6 +311,13 @@ GPlatesScribe::XmlArchiveWriter::write_transcription(
 			d_output_stream.writeEndElement();
 			break;
 
+		case Transcription::RAW_STREAM:
+			d_output_stream.writeStartElement(ArchiveCommon::XML_RAW_STREAM_OBJECT_ELEMENT_NAME);
+			d_output_stream.writeAttribute(ArchiveCommon::XML_OBJECT_ID, C_LOCALE.toString(object_id));
+			write(transcription.get_raw_stream(object_id));
+			d_output_stream.writeEndElement();
+			break;
+
 		default:
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 					false,
@@ -448,4 +456,14 @@ GPlatesScribe::XmlArchiveWriter::write(
 {
 	d_output_stream.writeCharacters(
 			QString::fromLatin1(object.data(), object.length()));
+}
+
+
+void
+GPlatesScribe::XmlArchiveWriter::write(
+		const std::vector<char> &object)
+{
+	const QByteArray base64_data = QByteArray(object.data(), object.size()).toBase64();
+
+	d_output_stream.writeCharacters(QString::fromLatin1(base64_data.constData(), base64_data.size()));
 }

@@ -26,6 +26,7 @@
 #ifndef GPLATES_SCRIBE_SCRIBEXMLARCHIVEWRITER_H
 #define GPLATES_SCRIBE_SCRIBEXMLARCHIVEWRITER_H
 
+#include <vector>
 #include <QLocale>
 #include <QString>
 #include <QXmlStreamWriter>
@@ -120,6 +121,11 @@ namespace GPlatesScribe
 		void
 		write(
 				const std::string &object);
+
+		//! Base64-encodes the raw bytes so they're safe to embed as XML character data.
+		void
+		write(
+				const std::vector<char> &object);
 
 
 		/**

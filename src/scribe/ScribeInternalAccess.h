@@ -26,6 +26,7 @@
 #ifndef GPLATES_SCRIBE_SCRIBEINTERNALACCESS_H
 #define GPLATES_SCRIBE_SCRIBEINTERNALACCESS_H
 
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "Scribe.h"
@@ -57,7 +58,8 @@ namespace GPlatesScribe
 
 	template <typename ObjectType>
 	Bool transcribe_smart_pointer_protocol(
-			const GPlatesUtils::CallStack::Trace &, Scribe &, ObjectType *&, bool);
+			const GPlatesUtils::CallStack::Trace &, Scribe &, ObjectType *&, bool,
+			boost::optional<unsigned int>);
 
 	namespace TranscribeUtils
 	{
@@ -121,9 +123,21 @@ namespace GPlatesScribe
 		transcribe_smart_pointer(
 				Scribe &scribe,
 				ObjectType *&object_ptr,
-				bool shared_owner)
+				bool shared_owner,
+				boost::optional<unsigned int> use_count_hint)
 		{
-			return scribe.transcribe_smart_pointer(object_ptr, shared_owner);
+			return scribe.transcribe_smart_pointer(object_ptr, shared_owner, use_count_hint);
+		}
+
+
+		template <typename ObjectType>
+		static
+		bool
+		transcribe_construct_raw(
+				Scribe &scribe,
+				ConstructObject<ObjectType> &object)
+		{
+			return scribe.transcribe_construct_raw(object);
 		}
 
 
@@ -218,7 +232,8 @@ namespace GPlatesScribe
 		// Allow smart pointer protocol to call 'Scribe::transcribe_smart_pointer()' and construct 'Bool' objects.
 		template <typename ObjectType>
 		friend Bool transcribe_smart_pointer_protocol(
-				const GPlatesUtils::CallStack::Trace &, Scribe &, ObjectType *&, bool);
+				const GPlatesUtils::CallStack::Trace &, Scribe &, ObjectType *&, bool,
+				boost::optional<unsigned int>);
 
 		// Allow delegate protocol to call 'Scribe::transcribe_delegate()',
 		// 'Scribe::load_delegate()' and 'Scribe::load_delegate()'.

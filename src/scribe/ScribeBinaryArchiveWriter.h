@@ -26,6 +26,7 @@
 #ifndef GPLATES_SCRIBE_SCRIBEBINARYARCHIVEWRITER_H
 #define GPLATES_SCRIBE_SCRIBEBINARYARCHIVEWRITER_H
 
+#include <vector>
 #include <QDataStream>
 #include <QtGlobal>
 
@@ -82,6 +83,19 @@ namespace GPlatesScribe
 		BinaryArchiveWriter(
 				QDataStream &output_stream);
 
+		/**
+		 * Writes the part of the archive header whose value depends on the transcription being
+		 * written (the binary archive format version - see @a ArchiveCommon::BINARY_ARCHIVE_FORMAT_VERSION_RAW_STREAM)
+		 * the first time @a write_transcription is called, and does nothing on subsequent calls.
+		 *
+		 * This is deferred (rather than written in the constructor) because whether to bump the
+		 * format version depends on @a transcription containing raw stream data, which isn't known
+		 * until the first transcription to be written is available.
+		 */
+		void
+		write_header_if_necessary(
+				const Transcription &transcription);
+
 		void
 		write_object_group(
 				const Transcription &transcription,
@@ -119,8 +133,15 @@ namespace GPlatesScribe
 		write(
 				const std::string &object);
 
+		void
+		write(
+				const std::vector<char> &object);
+
 
 		QDataStream &d_output_stream;
+
+		//! Whether @a write_header_if_necessary has already written the deferred header fields.
+		bool d_header_written;
 
 	};
 }

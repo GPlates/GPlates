@@ -1980,10 +1980,18 @@ namespace GPlatesApi
 		}
 
 		// Load the resolved topology parameters.
+		//
+		// Note: These must be loaded in the same order they were saved (see 'save_construct_data':
+		//       per-file 'resolve_topology_parameters' first, then 'default_resolve_topology_parameters').
+		//       The order matters for the "raw lane" (used by pickling) which is positional - there
+		//       are no per-object tags to look up, so the load order must mirror the save order.
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, resolve_topology_parameters, "resolve_topology_parameters"))
+		{
+			return false;
+		}
 		default_resolve_topology_parameters = scribe.load<ResolveTopologyParameters::non_null_ptr_to_const_type>(
 				TRANSCRIBE_SOURCE, "default_resolve_topology_parameters");
-		if (!default_resolve_topology_parameters.is_valid() ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, resolve_topology_parameters, "resolve_topology_parameters"))
+		if (!default_resolve_topology_parameters.is_valid())
 		{
 			return false;
 		}

@@ -2504,6 +2504,1591 @@ GPlatesUnitTest::TranscribeCompatibilityTest::SmartPtrData::transcribe(
 	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		TranscribeRawTest::Enum &e,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		GPlatesScribe::EnumValue("ENUM_VALUE_1", TranscribeRawTest::ENUM_VALUE_1),
+		GPlatesScribe::EnumValue("ENUM_VALUE_2", TranscribeRawTest::ENUM_VALUE_2),
+		GPlatesScribe::EnumValue("ENUM_VALUE_3", TranscribeRawTest::ENUM_VALUE_3)
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			e,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::NestedData::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// 'value' was transcribed as construct data.
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::NestedData::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<NestedData> &nested_data)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, nested_data->value, "value");
+	}
+	else // loading...
+	{
+		GPlatesScribe::LoadRef<int> value =
+				scribe.load<int>(TRANSCRIBE_SOURCE, "value", GPlatesScribe::TRACK);
+		if (!value.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		nested_data.construct_object(value);
+
+		// Inside a raw subtree this is a harmless no-op (objects are not tracked in raw mode).
+		scribe.relocated(TRANSCRIBE_SOURCE, nested_data->value, value);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesUnitTest::TranscribeRawTest::Data::Data() :
+	b(false),
+	c(0),
+	s(0),
+	i(0),
+	ui(0),
+	l(0),
+	f(0),
+	d(0),
+	real(0),
+	e(ENUM_VALUE_1),
+	opt_none(1.0), // Gets overwritten on loading (should end up as none).
+	nested(0)
+{
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::Data::initialise()
+{
+	b = true;
+	c = 'z';
+	s = -321;
+	i = -123456;
+	ui = 4000000000u;
+	l = -2000000000L;
+	f = 2.5f;
+	d = -1234.56789;
+	real = GPlatesMaths::Real(3.14159);
+	e = ENUM_VALUE_2;
+	str1 = "shared string";
+	str2 = "shared string";
+	str3 = "another string";
+	qstr = QString::fromUtf8("qstring \xc3\xa9\xc3\xa0");
+	int_vec.clear();
+	int_vec.push_back(1);
+	int_vec.push_back(-2);
+	int_vec.push_back(3);
+	str_vec.clear();
+	str_vec.push_back("alpha");
+	str_vec.push_back("beta");
+	str_vec.push_back("shared string");
+	int_str_map.clear();
+	int_str_map[1] = "one";
+	int_str_map[2] = "two";
+	opt_some = 42.5;
+	opt_none = boost::none;
+	nested.value = 1234;
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::Data::check_equality(
+		const Data &other) const
+{
+	BOOST_CHECK(b == other.b);
+	BOOST_CHECK(c == other.c);
+	BOOST_CHECK(s == other.s);
+	BOOST_CHECK(i == other.i);
+	BOOST_CHECK(ui == other.ui);
+	BOOST_CHECK(l == other.l);
+	BOOST_CHECK(f == other.f);
+	BOOST_CHECK(d == other.d);
+	BOOST_CHECK(real == other.real);
+	BOOST_CHECK(e == other.e);
+	BOOST_CHECK(str1 == other.str1);
+	BOOST_CHECK(str2 == other.str2);
+	BOOST_CHECK(str3 == other.str3);
+	BOOST_CHECK(qstr == other.qstr);
+	BOOST_CHECK(int_vec == other.int_vec);
+	BOOST_CHECK(str_vec == other.str_vec);
+	BOOST_CHECK(int_str_map == other.int_str_map);
+	BOOST_CHECK(opt_some == other.opt_some);
+	BOOST_CHECK(opt_none == other.opt_none);
+	BOOST_CHECK(nested.value == other.nested.value);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::Data::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, c, "c") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, s, "s") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, i, "i") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, ui, "ui") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, l, "l") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, f, "f") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d, "d") ||
+		// Transcribes via the delegate protocol (which streams directly)...
+		!scribe.transcribe(TRANSCRIBE_SOURCE, real, "real") ||
+		// Transcribes via the enum protocol (as a string)...
+		!scribe.transcribe(TRANSCRIBE_SOURCE, e, "e") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, str1, "str1") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, str2, "str2") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, str3, "str3") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, qstr, "qstr") ||
+		// A nested RAW option is ignored inside a raw subtree (everything is already raw).
+		// When this object is transcribed via the *general* path (see the raw compatibility
+		// test case) it instead creates a nested raw stream boundary...
+		!scribe.transcribe(TRANSCRIBE_SOURCE, int_vec, "int_vec", GPlatesScribe::RAW) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, str_vec, "str_vec") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, int_str_map, "int_str_map") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, opt_some, "opt_some") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, opt_none, "opt_none"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	// Transcribe 'nested' via save/load construction (it has no default constructor).
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, nested, "nested");
+	}
+	else // loading...
+	{
+		GPlatesScribe::LoadRef<NestedData> nested_ref =
+				scribe.load<NestedData>(TRANSCRIBE_SOURCE, "nested");
+		if (!nested_ref.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		nested = nested_ref.get();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesUnitTest::TranscribeRawTest::ArrayData::ArrayData() :
+	doubles(),
+	floats(),
+	ints()
+{  }
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::ArrayData::initialise()
+{
+	doubles[0] = 1.5;
+	doubles[1] = -2.25;
+	doubles[2] = 0.0;
+	doubles[3] = 123456.789;
+
+	floats[0] = 1.5f;
+	floats[1] = -2.25f;
+	floats[2] = 3.0f;
+
+	ints[0] = 0;
+	ints[1] = -1;
+	ints[2] = 2147483647;
+	ints[3] = -2147483647 - 1;
+	ints[4] = 42;
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::ArrayData::check_equality(
+		const ArrayData &other) const
+{
+	for (unsigned int n = 0; n < 4; ++n)
+	{
+		BOOST_CHECK_EQUAL(doubles[n], other.doubles[n]);
+	}
+	for (unsigned int n = 0; n < 3; ++n)
+	{
+		BOOST_CHECK_EQUAL(floats[n], other.floats[n]);
+	}
+	for (unsigned int n = 0; n < 5; ++n)
+	{
+		BOOST_CHECK_EQUAL(ints[n], other.ints[n]);
+	}
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::ArrayData::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, doubles, 4, "doubles") ||
+		!scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, floats, 3, "floats") ||
+		!scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, ints, 5, "ints"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesUnitTest::TranscribeRawTest::FixedArrayData::FixedArrayData() :
+	nums(),
+	matrix(),
+	strs()
+{  }
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::FixedArrayData::initialise()
+{
+	nums[0] = 0;
+	nums[1] = -7;
+	nums[2] = 2147483647;
+	nums[3] = 42;
+
+	matrix[0][0] = 1.5;
+	matrix[0][1] = -2.25;
+	matrix[0][2] = 0.0;
+	matrix[1][0] = 123456.789;
+	matrix[1][1] = -0.001;
+	matrix[1][2] = 3.0;
+
+	strs[0] = "hello";
+	strs[1] = "world";
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::FixedArrayData::check_equality(
+		const FixedArrayData &other) const
+{
+	for (unsigned int n = 0; n < 4; ++n)
+	{
+		BOOST_CHECK_EQUAL(nums[n], other.nums[n]);
+	}
+	for (unsigned int i = 0; i < 2; ++i)
+	{
+		for (unsigned int j = 0; j < 3; ++j)
+		{
+			BOOST_CHECK_EQUAL(matrix[i][j], other.matrix[i][j]);
+		}
+	}
+	for (unsigned int n = 0; n < 2; ++n)
+	{
+		BOOST_CHECK_EQUAL(strs[n], other.strs[n]);
+	}
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::FixedArrayData::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, nums, "nums") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, matrix, "matrix") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, strs, "strs"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_1()
+{
+	Data before_data;
+	before_data.initialise();
+
+	try
+	{
+		//
+		// Text archive
+		//
+
+		std::stringstream text_archive;
+
+		test_case_raw_1_write(
+				GPlatesScribe::TextArchiveWriter::create(text_archive),
+				before_data);
+
+		text_archive.seekp(0);
+
+		test_case_raw_1_read(
+				GPlatesScribe::TextArchiveReader::create(text_archive),
+				before_data);
+
+		//
+		// Binary archive
+		//
+
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		test_case_raw_1_write(
+				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
+				before_data);
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		test_case_raw_1_read(
+				GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
+				before_data);
+
+		//
+		// XML archive
+		//
+
+		QBuffer xml_archive;
+		xml_archive.open(QBuffer::WriteOnly);
+
+		QXmlStreamWriter xml_stream_writer(&xml_archive);
+		xml_stream_writer.writeStartDocument();
+
+		test_case_raw_1_write(
+				GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
+				before_data);
+
+		xml_stream_writer.writeEndDocument();
+
+		xml_archive.close();
+
+		xml_archive.open(QBuffer::ReadOnly);
+		xml_archive.seek(0);
+
+		QXmlStreamReader xml_stream_reader(&xml_archive);
+		xml_stream_reader.readNext();
+		BOOST_CHECK(xml_stream_reader.isStartDocument());
+
+		GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
+				GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
+
+		test_case_raw_1_read(
+				xml_archive_reader,
+				before_data);
+
+		xml_archive_reader->close();
+		xml_stream_reader.readNext();
+		BOOST_CHECK(xml_stream_reader.isEndDocument());
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_1_write(
+		const GPlatesScribe::ArchiveWriter::non_null_ptr_type &archive_writer,
+		Data &before_data)
+{
+	GPlatesScribe::Scribe scribe;
+
+	scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
+
+	BOOST_CHECK(scribe.is_transcription_complete());
+
+	// The entire 'Data' subtree should have been streamed into a *single* raw stream
+	// (the nested RAW option on 'int_vec' is ignored inside the raw subtree).
+	BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
+
+	// Strings inside the raw stream are interned in the transcription's unique-string pool:
+	// "ENUM_VALUE_2", "shared string" (transcribed three times but interned once),
+	// "another string", the QString utf8 bytes, "alpha", "beta", "one" and "two".
+	BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_unique_string_objects(), 8u);
+
+	archive_writer->write_transcription(*scribe.get_transcription());
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_1_read(
+		const GPlatesScribe::ArchiveReader::non_null_ptr_type &archive_reader,
+		Data &before_data)
+{
+	GPlatesScribe::Scribe scribe(archive_reader->read_transcription());
+
+	Data after_data;
+
+	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+
+	BOOST_CHECK(scribe.is_transcription_complete());
+
+	before_data.check_equality(after_data);
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_64_bit_integers()
+{
+	// 64-bit integers are encoded full-width in the raw lane, unlike the general path
+	// (which encodes 64-bit integer types as 32-bit integers and throws outside their range).
+	const long long before_int64 = 0x123456789abcdef0LL;
+	const unsigned long long before_uint64 = 0xfedcba9876543210ULL;
+
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_int64, "int64", GPlatesScribe::RAW);
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_uint64, "uint64", GPlatesScribe::RAW);
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			// Each RAW boundary object is its own raw stream.
+			BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_raw_stream_objects(), 2u);
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			long long after_int64 = 0;
+			unsigned long long after_uint64 = 0;
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_int64, "int64", GPlatesScribe::RAW));
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_uint64, "uint64", GPlatesScribe::RAW));
+
+			BOOST_CHECK_EQUAL(after_int64, before_int64);
+			BOOST_CHECK_EQUAL(after_uint64, before_uint64);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_cross_type_integers()
+{
+	// The raw lane encodes integers in a canonical, type-independent form (a sign discriminator
+	// followed by a varint), so - as on the general path - a value saved through one integral type
+	// can be loaded through another. The transcribe handlers rely on this (eg, saving an 'int' and
+	// loading a 'GPlatesModel::integer_plate_id_type', which is an 'unsigned long').
+	const int before_int = 42;
+	const unsigned int before_uint = 300;
+
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_int, "signed", GPlatesScribe::RAW);
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_uint, "unsigned", GPlatesScribe::RAW);
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			// Load through *different* integral types than were saved.
+			unsigned long after_ulong = 0;   // 'int' saved -> 'unsigned long' loaded.
+			long long after_llong = 0;        // 'unsigned int' saved -> 'long long' loaded.
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_ulong, "signed", GPlatesScribe::RAW));
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_llong, "unsigned", GPlatesScribe::RAW));
+
+			BOOST_CHECK_EQUAL(after_ulong, static_cast<unsigned long>(before_int));
+			BOOST_CHECK_EQUAL(after_llong, static_cast<long long>(before_uint));
+		}
+
+		//
+		// Loading a negative value through an unsigned type is out of range and must fail cleanly
+		// (a RawStreamError, mirroring the general path's range check).
+		//
+		QBuffer negative_archive;
+		negative_archive.open(QBuffer::WriteOnly);
+
+		QDataStream negative_stream_writer(&negative_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			const int before_negative = -1;
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_negative, "negative", GPlatesScribe::RAW);
+
+			GPlatesScribe::BinaryArchiveWriter::create(negative_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		negative_archive.close();
+
+		negative_archive.open(QBuffer::ReadOnly);
+		negative_archive.seek(0);
+
+		QDataStream negative_stream_reader(&negative_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(negative_stream_reader)->read_transcription());
+
+			unsigned int after_negative = 0;
+			BOOST_CHECK_THROW(
+					scribe.transcribe(TRANSCRIBE_SOURCE, after_negative, "negative", GPlatesScribe::RAW),
+					GPlatesScribe::Exceptions::RawStreamError);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::BaseA::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, a, "a"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::BaseB::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, b, "b"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::Derived::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Note: In raw mode 'transcribe_base' still registers the base/derived inheritance links
+	// (needed to up-cast shared-object backrefs) but streams the base class sub-objects inline.
+	if (!scribe.transcribe_base<BaseA>(TRANSCRIBE_SOURCE, *this, "BaseA") ||
+		!scribe.transcribe_base<BaseB>(TRANSCRIBE_SOURCE, *this, "BaseB") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d, "d"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::RefCountedData::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// The nested child is an intrusive (shared-owner) pointer - when a child object is itself
+	// shared (referenced elsewhere too) this exercises backref ordering for a shared object
+	// nested inside another shared object.
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, value, "value") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, child, "child"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesUnitTest::TranscribeRawTest::PointerData::PointerData() :
+	raw_owned(NULL),
+	intrusive_1(new RefCountedData()),
+	intrusive_2(intrusive_1),
+	intrusive_solo(new RefCountedData())
+{
+}
+
+
+GPlatesUnitTest::TranscribeRawTest::PointerData::~PointerData()
+{
+	delete raw_owned;
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::PointerData::initialise()
+{
+	scoped.reset(new int(123));
+
+	raw_owned = new int(-456);
+
+	// A single Derived object shared (with aliasing) by 'shared_a', 'shared_b' and 'weak_a'.
+	const boost::shared_ptr<Derived> derived(new Derived());
+	derived->a = 10;
+	derived->b = 20;
+	derived->d = 30;
+	shared_a = derived;
+	shared_b = derived;
+	weak_a = shared_a;
+
+	// 'shared_null' remains NULL.
+
+	// A single RefCountedData object shared by 'intrusive_1' and 'intrusive_2'
+	// (reference count 2 - exercises the deduplicated raw-lane pointer encoding).
+	intrusive_1 = RefCountedData::non_null_ptr_type(new RefCountedData(7));
+	intrusive_2 = intrusive_1;
+
+	// Sole owner (reference count 1 - exercises the inline raw-lane pointer encoding).
+	intrusive_solo = RefCountedData::non_null_ptr_type(new RefCountedData(8));
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::PointerData::check_equality(
+		const PointerData &other) const
+{
+	// Note: The aliasing (and reference count) checks are made on *both* objects - notably on
+	// 'other' which, in the test cases, is the *loaded* object.
+
+	BOOST_CHECK(scoped && other.scoped && *scoped == *other.scoped);
+	BOOST_CHECK(raw_owned && other.raw_owned && *raw_owned == *other.raw_owned);
+
+	// 'shared_a' and 'shared_b' should reference the *same* Derived object (aliasing preserved).
+	BOOST_CHECK(shared_a && shared_b && other.shared_a && other.shared_b);
+	if (shared_a && shared_b && other.shared_a && other.shared_b)
+	{
+		const Derived *derived = dynamic_cast<const Derived *>(shared_a.get());
+		BOOST_CHECK(derived);
+		BOOST_CHECK(derived == dynamic_cast<const Derived *>(shared_b.get()));
+
+		const Derived *other_derived = dynamic_cast<const Derived *>(other.shared_a.get());
+		BOOST_CHECK(other_derived);
+		BOOST_CHECK(other_derived == dynamic_cast<const Derived *>(other.shared_b.get()));
+
+		BOOST_CHECK_EQUAL(shared_a->a, other.shared_a->a);
+		BOOST_CHECK_EQUAL(shared_b->b, other.shared_b->b);
+		if (derived && other_derived)
+		{
+			BOOST_CHECK_EQUAL(derived->d, other_derived->d);
+		}
+	}
+
+	// 'weak_a' should reference the same object as 'shared_a' (aliasing preserved).
+	BOOST_CHECK(!weak_a.expired() && weak_a.lock() == shared_a);
+	BOOST_CHECK(!other.weak_a.expired() && other.weak_a.lock() == other.shared_a);
+
+	BOOST_CHECK(!shared_null && !other.shared_null);
+
+	// 'intrusive_1' and 'intrusive_2' should reference the *same* object (aliasing preserved)
+	// and hence its reference count should be exactly 2 (its only owners).
+	BOOST_CHECK(intrusive_1 == intrusive_2);
+	BOOST_CHECK(other.intrusive_1 == other.intrusive_2);
+	BOOST_CHECK_EQUAL(intrusive_1->get_reference_count(), 2);
+	BOOST_CHECK_EQUAL(other.intrusive_1->get_reference_count(), 2);
+	BOOST_CHECK_EQUAL(intrusive_1->value, other.intrusive_1->value);
+
+	BOOST_CHECK_EQUAL(intrusive_solo->get_reference_count(), 1);
+	BOOST_CHECK_EQUAL(other.intrusive_solo->get_reference_count(), 1);
+	BOOST_CHECK_EQUAL(intrusive_solo->value, other.intrusive_solo->value);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesUnitTest::TranscribeRawTest::PointerData::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Note: The weak pointer is transcribed *after* a shared pointer to the same object
+	// (a requirement of the general path - see the boost::weak_ptr transcribe overload).
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, scoped, "scoped", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, raw_owned, "raw_owned", GPlatesScribe::EXCLUSIVE_OWNER | GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, shared_a, "shared_a", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, shared_b, "shared_b", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, weak_a, "weak_a", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, shared_null, "shared_null", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, intrusive_1, "intrusive_1", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, intrusive_2, "intrusive_2", GPlatesScribe::TRACK) ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, intrusive_solo, "intrusive_solo", GPlatesScribe::TRACK))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_pointers()
+{
+	try
+	{
+		//
+		// Raw round trip of the owning pointer graph.
+		//
+		{
+			PointerData before_data;
+			before_data.initialise();
+
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
+
+			QDataStream binary_stream_writer(&binary_archive);
+
+			{
+				GPlatesScribe::Scribe scribe;
+
+				scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
+
+				BOOST_CHECK(scribe.is_transcription_complete());
+
+				// The entire pointer graph (markers, class names, backrefs and pointed-to
+				// objects) should be inside a single raw stream.
+				BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
+
+				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+						*scribe.get_transcription());
+			}
+
+			binary_archive.close();
+
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
+
+			QDataStream binary_stream_reader(&binary_archive);
+
+			PointerData after_data;
+
+			{
+				GPlatesScribe::Scribe scribe(
+						GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+				BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+			}
+
+			// Note: The equality check is made *after* the load scribe is destroyed so that the
+			// scribe's internal boost::shared_ptr map no longer contributes to reference counts.
+			before_data.check_equality(after_data);
+		}
+
+		//
+		// Compatibility: save the same pointer graph via the *general* path (like an older
+		// version without the raw lane) and load *with* the RAW option - the boundary falls
+		// back to the general path.
+		//
+		// Note: The boundary object is *tracked* here - on the general path an untracked
+		// boundary would untrack the (owned, tracked) pointed-to objects inside it, which
+		// throws because pointers still reference them. (The raw lane has no tracking at
+		// all, so the first test case above doesn't need TRACK.)
+		//
+		{
+			PointerData before_data;
+			before_data.initialise();
+
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
+
+			QDataStream binary_stream_writer(&binary_archive);
+
+			{
+				GPlatesScribe::Scribe scribe;
+
+				scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::TRACK);
+
+				BOOST_CHECK(scribe.is_transcription_complete());
+
+				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+						*scribe.get_transcription());
+			}
+
+			binary_archive.close();
+
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
+
+			QDataStream binary_stream_reader(&binary_archive);
+
+			PointerData after_data;
+
+			{
+				GPlatesScribe::Scribe scribe(
+						GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+				BOOST_CHECK(scribe.transcribe(
+						TRANSCRIBE_SOURCE, after_data, "data",
+						GPlatesScribe::RAW | GPlatesScribe::TRACK));
+			}
+
+			before_data.check_equality(after_data);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_nested_shared_objects()
+{
+	// A shared object nested inside another shared object.
+	//
+	// The save path registers a shared object (for backrefs) *before* streaming its contents, so
+	// a nested shared object is assigned a *higher* backref index than its parent. The load path
+	// must reserve the parent's backref slot before loading its contents (rather than registering
+	// it afterwards) so that the indices match - otherwise the nested child would be registered
+	// before its parent on load but after it on save, misaligning every subsequent backref.
+	try
+	{
+		RefCountedData::non_null_ptr_type child(new RefCountedData(100));
+		RefCountedData::non_null_ptr_type parent(new RefCountedData(200));
+		parent->child = child;
+
+		// 'parent' is the first shared object (backref index 0); its nested 'child' is the second
+		// (backref index 1). The repeated entries then back-reference both.
+		std::vector<RefCountedData::non_null_ptr_type> before_data;
+		before_data.push_back(parent);  // Streams 'parent' (and, nested, 'child').
+		before_data.push_back(parent);  // Backref to 'parent'.
+		before_data.push_back(child);   // Backref to the nested 'child'.
+
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+			BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		std::vector<RefCountedData::non_null_ptr_type> after_data;
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+		}
+
+		// Note: The aliasing/reference-count checks are made after the load scribe is destroyed
+		// (its internal shared-object bookkeeping no longer contributes to reference counts).
+		BOOST_REQUIRE_EQUAL(after_data.size(), 3u);
+
+		// References (not copies) so they do not contribute to the reference counts checked below.
+		const RefCountedData::non_null_ptr_type &after_parent = after_data[0];
+		const RefCountedData::non_null_ptr_type &after_child = after_data[2];
+
+		// The repeated 'parent' entry resolved to the same object (aliasing preserved).
+		BOOST_CHECK(after_data[0] == after_data[1]);
+		BOOST_CHECK_EQUAL(after_parent->value, 200);
+
+		// The nested child aliases the separately-owned 'child' entry (nested backref resolved).
+		BOOST_REQUIRE(static_cast<bool>(after_parent->child));
+		BOOST_CHECK(*after_parent->child == after_child);
+		BOOST_CHECK_EQUAL(after_child->value, 100);
+
+		// 'parent' is owned by 'after_data[0]' and 'after_data[1]' (reference count 2).
+		BOOST_CHECK_EQUAL(after_parent->get_reference_count(), 2);
+		// 'child' is owned by 'parent->child' and 'after_data[2]' (reference count 2).
+		BOOST_CHECK_EQUAL(after_child->get_reference_count(), 2);
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_compatibility()
+{
+	Data before_data;
+	before_data.initialise();
+
+	try
+	{
+		//
+		// Save via the general path (no RAW option at the boundary - like an older version
+		// without the raw lane) and load *with* the RAW option - the boundary dispatches on
+		// the transcription kind (COMPOSITE) and falls back to the general path.
+		//
+		// (Note that the nested RAW option on 'int_vec' *does* apply on the general path,
+		// creating a raw stream boundary inside the general path - which is also loadable.)
+		//
+		{
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
+
+			QDataStream binary_stream_writer(&binary_archive);
+
+			{
+				GPlatesScribe::Scribe scribe;
+
+				scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data");
+
+				BOOST_CHECK(scribe.is_transcription_complete());
+
+				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+						*scribe.get_transcription());
+			}
+
+			binary_archive.close();
+
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
+
+			QDataStream binary_stream_reader(&binary_archive);
+
+			{
+				GPlatesScribe::Scribe scribe(
+						GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+				Data after_data;
+
+				BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+
+				before_data.check_equality(after_data);
+			}
+		}
+
+		//
+		// Save *with* the RAW option and load *without* it - the general path cannot decode
+		// a raw stream so the load fails cleanly (returns false, without throwing).
+		//
+		{
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
+
+			QDataStream binary_stream_writer(&binary_archive);
+
+			{
+				GPlatesScribe::Scribe scribe;
+
+				scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
+
+				BOOST_CHECK(scribe.is_transcription_complete());
+
+				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+						*scribe.get_transcription());
+			}
+
+			binary_archive.close();
+
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
+
+			QDataStream binary_stream_reader(&binary_archive);
+
+			{
+				GPlatesScribe::Scribe scribe(
+						GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+				Data after_data;
+
+				BOOST_CHECK(!scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
+			}
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
+namespace GPlatesUnitTest
+{
+	namespace TranscribeRawTestImpl
+	{
+		//! A transcribe handler that (incorrectly) transcribes an object *reference* in raw mode.
+		struct ReferenceData
+		{
+			int target;
+		};
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				ReferenceData &reference_data,
+				bool transcribed_construct_data)
+		{
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, reference_data.target, "target", GPlatesScribe::TRACK))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			if (scribe.is_saving())
+			{
+				scribe.save_reference(TRANSCRIBE_SOURCE, reference_data.target, "target_ref");
+			}
+			else // loading...
+			{
+				GPlatesScribe::LoadRef<int> target_ref =
+						scribe.load_reference<int>(TRANSCRIBE_SOURCE, "target_ref");
+				if (!target_ref.is_valid())
+				{
+					return scribe.get_transcribe_result();
+				}
+			}
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
+
+		//! A transcribe handler that (incorrectly) transcribes a *non-owning* pointer in raw mode.
+		struct NonOwningPointerData
+		{
+			int value;
+			int *value_ptr;
+		};
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				NonOwningPointerData &pointer_data,
+				bool transcribed_construct_data)
+		{
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, pointer_data.value, "value", GPlatesScribe::TRACK) ||
+				// A non-owning pointer (no EXCLUSIVE_OWNER/SHARED_OWNER option)...
+				!scribe.transcribe(TRANSCRIBE_SOURCE, pointer_data.value_ptr, "value_ptr", GPlatesScribe::TRACK))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
+
+		/**
+		 * Adds a single raw stream object (with the specified raw stream data) tagged "data"
+		 * to the transcription - as if saved by 'transcribe(..., "data", RAW)'.
+		 */
+		void
+		add_raw_stream_to_transcription(
+				GPlatesScribe::Transcription &transcription,
+				const std::vector<char> &raw_stream_data)
+		{
+			GPlatesScribe::Transcription::CompositeObject &root_composite_object =
+					transcription.add_composite_object(
+							GPlatesScribe::TranscriptionScribeContext::ROOT_OBJECT_ID);
+
+			const GPlatesScribe::Transcription::object_id_type raw_stream_object_id =
+					GPlatesScribe::TranscriptionScribeContext::ROOT_OBJECT_ID + 1;
+
+			root_composite_object.set_child(
+					transcription.get_or_create_object_key("data", 0),
+					raw_stream_object_id);
+
+			transcription.add_raw_stream(raw_stream_object_id, raw_stream_data);
+		}
+
+		/**
+		 * Creates a transcription containing a single raw stream object (with the specified
+		 * raw stream data) tagged "data" - as if saved by 'transcribe(..., "data", RAW)'.
+		 */
+		GPlatesScribe::Transcription::non_null_ptr_type
+		create_transcription_with_raw_stream(
+				const std::vector<char> &raw_stream_data)
+		{
+			GPlatesScribe::Transcription::non_null_ptr_type transcription =
+					GPlatesScribe::Transcription::create();
+
+			add_raw_stream_to_transcription(*transcription, raw_stream_data);
+
+			return transcription;
+		}
+	}
+}
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
+{
+	// Skip these tests in debug build because GPlatesGlobal::Assert() aborts instead of
+	// throwing an exception and these tests check for exceptions...
+#ifndef GPLATES_DEBUG
+
+	//
+	// Transcribing an object *reference* inside a raw subtree should throw an exception.
+	//
+	{
+		GPlatesScribe::Scribe scribe;
+
+		TranscribeRawTestImpl::ReferenceData reference_data;
+		reference_data.target = 1;
+
+		BOOST_CHECK_THROW(
+				scribe.transcribe(TRANSCRIBE_SOURCE, reference_data, "data", GPlatesScribe::RAW),
+				GPlatesScribe::Exceptions::InvalidRawTranscribeOperation);
+	}
+
+	//
+	// Transcribing a *non-owning* pointer inside a raw subtree should throw an exception
+	// (owning pointers are supported - see 'test_case_raw_pointers').
+	//
+	{
+		GPlatesScribe::Scribe scribe;
+
+		TranscribeRawTestImpl::NonOwningPointerData pointer_data;
+		pointer_data.value = 1;
+		pointer_data.value_ptr = &pointer_data.value;
+
+		BOOST_CHECK_THROW(
+				scribe.transcribe(TRANSCRIBE_SOURCE, pointer_data, "data", GPlatesScribe::RAW),
+				GPlatesScribe::Exceptions::InvalidRawTranscribeOperation);
+	}
+
+	//
+	// The RAW option directly on a pointer should throw an exception.
+	//
+	{
+		GPlatesScribe::Scribe scribe;
+
+		int value = 1;
+		int *value_ptr = &value;
+
+		scribe.transcribe(TRANSCRIBE_SOURCE, value, "value", GPlatesScribe::TRACK);
+
+		BOOST_CHECK_THROW(
+				scribe.transcribe(
+						TRANSCRIBE_SOURCE, value_ptr, "value_ptr",
+						GPlatesScribe::RAW | GPlatesScribe::TRACK),
+				GPlatesScribe::Exceptions::InvalidRawTranscribeOperation);
+	}
+
+	//
+	// A raw stream with a future codec version should be rejected cleanly.
+	//
+	{
+		// The raw stream contains only a codec version (127 - some far-future version).
+		std::vector<char> raw_stream_data;
+		raw_stream_data.push_back(0x7f);
+
+		GPlatesScribe::Scribe scribe(
+				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
+
+		int after_int;
+		BOOST_CHECK_THROW(
+				scribe.transcribe(TRANSCRIBE_SOURCE, after_int, "data", GPlatesScribe::RAW),
+				GPlatesScribe::Exceptions::UnsupportedRawStreamVersion);
+	}
+
+	//
+	// A raw stream is positional - loading a *smaller* type than was saved leaves the stream
+	// not fully consumed, which should throw (rather than silently succeed).
+	//
+	{
+		// Codec version 0 followed by 8 bytes (as if a 'double' was saved).
+		std::vector<char> raw_stream_data(1 + 8, 0);
+
+		GPlatesScribe::Scribe scribe(
+				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
+
+		float after_float;
+		BOOST_CHECK_THROW(
+				scribe.transcribe(TRANSCRIBE_SOURCE, after_float, "data", GPlatesScribe::RAW),
+				GPlatesScribe::Exceptions::RawStreamError);
+	}
+
+	//
+	// ...and loading a *larger* type than was saved reads past the end, which should throw.
+	//
+	{
+		// Codec version 0 followed by 4 bytes (as if a 'float' was saved).
+		std::vector<char> raw_stream_data(1 + 4, 0);
+
+		GPlatesScribe::Scribe scribe(
+				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
+
+		double after_double;
+		BOOST_CHECK_THROW(
+				scribe.transcribe(TRANSCRIBE_SOURCE, after_double, "data", GPlatesScribe::RAW),
+				GPlatesScribe::Exceptions::RawStreamError);
+	}
+
+	//
+	// Sanity check the hand-crafted raw stream: loading the *same* size type succeeds.
+	//
+	{
+		// Codec version 0 followed by 8 bytes (as if a 'double' was saved).
+		std::vector<char> raw_stream_data(1 + 8, 0);
+
+		GPlatesScribe::Scribe scribe(
+				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
+
+		double after_double;
+		BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_double, "data", GPlatesScribe::RAW));
+		BOOST_CHECK(after_double == 0);
+	}
+
+	//
+	// A pointed-to class name that is not export registered (eg, an archive created by a
+	// future version) fails the load *softly* (like the general path) - it does not throw.
+	//
+	{
+		GPlatesScribe::Transcription::non_null_ptr_type transcription =
+				GPlatesScribe::Transcription::create();
+
+		// Register the unknown class name in the transcription's unique-string pool.
+		const unsigned int unknown_class_name_index =
+				transcription->get_or_create_unique_string_index(
+						"GPlatesUnitTest::TranscribeRawTest::RemovedInThisVersion");
+		BOOST_REQUIRE(unknown_class_name_index < 128); // Fits in a single varint byte.
+
+		std::vector<char> raw_stream_data;
+		raw_stream_data.push_back(0x00); // Codec version 0.
+		raw_stream_data.push_back(0x01); // RAW_POINTER_INLINE.
+		raw_stream_data.push_back(static_cast<char>(unknown_class_name_index)); // Class name.
+
+		TranscribeRawTestImpl::add_raw_stream_to_transcription(*transcription, raw_stream_data);
+
+		GPlatesScribe::Scribe scribe(transcription);
+
+		boost::shared_ptr<TranscribeRawTest::BaseA> after_ptr;
+		BOOST_CHECK(!scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW));
+		BOOST_CHECK(scribe.get_transcribe_result() == GPlatesScribe::TRANSCRIBE_UNKNOWN_TYPE);
+	}
+
+	//
+	// An invalid owning pointer marker byte should throw.
+	//
+	{
+		std::vector<char> raw_stream_data;
+		raw_stream_data.push_back(0x00); // Codec version 0.
+		raw_stream_data.push_back(static_cast<char>(0xff)); // Invalid marker.
+
+		GPlatesScribe::Scribe scribe(
+				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
+
+		boost::shared_ptr<TranscribeRawTest::BaseA> after_ptr;
+		BOOST_CHECK_THROW(
+				scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW),
+				GPlatesScribe::Exceptions::RawStreamError);
+	}
+
+	//
+	// An owning pointer backref referencing a shared object that was never streamed should throw.
+	//
+	{
+		std::vector<char> raw_stream_data;
+		raw_stream_data.push_back(0x00); // Codec version 0.
+		raw_stream_data.push_back(0x03); // RAW_POINTER_SHARED_BACKREF.
+		raw_stream_data.push_back(0x00); // Backref index 0 (but no shared objects streamed).
+
+		GPlatesScribe::Scribe scribe(
+				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
+
+		boost::shared_ptr<TranscribeRawTest::BaseA> after_ptr;
+		BOOST_CHECK_THROW(
+				scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW),
+				GPlatesScribe::Exceptions::RawStreamError);
+	}
+
+#endif // GPLATES_DEBUG
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_raw_array()
+{
+	ArrayData before_data;
+	before_data.initialise();
+
+	// Round trip through the raw lane - exercises 'transcribe_raw_array's bulk fixed-width path.
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			ArrayData after_data;
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+
+			before_data.check_equality(after_data);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+
+	// Round trip through the general path (no RAW option) - exercises 'transcribe_raw_array's
+	// per-element fallback loop (see the method's doc comment in "Scribe.h").
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data");
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			ArrayData after_data;
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
+
+			before_data.check_equality(after_data);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
+void
+GPlatesUnitTest::TranscribeRawTest::test_case_fixed_array()
+{
+	FixedArrayData before_data;
+	before_data.initialise();
+
+	// Round trip through the raw lane - exercises "TranscribeArray.h"'s raw-lane fast path (for
+	// 'nums' and 'matrix') and its general-path fallback (for 'strs', a non-arithmetic array).
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			FixedArrayData after_data;
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+
+			before_data.check_equality(after_data);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+
+	// Round trip through the general path (no RAW option) - exercises the per-element fallback
+	// loop for all three members.
+	try
+	{
+		QBuffer binary_archive;
+		binary_archive.open(QBuffer::WriteOnly);
+
+		QDataStream binary_stream_writer(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe;
+
+			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data");
+
+			BOOST_CHECK(scribe.is_transcription_complete());
+
+			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
+					*scribe.get_transcription());
+		}
+
+		binary_archive.close();
+
+		binary_archive.open(QBuffer::ReadOnly);
+		binary_archive.seek(0);
+
+		QDataStream binary_stream_reader(&binary_archive);
+
+		{
+			GPlatesScribe::Scribe scribe(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
+
+			FixedArrayData after_data;
+
+			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
+
+			before_data.check_equality(after_data);
+		}
+	}
+	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+	{
+		std::ostringstream message;
+		message << "Error transcribing: " << scribe_exception;
+		BOOST_ERROR(message.str().c_str());
+		return;
+	}
+}
+
+
 void
 GPlatesUnitTest::TranscribeTestSuite::construct_maps()
 {
@@ -2511,6 +4096,7 @@ GPlatesUnitTest::TranscribeTestSuite::construct_maps()
 	construct_transcribe_untracked_test();
 	construct_transcribe_inheritance_test();
 	construct_transcribe_compatibility_test();
+	construct_transcribe_raw_test();
 }
 
 void
@@ -2540,4 +4126,19 @@ GPlatesUnitTest::TranscribeTestSuite::construct_transcribe_compatibility_test()
 {
 	boost::shared_ptr<TranscribeCompatibilityTest> instance(new TranscribeCompatibilityTest());
 	ADD_TESTCASE(TranscribeCompatibilityTest,test_case_compatibility_1);
+}
+
+void
+GPlatesUnitTest::TranscribeTestSuite::construct_transcribe_raw_test()
+{
+	boost::shared_ptr<TranscribeRawTest> instance(new TranscribeRawTest());
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_1);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_64_bit_integers);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_cross_type_integers);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_pointers);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_nested_shared_objects);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_compatibility);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_errors);
+	ADD_TESTCASE(TranscribeRawTest,test_case_raw_array);
+	ADD_TESTCASE(TranscribeRawTest,test_case_fixed_array);
 }

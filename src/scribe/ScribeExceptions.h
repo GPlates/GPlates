@@ -372,6 +372,130 @@ namespace GPlatesScribe
 
 
 		/**
+		 * Exception thrown when a raw stream ("raw lane") being loaded was written using a
+		 * future version of the raw stream codec (see Scribe::CURRENT_RAW_STREAM_CODEC_VERSION).
+		 *
+		 * A raw stream is positional (order-defined) so an unknown codec version cannot be decoded.
+		 */
+		class UnsupportedRawStreamVersion :
+				public BaseException
+		{
+		public:
+
+			UnsupportedRawStreamVersion(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					unsigned int raw_stream_codec_version,
+					unsigned int current_raw_stream_codec_version) :
+				BaseException(exception_source),
+				d_raw_stream_codec_version(raw_stream_codec_version),
+				d_current_raw_stream_codec_version(current_raw_stream_codec_version)
+			{  }
+
+			~UnsupportedRawStreamVersion() throw() { }
+
+		protected:
+
+			virtual
+			const char *
+			exception_name() const
+			{
+				return "UnsupportedRawStreamVersion";
+			}
+
+			virtual
+			void
+			write_message(
+					std::ostream &os) const;
+
+		private:
+
+			unsigned int d_raw_stream_codec_version;
+			unsigned int d_current_raw_stream_codec_version;
+		};
+
+
+		/**
+		 * Exception thrown when decoding a raw stream ("raw lane") fails.
+		 *
+		 * For example, reading past the end of the raw stream data or encountering an invalid
+		 * unique-string-pool index. A raw stream is positional (order-defined) so decoding cannot
+		 * re-synchronise after a failure - this usually indicates the load path transcribe calls
+		 * do not match the save path (or the stream data is corrupted).
+		 */
+		class RawStreamError :
+				public BaseException
+		{
+		public:
+
+			RawStreamError(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const std::string &message) :
+				BaseException(exception_source),
+				d_message(message)
+			{  }
+
+			~RawStreamError() throw() { }
+
+		protected:
+
+			virtual
+			const char *
+			exception_name() const
+			{
+				return "RawStreamError";
+			}
+
+			virtual
+			void
+			write_message(
+					std::ostream &os) const;
+
+		private:
+
+			std::string d_message;
+		};
+
+
+		/**
+		 * Exception thrown when a transcribe operation that is not supported inside a raw
+		 * stream ("raw lane") subtree is attempted - such as transcribing object references
+		 * or non-owning pointers (they require object tracking, which the raw lane omits).
+		 */
+		class InvalidRawTranscribeOperation :
+				public BaseException
+		{
+		public:
+
+			InvalidRawTranscribeOperation(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const std::string &message) :
+				BaseException(exception_source),
+				d_message(message)
+			{  }
+
+			~InvalidRawTranscribeOperation() throw() { }
+
+		protected:
+
+			virtual
+			const char *
+			exception_name() const
+			{
+				return "InvalidRawTranscribeOperation";
+			}
+
+			virtual
+			void
+			write_message(
+					std::ostream &os) const;
+
+		private:
+
+			std::string d_message;
+		};
+
+
+		/**
 		 * When the start or end of an XML element with a specific element name is not encountered.
 		 */
 		class UnexpectedXmlElementName :

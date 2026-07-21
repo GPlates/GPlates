@@ -327,7 +327,55 @@ GPlatesMaths::PolylineOnSphere::transcribe(
 {
 	// Transcribe the vertices instead of segments because the segments (great circle arcs)
 	// contain duplicate vertices (end of segment contains same vertex as start of next segment).
-	if (scribe.is_saving())
+	if (scribe.is_transcribing_raw())
+	{
+		// Fast path for the raw lane: stream the vertex coordinates as one bulk array of doubles
+		// (x, y, z per vertex) instead of the general per-vertex PointOnSphere/UnitVector3D/Real
+		// transcription chain - this is the dominant per-vertex cost for large geometries.
+		if (scribe.is_saving())
+		{
+			std::vector<double> coords;
+			coords.reserve(3 * number_of_vertices());
+			for (vertex_const_iterator iter = vertex_begin(); iter != vertex_end(); ++iter)
+			{
+				const UnitVector3D &position_vector = iter->position_vector();
+				coords.push_back(position_vector.x().dval());
+				coords.push_back(position_vector.y().dval());
+				coords.push_back(position_vector.z().dval());
+			}
+
+			const unsigned int num_vertices = number_of_vertices();
+			scribe.save(TRANSCRIBE_SOURCE, num_vertices, "num_vertices");
+			scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, coords.data(), coords.size(), "vertex_coords");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<unsigned int> num_vertices =
+					scribe.load<unsigned int>(TRANSCRIBE_SOURCE, "num_vertices");
+			if (!num_vertices.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			std::vector<double> coords(3 * num_vertices.get());
+			if (!scribe.transcribe_raw_array(TRANSCRIBE_SOURCE, coords.data(), coords.size(), "vertex_coords"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			std::vector<PointOnSphere> vertices;
+			vertices.reserve(num_vertices.get());
+			for (unsigned int n = 0; n < num_vertices.get(); ++n)
+			{
+				vertices.push_back(PointOnSphere(
+						UnitVector3D(coords[3 * n], coords[3 * n + 1], coords[3 * n + 2])));
+			}
+
+			// Add the vertices (as great circle arc segments).
+			generate_segments_and_swap(*this, vertices.begin(), vertices.end());
+		}
+	}
+	else if (scribe.is_saving())
 	{
 		const std::vector<PointOnSphere> vertices(vertex_begin(), vertex_end());
 		scribe.save(TRANSCRIBE_SOURCE, vertices, "vertices");

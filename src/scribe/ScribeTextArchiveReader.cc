@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <locale>
 #include <sstream>
+#include <QByteArray>
 
 #include "ScribeTextArchiveReader.h"
 
@@ -192,6 +193,10 @@ GPlatesScribe::TextArchiveReader::read_object_group(
 		{
 			transcription.add_composite_object(object_id_in_group);
 			read(transcription.get_composite_object(object_id_in_group));
+		}
+		else if (object_type_code == ArchiveCommon::RAW_STREAM_CODE)
+		{
+			transcription.add_raw_stream(object_id_in_group, read_raw_stream());
 		}
 		else
 		{
@@ -362,4 +367,16 @@ GPlatesScribe::TextArchiveReader::read<std::string>()
 	}
 
 	return object;
+}
+
+
+std::vector<char>
+GPlatesScribe::TextArchiveReader::read_raw_stream()
+{
+	const std::string base64_string = read<std::string>();
+
+	const QByteArray decoded_data = QByteArray::fromBase64(
+			QByteArray(base64_string.data(), base64_string.size()));
+
+	return std::vector<char>(decoded_data.constData(), decoded_data.constData() + decoded_data.size());
 }

@@ -170,6 +170,32 @@ namespace GPlatesScribe
 				std::string &object);
 
 
+		/**
+		 * Save a raw stream of bytes as the current transcribed object (the "raw lane").
+		 *
+		 * Like the std::string primitive, this binds the data to the current object id and
+		 * marks the current object as a PRIMITIVE (a raw stream has no child objects as far
+		 * as the transcription is concerned - its contents are opaque bytes).
+		 *
+		 * Note: @a raw_stream_data is *moved* into the transcription (it is typically a large
+		 * buffer, eg an entire pickle payload, so we avoid copying it).
+		 */
+		void
+		save_raw_stream(
+				std::vector<char> &raw_stream_data);
+
+		/**
+		 * Load the raw stream of bytes bound to the current transcribed object (the "raw lane").
+		 *
+		 * Returns none if the current object is not a RAW_STREAM - eg, when loading an archive
+		 * that was saved via the general path (without the RAW option) by an older version -
+		 * in which case the current object remains untouched (the caller can fall back to
+		 * loading it via the general path).
+		 */
+		boost::optional<const std::vector<char> &>
+		load_raw_stream();
+
+
 		//
 		// Transcribe integral and floating-point primitives.
 		//

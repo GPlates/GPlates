@@ -26,6 +26,7 @@
 #ifndef GPLATES_SCRIBE_SCRIBEXMLARCHIVEREADER_H
 #define GPLATES_SCRIBE_SCRIBEXMLARCHIVEREADER_H
 
+#include <vector>
 #include <QLocale>
 #include <QString>
 #include <QStringList>
@@ -112,6 +113,10 @@ namespace GPlatesScribe
 
 		std::string
 		read_string();
+
+		//! Base64-decodes the raw stream bytes written by @a XmlArchiveWriter::write(const std::vector<char> &).
+		std::vector<char>
+		read_raw_stream();
 
 
 		/**

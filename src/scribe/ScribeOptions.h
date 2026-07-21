@@ -49,6 +49,35 @@ namespace GPlatesScribe
 	// A pointer can optionally specify that it shares ownership of the pointed-to object with other pointers
 	// (only applies to pointers)...
 	const unsigned int SHARED_OWNER = (1 << 2);
+
+	// Transcribe the object, and its entire subtree of child objects, into a single raw stream
+	// of bytes (the "raw lane") instead of the usual one-transcription-object-per-child encoding.
+	//
+	// This is much faster (no per-object ids, tags or tracking inside the subtree) but the
+	// resulting stream is *positional* (order-defined): the same transcribe calls must be made,
+	// in the same order, on the load path as on the save path. There is no per-field tag lookup,
+	// so fields cannot be individually skipped, reordered or probed on load - any evolution of
+	// the transcribed layout must be gated by a version transcribed at the front of the stream.
+	//
+	// *Owning* pointers (EXCLUSIVE_OWNER/SHARED_OWNER and the smart pointer protocol) are
+	// supported: the pointed-to object is streamed inline, preceded by a marker byte and,
+	// for polymorphic pointee types, the export-registered class name of the actual (dynamic)
+	// pointed-to type (encoded as an index into the transcription's unique-string pool).
+	// Shared owners are deduplicated - the first owner streams the pointed-to object and
+	// subsequent owners back-reference it - preserving aliasing across the raw subtree.
+	//
+	// Object references (Scribe::save_reference/load_reference) and *non-owning* pointers are
+	// not supported inside a raw subtree (they require object tracking) - attempting to
+	// transcribe them will throw Exceptions::InvalidRawTranscribeOperation.
+	//
+	// This option only has an effect at the *boundary* (outer-most) transcribe call - it is
+	// ignored on transcribe calls inside a raw subtree (everything inside is already raw).
+	// The boundary object itself is transcribed normally (object id, tag, optional tracking),
+	// so on the *load* path the transcription kind of the boundary object determines whether
+	// the subtree is loaded via the raw lane (RAW_STREAM) or the general path (eg, an archive
+	// written by an older version without this option) - clients transcribing with RAW can
+	// therefore still load archives that were saved without it.
+	const unsigned int RAW = (1 << 3);
 }
 
 #endif // GPLATES_SCRIBE_SCRIBEOPTIONS_H

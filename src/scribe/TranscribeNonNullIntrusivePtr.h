@@ -26,6 +26,8 @@
 #ifndef GPLATES_SCRIBE_TRANSCRIBENONNULLINTRUSIVEPTR_H
 #define GPLATES_SCRIBE_TRANSCRIBENONNULLINTRUSIVEPTR_H
 
+#include <boost/optional.hpp>
+
 #include "utils/non_null_intrusive_ptr.h"
 
 #include "Transcribe.h"
@@ -75,12 +77,18 @@ namespace GPlatesScribe
 		{
 			T *raw_ptr = NULL;
 
+			// The intrusive reference count (counting *all* owners) of the pointed-to object -
+			// used (only inside a raw stream subtree) to skip shared-object deduplication when
+			// we are the sole owner.
+			boost::optional<unsigned int> use_count_hint;
+
 			if (scribe.is_saving())
 			{
 				raw_ptr = intrusive_ptr_object.get();
+				use_count_hint = get_intrusive_use_count_hint(raw_ptr);
 			}
 
-			if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/))
+			if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/, use_count_hint))
 			{
 				return scribe.get_transcribe_result();
 			}
@@ -103,12 +111,18 @@ namespace GPlatesScribe
 	{
 		T *raw_ptr = NULL;
 
+		// The intrusive reference count (counting *all* owners) of the pointed-to object -
+		// used (only inside a raw stream subtree) to skip shared-object deduplication when
+		// we are the sole owner.
+		boost::optional<unsigned int> use_count_hint;
+
 		if (scribe.is_saving())
 		{
 			raw_ptr = intrusive_ptr_object->get();
+			use_count_hint = get_intrusive_use_count_hint(raw_ptr);
 		}
 
-		if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/))
+		if (!transcribe_smart_pointer_protocol(TRANSCRIBE_SOURCE, scribe, raw_ptr, true/*shared_owner*/, use_count_hint))
 		{
 			return scribe.get_transcribe_result();
 		}

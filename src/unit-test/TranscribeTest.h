@@ -36,6 +36,7 @@
 #include <utility>
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
@@ -794,13 +795,364 @@ namespace GPlatesUnitTest
 	};
 
 
+	/**
+	 * Test transcribing via the raw stream ("raw lane") - the RAW option.
+	 */
+	class TranscribeRawTest
+	{
+	public:
+		TranscribeRawTest()
+		{ }
+
+		//! Raw round trip of primitives/strings/containers through all archive types.
+		void
+		test_case_raw_1();
+
+		//! Raw round trip of full-width 64-bit integers (general path restricts to 32-bit range).
+		void
+		test_case_raw_64_bit_integers();
+
+		//! Raw round trip of an integer saved through one integral type and loaded through another.
+		void
+		test_case_raw_cross_type_integers();
+
+		//! Raw round trip of owning pointers (inline, NULL, polymorphic, shared-owner backrefs).
+		void
+		test_case_raw_pointers();
+
+		//! Raw round trip of a shared object nested inside another shared object (backref ordering).
+		void
+		test_case_raw_nested_shared_objects();
+
+		//! Loading between transcriptions saved with and without the RAW option.
+		void
+		test_case_raw_compatibility();
+
+		//! Errors: unsupported operations in raw mode, codec version rejection, positional mismatches.
+		void
+		test_case_raw_errors();
+
+		//! Raw round trip of 'Scribe::transcribe_raw_array' - bulk fixed-size arithmetic arrays.
+		void
+		test_case_raw_array();
+
+		//! Raw round trip of native C arrays through "TranscribeArray.h" (1D, multidimensional and
+		//! non-arithmetic element types).
+		void
+		test_case_fixed_array();
+
+
+		//! Tests save/load construction (non-default constructor) inside a raw subtree.
+		struct NestedData
+		{
+			explicit
+			NestedData(
+					int value_) :
+				value(value_)
+			{  }
+
+			int value;
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject<NestedData> &nested_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+		enum Enum
+		{
+			ENUM_VALUE_1,
+			ENUM_VALUE_2,
+			ENUM_VALUE_3
+		};
+
+		struct Data
+		{
+			Data();
+
+			void
+			initialise();
+
+			void
+			check_equality(
+					const Data &other) const;
+
+			bool b;
+			char c;
+			short s;
+			int i;
+			unsigned int ui;
+			long l;
+			float f;
+			double d;
+			GPlatesMaths::Real real; // Transcribes via the delegate protocol.
+			Enum e;
+			std::string str1;
+			std::string str2; // Same value as 'str1' (tests string interning).
+			std::string str3;
+			QString qstr;
+			std::vector<int> int_vec; // Transcribed with a nested RAW option (which is ignored).
+			std::vector<std::string> str_vec;
+			std::map<int, std::string> int_str_map;
+			boost::optional<double> opt_some;
+			boost::optional<double> opt_none;
+			NestedData nested; // Transcribed via save/load construction.
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+
+		//! Fixed-size arithmetic arrays transcribed with 'Scribe::transcribe_raw_array'.
+		struct ArrayData
+		{
+			ArrayData();
+
+			void
+			initialise();
+
+			void
+			check_equality(
+					const ArrayData &other) const;
+
+			double doubles[4];
+			float floats[3];
+			int ints[5];
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+
+		/**
+		 * Fixed-size native C arrays transcribed via 'scribe.transcribe()' (ie, through
+		 * "TranscribeArray.h" rather than calling 'Scribe::transcribe_raw_array' directly like
+		 * @a ArrayData does). Covers a 1D arithmetic array (raw-lane fast path), a multidimensional
+		 * arithmetic array (recurses down to the same fast path) and a non-arithmetic array
+		 * (general per-element path only - 'transcribe_raw_array' doesn't support class types).
+		 */
+		struct FixedArrayData
+		{
+			FixedArrayData();
+
+			void
+			initialise();
+
+			void
+			check_equality(
+					const FixedArrayData &other) const;
+
+			int nums[4];
+			double matrix[2][3];
+			std::string strs[2];
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+
+		//! First polymorphic base of @a Derived (raw-lane owning pointer tests).
+		class BaseA
+		{
+		public:
+			virtual
+			~BaseA()
+			{  }
+
+			BaseA() :
+				a(0)
+			{  }
+
+			int a;
+
+		protected:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+		/**
+		 * Second polymorphic base of @a Derived (raw-lane owning pointer tests).
+		 *
+		 * Being the *second* base gives it a non-zero pointer offset within @a Derived, which
+		 * exercises the multiple-inheritance pointer fix-ups of shared-object backrefs.
+		 */
+		class BaseB
+		{
+		public:
+			virtual
+			~BaseB()
+			{  }
+
+			BaseB() :
+				b(0)
+			{  }
+
+			int b;
+
+		protected:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+		/**
+		 * A multiply-inherited polymorphic class transcribed via (owning) base class pointers
+		 * in the raw lane - its class name is transcribed as a unique-string-pool index
+		 * (it is export registered in "ScribeExportUnitTest.h").
+		 */
+		class Derived :
+				public BaseA,
+				public BaseB
+		{
+		public:
+
+			Derived() :
+				d(0)
+			{  }
+
+			int d;
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+		/**
+		 * An intrusively reference-counted class (raw-lane owning pointer tests) - its reference
+		 * count is passed as a use-count hint that selects between the deduplicated (shared) and
+		 * inline (sole owner) raw-lane pointer encodings.
+		 */
+		class RefCountedData :
+				public GPlatesUtils::ReferenceCount<RefCountedData>
+		{
+		public:
+
+			typedef GPlatesUtils::non_null_intrusive_ptr<RefCountedData> non_null_ptr_type;
+
+			explicit
+			RefCountedData(
+					int value_ = 0) :
+				value(value_)
+			{  }
+
+			int value;
+
+			// An optional nested (shared) child - used to test backref ordering when a shared
+			// object is nested inside another shared object.
+			boost::optional<non_null_ptr_type> child;
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+		//! An object graph of owning pointers (raw-lane owning pointer tests).
+		struct PointerData
+		{
+			PointerData();
+
+			~PointerData();
+
+			void
+			initialise();
+
+			void
+			check_equality(
+					const PointerData &other) const;
+
+			boost::scoped_ptr<int> scoped;         // Exclusive owner - streamed inline.
+			int *raw_owned;                        // EXCLUSIVE_OWNER raw pointer - streamed inline.
+			boost::shared_ptr<BaseA> shared_a;     // A Derived object shared with 'shared_b' and 'weak_a'.
+			boost::shared_ptr<BaseB> shared_b;     // Same Derived object - backref (with pointer offset).
+			boost::weak_ptr<BaseA> weak_a;         // Weak pointer to the same Derived object - backref.
+			boost::shared_ptr<BaseA> shared_null;  // NULL pointer.
+			RefCountedData::non_null_ptr_type intrusive_1;    // Shared with 'intrusive_2' (use count 2 - deduplicated).
+			RefCountedData::non_null_ptr_type intrusive_2;    // Same object - backref.
+			RefCountedData::non_null_ptr_type intrusive_solo; // Sole owner (use count 1 - streamed inline).
+
+		private:
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			friend class GPlatesScribe::Access;
+		};
+
+	private:
+
+		void
+		test_case_raw_1_write(
+				const GPlatesScribe::ArchiveWriter::non_null_ptr_type &archive_writer,
+				Data &before_data);
+
+		void
+		test_case_raw_1_read(
+				const GPlatesScribe::ArchiveReader::non_null_ptr_type &archive_reader,
+				Data &before_data);
+	};
+
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			TranscribeRawTest::Enum &e,
+			bool transcribed_construct_data);
+
 
 	//
 	// To run only Transcribe test suite:
 	//
 	// gplates-unit-test.exe --G_test_to_run=*/Transcribe
 	//
-	class TranscribeTestSuite : 
+	class TranscribeTestSuite :
 		public GPlatesUnitTest::GPlatesTestSuite
 	{
 	public:
@@ -808,7 +1160,7 @@ namespace GPlatesUnitTest
 				unsigned depth);
 
 	protected:
-		void 
+		void
 		construct_maps();
 
 	private:
@@ -823,6 +1175,9 @@ namespace GPlatesUnitTest
 
 		void
 		construct_transcribe_compatibility_test();
+
+		void
+		construct_transcribe_raw_test();
 	};
 }
 
