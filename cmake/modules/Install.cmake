@@ -11,29 +11,11 @@
 include(GNUInstallDirs)
 
 #
-# The following shows how to configure CMake for either 'gplates' or 'pygplates', build it and then
-# install it into a 'staging' sub-directory. It assumes the source code is in a directory 'gplates-src'
-# and that you are creating a sibling directory 'gplates-build' or 'pygplates-build' (or both).
+# See the top-level BUILD-Windows.md / BUILD-macOS.md / BUILD-Linux.md for how to configure, build and
+# install 'gplates' or 'pygplates' (including the GPLATES_BUILD_GPLATES and GPLATES_INSTALL_STANDALONE
+# options used below).
 #
-# For 'gplates':
-#
-#   mkdir gplates-build  # You should now see 'gplates-src/' and 'gplates-build/' side-by-side
-#   cd gplates-build
-#   cmake -D GPLATES_BUILD_GPLATES:BOOL=TRUE ../gplates-src  # Note the TRUE for building gplates
-#   cmake --build .
-#   cmake --install . --prefix staging  # Should now have a 'gplates-build/staging/' directory
-#
-# For 'pygplates':
-#
-#   mkdir pygplates-build  # You should now see 'gplates-src/' and 'pygplates-build/' side-by-side
-#   cd pygplates-build
-#   cmake -D GPLATES_BUILD_GPLATES:BOOL=FALSE ../gplates-src  # Note the FALSE for building pygplates
-#   cmake --build .
-#   cmake --install . --prefix staging  # Should now have a 'pygplates-build/staging/' directory
-#
-# For GPlates, in most cases you wouldn't typically install directly like this. More likely you'd create a package
-# using CPack (see Package.cmake) which will, in turn, install to its own staging area prior to creating a package.
-# However for pyGPlates, the install phase is used by scikit-build-core to create a Python wheel (see pyproject.toml).
+# For pyGPlates, the install phase is also used by scikit-build-core to create a Python wheel (see pyproject.toml).
 #
 
 #
@@ -374,14 +356,24 @@ if (GPLATES_INSTALL_STANDALONE)
         # Find the relative path from the Python prefix directory to the standard library directory.
         # We'll use this as the standard library install location relative to our install prefix.
         if (APPLE)
-            # On Apple we're expecting Python to be a framework. Later on, if we're also installing shared library dependencies, we will also
-            # install the Python framework library itself (and its Resources directory).
+            # On Apple, Python may either be a framework (eg, MacPorts) or a normal prefix layout (eg, conda).
             if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
+                # Framework Python (eg, MacPorts). Later on, if we're also installing shared library dependencies,
+                # we will also install the Python framework library itself (and its Resources directory).
                 # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
                 # 'gplates.app/Contents/Frameworks/Python.framework/Versions/3.8/lib/python3.8'.
                 string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "gplates.app/Contents/Frameworks/\\1" GPLATES_PYTHON_STDLIB_INSTALL_PREFIX ${GPLATES_PYTHON_STDLIB_DIR})
             else()
-                message(FATAL_ERROR "Expected Python to be a framework")
+                # Non-framework Python (eg, conda). Install the standard library under 'gplates.app/Contents/Resources/'
+                # using its path relative to the Python prefix (eg, 'gplates.app/Contents/Resources/lib/python3.14').
+                # It must go under 'Contents/Resources/' (not 'Contents/Frameworks/') because a plain directory tree of
+                # '.py'/'.so' files is neither a framework nor a dylib, and code-signing rejects such content in the
+                # reserved 'Contents/Frameworks/' directory ("bundle format unrecognized, invalid, or unsuitable").
+                # This must match GPLATES_STANDALONE_PYTHON_STDLIB_DIR in Config_h.cmake and the runtime location in
+                # 'src/file-io/StandaloneBundle.cc'. The non-framework libpython itself is a regular '.dylib' and is
+                # copied into 'Contents/MacOS/' via the shared-library-dependency install below.
+                file(RELATIVE_PATH _python_stdlib_relative_to_prefix ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
+                set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX gplates.app/Contents/Resources/${_python_stdlib_relative_to_prefix})
             endif()
         else() # Windows or Linux
             file(RELATIVE_PATH GPLATES_PYTHON_STDLIB_INSTALL_PREFIX ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
@@ -517,12 +509,12 @@ if (GPLATES_INSTALL_STANDALONE)
     # Copy the GDAL library plugins (eg, NetCDF) into standalone bundle (unless compiled into core library). #
     ##########################################################################################################
     #
-    # Find the GDAL home directory (the GDAL plugins will be in a sub-directory depending on the platform).
+    # Find the GDAL library plugins directory.
     if (WIN32)
-        # The 'gdal-config' command is not available on Windows. Instead we'll use the GDAL_HOME environment variable (that we asked the user to set).
-        set(_gdal_home_dir $ENV{GDAL_HOME})
-        if (NOT _gdal_home_dir)
-            message(WARNING "GDAL_HOME environment variable not set - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+        # The 'gdal-config' command is not available on Windows. Instead we're expected to use the GDAL_DRIVER_PATH environment variable.
+        set(_gdal_plugins_dir $ENV{GDAL_DRIVER_PATH})
+        if (NOT _gdal_plugins_dir)
+            message(WARNING "GDAL_DRIVER_PATH environment variable not set - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
         endif()
     else() # Apple or Linux
         # Find the 'gdal-config' command (should be able to find via PATH environment variable).
@@ -541,15 +533,29 @@ if (GPLATES_INSTALL_STANDALONE)
         else()
             message(WARNING "Unable to find 'gdal-config' command - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
         endif()
+
+        # The GDAL plugins directory is a sub-directory of the GDAL home directory.
+        # The exact location depends on the platform and how GDAL is installed.
+        if (APPLE)
+            # If the GDAL home directory is inside a framework then it has a different plugin path.
+            if (_gdal_home_dir MATCHES "[^/]+\\.framework/")
+                set(_gdal_plugins_dir ${_gdal_home_dir}/PlugIns)
+            else()
+                set(_gdal_plugins_dir ${_gdal_home_dir}/lib/gdalplugins)
+            endif()
+        else()  # Linux
+            set(_gdal_plugins_dir ${_gdal_home_dir}/lib/gdalplugins)
+        endif()
     endif()
     #
-    if (_gdal_home_dir)
-        file(TO_CMAKE_PATH ${_gdal_home_dir} _gdal_home_dir)
-        if (EXISTS "${_gdal_home_dir}")
+    if (_gdal_plugins_dir)
+        file(TO_CMAKE_PATH ${_gdal_plugins_dir} _gdal_plugins_dir)
+        if (EXISTS "${_gdal_plugins_dir}")
             # Remove the trailing '/' if there is one.
-            string(REGEX REPLACE "/+$" "" _gdal_home_dir "${_gdal_home_dir}")
+            string(REGEX REPLACE "/+$" "" _gdal_plugins_dir "${_gdal_plugins_dir}")
         else()
-            message(WARNING "GDAL home directory \"${_gdal_home_dir}\" does not exist - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+            # The GDAL plugins directory does not exist. It's possible the plugins were compiled into core GDAL library though.
+            # For each specific plugin we later attempt to install we'll emit a message indicating it will not be included in standalone bundle.
         endif()
     endif()
     #
@@ -573,30 +579,22 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # ...and the full path to installed plugin file will be added to 'GDAL_PLUGINS_INSTALLED'.
     function(install_gdal_plugin gdal_plugin_short_name)
-        if (NOT EXISTS "${_gdal_home_dir}")
-            return()
-        endif()
-
         # Get the source file location of the GDAL plugin.
+        set(_gdal_plugin_path ${_gdal_plugins_dir}/gdal_${gdal_plugin_short_name})
         if (WIN32)
-            set(_gdal_plugin_path ${_gdal_home_dir}/bin/gdalplugins/gdal_${gdal_plugin_short_name}.dll)
+            set(_gdal_plugin_path ${_gdal_plugin_path}.dll)
         elseif (APPLE)
-            # If the GDAL home directory is inside a framework then it has a different plugin path.
-            if (_gdal_home_dir MATCHES "[^/]+\\.framework/")
-                set(_gdal_plugin_path ${_gdal_home_dir}/PlugIns/gdal_${gdal_plugin_short_name}.dylib)
-            else()
-                set(_gdal_plugin_path ${_gdal_home_dir}/lib/gdalplugins/gdal_${gdal_plugin_short_name}.dylib)
-            endif()
+            set(_gdal_plugin_path ${_gdal_plugin_path}.dylib)
         else()  # Linux
-            set(_gdal_plugin_path ${_gdal_home_dir}/lib/gdalplugins/gdal_${gdal_plugin_short_name}.so)
+            set(_gdal_plugin_path ${_gdal_plugin_path}.so)
         endif()
 
         if (NOT EXISTS "${_gdal_plugin_path}")
             # Report message at install time since it's not an error if plugin is compiled into core GDAL library.
             #
-            # Update: It's common to have GDAL plugins compiled into the core library.
-            #         So we won't output a message since it tends to look like an error/warning message.
-            #install(CODE "message(\"GDAL plugin ${_gdal_plugin_path} not found, so not installed (might be compiled into core GDAL library though)\")")
+            # Report a message even though it looks like an error because it's provides a debug clue if GDAL plugins exist
+            # (ie, are *not* compiled into the core GDAL library) but were nevertheless not found.
+            install(CODE "message(\"GDAL plugin ${_gdal_plugin_path} not found, so not installed (might be compiled into core GDAL library though)\")")
             return()
         endif()
 
@@ -620,6 +618,13 @@ if (GPLATES_INSTALL_STANDALONE)
         list(APPEND _installed_gdal_plugin_list "${_installed_gdal_plugin}")
         # Set caller's plugin list.
         set(GDAL_PLUGINS_INSTALLED ${_installed_gdal_plugin_list} PARENT_SCOPE)
+
+        # Also record the *source* plugin file. We scan the source plugins (not the installed copies)
+        # for their runtime dependencies, because some libraries (eg, from conda) use relative rpaths
+        # (eg, '@loader_path/...') that only resolve at the source location, not the install location.
+        set(_source_gdal_plugin_list ${GDAL_PLUGINS_SOURCE})
+        list(APPEND _source_gdal_plugin_list "${_gdal_plugin_path}")
+        set(GDAL_PLUGINS_SOURCE ${_source_gdal_plugin_list} PARENT_SCOPE)
     endfunction()
     #
     # Install the GDAL plugins (if not already compiled into the core GDAL library).
@@ -723,6 +728,13 @@ if (GPLATES_INSTALL_STANDALONE)
             list(APPEND _installed_qt_plugin_list "${_installed_qt_plugin}")
             # Set caller's plugin list.
             set(QT_PLUGINS_INSTALLED ${_installed_qt_plugin_list} PARENT_SCOPE)
+
+            # Also record the *source* plugin file. We scan the source plugins (not the installed copies)
+            # for their runtime dependencies, because some libraries (eg, from conda) use relative rpaths
+            # (eg, '@loader_path/...') that only resolve at the source location, not the install location.
+            set(_source_qt_plugin_list ${QT_PLUGINS_SOURCE})
+            list(APPEND _source_qt_plugin_list "${_qt_plugin_path}")
+            set(QT_PLUGINS_SOURCE ${_source_qt_plugin_list} PARENT_SCOPE)
         else()
             message(FATAL_ERROR "Qt plugin ${qt_plugin_target} not found")
         endif()

@@ -399,7 +399,11 @@ output_as_gpml(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &features)
 {
 	QFile standard_output;
-	standard_output.open(stdout, QIODevice::WriteOnly);
+	if (!standard_output.open(stdout, QIODevice::WriteOnly))
+	{
+		std::cerr << "Unable to open standard output for writing GPML." << std::endl;
+		return;
+	}
 	GPlatesFileIO::GpmlOutputVisitor v(&standard_output, features);
 
 	GPlatesModel::FeatureCollectionHandle::iterator begin = features->begin();

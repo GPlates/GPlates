@@ -54,6 +54,23 @@
 
 namespace
 {
+	/**
+	 * Returns the position of a mouse event in local widget coordinates as a QPointF.
+	 *
+	 * QMouseEvent::position() was introduced in Qt6; QMouseEvent::localPos() is the Qt5
+	 * equivalent (both return the event position in local widget coordinates).
+	 */
+	QPointF
+	get_mouse_event_position(
+			const QMouseEvent *mouse_event)
+	{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+		return mouse_event->position();
+#else
+		return mouse_event->localPos();
+#endif
+	}
+
 	double
 	distance_between_qpointfs(
 		const QPointF &p1,
@@ -280,8 +297,8 @@ GPlatesQtWidgets::MapView::mousePressEvent(
 
 	d_mouse_press_info =
 			MousePressInfo(
-					press_event->x(),
-					press_event->y(),
+					qRound(get_mouse_event_position(press_event).x()),
+					qRound(get_mouse_event_position(press_event).y()),
 					mouse_pointer_scene_coords(),
 					mouse_pointer_llp(),
 					mouse_pointer_is_on_surface(),
@@ -326,8 +343,8 @@ GPlatesQtWidgets::MapView::mouseReleaseEvent(
 		return;
 	}
 
-	if (abs(release_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
-			abs(release_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
+	if (abs(qRound(get_mouse_event_position(release_event).x()) - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
+			abs(qRound(get_mouse_event_position(release_event).y()) - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
 		d_mouse_press_info->d_is_mouse_drag = true;
 	}
 	if ((d_mouse_press_info->d_is_mouse_drag))
@@ -378,8 +395,8 @@ GPlatesQtWidgets::MapView::mouseMoveEvent(
 
 	if (d_mouse_press_info)
 	{
-		int x_dist = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
-		int y_dist = move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
+		int x_dist = qRound(get_mouse_event_position(move_event).x()) - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
+		int y_dist = qRound(get_mouse_event_position(move_event).y()) - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
 		if (x_dist*x_dist + y_dist*y_dist > 4)
 		{
 			d_mouse_press_info->d_is_mouse_drag = true;

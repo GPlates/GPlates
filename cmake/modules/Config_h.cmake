@@ -2,25 +2,6 @@
 # Set some variables needed when generating 'global/config.h' file from 'global/config.h.in'.
 #
 
-# Determine which PROJ header to include.
-#
-# For Proj5+ we should include 'proj.h' (the modern API).
-# For Proj4 we can only include 'proj_api.h' (the old API).
-#
-# Note that Proj8 removed the Proj4 header ('proj_api.h') but both headers
-# exist in Proj versions 5, 6 and 7 (where we choose 'proj.h').
-FOREACH(_PROJ_INCLUDE_DIR ${PROJ_INCLUDE_DIRS})
-  # If have the Proj5+ header ("proj.h").
-  IF (EXISTS "${_PROJ_INCLUDE_DIR}/proj.h")
-    set(GPLATES_HAVE_PROJ_H 1)
-  ENDIF()
-  
-  # If have the Proj4 header ("proj_api.h").
-  IF (EXISTS "${_PROJ_INCLUDE_DIR}/proj_api.h")
-    set(GPLATES_HAVE_PROJ_API_H 1)
-  ENDIF()
-ENDFOREACH()
-
 # Do we have boost.python.numpy?
 #
 # Only available for Boost >= 1.63, and if boost.python.numpy installed since
@@ -60,13 +41,20 @@ set(GPLATES_STANDALONE_GDAL_PLUGINS_DIR gdal_plugins)
 #       non-embedded Python interpreter that has its own Python standard library).
 if (GPLATES_INSTALL_STANDALONE AND GPLATES_BUILD_GPLATES)
   if (APPLE)
-    # On Apple we're expecting Python to be a framework.
+    # On Apple, Python may either be a framework (eg, MacPorts) or a normal prefix layout (eg, conda).
     if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
+        # Framework Python (eg, MacPorts).
         # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
         # 'Python.framework/Versions/3.8/lib/python3.8'.
         string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "\\1" GPLATES_STANDALONE_PYTHON_STDLIB_DIR ${GPLATES_PYTHON_STDLIB_DIR})
     else()
-        message(FATAL_ERROR "Expected Python to be a framework")
+        # Non-framework Python (eg, conda).
+        # Use the path of the standard library relative to the Python prefix (eg, 'lib/python3.14').
+        # This gets installed under 'gplates.app/Contents/Resources/' (see Install.cmake) and is located
+        # there at runtime (see 'src/file-io/StandaloneBundle.cc') - a loose directory tree cannot go under
+        # the code-signed 'Contents/Frameworks/'. Since it is not a framework, the embedded interpreter is
+        # told its home explicitly (see 'src/gui/PythonManager.cc').
+        file(RELATIVE_PATH GPLATES_STANDALONE_PYTHON_STDLIB_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
     endif()
   else() # Windows or Linux
     # Find the relative path from the Python prefix directory to the standard library directory.

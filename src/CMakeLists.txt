@@ -28,7 +28,8 @@ find_package(GLEW REQUIRED)
 #############
 # Find ZLIB #
 #
-# We use our own "FindZLIB.cmake" module so we can find contrib-built zlibwapi on Windows, which also defines the ZLIB::ZLIB imported target.
+# Use CMake's built-in FindZLIB module (which defines the ZLIB::ZLIB imported target).
+# Note: Windows and macOS get zlib from conda; only Linux also offers it as a system package.
 find_package(ZLIB REQUIRED)
 
 #############
@@ -96,6 +97,11 @@ if (GPLATES_CONDA_BUILD)
 	#   "Empty package; python present in build and host deps.  You probably picked up the build environment's python  executable.
 	#    You need to alter your recipe to  use the PYTHON env var in your recipe to run that executable."
 	#
+	# UPDATE: CMake policy CMP0190 (CMake 4.1) may require setting CMAKE_CROSSCOMPILING_EMULATOR since we specified the 'Development'
+	#         component together with the 'Interpreter' component. See:
+	#           https://github.com/Kitware/CMake/blob/bda0b36155a63134811c8ec754fba4fa85dfcd65/Modules/FindPython/Support.cmake#L1601
+	#         If we get an error building on conda then can try separate 'find_package()' calls for the 'Interpreter' and 'Development' components.
+	#
 	# When not cross-compiling there's only a 'host' prefix (conda only installs Python into the 'host' prefix, not also the 'build' prefix).
 	# In this situation the PYTHON environment variable should be the same as that found with 'find_package(Python2/3)'.
 	#
@@ -144,6 +150,39 @@ endif()
 file(TO_CMAKE_PATH ${GPLATES_PYTHON_EXECUTABLE} GPLATES_PYTHON_EXECUTABLE)
 file(TO_CMAKE_PATH ${GPLATES_PYTHON_STDLIB_DIR} GPLATES_PYTHON_STDLIB_DIR)
 file(TO_CMAKE_PATH ${GPLATES_PYTHON_PREFIX_DIR} GPLATES_PYTHON_PREFIX_DIR)
+
+# Reject a virtual environment (venv/virtualenv) when building the embedded-Python GPlates application.
+#
+# GPlates embeds a Python interpreter and, for a standalone install, copies the Python standard library
+# wholesale from GPLATES_PYTHON_STDLIB_DIR. A venv has no standard library of its own - on Windows
+# 'venv/Lib' holds only 'site-packages', while the real stdlib (eg, the 'encodings' module) stays in the
+# base Python and is reached at runtime only via the venv's redirection. Since we derive the prefix/stdlib
+# from sys.prefix / Python_STDLIB (which point at the venv) and the embedding test forces PYTHONHOME to
+# that prefix, the embedded interpreter can't find its stdlib and dies with an obscure
+# "ModuleNotFoundError: No module named 'encodings'". Detect it here and fail with a clear message.
+#
+# This is gated on GPLATES_BUILD_GPLATES (like the embedding test below): building the pyGPlates *module*
+# with 'pip install .' is a normal, supported use of a venv - only the embedded application needs a full
+# Python. A venv is detected by sys.prefix differing from sys.base_prefix (conda environments, being full
+# prefixes, are not flagged).
+if (GPLATES_BUILD_GPLATES)
+	execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix != getattr(sys, 'base_prefix', sys.prefix));"
+		RESULT_VARIABLE _PYTHON_VENV_RESULT
+		OUTPUT_VARIABLE _PYTHON_IS_VENV
+		ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (NOT _PYTHON_VENV_RESULT AND _PYTHON_IS_VENV STREQUAL "True")
+		message(FATAL_ERROR
+			"The Python interpreter selected for the embedded GPlates build is a virtual environment "
+			"(venv/virtualenv):\n"
+			"    ${GPLATES_PYTHON_PREFIX_DIR}\n"
+			"A venv has no standard library of its own, so the embedded interpreter cannot locate its "
+			"stdlib (you would get \"ModuleNotFoundError: No module named 'encodings'\") and the standalone "
+			"install has no stdlib to bundle. Build GPlates against a full Python installation instead - "
+			"point CMake at it with, eg, -DPython${GPLATES_PYTHON_VERSION_MAJOR}_EXECUTABLE=/path/to/python "
+			"- and curate that installation's site-packages (eg, numpy only) to keep the standalone "
+			"dependency scan clean. (A venv is fine for building the pyGPlates module via 'pip install .'.)")
+	endif()
+endif()
 
 # Find the Python NumPy include directories (and store in GPLATES_PYTHON_NUMPY_INCLUDE_DIRS if found).
 if (GPLATES_CONDA_BUILD)
@@ -317,6 +356,14 @@ find_package(GDAL 2.0 REQUIRED)
 #############
 # Find PROJ #
 #
+# GPlates requires PROJ 6 or above (see README.md) and uses only the modern 'proj.h' API.
+# We use our own FindPROJ.cmake module: it prefers PROJ's CMake config package (eg, conda) but
+# falls back to a manual library search for distributions that ship no config package. Either way
+# it provides the PROJ::proj target (linked below).
+#
+# Note: FindPROJ.cmake is kept only for Ubuntu 22.04, whose 'libproj-dev' ships no CMake config
+# package (and CMake has no built-in FindPROJ), so the manual fallback is the only way to locate
+# PROJ there. Remove this module once our minimum Ubuntu LTS provides a PROJ config package.
 find_package(PROJ REQUIRED)
 
 

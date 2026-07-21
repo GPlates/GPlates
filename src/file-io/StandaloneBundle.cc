@@ -246,9 +246,18 @@ GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory()
 	}
 	QString bundle_python_stdlib_dir = bundle_root_dir.get();
 
-	// On macOS the bundle Python standard library is relative to the frameworks directory.
+	// On macOS a framework Python (eg, MacPorts) is bundled inside 'Contents/Frameworks' (as a proper
+	// framework), whereas a non-framework Python (eg, conda) is bundled as a plain directory tree under
+	// 'Contents/Resources' (a loose '.py'/'.so' tree is not permitted in the code-signed 'Contents/Frameworks').
 #		if defined(Q_OS_MACOS)
-	bundle_python_stdlib_dir += "/gplates.app/Contents/Frameworks";
+	if (QString(GPLATES_STANDALONE_PYTHON_STDLIB_DIR).contains("Python.framework"))
+	{
+		bundle_python_stdlib_dir += "/gplates.app/Contents/Frameworks";
+	}
+	else
+	{
+		bundle_python_stdlib_dir += "/gplates.app/Contents/Resources";
+	}
 #		endif
 
 	bundle_python_stdlib_dir = bundle_python_stdlib_dir + "/" + GPLATES_STANDALONE_PYTHON_STDLIB_DIR;
@@ -266,6 +275,64 @@ GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory()
 
 	// Pygplates is imported by an external non-embedded Python interpreter
 	// that has its own Python standard library.
+	return boost::none;
+
+#	endif
+
+#else  // not a standalone bundle
+
+	return boost::none;
+
+#endif // GPLATES_INSTALL_STANDALONE
+}
+
+
+boost::optional<QString>
+GPlatesFileIO::StandaloneBundle::get_python_home_directory()
+{
+#if defined(GPLATES_INSTALL_STANDALONE)
+
+#	if defined(GPLATES_PYTHON_EMBEDDING)  // gplates
+
+#		if defined(Q_OS_MACOS)
+
+	// A framework Python (eg, MacPorts) locates its home via dyld, so it does not need to be told
+	// explicitly (and we preserve that existing behaviour by returning none). Only a non-framework
+	// Python (eg, conda) needs an explicit home. We distinguish the two by the bundled standard library
+	// location (which is inside 'Python.framework/...' only for a framework Python).
+	if (QString(GPLATES_STANDALONE_PYTHON_STDLIB_DIR).contains("Python.framework"))
+	{
+		return boost::none;
+	}
+
+	// Only provide a home if the standard library was actually bundled (ie, exists in the bundle).
+	boost::optional<QString> bundle_python_stdlib_dir = get_python_standard_library_directory();
+	if (!bundle_python_stdlib_dir)
+	{
+		return boost::none;
+	}
+
+	// The non-framework standard library is bundled at '<bundle>/gplates.app/Contents/Resources/lib/pythonX.Y'
+	// (see Config_h.cmake / Install.cmake), so the Python home (prefix) is the 'Contents/Resources' directory.
+	boost::optional<QString> bundle_root_dir = get_bundle_root_directory();
+	if (!bundle_root_dir)
+	{
+		return boost::none;
+	}
+
+	return bundle_root_dir.get() + "/gplates.app/Contents/Resources";
+
+#		else  // Windows or Linux
+
+	// On Windows and Linux the embedded interpreter locates its home relative to the executable
+	// (the standard library is bundled relative to the executable), so no explicit home is needed.
+	return boost::none;
+
+#		endif
+
+#	else // pygplates
+
+	// Pygplates is imported by an external non-embedded Python interpreter that has its own home.
 	return boost::none;
 
 #	endif

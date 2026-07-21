@@ -205,20 +205,13 @@ In a terminal or command window, type the following to download the GPlates repo
   cd GPlates
   git switch release-pygplates
 
-Then follow the instructions in ``DEPS.Linux`` (on Linux), ``DEPS.OSX`` (on macOS) or ``DEPS.Windows`` (on Windows) to install
+Then follow the instructions in ``BUILD-Linux.md`` (on Linux), ``BUILD-macOS.md`` (on macOS) or ``BUILD-Windows.md`` (on Windows) to install
 the dependency libraries required by pyGPlates (and to install the compilation tools).
 These instructions are in the root directory of the source code.
 
-Once the dependency libraries (and compilation tools) have been installed then you can compile and install pyGPlates.
-
-To compile pyGPlates and install it into Python (along with its dependency shared libraries), type the following
-(assuming you are currently in the root directory of the source code - see ``cd GPlates`` above):
-::
-
-  python -m pip install .
-
-.. note:: This assumes a virtual environment has already been *activated* as described in :ref:`pygplates_getting_started_install_into_a_venv`.
-  Otherwise you might need to replace ``python`` with ``python3`` (on macOS and Linux) or ``py`` (on Windows).
+Once the dependency libraries (and compilation tools) have been installed then you can compile and install pyGPlates
+by following the "Build pyGPlates" instructions in the same ``BUILD-Linux.md``, ``BUILD-macOS.md`` or ``BUILD-Windows.md``
+file (the exact ``pip install`` command depends on how the dependencies were installed).
 
 Now you can use pyGPlates. For example, to see the pyGPlates version:
 ::

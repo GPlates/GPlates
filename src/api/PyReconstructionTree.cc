@@ -136,8 +136,10 @@ namespace GPlatesApi
 	template <
 			class EdgeIteratorType,
 			// Nontype template parameter is a function pointer that takes an iterator and returns an edge...
+			// Note: The iterator is taken by reference (rather than by value) to avoid a spurious
+			// '-Wdangling-reference' warning from GCC at the call sites below.
 			const GPlatesAppLogic::ReconstructionTree::Edge &
-					(*edge_from_iterator_unary_func)(EdgeIteratorType)>
+					(*edge_from_iterator_unary_func)(const EdgeIteratorType &)>
 	class ReconstructionTreeEdgeSequenceView
 	{
 	public:
@@ -269,7 +271,7 @@ namespace GPlatesApi
 	template <typename IteratorType>
 	const GPlatesAppLogic::ReconstructionTree::Edge &
 	edge_from_vector_iterator(
-			IteratorType iter)
+			const IteratorType &iter)
 	{
 		return *iter;
 	}
@@ -284,7 +286,7 @@ namespace GPlatesApi
 	template <typename IteratorType>
 	const GPlatesAppLogic::ReconstructionTree::Edge &
 	edge_from_map_iterator(
-			IteratorType iter)
+			const IteratorType &iter)
 	{
 		return *iter->second;
 	}

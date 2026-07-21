@@ -1,0 +1,7 @@
+CompileFlags:
+  # Point clangd at the compilation database emitted by the Ninja 'build-gplates' tree
+  # (CMake enables CMAKE_EXPORT_COMPILE_COMMANDS by default - see cmake/modules/ConfigDefault.cmake),
+  # so it resolves the project's real include paths, defines and flags. This path is relative to this
+  # file's directory, so a single committed '.clangd' works in every git worktree that builds into
+  # 'build-gplates'. Point it at another tree (eg, build-pygplates) if that is your primary target.
+  CompilationDatabase: build-gplates

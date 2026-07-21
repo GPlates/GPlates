@@ -87,8 +87,25 @@
  */
 const GLfloat GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO = static_cast<GLfloat>(1.07);
 
-namespace 
+namespace
 {
+	/**
+	 * Returns the position of a mouse event in local widget coordinates as a QPointF.
+	 *
+	 * QMouseEvent::position() was introduced in Qt6; QMouseEvent::localPos() is the Qt5
+	 * equivalent (both return the event position in local widget coordinates).
+	 */
+	QPointF
+	get_mouse_event_position(
+			const QMouseEvent *mouse_event)
+	{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+		return mouse_event->position();
+#else
+		return mouse_event->localPos();
+#endif
+	}
+
 	/**
 	 * The view is initially oriented such that the global x-axis points out of the screen.
 	 * So set our viewpoint to be along the positive x-axis (looking at the origin).
@@ -1225,8 +1242,8 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 	}
 	d_mouse_press_info =
 			MousePressInfo(
-					press_event->x(),
-					press_event->y(),
+					qRound(get_mouse_event_position(press_event).x()),
+					qRound(get_mouse_event_position(press_event).y()),
 					virtual_mouse_pointer_pos_on_globe(),
 					mouse_pointer_is_on_globe(),
 					press_event->button(),
@@ -1254,8 +1271,8 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		//  * the mouse moved at least 3 pixels in one direction.
 		//
 		// Otherwise, the user just has shaky hands or a very high-res screen.
-		int mouse_delta_x = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
-		int mouse_delta_y = move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
+		int mouse_delta_x = qRound(get_mouse_event_position(move_event).x()) - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
+		int mouse_delta_y = qRound(get_mouse_event_position(move_event).y()) - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
 		if (mouse_delta_x*mouse_delta_x + mouse_delta_y*mouse_delta_y > 4) {
 			d_mouse_press_info->d_is_mouse_drag = true;
 		}
@@ -1313,8 +1330,8 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 		return;
 	}
 
-	if (abs(release_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
-			abs(release_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
+	if (abs(qRound(get_mouse_event_position(release_event).x()) - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
+			abs(qRound(get_mouse_event_position(release_event).y()) - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
 		d_mouse_press_info->d_is_mouse_drag = true;
 	}
 	if (d_mouse_press_info->d_is_mouse_drag) {

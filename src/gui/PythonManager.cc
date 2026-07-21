@@ -274,6 +274,25 @@ GPlatesGui::PythonManager::init_python_interpreter(
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
+	// A *non-framework* bundled Python (eg, conda on macOS) cannot locate its home relative to the
+	// executable (unlike a framework Python, eg MacPorts, which uses dyld), so tell the embedded
+	// interpreter where its home (prefix) is. Returns none when no explicit home is needed (eg, a
+	// framework bundle, a non-standalone build, or Windows/Linux where the home is found relative to
+	// the executable), in which case we leave the default (executable-relative) home computation.
+	const boost::optional<QString> python_home =
+			GPlatesFileIO::StandaloneBundle::get_python_home_directory();
+	if (python_home)
+	{
+		const std::wstring python_home_name = GPlatesUtils::make_wstring_from_qstring(python_home.get());
+		status = PyConfig_SetString(&config, &config.home, python_home_name.c_str());
+		if (PyStatus_Exception(status))
+		{
+			PyConfig_Clear(&config);
+			qWarning() << "Failed to set Python home:" << status.err_msg;
+			throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
+		}
+	}
+
 	// If GPlates has bundled the Python standard library then ignore all PYTHON* environment variables
 	// (eg, PYTHONPATH and PYTHONHOME), since they could point to a *wrong* Python installation on the
 	// user's computer and prevent the embedded interpreter from initialising. Instead we want GPlates to

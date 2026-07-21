@@ -26,26 +26,7 @@
 #ifndef GPLATES_FILEIO_PROJ_H
 #define GPLATES_FILEIO_PROJ_H
 
-#include "global/config.h"
-// Give preference to the Proj5+ header ("proj.h").
-#ifdef GPLATES_HAVE_PROJ_H
-	#include <proj.h>
-#else
-	// Fallback to using Proj4 header ("proj_api.h").
-	//
-	// Accept use of deprecated Proj4 library header ("proj_api.h").
-	// Actually we don't really need this since we only get here if we haven't detected Proj (5+),
-	// you only need to acknowledge if you use "proj_api.h" when there's also a "proj.h",
-	// but we'll acknowledge use of deprecated API anyway.
-	//
-	#ifndef ACCEPT_USE_OF_DEPRECATED_PROJ_API_H
-		#define ACCEPT_USE_OF_DEPRECATED_PROJ_API_H
-	#endif
-	// Note that "proj_api.h" will be removed when Proj7 is released, so any GPlates builds
-	// using it should be switched over to Proj5+ soon. Any of those switched over builds
-	// will be detected above and automatically start using "proj.h" (ie, Proj5+).
-	#include <proj_api.h>
-	#define GPLATES_USING_PROJ4
-#endif
+// Use the modern Proj API ("proj.h"), available since Proj5. GPlates requires Proj6+.
+#include <proj.h>
 
 #endif  // GPLATES_FILEIO_PROJ_H

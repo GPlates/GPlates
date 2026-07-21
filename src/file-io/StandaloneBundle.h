@@ -98,6 +98,21 @@ namespace GPlatesFileIO
 		 */
 		boost::optional<QString>
 		get_python_standard_library_directory();
+
+		/**
+		 * Return the Python home (prefix) directory of the embedded interpreter in the standalone bundle,
+		 * or none if the embedded interpreter can locate its home without being told explicitly.
+		 *
+		 * This is needed for a *non-framework* bundled Python (eg, conda) on macOS: unlike a framework
+		 * Python (eg, MacPorts), which locates its home via dyld, a non-framework Python cannot find its
+		 * home relative to the (differently-located) executable, so the embedded interpreter must be told
+		 * where its home is (see 'src/gui/PythonManager.cc').
+		 *
+		 * Note: This is only used for gplates (not pygplates since that's imported by an external
+		 * non-embedded Python interpreter that has its own Python standard library).
+		 */
+		boost::optional<QString>
+		get_python_home_directory();
 	}
 }
 

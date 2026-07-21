@@ -80,22 +80,22 @@ The source code is obtained by checking out a [primary branch in this repository
 
 Instructions for installing the [dependencies](#dependencies) and compiling GPlates/pyGPlates can be found in the source code, in the files:
 
-- `DEPS.Linux` and `BUILD.Linux` (on Linux)
-- `DEPS.OSX` and `BUILD.OSX` (on macOS)
-- `DEPS.Windows` and `BUILD.Windows` (on Windows)
+- `BUILD-Linux.md` (on Linux)
+- `BUILD-macOS.md` (on macOS)
+- `BUILD-Windows.md` (on Windows)
 
 GPlates and pyGPlates are [free software](https://www.gnu.org/philosophy/free-sw.html) (also known as [open-source](https://opensource.org/docs/definition.php) software), licensed for distribution under the GNU [General Public License](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) (GPL) version 2 (see `COPYING`).
 
 #### Dependencies
 
-* [Boost](https://www.boost.org/) 1.55 or above (1.70 or above if cmake >= 3.30)
+* [Boost](https://www.boost.org/) 1.69 or above (1.70 or above if cmake >= 3.30)
 * [CGAL](https://www.cgal.org/) 4.12 or above
-* [CMake](https://cmake.org/) 3.16 or above
+* [CMake](https://cmake.org/) 3.22 or above
 * [GDAL](https://gdal.org/) 2.0 or above
 * [GLEW](http://glew.sourceforge.net/)
-* [PROJ](https://proj.org/) 4.6 or above (preferably 6 or above)
+* [PROJ](https://proj.org/) 6 or above
 * [Python](http://python.org/) 3.8 or above
-* [Qt](https://www.qt.io/) 5.6 - 5.15 (__note__: 6.x will only be supported for GPlates 3.0)
+* [Qt](https://www.qt.io/) 6.x recommended (5.15 also supported)
 * [Qwt](https://qwt.sourceforge.io/) 6.0.1 or above (preferably 6.1 or above)
 
 #### Repository

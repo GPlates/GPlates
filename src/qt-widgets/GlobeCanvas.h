@@ -194,7 +194,7 @@ namespace GPlatesQtWidgets
 		 */
 		double
 		current_proximity_inclusion_threshold(
-				const GPlatesMaths::PointOnSphere &click_point) const;
+				const GPlatesMaths::PointOnSphere &click_point) const override;
 
 		GPlatesGui::Globe &
 		globe()
@@ -239,7 +239,7 @@ namespace GPlatesQtWidgets
 		 */
 		virtual
 		QSize
-		get_viewport_size() const;
+		get_viewport_size() const override;
 
 		/**
 		 * Renders the scene to a QImage of the dimensions specified by @a image_size.
@@ -254,7 +254,7 @@ namespace GPlatesQtWidgets
 		QImage
 		render_to_qimage(
 				const QSize &image_size_in_device_independent_pixels,
-				const GPlatesGui::Colour &image_clear_colour);
+				const GPlatesGui::Colour &image_clear_colour) override;
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
@@ -262,26 +262,26 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		render_opengl_feedback_to_paint_device(
-				QPaintDevice &feedback_paint_device);
+				QPaintDevice &feedback_paint_device) override;
 
 		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
-		camera_llp() const;
+		camera_llp() const override;
 
 		virtual
 		void
 		set_camera_viewpoint(
-			const GPlatesMaths::LatLonPoint &llp);
+			const GPlatesMaths::LatLonPoint &llp) override;
 
 		virtual
 		boost::optional<GPlatesMaths::Rotation>
-		orientation() const;
+		orientation() const override;
 
 		virtual
 		void
 		set_orientation(
 			const GPlatesMaths::Rotation &rotation
-			/*bool should_emit_external_signal = true */);
+			/*bool should_emit_external_signal = true */) override;
 
 		/**
 		 * Returns the OpenGL context associated with this QGLWidget.
@@ -308,7 +308,7 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
-		update_canvas();
+		update_canvas() override;
 
 		void
 		notify_of_orientation_change();
@@ -394,7 +394,7 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		mousePressEvent(
-				QMouseEvent *event);
+				QMouseEvent *event) override;
 
 		/**
 		 * This is a virtual override of the function in QWidget.
@@ -416,7 +416,7 @@ namespace GPlatesQtWidgets
 		virtual 
 		void 
 		mouseMoveEvent(
-				QMouseEvent *event);
+				QMouseEvent *event) override;
 
 		/**
 		 * This is a virtual override of the function in QWidget.
@@ -429,40 +429,40 @@ namespace GPlatesQtWidgets
 		virtual 
 		void 
 		mouseReleaseEvent(
-				QMouseEvent *event);
+				QMouseEvent *event) override;
 
 		virtual
 		void
 		keyPressEvent(
-				QKeyEvent *key_event);
+				QKeyEvent *key_event) override;
 
 		virtual
 		void
-		move_camera_up();
+		move_camera_up() override;
 
 		virtual
 		void
-		move_camera_down();
+		move_camera_down() override;
 
 		virtual
 		void
-		move_camera_left();
+		move_camera_left() override;
 
 		virtual
 		void
-		move_camera_right();
+		move_camera_right() override;
 
 		virtual
 		void
-		rotate_camera_clockwise();
+		rotate_camera_clockwise() override;
 
 		virtual
 		void
-		rotate_camera_anticlockwise();
+		rotate_camera_anticlockwise() override;
 
 		virtual
 		void
-		reset_camera_orientation();
+		reset_camera_orientation() override;
 
 	Q_SIGNALS:
 
@@ -533,7 +533,7 @@ namespace GPlatesQtWidgets
 		//       to not be able to connect them at runtime.
 
 		void
-		handle_zoom_change();
+		handle_zoom_change() override;
 
 	private:
 		/**

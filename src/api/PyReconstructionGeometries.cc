@@ -432,8 +432,12 @@ namespace GPlatesApi
 							ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> > *>(
 									data)->storage.bytes;
 
+			// Note: The extractor is kept as a named local (rather than a temporary) to avoid a
+			// spurious '-Wdangling-reference' warning from GCC when binding the reference below.
+			bp::extract< ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> >
+					extract_reconstruction_geometry_wrapper(obj);
 			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &reconstruction_geometry_wrapper =
-					bp::extract< ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> >(obj)();
+					extract_reconstruction_geometry_wrapper();
 
 			// Extract theReconstructionGeometryTypeWrapper<ReconstructionGeometryType> wrapper.
 			boost::optional<const ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> &> wrapper =

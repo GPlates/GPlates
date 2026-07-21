@@ -57,6 +57,13 @@ if (MSVC)
     include(InstallRequiredSystemLibraries)
     # Install the runtime libraries in same location as gplates.exe (or pygplates.pyd) so they can be found when executing gplates (or importing pygplates).
     install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
+    #
+    # Note: A system runtime library installed here (eg, VCRUNTIME140.dll) can subsequently be
+    #       overwritten by a copy found by file(GET_RUNTIME_DEPENDENCIES) below, since both install
+    #       to the same destination and the dependency install runs afterwards. This happens in a
+    #       conda environment (which ships its own VCRUNTIME140.dll on the PATH). It's benign because
+    #       both are valid MSVC runtimes, but be aware the installed copy may not be the Visual Studio
+    #       redistributable one that InstallRequiredSystemLibraries provides.
 endif()
 
 
@@ -104,16 +111,56 @@ install(CODE "set(_target_file \"$<TARGET_FILE:${BUILD_TARGET}>\")")
 install(
         CODE "set(GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[${GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES}]])"
         CODE "set(GET_RUNTIME_DEPENDENCIES_DIRECTORIES [[${GET_RUNTIME_DEPENDENCIES_DIRECTORIES}]])"
+        # The *source* Qt/GDAL plugin files (not the installed copies). We scan these for their runtime
+        # dependencies because some libraries (eg, from conda) use relative rpaths (eg, '@loader_path/...')
+        # that only resolve at the source location, not the (as-yet unpopulated) install location. These
+        # are plain absolute paths (no ${CMAKE_INSTALL_PREFIX}), so use square brackets.
+        CODE "set(QT_PLUGINS_SOURCE [[${QT_PLUGINS_SOURCE}]])"
+        CODE "set(GDAL_PLUGINS_SOURCE [[${GDAL_PLUGINS_SOURCE}]])"
         # Note: Using \"${QT_PLUGINS_INSTALLED}\"" instead of [[${QT_PLUGINS_INSTALLED}]] because install code needs to evaluate
         #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS_INSTALLED). And a side note, it does this at install time...
         CODE "set(QT_PLUGINS_INSTALLED \"${QT_PLUGINS_INSTALLED}\")"
         CODE "set(GDAL_PLUGINS_INSTALLED \"${GDAL_PLUGINS_INSTALLED}\")"
         CODE "set(GPLATES_BUILD_GPLATES [[${GPLATES_BUILD_GPLATES}]])"
+        # Needed to locate the bundled Python site-packages (only installed for the 'gplates' target).
+        CODE "set(STANDALONE_BASE_INSTALL_DIR [[${STANDALONE_BASE_INSTALL_DIR}]])"
+        CODE "set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX [[${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}]])"
+        # The *source* Python standard library directory (not the installed copy) - used to scan the
+        # source Python extension modules for dependencies (same relative-rpath reason as the plugins above).
+        CODE "set(GPLATES_PYTHON_STDLIB_DIR [[${GPLATES_PYTHON_STDLIB_DIR}]])"
+        # Need to set any relevant CMake policies here since install code apparently does not have access to the
+        # max policy version specified in cmake_minimum_required().
+        # Policy CMP0207 was introduced in CMake 4.3...
+        CODE [[
+            if(POLICY CMP0207)
+                cmake_policy(SET CMP0207 NEW)
+            endif()
+            # Allow the CMP0009 policy change below to be made inside this included install script
+            # without a CMP0011 warning (CMP0011 NEW gives included scripts automatic policy push/pop).
+            if(POLICY CMP0011)
+                cmake_policy(SET CMP0011 NEW)
+            endif()
+            # Don't follow symlinks in file(GLOB_RECURSE) below (eg, when scanning bundled Python
+            # extension modules, and later the installed frameworks which contain 'Versions/Current'
+            # symlinks). This avoids the CMP0009 developer warning and avoids visiting the same '.so'
+            # files twice (once via the real versioned path and once via the 'Current' symlink).
+            if(POLICY CMP0009)
+                cmake_policy(SET CMP0009 NEW)
+            endif()
+        ]]
         CODE [[
             unset(ARGUMENT_EXECUTABLES)
             unset(ARGUMENT_BUNDLE_EXECUTABLE)
             # Search the Qt/GDAL plugins regardless of whether installing gplates or pygplates.
-            set(ARGUMENT_MODULES MODULES ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
+            #
+            # Note: We search the *source* plugin files (not the installed copies). Their runtime
+            #       dependencies are the same, but some libraries (eg, from conda) use relative rpaths
+            #       (eg, '@loader_path/...') that resolve to the dependency libraries only at the source
+            #       location; at the install location those libraries are not present yet (they are what
+            #       we are about to discover and copy), so scanning the installed copies would leave those
+            #       dependencies unresolved. The installed copies still get their dependency paths fixed
+            #       up (and are codesigned) further below.
+            set(ARGUMENT_MODULES MODULES ${QT_PLUGINS_SOURCE} ${GDAL_PLUGINS_SOURCE})
             # Target 'gplates' is an executable and target 'pygplates' is a module.
             if (GPLATES_BUILD_GPLATES)  # GPlates ...
                 # Add gplates to the list of executables to search.
@@ -122,6 +169,60 @@ install(
             else()  # pyGPlates ...
                 # Add pygplates to the list of modules to search.
                 set(ARGUMENT_MODULES ${ARGUMENT_MODULES} "${_target_file}")  # pygplates
+            endif()
+
+            # For the 'gplates' target (which embeds a Python interpreter) also search the bundled
+            # Python extension modules (eg, numpy's '.pyd' on Windows or '.so' on macOS/Linux) so
+            # that their native dependency libraries get discovered and installed. The Python standard
+            # library (including 'site-packages') is copied wholesale into the standalone bundle (see
+            # Install.cmake), but is not otherwise scanned for dependencies. Without this, eg, numpy
+            # fails to import when running gplates outside the environment it was built in (because
+            # its BLAS/LAPACK backend library was never bundled).
+            #
+            # Note: This is gated on GPLATES_BUILD_GPLATES because only 'gplates' installs the
+            #       Python standard library (and hence site-packages); 'pygplates' does not (so
+            #       there is nothing to search), and its dependencies are handled separately (eg,
+            #       by auditwheel/delocate/delvewheel when building pyGPlates wheels).
+            unset(_python_backend_libraries)
+            if (GPLATES_BUILD_GPLATES)
+                # The *source* site-packages directory (the one copied wholesale into the bundle). We scan
+                # the source extension modules (not the installed copies) for the same relative-rpath reason
+                # as the plugins above - eg, numpy's '.so' reaches its BLAS/LAPACK backend via an
+                # '@loader_path'-relative rpath that only resolves at the source location.
+                set(_source_site_packages "${GPLATES_PYTHON_STDLIB_DIR}/site-packages")
+                if (EXISTS "${_source_site_packages}")
+                    # Python extension modules are '.pyd' on Windows and '.so' on macOS/Linux
+                    # (only the platform-appropriate suffix will actually match anything).
+                    file(GLOB_RECURSE _site_packages_modules
+                        "${_source_site_packages}/*.pyd"
+                        "${_source_site_packages}/*.so")
+                    if (_site_packages_modules)
+                        set(ARGUMENT_MODULES ${ARGUMENT_MODULES} ${_site_packages_modules})
+                    endif()
+                endif()
+
+                # On Windows, numpy (from conda) reaches its BLAS/LAPACK backend (OpenBLAS) through the
+                # netlib shim DLLs (libblas/libcblas/liblapack), which use *export forwarding* to reach
+                # 'openblas.dll'. Export forwarders are invisible to file(GET_RUNTIME_DEPENDENCIES) (it
+                # reads import tables), so the backend is not discovered by scanning the '.pyd' modules
+                # alone. Locate it explicitly in the dependency search directories so we can (a) search
+                # it for *its* dependencies (below) and (b) install it (further below).
+                #
+                # Note: This is only needed on Windows. On macOS/Linux the extension modules link their
+                #       backend ('.dylib'/'.so') directly (no export forwarders), so scanning the
+                #       modules above is sufficient to discover it.
+                if (WIN32)
+                    foreach(_search_directory ${GET_RUNTIME_DEPENDENCIES_DIRECTORIES})
+                        file(GLOB _backend_in_directory "${_search_directory}/*openblas*.dll")
+                        if (_backend_in_directory)
+                            list(APPEND _python_backend_libraries ${_backend_in_directory})
+                        endif()
+                    endforeach()
+                    if (_python_backend_libraries)
+                        list(REMOVE_DUPLICATES _python_backend_libraries)
+                        set(ARGUMENT_MODULES ${ARGUMENT_MODULES} ${_python_backend_libraries})
+                    endif()
+                endif()
             endif()
 
             # Only specify arguments to file(GET_RUNTIME_DEPENDENCIES) if we have them.
@@ -152,14 +253,49 @@ install(
                 ${ARGUMENT_PRE_EXCLUDE_REGEXES}  # Can evaluate to empty.
                 ${ARGUMENT_POST_EXCLUDE_REGEXES})  # Can evaluate to empty.
 
-            # Fail if any unresolved/conflicting dependencies.
+            # Fail if any unresolved dependencies.
             if (_unresolved_dependencies)
                 message(FATAL_ERROR "There were unresolved dependencies of \"${_target_file}\":
                     ${_unresolved_dependencies}")
             endif()
-            if (_conflicting_dependencies)
-                message(FATAL_ERROR "There were conflicting dependencies of \"${_target_file}\":
-                    ${_conflicting_dependencies}")
+
+            # Resolve conflicting dependencies (same DLL basename found in more than one search
+            # directory). This is normal for conda, which ships some DLLs (eg, zlib.dll) in both
+            # the environment root, beside python.exe, and in Library/bin. A conflicting dependency
+            # is *not* added to the resolved dependencies by file(GET_RUNTIME_DEPENDENCIES), so we
+            # must handle it ourselves (otherwise it would silently be omitted from the install).
+            # If all copies of a conflicting dependency are byte-identical then we simply install
+            # one of them; if they genuinely differ then we fail (eg, an accidental mix of Qt5 and
+            # Qt6 libraries in the search directories).
+            #
+            # Note: file(GET_RUNTIME_DEPENDENCIES) sets '<prefix>_FILENAMES' (and one
+            #       '<prefix>_<filename>' list per conflicting filename), but does not set a
+            #       variable named '<prefix>' itself.
+            foreach(_conflicting_filename ${_conflicting_dependencies_FILENAMES})
+                set(_conflicting_candidates ${_conflicting_dependencies_${_conflicting_filename}})
+                list(GET _conflicting_candidates 0 _chosen_candidate)
+                file(SHA256 "${_chosen_candidate}" _chosen_candidate_hash)
+                set(_conflicting_candidates_identical TRUE)
+                foreach(_conflicting_candidate ${_conflicting_candidates})
+                    file(SHA256 "${_conflicting_candidate}" _conflicting_candidate_hash)
+                    if (NOT _conflicting_candidate_hash STREQUAL _chosen_candidate_hash)
+                        set(_conflicting_candidates_identical FALSE)
+                    endif()
+                endforeach()
+                if (_conflicting_candidates_identical)
+                    message(STATUS "Multiple identical copies of dependency \"${_conflicting_filename}\" found; installing \"${_chosen_candidate}\".")
+                    list(APPEND _resolved_dependencies "${_chosen_candidate}")
+                else()
+                    message(FATAL_ERROR "Conflicting dependency \"${_conflicting_filename}\" of \"${_target_file}\" resolves to differing libraries:
+                        ${_conflicting_candidates}")
+                endif()
+            endforeach()
+
+            # Install the Python BLAS/LAPACK backend DLL(s) (eg, OpenBLAS) themselves.
+            # file(GET_RUNTIME_DEPENDENCIES) searched them (above) for *their* dependencies, but a
+            # searched module is not itself added to the resolved dependencies - so add them here.
+            if (_python_backend_libraries)
+                list(APPEND _resolved_dependencies ${_python_backend_libraries})
             endif()
         ]]
 )
@@ -376,11 +512,27 @@ elseif (APPLE)
                             # Get '${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/lib/dependency.dylib' from resolved dependency.
                             string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/lib/\\1" _installed_dependency "${_resolved_dependency}")
                         endif()
+
+                        # A resolved dependency is often referenced (and hence resolved) via a symlink rather than the
+                        # real library file. For example, consumers link '@rpath/libFoo.6.dylib' and conda ships
+                        # 'libFoo.6.dylib -> libFoo.6.11.1.dylib' (and similarly 'libopenblasp-r0.3.33.dylib -> libopenblas.0.dylib').
+                        # FOLLOW_SYMLINK_CHAIN copied both the symlink and its real target, so resolve to the *real* file
+                        # here and fix/sign that (leaving the symlink a symlink). This matters for code signing: if we
+                        # instead process the symlink, 'install_name_tool' replaces it with a second modified *real* file
+                        # (which we then sign) while the true versioned library is left untouched - keeping its original,
+                        # now-invalidated ad-hoc signature - so 'codesign --deep' and notarization reject the bundle with
+                        # "code or signature have been modified". Resolving to the real file ensures it is the one signed.
+                        get_filename_component(_installed_dependency "${_installed_dependency}" REALPATH)
                     endif()
 
                     # Add installed dependency to the list.
                     list(APPEND _installed_dependencies "${_installed_dependency}")
                 endforeach()
+
+                # Several resolved dependencies can be symlinks to the same real library (eg, openblas ships multiple
+                # differently-named symlinks pointing at 'libopenblas.0.dylib'), which now collapse to the same real
+                # file above, so remove duplicates to avoid fixing/signing (and later RPATH-ing) the same file twice.
+                list(REMOVE_DUPLICATES _installed_dependencies)
             ]]
     )
 
@@ -412,19 +564,30 @@ elseif (APPLE)
 
                     get_filename_component(_installed_file_dir ${installed_file} DIRECTORY)
 
-                    # Need to optionally convert relative paths to absolute paths (required by file(RELATIVE_PATH)) because it's possible that
+                    # Need to convert to absolute paths (required by file(RELATIVE_PATH)) because it's possible that
                     # CMAKE_INSTALL_PREFIX (embedded in install paths) is a relative path (eg, 'staging' if installing with
                     # 'cmake --install . --prefix staging').
                     #
-                    # Note that both the installed file and installed dependency will have paths starting with CMAKE_INSTALL_PREFIX so the
-                    # relative path will be unaffected by whatever absolute prefix we use, so we don't need to specify BASE_DIR
-                    # (it will default to 'CMAKE_CURRENT_SOURCE_DIR' which defaults to the current working directory when this
-                    # install code is finally run in cmake script mode '-P' but, as mentioned, it doesn't matter what this is).
-                    get_filename_component(_installed_file_dir ${_installed_file_dir} ABSOLUTE)
-                    get_filename_component(installed_dependency ${installed_dependency} ABSOLUTE)
+                    # We use REALPATH (rather than just ABSOLUTE) to resolve any symbolic links so that both directories
+                    # are in a *canonical* form before computing the relative path between them. This matters because these
+                    # two paths do not necessarily arrive here in the same form: the installed dependency list is built with
+                    # symlinks resolved (see the REALPATH used when populating '_installed_dependencies') whereas the
+                    # dependency path passed in is built directly from CMAKE_INSTALL_PREFIX (symlinks *not* resolved).
+                    # If CMAKE_INSTALL_PREFIX lies under a symlinked directory then the two forms disagree - eg, when
+                    # pip/scikit-build-core installs into a macOS temporary staging directory under '/var/...' (which is
+                    # itself a symlink to '/private/var/...'). Without canonicalising both here they would share only '/'
+                    # as a common prefix and file(RELATIVE_PATH) would emit a long, broken '@loader_path/../../../..' path.
+                    #
+                    # We resolve symlinks on the *directories* only (keeping the dependency's original filename) so that a
+                    # dependency referenced via a versioned symlink (eg, 'libFoo.6.dylib' -> 'libFoo.6.11.dylib') keeps its
+                    # original install name.
+                    get_filename_component(_installed_dependency_dir ${installed_dependency} DIRECTORY)
+                    get_filename_component(_installed_dependency_name ${installed_dependency} NAME)
+                    get_filename_component(_installed_file_dir ${_installed_file_dir} REALPATH)
+                    get_filename_component(_installed_dependency_dir ${_installed_dependency_dir} REALPATH)
 
                     # Get the relative path.
-                    file(RELATIVE_PATH _installed_dependency_relative_path ${_installed_file_dir} ${installed_dependency})
+                    file(RELATIVE_PATH _installed_dependency_relative_path ${_installed_file_dir} ${_installed_dependency_dir}/${_installed_dependency_name})
 
                     # Set caller's relative path.
                     set(${installed_dependency_relative_path} ${_installed_dependency_relative_path} PARENT_SCOPE)
@@ -542,12 +705,20 @@ elseif (APPLE)
                     endforeach()
 
                     # Run 'install_name_tool -change <installed-dependency-file-install-name> <installed-dependency-file> ... <installed-file>' .
-                    execute_process(
-                        COMMAND ${INSTALL_NAME_TOOL} ${_change_installed_dependency_file_install_names_options} ${installed_file}
-                        RESULT_VARIABLE _install_name_tool_result
-                        ERROR_VARIABLE _install_name_tool_error)
-                    if (_install_name_tool_result)
-                        message(FATAL_ERROR "${INSTALL_NAME_TOOL} failed: ${_install_name_tool_error}")
+                    #
+                    # Only run this if there's at least one '-change' option (ie, at least one non-system dependency to fix up).
+                    # Some installed files (eg, Python standard library extension modules such as '_datetime.cpython-*.so')
+                    # depend *only* on system libraries (in '/usr/lib' or '/System'), which we skip above. In that case the
+                    # options list is empty and running 'install_name_tool <installed-file>' with no operations would fail
+                    # (install_name_tool prints its usage message and returns a non-zero exit code when given no operations).
+                    if (_change_installed_dependency_file_install_names_options)
+                        execute_process(
+                            COMMAND ${INSTALL_NAME_TOOL} ${_change_installed_dependency_file_install_names_options} ${installed_file}
+                            RESULT_VARIABLE _install_name_tool_result
+                            ERROR_VARIABLE _install_name_tool_error)
+                        if (_install_name_tool_result)
+                            message(FATAL_ERROR "${INSTALL_NAME_TOOL} failed: ${_install_name_tool_error}")
+                        endif()
                     endif()
 
                     # Get the install name for the installed file itself (as opposed to its dependencies).
@@ -583,6 +754,17 @@ elseif (APPLE)
             # At the same time code sign GPlates (or pyGPlates), its Qt/GDAL plugins and their installed dependencies with a valid Developer ID certificate (if available).
             #
             CODE [[
+                # Don't follow symlinks when recursively globbing '.so' files in the installed frameworks below.
+                # Frameworks contain a 'Versions/Current' symlink, so following symlinks would visit each '.so'
+                # twice (and emit the CMP0009 developer warning).
+                # (CMP0011 NEW avoids a warning about changing a policy inside this included install script.)
+                if(POLICY CMP0011)
+                    cmake_policy(SET CMP0011 NEW)
+                endif()
+                if(POLICY CMP0009)
+                    cmake_policy(SET CMP0009 NEW)
+                endif()
+
                 # Fix the dependency install names in each installed dependency, and then codesign the dependency.
                 foreach(_installed_dependency ${_installed_dependencies})
                     fix_dependency_install_names(${_installed_dependency})
@@ -605,24 +787,36 @@ elseif (APPLE)
                 # (and hence that framework got added to the list multiple times).
                 list(REMOVE_DUPLICATES _installed_frameworks)
 
-                # Codesign the installed frameworks (after codesigning any shared '.so' libraries contained within them).
+                # Fix dependency install names in, and codesign, the shared '.so' libraries contained within the installed frameworks
+                # (after which we codesign the frameworks themselves).
                 #
                 # For example, there are some shared '.so' libraries in the Python framework that are not dependencies of GPlates/pyGPlates
-                # (and hence have not been codesigned). However, they still need code signing (otherwise Apple notarization fails).
+                # (and hence have not had their dependency install names fixed, nor been codesigned).
                 # An example is a directory called 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that contains '.so' libraries (and is in 'sys.path').
                 # There's also site packages (eg, in 'Python.framework/Versions/3.8/lib/python3.8/site-packages/') like NumPy that contain '.so' libraries.
+                #
+                # These '.so' libraries need:
+                #   - their dependency install names fixed, so that any *non-system* dependencies (eg, numpy's BLAS/LAPACK backend, which we
+                #     now bundle by scanning these '.so' modules in the file(GET_RUNTIME_DEPENDENCIES) step above) are referenced from inside
+                #     the bundle (eg, "@executable_path/../MacOS/...") rather than from their original (eg, Macports "/opt/local/lib/...")
+                #     location - otherwise, eg, 'import numpy' fails when running gplates outside the environment it was built in.
+                #     Extension modules that only depend on system libraries (eg, in '/usr/lib' or '/System') are left unchanged.
+                #   - code signing (otherwise Apple notarization fails).
+                # Note that fixing the dependency install names must happen *before* codesigning (since we cannot modify after signing).
                 #
                 # Originally we only applied this logic to the Python framework (since the other frameworks, like the Qt frameworks, don't typically have '.so' libraries).
                 # However, we now apply the same logic to all installed frameworks (just in case the other frameworks add '.so' libraries in the future).
                 #
                 # Note: The Python standard library is only installed for the 'gplates' target which has an embedded Python interpreter
                 #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
-                #       So it will only get installed (and therefore codesigned) for the 'gplates' target.
+                #       So it will only get installed (and therefore processed here) for the 'gplates' target.
                 #
                 foreach(_installed_framework ${_installed_frameworks})
                     # Recursively search for '.so' files within the installed framework (if any).
                     file(GLOB_RECURSE _installed_framework_shared_libs "${_installed_framework}/*.so")
                     foreach(_shared_lib ${_installed_framework_shared_libs})
+                        # Fix dependency install names *before* codesigning (since we cannot modify after signing).
+                        fix_dependency_install_names(${_shared_lib})
                         codesign(${_shared_lib})
                     endforeach()
 
@@ -633,6 +827,32 @@ elseif (APPLE)
                     #       But it appears we do now, otherwise we can get the error "a sealed resource is missing or invalid" for the Python framework.
                     codesign(${_installed_framework})
                 endforeach()
+
+                # For a non-framework (eg, conda) bundled Python, the standard library is installed
+                # *outside* any '.framework' (eg, in 'gplates.app/Contents/Resources/lib/python3.14'),
+                # so its extension modules ('.so') were not covered by the installed-frameworks loop above.
+                # Fix their dependency install names (so any *non-system* dependencies - eg, numpy's
+                # BLAS/LAPACK backend, which we now bundle - reference inside the bundle rather than their
+                # original build-machine location) and codesign them (otherwise Apple notarization fails).
+                # For a framework Python this is skipped (its '.so' files were already handled above).
+                #
+                # Note: The Python standard library is only installed for the 'gplates' target (which has an
+                #       embedded Python interpreter), so this only applies there.
+                if (GPLATES_BUILD_GPLATES AND NOT GPLATES_PYTHON_STDLIB_INSTALL_PREFIX MATCHES "\\.framework/")
+                    set(_installed_python_stdlib "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}")
+                    if (EXISTS "${_installed_python_stdlib}")
+                        file(GLOB_RECURSE _installed_python_shared_libs "${_installed_python_stdlib}/*.so")
+                        foreach(_shared_lib ${_installed_python_shared_libs})
+                            # Skip symlinks - operate on the real target files (which the glob returns
+                            # directly) and avoid any symlink that dangles within the bundle.
+                            if (NOT IS_SYMLINK "${_shared_lib}")
+                                # Fix dependency install names *before* codesigning (since we cannot modify after signing).
+                                fix_dependency_install_names(${_shared_lib})
+                                codesign(${_shared_lib})
+                            endif()
+                        endforeach()
+                    endif()
+                endif()
 
                 # Fix the dependency install names in each installed plugin (Qt and GDAL).
                 foreach(_plugin ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
@@ -752,6 +972,8 @@ else()  # Linux
             #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS_INSTALLED). And a side note, it does this at install time...
             CODE "set(QT_PLUGINS_INSTALLED \"${QT_PLUGINS_INSTALLED}\")"
             CODE "set(GDAL_PLUGINS_INSTALLED \"${GDAL_PLUGINS_INSTALLED}\")"
+            CODE "set(GPLATES_BUILD_GPLATES [[${GPLATES_BUILD_GPLATES}]])"
+            CODE "set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX [[${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}]])"
             # The *build* target filename: executable (for gplates) or module library (for pygplates).
             CODE "set(_target_file_name \"$<TARGET_FILE_NAME:${BUILD_TARGET}>\")"
             #
@@ -761,6 +983,17 @@ else()  # Linux
             # dependencies (also in 'lib/').
             #
             CODE [[
+                # Don't follow symlinks when recursively globbing '.so' files in the installed Python
+                # standard library below (avoids the CMP0009 developer warning and visiting the same
+                # '.so' twice via any symlinks).
+                # (CMP0011 NEW avoids a warning about changing a policy inside this included install script.)
+                if(POLICY CMP0011)
+                    cmake_policy(SET CMP0011 NEW)
+                endif()
+                if(POLICY CMP0009)
+                    cmake_policy(SET CMP0009 NEW)
+                endif()
+
                 # Set the RPATH in each installed dependency.
                 foreach(_installed_dependency ${_installed_dependencies})
                     set_rpath(${_installed_dependency})
@@ -770,6 +1003,33 @@ else()  # Linux
                 foreach(_plugin ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
                     set_rpath(${_plugin})
                 endforeach()
+
+                # Set the RPATH in the bundled Python extension modules (eg, numpy's '.so' files in the
+                # installed Python standard library / site-packages) so that they can find their now-bundled
+                # native dependencies (eg, the BLAS/LAPACK backend) in the 'lib/' sub-directory - otherwise,
+                # eg, 'import numpy' fails when running gplates outside the environment it was built in.
+                # Their non-system dependencies are discovered and bundled by scanning these modules in the
+                # file(GET_RUNTIME_DEPENDENCIES) step above.
+                #
+                # Note: The Python standard library is only installed for the 'gplates' target which has an
+                #       embedded Python interpreter (not 'pygplates'). So it will only get processed here for
+                #       the 'gplates' target.
+                if (GPLATES_BUILD_GPLATES)
+                    set(_installed_python_stdlib "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}")
+                    if (EXISTS "${_installed_python_stdlib}")
+                        file(GLOB_RECURSE _installed_python_shared_libs "${_installed_python_stdlib}/*.so")
+                        foreach(_shared_lib ${_installed_python_shared_libs})
+                            # Skip symlinks. 'patchelf' follows them to their target, but some are dangling
+                            # within the bundle - eg, Ubuntu's 'config-*/libpython3.10.so' points to
+                            # '../../x86_64-linux-gnu/libpython3.10.so.1', which lives outside the bundled
+                            # standard library - which makes patchelf fail. The real extension modules are
+                            # regular files and are still patched directly by this loop.
+                            if (NOT IS_SYMLINK "${_shared_lib}")
+                                set_rpath(${_shared_lib})
+                            endif()
+                        endforeach()
+                    endif()
+                endif()
 
                 # Set the RPATH in the installed gplates executable (or pygplates library).
                 set_rpath(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${_target_file_name})
