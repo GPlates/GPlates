@@ -927,7 +927,7 @@ export_reconstruction_tree()
 				&GPlatesApi::get_equivalent_total_rotation,
 				(bp::arg("plate_id"),
 					bp::arg("use_identity_for_missing_plate_ids")=true),
-				"get_equivalent_total_rotation(plate_id, [bool use_identity_for_missing_plate_ids=True])\n"
+				"get_equivalent_total_rotation(plate_id, [use_identity_for_missing_plate_ids=True])\n"
 				"  Return the *equivalent* finite rotation of the *plate_id* plate relative to the "
 				"*anchored* plate.\n"
 				"\n"
