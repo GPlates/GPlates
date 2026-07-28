@@ -35,6 +35,7 @@
 #include <QDebug>
 
 #include "CreateFeatureDialog.h"
+#include "FeatureTypeDisplayPreferences.h"
 
 #include "CanvasToolBarDockWidget.h"
 #include "ChooseFeatureCollectionWidget.h"
@@ -61,6 +62,7 @@
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/TopologyGeometryType.h"
 #include "app-logic/TopologyUtils.h"
+#include "app-logic/UserPreferences.h"
 
 #include "feature-visitors/GeometrySetter.h"
 #include "feature-visitors/PropertyValueFinder.h"
@@ -819,7 +821,9 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_list()
 {
 	// Populate list of feature types that support the geometric property type.
 	// If no geometric property type (not selected by user yet) then select all feature types.
-	d_choose_feature_type_widget->populate(d_geometry_property_type);
+	const QStringList hidden_feature_types = d_application_state_ptr->get_user_preferences().get_value(
+			FeatureTypeDisplayPreferences::hidden_feature_types_key()).toStringList();
+	d_choose_feature_type_widget->populate(d_geometry_property_type, hidden_feature_types);
 
 	// Note that we don't set the feature type selection.
 	// If the previously selected feature type is in the new list of feature types then
@@ -855,7 +859,12 @@ GPlatesQtWidgets::CreateFeatureDialog::select_default_feature_type()
 		}
 	}
 
-	d_choose_feature_type_widget->set_feature_type(default_feature_type);
+	// A user can hide the normal default in Active Feature Types preferences.
+	// In that case retain the first compatible enabled type selected by populate().
+	if (d_choose_feature_type_widget->has_feature_type(default_feature_type))
+	{
+		d_choose_feature_type_widget->set_feature_type(default_feature_type);
+	}
 }
 
 
@@ -1884,7 +1893,17 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_next()
 	// Note: Any code here should only be to prevent transitioning to next page.
 	// Otherwise page change code should go into 'handle_page_change()'.
 
-	if (stack->currentIndex() == COMMON_PROPERTIES_PAGE)
+	if (stack->currentIndex() == FEATURE_TYPE_PAGE &&
+		!d_choose_feature_type_widget->get_feature_type())
+	{
+		QMessageBox::information(
+				this,
+				tr("No Feature Types Available"),
+				tr("No enabled feature type supports this geometry. "
+					"Enable a compatible feature type in Edit > Preferences > Active Feature Types."));
+		return;
+	}
+	else if (stack->currentIndex() == COMMON_PROPERTIES_PAGE)
 	{
 		// If the start-end time are not valid, do not change page.
 		if (!d_time_period_widget->valid())
@@ -2044,6 +2063,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_enter_page(
 		// Populate the d_choose_feature_type_widget based on what features support
 		// the geometric property type.
 		set_up_feature_list();
+		button_next->setEnabled(d_choose_feature_type_widget->get_feature_type().is_initialized());
 
 		d_choose_feature_type_widget->setFocus();
 		break;
@@ -2284,6 +2304,11 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_conjugate_plate_id_changed()
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_feature_type_changed()
 {
+	if (stack->currentIndex() == FEATURE_TYPE_PAGE)
+	{
+		button_next->setEnabled(d_choose_feature_type_widget->get_feature_type().is_initialized());
+	}
+
 	//
 	// NOTE: In this function we use 'd_choose_feature_type_widget->get_feature_type()' instead of
 	// 'd_feature_type'. The latter is set only once we've moved on from the feature type page -

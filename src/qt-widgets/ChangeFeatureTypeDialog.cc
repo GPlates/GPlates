@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <boost/none.hpp>
 #include <QDebug>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -37,9 +38,11 @@
 #include "ChangePropertyWidget.h"
 #include "ChooseFeatureTypeWidget.h"
 #include "ChoosePropertyWidget.h"
+#include "FeatureTypeDisplayPreferences.h"
 #include "QtWidgetUtils.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/UserPreferences.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -121,8 +124,16 @@ GPlatesQtWidgets::ChangeFeatureTypeDialog::populate(
 	if (feature_ref)
 	{
 		const GPlatesModel::FeatureType &feature_type = feature_ref->feature_type();
-		d_new_feature_type_widget->populate();
-		d_new_feature_type_widget->set_feature_type(feature_type);
+		const QStringList hidden_feature_types = d_application_state.get_user_preferences().get_value(
+				FeatureTypeDisplayPreferences::hidden_feature_types_key()).toStringList();
+		d_new_feature_type_widget->populate(boost::none, hidden_feature_types);
+
+		// Select the current type when it is enabled. If it is hidden, retain the
+		// first enabled type selected by populate() as the proposed replacement.
+		if (d_new_feature_type_widget->has_feature_type(feature_type))
+		{
+			d_new_feature_type_widget->set_feature_type(feature_type);
+		}
 	}
 }
 
@@ -336,4 +347,3 @@ GPlatesQtWidgets::ChangeFeatureTypeDialog::InvalidPropertiesWidget::populate(
 		d_invalid_properties_textedit->hide();
 	}
 }
-

@@ -28,6 +28,7 @@
 
 #include <boost/optional.hpp>
 #include <QFocusEvent>
+#include <QStringList>
 #include <QWidget>
 
 #include "SelectionWidget.h"
@@ -63,7 +64,8 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		populate(
-				boost::optional<GPlatesPropertyValues::StructuralType> property_type = boost::none);
+				boost::optional<GPlatesPropertyValues::StructuralType> property_type = boost::none,
+				const QStringList &excluded_feature_types = QStringList());
 
 
 		/**
@@ -72,6 +74,13 @@ namespace GPlatesQtWidgets
 		 */
 		boost::optional<GPlatesModel::FeatureType>
 		get_feature_type() const;
+
+		/**
+		 * Returns true if @a feature_type is currently in the populated list.
+		 */
+		bool
+		has_feature_type(
+				const GPlatesModel::FeatureType &feature_type) const;
 
 		/**
 		 * Changes the currently selected feature type to @a feature_type.
