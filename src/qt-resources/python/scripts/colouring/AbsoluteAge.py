@@ -1,6 +1,6 @@
 '''
  *
- * Copyright (C) 2026 The University of Sydney, Australia
+ * Copyright (C) 2026 CaliTarheel
  *
  * This file is part of GPlates.
  *

@@ -1,3 +1,20 @@
+'''
+ *
+ * Copyright (C) 2026 CaliTarheel
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+'''
+
 import importlib.util
 from pathlib import Path
 import sys
@@ -77,6 +94,14 @@ class AbsoluteAgeDrawStyleTest(unittest.TestCase):
 
 	def test_invalid_step_count_falls_back_to_smooth(self):
 		self.assertEqual((0.25, 0.0, 0.75, 0.875), self.colour_for_age(125, 'many'))
+
+	def test_non_finite_values_use_safe_defaults(self):
+		self.assertEqual(7.0, absolute_age._finite_float('nan', 7.0))
+		self.assertEqual(7.0, absolute_age._finite_float('infinity', 7.0))
+		self.assertEqual(7.0, absolute_age._finite_float(None, 7.0))
+
+	def test_equal_endpoint_times_select_first_colour(self):
+		self.assertEqual(0.0, absolute_age._gradient_position(150, 100, 100))
 
 	def test_new_style_defaults_are_declared(self):
 		config = absolute_age.AbsoluteAge().get_config()

@@ -119,30 +119,34 @@ GPlatesGui::PythonStyleAdapter::init_configuration()
 		bp::dict cfg_defs = bp::extract<bp::dict>(d_py_obj.attr("get_config")());
 		bp::list tmp_cfg_items =  cfg_defs.items();
 		int len = bp::len(tmp_cfg_items);
-		QString cfg_name;
-		std::map<QString, QString> cfg_map;
+		typedef std::map<QString, QString> ConfigDefinition;
+		typedef std::map<QString, ConfigDefinition> ConfigDefinitions;
+		ConfigDefinitions config_definitions;
 
 		for (int i = 0; i < len; i++)
 		{
 			bp::tuple t = bp::extract<bp::tuple>(tmp_cfg_items[i]);
 			QString key = QString::fromUtf8(bp::extract<const char*>(t[0])());
 			QString value = QString::fromUtf8(bp::extract<const char*>(t[1])());
-			QString sub_key = key.right(key.length() - key.indexOf('/') -1);
-			key.chop(key.length() - key.indexOf('/'));
-			if(key != cfg_name)
+			const int separator_index = key.indexOf('/');
+			if (separator_index <= 0 || separator_index == key.length() - 1)
 			{
-				if (!cfg_name.isEmpty())
-				{
-					d_cfg.set(cfg_name, create_cfg_item(cfg_map));
-				}
-				cfg_map.clear();
-				cfg_name = key;
+				qWarning() << "Invalid python configuration key:" << key;
+				continue;
 			}
-			cfg_map[sub_key] = value;
+
+			const QString cfg_name = key.left(separator_index);
+			const QString sub_key = key.mid(separator_index + 1);
+			config_definitions[cfg_name][sub_key] = value;
 		}
-		if (!cfg_name.isEmpty())
+
+		BOOST_FOREACH(const ConfigDefinitions::value_type& config_definition, config_definitions)
 		{
-			d_cfg.set(cfg_name, create_cfg_item(cfg_map));
+			PythonCfgItem* cfg_item = create_cfg_item(config_definition.second);
+			if (cfg_item)
+			{
+				d_cfg.set(config_definition.first, cfg_item);
+			}
 		}
 	}
 	catch(const  boost::python::error_already_set&)
