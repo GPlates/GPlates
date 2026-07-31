@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os, platform
+import sys, os, platform, re
 
 # Read the Docs Sphinx Theme.
 # Note: This needs to be installed with 'pip install sphinx_rtd_theme'.
@@ -139,6 +139,8 @@ html_theme = 'sphinx_rtd_theme'
 # Note: 'app.add_css_file()' was renamed from 'app.add_stylesheet()' in version 1.8.
 def setup(app):
     app.add_css_file('theme_overrides.css')
+    # Repair docstrings that contain more than one signature block (see 'process_docstring').
+    app.connect('autodoc-process-docstring', process_docstring)
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -237,3 +239,124 @@ autodoc_default_options = {
     'inherited-members' : False,
     # Show base classes (eg, show that pygplates.PolylineOnSphere derives from pygplates.GeometryOnSphere)...
     'show-inheritance' : True}
+
+
+#
+# Repair docstrings whose body does not get dedented by Sphinx.
+#
+# Our docstrings are hand written with the convention that the first line is the signature and
+# the body is indented two spaces, eg:
+#
+#     wrap(geometry, [tessellate_degrees])
+#       Wrap a geometry to the range ...
+#
+#       :param geometry: the geometry to wrap
+#       :type geometry: :class:`GeometryOnSphere`
+#
+# However Boost.Python concatenates the docstrings of overloaded 'def()'s - and repeats the
+# docstring when a 'def()' also provides the default implementation of a virtual function
+# (as PropertyValueVisitor does) - so one '__doc__' can hold several of these blocks.
+#
+# That breaks Sphinx, because 'sphinx.util.docstrings.prepare_docstring()' dedents the docstring
+# by the smallest indent it finds over the second and subsequent lines. The extra signature lines
+# sit at column zero, so that margin is zero and *nothing* gets dedented. The still-indented body
+# is then read as a block quote, which puts the field list out of reach of the Python domain:
+# it renders as literal "param geometry:" text instead of a "Parameters:" table.
+#
+# So split the docstring on those signature lines and dedent each block ourselves. Note that
+# Sphinx has already taken the first line as this member's signature by the time we are called
+# (see 'autodoc_docstring_signature' above), so a surviving signature line can only be shown as
+# text - we mark it up as inline literal so it still reads as a signature.
+#
+# A trailing '.. versionadded::' or '.. versionchanged::' written at column zero (rather than
+# indented with the body it belongs to) zeroes the margin in exactly the same way, so ignore
+# such a directive when measuring a block. It is already where it belongs - at the top level -
+# so it is left untouched while the body around it is dedented to join it. That has to cover
+# the lines indented *under* the directive as well, since they are its content and are already
+# positioned relative to it.
+#
+_SIGNATURE_RE = re.compile(r'^(\w+)\s*\(.*\)\s*$')
+_FLUSH_DIRECTIVE_RE = re.compile(r'^\.\.\s')
+
+def flush_directive_lines(body):
+    """
+    Flag the lines of any directive written at column zero, including its indented content.
+
+    A blank line ends the run: directive content is not separated from the directive by one, so
+    anything after a blank line is body again (and does need dedenting).
+    """
+    flagged = []
+    inside = False
+    for line in body:
+        if not line.strip():
+            inside = False
+        elif not (len(line) - len(line.lstrip())):
+            inside = bool(_FLUSH_DIRECTIVE_RE.match(line))
+        flagged.append(inside)
+    return flagged
+
+def dedent_docstring_block(body, skip_first_line):
+    """
+    Remove the common leading indent, and any leading/trailing blank lines, from one block.
+
+    'skip_first_line' excludes the first line when measuring the indent, because
+    'prepare_docstring()' left-strips the first line of a docstring but dedents the rest by a
+    common margin - so in the first block (the only one whose signature line Sphinx consumed)
+    the first line is already flush while the rest are still indented.
+    """
+    flagged = flush_directive_lines(body)
+    measured = [line for i, line in enumerate(body)
+                if line.strip() and not flagged[i] and not (skip_first_line and not i)]
+    margin = min((len(line) - len(line.lstrip()) for line in measured), default=0)
+
+    block = []
+    for i, line in enumerate(body):
+        if not line.strip():
+            block.append('')
+        elif flagged[i] or len(line) - len(line.lstrip()) < margin:
+            # A top-level directive, or the already-flush first line - both are where they
+            # should be, so leave them alone.
+            block.append(line)
+        else:
+            block.append(line[margin:])
+
+    while block and not block[0]:
+        del block[0]
+    while block and not block[-1]:
+        del block[-1]
+    return block
+
+def process_docstring(app, what, name, obj, options, lines):
+    member_name = name.rsplit('.', 1)[-1]
+
+    # Split into blocks on column-zero signature lines for *this* member. Requiring the name to
+    # match keeps us from splitting on an unrelated line that happens to look like a call, and
+    # only overloadable members can pick up extra signature lines in the first place (a class
+    # docstring is free to open a paragraph with something that reads like a call).
+    # The first block has no signature line of its own - Sphinx has already consumed it.
+    blocks = [(None, [])]
+    for line in lines:
+        match = _SIGNATURE_RE.match(line)
+        if match and match.group(1) == member_name and what in ('function', 'method'):
+            blocks.append((line.strip(), []))
+        else:
+            blocks[-1][1].append(line)
+
+    output = []
+    previous_bodies = []
+    for signature, body in blocks:
+        body = dedent_docstring_block(body, skip_first_line=signature is None)
+        # Drop a block that repeats an earlier one verbatim (the virtual-function case above).
+        # An empty body is not evidence of a repeat, so never match on one.
+        if body and body in previous_bodies:
+            continue
+        previous_bodies.append(body)
+        if output:
+            output.append('')
+        if signature is not None:
+            output.extend(['``%s``' % signature, ''])
+        output.extend(body)
+
+    # 'prepare_docstring()' guarantees a trailing blank line - keep that guarantee.
+    output.append('')
+    lines[:] = output
