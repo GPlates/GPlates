@@ -227,13 +227,14 @@ class DateLineWrapper:
 
     def __ne__(self, other: object) -> bool: ...
 
-    def wrap(self, geometry: GeometryOnSphere, tessellate_degrees: float | None = ...) -> Any:
+    def wrap(self, geometry: GeometryOnSphere, tessellate_degrees: float | None = ...) -> LatLonPoint | DateLineWrapper.LatLonMultiPoint | list[DateLineWrapper.LatLonPolyline] | list[DateLineWrapper.LatLonPolygon]:
         """Wrap a geometry to the range ``[central_meridian - 180, central_meridian + 180]``.
 
         :param geometry: the geometry to wrap
         :type geometry: :class:`GeometryOnSphere`
         :param tessellate_degrees: optional tessellation threshold (in degrees) - threshold is clamped to the range [0, 180] if specified
         :type tessellate_degrees: float or None
+        :rtype: :class:`LatLonPoint`, or :class:`DateLineWrapper.LatLonMultiPoint`, or list of :class:`DateLineWrapper.LatLonPolyline`, or list of :class:`DateLineWrapper.LatLonPolygon`
 
         The following table maps the input geometry type to the return type:
 
@@ -476,7 +477,7 @@ class Enumeration(PropertyValue):
         :rtype: :class:`EnumerationType`
         """
 
-    def set_content(self, content: str, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Any:
+    def set_content(self, content: str, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> None:
         """Sets the content (value) of this enumeration.
 
         :param content: the content (value)
@@ -2371,7 +2372,7 @@ class Feature:
         .. seealso:: :meth:`get_valid_time` and :meth:`set_valid_time`
         """
 
-    def remove(self, property_query: PropertyName | Property | Callable[[Property], Any] | Sequence[PropertyName | Property | Callable[[Property], Any]]) -> Any:
+    def remove(self, property_query: PropertyName | Property | Callable[[Property], Any] | Sequence[PropertyName | Property | Callable[[Property], Any]]) -> None:
         """Removes properties from this feature.
 
         :param property_query: one or more property names, property instances or predicate functions that determine which properties to remove
@@ -3219,7 +3220,7 @@ class FeatureCollection:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def add(self, feature: Feature | Sequence[Feature]) -> Any:
+    def add(self, feature: Feature | Sequence[Feature]) -> None:
         """Adds one or more features to this collection.
 
         :param feature: one or more features to add
@@ -3306,7 +3307,7 @@ class FeatureCollection:
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
         """
 
-    def remove(self, feature_query: FeatureType | FeatureId | Feature | Callable[[Feature], Any] | Sequence[FeatureType | FeatureId | Feature | Callable[[Feature], Any]]) -> Any:
+    def remove(self, feature_query: FeatureType | FeatureId | Feature | Callable[[Feature], Any] | Sequence[FeatureType | FeatureId | Feature | Callable[[Feature], Any]]) -> None:
         """Removes features from this collection.
 
         :param feature_query: one or more feature types, feature IDs, feature instances or predicate functions that determine which features to remove
@@ -3347,7 +3348,7 @@ class FeatureCollection:
                                feature.get_feature_type() == pygplates.FeatureType.gpml_isochron)
         """
 
-    def write(self, filename: str | os.PathLike) -> Any:
+    def write(self, filename: str | os.PathLike) -> None:
         """Writes this feature collection to the file with name *filename*.
 
         :param filename: the name of the file to write
@@ -3803,10 +3804,12 @@ class FeaturesFunctionArgument:
     def __ne__(self, other: object) -> bool: ...
 
     @staticmethod
-    def contains_features(function_argument: Any) -> Any:
+    def contains_features(function_argument: Any) -> bool:
         """Return whether *function_argument* contains features.
 
         :param function_argument: the function argument to test for features
+        :type function_argument: any
+        :rtype: bool
 
         This method returns ``True`` if *function_argument* is a :class:`feature collection<FeatureCollection>`, or filename, or :class:`feature<Feature>`, or sequence of :class:`features<Feature>`, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types.
 
@@ -4817,7 +4820,7 @@ class GmlDataBlock(PropertyValue):
               velocity_colat_scalar_values = data_block.get_scalar_values(velocity_colat_scalar_type)
         """
 
-    def remove(self, scalar_type: ScalarType) -> Any:
+    def remove(self, scalar_type: ScalarType) -> None:
         """Removes the list of scalar values associated with a scalar type.
 
         :param scalar_type: the type of the scalars
@@ -4831,7 +4834,7 @@ class GmlDataBlock(PropertyValue):
         .. note:: If *scalar_type* does not exist in the data block then it is ignored and nothing is done.
         """
 
-    def set(self, scalar_type: ScalarType, scalar_values: Sequence[float]) -> Any:
+    def set(self, scalar_type: ScalarType, scalar_values: Sequence[float]) -> None:
         """Sets the scalar values of the data block associated with a scalar type.
 
         :param scalar_type: the type of the scalars
@@ -4882,7 +4885,7 @@ class GmlLineString(PropertyValue):
         :rtype: :class:`PolylineOnSphere`
         """
 
-    def set_polyline(self, polyline: PolylineOnSphere) -> Any:
+    def set_polyline(self, polyline: PolylineOnSphere) -> None:
         """Sets the polyline geometry of this property value.
 
         :param polyline: the polyline geometry
@@ -4921,7 +4924,7 @@ class GmlMultiPoint(PropertyValue):
         :rtype: :class:`MultiPointOnSphere`
         """
 
-    def set_multi_point(self, multi_point: MultiPointOnSphere) -> Any:
+    def set_multi_point(self, multi_point: MultiPointOnSphere) -> None:
         """Sets the multi-point geometry of this property value.
 
         :param multi_point: the multi-point geometry
@@ -4962,7 +4965,7 @@ class GmlOrientableCurve(PropertyValue):
         :rtype: :class:`GmlLineString`
         """
 
-    def set_base_curve(self, base_curve: GmlLineString) -> Any:
+    def set_base_curve(self, base_curve: GmlLineString) -> None:
         """Sets the line string (polyline) property value of this wrapped property value.
 
         :param base_curve: the line string (polyline) property value
@@ -5001,7 +5004,7 @@ class GmlPoint(PropertyValue):
         :rtype: :class:`PointOnSphere`
         """
 
-    def set_point(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> Any:
+    def set_point(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
         """Sets the point geometry of this property value.
 
         :param point: the point geometry
@@ -5040,7 +5043,7 @@ class GmlPolygon(PropertyValue):
         :rtype: :class:`PolygonOnSphere`
         """
 
-    def set_polygon(self, polygon: PolygonOnSphere) -> Any:
+    def set_polygon(self, polygon: PolygonOnSphere) -> None:
         """Sets the polygon geometry of this property value.
 
         :param polygon: the polygon geometry
@@ -5094,7 +5097,7 @@ class GmlTimeInstant(PropertyValue):
           print 'Time instant is distant past: %s' % (float_time == float('inf'))
         """
 
-    def set_time(self, time_position: float | GeoTimeInstant) -> Any:
+    def set_time(self, time_position: float | GeoTimeInstant) -> None:
         """Sets the time position of this property value.
 
         :param time_position: the time position
@@ -5156,7 +5159,7 @@ class GmlTimePeriod(PropertyValue):
         You can use :class:`GeoTimeInstant` with the returned ``float`` to check for *distant past* or *distant future* for example. See :meth:`GmlTimeInstant.get_time` for more details.
         """
 
-    def set_begin_time(self, time_position: float | GeoTimeInstant) -> Any:
+    def set_begin_time(self, time_position: float | GeoTimeInstant) -> None:
         """Sets the begin time position (time of appearance) of this property value.
 
         :param time_position: the begin time position (time of appearance)
@@ -5164,7 +5167,7 @@ class GmlTimePeriod(PropertyValue):
         :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
         """
 
-    def set_end_time(self, time_position: float | GeoTimeInstant) -> Any:
+    def set_end_time(self, time_position: float | GeoTimeInstant) -> None:
         """Sets the end time position (time of disappearance) of this property value.
 
         :param time_position: the end time position (time of disappearance)
@@ -5256,40 +5259,75 @@ class GpmlArray(PropertyValue):
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def append(self, x: Any) -> Any:
+    def append(self, x: PropertyValue) -> None:
         """Add element *x* to the end.
+
+        :param x: the element to add
+        :type x: :class:`PropertyValue`
         """
 
-    def count(self, x: Any) -> Any:
+    def count(self, x: PropertyValue) -> int:
         """Number of occurrences of *x*.
+
+        :param x: the element to count
+        :type x: :class:`PropertyValue`
+        :rtype: int
         """
 
-    def extend(self, t: Any) -> Any:
+    def extend(self, t: Sequence[PropertyValue]) -> None:
         """Add the elements in sequence *t* to the end.
+
+        :param t: the elements to add
+        :type t: sequence of :class:`PropertyValue`
         """
 
-    def index(self, x: Any, i: Any = ..., j: Any = ...) -> Any:
+    def index(self, x: PropertyValue, i: int = ..., j: int = ...) -> int:
         """Smallest *k* such that the *k* th element equals ``x`` and ``i <= k < j`` (raises ``ValueError`` if not found).
+
+        :param x: the element to search for
+        :type x: :class:`PropertyValue`
+        :param i: the index to start searching at (defaults to the first element)
+        :type i: int
+        :param j: the index to stop searching before (defaults to past the last element)
+        :type j: int
+        :rtype: int
         """
 
-    def insert(self, i: Any, x: Any) -> Any:
+    def insert(self, i: int, x: PropertyValue) -> None:
         """Insert element *x* at index *i*.
+
+        :param i: the index to insert at
+        :type i: int
+        :param x: the element to insert
+        :type x: :class:`PropertyValue`
         """
 
-    def pop(self, i: Any = ...) -> Any:
+    def pop(self, i: int = ...) -> PropertyValue:
         """Removes the element at index *i* and returns it (defaults to last element).
+
+        :param i: the index to remove at (defaults to the last element)
+        :type i: int
+        :rtype: :class:`PropertyValue`
         """
 
-    def remove(self, x: Any) -> Any:
+    def remove(self, x: PropertyValue) -> None:
         """Removes the first element that equals *x* (raises ``ValueError`` if not found).
+
+        :param x: the element to remove
+        :type x: :class:`PropertyValue`
         """
 
-    def reverse(self) -> Any:
+    def reverse(self) -> None:
         """Reverses the items in place.
         """
 
-    def sort(self, key: Any, reverse: Any = ...) -> Any:
+    def sort(self, key: Callable[[PropertyValue], Any], reverse: bool = ...) -> None:
         """Sort the items in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*).
+
+        :param key: the sort key extracted from each element
+        :type key: callable (accepting single :class:`PropertyValue` argument)
+        :param reverse: whether to sort in descending order (defaults to ``False``)
+        :type reverse: bool
         """
 
 class GpmlConstantValue(PropertyValue):
@@ -5350,14 +5388,14 @@ class GpmlConstantValue(PropertyValue):
         This method overrides :meth:`PropertyValue.get_value`.
         """
 
-    def set_description(self, description: str | None = ...) -> Any:
+    def set_description(self, description: str | None = ...) -> None:
         """Sets the description of this constant value wrapper, or removes it if none specified.
 
         :param description: description of this constant value wrapper
         :type description: string or None
         """
 
-    def set_value(self, property_value: PropertyValue) -> Any:
+    def set_value(self, property_value: PropertyValue) -> None:
         """Sets the property value of this constant value wrapper.
 
         :param property_value: arbitrary property value
@@ -5398,7 +5436,7 @@ class GpmlFiniteRotation(PropertyValue):
         :rtype: :class:`FiniteRotation`
         """
 
-    def set_finite_rotation(self, finite_rotation: FiniteRotation) -> Any:
+    def set_finite_rotation(self, finite_rotation: FiniteRotation) -> None:
         """Sets the finite rotation.
 
         :param finite_rotation: the finite rotation
@@ -5493,16 +5531,26 @@ class GpmlIrregularSampling(PropertyValue):
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def append(self, x: Any) -> Any:
+    def append(self, x: GpmlTimeSample) -> None:
         """Add element *x* to the end.
+
+        :param x: the element to add
+        :type x: :class:`GpmlTimeSample`
         """
 
-    def count(self, x: Any) -> Any:
+    def count(self, x: GpmlTimeSample) -> int:
         """Number of occurrences of *x*.
+
+        :param x: the element to count
+        :type x: :class:`GpmlTimeSample`
+        :rtype: int
         """
 
-    def extend(self, t: Any) -> Any:
+    def extend(self, t: Sequence[GpmlTimeSample]) -> None:
         """Add the elements in sequence *t* to the end.
+
+        :param t: the elements to add
+        :type t: sequence of :class:`GpmlTimeSample`
         """
 
     def get_enabled_time_samples(self) -> list:
@@ -5595,23 +5643,43 @@ class GpmlIrregularSampling(PropertyValue):
         .. versionadded:: 0.21
         """
 
-    def index(self, x: Any, i: Any = ..., j: Any = ...) -> Any:
+    def index(self, x: GpmlTimeSample, i: int = ..., j: int = ...) -> int:
         """Smallest *k* such that the *k* th element equals ``x`` and ``i <= k < j`` (raises ``ValueError`` if not found).
+
+        :param x: the element to search for
+        :type x: :class:`GpmlTimeSample`
+        :param i: the index to start searching at (defaults to the first element)
+        :type i: int
+        :param j: the index to stop searching before (defaults to past the last element)
+        :type j: int
+        :rtype: int
         """
 
-    def insert(self, i: Any, x: Any) -> Any:
+    def insert(self, i: int, x: GpmlTimeSample) -> None:
         """Insert element *x* at index *i*.
+
+        :param i: the index to insert at
+        :type i: int
+        :param x: the element to insert
+        :type x: :class:`GpmlTimeSample`
         """
 
-    def pop(self, i: Any = ...) -> Any:
+    def pop(self, i: int = ...) -> GpmlTimeSample:
         """Removes the element at index *i* and returns it (defaults to last element).
+
+        :param i: the index to remove at (defaults to the last element)
+        :type i: int
+        :rtype: :class:`GpmlTimeSample`
         """
 
-    def remove(self, x: Any) -> Any:
+    def remove(self, x: GpmlTimeSample) -> None:
         """Removes the first element that equals *x* (raises ``ValueError`` if not found).
+
+        :param x: the element to remove
+        :type x: :class:`GpmlTimeSample`
         """
 
-    def reverse(self) -> Any:
+    def reverse(self) -> None:
         """Reverses the items in place.
         """
 
@@ -5640,8 +5708,13 @@ class GpmlIrregularSampling(PropertyValue):
         Note that *time* can be outside the time range of existing :meth:`time samples<get_time_samples>`.
         """
 
-    def sort(self, key: Any, reverse: Any = ...) -> Any:
+    def sort(self, key: Callable[[GpmlTimeSample], Any], reverse: bool = ...) -> None:
         """Sort the items in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*).
+
+        :param key: the sort key extracted from each element
+        :type key: callable (accepting single :class:`GpmlTimeSample` argument)
+        :param reverse: whether to sort in descending order (defaults to ``False``)
+        :type reverse: bool
         """
 
 class GpmlKeyValueDictionary(PropertyValue):
@@ -5741,7 +5814,7 @@ class GpmlKeyValueDictionary(PropertyValue):
           integer_value = dictionary.get('key', 0)
         """
 
-    def remove(self, key: str) -> Any:
+    def remove(self, key: str) -> None:
         """Removes the dictionary element associated with a key.
 
         :param key: the key of the dictionary element to remove
@@ -5750,7 +5823,7 @@ class GpmlKeyValueDictionary(PropertyValue):
         If *key* does not exist in the dictionary then it is ignored and nothing is done.
         """
 
-    def set(self, key: str, value: int | float | str) -> Any:
+    def set(self, key: str, value: int | float | str) -> None:
         """Sets the value of the dictionary element associated with a key.
 
         :param key: the key of the dictionary element
@@ -5885,91 +5958,91 @@ class GpmlOldPlatesHeader(PropertyValue):
         :rtype: int
         """
 
-    def set_age_of_appearance(self, age_of_appearance: float) -> Any:
+    def set_age_of_appearance(self, age_of_appearance: float) -> None:
         """Sets the age of appearance.
 
         :param age_of_appearance: age of appearance
         :type age_of_appearance: float
         """
 
-    def set_age_of_disappearance(self, age_of_disappearance: float) -> Any:
+    def set_age_of_disappearance(self, age_of_disappearance: float) -> None:
         """Sets the age of disappearance.
 
         :param age_of_disappearance: age of disappearance
         :type age_of_disappearance: float
         """
 
-    def set_colour_code(self, colour_code: int) -> Any:
+    def set_colour_code(self, colour_code: int) -> None:
         """Sets the colour code.
 
         :param colour_code: colour code
         :type colour_code: int
         """
 
-    def set_conjugate_plate_id_number(self, conjugate_plate_id_number: int) -> Any:
+    def set_conjugate_plate_id_number(self, conjugate_plate_id_number: int) -> None:
         """Sets the conjugate plate id number.
 
         :param conjugate_plate_id_number: conjugate plate id number
         :type conjugate_plate_id_number: int
         """
 
-    def set_data_type_code(self, data_type_code: str) -> Any:
+    def set_data_type_code(self, data_type_code: str) -> None:
         """Sets the data type code.
 
         :param data_type_code: data type code
         :type data_type_code: string
         """
 
-    def set_data_type_code_number(self, data_type_code_number: int) -> Any:
+    def set_data_type_code_number(self, data_type_code_number: int) -> None:
         """Sets the data type code number.
 
         :param data_type_code_number: data type code number
         :type data_type_code_number: int
         """
 
-    def set_data_type_code_number_additional(self, data_type_code_number_additional: str) -> Any:
+    def set_data_type_code_number_additional(self, data_type_code_number_additional: str) -> None:
         """Sets the data type code number additional.
 
         :param data_type_code_number_additional: data type code number additional
         :type data_type_code_number_additional: string
         """
 
-    def set_geographic_description(self, geographic_description: str) -> Any:
+    def set_geographic_description(self, geographic_description: str) -> None:
         """Sets the geographic description.
 
         :param geographic_description: geographic description
         :type geographic_description: string
         """
 
-    def set_number_of_points(self, number_of_points: int) -> Any:
+    def set_number_of_points(self, number_of_points: int) -> None:
         """Sets the number of points.
 
         :param number_of_points: number of points
         :type number_of_points: int
         """
 
-    def set_plate_id_number(self, plate_id_number: int) -> Any:
+    def set_plate_id_number(self, plate_id_number: int) -> None:
         """Sets the plate id number.
 
         :param plate_id_number: plate id number
         :type plate_id_number: int
         """
 
-    def set_reference_number(self, reference_number: int) -> Any:
+    def set_reference_number(self, reference_number: int) -> None:
         """Sets the reference number.
 
         :param reference_number: reference number
         :type reference_number: int
         """
 
-    def set_region_number(self, region_number: int) -> Any:
+    def set_region_number(self, region_number: int) -> None:
         """Sets the region number.
 
         :param region_number: region number
         :type region_number: int
         """
 
-    def set_string_number(self, string_number: int) -> Any:
+    def set_string_number(self, string_number: int) -> None:
         """Sets the string number.
 
         :param string_number: string number
@@ -6068,16 +6141,26 @@ class GpmlPiecewiseAggregation(PropertyValue):
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def append(self, x: Any) -> Any:
+    def append(self, x: GpmlTimeWindow) -> None:
         """Add element *x* to the end.
+
+        :param x: the element to add
+        :type x: :class:`GpmlTimeWindow`
         """
 
-    def count(self, x: Any) -> Any:
+    def count(self, x: GpmlTimeWindow) -> int:
         """Number of occurrences of *x*.
+
+        :param x: the element to count
+        :type x: :class:`GpmlTimeWindow`
+        :rtype: int
         """
 
-    def extend(self, t: Any) -> Any:
+    def extend(self, t: Sequence[GpmlTimeWindow]) -> None:
         """Add the elements in sequence *t* to the end.
+
+        :param t: the elements to add
+        :type t: sequence of :class:`GpmlTimeWindow`
         """
 
     def get_time_window_containing_time(self, time: float | GeoTimeInstant) -> GpmlTimeWindow | None:
@@ -6132,23 +6215,43 @@ class GpmlPiecewiseAggregation(PropertyValue):
         .. versionadded:: 0.21
         """
 
-    def index(self, x: Any, i: Any = ..., j: Any = ...) -> Any:
+    def index(self, x: GpmlTimeWindow, i: int = ..., j: int = ...) -> int:
         """Smallest *k* such that the *k* th element equals ``x`` and ``i <= k < j`` (raises ``ValueError`` if not found).
+
+        :param x: the element to search for
+        :type x: :class:`GpmlTimeWindow`
+        :param i: the index to start searching at (defaults to the first element)
+        :type i: int
+        :param j: the index to stop searching before (defaults to past the last element)
+        :type j: int
+        :rtype: int
         """
 
-    def insert(self, i: Any, x: Any) -> Any:
+    def insert(self, i: int, x: GpmlTimeWindow) -> None:
         """Insert element *x* at index *i*.
+
+        :param i: the index to insert at
+        :type i: int
+        :param x: the element to insert
+        :type x: :class:`GpmlTimeWindow`
         """
 
-    def pop(self, i: Any = ...) -> Any:
+    def pop(self, i: int = ...) -> GpmlTimeWindow:
         """Removes the element at index *i* and returns it (defaults to last element).
+
+        :param i: the index to remove at (defaults to the last element)
+        :type i: int
+        :rtype: :class:`GpmlTimeWindow`
         """
 
-    def remove(self, x: Any) -> Any:
+    def remove(self, x: GpmlTimeWindow) -> None:
         """Removes the first element that equals *x* (raises ``ValueError`` if not found).
+
+        :param x: the element to remove
+        :type x: :class:`GpmlTimeWindow`
         """
 
-    def reverse(self) -> Any:
+    def reverse(self) -> None:
         """Reverses the items in place.
         """
 
@@ -6190,8 +6293,13 @@ class GpmlPiecewiseAggregation(PropertyValue):
               time_window.set_value(property_value)
         """
 
-    def sort(self, key: Any, reverse: Any = ...) -> Any:
+    def sort(self, key: Callable[[GpmlTimeWindow], Any], reverse: bool = ...) -> None:
         """Sort the items in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*).
+
+        :param key: the sort key extracted from each element
+        :type key: callable (accepting single :class:`GpmlTimeWindow` argument)
+        :param reverse: whether to sort in descending order (defaults to ``False``)
+        :type reverse: bool
         """
 
 class GpmlPlateId(PropertyValue):
@@ -6226,7 +6334,7 @@ class GpmlPlateId(PropertyValue):
         :rtype: int
         """
 
-    def set_plate_id(self, plate_id: int) -> Any:
+    def set_plate_id(self, plate_id: int) -> None:
         """Sets the integer plate id.
 
         :param plate_id: integer plate id
@@ -6288,7 +6396,7 @@ class GpmlPolarityChronId(PropertyValue):
         :rtype: string or None
         """
 
-    def set_era(self, era: str, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Any:
+    def set_era(self, era: str, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> None:
         """Sets the era.
 
         :param era: the era of the chron ('Cenozoic' or 'Mesozoic')
@@ -6298,14 +6406,14 @@ class GpmlPolarityChronId(PropertyValue):
         :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *era* is not a recognised era string value
         """
 
-    def set_major_region(self, major_region: int) -> Any:
+    def set_major_region(self, major_region: int) -> None:
         """Sets the major region.
 
         :param major_region: the number indicating the major region the chron is in - Cenozoic isochrons have been classified into broad regions identified by the numbers 1 to 34, Mesozoic isochrons use the numbers 1 to 29
         :type major_region: int
         """
 
-    def set_minor_region(self, minor_region: str) -> Any:
+    def set_minor_region(self, minor_region: str) -> None:
         """Sets the minor region.
 
         :param minor_region: the sequence of letters indicating the sub-region the chron is located in - the letters a-z are used for the initial sub-region, and if further polarity reversals have been discovered within that chron, a second letter is appended, and so on
@@ -6449,40 +6557,75 @@ class GpmlPropertyDelegateList:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def append(self, x: Any) -> Any:
+    def append(self, x: GpmlPropertyDelegate) -> None:
         """Add element *x* to the end.
+
+        :param x: the element to add
+        :type x: :class:`GpmlPropertyDelegate`
         """
 
-    def count(self, x: Any) -> Any:
+    def count(self, x: GpmlPropertyDelegate) -> int:
         """Number of occurrences of *x*.
+
+        :param x: the element to count
+        :type x: :class:`GpmlPropertyDelegate`
+        :rtype: int
         """
 
-    def extend(self, t: Any) -> Any:
+    def extend(self, t: Sequence[GpmlPropertyDelegate]) -> None:
         """Add the elements in sequence *t* to the end.
+
+        :param t: the elements to add
+        :type t: sequence of :class:`GpmlPropertyDelegate`
         """
 
-    def index(self, x: Any, i: Any = ..., j: Any = ...) -> Any:
+    def index(self, x: GpmlPropertyDelegate, i: int = ..., j: int = ...) -> int:
         """Smallest *k* such that the *k* th element equals ``x`` and ``i <= k < j`` (raises ``ValueError`` if not found).
+
+        :param x: the element to search for
+        :type x: :class:`GpmlPropertyDelegate`
+        :param i: the index to start searching at (defaults to the first element)
+        :type i: int
+        :param j: the index to stop searching before (defaults to past the last element)
+        :type j: int
+        :rtype: int
         """
 
-    def insert(self, i: Any, x: Any) -> Any:
+    def insert(self, i: int, x: GpmlPropertyDelegate) -> None:
         """Insert element *x* at index *i*.
+
+        :param i: the index to insert at
+        :type i: int
+        :param x: the element to insert
+        :type x: :class:`GpmlPropertyDelegate`
         """
 
-    def pop(self, i: Any = ...) -> Any:
+    def pop(self, i: int = ...) -> GpmlPropertyDelegate:
         """Removes the element at index *i* and returns it (defaults to last element).
+
+        :param i: the index to remove at (defaults to the last element)
+        :type i: int
+        :rtype: :class:`GpmlPropertyDelegate`
         """
 
-    def remove(self, x: Any) -> Any:
+    def remove(self, x: GpmlPropertyDelegate) -> None:
         """Removes the first element that equals *x* (raises ``ValueError`` if not found).
+
+        :param x: the element to remove
+        :type x: :class:`GpmlPropertyDelegate`
         """
 
-    def reverse(self) -> Any:
+    def reverse(self) -> None:
         """Reverses the items in place.
         """
 
-    def sort(self, key: Any, reverse: Any = ...) -> Any:
+    def sort(self, key: Callable[[GpmlPropertyDelegate], Any], reverse: bool = ...) -> None:
         """Sort the items in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*).
+
+        :param key: the sort key extracted from each element
+        :type key: callable (accepting single :class:`GpmlPropertyDelegate` argument)
+        :param reverse: whether to sort in descending order (defaults to ``False``)
+        :type reverse: bool
         """
 
 class GpmlTimeSample:
@@ -6579,35 +6722,35 @@ class GpmlTimeSample:
         For example, only enabled total reconstruction poles (in a GpmlIrregularSampling sequence) are considered when interpolating rotations at some arbitrary time.
         """
 
-    def set_description(self, description: str | None = ...) -> Any:
+    def set_description(self, description: str | None = ...) -> None:
         """Sets the description associated with this time sample, or removes it if none specified.
 
         :param description: description of the time sample
         :type description: string or None
         """
 
-    def set_disabled(self, is_disabled: bool = True) -> Any:
+    def set_disabled(self, is_disabled: bool = True) -> None:
         """Sets whether this time sample is disabled.
 
         :param is_disabled: whether time sample is disabled (defaults to ``True``)
         :type is_disabled: bool
         """
 
-    def set_enabled(self, is_enabled: bool = True) -> Any:
+    def set_enabled(self, is_enabled: bool = True) -> None:
         """Sets whether this time sample is enabled.
 
         :param is_enabled: whether time sample is enabled (defaults to ``True``)
         :type is_enabled: bool
         """
 
-    def set_time(self, time: float | GeoTimeInstant) -> Any:
+    def set_time(self, time: float | GeoTimeInstant) -> None:
         """Sets the time position associated with this time sample.
 
         :param time: the time position associated with the property value
         :type time: float or :class:`GeoTimeInstant`
         """
 
-    def set_value(self, property_value: PropertyValue) -> Any:
+    def set_value(self, property_value: PropertyValue) -> None:
         """Sets the property value associated with this time sample.
 
         :param property_value: arbitrary property value
@@ -6698,40 +6841,75 @@ class GpmlTimeSampleList:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def append(self, x: Any) -> Any:
+    def append(self, x: GpmlTimeSample) -> None:
         """Add element *x* to the end.
+
+        :param x: the element to add
+        :type x: :class:`GpmlTimeSample`
         """
 
-    def count(self, x: Any) -> Any:
+    def count(self, x: GpmlTimeSample) -> int:
         """Number of occurrences of *x*.
+
+        :param x: the element to count
+        :type x: :class:`GpmlTimeSample`
+        :rtype: int
         """
 
-    def extend(self, t: Any) -> Any:
+    def extend(self, t: Sequence[GpmlTimeSample]) -> None:
         """Add the elements in sequence *t* to the end.
+
+        :param t: the elements to add
+        :type t: sequence of :class:`GpmlTimeSample`
         """
 
-    def index(self, x: Any, i: Any = ..., j: Any = ...) -> Any:
+    def index(self, x: GpmlTimeSample, i: int = ..., j: int = ...) -> int:
         """Smallest *k* such that the *k* th element equals ``x`` and ``i <= k < j`` (raises ``ValueError`` if not found).
+
+        :param x: the element to search for
+        :type x: :class:`GpmlTimeSample`
+        :param i: the index to start searching at (defaults to the first element)
+        :type i: int
+        :param j: the index to stop searching before (defaults to past the last element)
+        :type j: int
+        :rtype: int
         """
 
-    def insert(self, i: Any, x: Any) -> Any:
+    def insert(self, i: int, x: GpmlTimeSample) -> None:
         """Insert element *x* at index *i*.
+
+        :param i: the index to insert at
+        :type i: int
+        :param x: the element to insert
+        :type x: :class:`GpmlTimeSample`
         """
 
-    def pop(self, i: Any = ...) -> Any:
+    def pop(self, i: int = ...) -> GpmlTimeSample:
         """Removes the element at index *i* and returns it (defaults to last element).
+
+        :param i: the index to remove at (defaults to the last element)
+        :type i: int
+        :rtype: :class:`GpmlTimeSample`
         """
 
-    def remove(self, x: Any) -> Any:
+    def remove(self, x: GpmlTimeSample) -> None:
         """Removes the first element that equals *x* (raises ``ValueError`` if not found).
+
+        :param x: the element to remove
+        :type x: :class:`GpmlTimeSample`
         """
 
-    def reverse(self) -> Any:
+    def reverse(self) -> None:
         """Reverses the items in place.
         """
 
-    def sort(self, key: Any, reverse: Any = ...) -> Any:
+    def sort(self, key: Callable[[GpmlTimeSample], Any], reverse: bool = ...) -> None:
         """Sort the items in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*).
+
+        :param key: the sort key extracted from each element
+        :type key: callable (accepting single :class:`GpmlTimeSample` argument)
+        :param reverse: whether to sort in descending order (defaults to ``False``)
+        :type reverse: bool
         """
 
 class GpmlTimeWindow:
@@ -6815,7 +6993,7 @@ class GpmlTimeWindow:
         .. versionadded:: 0.21
         """
 
-    def set_begin_time(self, time: float | GeoTimeInstant) -> Any:
+    def set_begin_time(self, time: float | GeoTimeInstant) -> None:
         """Sets the begin time of this time window.
 
         :param time: the begin time of this time window
@@ -6823,7 +7001,7 @@ class GpmlTimeWindow:
         :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
         """
 
-    def set_end_time(self, time: float | GeoTimeInstant) -> Any:
+    def set_end_time(self, time: float | GeoTimeInstant) -> None:
         """Sets the end time of this time window.
 
         :param time: the end time of this time window
@@ -6831,7 +7009,7 @@ class GpmlTimeWindow:
         :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
         """
 
-    def set_value(self, property_value: PropertyValue) -> Any:
+    def set_value(self, property_value: PropertyValue) -> None:
         """Sets the property value associated with this time window.
 
         :param property_value: arbitrary property value
@@ -6922,40 +7100,75 @@ class GpmlTimeWindowList:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def append(self, x: Any) -> Any:
+    def append(self, x: GpmlTimeWindow) -> None:
         """Add element *x* to the end.
+
+        :param x: the element to add
+        :type x: :class:`GpmlTimeWindow`
         """
 
-    def count(self, x: Any) -> Any:
+    def count(self, x: GpmlTimeWindow) -> int:
         """Number of occurrences of *x*.
+
+        :param x: the element to count
+        :type x: :class:`GpmlTimeWindow`
+        :rtype: int
         """
 
-    def extend(self, t: Any) -> Any:
+    def extend(self, t: Sequence[GpmlTimeWindow]) -> None:
         """Add the elements in sequence *t* to the end.
+
+        :param t: the elements to add
+        :type t: sequence of :class:`GpmlTimeWindow`
         """
 
-    def index(self, x: Any, i: Any = ..., j: Any = ...) -> Any:
+    def index(self, x: GpmlTimeWindow, i: int = ..., j: int = ...) -> int:
         """Smallest *k* such that the *k* th element equals ``x`` and ``i <= k < j`` (raises ``ValueError`` if not found).
+
+        :param x: the element to search for
+        :type x: :class:`GpmlTimeWindow`
+        :param i: the index to start searching at (defaults to the first element)
+        :type i: int
+        :param j: the index to stop searching before (defaults to past the last element)
+        :type j: int
+        :rtype: int
         """
 
-    def insert(self, i: Any, x: Any) -> Any:
+    def insert(self, i: int, x: GpmlTimeWindow) -> None:
         """Insert element *x* at index *i*.
+
+        :param i: the index to insert at
+        :type i: int
+        :param x: the element to insert
+        :type x: :class:`GpmlTimeWindow`
         """
 
-    def pop(self, i: Any = ...) -> Any:
+    def pop(self, i: int = ...) -> GpmlTimeWindow:
         """Removes the element at index *i* and returns it (defaults to last element).
+
+        :param i: the index to remove at (defaults to the last element)
+        :type i: int
+        :rtype: :class:`GpmlTimeWindow`
         """
 
-    def remove(self, x: Any) -> Any:
+    def remove(self, x: GpmlTimeWindow) -> None:
         """Removes the first element that equals *x* (raises ``ValueError`` if not found).
+
+        :param x: the element to remove
+        :type x: :class:`GpmlTimeWindow`
         """
 
-    def reverse(self) -> Any:
+    def reverse(self) -> None:
         """Reverses the items in place.
         """
 
-    def sort(self, key: Any, reverse: Any = ...) -> Any:
+    def sort(self, key: Callable[[GpmlTimeWindow], Any], reverse: bool = ...) -> None:
         """Sort the items in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*).
+
+        :param key: the sort key extracted from each element
+        :type key: callable (accepting single :class:`GpmlTimeWindow` argument)
+        :param reverse: whether to sort in descending order (defaults to ``False``)
+        :type reverse: bool
         """
 
 class GpmlTopologicalLine(PropertyValue):
@@ -7042,14 +7255,14 @@ class GpmlTopologicalLineSection(GpmlTopologicalSection):
         :rtype: bool
         """
 
-    def set_property_delegate(self, gpml_property_delegate: GpmlPropertyDelegate) -> Any:
+    def set_property_delegate(self, gpml_property_delegate: GpmlPropertyDelegate) -> None:
         """Sets the property value that references/delegates the source line geometry.
 
         :param gpml_property_delegate: the line (polyline) delegate property value
         :type gpml_property_delegate: :class:`GpmlPropertyDelegate`
         """
 
-    def set_reverse_orientation(self, reverse_orientation: bool) -> Any:
+    def set_reverse_orientation(self, reverse_orientation: bool) -> None:
         """Sets the property value that references/delegates the source line geometry.
 
         :param reverse_orientation: whether the line was reversed when contributing to the parent topology
@@ -7150,7 +7363,7 @@ class GpmlTopologicalPoint(GpmlTopologicalSection):
         :rtype: :class:`GpmlPropertyDelegate`
         """
 
-    def set_property_delegate(self, gpml_property_delegate: GpmlPropertyDelegate) -> Any:
+    def set_property_delegate(self, gpml_property_delegate: GpmlPropertyDelegate) -> None:
         """Sets the property value that references/delegates the source point geometry.
 
         :param gpml_property_delegate: the point geometry property value
@@ -7201,7 +7414,7 @@ class GpmlTopologicalPolygon(PropertyValue):
         .. versionadded:: 0.24
         """
 
-    def get_exterior_sections(self) -> Any:
+    def get_exterior_sections(self) -> GpmlTopologicalSectionList:
         """Same as :meth:`get_boundary_sections`.
         """
 
@@ -7417,40 +7630,75 @@ class GpmlTopologicalSectionList:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def append(self, x: Any) -> Any:
+    def append(self, x: GpmlTopologicalSection) -> None:
         """Add element *x* to the end.
+
+        :param x: the element to add
+        :type x: :class:`GpmlTopologicalSection`
         """
 
-    def count(self, x: Any) -> Any:
+    def count(self, x: GpmlTopologicalSection) -> int:
         """Number of occurrences of *x*.
+
+        :param x: the element to count
+        :type x: :class:`GpmlTopologicalSection`
+        :rtype: int
         """
 
-    def extend(self, t: Any) -> Any:
+    def extend(self, t: Sequence[GpmlTopologicalSection]) -> None:
         """Add the elements in sequence *t* to the end.
+
+        :param t: the elements to add
+        :type t: sequence of :class:`GpmlTopologicalSection`
         """
 
-    def index(self, x: Any, i: Any = ..., j: Any = ...) -> Any:
+    def index(self, x: GpmlTopologicalSection, i: int = ..., j: int = ...) -> int:
         """Smallest *k* such that the *k* th element equals ``x`` and ``i <= k < j`` (raises ``ValueError`` if not found).
+
+        :param x: the element to search for
+        :type x: :class:`GpmlTopologicalSection`
+        :param i: the index to start searching at (defaults to the first element)
+        :type i: int
+        :param j: the index to stop searching before (defaults to past the last element)
+        :type j: int
+        :rtype: int
         """
 
-    def insert(self, i: Any, x: Any) -> Any:
+    def insert(self, i: int, x: GpmlTopologicalSection) -> None:
         """Insert element *x* at index *i*.
+
+        :param i: the index to insert at
+        :type i: int
+        :param x: the element to insert
+        :type x: :class:`GpmlTopologicalSection`
         """
 
-    def pop(self, i: Any = ...) -> Any:
+    def pop(self, i: int = ...) -> GpmlTopologicalSection:
         """Removes the element at index *i* and returns it (defaults to last element).
+
+        :param i: the index to remove at (defaults to the last element)
+        :type i: int
+        :rtype: :class:`GpmlTopologicalSection`
         """
 
-    def remove(self, x: Any) -> Any:
+    def remove(self, x: GpmlTopologicalSection) -> None:
         """Removes the first element that equals *x* (raises ``ValueError`` if not found).
+
+        :param x: the element to remove
+        :type x: :class:`GpmlTopologicalSection`
         """
 
-    def reverse(self) -> Any:
+    def reverse(self) -> None:
         """Reverses the items in place.
         """
 
-    def sort(self, key: Any, reverse: Any = ...) -> Any:
+    def sort(self, key: Callable[[GpmlTopologicalSection], Any], reverse: bool = ...) -> None:
         """Sort the items in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*).
+
+        :param key: the sort key extracted from each element
+        :type key: callable (accepting single :class:`GpmlTopologicalSection` argument)
+        :param reverse: whether to sort in descending order (defaults to ``False``)
+        :type reverse: bool
         """
 
 class GreatCircleArc:
@@ -12100,7 +12348,7 @@ class PropertyValue:
 
     def __str__(self) -> str: ...
 
-    def accept_visitor(self, visitor: PropertyValueVisitor) -> Any:
+    def accept_visitor(self, visitor: PropertyValueVisitor) -> None:
         """Accept a property value visitor so that it can visit this property value. As part of the visitor pattern, this enables the visitor instance to discover the derived class type of this property. Note that there is no common interface shared by all property value types, hence the visitor pattern provides one way to find out which type of property value is being visited.
 
         :param visitor: the visitor instance visiting this property value
@@ -12234,116 +12482,200 @@ class PropertyValueVisitor:
         """Default constructor - must be explicitly called by derived class.
         """
 
-    def visit_enumeration(self, enumeration: Any) -> Any:
+    def visit_enumeration(self, enumeration: Enumeration) -> None:
         """Visits a :class:`Enumeration` property value.
+
+        :param enumeration: the property value being visited
+        :type enumeration: :class:`Enumeration`
         """
 
-    def visit_gml_data_block(self, gml_data_block: Any) -> Any:
+    def visit_gml_data_block(self, gml_data_block: GmlDataBlock) -> None:
         """Visits a :class:`GmlDataBlock` property value.
+
+        :param gml_data_block: the property value being visited
+        :type gml_data_block: :class:`GmlDataBlock`
         """
 
-    def visit_gml_line_string(self, gml_line_string: Any) -> Any:
+    def visit_gml_line_string(self, gml_line_string: GmlLineString) -> None:
         """Visits a :class:`GmlLineString` property value.
+
+        :param gml_line_string: the property value being visited
+        :type gml_line_string: :class:`GmlLineString`
         """
 
-    def visit_gml_multi_point(self, gml_multi_point: Any) -> Any:
+    def visit_gml_multi_point(self, gml_multi_point: GmlMultiPoint) -> None:
         """Visits a :class:`GmlMultiPoint` property value.
+
+        :param gml_multi_point: the property value being visited
+        :type gml_multi_point: :class:`GmlMultiPoint`
         """
 
-    def visit_gml_orientable_curve(self, gml_orientable_curve: Any) -> Any:
+    def visit_gml_orientable_curve(self, gml_orientable_curve: GmlOrientableCurve) -> None:
         """Visits a :class:`GmlOrientableCurve` property value.
+
+        :param gml_orientable_curve: the property value being visited
+        :type gml_orientable_curve: :class:`GmlOrientableCurve`
         """
 
-    def visit_gml_point(self, gml_point: Any) -> Any:
+    def visit_gml_point(self, gml_point: GmlPoint) -> None:
         """Visits a :class:`GmlPoint` property value.
+
+        :param gml_point: the property value being visited
+        :type gml_point: :class:`GmlPoint`
         """
 
-    def visit_gml_polygon(self, gml_polygon: Any) -> Any:
+    def visit_gml_polygon(self, gml_polygon: GmlPolygon) -> None:
         """Visits a :class:`GmlPolygon` property value.
+
+        :param gml_polygon: the property value being visited
+        :type gml_polygon: :class:`GmlPolygon`
         """
 
-    def visit_gml_time_instant(self, gml_time_instant: Any) -> Any:
+    def visit_gml_time_instant(self, gml_time_instant: GmlTimeInstant) -> None:
         """Visits a :class:`GmlTimeInstant` property value.
+
+        :param gml_time_instant: the property value being visited
+        :type gml_time_instant: :class:`GmlTimeInstant`
         """
 
-    def visit_gml_time_period(self, gml_time_period: Any) -> Any:
+    def visit_gml_time_period(self, gml_time_period: GmlTimePeriod) -> None:
         """Visits a :class:`GmlTimePeriod` property value.
+
+        :param gml_time_period: the property value being visited
+        :type gml_time_period: :class:`GmlTimePeriod`
         """
 
-    def visit_gpml_array(self, gpml_array: Any) -> Any:
+    def visit_gpml_array(self, gpml_array: GpmlArray) -> None:
         """Visits a :class:`GpmlArray` property value.
+
+        :param gpml_array: the property value being visited
+        :type gpml_array: :class:`GpmlArray`
         """
 
-    def visit_gpml_constant_value(self, gpml_constant_value: Any) -> Any:
+    def visit_gpml_constant_value(self, gpml_constant_value: GpmlConstantValue) -> None:
         """Visits a :class:`GpmlConstantValue` property value.
+
+        :param gpml_constant_value: the property value being visited
+        :type gpml_constant_value: :class:`GpmlConstantValue`
         """
 
-    def visit_gpml_finite_rotation(self, ppml_finite_rotation: Any) -> Any:
+    def visit_gpml_finite_rotation(self, ppml_finite_rotation: GpmlFiniteRotation) -> None:
         """Visits a :class:`GpmlFiniteRotation` property value.
+
+        :param ppml_finite_rotation: the property value being visited
+        :type ppml_finite_rotation: :class:`GpmlFiniteRotation`
         """
 
-    def visit_gpml_irregular_sampling(self, gpml_irregular_sampling: Any) -> Any:
+    def visit_gpml_irregular_sampling(self, gpml_irregular_sampling: GpmlIrregularSampling) -> None:
         """Visits a :class:`GpmlIrregularSampling` property value.
+
+        :param gpml_irregular_sampling: the property value being visited
+        :type gpml_irregular_sampling: :class:`GpmlIrregularSampling`
         """
 
-    def visit_gpml_key_value_dictionary(self, gpml_key_value_dictionary: Any) -> Any:
+    def visit_gpml_key_value_dictionary(self, gpml_key_value_dictionary: GpmlKeyValueDictionary) -> None:
         """Visits a :class:`GpmlKeyValueDictionary` property value.
+
+        :param gpml_key_value_dictionary: the property value being visited
+        :type gpml_key_value_dictionary: :class:`GpmlKeyValueDictionary`
         """
 
-    def visit_gpml_old_plates_header(self, gpml_old_plates_header: Any) -> Any:
+    def visit_gpml_old_plates_header(self, gpml_old_plates_header: GpmlOldPlatesHeader) -> None:
         """Visits a :class:`GpmlOldPlatesHeader` property value.
+
+        :param gpml_old_plates_header: the property value being visited
+        :type gpml_old_plates_header: :class:`GpmlOldPlatesHeader`
         """
 
-    def visit_gpml_piecewise_aggregation(self, gpml_piecewise_aggregation: Any) -> Any:
+    def visit_gpml_piecewise_aggregation(self, gpml_piecewise_aggregation: GpmlPiecewiseAggregation) -> None:
         """Visits a :class:`GpmlPiecewiseAggregation` property value.
+
+        :param gpml_piecewise_aggregation: the property value being visited
+        :type gpml_piecewise_aggregation: :class:`GpmlPiecewiseAggregation`
         """
 
-    def visit_gpml_plate_id(self, gpml_plate_id: Any) -> Any:
+    def visit_gpml_plate_id(self, gpml_plate_id: GpmlPlateId) -> None:
         """Visits a :class:`GpmlPlateId` property value.
+
+        :param gpml_plate_id: the property value being visited
+        :type gpml_plate_id: :class:`GpmlPlateId`
         """
 
-    def visit_gpml_polarity_chron_id(self, gpml_polarity_chron_id: Any) -> Any:
+    def visit_gpml_polarity_chron_id(self, gpml_polarity_chron_id: GpmlPolarityChronId) -> None:
         """Visits a :class:`GpmlPolarityChronId` property value.
+
+        :param gpml_polarity_chron_id: the property value being visited
+        :type gpml_polarity_chron_id: :class:`GpmlPolarityChronId`
         """
 
-    def visit_gpml_property_delegate(self, gpml_property_delegate: Any) -> Any:
+    def visit_gpml_property_delegate(self, gpml_property_delegate: GpmlPropertyDelegate) -> None:
         """Visits a :class:`GpmlPropertyDelegate` property value.
+
+        :param gpml_property_delegate: the property value being visited
+        :type gpml_property_delegate: :class:`GpmlPropertyDelegate`
         """
 
-    def visit_gpml_topological_line(self, gpml_topological_line: Any) -> Any:
+    def visit_gpml_topological_line(self, gpml_topological_line: GpmlTopologicalLine) -> None:
         """Visits a :class:`GpmlTopologicalLine` property value.
+
+        :param gpml_topological_line: the property value being visited
+        :type gpml_topological_line: :class:`GpmlTopologicalLine`
         """
 
-    def visit_gpml_topological_line_section(self, gpml_topological_line_section: Any) -> Any:
+    def visit_gpml_topological_line_section(self, gpml_topological_line_section: GpmlTopologicalLineSection) -> None:
         """Visits a :class:`GpmlTopologicalLineSection` property value.
+
+        :param gpml_topological_line_section: the property value being visited
+        :type gpml_topological_line_section: :class:`GpmlTopologicalLineSection`
         """
 
-    def visit_gpml_topological_network(self, gpml_topological_network: Any) -> Any:
+    def visit_gpml_topological_network(self, gpml_topological_network: GpmlTopologicalNetwork) -> None:
         """Visits a :class:`GpmlTopologicalNetwork` property value.
+
+        :param gpml_topological_network: the property value being visited
+        :type gpml_topological_network: :class:`GpmlTopologicalNetwork`
         """
 
-    def visit_gpml_topological_point(self, gpml_topological_point: Any) -> Any:
+    def visit_gpml_topological_point(self, gpml_topological_point: GpmlTopologicalPoint) -> None:
         """Visits a :class:`GpmlTopologicalPoint` property value.
+
+        :param gpml_topological_point: the property value being visited
+        :type gpml_topological_point: :class:`GpmlTopologicalPoint`
         """
 
-    def visit_gpml_topological_polygon(self, gpml_topological_polygon: Any) -> Any:
+    def visit_gpml_topological_polygon(self, gpml_topological_polygon: GpmlTopologicalPolygon) -> None:
         """Visits a :class:`GpmlTopologicalPolygon` property value.
+
+        :param gpml_topological_polygon: the property value being visited
+        :type gpml_topological_polygon: :class:`GpmlTopologicalPolygon`
         """
 
-    def visit_xs_boolean(self, xs_boolean: Any) -> Any:
+    def visit_xs_boolean(self, xs_boolean: XsBoolean) -> None:
         """Visits a :class:`XsBoolean` property value.
+
+        :param xs_boolean: the property value being visited
+        :type xs_boolean: :class:`XsBoolean`
         """
 
-    def visit_xs_double(self, xs_double: Any) -> Any:
+    def visit_xs_double(self, xs_double: XsDouble) -> None:
         """Visits a :class:`XsDouble` property value.
+
+        :param xs_double: the property value being visited
+        :type xs_double: :class:`XsDouble`
         """
 
-    def visit_xs_integer(self, xs_integer: Any) -> Any:
+    def visit_xs_integer(self, xs_integer: XsInteger) -> None:
         """Visits a :class:`XsInteger` property value.
+
+        :param xs_integer: the property value being visited
+        :type xs_integer: :class:`XsInteger`
         """
 
-    def visit_xs_string(self, xs_string: Any) -> Any:
+    def visit_xs_string(self, xs_string: XsString) -> None:
         """Visits a :class:`XsString` property value.
+
+        :param xs_string: the property value being visited
+        :type xs_string: :class:`XsString`
         """
 
 class ReconstructModel:
@@ -12477,7 +12809,7 @@ class ReconstructSnapshot:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def export_reconstructed_geometries(self, export_filename: str | os.PathLike, reconstruct_type: ReconstructType = ReconstructType.feature_geometry, wrap_to_dateline: bool = True, force_polygon_orientation: int = ...) -> Any:
+    def export_reconstructed_geometries(self, export_filename: str | os.PathLike, reconstruct_type: ReconstructType = ReconstructType.feature_geometry, wrap_to_dateline: bool = True, force_polygon_orientation: int = ...) -> None:
         """Exports the reconstructed geometries of the requested type(s) to a file.
 
         :param export_filename: the name of the export file
@@ -12550,7 +12882,7 @@ class ReconstructSnapshot:
         .. versionadded:: 0.50
         """
 
-    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, sort_reconstructed_static_polygons: SortReconstructedStaticPolygons | None = SortReconstructedStaticPolygons.by_plate_id, return_point_locations: Any = False) -> list[Vector3D] | tuple[list[Vector3D], list[ReconstructedFeatureGeometry]]:
+    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, sort_reconstructed_static_polygons: SortReconstructedStaticPolygons | None = SortReconstructedStaticPolygons.by_plate_id, return_point_locations: bool = False) -> list[Vector3D] | tuple[list[Vector3D], list[ReconstructedFeatureGeometry]]:
         """Returns the velocities of the specified points (as determined by the reconstructed static polygons that contain them).
 
         :param points: sequence of points at which to calculate velocities
@@ -12566,6 +12898,7 @@ class ReconstructSnapshot:
         :param sort_reconstructed_static_polygons: optional sort order of reconstructed static polygons (defaults to ``pygplates.SortReconstructedStaticPolygons.by_plate_id``)
         :type sort_reconstructed_static_polygons: ``pygplates.SortReconstructedStaticPolygons.by_plate_id`` or ``pygplates.SortReconstructedStaticPolygons.by_plate_area`` or None
         :param return_point_locations: whether to also return the reconstructed static polygon that contains each point - defaults to ``False``
+        :type return_point_locations: bool
         :rtype: list of :class:`Vector3D`, or 2-tuple (list of :class:`Vector3D`, list of :class:`ReconstructedFeatureGeometry`) if *return_point_locations* is ``True``
 
         Reconstructed static polygons are :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>` that have :class:`polygon <PolygonOnSphere>` geometries (other geometry types are ignored since only polygons can contain points). The reconstructed feature geometries are obtained from :meth:`get_reconstructed_geometries` with ``reconstruct_types=pygplates.ReconstructType.feature_geometry`` and ``same_order_as_reconstructable_features=True``.
@@ -12937,7 +13270,7 @@ class ReconstructedGeometryTimeSpan:
 
         def __init__(self, *args: Any, **kwargs: Any) -> None: ...
 
-        def deactivate(self, prev_point: Any, prev_location: Any, current_point: Any, current_location: Any, current_time: Any, reverse_reconstruct: Any) -> Any:
+        def deactivate(self, prev_point: PointOnSphere, prev_location: TopologyPointLocation, prev_time: float | GeoTimeInstant, current_point: PointOnSphere, current_location: TopologyPointLocation, current_time: float | GeoTimeInstant) -> bool:
             """Return true if the point should be deactivated.
 
             * **prev_point** (:class:`PointOnSphere`): the previous position of the point
@@ -13351,8 +13684,10 @@ class ReconstructionTree:
 
     def __ne__(self, other: object) -> bool: ...
 
-    def get_anchor_plate_edges(self) -> Any:
+    def get_anchor_plate_edges(self) -> Sequence[ReconstructionTreeEdge]:
         """Returns a *view*, of the :class:`edges<ReconstructionTreeEdge>` at the top (or root) of this reconstruction tree, that supports iteration over the edges as well as indexing into the edges.
+
+        :rtype: sequence of :class:`ReconstructionTreeEdge`
 
         The fixed plate id of each anchor plate edge matches the anchor plate id.
 
@@ -13397,8 +13732,10 @@ class ReconstructionTree:
         Returns ``None`` if *moving_plate_id* is the *anchored* plate, or is not found (not in this reconstruction tree).
         """
 
-    def get_edges(self) -> Any:
+    def get_edges(self) -> Sequence[ReconstructionTreeEdge]:
         r"""Returns a *view*, of *all* :class:`edges<ReconstructionTreeEdge>` of this reconstruction tree, that supports iteration over the edges as well as indexing into the edges.
+
+        :rtype: sequence of :class:`ReconstructionTreeEdge`
 
         Note that the *view* object returned by this method is not a ``list`` or an *iterator* but, like dictionary views in Python 3, a ``list`` or *iterator* can be obtained from the *view* as in ``list(reconstruction_tree.get_edges())`` or ``iter(reconstruction_tree.get_edges())``.
 
@@ -13630,8 +13967,10 @@ class ReconstructionTreeEdge:
         This class cannot be instantiated from Python
         """
 
-    def get_child_edges(self) -> Any:
+    def get_child_edges(self) -> Sequence[ReconstructionTreeEdge]:
         """Returns a *view*, of the child :class:`edges<ReconstructionTreeEdge>` of this edge, that supports iteration over the child edges as well as indexing into the child edges.
+
+        :rtype: sequence of :class:`ReconstructionTreeEdge`
 
         A child edge is one step further from the top (or root) of the reconstruction tree (further from the anchor plate). The fixed plate id of each child edge matches the moving plate id of this edge.
 
@@ -13959,7 +14298,7 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         .. seealso:: :meth:`get_resolved_feature`
         """
 
-    def get_geometry_sub_segments(self) -> Any:
+    def get_geometry_sub_segments(self) -> list[ResolvedTopologicalSubSegment]:
         """Same as :meth:`get_boundary_sub_segments`.
         """
 
@@ -14092,7 +14431,7 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         .. seealso:: :meth:`get_feature`
         """
 
-    def get_resolved_geometry(self) -> Any:
+    def get_resolved_geometry(self) -> PolygonOnSphere:
         """Same as :meth:`get_resolved_boundary`.
         """
 
@@ -14242,7 +14581,7 @@ class ResolvedTopologicalLine(ReconstructionGeometry):
         .. seealso:: :meth:`get_resolved_feature`
         """
 
-    def get_geometry_sub_segments(self) -> Any:
+    def get_geometry_sub_segments(self) -> list[ResolvedTopologicalSubSegment]:
         """Same as :meth:`get_line_sub_segments`.
         """
 
@@ -14308,7 +14647,7 @@ class ResolvedTopologicalLine(ReconstructionGeometry):
         .. seealso:: :meth:`get_feature`
         """
 
-    def get_resolved_geometry(self) -> Any:
+    def get_resolved_geometry(self) -> PolylineOnSphere:
         """Same as :meth:`get_resolved_line`.
         """
 
@@ -14642,7 +14981,7 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. seealso:: :meth:`get_feature`
         """
 
-    def get_resolved_geometry(self, include_rigid_blocks_as_interior_holes: Any = False) -> Any:
+    def get_resolved_geometry(self, include_rigid_blocks_as_interior_holes: bool = False) -> PolygonOnSphere:
         """Same as :meth:`get_resolved_boundary`.
 
         .. versionchanged:: 0.49
@@ -14824,7 +15163,7 @@ class ResolvedTopologicalSection:
 
     def __ne__(self, other: object) -> bool: ...
 
-    def get_feature(self) -> Any:
+    def get_feature(self) -> Feature:
         """Same as :meth:`get_topological_section_feature`.
 
         .. warning:: | The geometry in the feature is **present day** geometry - it is NOT reconstructed.
@@ -14916,14 +15255,14 @@ class ResolvedTopologicalSharedSubSegment:
 
     def __ne__(self, other: object) -> bool: ...
 
-    def get_feature(self) -> Any:
+    def get_feature(self) -> Feature:
         """Same as :meth:`get_topological_section_feature`.
 
         .. warning:: | The geometry in the feature is **present day** geometry - it is NOT reconstructed like :meth:`get_geometry` is.
                      | See :meth:`get_resolved_feature` for a **resolved** feature containing reconstructed geometry.
         """
 
-    def get_geometry(self) -> Any:
+    def get_geometry(self) -> PolylineOnSphere:
         """Same as :meth:`get_resolved_geometry`.
         """
 
@@ -15349,14 +15688,14 @@ class ResolvedTopologicalSubSegment:
 
     def __ne__(self, other: object) -> bool: ...
 
-    def get_feature(self) -> Any:
+    def get_feature(self) -> Feature:
         """Same as :meth:`get_topological_section_feature`.
 
         .. warning:: | The geometry in the feature is **present day** geometry - it is NOT reconstructed like :meth:`get_geometry` is.
                      | See :meth:`get_resolved_feature` for a **resolved** feature containing reconstructed geometry.
         """
 
-    def get_geometry(self) -> Any:
+    def get_geometry(self) -> PolylineOnSphere:
         """Same as :meth:`get_resolved_geometry`.
         """
 
@@ -16629,7 +16968,7 @@ class TopologicalSnapshot:
         .. versionadded:: 0.47
         """
 
-    def export_resolved_topological_sections(self, export_filename: str | os.PathLike, resolve_topological_section_types: ResolveTopologyType | int = ..., export_topological_line_sub_segments: bool = True, wrap_to_dateline: bool = True) -> Any:
+    def export_resolved_topological_sections(self, export_filename: str | os.PathLike, resolve_topological_section_types: ResolveTopologyType | int = ..., export_topological_line_sub_segments: bool = True, wrap_to_dateline: bool = True) -> None:
         """Exports the resolved topological sections of the requested type(s) to a file.
 
         :param export_filename: the name of the export file
@@ -16664,7 +17003,7 @@ class TopologicalSnapshot:
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
         """
 
-    def export_resolved_topologies(self, export_filename: str | os.PathLike, resolve_topology_types: ResolveTopologyType | int | ResolveTopologyType = ..., wrap_to_dateline: bool = True, force_boundary_orientation: int = ...) -> Any:
+    def export_resolved_topologies(self, export_filename: str | os.PathLike, resolve_topology_types: ResolveTopologyType | int | ResolveTopologyType = ..., wrap_to_dateline: bool = True, force_boundary_orientation: int = ...) -> None:
         """Exports the resolved topologies of the requested type(s) to a file.
 
         :param export_filename: the name of the export file
@@ -16735,7 +17074,7 @@ class TopologicalSnapshot:
         .. versionadded:: 0.50
         """
 
-    def get_point_strain_rates(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], resolve_topology_types: ResolveTopologyType | int = ..., return_point_locations: Any = False) -> list[StrainRate] | tuple[list[StrainRate], list[TopologyPointLocation]]:
+    def get_point_strain_rates(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], resolve_topology_types: ResolveTopologyType | int = ..., return_point_locations: bool = False) -> list[StrainRate] | tuple[list[StrainRate], list[TopologyPointLocation]]:
         """Returns the strain rates of the specified points (as determined by the resolved topological boundaries/networks that contain them).
 
         :param points: sequence of points at which to calculate strain rates
@@ -16743,6 +17082,7 @@ class TopologicalSnapshot:
         :param resolve_topology_types: specifies the resolved topology types to use for strain rates - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
         :type resolve_topology_types: a bitwise combination of any of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
         :param return_point_locations: whether to also return the resolved topological boundary/network that contains each point - defaults to ``False``
+        :type return_point_locations: bool
         :rtype: list of :class:`StrainRate`, or 2-tuple (list of :class:`StrainRate`, list of :class:`TopologyPointLocation`) if *return_point_locations* is ``True``
         :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
@@ -16772,7 +17112,7 @@ class TopologicalSnapshot:
         .. versionadded:: 0.50
         """
 
-    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], resolve_topology_types: ResolveTopologyType | int = ..., velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, return_point_locations: Any = False) -> list[Vector3D] | tuple[list[Vector3D], list[TopologyPointLocation]]:
+    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], resolve_topology_types: ResolveTopologyType | int = ..., velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, return_point_locations: bool = False) -> list[Vector3D] | tuple[list[Vector3D], list[TopologyPointLocation]]:
         """Returns the velocities of the specified points (as determined by the resolved topological boundaries/networks that contain them).
 
         :param points: sequence of points at which to calculate velocities
@@ -16788,6 +17128,7 @@ class TopologicalSnapshot:
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :param return_point_locations: whether to also return the resolved topological boundary/network that contains each point - defaults to ``False``
+        :type return_point_locations: bool
         :rtype: list of :class:`Vector3D`, or 2-tuple (list of :class:`Vector3D`, list of :class:`TopologyPointLocation`) if *return_point_locations* is ``True``
         :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
@@ -16858,7 +17199,7 @@ class TopologicalSnapshot:
         .. note:: The :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of the returned rotation model may be different to that of the rotation model passed into the :meth:`constructor<__init__>` if an anchor plate ID was specified in the :meth:`constructor<__init__>`.
         """
 
-    def reconstruct_points(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], reconstruction_time: float | GeoTimeInstant, resolve_topology_types: ResolveTopologyType | int = ..., use_natural_neighbour_interpolation: bool = True, return_input_if_not_intersect: Any = False) -> list[PointOnSphere | None]:
+    def reconstruct_points(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], reconstruction_time: float | GeoTimeInstant, resolve_topology_types: ResolveTopologyType | int = ..., use_natural_neighbour_interpolation: bool = True, return_input_if_not_intersect: bool = False) -> list[PointOnSphere | None]:
         """Incrementally reconstruct the specified points (that lie within resolved topological boundaries/networks searched in this snapshot) to the specified reconstruction time.
 
         :param points: sequence of points to reconstruct
@@ -16870,6 +17211,7 @@ class TopologicalSnapshot:
         :param use_natural_neighbour_interpolation: If ``True`` and a point lies within the deforming region of a resolved network, then the reconstructed point is the interpolation of the natural neighbour deformed triangulation vertex positions (otherwise barycentric interpolation is used). Only applies if resolved networks are specified in *resolve_topology_types*. Defaults to ``True``.
         :type use_natural_neighbour_interpolation: bool
         :param return_input_if_not_intersect: Whether to return the *input* point for each point that does *not* intersect any resolved topological boundaries/networks searched in this snapshot - if ``False`` then ``None`` is returned. Defaults to ``False``.
+        :type return_input_if_not_intersect: bool
         :rtype: list of :class:`PointOnSphere` (or ``None`` depending on *return_input_if_not_intersect*)
         :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
@@ -17062,11 +17404,11 @@ class Vector3D:
         """
 
     @overload
-    def __init__(self, vector: Any) -> None:
+    def __init__(self, vector: Sequence[tuple[float, float, float]] | Vector3D) -> None:
         """Create a *Vector3D* instance from an (x,y,z) sequence (or *Vector3D*).
 
-        :param point: (x,y,z) vector
-        :type point: sequence, such as list or tuple, of (float,float,float), or :class:`Vector3D`
+        :param vector: (x,y,z) vector
+        :type vector: sequence (such as list or tuple) of (float,float,float), or :class:`Vector3D`
 
         The following example shows a few different ways to use this method:
         ::
@@ -17333,7 +17675,7 @@ class Vector3D:
               raise pygplates.UnableToNormaliseZeroVectorError
         """
 
-    def to_normalized(self) -> Any:
+    def to_normalized(self) -> Vector3D:
         """See :meth:`to_normalised`.
         """
 
@@ -17516,7 +17858,7 @@ class Version:
         .. versionadded:: 0.34
         """
 
-    def get_prerelease_suffix(self) -> Any:
+    def get_prerelease_suffix(self) -> str | None:
         """Same as :meth:`get_release_suffix`.
 
         .. versionadded:: 0.34
@@ -17576,7 +17918,7 @@ class XsBoolean(PropertyValue):
         :rtype: bool
         """
 
-    def set_boolean(self, boolean_value: bool) -> Any:
+    def set_boolean(self, boolean_value: bool) -> None:
         """Sets the boolean value.
 
         :param boolean_value: the boolean value
@@ -17615,7 +17957,7 @@ class XsDouble(PropertyValue):
         :rtype: float
         """
 
-    def set_double(self, float_value: float) -> Any:
+    def set_double(self, float_value: float) -> None:
         """Sets the floating-point value.
 
         :param float_value: the floating-point value
@@ -17654,7 +17996,7 @@ class XsInteger(PropertyValue):
         :rtype: int
         """
 
-    def set_integer(self, integer_value: int) -> Any:
+    def set_integer(self, integer_value: int) -> None:
         """Sets the integer value.
 
         :param integer_value: the integer value
@@ -17693,7 +18035,7 @@ class XsString(PropertyValue):
         :rtype: string
         """
 
-    def set_string(self, string: str) -> Any:
+    def set_string(self, string: str) -> None:
         """Sets the string.
 
         :param string: the string
@@ -18226,7 +18568,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_     (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
 
-def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstructed_geometries: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ..., **output_parameters: Any) -> Any:
+def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstructed_geometries: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ..., **output_parameters: Any) -> None:
     """Reconstruct regular geological features (including motion paths and flowlines) to a specific geological time.
 
     :param reconstructable_features: the features to reconstruct as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types
@@ -18377,7 +18719,7 @@ def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike 
        * Changed underlying bit values for *ReconstructType.feature_geometry*, *ReconstructType.motion_path* and *ReconstructType.flowline*.
     """
 
-def resolve_topologies(topological_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], resolved_topologies: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, resolved_topological_sections: str | os.PathLike | list = ..., anchor_plate_id: int = ..., default_resolve_topology_parameters: ResolveTopologyParameters = ..., **output_parameters: Any) -> Any:
+def resolve_topologies(topological_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], resolved_topologies: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, resolved_topological_sections: str | os.PathLike | list = ..., anchor_plate_id: int = ..., default_resolve_topology_parameters: ResolveTopologyParameters = ..., **output_parameters: Any) -> None:
     """Resolve topological features (lines, boundaries and networks) to a specific geological time.
 
     :param topological_features: The topological boundary and network features and the topological section features they reference (regular and topological lines) as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple (entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.
@@ -18555,7 +18897,7 @@ def resolve_topologies(topological_features: FeatureCollection | str | os.PathLi
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
 
-def reverse_reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ...) -> Any:
+def reverse_reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ...) -> None:
     """Reverse reconstruct geological features from a specific geological time.
 
     :param reconstructable_features: A reconstructable feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types - all features used as input and output
