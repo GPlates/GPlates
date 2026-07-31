@@ -600,6 +600,8 @@ export_feature_collection_function_argument()
 				"  [*staticmethod*] Return whether *function_argument* contains features.\n"
 				"\n"
 				"  :param function_argument: the function argument to test for features\n"
+				"  :type function_argument: any\n"
+				"  :rtype: bool\n"
 				"\n"
 				"  This method returns ``True`` if *function_argument* is a "
 				":class:`feature collection<FeatureCollection>`, or filename, or :class:`feature<Feature>`, "

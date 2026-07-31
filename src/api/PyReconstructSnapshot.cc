@@ -1306,6 +1306,7 @@ export_reconstruct_snapshot()
 				"  :type sort_reconstructed_static_polygons: ``pygplates.SortReconstructedStaticPolygons.by_plate_id`` or "
 				"``pygplates.SortReconstructedStaticPolygons.by_plate_area`` or None\n"
 				"  :param return_point_locations: whether to also return the reconstructed static polygon that contains each point - defaults to ``False``\n"
+				"  :type return_point_locations: bool\n"
 				"  :rtype: list of :class:`Vector3D`, or 2-tuple (list of :class:`Vector3D`, list of :class:`ReconstructedFeatureGeometry`) if "
 				"*return_point_locations* is ``True``\n"
 				"\n"

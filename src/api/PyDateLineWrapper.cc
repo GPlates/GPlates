@@ -393,6 +393,10 @@ export_date_line_wrapper()
 				"  :param tessellate_degrees: optional tessellation threshold (in degrees) - "
 				"threshold is clamped to the range [0, 180] if specified\n"
 				"  :type tessellate_degrees: float or None\n"
+				// Note: The ', or' separators are required - 'list of A or list of B' parses as
+				//       'list of (A or list of B)' in pygplates/stub/generate_stub.py.
+				"  :rtype: :class:`LatLonPoint`, or :class:`DateLineWrapper.LatLonMultiPoint`, or "
+				"list of :class:`DateLineWrapper.LatLonPolyline`, or list of :class:`DateLineWrapper.LatLonPolygon`\n"
 				"\n"
 				"  The following table maps the input geometry type to the return type:\n"
 				"\n"

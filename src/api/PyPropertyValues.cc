@@ -1739,7 +1739,8 @@ export_gpml_array()
 			&GPlatesApi::gpml_array_return_as_non_null_ptr_type,
 			&GPlatesApi::gpml_array_get_revisioned_vector>(
 					gpml_array_class,
-					gpml_array_class_name);
+					gpml_array_class_name,
+					"PropertyValue");
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
 	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlArray>();
@@ -2388,7 +2389,8 @@ export_gpml_irregular_sampling()
 			&GPlatesApi::gpml_irregular_sampling_return_as_non_null_ptr_type,
 			&GPlatesApi::gpml_irregular_sampling_get_revisioned_vector>(
 					gpml_irregular_sampling_class,
-					gpml_irregular_sampling_class_name);
+					gpml_irregular_sampling_class_name,
+					"GpmlTimeSample");
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlIrregularSampling>();
@@ -3487,7 +3489,8 @@ export_gpml_piecewise_aggregation()
 			&GPlatesApi::gpml_piecewise_aggregation_return_as_non_null_ptr_type,
 			&GPlatesApi::gpml_piecewise_aggregation_get_revisioned_vector>(
 					gpml_piecewise_aggregation_class,
-					gpml_piecewise_aggregation_class_name);
+					gpml_piecewise_aggregation_class_name,
+					"GpmlTimeWindow");
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPiecewiseAggregation>();

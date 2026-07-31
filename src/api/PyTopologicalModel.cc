@@ -2008,7 +2008,10 @@ export_topological_model()
 						bp::arg("current_time")),
 					// NOTE: It seems Sphinx does properly document parameters of methods of nested classes (tested with Sphinx 3.4.3).
 					//       Instead we'll document the parameters using a list.
-					"deactivate(prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct)\n"
+					//       (The stub generator understands this bullet convention too - see pygplates/stub/generate_stub.py.)
+					//
+					// The signature line must match 'DeactivatePoint::deactivate' (and the bp::arg list above).
+					"deactivate(prev_point, prev_location, prev_time, current_point, current_location, current_time)\n"
 					"  Return true if the point should be deactivated.\n"
 					"\n"
 					"  * **prev_point** (:class:`PointOnSphere`): the previous position of the point\n"
