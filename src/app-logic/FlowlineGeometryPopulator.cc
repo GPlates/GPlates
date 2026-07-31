@@ -109,6 +109,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
     d_right_rotations.clear();
     d_left_seed_point_rotations.clear();
     d_right_seed_point_rotations.clear();
+    d_left_to_right_plate_frame_rotation = boost::none;
 
     //Detect Flowline features.
     FlowlineUtils::DetectFlowlineFeatures detector;
@@ -163,6 +164,16 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 			*d_flowline_property_finder->get_left_plate(),
 			d_reconstruction_tree_creator,
 			d_right_seed_point_rotations);
+
+		// The seed point is stored in the left plate's frame, but the right-hand half of the
+		// flowline is built up in the right plate's frame, so we'll need to move the seed point
+		// between the two frames.
+		d_left_to_right_plate_frame_rotation =
+			FlowlineUtils::get_left_to_right_plate_frame_rotation(
+				times.front()/*the flowline's youngest time*/,
+				*d_flowline_property_finder->get_left_plate(),
+				*d_flowline_property_finder->get_right_plate(),
+				d_reconstruction_tree_creator);
 
 		// This will now hold the times we need to use for flowline rotations, from the current reconstruction time to
 		// the oldest time in the flowline.
@@ -403,9 +414,19 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 			present_day_seed_point,
 			d_left_seed_point_rotations);
 
+		// The seed point is stored in the left plate's frame, so it can be used as-is to seed the
+		// left-hand half of the flowline (above), but it must first be moved into the right plate's
+		// frame to seed the right-hand half. Without this the two halves of the flowline start from
+		// different places whenever the left and right plates do not coincide at the flowline's
+		// youngest time.
+		const GPlatesMaths::PointOnSphere right_plate_seed_point =
+			d_left_to_right_plate_frame_rotation
+			? *d_left_to_right_plate_frame_rotation * present_day_seed_point
+			: present_day_seed_point;
+
 		const GPlatesMaths::PointOnSphere reconstructed_right_seed_point =
 			FlowlineUtils::reconstruct_seed_point(
-			present_day_seed_point,
+			right_plate_seed_point,
 			d_right_seed_point_rotations);
 
 
