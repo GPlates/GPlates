@@ -62,7 +62,7 @@ namespace GPlatesScribe
 			Scribe &scribe,
 			ObjectType *&object_ptr,
 			bool shared_owner,
-			boost::optional<unsigned int> use_count_hint = boost::none)
+			boost::optional<unsigned int> use_count_hint)
 	{
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);

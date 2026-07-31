@@ -48,6 +48,7 @@
 // So we prepend with "scribe_".
 const GPlatesScribe::ObjectTag GPlatesScribe::Scribe::POINTS_TO_OBJECT_TAG("scribe_points_to_object");
 const GPlatesScribe::ObjectTag GPlatesScribe::Scribe::POINTS_TO_CLASS_TAG("scribe_points_to_class");
+const unsigned int GPlatesScribe::Scribe::CURRENT_RAW_STREAM_CODEC_VERSION;
 
 
 GPlatesScribe::Scribe::Scribe() :

@@ -59,7 +59,7 @@ namespace GPlatesScribe
 	template <typename ObjectType>
 	Bool transcribe_smart_pointer_protocol(
 			const GPlatesUtils::CallStack::Trace &, Scribe &, ObjectType *&, bool,
-			boost::optional<unsigned int>);
+			boost::optional<unsigned int> = boost::none);
 
 	namespace TranscribeUtils
 	{
