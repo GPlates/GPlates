@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 The GPlates development team
+ * Copyright (C) 2026 CaliTarheel
  *
  * This file is part of GPlates.
  *

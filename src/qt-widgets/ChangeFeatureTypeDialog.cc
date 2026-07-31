@@ -121,6 +121,10 @@ GPlatesQtWidgets::ChangeFeatureTypeDialog::populate(
 {
 	d_feature_ref = feature_ref;
 
+	// The dialog instance is reused. Start from a safe state because repopulating
+	// an empty chooser does not necessarily emit current_index_changed().
+	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
+
 	if (feature_ref)
 	{
 		const GPlatesModel::FeatureType &feature_type = feature_ref->feature_type();
