@@ -1,7 +1,9 @@
 # Plan: Generated .pyi type stubs for pygplates
 
-> Status: **planned, not yet executed** (2026-07-23, branch `feature/pygplates_pyi`).
-> This file can later be reworked into a design doc for the stub generator.
+> Status: **Round 1 executed** (2026-07-26, branch `feature/pygplates_pyi`) — all steps
+> below are done and committed. **Round 2 planned** (2026-08-02): see the
+> [Round 2 section](#round-2-2026-08-02--overload-reorder-type-grammar-extensions-staticmethod-removal)
+> at the end of this file.
 >
 > Suggested Claude model per step is listed in each step heading (and summarized in the
 > table at the end). The parser/generator work is the hard part; the CMake/test wiring
@@ -235,17 +237,22 @@ of the stub only.
    `get_rotation` shows full docs, `PropertyReturn.first` resolves.
 5. Determinism: regenerate twice (ideally on a second platform) → byte-identical.
 
-## Notes on the two Sphinx quirks (out of scope, for later)
+## Notes on the two Sphinx quirks (RESOLVED 2026-08-02 — see Round 2 below)
 
-- `[*staticmethod*]` marker: boost-python's `.staticmethod()` creates *real*
-  `staticmethod` descriptors, which modern Sphinx autodoc can detect and label — worth
-  an experiment to drop the manual markers later. The stub generator relies on the
-  descriptor, not the marker (and strips the marker from embedded docs).
-- Multiple `__init__`: `autodoc_docstring_signature = True` (already set in
-  doc-python-api/conf.py.in:222) supports *multiple* signature lines at the docstring
-  start in Sphinx ≥ 3.1 and renders them all. In the stub this is represented properly
-  as `@overload` — the standard typing mechanism, so Pylance shows each constructor form
-  separately (better than the current Sphinx rendering).
+- `[*staticmethod*]` marker: **confirmed redundant** — boost-python's `.staticmethod()`
+  creates *real* `staticmethod` descriptors (`PyStaticMethod_New` in class.cpp), modern
+  Sphinx auto-detects them (`sphinx.util.inspect.isstaticmethod` scans the class
+  `__dict__` via `__mro__`) and the published docs already render the italic *static*
+  prefix **plus** the now-duplicated manual marker. Round 2 deletes all 56 markers.
+- Multiple `__init__`: **not fixable via Sphinx's stacked-signature support** — since
+  Sphinx 3.1 `autodoc_docstring_signature` does consume multiple signature lines, but
+  only when they are *contiguous from line 0* and share *one* body (confirmed from
+  `_extract_signatures_from_docstrings` in Sphinx 9 source), which would collapse
+  pyGPlates' per-overload Parameters/Raises blocks into one. The `process_docstring`
+  handler in doc-python-api/conf.py.in remains the right mechanism; its rendering of the
+  extra signatures is being upgraded to real `.. py:method::` directives — see
+  `doc-python-api/PLAN.md`. In the stub this was never a problem: overloads are emitted
+  as `@overload` defs.
 
 ## Risks
 
@@ -274,3 +281,159 @@ of the stub only.
 Steps 3–5 can be done in one session by one model; they're listed separately only for
 clarity. If running the whole plan in a single session, use Fable 5 (or Opus 4.8) since
 Step 1–2 dominate.
+
+---
+
+## Round 2 (2026-08-02) — overload reorder, type-grammar extensions, `[*staticmethod*]` removal
+
+> Status: **planned, not yet executed** (branch `feature/pygplates_pyi`).
+> Prompted by VS Code verification of the installed stub (Round 1's end-to-end check):
+> Pylance showed only two `RotationModel.__init__` overloads, and the remaining
+> "Unparsed type expressions" worklist (20 entries) was reviewed for grammar/docstring
+> fixes. The companion `doc-python-api/PLAN.md` covers the Sphinx/docs side.
+
+### Findings driving this round
+
+- **`RotationModel.__init__(rotation_model)` is documented and parses** — the generator
+  *deliberately drops* any overload fully subsumed by an earlier broader one
+  (generate_stub.py:1475-1485; the comment names this exact case), because mypy flags a
+  *later*-subsumed overload as "will never be matched". Emitting the narrower overload
+  **before** its subsumer is mypy-legal and makes Pylance show all three.
+- Sphinx's officially blessed union syntax for info-field types is exactly the house
+  style already (`A or B`, auto-linked; `|` also works) — there is no "better ReST way"
+  to express multiple types. So the worklist is cleared by a mix of small grammar
+  extensions (where the prose is natural English) and docstring restyles (where it
+  isn't).
+- **Silent precedence hazard**: `list of A or list of B` parses as `list[A | list[B]]`
+  with *no* report entry (`_parse_of_target`'s greedy or-loop, generate_stub.py:630-634).
+  Verified live. Only 2 docstrings still use the bare form (both already on the worklist
+  for other reasons); the codebase otherwise converged on the safe `, or` separator
+  (see the comment at src/api/PyDateLineWrapper.cc:396-399).
+- Of the 20 unparsed entries, 11 live in `src/api/*.cc` and 9 in the injected
+  pure-Python `src/qt-resources/python/api/*.py`.
+
+### Step R1 — Generator: reorder subsumed overloads   [model: Fable 5]
+
+In the dedup loop (generate_stub.py:1466-1486), when
+`_signature_subsumes(entry[0], signature)`:
+
+- **identical** signatures → keep today's merge-and-drop (the const/non-const
+  `visit_*` dedup);
+- **strictly narrower** → `rendered.insert(<index of subsumer>, [signature, doc_text])`
+  instead of `continue`, so every documented overload is emitted, narrower-first.
+
+Edge to verify: the umbrella prose from the `__init__(...)` marker attaches to
+`rendered[0]` (lines 1488-1490). In RotationModel the subsumer sits at index 1 so the
+prose stays on the features-overload; check behaviour is sensible for all 11
+multi-`__init__` classes if an insert ever lands at index 0.
+
+Expected stub outcome: `RotationModel` gains
+`def __init__(self, rotation_model: RotationModel) -> None` as a third `@overload`,
+emitted *before* the adapt-overload; `mypy` stays clean.
+
+### Step R2 — Generator: type-grammar extensions   [model: Fable 5]
+
+All in `TypeExpressionParser`:
+
+- **`N-tuple of A and B` → `tuple[A, B]`**: replace the `\bN-tuple of\b` →
+  `tuple of <count-word>` text rewrite (lines 309-310) with direct parsing in
+  `_parse_tuple`; keep `tuple of two X` → `tuple[X, X]`. Fix the flagged hazard first:
+  the current rewrite would make `2-tuple of A and B` silently mean `tuple[A, A]`.
+  (Fixes the three `Feature.get_*geometr*` returns, with the markup fix in Step R4.)
+- **`named-tuple 'X'`**: tokenizer gains a quoted-name token; resolve `X` against the
+  module (`Crossover` is a real runtime class in the stub). Chosen over restyling to
+  `` :class:`Crossover` `` because Crossover has no page in the HTML docs (only
+  sample-code mentions) — the xref wouldn't resolve. (Fixes `find_crossovers` and
+  `synchronise_crossovers(crossover_filter)` with no docstring change.)
+- **`where`-gloss substitution**: strip a top-level `where <name> is/can be <expr>`
+  clause (parenthesised `(where ...)` or trailing), parse `<expr>` as a union, and bind
+  `<name>` so the word-atom / tuple-element lookup resolves it. Covers
+  `PolygonOnSphere.__init__(interior_rings)` (nested:
+  `sequence of rings (where ring is any sequence of ...)`),
+  `TopologicalModel.reconstruct_geometry(geometry)`, and both
+  `NetRotationModel/NetRotationSnapshot.__init__(point_distribution)` — there the
+  placeholder appears *inside* a tuple form (`tuple (point, float) where *point* is ...`),
+  so bind before parsing the main text.
+- **numpy**: in `parse()`, special-case text starting `2D numpy array` →
+  `numpy.ndarray`; track a `uses_numpy` flag → emit `import numpy` in the stub header
+  when used. (User decision: yes — numpy is an optional runtime dep, but practically
+  every IDE user has it; fixes `GeometryOnSphere.to_lat_lon_array`/`to_xyz_array`.)
+- **`:meth:`-only suffix groups are commentary**: a parenthetical group whose only
+  markup is `:meth:` (no `:class:`/`:exc:`) is skipped, like the existing no-markup
+  skip. Fixes `Feature.create_reconstructable_feature/create_tectonic_section(geometry)`
+  (the `(or a coverage ... - :meth:`set_geometry`)` tail) — consistent with the
+  `set_geometry` precedent whose own `:type geometry:` already parses by skipping its
+  no-markup `(... - see below)` group (coverage forms likewise omitted from its type).
+- **Ambiguity lint**: in `_parse_of_target`'s greedy or-loop, when a bare `or` is
+  followed by a container keyword (`list`/`sequence`/`tuple`/`dict`), add a
+  `self.warnings` entry (parse result unchanged) — turns the silent `list[A | list[B]]`
+  mis-parse into a visible report.
+
+### Step R3 — `MANUAL_OVERRIDES` for enum-dependent returns   [model: Sonnet 5]
+
+`PlatePartitioner.partition_features` / `partition_into_plates`
+(`:rtype: depends on *partition_return* (see table below)`,
+src/qt-resources/python/api/PlatePartitioning.py:143/567): read the table and write an
+honest union override; if it turns out unwieldy, leave as `Any` (stays on the worklist)
+— call it during implementation.
+
+### Step R4 — Docstring restyles   [model: Sonnet 5]
+
+Compiled-in docstrings → rebuild pygplates afterwards. Every restyle must still read as
+plain English in the rendered HTML.
+
+| Site | Change |
+|---|---|
+| src/api/PyFeature.cc:5393-5395 (`get_geometry` rtype), :5544-5545 (`get_geometries`), :5577-5578 (`get_all_geometries`) | `` `dict` `` → ``` ``dict`` ``` (single backquote is the default role, not a literal); insert `,` before the bare `or list of`; the `2-tuple of A and B` wording stays (parsed after Step R2) |
+| src/api/PyFeature.cc:5238-5240 (`set_geometry` rtype) | rewrite as a `, or`-separated union — `` :class:`Property` ``, or list of, or 2-tuple of, or list of 2-tuple of — moving the `depending on whether ...` condition into the prose that already explains it |
+| src/qt-resources/python/api/ReconstructionGeometries.py:38, 189, 319 | replace `N-tuple appending a str` with explicit tuple forms, e.g. `` :class:`ReconstructionGeometry` ``, or 2-tuple of (`` :class:`ReconstructionGeometry` ``, str), or None — confirm exact element semantics from each docstring body when editing |
+| src/qt-resources/python/api/Crossovers.py:542-543 (`crossover_type_function`) | restyle trailing `or can also be None if ...` → `, or None if *crossover_filter* is a sequence (since it then gets ignored)` |
+
+### Step R5 — Delete the `[*staticmethod*]` markers   [model: Haiku 4.5]
+
+- Remove all **56** `[*staticmethod*] ` markers plus the recurring explanatory C++
+  comment above each ("Documenting 'staticmethod' here since Sphinx cannot
+  introspect...") across 16 src/api/*.cc files (PyQualifiedXmlNames 12,
+  PyFiniteRotation 8, PyFeature 7, PyVector3D 5, PyNetRotation 4, PyLocalCartesian 4,
+  and 2 or fewer in each of 10 more). **Do not touch the `.staticmethod("...")` calls.**
+- Then remove `_STATICMETHOD_MARKER_RE` and its stripping logic from generate_stub.py
+  (lines 86-89 and use) — the staticmethod signal is already
+  `inspect.getattr_static` (1318-1319), unchanged.
+- HTML result: the auto-detected *static* prefix remains; the duplicated body marker
+  disappears.
+
+### Step R6 — Rebuild, regenerate, verify   [model: Sonnet 5]
+
+1. Rebuild: `cmake --build build-pygplates-vs --config Release --target pygplates`.
+2. Regenerate the stub; stderr expectations: **unparsed** worklist 20 → 0 (or 2 if
+   Step R3 punts); **missing-fields** unchanged (Crossover/CrossoverTypeFunction still
+   deliberately out of scope); no new warnings.
+3. Spot-checks: `RotationModel` has 3 `__init__` overloads (narrow one before the
+   adapt-overload); `to_lat_lon_array -> numpy.ndarray` (+ `import numpy` in header);
+   `Feature.get_all_geometries -> list[GeometryOnSphere] | list[tuple[GeometryOnSphere, dict]]`;
+   `find_crossovers -> list[Crossover]`.
+4. `mypy pygplates/stub/__init__.pyi` → clean (no "will never be matched"); regenerate
+   twice → byte-identical; `ctest -C Release -R pygplates-stub-test` passes.
+5. User re-checks in VS Code: signature help (Ctrl+Shift+Space) on
+   `pygplates.RotationModel(` cycles all three constructor forms. (Bare hover always
+   shows only the *first* overload's doc — that is Pylance behaviour, not a stub defect.)
+
+### Round 2 commit split
+
+1. Generator: overload reorder + grammar extensions + numpy + ambiguity lint
+   (Steps R1-R3).
+2. Docstring restyles in src/api/*.cc + src/qt-resources/python/api/*.py (Step R4).
+3. `[*staticmethod*]` marker removal + `_STATICMETHOD_MARKER_RE` drop + this PLAN.md
+   status update (Step R5).
+4. Regenerated `pygplates/stub/__init__.pyi` (Step R6).
+
+### Round 2 model summary
+
+| Step | Work | Suggested model | Why |
+|---|---|---|---|
+| R1 | Overload reorder | **Fable 5** | Typing semantics (mypy overload-ordering rules) and prose-attachment edge cases; same session as R2. |
+| R2 | Grammar extensions | **Fable 5** | The hard part — five parser features with known hazards (the `N-tuple` rewrite trap, nested `where` glosses). |
+| R3 | `MANUAL_OVERRIDES` | Sonnet 5 | Read a docs table, transcribe an honest union; escape hatch is leaving `Any`. |
+| R4 | Docstring restyles | Sonnet 5 | Well-specified per-site edits; needs care reading each body for semantics, not design. |
+| R5 | Marker deletion | Haiku 4.5 | Mechanical removal of a fixed marker + comment pattern across 16 files. |
+| R6 | Rebuild/regenerate/verify | Sonnet 5 | Mechanical execution and reporting; final IDE check is manual. |
