@@ -22,10 +22,11 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <fstream>
 #include <utility>
 #include <boost/foreach.hpp>
+#include <QFile>
 #include <QtGlobal>
+#include <QTextStream>
 
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
@@ -237,25 +238,37 @@ GPlatesDataMining::DataMiningUtils::load_cfg(
 		const QString& cfg_filename,
 		const QString& section_name)
 {
-	std::string str;
 	std::vector<QString> ret;
-	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
-	std::ifstream ifs ( cfg_filename.toStdString().c_str() , std::ifstream::in );
 
-	while (ifs.good()) // go to the line starting with section_name.
+	// Read the file through QFile rather than std::ifstream so that paths containing
+	// non-ASCII characters work. QString::toStdString() encodes as UTF-8, but the narrow
+	// std::ifstream constructor interprets its path using the process' ANSI code page on
+	// Windows, so any path outside that code page silently failed to open.
+	QFile cfg_file(cfg_filename);
+	if (!cfg_file.open(QIODevice::ReadOnly | QIODevice::Text))
 	{
-		std::getline(ifs,str);
-		QString s(str.c_str());
-		s = s.trimmed().simplified();
+		return ret;
+	}
+
+	QTextStream cfg_stream(&cfg_file);
+	// The replaced code decoded each line as UTF-8 via QString(const char *), so ask for
+	// UTF-8 explicitly rather than inheriting the locale codec under Qt5.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+	cfg_stream.setEncoding(QStringConverter::Utf8);
+#else
+	cfg_stream.setCodec("UTF-8");
+#endif
+
+	while (!cfg_stream.atEnd()) // go to the line starting with section_name.
+	{
+		const QString s = cfg_stream.readLine().trimmed().simplified();
 		if(s.startsWith(section_name))
 			break;
 	}
 
-	while (ifs.good())
+	while (!cfg_stream.atEnd())
 	{
-		std::getline(ifs,str);
-		QString s(str.c_str());
-		s = s.trimmed().simplified();
+		const QString s = cfg_stream.readLine().trimmed().simplified();
 
 		if(s.startsWith("#"))//skip comments
 			continue;
