@@ -46,6 +46,11 @@ namespace GPlatesPresentation
 	class SessionManagement;
 }
 
+namespace GPlatesAppLogic
+{
+	class ProjectDocumentRegistry;
+}
+
 namespace GPlatesQtWidgets
 {
 	// Forward declaration of ViewportWindow to avoid spaghetti.
@@ -86,7 +91,8 @@ namespace GPlatesGui
 		{
 			NO_UNSAVED_CHANGES,          // There are no unsaved changes - can proceed with action.
 			DISCARD_UNSAVED_CHANGES,     // There are unsaved changes, but user is discarding them.
-			DONT_DISCARD_UNSAVED_CHANGES // There are unsaved changes and user doesn't want to discard them.
+			DONT_DISCARD_UNSAVED_CHANGES, // There are unsaved changes and user doesn't want to discard them.
+			SAVE_UNSAVED_CHANGES          // Save modified files/documents, then proceed.
 		};
 
 
@@ -95,6 +101,7 @@ namespace GPlatesGui
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state_,
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io_,
+				GPlatesAppLogic::ProjectDocumentRegistry &project_document_registry_,
 				GPlatesPresentation::SessionManagement &session_management_,
 				QObject *parent_ = NULL);
 
@@ -127,6 +134,9 @@ namespace GPlatesGui
 		 */
 		QStringList
 		list_unsaved_feature_collection_filenames();
+
+		QStringList
+		list_unsaved_project_document_filenames() const;
 
 
 		/**
@@ -257,6 +267,8 @@ namespace GPlatesGui
 		 * Handles loading/unloading of feature collections.
 		 */
 		GPlatesAppLogic::FeatureCollectionFileIO *d_feature_collection_file_io_ptr;
+
+		GPlatesAppLogic::ProjectDocumentRegistry *d_project_document_registry_ptr;
 
 		/**
 		 * Detects unsaved changes in loaded projects.
