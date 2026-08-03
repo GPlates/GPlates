@@ -154,6 +154,10 @@ namespace GPlatesAppLogic
 		handle_reconstruct_params_modified(
 				GPlatesAppLogic::ReconstructLayerParams &layer_params);
 
+		void
+		handle_planetary_radius_changed(
+				double radius_metres);
+
 	private:
 
 		/**
@@ -187,7 +191,7 @@ namespace GPlatesAppLogic
 
 		//! Constructor.
 		ReconstructLayerTask(
-				const ReconstructMethodRegistry &reconstruct_method_registry);
+				ApplicationState &application_state);
 
 		/**
 		 * Returns true if any topology surface layers are currently connected.

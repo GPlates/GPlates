@@ -42,14 +42,30 @@
 
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::VelocityFieldCalculatorLayerProxy(
 		const VelocityParams &velocity_params,
+		double planet_radius_in_kms,
 		unsigned int max_num_velocity_results_in_cache) :
 	d_current_reconstruction_time(0),
 	d_current_velocity_params(velocity_params),
-	d_cached_velocities(max_num_velocity_results_in_cache)
+	d_cached_velocities(max_num_velocity_results_in_cache),
+	d_planet_radius_in_kms(planet_radius_in_kms)
 {
 	// Defined in ".cc" file because...
 	// non_null_ptr destructors require complete type of class they're referring to.
 	// Compiler will call destructors of already-constructed members if constructor throws exception.
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::set_planet_radius_in_kms(
+		double planet_radius_in_kms)
+{
+	if (GPlatesMaths::are_almost_exactly_equal(d_planet_radius_in_kms, planet_radius_in_kms))
+	{
+		return;
+	}
+	d_planet_radius_in_kms = planet_radius_in_kms;
+	reset_cache();
+	d_subject_token.invalidate();
 }
 
 
@@ -522,7 +538,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::cache_velocities(
 				velocity_params.get_delta_time(),
 				velocity_params.get_delta_time_type(),
 				VelocityUnits::CMS_PER_YR,
-				GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
+				d_planet_radius_in_kms,
 				velocity_smoothing_options);
 	}
 	else

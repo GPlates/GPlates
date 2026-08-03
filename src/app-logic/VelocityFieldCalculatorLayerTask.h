@@ -41,6 +41,7 @@
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
 	/**
 	 * A layer task that calculates velocity fields on domains of mesh points inside
 	 * reconstructed static polygons, resolved topological dynamic polygons or resolved
@@ -62,7 +63,8 @@ namespace GPlatesAppLogic
 
 		static
 		boost::shared_ptr<VelocityFieldCalculatorLayerTask>
-		create_layer_task();
+		create_layer_task(
+				ApplicationState &application_state);
 
 
 		virtual
@@ -146,6 +148,10 @@ namespace GPlatesAppLogic
 		handle_velocity_params_modified(
 				GPlatesAppLogic::VelocityFieldCalculatorLayerParams &layer_params);
 
+		void
+		handle_planetary_radius_changed(
+				double radius_metres);
+
 	private:
 
 		/**
@@ -160,7 +166,8 @@ namespace GPlatesAppLogic
 
 
 		//! Constructor.
-		VelocityFieldCalculatorLayerTask();
+		VelocityFieldCalculatorLayerTask(
+				ApplicationState &application_state);
 	};
 }
 

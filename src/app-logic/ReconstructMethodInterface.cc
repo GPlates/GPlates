@@ -135,7 +135,7 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 							velocity_stage_rotation,
 							velocity_delta_time,
 							VelocityUnits::CMS_PER_YR,
-							GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
+							context.planet_radius_in_kms);
 
 			*field_iter = MultiPointVectorField::CodomainElement(
 					vector_xyz,

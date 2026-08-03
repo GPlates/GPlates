@@ -121,6 +121,11 @@ namespace GPlatesQtWidgets
 		lineedit_radius_text_edited(
 				const QString &text);
 
+		//! Keep the displayed radius synchronized with project metadata changes.
+		void
+		update_radius(
+				double radius_in_kilometres);
+
 		/**
 		 * Toggles background highlight of Quick Measure distance field
 		 */

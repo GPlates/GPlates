@@ -402,6 +402,7 @@ GPlatesCanvasTools::MeasureDistanceState::set_radius(
 	if (!GPlatesMaths::are_almost_exactly_equal(radius.dval(), d_radius.dval()))
 	{
 		d_radius = radius;
+		Q_EMIT radius_changed(d_radius.dval());
 		emit_quick_measure_updated();
 
 		// update the total feature distance
