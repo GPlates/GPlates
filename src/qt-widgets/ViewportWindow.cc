@@ -830,6 +830,8 @@ GPlatesQtWidgets::ViewportWindow::connect_reconstruction_menu_actions()
 			&dialogs(), SLOT(pop_up_specify_anchored_plate_id_dialog()));
 	QObject::connect(action_View_Reconstruction_Poles, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_total_reconstruction_poles_dialog()));
+	QObject::connect(action_View_Rotation_Hierarchy, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_rotation_hierarchy_dialog()));
 	// ----
 	QObject::connect(action_Export, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_export_animation_dialog()));

@@ -86,6 +86,7 @@
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
 #include "qt-widgets/PreferencesDialog.h"
 #include "qt-widgets/ReadErrorAccumulationDialog.h"
+#include "qt-widgets/RotationHierarchyDialog.h"
 #include "qt-widgets/SetCameraViewpointDialog.h"
 #include "qt-widgets/SetProjectionDialog.h"
 #include "qt-widgets/ShapefileAttributeViewerDialog.h"
@@ -874,6 +875,31 @@ void
 GPlatesGui::Dialogs::pop_up_symbol_manager_dialog()
 {
 	symbol_manager_dialog().pop_up();
+}
+
+
+GPlatesQtWidgets::RotationHierarchyDialog &
+GPlatesGui::Dialogs::rotation_hierarchy_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_ROTATION_HIERARCHY;
+	typedef GPlatesQtWidgets::RotationHierarchyDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_rotation_hierarchy_dialog()
+{
+	GPlatesQtWidgets::RotationHierarchyDialog &dialog = rotation_hierarchy_dialog();
+
+	dialog.pop_up();
+	dialog.update();
 }
 
 
