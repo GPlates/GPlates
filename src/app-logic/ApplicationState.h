@@ -74,6 +74,8 @@ namespace GPlatesAppLogic
 	class LayerTask;
 	class LayerTaskRegistry;
 	class LogModel;
+	class PlanetaryParameters;
+	class ProjectDocumentRegistry;
 	class ReconstructGraph;
 	class ReconstructMethodRegistry;
 	class UserPreferences;
@@ -175,6 +177,24 @@ namespace GPlatesAppLogic
 		//! Const overload.
 		const UserPreferences &
 		get_user_preferences() const;
+
+		/**
+		 * Markdown documents associated with the current project/session.
+		 */
+		ProjectDocumentRegistry &
+		get_project_document_registry();
+
+		const ProjectDocumentRegistry &
+		get_project_document_registry() const;
+
+		/**
+		 * Effective physical parameters supplied by project metadata.
+		 */
+		PlanetaryParameters &
+		get_planetary_parameters();
+
+		const PlanetaryParameters &
+		get_planetary_parameters() const;
 
 
 		/**
@@ -498,6 +518,12 @@ namespace GPlatesAppLogic
 		boost::scoped_ptr<FeatureCollectionFileIO> d_feature_collection_file_io;
 
 		boost::scoped_ptr<UserPreferences> d_user_preferences_ptr;
+
+		//! Associated ordinary Markdown documents.
+		boost::scoped_ptr<ProjectDocumentRegistry> d_project_document_registry;
+
+		//! Project-wide typed planetary parameters derived from the primary document.
+		boost::scoped_ptr<PlanetaryParameters> d_planetary_parameters;
 
 		/**
 		 * A registry for various ways to reconstruct a feature into @a ReconstructedFeatureGeometry objects.
