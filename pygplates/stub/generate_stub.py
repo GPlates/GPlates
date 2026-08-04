@@ -584,7 +584,8 @@ class TypeExpressionParser(object):
         if stream.peek_word() == 'of':
             stream.next()
         token = stream.peek()
-        if token is not None and token[0] == 'word':
+        if token is not None and token[0] == 'word' and \
+                token[1].lower() in ('them', 'those', 'these'):
             # 'any combination of those four types' / 'of them' - the union of the
             # alternatives already listed (if known, else 'Any').
             while stream.peek() is not None and stream.peek()[0] in ('word', 'period'):
@@ -608,10 +609,16 @@ class TypeExpressionParser(object):
         while stream.peek_word() in ('the', 'values', 'in'):
             stream.next()
         token = stream.next()
-        if token[0] != 'emph':
-            raise TypeParseError("expected emphasis after 'one of the values'")
-        annotation = self._resolve_emphasis(token[1])
-        while stream.peek_word() in ('table', 'above', 'below'):
+        if token[0] == 'emph':
+            annotation = self._resolve_emphasis(token[1])
+        elif token[0] == 'word':
+            annotation = self._resolve_identifier(token[1])
+            if annotation is None:
+                raise TypeParseError("unknown identifier %r after 'one of the values'"
+                                     % token[1])
+        else:
+            raise TypeParseError("expected an identifier after 'one of the values'")
+        while stream.peek_word() in ('the', 'table', 'above', 'below'):
             stream.next()
         return annotation
 
@@ -628,11 +635,18 @@ class TypeExpressionParser(object):
                 break
             kind, value = token
             if kind == 'punct' and value == '(':
+                # '(derived from :class:`PropertyValue`)' - or, markup-free,
+                # '(derived from PropertyValue)'.
                 for group_kind, group_value in self._collect_paren_group(stream):
                     if group_kind == 'role':
                         annotation = 'type[%s]' % self._parse_role((group_kind,
                                                                     group_value))
                         break
+                    if group_kind == 'word':
+                        resolved = self._resolve_identifier(group_value)
+                        if resolved is not None:
+                            annotation = 'type[%s]' % resolved
+                            break
                 continue
             if kind == 'word':
                 if value.lower() == 'except':
@@ -961,6 +975,19 @@ class TypeExpressionParser(object):
             # ('PropertyReturn.exactly_one') standing for its enumeration type.
             annotation = self._resolve_identifier(value)
             if annotation is not None:
+                # The same suffixes the role/emphasis forms take: a container-of
+                # ('GpmlIrregularSampling of GpmlFiniteRotation') or 'containing'
+                # contents clause (both describe the contents, not the type), and an
+                # 'enumeration value' gloss.
+                if stream.peek_word() == 'of':
+                    stream.next()
+                    self._parse_of_target(stream)
+                elif stream.peek_word() == 'containing':
+                    self._consume_condition_clause(stream)
+                elif stream.peek_word() in ('enumeration', 'enumerated'):
+                    stream.next()
+                    if stream.peek_word() in ('value', 'values'):
+                        stream.next()
                 return annotation
             raise TypeParseError('unknown word %r' % value)
 
