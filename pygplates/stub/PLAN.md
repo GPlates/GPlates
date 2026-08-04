@@ -1,7 +1,7 @@
 # Plan: Generated .pyi type stubs for pygplates
 
-> Status: **Round 1 executed** (2026-07-26, branch `feature/pygplates_pyi`) — all steps
-> below are done and committed. **Round 2 planned** (2026-08-02): see the
+> Status: **Round 1 executed** (2026-07-26, branch `feature/pygplates_pyi`) and
+> **Round 2 executed** (2026-08-05) — all steps below are done and committed. See the
 > [Round 2 section](#round-2-2026-08-02--overload-reorder-type-grammar-extensions-staticmethod-removal)
 > at the end of this file.
 >
@@ -286,12 +286,12 @@ Step 1–2 dominate.
 
 ## Round 2 (2026-08-02, revised 2026-08-05) — overload reorder, type-grammar extensions, type-field style sweep, `[*staticmethod*]` removal
 
-> Status: **R1 + R2 executed** (commit 4e681e263); **R3-R6 redesigned 2026-08-05** after
-> the docstring type-field style decisions (see below); **R3 + R4 executed 2026-08-05**
-> (R3: e48751a46 plus follow-ups e9ad947b1/47e5fc675 discovered by dry-running the sweep;
-> R4: f6ec0c79b mechanical + 33e30aa80 hand restyles). **R5 + R6 remain** - note that the
-> module has NOT been rebuilt since the sweep, so the committed stub and the
-> 'pygplates-stub-test' ctest are stale until R6 rebuilds and regenerates.
+> Status: **all steps executed.** R1 + R2: commit 4e681e263; **R3-R6 redesigned
+> 2026-08-05** after the docstring type-field style decisions (see below); R3 + R4
+> executed 2026-08-05 (R3: e48751a46 plus follow-ups e9ad947b1/47e5fc675 discovered by
+> dry-running the sweep; R4: f6ec0c79b mechanical + 33e30aa80 hand restyles); R5:
+> 1b30bd0ad; R6: rebuilt/regenerated/pruned/verified 2026-08-05 (the commit containing
+> this status update). Only the user-side VS Code re-check (R6 item 6) remains.
 > Prompted by VS Code verification of the installed stub (Round 1's end-to-end check):
 > Pylance showed only two `RotationModel.__init__` overloads, and the remaining
 > "Unparsed type expressions" worklist (20 entries) was reviewed for grammar/docstring
@@ -462,7 +462,7 @@ pygplates afterwards. Two parts, two commits:
    Also: `:returns:` goes before `:rtype:` (3 reversed sites), `:return:` →
    `:returns:` (3 sites).
 
-### Step R5 — Delete the `[*staticmethod*]` markers   [model: Haiku 4.5]
+### Step R5 — Delete the `[*staticmethod*]` markers   [model: Haiku 4.5]   ✔ DONE (1b30bd0ad)
 
 - Remove all **56** `[*staticmethod*] ` markers plus the recurring explanatory C++
   comment above each ("Documenting 'staticmethod' here since Sphinx cannot
@@ -475,7 +475,36 @@ pygplates afterwards. Two parts, two commits:
 - HTML result: the auto-detected *static* prefix remains; the duplicated body marker
   disappears.
 
-### Step R6 — Rebuild, regenerate, prune, verify   [model: Sonnet 5 (prune: Fable 5)]
+### Step R6 — Rebuild, regenerate, prune, verify   [model: Sonnet 5 (prune: Fable 5)]   ✔ DONE
+
+> Outcome (2026-08-05): items 1-2 verified via an annotation-only (ast-based) diff
+> against the stale committed stub — all 45 changed member signatures were either
+> prior-`Any` worklist fallbacks landing or entries on the deliberate-changes list in
+> item 2; the one "new" member (`RotationModel.__init__(self, rotation_model)`) is R1's
+> overload-reorder fix regenerated for the first time. Unparsed worklist 0, missing
+> fields unchanged (33), no new lint warnings.
+>
+> Item 3 (prune) was driven by corpus evidence — a hook on
+> `TypeExpressionParser.parse()` recorded all 309 unique type-field texts the built
+> module actually feeds the parser. **Pruned** (0 corpus hits each): the `2D numpy
+> array` special-case, named-tuple normalization, the `N-tuple of` count-word rewrite
+> and the `N-tuple of A and B` distinct-elements arm (the homogeneous `tuple of three
+> X` form and the `2-tuple (A, B)` arity-prefix rewrite stay — 1 live site each), the
+> double-backquote literal token path (`_LITERAL_TYPES`), the `*emphasis*` token path
+> (`_resolve_emphasis`), the `:meth:`-commentary/markup group classification in
+> `_parse_suffix` (`_is_type_markup` deleted — every parenthesised suffix group is now
+> commentary, per the guideline that alternatives/conditions no longer live in type
+> fields), and the dead legacy-role sub-branches (`list :class:` missing-`of`,
+> class-object role arm, role-atom `of`/`containing` tails, one-of-the-values emphasis
+> arm). **Kept, contrary to the plan's expectation**: the where-gloss machinery (3 live
+> sites, e.g. `sequence of rings (where ring is ...)`) and the `:class:` role token
+> path — `src/api/PyRevisionedVector.h` builds templated docstrings with
+> `:class:`-role element types, and the PyTopologicalModel.cc nested-class bullet
+> fields use roles by design; both were outside the R4 sweep's `*.cc`/`*.py` type-field
+> scope. Ambiguity lint kept. Post-prune regeneration is byte-identical to the
+> pre-prune stub with an identical stderr report, so the prune is a proven no-op on
+> output; items 4-5 re-verified (spot-checks, mypy clean, determinism,
+> `pygplates-stub-test` passes).
 
 1. Rebuild: `cmake --build build-pygplates-vs --config Release --target pygplates`.
 2. Regenerate the stub. **Invariant check**: members whose fields already parsed keep
@@ -540,8 +569,9 @@ pygplates afterwards. Two parts, two commits:
 3. Docstring sweep, mechanical conversion (Step R4 part 1). ✔ f6ec0c79b
 4. Docstring sweep, complex-site hand restyles (Step R4 part 2). ✔ 33e30aa80
 5. `[*staticmethod*]` marker removal + `_STATICMETHOD_MARKER_RE` drop (Step R5).
+   ✔ 1b30bd0ad
 6. Regenerated `pygplates/stub/__init__.pyi` + grammar pruning + this PLAN.md status
-   update (Step R6).
+   update (Step R6). ✔ (the commit carrying this line)
 
 ### Round 2 model summary
 

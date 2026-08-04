@@ -10,8 +10,8 @@ convention:
         get_geometry([property_query], [property_return=PropertyReturn.exactly_one])
 
     Body (indented 2 spaces): standard Sphinx ReST fields carrying the real type info:
-        :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)
-        :rtype: :class:`Geometry` or ``None``
+        :type property_query: PropertyName, or callable (accepting single Property argument)
+        :rtype: GeometryOnSphere, or None
 
 Boost.Python concatenates the docstrings of sibling '.def()' overloads, so a docstring can
 contain multiple column-0 signature lines - these become '@overload' definitions.
@@ -187,17 +187,8 @@ _WORD_TYPES = {
     'key': 'Any', 'value': 'Any',
 }
 
-# Words that spell out a tuple arity ('tuple of three :class:`Property`').
+# Words that spell out a tuple arity ('tuple of three Property').
 _COUNT_WORDS = {'two': 2, 'three': 3, 'four': 4, 'five': 5}
-
-# Double-backquote literal spellings.
-_LITERAL_TYPES = {
-    'int': 'int', 'float': 'float', 'str': 'str', 'string': 'str', 'bool': 'bool',
-    'list': 'list', 'tuple': 'tuple', 'dict': 'dict', 'set': 'set',
-    'None': 'None', 'none': 'None',
-    'os.PathLike': 'os.PathLike',
-    'bytes': 'bytes',
-}
 
 
 # ---------------------------------------------------------------------------
@@ -210,8 +201,6 @@ class TypeParseError(Exception):
 
 _TOKEN_RE = re.compile(
     r":(?P<role_name>[\w:.]+):`(?P<role_text>[^`]+)`"
-    r"|``(?P<literal>[^`]+)``"
-    r"|\*(?P<emph>[^*]+)\*"
     r"|(?P<word>[A-Za-z_][\w.]*)"
     r"|(?P<punct>[()\[\],/|])"
     r"|(?P<ellipsis>\.\.\.)"
@@ -285,22 +274,22 @@ class TypeExpressionParser(object):
     """
     Parses the ':type:'/':rtype:' ReST text convention into a stub annotation.
 
-    Vocabulary (from a survey of src/api): ':class:`X`' (including ':class:`display<X>`'),
-    primitive spellings ('integer', 'string', 'none', 'double', plurals), 'list of X',
-    'sequence (eg, ``list`` or ``tuple``) of X', unions with 'or' / ', or' / '. Or',
-    tuple forms 'the tuple (A, B)', 'tuple (A, B [, C])', 'list of (A, B) tuples',
-    '2-tuple of A and B', '(x,y,z) tuple', enum member emphasis
-    ('*PropertyReturn.exactly_one*, ... or *PropertyReturn.all*'),
-    'string/``os.PathLike``', 'callable (accepting single :class:`X` argument)',
-    "named-tuple 'X'", 'ND numpy array ...', and placeholder glosses
-    ('sequence of rings (where ring is ...)', 'tuple (point, float) where *point* is ...').
+    The corpus follows the markup-free type-field style (the docstring type-field style
+    guideline in doc-python-api/PLAN.md): bare and dotted identifiers resolved against
+    the module ('FiniteRotation', 'NetworkTriangulation.Triangle', enum values like
+    'PropertyReturn.exactly_one' standing for their enumeration type), primitive
+    spellings ('integer', 'string', 'none', 'double', plurals), Python bracket generics
+    'list[X]', 'tuple[A, B]', 'tuple[X, ...]', 'dict[K, V]' (arbitrarily nested, mixing
+    with the prose forms), prose containers 'list of X', 'sequence (eg, list or tuple)
+    of X', 'tuple of three X', unions with 'or' / ', or' / '. Or' / '|', tuple forms
+    'the tuple (A, B)', 'tuple (A, B [, C])', 'list of (A, B) tuples', '(x,y,z) tuple',
+    'string/os.PathLike', 'callable (accepting single X argument)', and placeholder
+    glosses ('sequence of rings (where ring is ...)', 'tuple (point, float) where
+    point is ...').
 
-    The markup-free style (the docstring type-field style guideline in
-    doc-python-api/PLAN.md) adds: bare and dotted identifiers resolved against the
-    module ('FiniteRotation', 'NetworkTriangulation.Triangle', enum values like
-    'PropertyReturn.exactly_one' standing for their enumeration type), Python bracket
-    generics 'list[X]', 'tuple[A, B]', 'tuple[X, ...]', 'dict[K, V]' (arbitrarily
-    nested, mixing with the prose forms), and '|' unions.
+    ':class:`X`' roles are also accepted: the docstrings templated in
+    src/api/PyRevisionedVector.h and the bullet-list fields of nested-class methods
+    (see '_BULLET_TYPE_FIELD_RE') still spell types that way.
     """
 
     def __init__(self, generator):
@@ -317,23 +306,11 @@ class TypeExpressionParser(object):
         return self._parse_text(text)
 
     def _parse_text(self, text):
-        # A free-form numpy-array description ('2D numpy array with number of points as
-        # outer dimension and an inner dimension of two') - the dimensions/dtype prose is
-        # not machine-readable, so the annotation is the plain array type.
-        if re.match(r'\d+D numpy array\b', text):
-            self.generator.uses_numpy = True
-            return 'numpy.ndarray'
         # Normalize phrases that carry no type information.
         text = text.replace('read-only ', '')      # 'a read-only sequence of X'
         text = text.replace(', in degrees', '')    # 'tuple (latitude,longitude), in degrees'
         text = text.replace(' in degrees', '')     # '(latitude,longitude) tuple in degrees'
-        # "named-tuple 'Crossover'" - the quoted name is a runtime class; spell it as a
-        # role (the class deliberately has no page in the HTML docs, so the docstrings
-        # cannot use ':class:' themselves).
-        text = re.sub(r"\bnamed-tuple '([\w.]+)'", r':class:`\1`', text)
-        # 'N-tuple' spellings: '2-tuple of X' -> 'tuple of two X', '4-tuple (...)' -> 'tuple (...)'.
-        for count_word, count in _COUNT_WORDS.items():
-            text = re.sub(r'\b%d-tuple of\b' % count, 'tuple of %s' % count_word, text)
+        # 'N-tuple' arity prefix: '2-tuple (A, B)' -> 'tuple (A, B)'.
         text = re.sub(r'\b\d+-tuple\b', 'tuple', text)
         # 'where <name> is <expr>' glosses bind a placeholder word used in the main text
         # ('sequence of tuple (point, float) where *point* is ...').
@@ -461,17 +438,10 @@ class TypeExpressionParser(object):
             stream.next()
 
     def _peek_structural(self, stream, offset=0):
-        # A word - or a '``list``'-style literal used structurally - in lowercase.
+        # A word token in lowercase.
         token = stream.peek(offset)
-        if token is None:
-            return None
-        kind, value = token
-        if kind == 'word':
-            return value.lower()
-        if kind == 'literal':
-            text = value.strip().lower()
-            if text in ('list', 'tuple', 'dict', 'sequence'):
-                return text
+        if token is not None and token[0] == 'word':
+            return token[1].lower()
         return None
 
     def _parse_disjunct(self, stream, prior=None):
@@ -536,42 +506,14 @@ class TypeExpressionParser(object):
         return self._make_union(items)
 
     def _parse_suffix(self, stream, annotation):
-        # Parenthesised groups after a type:
-        # - pure commentary ('(see table below)') and '(if ...)' conditions - skipped;
-        # - subtype clarifications (':class:`GpmlTopologicalSection`
-        #   (:class:`GpmlTopologicalLineSection` or :class:`GpmlTopologicalPoint`)' -
-        #   the preceding type already covers these) - skipped;
-        # - '(or ...)' - *further alternatives*, parsed and added to the union.
-        # Anything else fails the parse rather than silently narrowing the type.
+        # A parenthesised group after a type is commentary ('(see table below)',
+        # '(or a coverage or a sequence of coverages - see below)') - the markup-free
+        # style guideline keeps alternatives and conditions out of the type fields
+        # (they belong in ':returns:'/prose, with the type a flat union), so the group
+        # never carries type information.
         while self._peek_punct(stream, '('):
-            saved = stream.pos
-            group = self._collect_paren_group(stream)
-            # Only *type* markup makes a group significant: a ':meth:'/':attr:' role is a
-            # see-also reference, so a group like '(or a coverage or a sequence of
-            # coverages - :meth:`set_geometry`)' is commentary, same as one with no
-            # markup at all.
-            has_markup = any(self._is_type_markup(kind, value) for kind, value in group)
-            if not has_markup:
-                continue
-            if group[0] == ('word', 'if'):
-                continue
-            if group[0] == ('word', 'or'):
-                # Eg, '(or ``None`` if *enforce_single_plates* is ``False``)'.
-                alternative = self._parse_union(_TokenStream(group[1:]))
-                annotation = self._make_union([annotation, alternative])
-                continue
-            if all(kind == 'role' or (kind, value) in (('word', 'or'), ('punct', ','))
-                   for kind, value in group):
-                continue
-            stream.pos = saved
-            raise TypeParseError('unrecognised parenthesised group after %r' % annotation)
+            self._collect_paren_group(stream)
         return annotation
-
-    @staticmethod
-    def _is_type_markup(kind, value):
-        if kind == 'role':
-            return value[0].split(':')[-1] in ('class', 'exc')
-        return kind in ('literal', 'emph')
 
     def _parse_any_combination(self, stream, prior):
         stream.next()  # 'any'
@@ -604,15 +546,12 @@ class TypeExpressionParser(object):
         while stream.peek_word() in ('the', 'values', 'in'):
             stream.next()
         token = stream.next()
-        if token[0] == 'emph':
-            annotation = self._resolve_emphasis(token[1])
-        elif token[0] == 'word':
-            annotation = self._resolve_identifier(token[1])
-            if annotation is None:
-                raise TypeParseError("unknown identifier %r after 'one of the values'"
-                                     % token[1])
-        else:
+        if token[0] != 'word':
             raise TypeParseError("expected an identifier after 'one of the values'")
+        annotation = self._resolve_identifier(token[1])
+        if annotation is None:
+            raise TypeParseError("unknown identifier %r after 'one of the values'"
+                                 % token[1])
         while stream.peek_word() in ('the', 'table', 'above', 'below'):
             stream.next()
         return annotation
@@ -630,13 +569,8 @@ class TypeExpressionParser(object):
                 break
             kind, value = token
             if kind == 'punct' and value == '(':
-                # '(derived from :class:`PropertyValue`)' - or, markup-free,
                 # '(derived from PropertyValue)'.
                 for group_kind, group_value in self._collect_paren_group(stream):
-                    if group_kind == 'role':
-                        annotation = 'type[%s]' % self._parse_role((group_kind,
-                                                                    group_value))
-                        break
                     if group_kind == 'word':
                         resolved = self._resolve_identifier(group_value)
                         if resolved is not None:
@@ -684,10 +618,6 @@ class TypeExpressionParser(object):
         if stream.peek_word() == 'of':
             stream.next()
             return 'list[%s]' % self._parse_of_target(stream, prior)
-        token = stream.peek()
-        if token is not None and token[0] == 'role':
-            # 'list :class:`points<PointOnSphere>`' - a missing 'of'.
-            return 'list[%s]' % self._parse_of_target(stream, prior)
         return 'list'
 
     def _parse_tuple(self, stream, prior):
@@ -706,25 +636,10 @@ class TypeExpressionParser(object):
                 return self._parse_tuple_form(stream, prior)  # 'a tuple of (A, B)'
             count = _COUNT_WORDS.get(stream.peek_word())
             if count is not None:
-                stream.next()
-                first = self._parse_disjunct(stream, prior)
-                if stream.peek_word() == 'and':
-                    # Distinct element types: '2-tuple of :class:`GeometryOnSphere` and
-                    # ``dict`` of scalar values' -> 'tuple[GeometryOnSphere, dict]'.
-                    # (The arity check keeps a miscounted docstring from silently
-                    # emitting the wrong tuple shape.)
-                    elements = [first]
-                    while stream.peek_word() == 'and':
-                        stream.next()
-                        elements.append(self._parse_disjunct(stream, prior))
-                    if len(elements) != count:
-                        raise TypeParseError(
-                            'tuple arity mismatch: %d-tuple of %d elements'
-                            % (count, len(elements)))
-                    return 'tuple[%s]' % ', '.join(elements)
-                # Homogeneous: 'tuple of two X [or Y]' - a bare 'or' extends the
+                # Homogeneous: 'tuple of three X [or Y]' - a bare 'or' extends the
                 # element type, as in '_parse_of_target'.
-                items = [first]
+                stream.next()
+                items = [self._parse_disjunct(stream, prior)]
                 while stream.peek_word() == 'or':
                     self._warn_if_ambiguous_or(stream)
                     stream.next()
@@ -907,40 +822,7 @@ class TypeExpressionParser(object):
         kind, value = token
 
         if kind == 'role':
-            annotation = self._parse_role(token)
-            # Container-of: ':class:`GpmlIrregularSampling` of :class:`GpmlFiniteRotation`'
-            # - the annotation is the (non-generic) container class.
-            if stream.peek_word() == 'of':
-                stream.next()
-                self._parse_of_target(stream)
-            # ':class:`Property` containing a :class:`GpmlKeyValueDictionary` ...' - the
-            # clause describes the contents, not the type.
-            elif stream.peek_word() == 'containing':
-                self._consume_condition_clause(stream)
-            return annotation
-
-        if kind == 'literal':
-            text = value.strip()
-            if text in _LITERAL_TYPES:
-                annotation = _LITERAL_TYPES[text]
-                if annotation == 'os.PathLike':
-                    self.generator.uses_os = True
-                return annotation
-            # '``pygplates.ReconstructType.feature_geometry``' - a literal-quoted
-            # enum member (or class) stands for its enumeration type.
-            annotation = self._resolve_identifier(text)
-            if annotation is not None:
-                return annotation
-            raise TypeParseError('unknown literal %r' % text)
-
-        if kind == 'emph':
-            annotation = self._resolve_emphasis(value)
-            # 'a *PartitionMethod* enumeration value (see table below)'.
-            if stream.peek_word() in ('enumeration', 'enumerated'):
-                stream.next()
-                if stream.peek_word() in ('value', 'values'):
-                    stream.next()
-            return annotation
+            return self._parse_role(token)
 
         if kind == 'word':
             lowered = value.lower()
@@ -987,14 +869,6 @@ class TypeExpressionParser(object):
             raise TypeParseError('unknown word %r' % value)
 
         raise TypeParseError('unexpected token %r' % (token,))
-
-    def _resolve_emphasis(self, text):
-        # Emphasised enum members ('*PropertyReturn.exactly_one*') and enumeration class
-        # names ('*PartitionMethod*', '*CrossoverType*') both stand for their type.
-        annotation = self._resolve_identifier(text)
-        if annotation is None:
-            raise TypeParseError('unknown emphasis %r' % text)
-        return annotation
 
     def _resolve_identifier(self, text):
         """
