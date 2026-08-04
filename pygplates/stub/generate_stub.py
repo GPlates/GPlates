@@ -293,26 +293,102 @@ class TypeExpressionParser(object):
     primitive spellings ('integer', 'string', 'none', 'double', plurals), 'list of X',
     'sequence (eg, ``list`` or ``tuple``) of X', unions with 'or' / ', or' / '. Or',
     tuple forms 'the tuple (A, B)', 'tuple (A, B [, C])', 'list of (A, B) tuples',
-    enum member emphasis ('*PropertyReturn.exactly_one*, ... or *PropertyReturn.all*'),
-    'string/``os.PathLike``', and 'callable (accepting single :class:`X` argument)'.
+    '2-tuple of A and B', '(x,y,z) tuple', enum member emphasis
+    ('*PropertyReturn.exactly_one*, ... or *PropertyReturn.all*'),
+    'string/``os.PathLike``', 'callable (accepting single :class:`X` argument)',
+    "named-tuple 'X'", 'ND numpy array ...', and placeholder glosses
+    ('sequence of rings (where ring is ...)', 'tuple (point, float) where *point* is ...').
     """
 
     def __init__(self, generator):
         self.generator = generator
+        # Bindings of 'where <name> is <expr>' gloss placeholders, live for one 'parse()'.
+        self._bindings = {}
+        # Non-fatal observations made while parsing (drained by '_parse_type_text').
+        self.parse_warnings = []
 
     def parse(self, text):
         """Return the annotation for 'text', or raise TypeParseError."""
+        self._bindings = {}
+        self.parse_warnings = []
+        return self._parse_text(text)
+
+    def _parse_text(self, text):
+        # A free-form numpy-array description ('2D numpy array with number of points as
+        # outer dimension and an inner dimension of two') - the dimensions/dtype prose is
+        # not machine-readable, so the annotation is the plain array type.
+        if re.match(r'\d+D numpy array\b', text):
+            self.generator.uses_numpy = True
+            return 'numpy.ndarray'
         # Normalize phrases that carry no type information.
         text = text.replace('read-only ', '')      # 'a read-only sequence of X'
         text = text.replace(', in degrees', '')    # 'tuple (latitude,longitude), in degrees'
+        text = text.replace(' in degrees', '')     # '(latitude,longitude) tuple in degrees'
+        # "named-tuple 'Crossover'" - the quoted name is a runtime class; spell it as a
+        # role (the class deliberately has no page in the HTML docs, so the docstrings
+        # cannot use ':class:' themselves).
+        text = re.sub(r"\bnamed-tuple '([\w.]+)'", r':class:`\1`', text)
         # 'N-tuple' spellings: '2-tuple of X' -> 'tuple of two X', '4-tuple (...)' -> 'tuple (...)'.
         for count_word, count in _COUNT_WORDS.items():
             text = re.sub(r'\b%d-tuple of\b' % count, 'tuple of %s' % count_word, text)
         text = re.sub(r'\b\d+-tuple\b', 'tuple', text)
+        # 'where <name> is <expr>' glosses bind a placeholder word used in the main text
+        # ('sequence of tuple (point, float) where *point* is ...').
+        text, glosses = self._extract_where_glosses(text)
+        for gloss_name, gloss_text in glosses:
+            self._bindings[gloss_name] = self._parse_text(gloss_text)
         stream = _TokenStream(_tokenize(text))
         if stream.at_end():
             raise TypeParseError('empty type expression')
         return self._parse_union(stream)
+
+    def _extract_where_glosses(self, text):
+        """
+        Split off 'where <name> is/are/can be <expr>' gloss clauses.
+
+        Returns (text with the clauses removed, [(name, expr)]). The clause is either
+        parenthesised ('sequence of rings (where ring is any sequence of ...)') - found
+        by a balanced-paren scan since the expr may itself contain tuple forms - or
+        trails the whole expression ('tuple (point, float) where *point* is ...').
+        """
+        glosses = []
+        while True:
+            match = re.search(r'\(\s*where\b', text)
+            if match is None:
+                break
+            start = match.start()
+            depth = 0
+            end = start
+            for end in range(start, len(text)):
+                if text[end] == '(':
+                    depth += 1
+                elif text[end] == ')':
+                    depth -= 1
+                    if depth == 0:
+                        break
+            if depth != 0:
+                break  # unbalanced - leave for the tokenizer/parser to reject
+            clause = self._match_where_gloss(text[start + 1:end])
+            if clause is None:
+                break
+            glosses.append(clause)
+            text = text[:start] + text[end + 1:]
+        trailing = re.search(r'\bwhere\b', text)
+        if trailing is not None:
+            clause = self._match_where_gloss(text[trailing.start():])
+            if clause is not None:
+                glosses.append(clause)
+                text = text[:trailing.start()]
+        return text, glosses
+
+    @staticmethod
+    def _match_where_gloss(clause):
+        """('name', 'expr') from a clause starting at its 'where', or None."""
+        match = re.match(r'where\s+(?:an?\s+)?\*?(\w+)\*?\s+(?:is|are|can\s+be)\s+(.+)$',
+                         clause, re.DOTALL)
+        if match is None:
+            return None
+        return match.group(1).lower(), match.group(2)
 
     def _parse_union(self, stream):
         # 'items' doubles as the referent for a later 'them' / 'any combination of those
@@ -443,6 +519,11 @@ class TypeExpressionParser(object):
             return self._make_union([self._parse_of_target(stream, prior), 'int'])
         if structural == 'class' and self._peek_structural(stream, 1) == 'object':
             return self._parse_class_object(stream)
+        if self._peek_punct(stream, '('):
+            # A tuple form written before the word 'tuple': '(x,y,z) tuple'.
+            annotation = self._parse_tuple_form(stream, prior)
+            stream.accept_word('tuples', 'tuple')
+            return annotation
 
         # A plain atom, possibly '/'-joined ('string/``os.PathLike``').
         items = [self._parse_atom(stream)]
@@ -462,7 +543,11 @@ class TypeExpressionParser(object):
         while self._peek_punct(stream, '('):
             saved = stream.pos
             group = self._collect_paren_group(stream)
-            has_markup = any(kind in ('role', 'literal', 'emph') for kind, _ in group)
+            # Only *type* markup makes a group significant: a ':meth:'/':attr:' role is a
+            # see-also reference, so a group like '(or a coverage or a sequence of
+            # coverages - :meth:`set_geometry`)' is commentary, same as one with no
+            # markup at all.
+            has_markup = any(self._is_type_markup(kind, value) for kind, value in group)
             if not has_markup:
                 continue
             if group[0] == ('word', 'if'):
@@ -478,6 +563,12 @@ class TypeExpressionParser(object):
             stream.pos = saved
             raise TypeParseError('unrecognised parenthesised group after %r' % annotation)
         return annotation
+
+    @staticmethod
+    def _is_type_markup(kind, value):
+        if kind == 'role':
+            return value[0].split(':')[-1] in ('class', 'exc')
+        return kind in ('literal', 'emph')
 
     def _parse_any_combination(self, stream, prior):
         stream.next()  # 'any'
@@ -588,13 +679,46 @@ class TypeExpressionParser(object):
             count = _COUNT_WORDS.get(stream.peek_word())
             if count is not None:
                 stream.next()
-                element = self._parse_of_target(stream, prior)
+                first = self._parse_disjunct(stream, prior)
+                if stream.peek_word() == 'and':
+                    # Distinct element types: '2-tuple of :class:`GeometryOnSphere` and
+                    # ``dict`` of scalar values' -> 'tuple[GeometryOnSphere, dict]'.
+                    # (The arity check keeps a miscounted docstring from silently
+                    # emitting the wrong tuple shape.)
+                    elements = [first]
+                    while stream.peek_word() == 'and':
+                        stream.next()
+                        elements.append(self._parse_disjunct(stream, prior))
+                    if len(elements) != count:
+                        raise TypeParseError(
+                            'tuple arity mismatch: %d-tuple of %d elements'
+                            % (count, len(elements)))
+                    return 'tuple[%s]' % ', '.join(elements)
+                # Homogeneous: 'tuple of two X [or Y]' - a bare 'or' extends the
+                # element type, as in '_parse_of_target'.
+                items = [first]
+                while stream.peek_word() == 'or':
+                    self._warn_if_ambiguous_or(stream)
+                    stream.next()
+                    if stream.at_end():
+                        break
+                    items.append(self._parse_disjunct(stream, prior))
+                element = self._make_union(items)
                 return 'tuple[%s]' % ', '.join([element] * count)
             return 'tuple[%s, ...]' % self._parse_of_target(stream, prior)
         return 'tuple'
 
     def _parse_dict(self, stream, prior):
         stream.next()  # 'dict'
+        if stream.peek_word() == 'of':
+            # 'a ``dict`` of scalar values' - a contents gloss in plain words, with no
+            # machine-readable key/value types. Consume the words (stopping at anything
+            # structural: a separator, condition, markup or punctuation).
+            stream.next()
+            while stream.peek() is not None and stream.peek()[0] == 'word' and \
+                    stream.peek_word() not in ('or', 'and', 'if', 'depending', 'to'):
+                stream.next()
+            return 'dict'
         if stream.peek_word() != 'mapping':
             return 'dict'
         stream.next()
@@ -628,11 +752,28 @@ class TypeExpressionParser(object):
         items = []
         items.append(self._parse_disjunct(stream, prior))
         while stream.peek_word() == 'or':
+            self._warn_if_ambiguous_or(stream)
             stream.next()
             if stream.at_end():
                 break
             items.append(self._parse_disjunct(stream, prior))
         return self._make_union(items)
+
+    def _warn_if_ambiguous_or(self, stream):
+        # A bare 'or' followed by another container ('list of A or list of B') binds to
+        # the element - 'list[A | list[B]]' - which is almost never what the docstring
+        # means. It still parses that way (some docstrings do mean it), but gets
+        # reported so a ', or' (top-level alternative) fix can be considered.
+        offset = 1
+        while stream.peek_word(offset) in ('a', 'an', 'the'):
+            offset += 1
+        follower = stream.peek_word(offset)
+        if follower in ('list', 'lists', 'sequence', 'sequences') or \
+                (follower in ('tuple', 'tuples', 'dict') and
+                 stream.peek_word(offset + 1) in ('of', 'mapping')):
+            self.parse_warnings.append(
+                "bare 'or %s' binds to the 'of' element - write ', or' if a top-level "
+                'alternative was intended' % follower)
 
     def _parse_tuple_form(self, stream, prior=None):
         # '(A, B)' or '(A, B [, C])' (optional trailing elements, possibly nested) - the
@@ -738,6 +879,14 @@ class TypeExpressionParser(object):
 
         if kind == 'word':
             lowered = value.lower()
+            # A placeholder bound by a 'where <name> is ...' gloss ('sequence of rings
+            # (where ring is ...)') - checked first since a gloss is the most specific
+            # statement of intent; the singular covers a pluralised use.
+            binding = self._bindings.get(lowered)
+            if binding is None and lowered.endswith('s'):
+                binding = self._bindings.get(lowered[:-1])
+            if binding is not None:
+                return binding
             if lowered in _WORD_TYPES:
                 annotation = _WORD_TYPES[lowered]
                 if annotation == 'Any':
@@ -1049,6 +1198,7 @@ class StubGenerator(object):
         self.uses_any = False
         self.uses_callable = False
         self.uses_classvar = False
+        self.uses_numpy = False
         self.uses_overload = False
         self.uses_sequence = False
         self.uses_os = False
@@ -1078,11 +1228,14 @@ class StubGenerator(object):
             self.uses_any = True
             return 'Any'
         try:
-            return self.type_parser.parse(raw_text)
+            annotation = self.type_parser.parse(raw_text)
         except TypeParseError:
             self.unparsed_report.add('%s: %s' % (qualified, raw_text))
             self.uses_any = True
-            return 'Any'
+            annotation = 'Any'
+        for warning in self.type_parser.parse_warnings:
+            self.warnings.add('%s: %s' % (qualified, warning))
+        return annotation
 
     def _is_pygplates_module(self, module_name):
         return module_name in _PYGPLATES_MODULES
@@ -1173,6 +1326,8 @@ class StubGenerator(object):
             self.uses_callable = True
         if 'ClassVar[' in signature_text:
             self.uses_classvar = True
+        if 'numpy.' in signature_text:
+            self.uses_numpy = True
         if 'Sequence[' in signature_text:
             self.uses_sequence = True
         if 'os.PathLike' in signature_text:
@@ -1210,6 +1365,8 @@ class StubGenerator(object):
 
     def _imports_block(self):
         lines = []
+        if self.uses_numpy:
+            lines.append('import numpy')
         if self.uses_os:
             lines.append('import os')
         typing_names = []
@@ -1472,18 +1629,19 @@ class StubGenerator(object):
             else:
                 self._note_annotation_usage(signature)
             doc_text = _clean_docstring_text(block.body_lines)
-            # Also drop an overload fully subsumed by an earlier one (eg, the
-            # 'RotationModel.__init__(rotation_model)' convenience overload) - at runtime
-            # Boost.Python picks it by registration priority, but to a type checker the
-            # earlier broader overload already accepts every such call, and mypy flags
-            # the later one as unmatchable. Its documentation is preserved.
-            duplicate = next((entry for entry in rendered
-                              if _signature_subsumes(entry[0], signature)), None)
+            duplicate = next((entry for entry in rendered if entry[0] == signature), None)
             if duplicate is not None:
                 if doc_text and doc_text not in duplicate[1]:
                     duplicate[1] += '\n\n' + doc_text
                 continue
-            rendered.append([signature, doc_text])
+            # An overload fully subsumed by an earlier broader one (eg, the
+            # 'RotationModel.__init__(rotation_model)' convenience overload) is emitted
+            # *before* its subsumer: at runtime Boost.Python picks it by registration
+            # priority, but mypy rejects a subsumed overload that comes after the
+            # broader one ('will never be matched') while accepting narrower-first.
+            subsumer = next((position for position, entry in enumerate(rendered)
+                             if _signature_subsumes(entry[0], signature)), len(rendered))
+            rendered.insert(subsumer, [signature, doc_text])
 
         if prose_text:
             rendered[0][1] = prose_text + \
