@@ -218,7 +218,8 @@ _TOKEN_RE = re.compile(
     r"|``(?P<literal>[^`]+)``"
     r"|\*(?P<emph>[^*]+)\*"
     r"|(?P<word>[A-Za-z_][\w.]*)"
-    r"|(?P<punct>[()\[\],/])"
+    r"|(?P<punct>[()\[\],/|])"
+    r"|(?P<ellipsis>\.\.\.)"
     r"|(?P<period>\.)"
     r"|(?P<ws>\s+)"
     r"|(?P<other>\S)"
@@ -298,6 +299,13 @@ class TypeExpressionParser(object):
     'string/``os.PathLike``', 'callable (accepting single :class:`X` argument)',
     "named-tuple 'X'", 'ND numpy array ...', and placeholder glosses
     ('sequence of rings (where ring is ...)', 'tuple (point, float) where *point* is ...').
+
+    The markup-free style (the docstring type-field style guideline in
+    doc-python-api/PLAN.md) adds: bare and dotted identifiers resolved against the
+    module ('FiniteRotation', 'NetworkTriangulation.Triangle', enum values like
+    'PropertyReturn.exactly_one' standing for their enumeration type), Python bracket
+    generics 'list[X]', 'tuple[A, B]', 'tuple[X, ...]', 'dict[K, V]' (arbitrarily
+    nested, mixing with the prose forms), and '|' unions.
     """
 
     def __init__(self, generator):
@@ -407,11 +415,11 @@ class TypeExpressionParser(object):
         return self._make_union(items)
 
     def _consume_union_separator(self, stream):
-        # Union separators: ',' and/or 'or' (also '. Or' - a new sentence continuing the
-        # union). A bare trailing '.' (end of sentence) is consumed harmlessly, as is a
-        # ' - ...' commentary tail ('float - defaults to zero'). An 'if'/'depending'
-        # clause only qualifies *when* each alternative occurs, without changing the
-        # union - consumed up to the next top-level comma.
+        # Union separators: ',' and/or 'or' and '|' (also '. Or' - a new sentence
+        # continuing the union). A bare trailing '.' (end of sentence) is consumed
+        # harmlessly, as is a ' - ...' commentary tail ('float - defaults to zero'). An
+        # 'if'/'depending' clause only qualifies *when* each alternative occurs, without
+        # changing the union - consumed up to the next top-level comma.
         found = False
         while True:
             token = stream.peek()
@@ -421,7 +429,7 @@ class TypeExpressionParser(object):
             if kind == 'period':
                 stream.next()
                 continue
-            if kind == 'punct' and value == ',':
+            if kind == 'punct' and value in (',', '|'):
                 stream.next()
                 found = True
                 continue
@@ -659,6 +667,11 @@ class TypeExpressionParser(object):
 
     def _parse_list(self, stream, prior):
         stream.next()  # 'list'
+        if self._peek_punct(stream, '['):
+            arguments = self._parse_bracket_arguments(stream, prior)
+            if len(arguments) != 1:
+                raise TypeParseError('list[...] takes one element type')
+            return 'list[%s]' % arguments[0]
         if stream.peek_word() == 'of':
             stream.next()
             return 'list[%s]' % self._parse_of_target(stream, prior)
@@ -670,6 +683,12 @@ class TypeExpressionParser(object):
 
     def _parse_tuple(self, stream, prior):
         stream.next()  # 'tuple'
+        if self._peek_punct(stream, '['):
+            # 'tuple[A, B]' / homogeneous 'tuple[X, ...]'.
+            arguments = self._parse_bracket_arguments(stream, prior)
+            if not arguments:
+                raise TypeParseError('tuple[...] takes at least one element type')
+            return 'tuple[%s]' % ', '.join(arguments)
         if self._peek_punct(stream, '('):
             return self._parse_tuple_form(stream, prior)
         if stream.peek_word() == 'of':
@@ -710,6 +729,11 @@ class TypeExpressionParser(object):
 
     def _parse_dict(self, stream, prior):
         stream.next()  # 'dict'
+        if self._peek_punct(stream, '['):
+            arguments = self._parse_bracket_arguments(stream, prior)
+            if len(arguments) != 2:
+                raise TypeParseError('dict[...] takes key and value types')
+            return 'dict[%s, %s]' % (arguments[0], arguments[1])
         if stream.peek_word() == 'of':
             # 'a ``dict`` of scalar values' - a contents gloss in plain words, with no
             # machine-readable key/value types. Consume the words (stopping at anything
@@ -774,6 +798,37 @@ class TypeExpressionParser(object):
             self.parse_warnings.append(
                 "bare 'or %s' binds to the 'of' element - write ', or' if a top-level "
                 'alternative was intended' % follower)
+
+    def _parse_bracket_arguments(self, stream, prior=None):
+        # The Python generic form after a container word - 'list[X]', 'tuple[A, B]',
+        # 'tuple[X, ...]', 'dict[K, V]' - with ',' separating the arguments and '|' (or
+        # 'or') uniting alternatives within one argument. Nesting recurses naturally
+        # ('dict[K, list[V]]'). Returns the argument annotations in order.
+        stream.expect('punct', '[')
+        arguments = []
+        while True:
+            token = stream.peek()
+            if token is None:
+                raise TypeParseError('unterminated bracket form')
+            kind, value = token
+            if kind == 'punct' and value == ']':
+                stream.next()
+                return arguments
+            if kind == 'punct' and value == ',':
+                stream.next()
+                continue
+            if kind == 'ellipsis':
+                stream.next()
+                arguments.append('...')
+                continue
+            arguments.append(self._parse_bracket_argument(stream, prior))
+
+    def _parse_bracket_argument(self, stream, prior):
+        items = [self._parse_disjunct(stream, prior)]
+        while self._peek_punct(stream, '|') or stream.peek_word() == 'or':
+            stream.next()
+            items.append(self._parse_disjunct(stream, prior))
+        return self._make_union(items)
 
     def _parse_tuple_form(self, stream, prior=None):
         # '(A, B)' or '(A, B [, C])' (optional trailing elements, possibly nested) - the
@@ -858,14 +913,9 @@ class TypeExpressionParser(object):
                 return annotation
             # '``pygplates.ReconstructType.feature_geometry``' - a literal-quoted
             # enum member (or class) stands for its enumeration type.
-            dotted = text[len('pygplates.'):] if text.startswith('pygplates.') else text
-            resolved = self.generator.resolve_dotted(dotted)
-            if isinstance(resolved, type) and self.generator._is_pygplates_module(
-                    getattr(resolved, '__module__', '')):
-                return resolved.__qualname__
-            if resolved is not None and isinstance(resolved, int) and \
-                    self.generator.is_enum_class(type(resolved)):
-                return type(resolved).__qualname__
+            annotation = self._resolve_identifier(text)
+            if annotation is not None:
+                return annotation
             raise TypeParseError('unknown literal %r' % text)
 
         if kind == 'emph':
@@ -897,10 +947,15 @@ class TypeExpressionParser(object):
             if value.startswith('os.PathLike'):
                 self.generator.uses_os = True
                 return 'os.PathLike'
-            # A dotted pygplates name written without markup.
-            resolved = self.generator.resolve_dotted(value)
-            if isinstance(resolved, type):
-                return resolved.__qualname__
+            if value == 'numpy.ndarray':
+                self.generator.uses_numpy = True
+                return 'numpy.ndarray'
+            # A markup-free pygplates identifier: a class (including nested,
+            # 'NetworkTriangulation.Triangle') or an enum value
+            # ('PropertyReturn.exactly_one') standing for its enumeration type.
+            annotation = self._resolve_identifier(value)
+            if annotation is not None:
+                return annotation
             raise TypeParseError('unknown word %r' % value)
 
         raise TypeParseError('unexpected token %r' % (token,))
@@ -908,14 +963,28 @@ class TypeExpressionParser(object):
     def _resolve_emphasis(self, text):
         # Emphasised enum members ('*PropertyReturn.exactly_one*') and enumeration class
         # names ('*PartitionMethod*', '*CrossoverType*') both stand for their type.
-        resolved = self.generator.resolve_dotted(text.strip())
+        annotation = self._resolve_identifier(text)
+        if annotation is None:
+            raise TypeParseError('unknown emphasis %r' % text)
+        return annotation
+
+    def _resolve_identifier(self, text):
+        """
+        The annotation for a (possibly dotted) pygplates identifier: a class resolves to
+        its qualified name, an enum *value* to its enumeration type's. None if 'text'
+        does not resolve (or resolves to something foreign to pygplates).
+        """
+        text = text.strip()
+        if text.startswith('pygplates.'):
+            text = text[len('pygplates.'):]
+        resolved = self.generator.resolve_dotted(text)
         if isinstance(resolved, type) and self.generator._is_pygplates_module(
                 getattr(resolved, '__module__', '')):
             return resolved.__qualname__
         if resolved is not None and isinstance(resolved, int) and \
                 self.generator.is_enum_class(type(resolved)):
             return type(resolved).__qualname__
-        raise TypeParseError('unknown emphasis %r' % text)
+        return None
 
     def _parse_role(self, token):
         role_name, role_text = token[1]
