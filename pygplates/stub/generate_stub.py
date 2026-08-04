@@ -875,11 +875,17 @@ class TypeExpressionParser(object):
         self.generator.uses_callable = True
         parameters = []
         if self._peek_punct(stream, '('):
-            # Eg, '(accepting single :class:`Property` argument)' - the parameter types
-            # are the class roles mentioned inside the parentheses, in order.
+            # Eg, '(accepting single :class:`Property` argument)' - or, markup-free,
+            # '(accepting single Property argument)' - the parameter types are the
+            # class roles and resolvable identifiers mentioned inside the parentheses,
+            # in order (the surrounding English words do not resolve).
             for kind, value in self._collect_paren_group(stream):
                 if kind == 'role':
                     parameters.append(self._parse_role((kind, value)))
+                elif kind == 'word':
+                    annotation = self._resolve_identifier(value)
+                    if annotation is not None:
+                        parameters.append(annotation)
         elif stream.peek_word() == 'accepting':
             # The unparenthesised form: 'a callable accepting a single ... argument'.
             self._consume_condition_clause(stream)
