@@ -1173,7 +1173,7 @@ def get_shapefile_attributes(feature, default=None):
     (if not specified then it *default* defaults to ``None``)
     :type default: dict or None
     :returns: all shapefile attributes, otherwise *default* if no shapefile attributes exist
-    :rtype: dict or type(default) or None
+    :rtype: dict[str, int | float | str], or type(default), or None
     
     Shapefile attributes are stored in a :class:`GpmlKeyValueDictionary` property named
     `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_
@@ -1283,8 +1283,8 @@ def get_total_reconstruction_pole(feature):
     """get_total_reconstruction_pole()
     Returns the *time-dependent* total reconstruction pole of this feature.
     
-    :rtype: tuple(int, int, GpmlIrregularSampling) or None
-    :return: A tuple containing (fixed plate id, moving plate id, time sequence of finite rotations) or None
+    :returns: a tuple containing (fixed plate id, moving plate id, time sequence of finite rotations), or ``None``
+    :rtype: tuple[int, int, GpmlIrregularSampling], or None
     
     This is a convenience method that wraps :meth:`get_value` for the common properties
     `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_,

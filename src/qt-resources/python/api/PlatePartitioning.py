@@ -138,9 +138,11 @@ def plate_partitioner_partition_features(
         (defaults to *PartitionReturn.combined_partitioned_and_unpartitioned*)
     :type partition_return: a PartitionReturn enumeration value (see table below)
     
-    :returns: the partitioned and unpartitioned features \
+    :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
+        (see table below) \
         (**note:** new features are always returned, never the originals passed in via *features*)
-    :rtype: depends on partition_return (see table below)
+    :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
+        tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
     
     The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the
@@ -562,9 +564,11 @@ def partition_into_plates(
         (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
     :type sort_partitioning_plates: a SortPartitioningPlates enumeration value (see table below), or None
     
-    :returns: the partitioned and unpartitioned features \
+    :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
+        (see table below) \
         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
-    :rtype: depends on partition_return (see table below)
+    :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
+        tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
     
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the

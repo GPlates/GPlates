@@ -119,8 +119,9 @@ def geometry_on_sphere_to_lat_lon_array(geometry):
     """to_lat_lon_array()
     Returns the sequence of points, in this geometry, as a numpy array of (latitude,longitude) pairs (in degrees).
     
-    :returns: an array of (latitude,longitude) pairs (in degrees)
-    :rtype: 2D numpy array with number of points as outer dimension and an inner dimension of two
+    :returns: a 2D array of (latitude,longitude) pairs (in degrees), with the number of points as the
+              outer dimension and an inner dimension of two
+    :rtype: numpy.ndarray
     
     .. warning:: This method should only be called if the ``numpy`` module is available.
     
@@ -197,8 +198,9 @@ def geometry_on_sphere_to_xyz_array(geometry):
     """to_xyz_array()
     Returns the sequence of points, in this geometry, as a numpy array of (x,y,z) triplets.
     
-    :returns: an array of (x,y,z) triplets
-    :rtype: 2D numpy array with number of points as outer dimension and an inner dimension of three
+    :returns: a 2D array of (x,y,z) triplets, with the number of points as the outer dimension and
+              an inner dimension of three
+    :rtype: numpy.ndarray
     
     .. warning:: This method should only be called if the ``numpy`` module is available.
     

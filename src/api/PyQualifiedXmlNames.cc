@@ -208,7 +208,7 @@ export_qualified_xml_name(
 			"\n"
 			"  :param name: qualified name\n"
 			"  :type name: string\n"
-			"  :rtype: :class:`" << class_name << "` or None\n"
+			"  :rtype: " << class_name << ", or None\n"
 			"\n"
 			"  The name string should have a ``:`` character separating the namespace alias from the unqualified name, "
 			"for example ``" << example_qualified_name

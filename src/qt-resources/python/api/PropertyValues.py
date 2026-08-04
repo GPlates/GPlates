@@ -413,8 +413,8 @@ def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampli
     :type time: float or GeoTimeInstant
     :param include_disabled_samples: if True then disabled time samples are included in the search
     :type include_disabled_samples: bool
-    :rtype: the tuple (GpmlTimeSample, GpmlTimeSample), or None
-    :return: the two time samples surrounding *time*, or None
+    :returns: the two time samples surrounding *time*, or ``None``
+    :rtype: tuple[GpmlTimeSample, GpmlTimeSample], or None
 
     Returns ``None`` if *time* is outside the range of times (later than the most recent time sample
     or earlier than the least recent time sample).

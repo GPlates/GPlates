@@ -884,7 +884,7 @@ export_rotation_model()
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` "
 				"for missing plate ids (default is to use identity rotation)\n"
 				"  :type use_identity_for_missing_plate_ids: bool\n"
-				"  :rtype: FiniteRotation, or None (if use_identity_for_missing_plate_ids is False)\n"
+				"  :rtype: FiniteRotation, or None\n"
 				"  :raises: InterpolationError if any time value is "
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"

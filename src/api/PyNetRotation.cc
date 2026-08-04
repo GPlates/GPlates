@@ -1068,7 +1068,7 @@ export_net_rotation()
 				"  :returns: If *resolved_topology* is specified then returns the :class:`NetRotation` of that resolved topology boundary or network "
 				"(or ``None`` if *resolved_topology* does **not contribute net rotation**). Otherwise returns a ``dict`` mapping each "
 				":class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` that **contributes net rotation** to its :class:`NetRotation`.\n"
-				"  :rtype: NetRotation or None, or dict\n"
+				"  :rtype: NetRotation, or dict[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork, NetRotation], or None\n"
 				"  :raises: ValueError if *resolved_topology* is specified but is neither a :class:`ResolvedTopologicalBoundary` nor a :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
 				"  .. note:: Any resolved boundary or network that did not intersect any sample points (see *point_distribution* in :meth:`__init__`) will **not contribute net rotation**. "
