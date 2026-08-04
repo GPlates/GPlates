@@ -340,10 +340,7 @@ export_vector_3d()
 				&GPlatesApi::vector_angle_between,
 				(bp::arg("vector1"), bp::arg("vector2")),
 				"angle_between(vector1, vector2)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns the angle between two vectors (in radians).\n"
+				"  Returns the angle between two vectors (in radians).\n"
 				"\n"
 				"  :param vector1: the first vector\n"
 				"  :type vector1: Vector3D, or sequence (such as list or tuple) of (float,float,float)\n"
@@ -384,10 +381,7 @@ export_vector_3d()
 				&GPlatesApi::vector_dot,
 				(bp::arg("vector1"), bp::arg("vector2")),
 				"dot(vector1, vector2)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns the dot product of two vectors.\n"
+				"  Returns the dot product of two vectors.\n"
 				"\n"
 				"  :param vector1: the first vector\n"
 				"  :type vector1: Vector3D, or sequence (such as list or tuple) of (float,float,float)\n"
@@ -421,10 +415,7 @@ export_vector_3d()
 				&GPlatesApi::vector_cross,
 				(bp::arg("vector1"), bp::arg("vector2")),
 				"cross(vector1, vector2)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns the cross product of two vectors.\n"
+				"  Returns the cross product of two vectors.\n"
 				"\n"
 				"  :param vector1: the first vector\n"
 				"  :type vector1: Vector3D, or sequence (such as list or tuple) of (float,float,float)\n"
@@ -459,10 +450,7 @@ export_vector_3d()
 				(bp::arg("xyz")),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				"create_normalised(...)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"[*staticmethod*] Returns a new vector that is a normalised (unit length) version of another.\n"
+				"Returns a new vector that is a normalised (unit length) version of another.\n"
 				"\n"
 				"This function can be called in more than one way...\n"
 				"\n"
@@ -515,10 +503,7 @@ export_vector_3d()
 				&GPlatesApi::vector_get_normalised,
 				(bp::arg("vector")),
 				"create_normalized(...)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"[*staticmethod*] See :meth:`create_normalised`.\n")
+				"See :meth:`create_normalised`.\n")
 		.def("create_normalized",
 				&GPlatesApi::vector_get_normalised_from_xyz,
 				(bp::arg("x"), bp::arg("y"), bp::arg("z")),

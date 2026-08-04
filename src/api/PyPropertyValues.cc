@@ -4592,10 +4592,7 @@ export_gpml_topological_section()
 					bp::arg("reverse_order") = false,
 					bp::arg("topological_geometry_type") = boost::optional<GPlatesPropertyValues::StructuralType>()),
 			"create(feature, [geometry_property_name], [reverse_order], [topological_geometry_type])\n"
-			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-			// (like it can a pure python function) and we cannot document it in first (signature) line
-			// because it messes up Sphinx's signature recognition...
-			"  [*staticmethod*] Create a topological section referencing a feature geometry.\n"
+			"  Create a topological section referencing a feature geometry.\n"
 			"\n"
 			"  :param feature: the feature referenced by the returned topological section\n"
 			"  :type feature: Feature\n"
@@ -4661,10 +4658,7 @@ export_gpml_topological_section()
 			(bp::arg("feature"),
 					bp::arg("geometry_property_name") = boost::optional<GPlatesModel::PropertyName>()),
 			"create_network_interior(feature, [geometry_property_name])\n"
-			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-			// (like it can a pure python function) and we cannot document it in first (signature) line
-			// because it messes up Sphinx's signature recognition...
-			"  [*staticmethod*] Create a topological network interior referencing a feature geometry.\n"
+			"  Create a topological network interior referencing a feature geometry.\n"
 			"\n"
 			"  :param feature: the feature referenced by the returned network interior\n"
 			"  :type feature: Feature\n"

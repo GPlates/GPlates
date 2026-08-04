@@ -546,10 +546,7 @@ export_finite_rotation()
 		.def("create_identity_rotation",
 				&GPlatesApi::finite_rotation_create_identity_rotation,
 				"create_identity_rotation()\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Creates a finite rotation that does not rotate (it maps a vector onto the same vector).\n"
+				"  Creates a finite rotation that does not rotate (it maps a vector onto the same vector).\n"
 				"\n"
 				"  :rtype: FiniteRotation\n"
 				"\n"
@@ -571,10 +568,7 @@ export_finite_rotation()
 		.def("create_great_circle_point_rotation",
 				&GPlatesApi::finite_rotation_create_great_circle_point_rotation,
 				"create_great_circle_point_rotation(from_point, to_point)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a finite rotation that rotates one point to another along the "
+				"  Create a finite rotation that rotates one point to another along the "
 				"great circle arc connecting them.\n"
 				"\n"
 				"  :param from_point: the point to rotate *from*\n"
@@ -600,10 +594,7 @@ export_finite_rotation()
 		.def("create_small_circle_point_rotation",
 				&GPlatesApi::finite_rotation_create_small_circle_point_rotation,
 				"create_small_circle_point_rotation(rotation_pole, from_point, to_point)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a finite rotation, using the specified rotation pole, that rotates "
+				"  Create a finite rotation, using the specified rotation pole, that rotates "
 				"*from_point* to *to_point*.\n"
 				"\n"
 				"  :param rotation_pole: the rotation pole to rotate around\n"
@@ -634,10 +625,7 @@ export_finite_rotation()
 		.def("create_segment_rotation",
 				&GPlatesApi::finite_rotation_create_segment_rotation,
 				"create_segment_rotation(from_segment_start, from_segment_end, to_segment_start, to_segment_end)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a finite rotation that rotates the *from* line segment to the *to* line segment.\n"
+				"  Create a finite rotation that rotates the *from* line segment to the *to* line segment.\n"
 				"\n"
 				"  :param from_segment_start: the start point of the segment to rotate *from*\n"
 				"  :type from_segment_start: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
@@ -688,10 +676,7 @@ export_finite_rotation()
 				&GPlatesApi::finite_rotation_represent_equivalent_rotations,
 				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
 				"are_equivalent(finite_rotation1, finite_rotation2)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return whether two finite rotations represent equivalent rotations.\n"
+				"  Return whether two finite rotations represent equivalent rotations.\n"
 				"\n"
 				"  :param finite_rotation1: the first finite rotation\n"
 				"  :type finite_rotation1: FiniteRotation\n"
@@ -727,10 +712,7 @@ export_finite_rotation()
 						bp::arg("finite_rotation2"),
 						bp::arg("threshold_degrees") = boost::optional<double>()),
 				"are_equal(finite_rotation1, finite_rotation2, [threshold_degrees])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return whether two finite rotations have equal pole "
+				"  Return whether two finite rotations have equal pole "
 				"latitude, longitude and angle to within a threshold in degrees.\n"
 				"\n"
 				"  :param finite_rotation1: the first finite rotation\n"
@@ -764,10 +746,7 @@ export_finite_rotation()
 				compose,
 				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
 				"compose(finite_rotation1, finite_rotation2)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Composes two finite rotations and returns the composed finite rotation.\n"
+				"  Composes two finite rotations and returns the composed finite rotation.\n"
 				"\n"
 				"  :param finite_rotation1: the left-hand-side finite rotation\n"
 				"  :type finite_rotation1: FiniteRotation\n"
@@ -793,10 +772,7 @@ export_finite_rotation()
 					bp::arg("time2"),
 					bp::arg("target_time")),
 				"interpolate(finite_rotation1, finite_rotation2, time1, time2, target_time)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Calculate the finite rotation which is the interpolation of two finite rotations.\n"
+				"  Calculate the finite rotation which is the interpolation of two finite rotations.\n"
 				"\n"
 				"  :param finite_rotation1: the left-hand-side finite rotation\n"
 				"  :type finite_rotation1: FiniteRotation\n"

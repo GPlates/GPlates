@@ -799,10 +799,7 @@ export_version()
 		.def("get_imported_version",
 				&GPlatesApi::Version::get_imported_version,
 				"get_imported_version()\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return the version of the imported pyGPlates library.\n"
+				"  Return the version of the imported pyGPlates library.\n"
 				"\n"
 				"  :returns: a Version instance representing the version of the imported pyGPlates library\n"
 				"  :rtype: Version\n"

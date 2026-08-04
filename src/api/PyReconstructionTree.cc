@@ -778,10 +778,7 @@ export_reconstruction_tree()
 					bp::arg("use_identity_for_missing_plate_ids")=true),
 				"get_equivalent_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, plate_id"
 				", [use_identity_for_missing_plate_ids=True])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return the finite rotation that rotates from the *anchored* plate to plate *plate_id* "
+				"  Return the finite rotation that rotates from the *anchored* plate to plate *plate_id* "
 				"and from the time of *from_reconstruction_tree* to the time of *to_reconstruction_tree*.\n"
 				"\n"
 				"  :param from_reconstruction_tree: the reconstruction tree created for the *from* time\n"
@@ -849,10 +846,7 @@ export_reconstruction_tree()
 					bp::arg("use_identity_for_missing_plate_ids")=true),
 				"get_relative_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, "
 				"moving_plate_id, fixed_plate_id, [use_identity_for_missing_plate_ids])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
+				"  Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
 				"plate and from the time of *from_reconstruction_tree* to the time of *to_reconstruction_tree*.\n"
 				"\n"
 				"  :param from_reconstruction_tree: the reconstruction tree created for the *from* time\n"

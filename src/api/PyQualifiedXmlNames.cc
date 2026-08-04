@@ -201,10 +201,7 @@ export_qualified_xml_name(
 	std::stringstream from_qualified_string_docstring_stream;
 	from_qualified_string_docstring_stream <<
 			"create_from_qualified_string(name)\n"
-			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-			// (like it can a pure python function) and we cannot document it in first (signature) line
-			// because it messes up Sphinx's signature recognition...
-			"  [*staticmethod*] Creates a :class:`" << class_name << "` instance from a fully qualified name string.\n"
+			"  Creates a :class:`" << class_name << "` instance from a fully qualified name string.\n"
 			"\n"
 			"  :param name: qualified name\n"
 			"  :type name: string\n"
@@ -255,10 +252,7 @@ export_enumeration_type()
 	enumeration_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::EnumerationType>,
 			"create_gpml(name)\n"
-			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-			// (like it can a pure python function) and we cannot document it in first (signature) line
-			// because it messes up Sphinx's signature recognition...
-			"  [*staticmethod*] Create an enumeration type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
+			"  Create an enumeration type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 			"\n"
 			"  :param name: unqualified name\n"
 			"  :type name: string\n"
@@ -469,10 +463,7 @@ export_feature_type()
 	feature_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::FeatureType>,
 			"create_gpml(name)\n"
-			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-			// (like it can a pure python function) and we cannot document it in first (signature) line
-			// because it messes up Sphinx's signature recognition...
-			"  [*staticmethod*] Create a feature type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
+			"  Create a feature type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 			"\n"
 			"  :param name: unqualified name\n"
 			"  :type name: string\n"
@@ -726,10 +717,7 @@ export_property_name()
 	property_name_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::PropertyName>,
 				"create_gpml(name)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a property name qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
+				"  Create a property name qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -742,10 +730,7 @@ export_property_name()
 	property_name_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesModel::PropertyName>,
 				"create_gml(name)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a property name qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
+				"  Create a property name qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -758,10 +743,7 @@ export_property_name()
 	property_name_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesModel::PropertyName>,
 				"create_xsi(name)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a property name qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
+				"  Create a property name qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -834,10 +816,7 @@ export_scalar_type()
 	scalar_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::ValueObjectType>,
 				"create_gpml(name)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a scalar type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
+				"  Create a scalar type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -850,10 +829,7 @@ export_scalar_type()
 	scalar_type_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesPropertyValues::ValueObjectType>,
 				"create_gml(name)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a scalar type qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
+				"  Create a scalar type qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -862,10 +838,7 @@ export_scalar_type()
 	scalar_type_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesPropertyValues::ValueObjectType>,
 				"create_xsi(name)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a scalar type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
+				"  Create a scalar type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -1078,10 +1051,7 @@ export_structural_type()
 	structural_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::StructuralType>,
 				"create_gpml(name)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a structural type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
+				"  Create a structural type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -1094,10 +1064,7 @@ export_structural_type()
 	structural_type_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesPropertyValues::StructuralType>,
 				"create_gml(name)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a structural type qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
+				"  Create a structural type qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
@@ -1110,10 +1077,7 @@ export_structural_type()
 	structural_type_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesPropertyValues::StructuralType>,
 				"create_xsi(name)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a structural type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
+				"  Create a structural type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"

@@ -696,10 +696,7 @@ export_strain()
 				&GPlatesAppLogic::accumulate_strain,
 				(bp::arg("previous_strain"), bp::arg("previous_strain_rate"), bp::arg("current_strain_rate"), bp::arg("time_increment")),
 				"accumulate(previous_strain, previous_strain_rate, current_strain_rate, time_increment)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Accumulate previous strain using both previous and current strain rates (in units of :math:`second^{-1}`) "
+				"  Accumulate previous strain using both previous and current strain rates (in units of :math:`second^{-1}`) "
 				"over a time increment (in units of :math:`second`).\n"
 				"\n"
 				"  :param previous_strain: the *previous* strain\n"

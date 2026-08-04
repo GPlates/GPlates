@@ -83,11 +83,6 @@ _SKIP_CLASS_ATTRS = frozenset([
     '__reduce__',
 ])
 
-# The '[*staticmethod*] ' marker manually written into docstrings (Sphinx cannot detect
-# Boost.Python staticmethods). The stub relies on the real staticmethod descriptor instead,
-# and strips the marker from the embedded documentation.
-_STATICMETHOD_MARKER_RE = re.compile(r'\[\*staticmethod\*\] ?')
-
 # A column-0 docstring signature line: 'name(args)'.
 _SIG_LINE_RE = re.compile(r'^(\w+)\((.*)\)\s*$')
 
@@ -1239,7 +1234,7 @@ def _dedent_convention(lines):
 def _clean_docstring_text(lines, dedent=True):
     if dedent:
         lines = _dedent_convention(lines)
-    lines = [_STATICMETHOD_MARKER_RE.sub('', line).rstrip() for line in lines]
+    lines = [line.rstrip() for line in lines]
     # Strip leading/trailing blank lines.
     while lines and not lines[0]:
         lines.pop(0)
@@ -1348,7 +1343,7 @@ class StubGenerator(object):
     def _alias_target(body_lines):
         """The method name a block delegates to, or None if it is not a delegation."""
         for line in body_lines:
-            line = _STATICMETHOD_MARKER_RE.sub('', line).strip()
+            line = line.strip()
             if not line:
                 continue  # eg, 'Version.get_prerelease_suffix' has a leading blank line
             match = _ALIAS_RE.match(line)
@@ -1412,7 +1407,7 @@ class StubGenerator(object):
         return 'None'
 
     def _note_void_return(self, qualified, body_lines):
-        lines = [_STATICMETHOD_MARKER_RE.sub('', line).strip() for line in body_lines]
+        lines = [line.strip() for line in body_lines]
         summary = next((line for line in lines if line), '')
         if _RETURNS_PROSE_RE.match(summary) or \
                 any(line.startswith(':returns:') or '**Return type**' in line

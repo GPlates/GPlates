@@ -406,10 +406,7 @@ export_geometry_on_sphere()
 				"distance(geometry1, geometry2, [distance_threshold_radians], "
 				"[return_closest_positions=False], [return_closest_indices=False], "
 				"[geometry1_is_solid=False], [geometry2_is_solid=False])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns the (minimum) distance between two geometries (in radians).\n"
+				"  Returns the (minimum) distance between two geometries (in radians).\n"
 				"\n"
 				"  :param geometry1: the first geometry\n"
 				"  :type geometry1: GeometryOnSphere\n"
@@ -2413,10 +2410,7 @@ export_polyline_on_sphere()
 				"[maximum_distance_threshold_radians], "
 				"[flatten_longitude_overlaps=FlattenLongitudeOverlaps.no], "
 				"[polyline_conversion=PolylineConversion.ignore_non_polyline])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Interpolates between two polylines about a rotation pole.\n"
+				"  Interpolates between two polylines about a rotation pole.\n"
 				"\n"
 				"  :param from_polyline: the polyline to interpolate *from*\n"
 				"  :type from_polyline: GeometryOnSphere\n"

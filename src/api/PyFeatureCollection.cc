@@ -890,10 +890,7 @@ export_feature_collection()
 				&GPlatesApi::feature_collection_handle_read,
 				(bp::arg("filename")),
 				"read(filename)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Reads one or more feature collections (from one or more files).\n"
+				"  Reads one or more feature collections (from one or more files).\n"
 				"\n"
 				"  :param filename: the name of the file (or files) to read\n"
 				"  :type filename: string/os.PathLike, or sequence of string/os.PathLike\n"

@@ -780,10 +780,7 @@ export_net_rotation()
 					bp::arg("finite_rotation"),
 					bp::arg("time_interval") = 1.0),
 				"create_sample_from_finite_rotation(point, sample_area, finite_rotation, [time_interval=1.0])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Creates a net rotation contribution from a finite rotation at a point sample.\n"
+				"  Creates a net rotation contribution from a finite rotation at a point sample.\n"
 				"\n"
 				"  :param point: The point that contributes to net rotation.\n"
 				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
@@ -825,10 +822,7 @@ export_net_rotation()
 					bp::arg("sample_area"),
 					bp::arg("rotation_rate_vector")),
 				"create_sample_from_rotation_rate(point, sample_area, rotation_rate_vector)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Creates a net rotation contribution from a rotation rate vector at a point sample.\n"
+				"  Creates a net rotation contribution from a rotation rate vector at a point sample.\n"
 				"\n"
 				"  :param point: The point that contributes to net rotation.\n"
 				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
@@ -845,10 +839,7 @@ export_net_rotation()
 				(bp::arg("finite_rotation"),
 					bp::arg("time_interval") = 1.0),
 				"convert_finite_rotation_to_rotation_rate_vector(finite_rotation, [time_interval=1.0])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Convert a :class:`finite rotation<FiniteRotation>` over a time interval to a rotation rate vector (with magnitude in radians per Myr).\n"
+				"  Convert a :class:`finite rotation<FiniteRotation>` over a time interval to a rotation rate vector (with magnitude in radians per Myr).\n"
 				"\n"
 				"  :param finite_rotation: The finite rotation over the specified time interval.\n"
 				"  :type finite_rotation: FiniteRotation\n"
@@ -866,10 +857,7 @@ export_net_rotation()
 				(bp::arg("rotation_rate_vector"),
 					bp::arg("time_interval") = 1.0),
 				"convert_rotation_rate_vector_to_finite_rotation(rotation_rate_vector, [time_interval=1.0])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Convert a rotation rate vector (with magnitude in radians per Myr) to a :class:`finite rotation<FiniteRotation>` over a time interval.\n"
+				"  Convert a rotation rate vector (with magnitude in radians per Myr) to a :class:`finite rotation<FiniteRotation>` over a time interval.\n"
 				"\n"
 				"  :param rotation_rate_vector: The rotation rate vector (with magnitude in radians per Myr).\n"
 				"  :type rotation_rate_vector: Vector3D\n"

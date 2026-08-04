@@ -594,10 +594,7 @@ export_feature_collection_function_argument()
 				&GPlatesApi::FeaturesFunctionArgument::contains_features,
 				(bp::arg("function_argument")),
 				"contains_features(function_argument)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return whether *function_argument* contains features.\n"
+				"  Return whether *function_argument* contains features.\n"
 				"\n"
 				"  :param function_argument: the function argument to test for features\n"
 				"  :type function_argument: any\n"

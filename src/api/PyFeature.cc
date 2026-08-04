@@ -4104,10 +4104,7 @@ export_feature()
 				"create_total_reconstruction_sequence(fixed_plate_id, moving_plate_id, total_reconstruction_pole, "
 				"[name], [description], [other_properties], [feature_id], "
 				"[verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a rotation feature for a fixed/moving plate pair.\n"
+				"  Create a rotation feature for a fixed/moving plate pair.\n"
 				"\n"
 				"  :param fixed_plate_id: the fixed plate id\n"
 				"  :type fixed_plate_id: int\n"
@@ -4172,10 +4169,7 @@ export_feature()
 				"create_reconstructable_feature(feature_type, geometry, [name], [description], [valid_time], "
 				"[reconstruction_plate_id], [conjugate_plate_id], [other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a reconstructable feature.\n"
+				"  Create a reconstructable feature.\n"
 				"\n"
 				"  :param feature_type: the type of feature to create\n"
 				"  :type feature_type: FeatureType\n"
@@ -4351,10 +4345,7 @@ export_feature()
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_topological_feature(feature_type, topological_geometry, [name], [description], [valid_time], "
 				"[other_properties], [feature_id], [verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a topological feature.\n"
+				"  Create a topological feature.\n"
 				"\n"
 				"  :param feature_type: the type of feature to create\n"
 				"  :type feature_type: FeatureType\n"
@@ -4435,10 +4426,7 @@ export_feature()
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_topological_network_feature(topological_network_geometry, [network_feature_type=pygplates.FeatureType.gpml_topological_network], "
 				"[name], [description], [valid_time], [rift_parameters], [other_properties], [feature_id], [verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a topological *network* feature.\n"
+				"  Create a topological *network* feature.\n"
 				"\n"
 				"  :param topological_network_geometry: the topological *network* geometry\n"
 				"  :type topological_network_geometry: GpmlTopologicalNetwork\n"
@@ -4537,10 +4525,7 @@ export_feature()
 				"[reconstruction_plate_id], [conjugate_plate_id], [left_plate], [right_plate], [reconstruction_method], "
 				"[other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a tectonic section feature.\n"
+				"  Create a tectonic section feature.\n"
 				"\n"
 				"  :param feature_type: the type of feature to create\n"
 				"  :type feature_type: FeatureType\n"
@@ -4689,10 +4674,7 @@ export_feature()
 				"create_flowline(seed_geometry, times, [name], [description], [valid_time], "
 				"[left_plate], [right_plate], [other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a flowline feature.\n"
+				"  Create a flowline feature.\n"
 				"\n"
 				"  :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry "
 				"is not present-day geometry then the created feature will need to be reverse reconstructed "
@@ -4819,10 +4801,7 @@ export_feature()
 				"create_motion_path(seed_geometry, times, [name], [description], [valid_time], "
 				"[relative_plate], [reconstruction_plate_id], [other_properties], [feature_id], "
 				"[reverse_reconstruct], [verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a motion path feature.\n"
+				"  Create a motion path feature.\n"
 				"\n"
 				"  :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry "
 				"is not present-day geometry then the created feature will need to be reverse reconstructed "

@@ -493,10 +493,7 @@ export_local_cartesian()
 				(bp::arg("local_origins"), bp::arg("vectors")),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				"convert_from_geocentric_to_north_east_down(...)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"[*staticmethod*] Converts a geocentric vector (or vectors) to a cartesian vector (or vectors) "
+				"Converts a geocentric vector (or vectors) to a cartesian vector (or vectors) "
 				"in a local North/East/Down coordinate system (or systems).\n"
 				"\n"
 				"This function can be called in more than one way...\n"
@@ -630,10 +627,7 @@ export_local_cartesian()
 				(bp::arg("local_origins"), bp::arg("vectors")),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				"convert_from_north_east_down_to_geocentric(...)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"[*staticmethod*] Converts a cartesian vector (or vectors) in a local North/East/Down "
+				"Converts a cartesian vector (or vectors) in a local North/East/Down "
 				"coordinate system (or systems) to a geocentric vector (or vectors).\n"
 				"\n"
 				"This function can be called in more than one way...\n"
@@ -767,10 +761,7 @@ export_local_cartesian()
 				(bp::arg("local_origins"), bp::arg("vectors")),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				"convert_from_geocentric_to_magnitude_azimuth_inclination(...)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"[*staticmethod*] Converts a geocentric vector (or vectors) to spherical coordinates in a "
+				"Converts a geocentric vector (or vectors) to spherical coordinates in a "
 				"local North/East/Down coordinate system (or systems).\n"
 				"\n"
 				"This function can be called in more than one way...\n"
@@ -905,10 +896,7 @@ export_local_cartesian()
 				(bp::arg("local_origins"), bp::arg("local_coordinates")),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				"convert_from_magnitude_azimuth_inclination_to_geocentric(...)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"[*staticmethod*] Converts a local North/East/Down tuple (or tuples) of spherical coordinates to "
+				"Converts a local North/East/Down tuple (or tuples) of spherical coordinates to "
 				"a cartesian geocentric vector (or vectors).\n"
 				"\n"
 				"This function can be called in more than one way...\n"
