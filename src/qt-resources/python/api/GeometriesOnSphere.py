@@ -28,7 +28,7 @@ def geometry_on_sphere_get_points(geometry):
     """get_points()
     Returns a *read-only* sequence of :class:`points<PointOnSphere>` in this geometry.
     
-    :rtype: a read-only sequence of :class:`PointOnSphere`
+    :rtype: a read-only sequence of PointOnSphere
     
     The following operations for accessing the points in the returned read-only sequence are supported:
     
@@ -154,7 +154,7 @@ def geometry_on_sphere_to_lat_lon_point_list(geometry):
     """to_lat_lon_point_list()
     Returns the sequence of points, in this geometry, as :class:`lat lon points<LatLonPoint>`.
     
-    :rtype: list of :class:`LatLonPoint`
+    :rtype: list of LatLonPoint
     
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
@@ -265,17 +265,17 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
     Joins geometries that have end points closer than a distance threshold.
     
     :param geometries: the geometries to join
-    :type geometries: sequence (eg, ``list`` or ``tuple``) of :class:`GeometryOnSphere`
+    :type geometries: sequence (eg, list or tuple) of GeometryOnSphere
     :param distance_threshold_radians: optional closeness distance threshold in radians for joining to occur \
     (if not specified then end point *equality* is used)
     :type distance_threshold_radians: float
     :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore \
     those geometries in *geometries* that are not :class:`PolylineOnSphere` - defaults to \
     *PolylineConversion.ignore_non_polyline*
-    :type polyline_conversion: *PolylineConversion.convert_to_polyline*, *PolylineConversion.ignore_non_polyline* \
-    or *PolylineConversion.raise_if_non_polyline*
+    :type polyline_conversion: PolylineConversion.convert_to_polyline, PolylineConversion.ignore_non_polyline \
+    or PolylineConversion.raise_if_non_polyline
     :returns: a list of joined polylines
-    :rtype: list of :class:`PolylineOnSphere`
+    :rtype: list of PolylineOnSphere
     :raises: GeometryTypeError if *polyline_conversion* is *PolylineConversion.raise_if_non_polyline* and \
     any geometry in *geometries* is not a :class:`PolylineOnSphere`
     

@@ -203,8 +203,8 @@ def find_crossovers(
     :param rotation_features: A rotation feature collection, or rotation filename, or \
         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
         of any combination of those four types
-    :type rotation_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
-        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    :type rotation_features: FeatureCollection, or string/os.PathLike, or Feature, \
+        or sequence of Feature, or sequence of any combination of those four types
     
     :param crossover_filter: A predicate function to determine which crossovers to return
     :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or None
@@ -212,7 +212,7 @@ def find_crossovers(
     :param crossover_type_function: A function that determines a crossover's type, or one of the \
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value
+    :type crossover_type_function: a callable, or a CrossoverType enumerated value
     
     :returns: A time-sorted list, from most recent (youngest) to least recent (oldest), of crossover named-tuple 'Crossover' (see table below)
     :rtype: list of named-tuple 'Crossover'
@@ -521,8 +521,8 @@ def synchronise_crossovers(
     :param rotation_features: A rotation feature collection, or rotation filename, or \
         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
         of any combination of those four types - all features are used as input and output
-    :type rotation_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
-        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    :type rotation_features: FeatureCollection, or string/os.PathLike, or Feature, \
+        or sequence of Feature, or sequence of any combination of those four types
     
     :param crossover_filter: Optional predicate function (accepting a single crossover argument) that determines \
         which crossovers (in *rotation_features*) to synchronise, or an optional sequence of crossovers (in any order) to \
@@ -539,8 +539,8 @@ def synchronise_crossovers(
     :param crossover_type_function: A function that determines a crossover's type, or one of the \
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value, \
-        or can also be None if *crossover_filter* is a sequence (since it then gets ignored)
+    :type crossover_type_function: a callable, or a CrossoverType enumerated value, \
+        or can also be None if crossover_filter is a sequence (since it then gets ignored)
     
     :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered \
         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or \

@@ -805,7 +805,7 @@ export_version()
 				"  [*staticmethod*] Return the version of the imported pyGPlates library.\n"
 				"\n"
 				"  :returns: a Version instance representing the version of the imported pyGPlates library\n"
-				"  :rtype: :class:`Version`\n"
+				"  :rtype: Version\n"
 				"\n"
 				"  To get the imported version:\n"
 				"  ::\n"

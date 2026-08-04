@@ -214,7 +214,7 @@ export_lat_lon_point()
 				"to_point_on_sphere()\n"
 				"  Returns the cartesian coordinates as a :class:`PointOnSphere`.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n")
+				"  :rtype: PointOnSphere\n")
 		.def("to_xyz",
 				&GPlatesApi::lat_lon_point_to_xyz,
 				"to_xyz()\n"
@@ -263,8 +263,8 @@ export_lat_lon_point()
 			"  Converts a 2D latitude/longitude point to a 3D cartesian point.\n"
 			"\n"
 			"  :param lat_lon_point: the 2D latitude/longitude point\n"
-			"  :type lat_lon_point: :class:`LatLonPoint`\n"
-			"  :rtype: :class:`PointOnSphere`\n"
+			"  :type lat_lon_point: LatLonPoint\n"
+			"  :rtype: PointOnSphere\n"
 			"\n"
 #endif
 			);
@@ -283,8 +283,8 @@ export_lat_lon_point()
 			"  Converts a 3D cartesian point to a 2D latitude/longitude point.\n"
 			"\n"
 			"  :param point: the 3D cartesian point\n"
-			"  :type point: :class:`PointOnSphere`\n"
-			"  :rtype: :class:`LatLonPoint`\n"
+			"  :type point: PointOnSphere\n"
+			"  :rtype: LatLonPoint\n"
 			"\n"
 #endif
 			);

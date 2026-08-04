@@ -259,7 +259,7 @@ export_network_triangulation()
 					"get_triangles\n"
 					"  Returns a read-only sequence of the triangles in this triangulation.\n"
 					"\n"
-					"  :rtype: a read-only sequence of :class:`NetworkTriangulation.Triangle`\n"
+					"  :rtype: a read-only sequence of NetworkTriangulation.Triangle\n"
 					"\n"
 					"  The following operations for accessing the triangles in the returned read-only sequence are supported:\n"
 					"\n"
@@ -290,7 +290,7 @@ export_network_triangulation()
 					"get_vertices\n"
 					"  Returns a read-only sequence of the vertices in this triangulation.\n"
 					"\n"
-					"  :rtype: a read-only sequence of :class:`NetworkTriangulation.Vertex`\n"
+					"  :rtype: a read-only sequence of NetworkTriangulation.Vertex\n"
 					"\n"
 					"  The following operations for accessing the vertices in the returned read-only sequence are supported:\n"
 					"\n"
@@ -340,7 +340,7 @@ export_network_triangulation()
 					"\n"
 					"  :param index: the index of this triangle's vertex (in the range [0, 2])\n"
 					"  :type index: int\n"
-					"  :rtype: :class:`NetworkTriangulation.Vertex`\n"
+					"  :rtype: NetworkTriangulation.Vertex\n"
 					"  :raises: ValueError if *index* is not in the range [0, 2]\n"
 					"\n"
 					"  To access the three vertices of a triangle in a network triangulation:\n"
@@ -358,7 +358,7 @@ export_network_triangulation()
 					"  :type index: int\n"
 					"  :returns: the adjacent network triangle, or ``None`` if the triangle edge that is opposite the vertex "
 					"at *index* is a boundary edge of the network triangulation (ie, a convex hull edge)\n"
-					"  :rtype: :class:`NetworkTriangulation.Triangle` or ``None``\n"
+					"  :rtype: NetworkTriangulation.Triangle or None\n"
 					"  :raises: ValueError if *index* is not in the range [0, 2]\n"
 					"\n"
 					"  To access the three adjacent triangles of a triangle in a network triangulation:\n"
@@ -380,7 +380,7 @@ export_network_triangulation()
 					&GPlatesApi::NetworkTriangulation::Triangle::get_strain_rate,
 					"Return the constant strain rate across this triangle.\n"
 					"\n"
-					"  :type: :class:`StrainRate`\n"
+					"  :type: StrainRate\n"
 					"\n"
 					"  .. note:: This will be ``pygplates.StrainRate.zero`` if this triangle is *not* :attr:`deforming <is_in_deforming_region>`.\n"
 					"\n"
@@ -427,18 +427,18 @@ export_network_triangulation()
 					"get_incident_vertices()\n"
 					"  Returns the vertices incident to this vertex.\n"
 					"\n"
-					"  :rtype: list of :class:`NetworkTriangulation.Vertex`\n")
+					"  :rtype: list of NetworkTriangulation.Vertex\n")
 			.def("get_incident_triangles",
 					&GPlatesApi::NetworkTriangulation::Vertex::get_incident_triangles,
 					"get_incident_triangles()\n"
 					"  Returns the triangles incident to this vertex.\n"
 					"\n"
-					"  :rtype: list of :class:`NetworkTriangulation.Triangle`\n")
+					"  :rtype: list of NetworkTriangulation.Triangle\n")
 			.add_property("position",
 					&GPlatesApi::NetworkTriangulation::Vertex::get_position,
 					"Return the position of this vertex.\n"
 					"\n"
-					"  :type: :class:`PointOnSphere`\n")
+					"  :type: PointOnSphere\n")
 			.def("get_velocity",
 					&GPlatesApi::NetworkTriangulation::Vertex::get_velocity,
 					(bp::arg("velocity_delta_time") = 1.0,
@@ -453,20 +453,20 @@ export_network_triangulation()
 					"  :type velocity_delta_time: float\n"
 					"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 					"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-					"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-					"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+					"  :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, "
+					"VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t\n"
 					"  :param velocity_units: whether to return velocity as *kilometres per million years* or "
 					"*centimetres per year* (defaults to *kilometres per million years*)\n"
-					"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+					"  :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr\n"
 					"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 					"  :type earth_radius_in_kms: float\n"
-					"  :rtype: :class:`Vector3D`\n"
+					"  :rtype: Vector3D\n"
 					"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n")
 			.add_property("strain_rate",
 					&GPlatesApi::NetworkTriangulation::Vertex::get_strain_rate,
 					"Return the strain rate at this vertex.\n"
 					"\n"
-					"  :type: :class:`StrainRate`\n"
+					"  :type: StrainRate\n"
 					"\n"
 					"  .. note:: This is the area-averaged strain rate of :attr:`deforming <NetworkTriangulation.Triangle.is_in_deforming_region>` "
 					"triangles incident to this vertex.\n")

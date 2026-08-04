@@ -262,7 +262,7 @@ export_enumeration_type()
 			"\n"
 			"  :param name: unqualified name\n"
 			"  :type name: string\n"
-			"  :rtype: :class:`EnumerationType`\n"
+			"  :rtype: EnumerationType\n"
 			"\n"
 			"  ::\n"
 			"\n"
@@ -476,7 +476,7 @@ export_feature_type()
 			"\n"
 			"  :param name: unqualified name\n"
 			"  :type name: string\n"
-			"  :rtype: :class:`FeatureType`\n"
+			"  :rtype: FeatureType\n"
 			"\n"
 			"  ::\n"
 			"\n"
@@ -496,7 +496,7 @@ export_feature_type()
 			"You can see which is the default by reading the ``Default Geometry Property`` label in the "
 			"`coastline feature model <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_.\n"
 			"\n"
-			"  :rtype: :class:`PropertyName` or None\n"
+			"  :rtype: PropertyName or None\n"
 			"\n"
 			"  .. note:: This can return `None` if this feature type represents an abstract feature class "
 			"(ie, those feature classes tagged \"*Class Type: abstract*\" in the `GPGIM <http://www.gplates.org/docs/gpgim>`_).\n"
@@ -733,7 +733,7 @@ export_property_name()
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
-				"  :rtype: :class:`PropertyName`\n"
+				"  :rtype: PropertyName\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -749,7 +749,7 @@ export_property_name()
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
-				"  :rtype: :class:`PropertyName`\n"
+				"  :rtype: PropertyName\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -765,7 +765,7 @@ export_property_name()
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
-				"  :rtype: :class:`PropertyName`\n"
+				"  :rtype: PropertyName\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -841,7 +841,7 @@ export_scalar_type()
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
-				"  :rtype: :class:`ScalarType`\n"
+				"  :rtype: ScalarType\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -857,7 +857,7 @@ export_scalar_type()
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
-				"  :rtype: :class:`ScalarType`\n");
+				"  :rtype: ScalarType\n");
 	scalar_type_class.staticmethod("create_gml");
 	scalar_type_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesPropertyValues::ValueObjectType>,
@@ -869,7 +869,7 @@ export_scalar_type()
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
-				"  :rtype: :class:`ScalarType`\n");
+				"  :rtype: ScalarType\n");
 	scalar_type_class.staticmethod("create_xsi");
 
 	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
@@ -1085,7 +1085,7 @@ export_structural_type()
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
-				"  :rtype: :class:`StructuralType`\n"
+				"  :rtype: StructuralType\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1101,7 +1101,7 @@ export_structural_type()
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
-				"  :rtype: :class:`StructuralType`\n"
+				"  :rtype: StructuralType\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1117,7 +1117,7 @@ export_structural_type()
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: string\n"
-				"  :rtype: :class:`StructuralType`\n"
+				"  :rtype: StructuralType\n"
 				"\n"
 				"  ::\n"
 				"\n"

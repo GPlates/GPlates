@@ -827,7 +827,7 @@ export_property_value_visitor()
 				"  Visits a :class:`Enumeration` property value.\n"
 				"\n"
 				"  :param enumeration: the property value being visited\n"
-				"  :type enumeration: :class:`Enumeration`\n")
+				"  :type enumeration: Enumeration\n")
 		.def("visit_gml_data_block",
 				&GPlatesModel::FeatureVisitor::visit_gml_data_block,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_data_block,
@@ -835,7 +835,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GmlDataBlock` property value.\n"
 				"\n"
 				"  :param gml_data_block: the property value being visited\n"
-				"  :type gml_data_block: :class:`GmlDataBlock`\n")
+				"  :type gml_data_block: GmlDataBlock\n")
 		.def("visit_gml_line_string",
 				&GPlatesModel::FeatureVisitor::visit_gml_line_string,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_line_string,
@@ -843,7 +843,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GmlLineString` property value.\n"
 				"\n"
 				"  :param gml_line_string: the property value being visited\n"
-				"  :type gml_line_string: :class:`GmlLineString`\n")
+				"  :type gml_line_string: GmlLineString\n")
 		.def("visit_gml_line_string",
 				&GPlatesModel::FeatureVisitor::visit_gml_line_string,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_line_string,
@@ -851,7 +851,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GmlLineString` property value.\n"
 				"\n"
 				"  :param gml_line_string: the property value being visited\n"
-				"  :type gml_line_string: :class:`GmlLineString`\n")
+				"  :type gml_line_string: GmlLineString\n")
 		.def("visit_gml_multi_point",
 				&GPlatesModel::FeatureVisitor::visit_gml_multi_point,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_multi_point,
@@ -859,7 +859,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GmlMultiPoint` property value.\n"
 				"\n"
 				"  :param gml_multi_point: the property value being visited\n"
-				"  :type gml_multi_point: :class:`GmlMultiPoint`\n")
+				"  :type gml_multi_point: GmlMultiPoint\n")
 		.def("visit_gml_orientable_curve",
 				&GPlatesModel::FeatureVisitor::visit_gml_orientable_curve,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_orientable_curve,
@@ -867,7 +867,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GmlOrientableCurve` property value.\n"
 				"\n"
 				"  :param gml_orientable_curve: the property value being visited\n"
-				"  :type gml_orientable_curve: :class:`GmlOrientableCurve`\n")
+				"  :type gml_orientable_curve: GmlOrientableCurve\n")
 		.def("visit_gml_point",
 				&GPlatesModel::FeatureVisitor::visit_gml_point,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_point,
@@ -875,7 +875,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GmlPoint` property value.\n"
 				"\n"
 				"  :param gml_point: the property value being visited\n"
-				"  :type gml_point: :class:`GmlPoint`\n")
+				"  :type gml_point: GmlPoint\n")
 		.def("visit_gml_polygon",
 				&GPlatesModel::FeatureVisitor::visit_gml_polygon,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_polygon,
@@ -883,7 +883,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GmlPolygon` property value.\n"
 				"\n"
 				"  :param gml_polygon: the property value being visited\n"
-				"  :type gml_polygon: :class:`GmlPolygon`\n")
+				"  :type gml_polygon: GmlPolygon\n")
 		.def("visit_gml_time_instant",
 				&GPlatesModel::FeatureVisitor::visit_gml_time_instant,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_time_instant,
@@ -891,7 +891,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GmlTimeInstant` property value.\n"
 				"\n"
 				"  :param gml_time_instant: the property value being visited\n"
-				"  :type gml_time_instant: :class:`GmlTimeInstant`\n")
+				"  :type gml_time_instant: GmlTimeInstant\n")
 		.def("visit_gml_time_period",
 				&GPlatesModel::FeatureVisitor::visit_gml_time_period,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_time_period,
@@ -899,7 +899,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GmlTimePeriod` property value.\n"
 				"\n"
 				"  :param gml_time_period: the property value being visited\n"
-				"  :type gml_time_period: :class:`GmlTimePeriod`\n")
+				"  :type gml_time_period: GmlTimePeriod\n")
 		.def("visit_gpml_array",
 				&GPlatesModel::FeatureVisitor::visit_gpml_array,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_array,
@@ -907,7 +907,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlArray` property value.\n"
 				"\n"
 				"  :param gpml_array: the property value being visited\n"
-				"  :type gpml_array: :class:`GpmlArray`\n")
+				"  :type gpml_array: GpmlArray\n")
 		.def("visit_gpml_constant_value",
 				&GPlatesModel::FeatureVisitor::visit_gpml_constant_value,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_constant_value,
@@ -915,7 +915,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlConstantValue` property value.\n"
 				"\n"
 				"  :param gpml_constant_value: the property value being visited\n"
-				"  :type gpml_constant_value: :class:`GpmlConstantValue`\n")
+				"  :type gpml_constant_value: GpmlConstantValue\n")
 		.def("visit_gpml_finite_rotation",
 				&GPlatesModel::FeatureVisitor::visit_gpml_finite_rotation,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_finite_rotation,
@@ -923,7 +923,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlFiniteRotation` property value.\n"
 				"\n"
 				"  :param ppml_finite_rotation: the property value being visited\n"
-				"  :type ppml_finite_rotation: :class:`GpmlFiniteRotation`\n")
+				"  :type ppml_finite_rotation: GpmlFiniteRotation\n")
 #if 0
 		.def("visit_gpml_finite_rotation_slerp",
 				&GPlatesModel::FeatureVisitor::visit_gpml_finite_rotation_slerp,
@@ -932,7 +932,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlFiniteRotationSlerp` property value.\n"
 				"\n"
 				"  :param gpml_finite_rotation_slerp: the property value being visited\n"
-				"  :type gpml_finite_rotation_slerp: :class:`GpmlFiniteRotationSlerp`\n")
+				"  :type gpml_finite_rotation_slerp: GpmlFiniteRotationSlerp\n")
 #endif
 		.def("visit_gpml_irregular_sampling",
 				&GPlatesModel::FeatureVisitor::visit_gpml_irregular_sampling,
@@ -941,7 +941,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlIrregularSampling` property value.\n"
 				"\n"
 				"  :param gpml_irregular_sampling: the property value being visited\n"
-				"  :type gpml_irregular_sampling: :class:`GpmlIrregularSampling`\n")
+				"  :type gpml_irregular_sampling: GpmlIrregularSampling\n")
 		.def("visit_gpml_key_value_dictionary",
 				&GPlatesModel::FeatureVisitor::visit_gpml_key_value_dictionary,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_key_value_dictionary,
@@ -949,7 +949,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlKeyValueDictionary` property value.\n"
 				"\n"
 				"  :param gpml_key_value_dictionary: the property value being visited\n"
-				"  :type gpml_key_value_dictionary: :class:`GpmlKeyValueDictionary`\n")
+				"  :type gpml_key_value_dictionary: GpmlKeyValueDictionary\n")
 		.def("visit_gpml_old_plates_header",
 				&GPlatesModel::FeatureVisitor::visit_gpml_old_plates_header,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_old_plates_header,
@@ -957,7 +957,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlOldPlatesHeader` property value.\n"
 				"\n"
 				"  :param gpml_old_plates_header: the property value being visited\n"
-				"  :type gpml_old_plates_header: :class:`GpmlOldPlatesHeader`\n")
+				"  :type gpml_old_plates_header: GpmlOldPlatesHeader\n")
 		.def("visit_gpml_piecewise_aggregation",
 				&GPlatesModel::FeatureVisitor::visit_gpml_piecewise_aggregation,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_piecewise_aggregation,
@@ -965,7 +965,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlPiecewiseAggregation` property value.\n"
 				"\n"
 				"  :param gpml_piecewise_aggregation: the property value being visited\n"
-				"  :type gpml_piecewise_aggregation: :class:`GpmlPiecewiseAggregation`\n")
+				"  :type gpml_piecewise_aggregation: GpmlPiecewiseAggregation\n")
 		.def("visit_gpml_plate_id",
 				&GPlatesModel::FeatureVisitor::visit_gpml_plate_id,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_plate_id,
@@ -973,7 +973,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlPlateId` property value.\n"
 				"\n"
 				"  :param gpml_plate_id: the property value being visited\n"
-				"  :type gpml_plate_id: :class:`GpmlPlateId`\n")
+				"  :type gpml_plate_id: GpmlPlateId\n")
 		.def("visit_gpml_polarity_chron_id",
 				&GPlatesModel::FeatureVisitor::visit_gpml_polarity_chron_id,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_polarity_chron_id,
@@ -981,7 +981,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlPolarityChronId` property value.\n"
 				"\n"
 				"  :param gpml_polarity_chron_id: the property value being visited\n"
-				"  :type gpml_polarity_chron_id: :class:`GpmlPolarityChronId`\n")
+				"  :type gpml_polarity_chron_id: GpmlPolarityChronId\n")
 		.def("visit_gpml_property_delegate",
 				&GPlatesModel::FeatureVisitor::visit_gpml_property_delegate,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_property_delegate,
@@ -989,7 +989,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlPropertyDelegate` property value.\n"
 				"\n"
 				"  :param gpml_property_delegate: the property value being visited\n"
-				"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n")
+				"  :type gpml_property_delegate: GpmlPropertyDelegate\n")
 		.def("visit_gpml_topological_line",
 				&GPlatesModel::FeatureVisitor::visit_gpml_topological_line,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_topological_line,
@@ -997,7 +997,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlTopologicalLine` property value.\n"
 				"\n"
 				"  :param gpml_topological_line: the property value being visited\n"
-				"  :type gpml_topological_line: :class:`GpmlTopologicalLine`\n")
+				"  :type gpml_topological_line: GpmlTopologicalLine\n")
 		.def("visit_gpml_topological_line_section",
 				&GPlatesModel::FeatureVisitor::visit_gpml_topological_line_section,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_topological_line_section,
@@ -1005,7 +1005,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlTopologicalLineSection` property value.\n"
 				"\n"
 				"  :param gpml_topological_line_section: the property value being visited\n"
-				"  :type gpml_topological_line_section: :class:`GpmlTopologicalLineSection`\n")
+				"  :type gpml_topological_line_section: GpmlTopologicalLineSection\n")
 		.def("visit_gpml_topological_point",
 				&GPlatesModel::FeatureVisitor::visit_gpml_topological_point,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_topological_point,
@@ -1013,7 +1013,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlTopologicalPoint` property value.\n"
 				"\n"
 				"  :param gpml_topological_point: the property value being visited\n"
-				"  :type gpml_topological_point: :class:`GpmlTopologicalPoint`\n")
+				"  :type gpml_topological_point: GpmlTopologicalPoint\n")
 		.def("visit_gpml_topological_network",
 				&GPlatesModel::FeatureVisitor::visit_gpml_topological_network,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_topological_network,
@@ -1021,7 +1021,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlTopologicalNetwork` property value.\n"
 				"\n"
 				"  :param gpml_topological_network: the property value being visited\n"
-				"  :type gpml_topological_network: :class:`GpmlTopologicalNetwork`\n")
+				"  :type gpml_topological_network: GpmlTopologicalNetwork\n")
 		.def("visit_gpml_topological_polygon",
 				&GPlatesModel::FeatureVisitor::visit_gpml_topological_polygon,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_topological_polygon,
@@ -1029,7 +1029,7 @@ export_property_value_visitor()
 				"  Visits a :class:`GpmlTopologicalPolygon` property value.\n"
 				"\n"
 				"  :param gpml_topological_polygon: the property value being visited\n"
-				"  :type gpml_topological_polygon: :class:`GpmlTopologicalPolygon`\n")
+				"  :type gpml_topological_polygon: GpmlTopologicalPolygon\n")
 		.def("visit_xs_boolean",
 				&GPlatesModel::FeatureVisitor::visit_xs_boolean,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_xs_boolean,
@@ -1037,7 +1037,7 @@ export_property_value_visitor()
 				"  Visits a :class:`XsBoolean` property value.\n"
 				"\n"
 				"  :param xs_boolean: the property value being visited\n"
-				"  :type xs_boolean: :class:`XsBoolean`\n")
+				"  :type xs_boolean: XsBoolean\n")
 		.def("visit_xs_double",
 				&GPlatesModel::FeatureVisitor::visit_xs_double,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_xs_double,
@@ -1045,7 +1045,7 @@ export_property_value_visitor()
 				"  Visits a :class:`XsDouble` property value.\n"
 				"\n"
 				"  :param xs_double: the property value being visited\n"
-				"  :type xs_double: :class:`XsDouble`\n")
+				"  :type xs_double: XsDouble\n")
 		.def("visit_xs_integer",
 				&GPlatesModel::FeatureVisitor::visit_xs_integer,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_xs_integer,
@@ -1053,7 +1053,7 @@ export_property_value_visitor()
 				"  Visits a :class:`XsInteger` property value.\n"
 				"\n"
 				"  :param xs_integer: the property value being visited\n"
-				"  :type xs_integer: :class:`XsInteger`\n")
+				"  :type xs_integer: XsInteger\n")
 		.def("visit_xs_string",
 				&GPlatesModel::FeatureVisitor::visit_xs_string,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_xs_string,
@@ -1061,6 +1061,6 @@ export_property_value_visitor()
 				"  Visits a :class:`XsString` property value.\n"
 				"\n"
 				"  :param xs_string: the property value being visited\n"
-				"  :type xs_string: :class:`XsString`\n")
+				"  :type xs_string: XsString\n")
 	;
 }

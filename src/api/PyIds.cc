@@ -89,7 +89,7 @@ export_feature_id()
 				// because it messes up Sphinx's signature recognition...
 				"  [*staticmethod*] Create a unique *FeatureId* by generating a unique string identifier.\n"
 				"\n"
-				"  :rtype: :class:`FeatureId`\n"
+				"  :rtype: FeatureId\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -178,7 +178,7 @@ export_revision_id()
 				// because it messes up Sphinx's signature recognition...
 				"  [*staticmethod*] Create a unique *RevisionId* by generating a unique string identifier.\n"
 				"\n"
-				"  :rtype: :class:`RevisionId`\n"
+				"  :rtype: RevisionId\n"
 				"\n"
 				"  ::\n"
 				"\n"

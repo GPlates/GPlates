@@ -199,7 +199,7 @@ export_property_value()
 				"  Create a duplicate of this property value (derived) instance, including a recursive copy "
 				"of any nested property values that this instance might contain.\n"
 				"\n"
-				"  :rtype: :class:`PropertyValue`\n")
+				"  :rtype: PropertyValue\n")
 		.def("accept_visitor",
 				&GPlatesApi::property_value_accept_visitor,
 				(bp::arg("visitor")),
@@ -211,13 +211,13 @@ export_property_value()
 				"to find out which type of property value is being visited.\n"
 				"\n"
 				"  :param visitor: the visitor instance visiting this property value\n"
-				"  :type visitor: :class:`PropertyValueVisitor`\n")
+				"  :type visitor: PropertyValueVisitor\n")
 		.def("get_geometry",
 				&GPlatesApi::property_value_get_geometry,
 				"get_geometry()\n"
 				"  Extracts the :class:`geometry<GeometryOnSphere>` if this property value contains a geometry.\n"
 				"\n"
-				"  :rtype: :class:`GeometryOnSphere` or None\n"
+				"  :rtype: GeometryOnSphere or None\n"
 				"\n"
 				"  This function searches for a geometry in the following standard geometry property value types:\n"
 				"\n"
@@ -391,12 +391,12 @@ export_enumeration()
 				"  Create an enumeration property value from an enumeration type and content (value).\n"
 				"\n"
 				"  :param type: the type of the enumeration\n"
-				"  :type type: :class:`EnumerationType`\n"
+				"  :type type: EnumerationType\n"
 				"  :param content: the content (value) of the enumeration\n"
 				"  :type content: string\n"
 				"  :param verify_information_model: whether to check the information model for valid "
 				"enumeration *type* and *content*\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and either *type* is not a recognised enumeration type or *content* is not a valid value "
 				"for *type*\n"
@@ -418,7 +418,7 @@ export_enumeration()
 				"get_type()\n"
 				"  Returns the type of this enumeration.\n"
 				"\n"
-				"  :rtype: :class:`EnumerationType`\n")
+				"  :rtype: EnumerationType\n")
 		.def("get_content",
 				&GPlatesPropertyValues::Enumeration::get_value,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -437,7 +437,7 @@ export_enumeration()
 				"  :type content: string\n"
 				"  :param verify_information_model: whether to check the information model for valid "
 				"enumeration *value*\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *content* is not a valid value for this enumeration :meth:`type<get_type>`\n"
 				"\n"
@@ -865,8 +865,8 @@ export_gml_data_block()
 				"associated scalar values.\n"
 				"\n"
 				"  :param scalar_type_to_values_mapping: maps each scalar type to a sequence of scalar values\n"
-				"  :type scalar_type_to_values_mapping: ``dict`` mapping each :class:`ScalarType` to a sequence "
-				"of float, or a sequence of (:class:`ScalarType`, sequence of float) tuples\n"
+				"  :type scalar_type_to_values_mapping: dict mapping each ScalarType to a sequence "
+				"of float, or a sequence of (ScalarType, sequence of float) tuples\n"
 				"  :raises: ValueError if *scalar_type_to_values_mapping* is empty, or if each "
 				":class:`scalar type<ScalarType>` is not mapped to the same number of scalar values.\n"
 				"\n"
@@ -901,7 +901,7 @@ export_gml_data_block()
 				"  Returns the list of scalar values associated with a scalar type.\n"
 				"\n"
 				"  :param scalar_type: the type of the scalars\n"
-				"  :type scalar_type: :class:`ScalarType`\n"
+				"  :type scalar_type: ScalarType\n"
 				"  :returns: the scalar values associated with *scalar_type*, otherwise ``None`` if *scalar_type* does not exist\n"
 				"  :rtype: list of float, or None\n"
 				"\n"
@@ -924,9 +924,9 @@ export_gml_data_block()
 				"  Sets the scalar values of the data block associated with a scalar type.\n"
 				"\n"
 				"  :param scalar_type: the type of the scalars\n"
-				"  :type scalar_type: :class:`ScalarType`\n"
+				"  :type scalar_type: ScalarType\n"
 				"  :param scalar_values: the scalar values associated with *scalar_type*\n"
-				"  :type scalar_values: sequence (eg, ``list`` or ``tuple``) of float\n"
+				"  :type scalar_values: sequence (eg, list or tuple) of float\n"
 				"  :raises: ValueError if the length of *scalar_values* does not match the length of "
 				"existing scalar values for other :class:`scalar types<ScalarType>`.\n"
 				"\n"
@@ -946,7 +946,7 @@ export_gml_data_block()
 				"  Removes the list of scalar values associated with a scalar type.\n"
 				"\n"
 				"  :param scalar_type: the type of the scalars\n"
-				"  :type scalar_type: :class:`ScalarType`\n"
+				"  :type scalar_type: ScalarType\n"
 				"\n"
 				"  To remove the scalar values associated with ``gpml:VelocityColat``:\n"
 				"  ::\n"
@@ -994,7 +994,7 @@ export_gml_line_string()
 				"  Create a property value representing a polyline geometry.\n"
 				"\n"
 				"  :param polyline: the polyline geometry\n"
-				"  :type polyline: :class:`PolylineOnSphere`\n"
+				"  :type polyline: PolylineOnSphere\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1010,7 +1010,7 @@ export_gml_line_string()
 				"get_polyline()\n"
 				"  Returns the polyline geometry of this property value.\n"
 				"\n"
-				"  :rtype: :class:`PolylineOnSphere`\n")
+				"  :rtype: PolylineOnSphere\n")
 		.def("set_polyline",
 				&GPlatesPropertyValues::GmlLineString::set_polyline,
 				(bp::arg("polyline")),
@@ -1018,7 +1018,7 @@ export_gml_line_string()
 				"  Sets the polyline geometry of this property value.\n"
 				"\n"
 				"  :param polyline: the polyline geometry\n"
-				"  :type polyline: :class:`PolylineOnSphere`\n")
+				"  :type polyline: PolylineOnSphere\n")
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1069,7 +1069,7 @@ export_gml_multi_point()
 				"  Create a property value representing a multi-point geometry.\n"
 				"\n"
 				"  :param multi_point: the multi-point geometry\n"
-				"  :type multi_point: :class:`MultiPointOnSphere`\n"
+				"  :type multi_point: MultiPointOnSphere\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1085,7 +1085,7 @@ export_gml_multi_point()
 				"get_multi_point()\n"
 				"  Returns the multi-point geometry of this property value.\n"
 				"\n"
-				"  :rtype: :class:`MultiPointOnSphere`\n")
+				"  :rtype: MultiPointOnSphere\n")
 		.def("set_multi_point",
 				&GPlatesPropertyValues::GmlMultiPoint::set_multipoint,
 				(bp::arg("multi_point")),
@@ -1093,7 +1093,7 @@ export_gml_multi_point()
 				"  Sets the multi-point geometry of this property value.\n"
 				"\n"
 				"  :param multi_point: the multi-point geometry\n"
-				"  :type multi_point: :class:`MultiPointOnSphere`\n")
+				"  :type multi_point: MultiPointOnSphere\n")
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1154,7 +1154,7 @@ export_gml_orientable_curve()
 				"gives it an orientation.\n"
 				"\n"
 				"  :param gml_line_string: the line string (polyline) property value\n"
-				"  :type gml_line_string: :class:`GmlLineString`\n"
+				"  :type gml_line_string: GmlLineString\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1173,7 +1173,7 @@ export_gml_orientable_curve()
 				"get_base_curve()\n"
 				"  Returns the line string (polyline) property value of this wrapped property value.\n"
 				"\n"
-				"  :rtype: :class:`GmlLineString`\n")
+				"  :rtype: GmlLineString\n")
 		.def("set_base_curve",
 				&GPlatesPropertyValues::GmlOrientableCurve::set_base_curve,
 				(bp::arg("base_curve")),
@@ -1181,7 +1181,7 @@ export_gml_orientable_curve()
 				"  Sets the line string (polyline) property value of this wrapped property value.\n"
 				"\n"
 				"  :param base_curve: the line string (polyline) property value\n"
-				"  :type base_curve: :class:`GmlLineString`\n")
+				"  :type base_curve: GmlLineString\n")
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1235,7 +1235,7 @@ export_gml_point()
 				"  Create a property value representing a point geometry.\n"
 				"\n"
 				"  :param point: the point geometry\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"\n"
 				"  ::\n"
@@ -1253,7 +1253,7 @@ export_gml_point()
 				"get_point()\n"
 				"  Returns the point geometry of this property value.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n")
+				"  :rtype: PointOnSphere\n")
 		.def("set_point",
 				&GPlatesPropertyValues::GmlPoint::set_point,
 				(bp::arg("point")),
@@ -1261,7 +1261,7 @@ export_gml_point()
 				"  Sets the point geometry of this property value.\n"
 				"\n"
 				"  :param point: the point geometry\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n")
 	;
 
@@ -1314,7 +1314,7 @@ export_gml_polygon()
 				"  Create a property value representing a polygon geometry.\n"
 				"\n"
 				"  :param polygon: the polygon geometry\n"
-				"  :type polygon: :class:`PolygonOnSphere`\n"
+				"  :type polygon: PolygonOnSphere\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1331,7 +1331,7 @@ export_gml_polygon()
 				"get_polygon()\n"
 				"  Returns the polygon geometry of this property value.\n"
 				"\n"
-				"  :rtype: :class:`PolygonOnSphere`\n")
+				"  :rtype: PolygonOnSphere\n")
 		.def("set_polygon",
 				// We ignore interior polygons for now - later they will get stored in a single PolygonOnSphere...
 				&GPlatesPropertyValues::GmlPolygon::set_polygon,
@@ -1340,7 +1340,7 @@ export_gml_polygon()
 				"  Sets the polygon geometry of this property value.\n"
 				"\n"
 				"  :param polygon: the polygon geometry\n"
-				"  :type polygon: :class:`PolygonOnSphere`\n")
+				"  :type polygon: PolygonOnSphere\n")
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1381,7 +1381,7 @@ export_gml_time_instant()
 				"  Create a property value representing a specific time instant.\n"
 				"\n"
 				"  :param time_position: the time position\n"
-				"  :type time_position: float or :class:`GeoTimeInstant`\n"
+				"  :type time_position: float or GeoTimeInstant\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1422,7 +1422,7 @@ export_gml_time_instant()
 				"  Sets the time position of this property value.\n"
 				"\n"
 				"  :param time_position: the time position\n"
-				"  :type time_position: float or :class:`GeoTimeInstant`\n")
+				"  :type time_position: float or GeoTimeInstant\n")
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1527,9 +1527,9 @@ export_gml_time_period()
 				"  Create a property value representing a specific time period.\n"
 				"\n"
 				"  :param begin_time: the begin time (time of appearance)\n"
-				"  :type begin_time: float or :class:`GeoTimeInstant`\n"
+				"  :type begin_time: float or GeoTimeInstant\n"
 				"  :param end_time: the end time (time of disappearance)\n"
-				"  :type end_time: float or :class:`GeoTimeInstant`\n"
+				"  :type end_time: float or GeoTimeInstant\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n"
 				"\n"
 				"  ::\n"
@@ -1558,7 +1558,7 @@ export_gml_time_period()
 				"  Sets the begin time position (time of appearance) of this property value.\n"
 				"\n"
 				"  :param time_position: the begin time position (time of appearance)\n"
-				"  :type time_position: float or :class:`GeoTimeInstant`\n"
+				"  :type time_position: float or GeoTimeInstant\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def("get_end_time",
 				&GPlatesApi::gml_time_period_get_end_time,
@@ -1577,7 +1577,7 @@ export_gml_time_period()
 				"  Sets the end time position (time of disappearance) of this property value.\n"
 				"\n"
 				"  :param time_position: the end time position (time of disappearance)\n"
-				"  :type time_position: float or :class:`GeoTimeInstant`\n"
+				"  :type time_position: float or GeoTimeInstant\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def("contains",
 				&GPlatesApi::gml_time_period_contains,
@@ -1586,7 +1586,7 @@ export_gml_time_period()
 				"  Determine if a time lies within this time period.\n"
 				"\n"
 				"  :param time_position: the time position to test\n"
-				"  :type time_position: float or :class:`GeoTimeInstant`\n"
+				"  :type time_position: float or GeoTimeInstant\n"
 				"  :rtype: bool\n"
 				"\n"
 				"  .. note:: *time_position* is considered to lie *within* a time period if it "
@@ -1711,7 +1711,7 @@ export_gpml_array()
 			"  Create an array from a sequence of property value elements.\n"
 			"\n"
 			"  :param elements: A sequence of :class:`PropertyValue` elements.\n"
-			"  :type elements: Any sequence such as a ``list`` or a ``tuple``\n"
+			"  :type elements: Any sequence such as a list or a tuple\n"
 			"  :raises: RuntimeError if sequence is empty\n"
 			"\n"
 			"  Note that all elements should have the same type (such as :class:`GmlTimePeriod`).\n"
@@ -1827,7 +1827,7 @@ export_gpml_constant_value()
 					"property value as constant for all time.\n"
 					"\n"
 					"  :param property_value: arbitrary property value\n"
-					"  :type property_value: :class:`PropertyValue`\n"
+					"  :type property_value: PropertyValue\n"
 					"  :param description: description of this constant value wrapper\n"
 					"  :type description: string or None\n"
 					"\n"
@@ -1853,7 +1853,7 @@ export_gpml_constant_value()
 				"  Sets the property value of this constant value wrapper.\n"
 				"\n"
 				"  :param property_value: arbitrary property value\n"
-				"  :type property_value: :class:`PropertyValue`\n"
+				"  :type property_value: PropertyValue\n"
 				"\n"
 				"  This essentially replaces the previous property value. "
 				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
@@ -1919,7 +1919,7 @@ export_gpml_finite_rotation()
 				"  Create a finite rotation property value from a finite rotation.\n"
 				"\n"
 				"  :param finite_rotation: the finite rotation\n"
-				"  :type finite_rotation: :class:`FiniteRotation`\n"
+				"  :type finite_rotation: FiniteRotation\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1936,7 +1936,7 @@ export_gpml_finite_rotation()
 				"get_finite_rotation()\n"
 				"  Returns the finite rotation.\n"
 				"\n"
-				"  :rtype: :class:`FiniteRotation`\n")
+				"  :rtype: FiniteRotation\n")
 		.def("set_finite_rotation",
 				&GPlatesPropertyValues::GpmlFiniteRotation::set_finite_rotation,
 				(bp::arg("finite_rotation")),
@@ -1944,7 +1944,7 @@ export_gpml_finite_rotation()
 				"  Sets the finite rotation.\n"
 				"\n"
 				"  :param finite_rotation: the finite rotation\n"
-				"  :type finite_rotation: :class:`FiniteRotation`\n")
+				"  :type finite_rotation: FiniteRotation\n")
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -2286,12 +2286,12 @@ export_gpml_irregular_sampling()
 				"\n"
 				"\n"
 				"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements.\n"
-				"  :type time_samples: Any sequence such as a ``list`` or a ``tuple``\n"
+				"  :type time_samples: Any sequence such as a list or a tuple\n"
 				// Not including interpolation function since it is not really used (yet) in GPlates and hence
 				// is just extra baggage for the python API user (we can add it later though)...
 #if 0
 				"  :param interpolation_function: identifies function used to interpolate\n"
-				"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`\n"
+				"  :type interpolation_function: an instance derived from GpmlInterpolationFunction\n"
 #endif
 				"  :raises: RuntimeError if time sample sequence is empty\n"
 				"\n"
@@ -2312,7 +2312,7 @@ export_gpml_irregular_sampling()
 				"get_time_samples()\n"
 				"  Returns the :class:`time samples<GpmlTimeSample>` in a sequence that behaves as a python ``list``.\n"
 				"\n"
-				"  :rtype: :class:`GpmlTimeSampleList`\n"
+				"  :rtype: GpmlTimeSampleList\n"
 				"\n"
 				"  Modifying the returned sequence will modify the internal state of the *GpmlIrregularSampling* instance:\n"
 				"  ::\n"
@@ -2355,7 +2355,7 @@ export_gpml_irregular_sampling()
 				"\n"
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
-				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"  :rtype: a class object of the property type (derived from PropertyValue)\n"
 				"\n"
 				"  .. versionadded:: 0.21\n")
 		// Not including interpolation function since it is not really used (yet) in GPlates and hence
@@ -2366,7 +2366,7 @@ export_gpml_irregular_sampling()
 				"get_interpolation_function()\n"
 				"  Returns the function used to interpolate between time samples, or ``None``.\n"
 				"\n"
-				"  :rtype: an instance derived from :class:`GpmlInterpolationFunction`, or ``None``\n")
+				"  :rtype: an instance derived from GpmlInterpolationFunction, or None\n")
 		.def("set_interpolation_function",
 				&GPlatesPropertyValues::GpmlIrregularSampling::set_interpolation_function,
 				(bp::arg("interpolation_function") =
@@ -2376,7 +2376,7 @@ export_gpml_irregular_sampling()
 				"or removes it if none specified.\n"
 				"\n"
 				"  :param interpolation_function: the function used to interpolate between time samples\n"
-				"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`, or None\n")
+				"  :type interpolation_function: an instance derived from GpmlInterpolationFunction, or None\n")
 #endif
 	;
 
@@ -2923,7 +2923,7 @@ export_gpml_key_value_dictionary()
 				"  Create a dictionary containing zero or more key/value pairs.\n"
 				"\n"
 				"  :param key_value_mapping: optional mapping of keys to values\n"
-				"  :type key_value_mapping: ``dict`` mapping each key (string) to a value "
+				"  :type key_value_mapping: dict mapping each key (string) to a value "
 				"(integer, float or string), or a sequence of (key, value) tuples, or None\n"
 				"\n"
 				"  To create an empty dictionary:\n"
@@ -2964,7 +2964,7 @@ export_gpml_key_value_dictionary()
 				"dictionary (if not specified then it defaults to None)\n"
 				"  :type default_value: int or float or string or None\n"
 				"  :returns: the value associated with *key*, otherwise *default_value* if *key* does not exist\n"
-				"  :rtype: integer or float or string or type(*default_value*) or None\n"
+				"  :rtype: integer or float or string or type(default_value) or None\n"
 				"\n"
 				"  To test if a key is present and retrieve its value:\n"
 				"  ::\n"
@@ -3431,7 +3431,7 @@ export_gpml_piecewise_aggregation()
 				"  Create a piecewise-constant time-dependent property from a sequence of time windows.\n"
 				"\n"
 				"  :param time_windows: A sequence of :class:`GpmlTimeWindow` elements.\n"
-				"  :type time_windows: Any sequence such as a ``list`` or a ``tuple``\n"
+				"  :type time_windows: Any sequence such as a list or a tuple\n"
 				"  :raises: RuntimeError if time window sequence is empty\n"
 				"\n"
 				"  .. note:: The sequence of time windows must **not** be empty (for technical implementation reasons), "
@@ -3451,7 +3451,7 @@ export_gpml_piecewise_aggregation()
 				"get_time_windows()\n"
 				"  Returns the :class:`time windows<GpmlTimeWindow>` in a sequence that behaves as a python ``list``.\n"
 				"\n"
-				"  :rtype: :class:`GpmlTimeWindowList`\n"
+				"  :rtype: GpmlTimeWindowList\n"
 				"\n"
 				"  Modifying the returned sequence will modify the internal state of the *GpmlPiecewiseAggregation* instance:\n"
 				"  ::\n"
@@ -3475,7 +3475,7 @@ export_gpml_piecewise_aggregation()
 				"\n"
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
-				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"  :rtype: a class object of the property type (derived from PropertyValue)\n"
 				"\n"
 				"  .. versionadded:: 0.21\n")
 	;
@@ -3662,7 +3662,7 @@ export_gpml_polarity_chron_id()
 				"reversals have been discovered within that chron, a second letter is appended, and so on\n"
 				"  :type minor_region: string\n"
 				"  :param verify_information_model: whether to check the information model for valid *era*\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *era* is not a recognised era value\n"
 				"\n"
@@ -3694,7 +3694,7 @@ export_gpml_polarity_chron_id()
 				"  :param era: the era of the chron ('Cenozoic' or 'Mesozoic')\n"
 				"  :type era: string\n"
 				"  :param verify_information_model: whether to check the information model for valid *era*\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *era* is not a recognised era string value\n")
 		.def("get_major_region",
@@ -3776,13 +3776,13 @@ export_gpml_property_delegate()
 				"  Create a reference, or delegation, to a property in another feature.\n"
 				"\n"
 				"  :param feature_id: the referenced feature\n"
-				"  :type feature_id: :class:`FeatureId`\n"
+				"  :type feature_id: FeatureId\n"
 				"  :param property_name: the name of the referenced property\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param property_type: the type of the referenced property\n"
-				"  :type property_type: a class object of a property type (derived from :class:`PropertyValue`) "
-				"except :class:`Enumeration` and time-dependent wrappers :class:`GpmlConstantValue`, "
-				":class:`GpmlIrregularSampling` and :class:`GpmlPiecewiseAggregation`.\n"
+				"  :type property_type: a class object of a property type (derived from PropertyValue) "
+				"except Enumeration and time-dependent wrappers GpmlConstantValue, "
+				"GpmlIrregularSampling and GpmlPiecewiseAggregation.\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -3802,14 +3802,14 @@ export_gpml_property_delegate()
 				"get_feature_id()\n"
 				"  Returns the feature ID of the feature containing the delegated property.\n"
 				"\n"
-				"  :rtype: :class:`FeatureId`\n")
+				"  :rtype: FeatureId\n")
 		.def("get_property_name",
 				&GPlatesPropertyValues::GpmlPropertyDelegate::get_target_property_name,
 				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_property_name()\n"
 				"  Returns the property name of the delegated property.\n"
 				"\n"
-				"  :rtype: :class:`PropertyName`\n")
+				"  :rtype: PropertyName\n")
 		.def("get_property_type",
 				&GPlatesPropertyValues::GpmlPropertyDelegate::get_value_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -3818,7 +3818,7 @@ export_gpml_property_delegate()
 				"\n"
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
-				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
+				"  :rtype: a class object of the property type (derived from PropertyValue)\n")
 	;
 
 	// Create a python class "GpmlPropertyDelegateList" for RevisionedVector<GpmlPropertyDelegate> that behaves like a list of GpmlPropertyDelegate.
@@ -3966,9 +3966,9 @@ export_gpml_time_sample()
 				"and disabled flag.\n"
 				"\n"
 				"  :param property_value: arbitrary property value\n"
-				"  :type property_value: :class:`PropertyValue`\n"
+				"  :type property_value: PropertyValue\n"
 				"  :param time: the time position associated with the property value\n"
-				"  :type time: float or :class:`GeoTimeInstant`\n"
+				"  :type time: float or GeoTimeInstant\n"
 				"  :param description: description of the time sample\n"
 				"  :type description: string or None\n"
 				"  :param is_enabled: whether time sample is enabled\n"
@@ -3988,7 +3988,7 @@ export_gpml_time_sample()
 				"get_value()\n"
 				"  Returns the property value of this time sample.\n"
 				"\n"
-				"  :rtype: :class:`PropertyValue`\n")
+				"  :rtype: PropertyValue\n")
 		.def("get_value_type",
 				&GPlatesPropertyValues::GpmlTimeSample::get_value_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -3997,7 +3997,7 @@ export_gpml_time_sample()
 				"\n"
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
-				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"  :rtype: a class object of the property type (derived from PropertyValue)\n"
 				"\n"
 				"  .. versionadded:: 0.21\n")
 		.def("set_value",
@@ -4007,7 +4007,7 @@ export_gpml_time_sample()
 				"  Sets the property value associated with this time sample.\n"
 				"\n"
 				"  :param property_value: arbitrary property value\n"
-				"  :type property_value: :class:`PropertyValue`\n"
+				"  :type property_value: PropertyValue\n"
 				"\n"
 				"  This essentially replaces the previous property value. "
 				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
@@ -4029,7 +4029,7 @@ export_gpml_time_sample()
 				"  Sets the time position associated with this time sample.\n"
 				"\n"
 				"  :param time: the time position associated with the property value\n"
-				"  :type time: float or :class:`GeoTimeInstant`\n")
+				"  :type time: float or GeoTimeInstant\n")
 		.def("get_description",
 				&GPlatesApi::gpml_time_sample_get_description,
 				"get_description()\n"
@@ -4193,11 +4193,11 @@ export_gpml_time_window()
 				"  Create a time window given a property value and time range.\n"
 				"\n"
 				"  :param property_value: arbitrary property value\n"
-				"  :type property_value: :class:`PropertyValue`\n"
+				"  :type property_value: PropertyValue\n"
 				"  :param begin_time: the begin time of the time window\n"
-				"  :type begin_time: float or :class:`GeoTimeInstant`\n"
+				"  :type begin_time: float or GeoTimeInstant\n"
 				"  :param end_time: the end time of the time window\n"
-				"  :type end_time: float or :class:`GeoTimeInstant`\n"
+				"  :type end_time: float or GeoTimeInstant\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n"
 				"\n"
 				"  ::\n"
@@ -4217,7 +4217,7 @@ export_gpml_time_window()
 				"get_value()\n"
 				"  Returns the property value of this time window.\n"
 				"\n"
-				"  :rtype: :class:`PropertyValue`\n")
+				"  :rtype: PropertyValue\n")
 		.def("get_value_type",
 				&GPlatesPropertyValues::GpmlTimeWindow::get_value_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -4226,7 +4226,7 @@ export_gpml_time_window()
 				"\n"
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
-				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"  :rtype: a class object of the property type (derived from PropertyValue)\n"
 				"\n"
 				"  .. versionadded:: 0.21\n")
 		.def("set_value",
@@ -4236,7 +4236,7 @@ export_gpml_time_window()
 				"  Sets the property value associated with this time window.\n"
 				"\n"
 				"  :param property_value: arbitrary property value\n"
-				"  :type property_value: :class:`PropertyValue`\n"
+				"  :type property_value: PropertyValue\n"
 				"\n"
 				"  This essentially replaces the previous property value. "
 				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
@@ -4258,7 +4258,7 @@ export_gpml_time_window()
 				"  Sets the begin time of this time window.\n"
 				"\n"
 				"  :param time: the begin time of this time window\n"
-				"  :type time: float or :class:`GeoTimeInstant`\n"
+				"  :type time: float or GeoTimeInstant\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def("get_end_time",
 				&GPlatesApi::gpml_time_window_get_end_time,
@@ -4277,7 +4277,7 @@ export_gpml_time_window()
 				"  Sets the end time of this time window.\n"
 				"\n"
 				"  :param time: the end time of this time window\n"
-				"  :type time: float or :class:`GeoTimeInstant`\n"
+				"  :type time: float or GeoTimeInstant\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
@@ -4598,20 +4598,20 @@ export_gpml_topological_section()
 			"  [*staticmethod*] Create a topological section referencing a feature geometry.\n"
 			"\n"
 			"  :param feature: the feature referenced by the returned topological section\n"
-			"  :type feature: :class:`Feature`\n"
+			"  :type feature: Feature\n"
 			"  :param geometry_property_name: the optional geometry property name used to find the geometry "
 			"(topological or non-topological), if not specified then the default geometry property name associated "
 			"with the feature's :class:`type<FeatureType>` is used instead\n"
-			"  :type geometry_property_name: :class:`PropertyName`, or None\n"
+			"  :type geometry_property_name: PropertyName, or None\n"
 			"  :param reverse_order: whether to reverse the topological section when it's used to resolve a "
 			"topological geometry, this is ignored for *point* sections and only applies to a *line* section when "
 			"it does not intersect both its neighbours (when resolving the parent topology) - defaults to False\n"
 			"  :type reverse_order: bool\n"
 			"  :param topological_geometry_type: optional type of topological geometry that the returned section "
 			"will be used for (if specified, then used to determine what type of feature geometry can be used as a section)\n"
-			"  :type topological_geometry_type: :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or "
-			":class:`GpmlTopologicalNetwork`, or None\n"
-			"  :rtype: :class:`GpmlTopologicalSection` (:class:`GpmlTopologicalLineSection` or :class:`GpmlTopologicalPoint`), or None\n"
+			"  :type topological_geometry_type: GpmlTopologicalLine or GpmlTopologicalPolygon or "
+			"GpmlTopologicalNetwork, or None\n"
+			"  :rtype: GpmlTopologicalSection (GpmlTopologicalLineSection or GpmlTopologicalPoint), or None\n"
 			"  :raises: ValueError if *topological_geometry_type* is specified but is not one of the accepted types "
 			"(:class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`)\n"
 			"\n"
@@ -4667,12 +4667,12 @@ export_gpml_topological_section()
 			"  [*staticmethod*] Create a topological network interior referencing a feature geometry.\n"
 			"\n"
 			"  :param feature: the feature referenced by the returned network interior\n"
-			"  :type feature: :class:`Feature`\n"
+			"  :type feature: Feature\n"
 			"  :param geometry_property_name: the optional geometry property name used to find the geometry "
 			"(topological or non-topological), if not specified then the default geometry property name associated "
 			"with the feature's :class:`type<FeatureType>` is used instead\n"
-			"  :type geometry_property_name: :class:`PropertyName`, or None\n"
-			"  :rtype: :class:`GpmlPropertyDelegate`, or None\n"
+			"  :type geometry_property_name: PropertyName, or None\n"
+			"  :rtype: GpmlPropertyDelegate, or None\n"
 			"\n"
 			"  If *geometry_property_name* is not specified then the default geometry property name is determined from the feature's :class:`type<FeatureType>` - "
 			"see :meth:`Feature.get_geometry` for more details.\n"
@@ -4721,7 +4721,7 @@ export_gpml_topological_section()
 			"get_property_delegate()\n"
 			"  Returns the property value that references/delegates the source geometry.\n"
 			"\n"
-			"  :rtype: :class:`GpmlPropertyDelegate`\n")
+			"  :rtype: GpmlPropertyDelegate\n")
 		.def("get_reverse_orientation",
 			&GPlatesPropertyValues::GpmlTopologicalSection::get_reverse_order,
 			"get_reverse_orientation()\n"
@@ -4801,7 +4801,7 @@ export_gpml_topological_line()
 			"  Create a topological line made from topological sections.\n"
 			"\n"
 			"  :param sections: A sequence of :class:`GpmlTopologicalSection` elements\n"
-			"  :type sections: Any sequence such as a ``list`` or a ``tuple``\n"
+			"  :type sections: Any sequence such as a list or a tuple\n"
 			"\n"
 			"  ::\n"
 			"\n"
@@ -4817,7 +4817,7 @@ export_gpml_topological_line()
 			"get_sections()\n"
 			"  Returns the :class:`sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
 			"\n"
-			"  :rtype: :class:`GpmlTopologicalSectionList`\n"
+			"  :rtype: GpmlTopologicalSectionList\n"
 			"\n"
 			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalLine* instance:\n"
 			"  ::\n"
@@ -4873,7 +4873,7 @@ export_gpml_topological_line_section()
 			"  Create a topological point section property value that references a feature property containing a line geometry.\n"
 			"\n"
 			"  :param gpml_property_delegate: the line (polyline) property value\n"
-			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n"
+			"  :type gpml_property_delegate: GpmlPropertyDelegate\n"
 			"  :param reverse_orientation: whether the line was reversed when contributing to the parent topology\n"
 			"  :type reverse_orientation: bool\n"
 			"\n"
@@ -4891,7 +4891,7 @@ export_gpml_topological_line_section()
 			"get_property_delegate()\n"
 			"  Returns the property value that references/delegates the source line geometry.\n"
 			"\n"
-			"  :rtype: :class:`GpmlPropertyDelegate`\n")
+			"  :rtype: GpmlPropertyDelegate\n")
 		.def("set_property_delegate",
 			&GPlatesPropertyValues::GpmlTopologicalLineSection::set_source_geometry,
 			(bp::arg("gpml_property_delegate")),
@@ -4899,7 +4899,7 @@ export_gpml_topological_line_section()
 			"  Sets the property value that references/delegates the source line geometry.\n"
 			"\n"
 			"  :param gpml_property_delegate: the line (polyline) delegate property value\n"
-			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n")
+			"  :type gpml_property_delegate: GpmlPropertyDelegate\n")
 		.def("get_reverse_orientation",
 			&GPlatesPropertyValues::GpmlTopologicalLineSection::get_reverse_order,
 			"get_reverse_orientation()\n"
@@ -5002,9 +5002,9 @@ export_gpml_topological_network()
 			"  Create a topological network made from boundary topological sections and interior geometries.\n"
 			"\n"
 			"  :param boundary_sections: A sequence of :class:`GpmlTopologicalSection` elements\n"
-			"  :type boundary_sections: Any sequence such as a ``list`` or a ``tuple``\n"
+			"  :type boundary_sections: Any sequence such as a list or a tuple\n"
 			"  :param interiors: A sequence of :class:`GpmlPropertyDelegate` elements\n"
-			"  :type interiors: Any sequence such as a ``list`` or a ``tuple``\n"
+			"  :type interiors: Any sequence such as a list or a tuple\n"
 			"\n"
 			"  ::\n"
 			"\n"
@@ -5020,7 +5020,7 @@ export_gpml_topological_network()
 			"get_boundary_sections()\n"
 			"  Returns the :class:`boundary sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
 			"\n"
-			"  :rtype: :class:`GpmlTopologicalSectionList`\n"
+			"  :rtype: GpmlTopologicalSectionList\n"
 			"\n"
 			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalNetwork* instance:\n"
 			"  ::\n"
@@ -5034,7 +5034,7 @@ export_gpml_topological_network()
 			"get_interiors()\n"
 			"  Returns the :class:`interior geometries<GpmlPropertyDelegate>` in a sequence that behaves as a python ``list``.\n"
 			"\n"
-			"  :rtype: :class:`GpmlPropertyDelegateList`\n"
+			"  :rtype: GpmlPropertyDelegateList\n"
 			"\n"
 			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalNetwork* instance:\n"
 			"  ::\n"
@@ -5089,7 +5089,7 @@ export_gpml_topological_point()
 			"  Create a topological point section property value that references a feature property containing a point geometry.\n"
 			"\n"
 			"  :param gpml_property_delegate: the point geometry property value\n"
-			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n"
+			"  :type gpml_property_delegate: GpmlPropertyDelegate\n"
 			"\n"
 			"  ::\n"
 			"\n"
@@ -5105,7 +5105,7 @@ export_gpml_topological_point()
 			"get_property_delegate()\n"
 			"  Returns the property value that references/delegates the source point geometry.\n"
 			"\n"
-			"  :rtype: :class:`GpmlPropertyDelegate`\n")
+			"  :rtype: GpmlPropertyDelegate\n")
 		.def("set_property_delegate",
 			&GPlatesPropertyValues::GpmlTopologicalPoint::set_source_geometry,
 			(bp::arg("gpml_property_delegate")),
@@ -5113,7 +5113,7 @@ export_gpml_topological_point()
 			"  Sets the property value that references/delegates the source point geometry.\n"
 			"\n"
 			"  :param gpml_property_delegate: the point geometry property value\n"
-			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n")
+			"  :type gpml_property_delegate: GpmlPropertyDelegate\n")
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -5180,7 +5180,7 @@ export_gpml_topological_polygon()
 			"  Create a topological polygon made from topological sections.\n"
 			"\n"
 			"  :param exterior_sections: A sequence of :class:`GpmlTopologicalSection` elements\n"
-			"  :type exterior_sections: Any sequence such as a ``list`` or a ``tuple``\n"
+			"  :type exterior_sections: Any sequence such as a list or a tuple\n"
 			"\n"
 			"  ::\n"
 			"\n"
@@ -5200,7 +5200,7 @@ export_gpml_topological_polygon()
 			"get_boundary_sections()\n"
 			"  Returns the :class:`boundary sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
 			"\n"
-			"  :rtype: :class:`GpmlTopologicalSectionList`\n"
+			"  :rtype: GpmlTopologicalSectionList\n"
 			"\n"
 			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalPolygon* instance:\n"
 			"  ::\n"
