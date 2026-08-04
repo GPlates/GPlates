@@ -287,7 +287,11 @@ Step 1–2 dominate.
 ## Round 2 (2026-08-02, revised 2026-08-05) — overload reorder, type-grammar extensions, type-field style sweep, `[*staticmethod*]` removal
 
 > Status: **R1 + R2 executed** (commit 4e681e263); **R3-R6 redesigned 2026-08-05** after
-> the docstring type-field style decisions (see below), not yet executed.
+> the docstring type-field style decisions (see below); **R3 + R4 executed 2026-08-05**
+> (R3: e48751a46 plus follow-ups e9ad947b1/47e5fc675 discovered by dry-running the sweep;
+> R4: f6ec0c79b mechanical + 33e30aa80 hand restyles). **R5 + R6 remain** - note that the
+> module has NOT been rebuilt since the sweep, so the committed stub and the
+> 'pygplates-stub-test' ctest are stale until R6 rebuilds and regenerates.
 > Prompted by VS Code verification of the installed stub (Round 1's end-to-end check):
 > Pylance showed only two `RotationModel.__init__` overloads, and the remaining
 > "Unparsed type expressions" worklist (20 entries) was reviewed for grammar/docstring
@@ -409,7 +413,7 @@ Outcome: worklist 20 → 10 (the survivors are the Step R4 restyle sites and the
 become unused once the Step R4 sweep restyles the docstrings that need them — they get
 pruned in Step R6.
 
-### Step R3 — Generator: grammar round 3 (bracket syntax + identifier resolution)   [model: Fable 5]
+### Step R3 — Generator: grammar round 3 (bracket syntax + identifier resolution)   [model: Fable 5]   ✔ DONE (e48751a46, e9ad947b1, 47e5fc675)
 
 Prepares the parser for the restyled corpus (must land before Step R4's regeneration):
 
@@ -428,7 +432,7 @@ Prepares the parser for the restyled corpus (must land before Step R4's regenera
   first try writing the honest flat union directly in the restyled `:rtype:` (read the
   table); fall back to a `MANUAL_OVERRIDES` entry only if the union is unwieldy.
 
-### Step R4 — Docstring type-field sweep (corpus-wide)   [model: Opus 5 (script), Fable 5 (hand restyles)]
+### Step R4 — Docstring type-field sweep (corpus-wide)   [model: Opus 5 (script), Fable 5 (hand restyles)]   ✔ DONE (f6ec0c79b, 33e30aa80)
 
 Applies the style guideline (see `doc-python-api/PLAN.md`) to ALL `:rtype:`/`:type:`
 fields in `src/api/*.cc` + `src/qt-resources/python/api/*.py`. Compiled-in → rebuild
@@ -481,6 +485,34 @@ pygplates afterwards. Two parts, two commits:
    stderr expectations: **unparsed** worklist → 0 (or lists only deliberate
    leftovers); **missing-fields** unchanged (Crossover/CrossoverTypeFunction still
    deliberately out of scope); no new lint warnings.
+   **Deliberate annotation changes from the R4 hand restyles** (expected diffs beyond
+   the previously-unparsed sites - everything else must be byte-identical):
+   - `TopologicalSnapshot.get_point_velocities/get_point_strain_rates` and
+     `ReconstructSnapshot.get_point_velocities`: element types gain `| None` (points
+     outside all topologies/polygons yield `None` elements), e.g.
+     `list[Vector3D | None] | tuple[list[Vector3D | None], list[TopologyPointLocation]]`.
+   - `TopologicalSnapshot.reconstruct_points -> list[PointOnSphere | None]` (was
+     `list[PointOnSphere | None]` too - unchanged - but now via the flat style);
+     `ReconstructSnapshot.get_point_locations -> list[ReconstructedFeatureGeometry | None]`.
+   - `TopologicalSnapshot.get_resolved_topologies`,
+     `ReconstructSnapshot.get_reconstructed_features/get_reconstructed_geometries`:
+     bare `list` → full generics.
+   - `find_crossovers(crossover_filter)` / `synchronise_crossovers(crossover_filter)`:
+     callables gain the `[Crossover]` parameter list;
+     `synchronise_crossovers(crossover_results)` → `list[tuple[Crossover, int]] | None`;
+     `synchronise_crossovers(crossover_type_function)` gains `| None`.
+   - `Feature.get_geometry/get_geometries/get_all_geometries`: coverage `dict` is now
+     `dict[ScalarType, list[float]]` (also updates the spot-check in item 4);
+     `Feature.get_shapefile_attributes -> dict[str, int | float | str] | Any | None`.
+   - `GpmlIrregularSampling.get_enabled_time_samples -> list[GpmlTimeSample]`;
+     `GpmlIrregularSampling.get_time_samples_bounding_time` unchanged but restyled;
+     `NetRotationSnapshot.get_net_rotation` full generics; LocalCartesian
+     magnitude/azimuth/inclination returns → `tuple[float, float, float]` (and
+     `list[...]` for the sequence overload);
+     `ReconstructedGeometryTimeSpan` accessors → `list[<element>] | None`;
+     `get_scalar_values -> list[float] | dict[ScalarType, list[float]] | None`;
+     `partition_features`/`partition_into_plates` → the three-way union (their old
+     `Any` came from the worklist, so this lands via the unparsed→parsed path).
 3. **Prune now-dead grammar** (less complexity was an explicit goal): where-gloss
    machinery, `N-tuple of A and B`, named-tuple normalization, `2D numpy array`
    special-case, `:meth:`-commentary heuristic, and the role/literal token paths —
@@ -488,7 +520,7 @@ pygplates afterwards. Two parts, two commits:
    worklist regression); keep the ambiguity lint.
 4. Spot-checks: `RotationModel` has 3 `__init__` overloads (narrow one before the
    adapt-overload); `to_lat_lon_array -> numpy.ndarray` (+ `import numpy` in header);
-   `Feature.get_all_geometries -> list[GeometryOnSphere] | list[tuple[GeometryOnSphere, dict]]`;
+   `Feature.get_all_geometries -> list[GeometryOnSphere] | list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]]`;
    `find_crossovers -> list[Crossover]`.
 5. `mypy pygplates/stub/__init__.pyi` → clean (no "will never be matched"); regenerate
    twice → byte-identical; `ctest -C Release -R pygplates-stub-test` passes.
@@ -501,9 +533,12 @@ pygplates afterwards. Two parts, two commits:
 
 1. Generator: overload reorder + grammar extensions + numpy + ambiguity lint
    (Steps R1-R2). ✔ 4e681e263
-2. Generator: bracket syntax + identifier resolution (Step R3).
-3. Docstring sweep, mechanical conversion (Step R4 part 1).
-4. Docstring sweep, complex-site hand restyles (Step R4 part 2).
+2. Generator: bracket syntax + identifier resolution (Step R3). ✔ e48751a46
+   (+ follow-ups from dry-running the sweep: e9ad947b1 markup-free callable
+   parameters, 47e5fc675 word-identifier suffixes / class-object / one-of-the-values /
+   any-combination bare-word forms).
+3. Docstring sweep, mechanical conversion (Step R4 part 1). ✔ f6ec0c79b
+4. Docstring sweep, complex-site hand restyles (Step R4 part 2). ✔ 33e30aa80
 5. `[*staticmethod*]` marker removal + `_STATICMETHOD_MARKER_RE` drop (Step R5).
 6. Regenerated `pygplates/stub/__init__.pyi` + grammar pruning + this PLAN.md status
    update (Step R6).
