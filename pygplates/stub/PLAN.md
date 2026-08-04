@@ -284,13 +284,15 @@ Step 1–2 dominate.
 
 ---
 
-## Round 2 (2026-08-02) — overload reorder, type-grammar extensions, `[*staticmethod*]` removal
+## Round 2 (2026-08-02, revised 2026-08-05) — overload reorder, type-grammar extensions, type-field style sweep, `[*staticmethod*]` removal
 
-> Status: **planned, not yet executed** (branch `feature/pygplates_pyi`).
+> Status: **R1 + R2 executed** (commit 4e681e263); **R3-R6 redesigned 2026-08-05** after
+> the docstring type-field style decisions (see below), not yet executed.
 > Prompted by VS Code verification of the installed stub (Round 1's end-to-end check):
 > Pylance showed only two `RotationModel.__init__` overloads, and the remaining
 > "Unparsed type expressions" worklist (20 entries) was reviewed for grammar/docstring
-> fixes. The companion `doc-python-api/PLAN.md` covers the Sphinx/docs side.
+> fixes. The companion `doc-python-api/PLAN.md` covers the Sphinx/docs side **and holds
+> the canonical docstring type-field style guideline** that Steps R3/R4 implement.
 
 ### Findings driving this round
 
@@ -312,7 +314,39 @@ Step 1–2 dominate.
 - Of the 20 unparsed entries, 11 live in `src/api/*.cc` and 9 in the injected
   pure-Python `src/qt-resources/python/api/*.py`.
 
-### Step R1 — Generator: reorder subsumed overloads   [model: Fable 5]
+### Style decisions (2026-08-05) — reshape Steps R3-R6
+
+Investigating `:returns:`/`:rtype:` conventions surfaced a decisive Sphinx 9 mechanic
+(verified in the installed conda Sphinx source): a `:type x:`/`:rtype:` body that is
+**pure plain text** gets every identifier auto-cross-referenced (the python domain
+splits on `[ ] ( ) ,` / ` or ` / ` of ` / `|`), but a single piece of inline markup
+anywhere in the field — a `:class:` role, a ``literal``, an *emphasis* — disables ALL
+auto-linking for that field. `:returns:` is the opposite: pure prose, never
+auto-linked, so explicit `:class:` roles are the only way to link there.
+
+A corpus survey found 468 `:rtype:` fields (415 `.cc` + 53 `.py`): ~400 simple and
+fine, ~60 problem sites in three overlapping groups — 23 underspecified containers
+(``` ``list`` or ``dict`` ``` etc., the source of `list[Unknown]` Pylance hovers), 36
+conditional rtypes (`if *arg* is True`, `depending on`, the 18-site `type(*default*)`
+family), and the 10 worklist survivors.
+
+User decisions (full guideline in `doc-python-api/PLAN.md`):
+
+1. **Full type-field sweep** — ALL `:rtype:`/`:type:` fields become markup-free
+   (roles/literals/emphasis dropped *inside those fields only*; prose keeps its roles).
+2. **Hybrid syntax** — prose where unambiguous (`list of GeometryOnSphere`,
+   `FiniteRotation, or None`); Python brackets whenever tuples/dicts/nesting appear
+   (`tuple[GeometryOnSphere, dict]`, `dict[K, list[V]]`).
+3. **`, or` top-level separator**; `|` allowed inside brackets.
+4. Conditional clauses move out of `:rtype:` into `:returns:` (which keeps `:class:`
+   roles); `:rtype:` becomes the flat union of all possibilities.
+5. NumPy-style/napoleon conversion considered and rejected.
+
+Verification invariant for the sweep: members whose fields already parsed must keep
+**byte-identical** stub annotations; only previously-unparsed/underspecified sites may
+change (improve).
+
+### Step R1 — Generator: reorder subsumed overloads   [model: Fable 5]   ✔ DONE (4e681e263)
 
 In the dedup loop (generate_stub.py:1466-1486), when
 `_signature_subsumes(entry[0], signature)`:
@@ -331,7 +365,7 @@ Expected stub outcome: `RotationModel` gains
 `def __init__(self, rotation_model: RotationModel) -> None` as a third `@overload`,
 emitted *before* the adapt-overload; `mypy` stays clean.
 
-### Step R2 — Generator: type-grammar extensions   [model: Fable 5]
+### Step R2 — Generator: type-grammar extensions   [model: Fable 5]   ✔ DONE (4e681e263)
 
 All in `TypeExpressionParser`:
 
@@ -369,25 +403,60 @@ All in `TypeExpressionParser`:
   `self.warnings` entry (parse result unchanged) — turns the silent `list[A | list[B]]`
   mis-parse into a visible report.
 
-### Step R3 — `MANUAL_OVERRIDES` for enum-dependent returns   [model: Sonnet 5]
+Outcome: worklist 20 → 10 (the survivors are the Step R4 restyle sites and the
+`partition_*` returns); mypy clean; deterministic. Note: several R2 features
+(where-glosses, `N-tuple of A and B`, named-tuple, `2D numpy array`) are expected to
+become unused once the Step R4 sweep restyles the docstrings that need them — they get
+pruned in Step R6.
 
-`PlatePartitioner.partition_features` / `partition_into_plates`
-(`:rtype: depends on *partition_return* (see table below)`,
-src/qt-resources/python/api/PlatePartitioning.py:143/567): read the table and write an
-honest union override; if it turns out unwieldy, leave as `Any` (stays on the worklist)
-— call it during implementation.
+### Step R3 — Generator: grammar round 3 (bracket syntax + identifier resolution)   [model: Fable 5]
 
-### Step R4 — Docstring restyles   [model: Sonnet 5]
+Prepares the parser for the restyled corpus (must land before Step R4's regeneration):
 
-Compiled-in docstrings → rebuild pygplates afterwards. Every restyle must still read as
-plain English in the rendered HTML.
+- **Bracket syntax**: `list[X]`, `tuple[A, B]`, `dict[K, V]`, `X | Y`, arbitrarily
+  nested, mixing with prose forms (`list of tuple[A, B]`).
+- **Bare/dotted identifier resolution**: a plain word or dotted name in a type field
+  resolves against the introspected module — classes (incl. nested, e.g.
+  `NetworkTriangulation.Triangle`), and enum *values* like `PropertyReturn.exactly_one`
+  resolve to their owning enum class (mirroring the existing emphasis-form handling,
+  since the sweep de-italicizes them). Unknown identifiers still error → worklist.
+- Keep the ambiguity lint; keep legacy role/literal parsing during the transition
+  (pruned in Step R6 once the corpus no longer exercises it).
+- `PlatePartitioner.partition_features` / `partition_into_plates`
+  (src/qt-resources/python/api/PlatePartitioning.py:143/567, currently
+  `:rtype: depends on *partition_return* (see table below)`): with bracket syntax,
+  first try writing the honest flat union directly in the restyled `:rtype:` (read the
+  table); fall back to a `MANUAL_OVERRIDES` entry only if the union is unwieldy.
 
-| Site | Change |
-|---|---|
-| src/api/PyFeature.cc:5393-5395 (`get_geometry` rtype), :5544-5545 (`get_geometries`), :5577-5578 (`get_all_geometries`) | `` `dict` `` → ``` ``dict`` ``` (single backquote is the default role, not a literal); insert `,` before the bare `or list of`; the `2-tuple of A and B` wording stays (parsed after Step R2) |
-| src/api/PyFeature.cc:5238-5240 (`set_geometry` rtype) | rewrite as a `, or`-separated union — `` :class:`Property` ``, or list of, or 2-tuple of, or list of 2-tuple of — moving the `depending on whether ...` condition into the prose that already explains it |
-| src/qt-resources/python/api/ReconstructionGeometries.py:38, 189, 319 | replace `N-tuple appending a str` with explicit tuple forms, e.g. `` :class:`ReconstructionGeometry` ``, or 2-tuple of (`` :class:`ReconstructionGeometry` ``, str), or None — confirm exact element semantics from each docstring body when editing |
-| src/qt-resources/python/api/Crossovers.py:542-543 (`crossover_type_function`) | restyle trailing `or can also be None if ...` → `, or None if *crossover_filter* is a sequence (since it then gets ignored)` |
+### Step R4 — Docstring type-field sweep (corpus-wide)   [model: Opus 5 (script), Fable 5 (hand restyles)]
+
+Applies the style guideline (see `doc-python-api/PLAN.md`) to ALL `:rtype:`/`:type:`
+fields in `src/api/*.cc` + `src/qt-resources/python/api/*.py`. Compiled-in → rebuild
+pygplates afterwards. Two parts, two commits:
+
+1. **Mechanical conversion script** (scratchpad one-off, not committed; review the full
+   diff by hand). Transforms ONLY `:type:`/`:rtype:` field text, multi-line aware
+   (fields wrap across C++ string-literal continuation lines):
+   `` :class:`X` `` → `X`; alt-text `` :class:`words<X>` `` → `X`;
+   ``` ``X`` ``` → `X`; `*X*` → `X` (e.g. `*PropertyReturn.exactly_one*` enum-value
+   lists keep the listed values, italics removed). Everything else byte-identical.
+   The ~245 role-only rtypes and most `:type:` fields convert this way.
+2. **Hand restyles** (~60 complex sites from the survey): flat-union `:rtype:` per the
+   guideline, conditions moved to `:returns:` (adding a `:returns:` where the real type
+   info currently lives only there). Key sites:
+   `calculate_plate_boundary_statistics` (PyTopologicalSnapshot.cc:3012-3014,
+   `` ``list`` or ``dict`` ``), `get_scalar_values` (PyTopologicalModel.cc:1843-1847),
+   the 9 `` ``list`` or ``None`` `` ReconstructedGeometryTimeSpan accessors
+   (PyTopologicalModel.cc:1694-1941), the 5 bare-`tuple` LocalCartesian returns
+   (+ `list of tuple`, PyLocalCartesian.cc:789-887), the PyFeature.cc
+   get/set_geometry family (:5238, :5393, :5544, :5577 — incl. the 3 single-backquote
+   `` `dict` `` mis-markups), `type(*default*)` → `type(default)` (18 sites),
+   ReconstructionGeometries.py:38/189/319 (`N-tuple appending a str` → explicit
+   bracket tuples), Crossovers.py:542-543, `2D numpy array ...` →
+   `numpy.ndarray` (GeometriesOnSphere.py:123/201), and the malformed
+   PyGreatCircleArc.cc:445 (`list :class:`points<PointOnSphere>``).
+   Also: `:returns:` goes before `:rtype:` (3 reversed sites), `:return:` →
+   `:returns:` (3 sites).
 
 ### Step R5 — Delete the `[*staticmethod*]` markers   [model: Haiku 4.5]
 
@@ -402,38 +471,50 @@ plain English in the rendered HTML.
 - HTML result: the auto-detected *static* prefix remains; the duplicated body marker
   disappears.
 
-### Step R6 — Rebuild, regenerate, verify   [model: Sonnet 5]
+### Step R6 — Rebuild, regenerate, prune, verify   [model: Sonnet 5 (prune: Fable 5)]
 
 1. Rebuild: `cmake --build build-pygplates-vs --config Release --target pygplates`.
-2. Regenerate the stub; stderr expectations: **unparsed** worklist 20 → 0 (or 2 if
-   Step R3 punts); **missing-fields** unchanged (Crossover/CrossoverTypeFunction still
-   deliberately out of scope); no new warnings.
-3. Spot-checks: `RotationModel` has 3 `__init__` overloads (narrow one before the
+2. Regenerate the stub. **Invariant check**: members whose fields already parsed keep
+   byte-identical annotations; the underspecified/conditional sites now emit full
+   generics (e.g. `calculate_plate_boundary_statistics ->
+   list[PlateBoundaryStatistic] | dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]`).
+   stderr expectations: **unparsed** worklist → 0 (or lists only deliberate
+   leftovers); **missing-fields** unchanged (Crossover/CrossoverTypeFunction still
+   deliberately out of scope); no new lint warnings.
+3. **Prune now-dead grammar** (less complexity was an explicit goal): where-gloss
+   machinery, `N-tuple of A and B`, named-tuple normalization, `2D numpy array`
+   special-case, `:meth:`-commentary heuristic, and the role/literal token paths —
+   delete each only after verifying the swept corpus no longer exercises it (no
+   worklist regression); keep the ambiguity lint.
+4. Spot-checks: `RotationModel` has 3 `__init__` overloads (narrow one before the
    adapt-overload); `to_lat_lon_array -> numpy.ndarray` (+ `import numpy` in header);
    `Feature.get_all_geometries -> list[GeometryOnSphere] | list[tuple[GeometryOnSphere, dict]]`;
    `find_crossovers -> list[Crossover]`.
-4. `mypy pygplates/stub/__init__.pyi` → clean (no "will never be matched"); regenerate
+5. `mypy pygplates/stub/__init__.pyi` → clean (no "will never be matched"); regenerate
    twice → byte-identical; `ctest -C Release -R pygplates-stub-test` passes.
-5. User re-checks in VS Code: signature help (Ctrl+Shift+Space) on
-   `pygplates.RotationModel(` cycles all three constructor forms. (Bare hover always
-   shows only the *first* overload's doc — that is Pylance behaviour, not a stub defect.)
+6. User re-checks in VS Code: signature help (Ctrl+Shift+Space) on
+   `pygplates.RotationModel(` cycles all three constructor forms (bare hover always
+   shows only the *first* overload's doc — Pylance behaviour, not a stub defect); hover
+   on `calculate_plate_boundary_statistics` shows the full generic union.
 
 ### Round 2 commit split
 
 1. Generator: overload reorder + grammar extensions + numpy + ambiguity lint
-   (Steps R1-R3).
-2. Docstring restyles in src/api/*.cc + src/qt-resources/python/api/*.py (Step R4).
-3. `[*staticmethod*]` marker removal + `_STATICMETHOD_MARKER_RE` drop + this PLAN.md
-   status update (Step R5).
-4. Regenerated `pygplates/stub/__init__.pyi` (Step R6).
+   (Steps R1-R2). ✔ 4e681e263
+2. Generator: bracket syntax + identifier resolution (Step R3).
+3. Docstring sweep, mechanical conversion (Step R4 part 1).
+4. Docstring sweep, complex-site hand restyles (Step R4 part 2).
+5. `[*staticmethod*]` marker removal + `_STATICMETHOD_MARKER_RE` drop (Step R5).
+6. Regenerated `pygplates/stub/__init__.pyi` + grammar pruning + this PLAN.md status
+   update (Step R6).
 
 ### Round 2 model summary
 
 | Step | Work | Suggested model | Why |
 |---|---|---|---|
-| R1 | Overload reorder | **Fable 5** | Typing semantics (mypy overload-ordering rules) and prose-attachment edge cases; same session as R2. |
-| R2 | Grammar extensions | **Fable 5** | The hard part — five parser features with known hazards (the `N-tuple` rewrite trap, nested `where` glosses). |
-| R3 | `MANUAL_OVERRIDES` | Sonnet 5 | Read a docs table, transcribe an honest union; escape hatch is leaving `Any`. |
-| R4 | Docstring restyles | Sonnet 5 | Well-specified per-site edits; needs care reading each body for semantics, not design. |
+| R1 | Overload reorder ✔ | **Fable 5** | Typing semantics (mypy overload-ordering rules) and prose-attachment edge cases; same session as R2. |
+| R2 | Grammar extensions ✔ | **Fable 5** | The hard part — five parser features with known hazards (the `N-tuple` rewrite trap, nested `where` glosses). |
+| R3 | Bracket grammar + identifier resolution | **Fable 5** | New parser surface interacting with every existing rule; the `partition_*` union judgement call. |
+| R4 | Type-field sweep | **Opus 5** (script) + **Fable 5** (hand restyles) | The script must edit wrapped C++ string literals without touching prose; the ~60 hand sites need per-site semantic reading and `:returns:` rewrites. |
 | R5 | Marker deletion | Haiku 4.5 | Mechanical removal of a fixed marker + comment pattern across 16 files. |
-| R6 | Rebuild/regenerate/verify | Sonnet 5 | Mechanical execution and reporting; final IDE check is manual. |
+| R6 | Rebuild/regenerate/prune/verify | Sonnet 5 (prune: **Fable 5**) | Mechanical execution and reporting, but deleting grammar safely needs the parser author's judgement. |
