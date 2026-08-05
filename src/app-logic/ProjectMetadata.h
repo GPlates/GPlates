@@ -13,6 +13,7 @@
 
 #include <boost/optional.hpp>
 #include <QString>
+#include <vector>
 
 
 namespace GPlatesAppLogic
@@ -27,6 +28,28 @@ namespace GPlatesAppLogic
 		bool has_front_matter;
 		bool is_valid;
 		boost::optional<double> planet_radius_metres;
+
+		/**
+		 * Whether @a planet_radius_metres reflects a well-formed document. Tracked separately
+		 * from @a is_valid so a malformed required_timestamps_ma cannot be mistaken for a bad
+		 * radius, or vice versa - the two are validated independently.
+		 */
+		bool planet_radius_is_valid;
+		QString planet_radius_diagnostic;
+
+		/**
+		 * The schedule of reconstruction times, in Ma, that the project intends to be worked
+		 * through in order, oldest first. Optional - absent means no schedule is active and
+		 * ordinary timeline stepping is unaffected.
+		 *
+		 * Validated independently of the planet radius above: a malformed schedule does not
+		 * invalidate an otherwise-good radius, and a missing radius (which is mandatory and
+		 * fails the whole document) never reaches this field at all.
+		 */
+		boost::optional< std::vector<double> > required_timestamps_ma;
+		bool required_timestamps_are_valid;
+		QString required_timestamps_diagnostic;
+
 		QString diagnostic;
 	};
 

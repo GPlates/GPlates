@@ -122,6 +122,10 @@ namespace
 		GPlatesAppLogic::ProjectMetadata metadata;
 		metadata.has_front_matter = true;
 		metadata.is_valid = false;
+		metadata.planet_radius_is_valid = false;
+		metadata.required_timestamps_are_valid = false;
+		metadata.planet_radius_diagnostic = diagnostic;
+		metadata.required_timestamps_diagnostic = diagnostic;
 		metadata.diagnostic = diagnostic;
 		return metadata;
 	}
@@ -130,8 +134,11 @@ namespace
 
 GPlatesAppLogic::ProjectMetadata::ProjectMetadata() :
 	has_front_matter(false),
-	is_valid(true)
+	is_valid(true),
+	planet_radius_is_valid(true),
+	required_timestamps_are_valid(true)
 {  }
+
 
 
 GPlatesAppLogic::ProjectMetadata
@@ -284,7 +291,70 @@ GPlatesAppLogic::ProjectMetadataParser::parse(
 		return invalid_metadata(QObject::tr("gplates.planet.radius_m must be a finite positive number in metres."));
 	}
 
-	metadata.is_valid = true;
 	metadata.planet_radius_metres = radius_metres;
+	metadata.planet_radius_is_valid = true;
+
+	//
+	// Required project timestamps. Entirely optional, and validated independently of the radius
+	// above: a malformed schedule here must not disturb an otherwise-good radius, since the two
+	// are unrelated concerns that happen to share a document. A missing radius already returned
+	// above, so nothing below this point can retroactively invalidate it.
+	//
+	QStringList diagnostics;
+	if (scalar_values.contains("gplates.reconstruction.required_timestamps_ma"))
+	{
+		const QStringList encoded_timestamps =
+				scalar_values["gplates.reconstruction.required_timestamps_ma"].split(
+						',', Qt::KeepEmptyParts);
+		std::vector<double> timestamps;
+		timestamps.reserve(static_cast<std::size_t>(encoded_timestamps.size()));
+		QString timestamp_problem;
+		if (encoded_timestamps.size() < 2)
+		{
+			timestamp_problem = QObject::tr(
+					"gplates.reconstruction.required_timestamps_ma must contain at least two comma-separated ages.");
+		}
+		else
+		{
+			double previous_timestamp = 10001.0;
+			for (int index = 0; index < encoded_timestamps.size(); ++index)
+			{
+				bool timestamp_is_numeric = false;
+				const QString encoded_timestamp = encoded_timestamps[index].trimmed();
+				const double timestamp = encoded_timestamp.toDouble(&timestamp_is_numeric);
+				if (encoded_timestamp.isEmpty() || !timestamp_is_numeric ||
+						!std::isfinite(timestamp) || timestamp < 0.0 || timestamp > 10000.0)
+				{
+					timestamp_problem = QObject::tr(
+							"Project timestamp %1 must be a finite age from 0 through 10000 Ma.")
+							.arg(index + 1);
+					break;
+				}
+				if (timestamp >= previous_timestamp)
+				{
+					timestamp_problem = QObject::tr(
+							"Project timestamps must be strictly descending from older to younger ages; timestamp %1 is out of order or duplicated.")
+							.arg(index + 1);
+					break;
+				}
+				timestamps.push_back(timestamp);
+				previous_timestamp = timestamp;
+			}
+		}
+
+		if (timestamp_problem.isEmpty())
+		{
+			metadata.required_timestamps_ma = timestamps;
+		}
+		else
+		{
+			metadata.required_timestamps_are_valid = false;
+			metadata.required_timestamps_diagnostic = timestamp_problem;
+			diagnostics.append(timestamp_problem);
+		}
+	}
+
+	metadata.is_valid = diagnostics.isEmpty();
+	metadata.diagnostic = diagnostics.join(" ");
 	return metadata;
 }

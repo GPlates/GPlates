@@ -30,7 +30,7 @@ the existing session/project archive. Paths use the same relative-path and
 missing-file recovery machinery as other project files; document contents are
 not embedded in the archive.
 
-## Planetary-radius metadata
+## Typed project metadata
 
 Only the Primary Project Document supplies metadata. Supported front matter
 must begin on its first line and use the following schema:
@@ -41,6 +41,8 @@ gplates:
   schema_version: 1
   planet:
     radius_m: 6900000
+  reconstruction:
+    required_timestamps_ma: "1000, 950, 900, 850, 800, 750, 700, 650, 600, 560, 520, 480, 440, 400, 370, 340, 310, 280, 250, 225, 200, 180, 160, 140, 120, 100, 80, 60, 40, 20, 10, 0"
 ---
 
 # Honua
@@ -52,6 +54,19 @@ Project notes begin here.
 version 1 is supported; omitting `schema_version` currently implies version 1.
 Unknown keys are ignored and are never rewritten. A bare `radius` key is not
 recognized, and units are never inferred from prose.
+
+`gplates.reconstruction.required_timestamps_ma` is an optional quoted,
+comma-separated scalar. Ages must be finite values from 0 through 10000 Ma,
+strictly descending from older to younger, with no duplicates and at least two
+entries. GPlates preserves the supplied values as the authoritative Project
+Timeline; it does not sort, regularize, interpolate, or rewrite them. Hold
+**Alt** while clicking the backward (`<<`) or forward (`>>`) View buttons to
+move to the adjacent older or younger Project Timestamp.
+
+The radius remains required whenever front matter is present; the timestamp
+schedule is optional. The two are validated independently, so an invalid
+schedule disables Project Timeline navigation without discarding a valid
+radius, rather than failing the document as a whole.
 
 After the primary document is saved or reloaded, GPlates reparses it and
 updates the project-wide effective radius. Measurement distances and polygon
@@ -83,10 +98,14 @@ physical distance, area, or linear velocity.
 2. Set `project.md` as primary, save the GPlates project, close it, and reopen
    it. Confirm document order and the primary marker are restored.
 3. Edit Markdown and confirm the Preview tab renders it.
-4. Add valid radius front matter and save. Confirm the panel reports Project
-   Markdown as the radius source and a physical measurement changes.
+4. Add valid radius and timestamp front matter and save. Confirm the panel
+   reports Project Markdown as the radius source, a physical measurement
+   changes, and Alt-click navigation follows the exact irregular schedule.
 5. Enter an invalid radius and save. Confirm a warning appears and the exact
    Earth default is used.
-6. Move a Markdown file outside GPlates. Confirm it is marked missing and use
+6. Restore the radius, duplicate one timestamp, and save. Confirm the radius
+   remains active while Project Timeline navigation reports the invalid
+   schedule and falls back to the ordinary frame step.
+7. Move a Markdown file outside GPlates. Confirm it is marked missing and use
    Locate to repair the association.
-7. Remove a document from the project and confirm the file remains on disk.
+8. Remove a document from the project and confirm the file remains on disk.

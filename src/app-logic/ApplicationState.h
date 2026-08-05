@@ -76,6 +76,7 @@ namespace GPlatesAppLogic
 	class LogModel;
 	class PlanetaryParameters;
 	class ProjectDocumentRegistry;
+	class ProjectTimestampSchedule;
 	class ReconstructGraph;
 	class ReconstructMethodRegistry;
 	class UserPreferences;
@@ -111,6 +112,17 @@ namespace GPlatesAppLogic
 		{
 			return d_reconstruction_time;
 		}
+
+		/**
+		 * Clamps a requested displayed reconstruction time to the default View range
+		 * configured in User Preferences.
+		 */
+		double
+		clamp_reconstruction_time_to_default_view_range(
+				double reconstruction_time) const;
+
+		bool
+		is_reconstruction_time_locked_to_default_view_range() const;
 
 		GPlatesModel::integer_plate_id_type
 		get_current_anchored_plate_id() const
@@ -195,6 +207,12 @@ namespace GPlatesAppLogic
 
 		const PlanetaryParameters &
 		get_planetary_parameters() const;
+
+		ProjectTimestampSchedule &
+		get_project_timestamp_schedule();
+
+		const ProjectTimestampSchedule &
+		get_project_timestamp_schedule() const;
 
 
 		/**
@@ -524,6 +542,9 @@ namespace GPlatesAppLogic
 
 		//! Project-wide typed planetary parameters derived from the primary document.
 		boost::scoped_ptr<PlanetaryParameters> d_planetary_parameters;
+
+		//! Exact required reconstruction timestamps derived from the primary document.
+		boost::scoped_ptr<ProjectTimestampSchedule> d_project_timestamp_schedule;
 
 		/**
 		 * A registry for various ways to reconstruct a feature into @a ReconstructedFeatureGeometry objects.

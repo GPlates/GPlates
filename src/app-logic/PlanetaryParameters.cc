@@ -96,11 +96,17 @@ GPlatesAppLogic::PlanetaryParameters::reload_from_primary_document()
 		use_earth_default(EARTH_DEFAULT);
 		return;
 	}
-	if (!metadata.is_valid || !metadata.planet_radius_metres)
+	if (!metadata.planet_radius_is_valid)
 	{
 		use_earth_default(
 				INVALID_PROJECT_METADATA_USING_EARTH_DEFAULT,
-				metadata.diagnostic + tr(" GPlates is using the existing Earth-radius default."));
+				metadata.planet_radius_diagnostic +
+						tr(" GPlates is using the existing Earth-radius default."));
+		return;
+	}
+	if (!metadata.planet_radius_metres)
+	{
+		use_earth_default(EARTH_DEFAULT);
 		return;
 	}
 
