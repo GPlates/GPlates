@@ -174,6 +174,13 @@ commits.
 - `src/qt-widgets/MetadataDialog.cc` `save_fc_meta()` / `save_mprs_meta()` (added `is_still_valid()` guards matching the old proxy's silent-skip)
 - `src/file-io/GpmlUpgradeReaderUtils.cc` crustal-thinning-factor upgrade (**also affects pygplates**: loading pre-GPlates-1.6.338 files silently kept unconverted values)
 - `src/qt-widgets/CreateFeatureDialog.cc` `reverse_reconstruct_geometry_property()` (also removed a stray duplicated `clone()` statement that predates the merge on both branches)
+- `src/qt-widgets/TotalReconstructionSequencesDialog.cc` `update_current_sequence()` (3 sites — TRS
+  dialog → Edit sequence → Apply) and `set_seq_disabled()` (1 site — enable/disable a sequence).
+  **Found later**, while investigating issue #38 (see §9): these are spelled `**opt_iter = x` /
+  `(**opt_iter) = x`, dereferencing a `boost::optional<FeatureHandle::iterator>` returned **by value**
+  from `TRSUtils::TRSFinder`, which the original audit's `*iter = ` grep did not match. Same bug class,
+  same fix (`feature_ref->set(iter, x)` with `is_still_valid()` guards). Independent of §9's fix:
+  `TRSFinder` is read-only (it only records iterators) and the mutation happens *after* the visit.
 
 **Not fixed / known residual:**
 - `BubbleUpRevisionHandler::commit()` has `// TODO: Emit model events.` — **in-place** property-value
@@ -182,6 +189,9 @@ commits.
   flag. Same gap existed for in-place edits on the old branch (old GUI always used clone + commit).
   Console `feature.add/remove/set` paths DO notify. Full fix is the deferred
   `feature/pygplates-model-revisions` work.
+  **Update:** this gap turned out to be live for the desktop app too, via the non-const `FeatureVisitor`
+  mutation path — see §9 for the symptom (issue #38) and the interim fix. The TODO itself remains
+  unimplementable until `FeatureHandle` is a `RevisionContext`.
 - New `FeatureHandle::set()` lacks the old instance-id equality skip, so a commit of an unchanged
   clone now still dirties the file (rare; e.g. a no-op geometry-builder update).
 - Disabled (`#if 0`) code still containing the dead pattern, left as-is: `SplitFeatureUndoCommand.cc`,
@@ -292,3 +302,97 @@ workaround can be deleted. No shared helper was introduced since it would just b
 un-hardened (option 2 skipped, per above) — every current `set()`/`add()` call site is disciplined today,
 and the full model migration (option 3) is expected to close this properly rather than layering a second
 temporary workaround on top of `set()`/`add()`.
+
+## 9. Post-merge regression (GPlates issue #38): non-const `FeatureVisitor` edits never reach the feature
+
+**Symptom (reported, GPlates 2.6.0-dev):** with the **Modify Reconstruction Pole** tool the plate follows
+the mouse while dragging, but **Apply** has no visible effect — the plate snaps back to its original
+position, and "Save All Changes" writes a byte-identical `.rot` file.
+
+**Root cause:** two consequences of the merge combine.
+
+1. *The write-back disappeared.* Pre-merge, `src/model/FeatureVisitor.cc` specialised the non-const
+   visitor to *clone → visit → commit*:
+   ```cpp
+   TopLevelProperty::non_null_ptr_type prop_clone = (*iter)->deep_clone();
+   prop_clone->accept_visitor(*this);
+   *iter = prop_clone;    // TopLevelPropertyRef proxy -> FeatureHandle::set() -> notifies the model
+   ```
+   The merge deleted that file (its `FeatureVisitorThatGuaranteesNotToModify` opt-out no longer exists
+   either), leaving only the generic template in `src/model/FeatureVisitor.h`:
+   `(*feature_iterator)->accept_visitor(*this);` — which mutates the live property in place.
+2. *Bubble-up does not reach the feature.* `GpmlFiniteRotation::set_finite_rotation()` commits via
+   `BubbleUpRevisionHandler`, and the chain terminates at `TopLevelPropertyInline` because
+   `FeatureHandle`/`BasicHandle` are **not** `RevisionContext`s — i.e. §7's residual `// TODO: Emit model
+   events.` (`src/model/BubbleUpRevisionHandler.cc`). That TODO cannot be implemented today: `d_model` is
+   always `boost::none` for an in-feature property value, so the handler has no feature to notify.
+
+So the pole data **is** updated in memory, but `BasicHandle::notify_listeners_of_modification()` never
+runs — and that one function does both jobs:
+
+- `set_unsaved_changes()` on the `FeatureCollectionHandle`. Without it, "Save All Changes" **skips the
+  file entirely** (`src/gui/FileIOFeedback.cc`), hence the unchanged `.rot`. (The per-row Save button
+  passes `only_unsaved_changes = false` and *would* write the new poles, since
+  `PlatesRotationFormatWriter` reads live property values — a useful confirmation that the model data
+  itself was correct all along.)
+- fires `publisher_modified` → `ApplicationState::reconstruct()` and `ReconstructGraph::modified_input_file()`
+  → `ReconstructionLayerProxy::invalidate()`, the only thing that discards the cached reconstruction
+  trees. Without it the view redraws from stale trees while
+  `ModifyReconstructionPoleWidget::reset_adjustment()` clears the drag orientation — so the plate
+  visibly snaps back.
+
+`AdjustmentApplicator::apply_adjustment()` (`src/qt-widgets/ApplyReconstructionPoleAdjustmentDialog.cc`)
+already wraps the visit in a `NotificationGuard` and releases it *expecting* a reconstruction; there was
+simply nothing pending to flush.
+
+**Interim fix applied** (two hunks, both marked `INTERIM (GPlates issue #38)`):
+- `src/model/TopLevelProperty.h` — new `accept_visitor_and_detect_modification(FeatureVisitor &)`
+  returning whether the visit created a new revision. The comparison lives inside `TopLevelProperty` so
+  `Revision` stays out of the public API (`Revisionable::get_current_revision()` is protected). Note the
+  `GPlatesModel::Revision` qualification — unqualified `Revision` would find the nested
+  `TopLevelProperty::Revision`.
+- `src/model/FeatureVisitor.h` — an `inline template<>` specialisation of
+  `FeatureVisitorBase<FeatureHandle>::visit_feature_property()` that, **only when the visit actually
+  created a new revision**, re-sets the property via `feature_ref->set(iter, property)` to notify model
+  listeners. A top-level property acquires a new revision iff something nested in it was modified, since
+  it is currently the root of the bubble-up chain — so this is an exact change detector, not a heuristic.
+
+Deliberately *not* a restoration of the pre-merge behaviour: there is **no deep clone** of every visited
+property, so the read-only visitors on the hot reconstruction path pay only a pointer copy and compare.
+`set()` with the same pointer is safe — `BasicRevision::set` is a copy-and-swap on the intrusive pointer
+(no reallocation, no size change, no revision swap), and `RevisionAwareIterator` holds only
+`{weak_ref, index}` and re-reads the revision on each dereference, so the enclosing
+`visit_feature_properties()` loop iterator stays valid.
+
+**Blast radius audited.** Of the 23 classes deriving from non-const `GPlatesModel::FeatureVisitor`,
+exactly three mutate property values:
+
+| Visitor | Verdict |
+|---|---|
+| `TotalReconstructionSequenceRotationInserter` | the bug — *wants* the notification, and already runs under a `NotificationGuard` |
+| `MakeFilePathsAbsoluteVisitor` (`src/file-io/GpmlReader.cc`) | runs on a **detached** collection during load (no model, no observers); `FeatureCollectionFileIO` clears the flag after a clean load — no regression |
+| `GeometryRotator` (`src/feature-visitors/GeometryRotator.h`) | **zero callers** — dead code |
+
+The other 20 (all the `ReconstructMethod*`, `TopologyGeometryResolver`, `TopologyNetworkResolver`,
+`GeometryCookieCutter`, `TopologyInternalUtils`, `*GeometryPopulator`, `TRSUtils`, `PartitionFeatureUtils`,
+`EditWidgetChooser`, `PaleomagUtils`, `api/PyPropertyValueVisitor`) are non-const only to obtain non-const
+references; none calls a setter or a `RevisionedVector` mutator, so none can trip the detector
+(`PartitionFeatureUtils.cc` even carries a TODO saying exactly this). Nothing overrides
+`visit_feature_property`, so the specialisation cannot be bypassed. pyGPlates is unaffected:
+`FeatureVisitorWrap` exposes only property-value visiting and never goes through `visit_feature_property`.
+
+**Removal criterion:** delete **both** hunks once `FeatureHandle` is a `RevisionContext` — Stage 4 of
+`feature/pygplates-model-revisions` (`src/model/FeatureBase.h`) — and the model emits these events itself
+via the now-implementable `BubbleUpRevisionHandler::commit()` TODO. That branch deliberately leaves
+`visit_feature_property()` as the plain in-place call, which is the correct end state; this interim
+specialisation exists only to bridge the gap.
+
+**Also fixed alongside** (drive-by, pre-existing on both branches — not caused by the merge):
+`TotalReconstructionSequenceRotationInserter::update_finite_rotation()` built its `old_pole` from
+`gpml_finite_rotation.get_finite_rotation()` *after* calling `set_finite_rotation()`, so
+`old_pole == new_pole`. Benign today (only the `.grot` proxy consumes it, and
+`PlatesRotationFileProxy::update_pole` matches on moving-plate-id + time), but it would break `.grot`
+editing the moment that match becomes value-sensitive. Now captures the original rotation first.
+
+**Explicitly out of scope** (recorded, not attempted): making the handles `RevisionContext`s;
+implementing the `BubbleUpRevisionHandler::commit()` TODO; making Python property-value edits notify.

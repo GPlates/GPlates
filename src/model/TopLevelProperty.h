@@ -144,6 +144,35 @@ namespace GPlatesModel
 				FeatureVisitor &visitor) = 0;
 
 		/**
+		 * Accept a FeatureVisitor instance and return whether the visitor modified this property.
+		 *
+		 * A top-level property acquires a new revision if and only if something nested within it
+		 * was modified, since it is currently the root of the bubble-up revisioning chain
+		 * (FeatureHandle is not yet a RevisionContext).
+		 *
+		 * INTERIM (GPlates issue #38) - remove this method once FeatureHandle is a RevisionContext
+		 * (see the 'feature/pygplates-model-revisions' branch) and the model emits these events itself.
+		 * See also the FeatureVisitorBase<FeatureHandle>::visit_feature_property() specialisation
+		 * in "FeatureVisitor.h" that is the sole caller.
+		 */
+		bool
+		accept_visitor_and_detect_modification(
+				FeatureVisitor &visitor)
+		{
+			// Hold a reference to the revision current before the visit, so that if the visitor
+			// creates more than one revision an intermediate one cannot be freed and its address reused.
+			//
+			// Note: 'GPlatesModel::Revision' must be qualified since the nested 'TopLevelProperty::Revision'
+			// (declared below) would otherwise be found instead.
+			const GPlatesModel::Revision::non_null_ptr_to_const_type revision_before_visit =
+					get_current_revision();
+
+			accept_visitor(visitor);
+
+			return get_current_revision() != revision_before_visit;
+		}
+
+		/**
 		 * Prints the contents of this TopLevelProperty to the stream @a os.
 		 *
 		 * Note: This function is not called operator<< because operator<< needs to
