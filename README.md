@@ -50,6 +50,24 @@ GPlates is developed by [an international team](https://www.gplates.org/contact/
 
 For more information please visit the [GPlates website](https://www.gplates.org/).
 
+## About this fork
+
+This repository tracks the upstream `gplates` development branch and adds work in three directions: the everyday feel of the application, the correctness of the machinery underneath it, and the particular needs of people who use GPlates to build imagined worlds rather than reconstruct the real one.
+
+Everything here arrives as its own reviewed pull request against the `gplates` branch, so the notes below double as a changelog.
+
+### General User Experience
+
+Nothing has landed here yet. Work in this area is still in review.
+
+### Behind the Scenes
+
+- **Files stored under non-ASCII paths now load and save reliably** — [#16](https://github.com/CaliTarheel/GPlates/pull/16)
+
+### World Building
+
+Nothing has landed here yet. Work in this area is still in review.
+
 ## Documentation
 
 The [documentation](https://www.gplates.org/docs/) includes:
