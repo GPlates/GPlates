@@ -62,7 +62,7 @@ Nothing has landed here yet. Work in this area is still in review.
 
 ### Behind the Scenes
 
-- **Files stored under non-ASCII paths now load and save reliably** — [#16](https://github.com/CaliTarheel/GPlates/pull/16)
+- Files stored under non-ASCII paths now load and save reliably — [#16](https://github.com/CaliTarheel/GPlates/pull/16)
 
 ### World Building
 
