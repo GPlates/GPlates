@@ -20,8 +20,34 @@ import math
 import pygplates
 
 
-DEFAULT_TIME_1 = 0.0
-DEFAULT_TIME_2 = 450.0
+# Used only when the configured view range cannot be read - see _default_times().
+FALLBACK_YOUNGEST_TIME = 0.0
+FALLBACK_OLDEST_TIME = 410.0
+
+# Newest features are orange, oldest are green.
+YOUNGEST_COLOUR = '#e66101'
+OLDEST_COLOUR = '#1a9641'
+
+
+def _default_times():
+	# Span the reconstruction range the project actually uses, taken from
+	# Preferences > Default View Settings, rather than a hardcoded guess. Older versions of
+	# GPlates do not expose this, so fall back to the documented default range.
+	try:
+		oldest, youngest = pygplates.Application().default_time_range()
+		oldest = float(oldest)
+		youngest = float(youngest)
+	except Exception:
+		return FALLBACK_YOUNGEST_TIME, FALLBACK_OLDEST_TIME
+
+	if not math.isfinite(oldest) or not math.isfinite(youngest) or oldest == youngest:
+		return FALLBACK_YOUNGEST_TIME, FALLBACK_OLDEST_TIME
+
+	return youngest, oldest
+
+
+def _format_time(value):
+	return ('%g' % value)
 
 
 def _finite_float(value, default):
@@ -60,11 +86,22 @@ def _interpolate_colour(colour_1, colour_2, position):
 		colour_1.get_alpha() + (colour_2.get_alpha() - colour_1.get_alpha()) * position)
 
 
+def _variant(youngest_colour, youngest_time, oldest_colour, oldest_time, steps):
+	return {
+		'Endpoint 1 colour': youngest_colour,
+		'Endpoint 1 time (Ma)': _format_time(youngest_time),
+		'Endpoint 2 colour': oldest_colour,
+		'Endpoint 2 time (Ma)': _format_time(oldest_time),
+		'Steps (or smooth)': steps,
+	}
+
+
 class AbsoluteAge:
 	def get_style(self, feature, style):
-		age = _finite_float(feature.begin_time(), DEFAULT_TIME_1)
-		time_1 = _finite_float(self.cfg['Endpoint 1 time (Ma)'], DEFAULT_TIME_1)
-		time_2 = _finite_float(self.cfg['Endpoint 2 time (Ma)'], DEFAULT_TIME_2)
+		youngest_time, oldest_time = _default_times()
+		age = _finite_float(feature.begin_time(), youngest_time)
+		time_1 = _finite_float(self.cfg['Endpoint 1 time (Ma)'], youngest_time)
+		time_2 = _finite_float(self.cfg['Endpoint 2 time (Ma)'], oldest_time)
 		position = _gradient_position(age, time_1, time_2)
 		position = _apply_steps(position, self.cfg['Steps (or smooth)'])
 		style.colour = _interpolate_colour(
@@ -73,28 +110,50 @@ class AbsoluteAge:
 			position)
 
 	def get_config(self):
+		youngest_time, oldest_time = _default_times()
 		return {
 			'Endpoint 1 colour/type': 'Color',
-			'Endpoint 1 colour/default': '#2c7bb6',
+			'Endpoint 1 colour/default': YOUNGEST_COLOUR,
 			'Endpoint 1 time (Ma)/type': 'String',
-			'Endpoint 1 time (Ma)/default': '0',
+			'Endpoint 1 time (Ma)/default': _format_time(youngest_time),
 			'Endpoint 2 colour/type': 'Color',
-			'Endpoint 2 colour/default': '#d7191c',
+			'Endpoint 2 colour/default': OLDEST_COLOUR,
 			'Endpoint 2 time (Ma)/type': 'String',
-			'Endpoint 2 time (Ma)/default': '450',
+			'Endpoint 2 time (Ma)/default': _format_time(oldest_time),
 			'Steps (or smooth)/type': 'String',
 			'Steps (or smooth)/default': 'smooth',
 		}
 
 	def get_config_variants(self):
+		# Several worked examples rather than one empty starting point. Seeing a few
+		# configurations side by side is the quickest way to understand that this style is an
+		# age-to-colour ramp between two editable endpoints - which is not obvious from a single
+		# default, and was not obvious at all when the list started empty.
+		youngest_time, oldest_time = _default_times()
+		midpoint_time = youngest_time + (oldest_time - youngest_time) / 2.0
+
 		return {
-			'Default': {
-				'Endpoint 1 colour': '#2c7bb6',
-				'Endpoint 1 time (Ma)': '0',
-				'Endpoint 2 colour': '#d7191c',
-				'Endpoint 2 time (Ma)': '450',
-				'Steps (or smooth)': 'smooth',
-			}
+			# Newest orange, oldest green, across the project's whole range.
+			'Default': _variant(
+				YOUNGEST_COLOUR, youngest_time, OLDEST_COLOUR, oldest_time, 'smooth'),
+
+			# The same range and colours quantised into bands, which makes age groupings
+			# readable at a glance instead of blending continuously.
+			'Banded (6 steps)': _variant(
+				YOUNGEST_COLOUR, youngest_time, OLDEST_COLOUR, oldest_time, '6'),
+
+			# Only the more recent half of the range, so recent features are separated instead
+			# of being crushed into one end of the ramp. Anything older clamps to the old colour.
+			'Recent detail': _variant(
+				YOUNGEST_COLOUR, youngest_time, OLDEST_COLOUR, midpoint_time, 'smooth'),
+
+			# A cool-to-warm alternative for when orange and green are already in use.
+			'Blue to red': _variant(
+				'#2c7bb6', youngest_time, '#d7191c', oldest_time, 'smooth'),
+
+			# Neutral ramp for figures that are printed or reproduced in greyscale.
+			'Greyscale': _variant(
+				'#f0f0f0', youngest_time, '#252525', oldest_time, 'smooth'),
 		}
 
 	def set_config(self, config):
