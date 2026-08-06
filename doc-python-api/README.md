@@ -148,6 +148,24 @@ Example:
 :rtype: list[PlateBoundaryStatistic], or dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]
 ```
 
+## Math markup
+
+The narrative pages (the primer and the sample-code walkthroughs) use `:math:` roles and `.. math::`
+directives, rendered in the browser by MathJax via `sphinx.ext.mathjax`. Do not set `mathjax_path` —
+the extension's default already tracks a current MathJax release. The override this project carried
+until 2026-08 pointed at `cdn.mathjax.org`, retired in 2017; it still answers, but only with a shim
+that redirects to MathJax 2.7.1, so the docs silently ran an eight-year-old renderer off a service
+that may stop answering at any time.
+
+**Escape underscores inside `\text{...}`.** `_` is a math-mode-only character in LaTeX. MathJax 2
+tolerated it and rendered it literally, so this went unnoticed for years; MathJax 3 and later reject
+it, and `\text{geometry_final}` renders as the error `'_' allowed only in math mode`. Write
+`\text{geometry\_final}`, which is correct under every renderer. Underscores *outside* `\text{}` are
+ordinary subscripts and need no escaping (`t_{from}`, `P_{A}`).
+
+Because MathJax runs in the browser, a clean Sphinx build proves nothing about the math — the build
+only checks that the reST parses. Open the affected pages after changing any formula.
+
 ## Why autosummary with `:toctree:`
 
 `pygplates_reference.rst` lists the API under `autosummary` directives with the `:toctree:

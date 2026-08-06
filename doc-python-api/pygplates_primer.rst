@@ -114,17 +114,17 @@ rotated in the following way:
 
 .. math::
 
-   \text{geometry_final} &= R2 \times(R1 \times \text{geometry_initial}) \\
-                         &= R2 \times R1 \times \text{geometry_initial}
+   \text{geometry\_final} &= R2 \times(R1 \times \text{geometry\_initial}) \\
+                         &= R2 \times R1 \times \text{geometry\_initial}
 
 ...which is the equivalent of...
 
 .. math::
 
-   \text{geometry_intermediate} &= R1 \times \text{geometry_initial} \\
-   \text{geometry_final} &= R2 \times \text{geometry_intermediate} \\
-                         &= R2 \times (R1 \times \text{geometry_initial}) \\
-                         &= R2 \times R1 \times \text{geometry_initial}
+   \text{geometry\_intermediate} &= R1 \times \text{geometry\_initial} \\
+   \text{geometry\_final} &= R2 \times \text{geometry\_intermediate} \\
+                         &= R2 \times (R1 \times \text{geometry\_initial}) \\
+                         &= R2 \times R1 \times \text{geometry\_initial}
 
 .. note:: Rotations are *not* commutative (:math:`R2 \times R1 \neq R1 \times R2`)
 
