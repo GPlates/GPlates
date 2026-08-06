@@ -17751,9 +17751,9 @@ class Version:
 
       print('imported pyGPlates version: {}'.format(pygplates.Version.get_imported_version()))
 
-    ...which, for this version of pyGPlates, will print ``imported pyGPlates version: 1.1.0.dev6``.
+    ...which, for this version of pyGPlates, will print ``imported pyGPlates version: 1.1.0.dev9``.
 
-    There is also a ``pygplates.__version__`` string which will also print ``1.1.0.dev6``.
+    There is also a ``pygplates.__version__`` string which will also print ``1.1.0.dev9``.
 
     .. versionchanged:: 0.42
        Added pickle support.
