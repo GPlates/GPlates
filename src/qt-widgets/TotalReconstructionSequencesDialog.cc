@@ -1692,9 +1692,29 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_current_sequence(
     trs_finder.visit_feature(feature_ref);
     if (trs_finder.can_process_trs())
     {
-        **trs_finder.irregular_sampling_property_iterator() = trs;	
-        **trs_finder.moving_ref_frame_property_iterator() = moving_plate_id;
-        **trs_finder.fixed_ref_frame_property_iterator() = fix_plate_id;
+        // Note: Cannot use '**trs_finder.<...>_property_iterator() = ...' since dereferencing a
+        // feature properties iterator returns a temporary pointer (so assigning to it does nothing) -
+        // instead set the property via the feature (which also notifies model listeners, eg, to
+        // flag unsaved changes).
+        const FeatureHandle::iterator irregular_sampling_iter =
+                *trs_finder.irregular_sampling_property_iterator();
+        const FeatureHandle::iterator moving_ref_frame_iter =
+                *trs_finder.moving_ref_frame_property_iterator();
+        const FeatureHandle::iterator fixed_ref_frame_iter =
+                *trs_finder.fixed_ref_frame_property_iterator();
+
+        if (irregular_sampling_iter.is_still_valid())
+        {
+            feature_ref->set(irregular_sampling_iter, trs);
+        }
+        if (moving_ref_frame_iter.is_still_valid())
+        {
+            feature_ref->set(moving_ref_frame_iter, moving_plate_id);
+        }
+        if (fixed_ref_frame_iter.is_still_valid())
+        {
+            feature_ref->set(fixed_ref_frame_iter, fix_plate_id);
+        }
     }
 
 	//Step 2: update the pole data in PlatesRotationFileProxy
@@ -1939,9 +1959,12 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 	trs_finder.visit_feature(feature_ref);
 	if (trs_finder.can_process_trs())
 	{
+		const FeatureHandle::iterator irregular_sampling_iter =
+			*trs_finder.irregular_sampling_property_iterator();
+
 		TopLevelProperty::non_null_ptr_type
-			trs = (**trs_finder.irregular_sampling_property_iterator())->clone();
-		boost::optional<PropertyValue::non_null_ptr_type> trs_value = 
+			trs = (*irregular_sampling_iter)->clone();
+		boost::optional<PropertyValue::non_null_ptr_type> trs_value =
 			ModelUtils::get_property_value(*trs);
 		if(trs_value)
 		{
@@ -1952,7 +1975,15 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 				irreg_sampling->set_disabled(flag);
 			}
 		}
-		(**trs_finder.irregular_sampling_property_iterator()) = trs;
+
+		// Note: Cannot use '(**trs_finder.irregular_sampling_property_iterator()) = trs' since
+		// dereferencing a feature properties iterator returns a temporary pointer (so assigning to
+		// it does nothing) - instead set the property via the feature (which also notifies model
+		// listeners, eg, to flag unsaved changes).
+		if (irregular_sampling_iter.is_still_valid())
+		{
+			feature_ref->set(irregular_sampling_iter, trs);
+		}
 	}
 	
 	//step 2: update the pole metadata in PlatesRotationFileProxy so that
