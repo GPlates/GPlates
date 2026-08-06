@@ -452,7 +452,7 @@ class Enumeration(PropertyValue):
         :param type: the type of the enumeration
         :type type: EnumerationType
         :param content: the content (value) of the enumeration
-        :type content: string
+        :type content: str
         :param verify_information_model: whether to check the information model for valid enumeration *type* and *content*
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and either *type* is not a recognised enumeration type or *content* is not a valid value for *type*
@@ -469,7 +469,7 @@ class Enumeration(PropertyValue):
     def get_content(self) -> str:
         """Returns the content (value) of this enumeration.
 
-        :rtype: string
+        :rtype: str
         """
 
     def get_type(self) -> EnumerationType:
@@ -482,7 +482,7 @@ class Enumeration(PropertyValue):
         """Sets the content (value) of this enumeration.
 
         :param content: the content (value)
-        :type content: string
+        :type content: str
         :param verify_information_model: whether to check the information model for valid enumeration *value*
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *content* is not a valid value for this enumeration :meth:`type<get_type>`
@@ -536,7 +536,7 @@ class EnumerationType:
         """Creates a :class:`EnumerationType` instance from a fully qualified name string.
 
         :param name: qualified name
-        :type name: string
+        :type name: str
         :rtype: EnumerationType, or None
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:SubductionPolarityEnumeration``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
@@ -552,7 +552,7 @@ class EnumerationType:
         """Create an enumeration type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).
 
         :param name: unqualified name
-        :type name: string
+        :type name: str
         :rtype: EnumerationType
 
         ::
@@ -563,7 +563,7 @@ class EnumerationType:
     def get_name(self) -> str:
         """Returns the unqualified name.
 
-        :rtype: string
+        :rtype: str
 
         This is the fully qualified name minus the ``gpml:`` prefix (if created with *create_gpml()*).
 
@@ -573,7 +573,7 @@ class EnumerationType:
     def get_namespace(self) -> str:
         """Returns the namespace URI.
 
-        :rtype: string
+        :rtype: str
 
         For example, the ``gpml`` namespace alias has the namespace ``http://www.gplates.org/gplates``.
         """
@@ -581,7 +581,7 @@ class EnumerationType:
     def get_namespace_alias(self) -> str:
         """Returns the namespace alias.
 
-        :rtype: string
+        :rtype: str
 
         For example, ``gpml`` (if created with *create_gpml()*).
         """
@@ -589,7 +589,7 @@ class EnumerationType:
     def to_qualified_string(self) -> str:
         """Returns the fully qualified name.
 
-        :rtype: string
+        :rtype: str
 
         For example, ``gpml:SubductionPolarityEnumeration``.
         """
@@ -843,9 +843,9 @@ class Feature:
         :param times: the list of times
         :type times: sequence (eg, list or tuple) of float or GeoTimeInstant
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: string, or sequence of string
+        :type name: str, or sequence of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: string
+        :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
         :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
         :param left_plate: the left plate id, if not specified then a `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property is not added
@@ -928,9 +928,9 @@ class Feature:
         :param times: the list of times
         :type times: sequence (eg, list or tuple) of float or GeoTimeInstant
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: string, or sequence of string
+        :type name: str, or sequence of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: string
+        :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
         :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
         :param relative_plate: the relative plate id, if not specified then a `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_ property is not added
@@ -1009,9 +1009,9 @@ class Feature:
         :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages - see :meth:`set_geometry` for the coverage forms) - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
         :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) of GeometryOnSphere (or a coverage or a sequence of coverages)
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: string, or sequence of string
+        :type name: str, or sequence of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: string
+        :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
         :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
         :param reconstruction_plate_id: the reconstruction plate id, if not specified then a `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added
@@ -1117,9 +1117,9 @@ class Feature:
         :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages - see :meth:`set_geometry` for the coverage forms) - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
         :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) of GeometryOnSphere (or a coverage or a sequence of coverages)
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: string, or sequence of string
+        :type name: str, or sequence of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: string
+        :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
         :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
         :param reconstruction_plate_id: the reconstruction plate id, if not specified then a `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added
@@ -1131,7 +1131,7 @@ class Feature:
         :param right_plate: the right plate id, if not specified then a `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property is not added
         :type right_plate: int
         :param reconstruction_method: the reconstruction method, if not specified then a `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ property is not added (note that a missing property essentially defaults to 'ByPlateId' behaviour) - note that 'HalfStageRotationVersion3' is the latest and most accurate half-stage method and should generally be used unless backward compatibility with old GPlates versions is required
-        :type reconstruction_method: string  (see `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_)
+        :type reconstruction_method: str  (see `supported values <http://www.gplates.org, or docs, or gpgim/#gpml:ReconstructionMethodEnumeration>`_)
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
         :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
@@ -1206,9 +1206,9 @@ class Feature:
         :param topological_geometry: the topological geometry or geometries
         :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or a sequence (eg, list or tuple) of them
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: string, or sequence of string
+        :type name: str, or sequence of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: string
+        :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
         :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
@@ -1264,9 +1264,9 @@ class Feature:
         :param network_feature_type: The type of *network* feature to create. Defaults to ``pygplates.FeatureType.gpml_topological_network``.
         :type network_feature_type: FeatureType
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: string, or sequence of string
+        :type name: str, or sequence of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: string
+        :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
         :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
         :param rift_parameters: An optional tuple containing between 2 and 5 rift parameters. If a tuple is specified, then the first two parameters must be specified, and are the rift's conjugate left/right plate IDs (it doesn't matter which is left or right; can swap them). These 2 parameters will add the feature properties ``gpml:riftLeftPlate``/``gpml:riftRightPlate``. The remaining 3 rift parameters are optional and are equivalent to the 3 rift parameters in :class:`ResolveTopologyParameters`. If any of these 3 parameters are specified then they'll override those in :class:`ResolveTopologyParameters` (for the returned network feature only). Any of these 3 parameters can be ``None``. Those that are *not* ``None`` will add an associated feature property to the returned network feature. The first optional parameter is the rift exponential stretching constant (see :attr:`ResolveTopologyParameters.rift_exponential_stretching_constant`) which adds the feature property ``gpml:riftExponentialStretchingConstant``. The second optional parameter is the rift strain rate resolution (see :attr:`ResolveTopologyParameters.rift_strain_rate_resolution`) which adds the feature property ``gpml::riftStrainRateResolutionLog10`` (with the property name indicating that :math:`\log_{10}(param)` is stored in the property). The third optional parameter is the rift edge length threshold in degrees (see :attr:`ResolveTopologyParameters.rift_edge_length_threshold_degrees`) which adds the feature property ``gpml:riftEdgeLengthThresholdDegrees``.
@@ -1330,9 +1330,9 @@ class Feature:
         :param total_reconstruction_pole: the time-sequence of rotations
         :type total_reconstruction_pole: GpmlIrregularSampling of GpmlFiniteRotation
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: string, or sequence of string
+        :type name: str, or sequence of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: string
+        :type description: str
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
         :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
@@ -1455,7 +1455,7 @@ class Feature:
         :type default: bool or list or None
         :param property_return: whether to return exactly one boolean, the first boolean or all matching booleans
         :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
-        :rtype: bool, or list of bools, or type(default)
+        :rtype: bool, or list of bool, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for :class:`XsBoolean` properties.
 
@@ -1548,9 +1548,9 @@ class Feature:
         """Return the description of this feature.
 
         :param default: the default description (defaults to an empty string)
-        :type default: string or None
+        :type default: str or None
         :returns: the description (if exactly one `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property found), otherwise *default* is returned
-        :rtype: string, or type(default)
+        :rtype: str, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for the common property
         `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_.
@@ -1587,7 +1587,7 @@ class Feature:
         :type default: float or list or None
         :param property_return: whether to return exactly one float, the first float or all matching floats
         :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
-        :rtype: float, or list of floats, or type(default)
+        :rtype: float, or list of float, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for :class:`XsDouble` properties.
 
@@ -1616,9 +1616,9 @@ class Feature:
         :param property_name: the property name of the enumeration property
         :type property_name: PropertyName
         :param default: the default enumeration content value (defaults to None)
-        :type default: string or None
+        :type default: str or None
         :returns: the enumeration content value if exactly one :class:`enumeration<Enumeration>` property named *property_name* is found with the expected :class:`enumeration type<EnumerationType>` associated with *property_name*, otherwise *default* is returned
-        :rtype: string, or type(default)
+        :rtype: str, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for :class:`Enumeration` properties.
 
@@ -1807,10 +1807,10 @@ class Feature:
         :param property_name: the property name of the integer property (or properties)
         :type property_name: PropertyName
         :param default: the default integer value (defaults to zero), or default integer values
-        :type default: integer or list or None
+        :type default: int or list or None
         :param property_return: whether to return exactly one integer, the first integer or all matching integers
         :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
-        :rtype: integer, or list of integers, or type(default)
+        :rtype: int, or list of int, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for :class:`XsInteger` properties.
 
@@ -1864,10 +1864,10 @@ class Feature:
         """Return the name (or names) of this feature.
 
         :param default: the default name (defaults to an empty string), or default names
-        :type default: string or list or None
+        :type default: str or list or None
         :param property_return: whether to return exactly one name, the first name or all names
         :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
-        :rtype: string, or list of strings, or type(default)
+        :rtype: str, or list of str, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for the common property
         `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_.
@@ -1930,9 +1930,9 @@ class Feature:
         """Returns the reconstruction method of this feature.
 
         :param default: the default reconstruction method (defaults to 'ByPlateId')
-        :type default: string or None
+        :type default: str or None
         :returns: the reconstruction method (see `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_)         if exactly one `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ property         found containing an :class:`enumeration type<EnumerationType>` of 'gpml:ReconstructionMethodEnumeration', otherwise *default* is returned
-        :rtype: string, or type(default)
+        :rtype: str, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for the common property
         `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_.
@@ -2038,11 +2038,11 @@ class Feature:
         """Returns the value of a shapefile attribute associated with a key.
 
         :param key: the key of the shapefile attribute
-        :type key: string
+        :type key: str
         :param default_value: the default value to return if *key* does not exist (if not specified then it defaults to None)
-        :type default_value: int or float or string or None
+        :type default_value: int or float or str or None
         :returns: the value of the shapefile attribute associated with *key*, otherwise *default_value* if *key* does not exist
-        :rtype: integer or float or string or type(default_value) or None
+        :rtype: int or float or str or type(default_value) or None
 
         Shapefile attributes are stored in a :class:`GpmlKeyValueDictionary` property named
         `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_
@@ -2116,10 +2116,10 @@ class Feature:
         :param property_name: the property name of the string property (or properties)
         :type property_name: PropertyName
         :param default: the default string value (defaults to an empty string), or default string values
-        :type default: string or list or None
+        :type default: str or list or None
         :param property_return: whether to return exactly one string, the first string or all matching strings
         :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
-        :rtype: string, or list of strings, or type(default)
+        :rtype: str, or list of str, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for :class:`XsString` properties.
 
@@ -2457,7 +2457,7 @@ class Feature:
         :param property_name: the property name of the boolean property
         :type property_name: PropertyName
         :param boolean: the boolean or booleans
-        :type boolean: bool, or sequence of bools
+        :type boolean: bool, or sequence of bool
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :returns: the property containing the boolean, or properties containing the booleans
@@ -2509,7 +2509,7 @@ class Feature:
         """Sets the description of this feature.
 
         :param description: the description
-        :type description: string
+        :type description: str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :returns: the property containing the description
@@ -2533,7 +2533,7 @@ class Feature:
         :param property_name: the property name of the float property
         :type property_name: PropertyName
         :param double: the float or floats
-        :type double: float, or sequence of floats
+        :type double: float, or sequence of float
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :returns: the property containing the float, or properties containing the floats
@@ -2558,7 +2558,7 @@ class Feature:
         :param property_name: the property name of the enumeration property
         :type property_name: PropertyName
         :param enumeration_content: the enumeration content (value of enumeration)
-        :type enumeration_content: string
+        :type enumeration_content: str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :returns: the property containing the enumeration
@@ -2700,7 +2700,7 @@ class Feature:
         :param property_name: the property name of the integer property
         :type property_name: PropertyName
         :param integer: the integer or integers
-        :type integer: integer, or sequence of integers
+        :type integer: int, or sequence of int
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :returns: the property containing the integer, or properties containing the integers
@@ -2745,7 +2745,7 @@ class Feature:
         """Set the name (or names) of this feature.
 
         :param name: the name or names
-        :type name: string, or sequence of string
+        :type name: str, or sequence of str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :returns: the property containing the name, or properties containing the names
@@ -2774,7 +2774,7 @@ class Feature:
         """Sets the reconstruction method of this feature.
 
         :param reconstruction_method: the reconstruction method (see `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_)
-        :type reconstruction_method: string
+        :type reconstruction_method: str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :returns: the property containing the reconstruction method
@@ -2862,9 +2862,9 @@ class Feature:
         """Sets the value of a shapefile attribute associated with a key.
 
         :param key: the key of the shapefile attribute
-        :type key: string
+        :type key: str
         :param value: the value of the shapefile attribute
-        :type value: integer, float or string
+        :type value: int, float or str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :returns: the property containing all the shapefile attributes
@@ -2897,7 +2897,7 @@ class Feature:
         """Sets the shapefile attributes of this feature.
 
         :param attribute_mapping: optional mapping of keys to values
-        :type attribute_mapping: dict mapping each key (string) to a value (integer, float or string),     or a sequence of (key, value) tuples, or None
+        :type attribute_mapping: dict mapping each key (str) to a value (int, float or str),     or a sequence of (key, value) tuples, or None
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :returns: the property containing all the shapefile attributes
@@ -2944,7 +2944,7 @@ class Feature:
         :param property_name: the property name of the string property
         :type property_name: PropertyName
         :param string: the string or strings
-        :type string: string, or sequence of string
+        :type string: str, or sequence of str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :returns: the property containing the string, or properties containing the strings
@@ -3177,7 +3177,7 @@ class FeatureCollection:
         """Create a new feature collection instance.
 
         :param features: an optional filename, or sequence of features, or a single feature
-        :type features: string/os.PathLike, or a sequence (eg, list or tuple) of Feature, or a single Feature
+        :type features: str, or os.PathLike, or a sequence (eg, list or tuple) of Feature, or a single Feature
         :raises: OpenFileForReadingError if file is not readable (if filename specified)
         :raises: FileFormatNotSupportedError if file format (identified by the filename extension) does not support reading (when filename specified)
 
@@ -3287,7 +3287,7 @@ class FeatureCollection:
         """Reads one or more feature collections (from one or more files).
 
         :param filename: the name of the file (or files) to read
-        :type filename: string/os.PathLike, or sequence of string/os.PathLike
+        :type filename: str, or os.PathLike, or sequence of str/os.PathLike
         :rtype: FeatureCollection, list of FeatureCollection
         :raises: OpenFileForReadingError if any file is not readable
         :raises: FileFormatNotSupportedError if any file format (identified by a filename extension) does not support reading
@@ -3356,7 +3356,7 @@ class FeatureCollection:
         """Writes this feature collection to the file with name *filename*.
 
         :param filename: the name of the file to write
-        :type filename: string/os.PathLike
+        :type filename: str, or os.PathLike
         :raises: OpenFileForWritingError if the file is not writable
         :raises: FileFormatNotSupportedError if the file format (identified by the filename extension) does not support writing
 
@@ -3438,7 +3438,7 @@ class FeatureId:
     def get_string(self) -> str:
         """Returns the feature identifier as a string.
 
-        :rtype: string
+        :rtype: str
 
         To determine if a feature has a particular feature ID:
         ::
@@ -3553,7 +3553,7 @@ class FeatureType:
         """Creates a :class:`FeatureType` instance from a fully qualified name string.
 
         :param name: qualified name
-        :type name: string
+        :type name: str
         :rtype: FeatureType, or None
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:Coastline``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
@@ -3569,7 +3569,7 @@ class FeatureType:
         """Create a feature type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).
 
         :param name: unqualified name
-        :type name: string
+        :type name: str
         :rtype: FeatureType
 
         ::
@@ -3592,7 +3592,7 @@ class FeatureType:
     def get_name(self) -> str:
         """Returns the unqualified name.
 
-        :rtype: string
+        :rtype: str
 
         This is the fully qualified name minus the ``gpml:`` prefix (if created with *create_gpml()*).
 
@@ -3602,7 +3602,7 @@ class FeatureType:
     def get_namespace(self) -> str:
         """Returns the namespace URI.
 
-        :rtype: string
+        :rtype: str
 
         For example, the ``gpml`` namespace alias has the namespace ``http://www.gplates.org/gplates``.
         """
@@ -3610,7 +3610,7 @@ class FeatureType:
     def get_namespace_alias(self) -> str:
         """Returns the namespace alias.
 
-        :rtype: string
+        :rtype: str
 
         For example, ``gpml`` (if created with *create_gpml()*).
         """
@@ -3720,7 +3720,7 @@ class FeatureType:
     def to_qualified_string(self) -> str:
         """Returns the fully qualified name.
 
-        :rtype: string
+        :rtype: str
 
         For example, ``gpml:Coastline``.
         """
@@ -3776,7 +3776,7 @@ class FeaturesFunctionArgument:
         """Extract features from files and/or collections of features.
 
         :param function_argument: A feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types
-        :type function_argument: FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type function_argument: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :raises: OpenFileForReadingError if any file is not readable (when filenames specified)
         :raises: FileFormatNotSupportedError if any file format (identified by the filename extensions) does not support reading (when filenames specified)
 
@@ -3857,7 +3857,7 @@ class FeaturesFunctionArgument:
         """Returns a list of feature collections that were loaded from files specified in the :meth:`constructor<__init__>`.
 
         :returns: a list of (feature collection, filename) tuples
-        :rtype: list of (FeatureCollection, string) tuples
+        :rtype: list of (FeatureCollection, str) tuples
 
         Only those feature collections associated with filenames (specified in the function argument in :meth:`constructor<__init__>`) are returned. :class:`Features<Feature>` and :class:`feature collections<FeatureCollection>` that were directly specified (in the function argument in :meth:`constructor<__init__>`) are not returned here.
 
@@ -5366,7 +5366,7 @@ class GpmlConstantValue(PropertyValue):
         :param property_value: arbitrary property value
         :type property_value: PropertyValue
         :param description: description of this constant value wrapper
-        :type description: string or None
+        :type description: str or None
 
         Optionally provide a description string. If *description* is not specified then :meth:`get_description` will return ``None``.
         ::
@@ -5379,7 +5379,7 @@ class GpmlConstantValue(PropertyValue):
     def get_description(self) -> str | None:
         """Returns the *optional* description of this constant value wrapper, or ``None``.
 
-        :rtype: string or None
+        :rtype: str or None
         """
 
     def get_value(self, time: float | GeoTimeInstant = 0) -> PropertyValue | None:
@@ -5398,7 +5398,7 @@ class GpmlConstantValue(PropertyValue):
         """Sets the description of this constant value wrapper, or removes it if none specified.
 
         :param description: description of this constant value wrapper
-        :type description: string or None
+        :type description: str or None
         """
 
     def set_value(self, property_value: PropertyValue) -> None:
@@ -5697,7 +5697,7 @@ class GpmlIrregularSampling(PropertyValue):
         :param time: the time to set the value
         :type time: float or GeoTimeInstant
         :param description: description of the time sample
-        :type description: string or None
+        :type description: str or None
         :param is_enabled: whether time sample is enabled
         :type is_enabled: bool or None
         :returns: the time sample that is modified, or inserted into the time sequence
@@ -5767,7 +5767,7 @@ class GpmlKeyValueDictionary(PropertyValue):
         """Create a dictionary containing zero or more key/value pairs.
 
         :param key_value_mapping: optional mapping of keys to values
-        :type key_value_mapping: dict mapping each key (string) to a value (integer, float or string), or a sequence of (key, value) tuples, or None
+        :type key_value_mapping: dict mapping each key (str) to a value (int, float or str), or a sequence of (key, value) tuples, or None
 
         To create an empty dictionary:
         ::
@@ -5797,11 +5797,11 @@ class GpmlKeyValueDictionary(PropertyValue):
         """Returns the value of the dictionary element associated with a key.
 
         :param key: the key of the dictionary element
-        :type key: string
+        :type key: str
         :param default_value: the default value to return if the key does not exist in the dictionary (if not specified then it defaults to None)
-        :type default_value: int or float or string or None
+        :type default_value: int or float or str or None
         :returns: the value associated with *key*, otherwise *default_value* if *key* does not exist
-        :rtype: integer or float or string or type(default_value) or None
+        :rtype: int or float or str or type(default_value) or None
 
         To test if a key is present and retrieve its value:
         ::
@@ -5824,7 +5824,7 @@ class GpmlKeyValueDictionary(PropertyValue):
         """Removes the dictionary element associated with a key.
 
         :param key: the key of the dictionary element to remove
-        :type key: string
+        :type key: str
 
         If *key* does not exist in the dictionary then it is ignored and nothing is done.
         """
@@ -5833,9 +5833,9 @@ class GpmlKeyValueDictionary(PropertyValue):
         """Sets the value of the dictionary element associated with a key.
 
         :param key: the key of the dictionary element
-        :type key: string
+        :type key: str
         :param value: the value of the dictionary element
-        :type value: integer, float or string
+        :type value: int, float or str
 
         If there is no dictionary element associated with *key* then a new element is created,   otherwise the existing element is modified.
         """
@@ -5863,7 +5863,7 @@ class GpmlOldPlatesHeader(PropertyValue):
         :param string_number: string number
         :type string_number: int
         :param geographic_description: geographic description
-        :type geographic_description: string
+        :type geographic_description: str
         :param plate_id_number: plate id number
         :type plate_id_number: float
         :param age_of_appearance: age of appearance
@@ -5871,11 +5871,11 @@ class GpmlOldPlatesHeader(PropertyValue):
         :param age_of_disappearance: age of disappearance
         :type age_of_disappearance: int
         :param data_type_code: data type code
-        :type data_type_code: string
+        :type data_type_code: str
         :param data_type_code_number: data type code number
         :type data_type_code_number: int
         :param data_type_code_number_additional: data type code number additional
-        :type data_type_code_number_additional: string
+        :type data_type_code_number_additional: str
         :param conjugate_plate_id_number: conjugate plate id number
         :type conjugate_plate_id_number: int
         :param colour_code: colour code
@@ -5913,7 +5913,7 @@ class GpmlOldPlatesHeader(PropertyValue):
     def get_data_type_code(self) -> str:
         """Returns the data type code.
 
-        :rtype: string
+        :rtype: str
         """
 
     def get_data_type_code_number(self) -> int:
@@ -5925,13 +5925,13 @@ class GpmlOldPlatesHeader(PropertyValue):
     def get_data_type_code_number_additional(self) -> str:
         """Returns the data type code number additional.
 
-        :rtype: string
+        :rtype: str
         """
 
     def get_geographic_description(self) -> str:
         """Returns the geographic description.
 
-        :rtype: string
+        :rtype: str
         """
 
     def get_number_of_points(self) -> int:
@@ -5996,7 +5996,7 @@ class GpmlOldPlatesHeader(PropertyValue):
         """Sets the data type code.
 
         :param data_type_code: data type code
-        :type data_type_code: string
+        :type data_type_code: str
         """
 
     def set_data_type_code_number(self, data_type_code_number: int) -> None:
@@ -6010,14 +6010,14 @@ class GpmlOldPlatesHeader(PropertyValue):
         """Sets the data type code number additional.
 
         :param data_type_code_number_additional: data type code number additional
-        :type data_type_code_number_additional: string
+        :type data_type_code_number_additional: str
         """
 
     def set_geographic_description(self, geographic_description: str) -> None:
         """Sets the geographic description.
 
         :param geographic_description: geographic description
-        :type geographic_description: string
+        :type geographic_description: str
         """
 
     def set_number_of_points(self, number_of_points: int) -> None:
@@ -6364,11 +6364,11 @@ class GpmlPolarityChronId(PropertyValue):
         """Create a polarity chron id property value.
 
         :param era: the era of the chron ('Cenozoic' or 'Mesozoic')
-        :type era: string
+        :type era: str
         :param major_region: the number indicating the major region the chron is in - Cenozoic isochrons have been classified into broad regions identified by the numbers 1 to 34, Mesozoic isochrons use the numbers 1 to 29
         :type major_region: int
         :param minor_region: the sequence of letters indicating the sub-region the chron is located in - the letters a-z are used for the initial sub-region, and if further polarity reversals have been discovered within that chron, a second letter is appended, and so on
-        :type minor_region: string
+        :type minor_region: str
         :param verify_information_model: whether to check the information model for valid *era*
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *era* is not a recognised era value
@@ -6385,7 +6385,7 @@ class GpmlPolarityChronId(PropertyValue):
         """Returns the era.
 
         :returns: the era, or None if the era was not initialised
-        :rtype: string or None
+        :rtype: str or None
         """
 
     def get_major_region(self) -> int | None:
@@ -6399,14 +6399,14 @@ class GpmlPolarityChronId(PropertyValue):
         """Returns the minor region.
 
         :returns: the minor region, or None if the minor region was not initialised
-        :rtype: string or None
+        :rtype: str or None
         """
 
     def set_era(self, era: str, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> None:
         """Sets the era.
 
         :param era: the era of the chron ('Cenozoic' or 'Mesozoic')
-        :type era: string
+        :type era: str
         :param verify_information_model: whether to check the information model for valid *era*
         :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
         :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *era* is not a recognised era string value
@@ -6423,7 +6423,7 @@ class GpmlPolarityChronId(PropertyValue):
         """Sets the minor region.
 
         :param minor_region: the sequence of letters indicating the sub-region the chron is located in - the letters a-z are used for the initial sub-region, and if further polarity reversals have been discovered within that chron, a second letter is appended, and so on
-        :type minor_region: string
+        :type minor_region: str
         """
 
 class GpmlPropertyDelegate(PropertyValue):
@@ -6665,7 +6665,7 @@ class GpmlTimeSample:
         :param time: the time position associated with the property value
         :type time: float or GeoTimeInstant
         :param description: description of the time sample
-        :type description: string or None
+        :type description: str or None
         :param is_enabled: whether time sample is enabled
         :type is_enabled: bool
 
@@ -6685,7 +6685,7 @@ class GpmlTimeSample:
     def get_description(self) -> str | None:
         """Returns the description of this time sample, or ``None``.
 
-        :rtype: string or None
+        :rtype: str or None
         """
 
     def get_time(self) -> float:
@@ -6732,7 +6732,7 @@ class GpmlTimeSample:
         """Sets the description associated with this time sample, or removes it if none specified.
 
         :param description: description of the time sample
-        :type description: string or None
+        :type description: str or None
         """
 
     def set_disabled(self, is_disabled: bool = True) -> None:
@@ -10200,7 +10200,7 @@ class PlatePartitioner:
         :param partitioning_plates: A sequence of reconstructed/resolved plates to partition with.
         :type partitioning_plates: Any sequence of ReconstructionGeometry
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param sort_partitioning_plates: optional sort order of partitioning plates (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
         :type sort_partitioning_plates: One of the values in the SortPartitioningPlates table above, or None
         :raises: DifferentTimesInPartitioningPlatesError if all partitioning plates do not have the same :meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`
@@ -10228,9 +10228,9 @@ class PlatePartitioner:
         """Create a partitioner by reconstructing/resolving plates from a sequence of plate features.
 
         :param partitioning_features: A sequence of plate features to partition with.
-        :type partitioning_features: FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type partitioning_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param reconstruction_time: the specific geological time to reconstruct/resolve the *partitioning_features* to (defaults to zero)
         :type reconstruction_time: float or GeoTimeInstant
         :param sort_partitioning_plates: optional sort order of partitioning plates (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
@@ -10258,7 +10258,7 @@ class PlatePartitioner:
         """Partitions features into partitioning plates.
 
         :param features: the features to partition
-        :type features: FeatureCollection, or string/os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
+        :type features: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
         :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features         (defaults to just the reconstruction plate ID)
         :type properties_to_copy: a sequence of any combination of PropertyName and         the PartitionProperty enumeration values (see table below)
@@ -12093,7 +12093,7 @@ class PropertyName:
         """Creates a :class:`PropertyName` instance from a fully qualified name string.
 
         :param name: qualified name
-        :type name: string
+        :type name: str
         :rtype: PropertyName, or None
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:reconstructionPlateId``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
@@ -12109,7 +12109,7 @@ class PropertyName:
         """Create a property name qualified with the ``gml:`` prefix (``gml:`` + ``name``).
 
         :param name: unqualified name
-        :type name: string
+        :type name: str
         :rtype: PropertyName
 
         ::
@@ -12122,7 +12122,7 @@ class PropertyName:
         """Create a property name qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).
 
         :param name: unqualified name
-        :type name: string
+        :type name: str
         :rtype: PropertyName
 
         ::
@@ -12135,7 +12135,7 @@ class PropertyName:
         """Create a property name qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).
 
         :param name: unqualified name
-        :type name: string
+        :type name: str
         :rtype: PropertyName
 
         ::
@@ -12146,7 +12146,7 @@ class PropertyName:
     def get_name(self) -> str:
         """Returns the unqualified name.
 
-        :rtype: string
+        :rtype: str
 
         This is the fully qualified name minus the ``gpml:`` prefix (if created with *create_gpml()*).
 
@@ -12156,7 +12156,7 @@ class PropertyName:
     def get_namespace(self) -> str:
         """Returns the namespace URI.
 
-        :rtype: string
+        :rtype: str
 
         For example, the ``gpml`` namespace alias has the namespace ``http://www.gplates.org/gplates``.
         """
@@ -12164,7 +12164,7 @@ class PropertyName:
     def get_namespace_alias(self) -> str:
         """Returns the namespace alias.
 
-        :rtype: string
+        :rtype: str
 
         For example, ``gpml`` (if created with *create_gpml()*).
         """
@@ -12276,7 +12276,7 @@ class PropertyName:
     def to_qualified_string(self) -> str:
         """Returns the fully qualified name.
 
-        :rtype: string
+        :rtype: str
 
         For example, ``gpml:reconstructionPlateId``.
         """
@@ -12708,9 +12708,9 @@ class ReconstructModel:
         """Create from reconstructable features and a rotation model.
 
         :param reconstructable_features: The features to reconstruct as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types.
-        :type reconstructable_features: FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type reconstructable_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param anchor_plate_id: The anchored plate id used for reconstructions. Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
         :type anchor_plate_id: int
         :param reconstruct_snapshot_cache_size: Number of reconstruct snapshots to cache internally. Defaults to unlimited.
@@ -12790,9 +12790,9 @@ class ReconstructSnapshot:
         """Create from reconstructable features and a rotation model at a specific reconstruction time.
 
         :param reconstructable_features: The reconstructable features as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types.
-        :type reconstructable_features: FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type reconstructable_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param reconstruction_time: the specific geological time to reconstruct to
         :type reconstruction_time: float or GeoTimeInstant
         :param anchor_plate_id: The anchored plate id used for all reconstructions. Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
@@ -12819,7 +12819,7 @@ class ReconstructSnapshot:
         """Exports the reconstructed geometries of the requested type(s) to a file.
 
         :param export_filename: the name of the export file
-        :type export_filename: string/os.PathLike
+        :type export_filename: str, or os.PathLike
         :param reconstruct_type: specifies which type of features to export - defaults to exporting only regular features (not motion paths or flowlines)
         :type reconstruct_type: pygplates.ReconstructType.feature_geometry, pygplates.ReconstructType.motion_path or pygplates.ReconstructType.flowline
         :param wrap_to_dateline: Whether to wrap/clip reconstructed geometries to the dateline (currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.
@@ -15896,7 +15896,7 @@ class RotationModel:
         Create from rotation feature collection(s) and/or rotation filename(s).
 
         :param rotation_features: A rotation feature collection, or rotation filename, or rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types
-        :type rotation_features: FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. Defaults to 150.
         :type reconstruction_tree_cache_size: int
         :param extend_total_reconstruction_poles_to_distant_past: extend each moving plate sequence back infinitely far into the distant past such that reconstructed geometries will not snap back to their present day positions when the reconstruction time is older than the oldest times specified in the rotation features (defaults to ``False``)
@@ -16116,7 +16116,7 @@ class ScalarType:
         """Creates a :class:`ScalarType` instance from a fully qualified name string.
 
         :param name: qualified name
-        :type name: string
+        :type name: str
         :rtype: ScalarType, or None
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:VelocityColat``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
@@ -16132,7 +16132,7 @@ class ScalarType:
         """Create a scalar type qualified with the ``gml:`` prefix (``gml:`` + ``name``).
 
         :param name: unqualified name
-        :type name: string
+        :type name: str
         :rtype: ScalarType
         """
 
@@ -16141,7 +16141,7 @@ class ScalarType:
         """Create a scalar type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).
 
         :param name: unqualified name
-        :type name: string
+        :type name: str
         :rtype: ScalarType
 
         ::
@@ -16154,14 +16154,14 @@ class ScalarType:
         """Create a scalar type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).
 
         :param name: unqualified name
-        :type name: string
+        :type name: str
         :rtype: ScalarType
         """
 
     def get_name(self) -> str:
         """Returns the unqualified name.
 
-        :rtype: string
+        :rtype: str
 
         This is the fully qualified name minus the ``gpml:`` prefix (if created with *create_gpml()*).
 
@@ -16171,7 +16171,7 @@ class ScalarType:
     def get_namespace(self) -> str:
         """Returns the namespace URI.
 
-        :rtype: string
+        :rtype: str
 
         For example, the ``gpml`` namespace alias has the namespace ``http://www.gplates.org/gplates``.
         """
@@ -16179,7 +16179,7 @@ class ScalarType:
     def get_namespace_alias(self) -> str:
         """Returns the namespace alias.
 
-        :rtype: string
+        :rtype: str
 
         For example, ``gpml`` (if created with *create_gpml()*).
         """
@@ -16195,7 +16195,7 @@ class ScalarType:
     def to_qualified_string(self) -> str:
         """Returns the fully qualified name.
 
-        :rtype: string
+        :rtype: str
 
         For example, ``gpml:VelocityColat``.
         """
@@ -16778,9 +16778,9 @@ class TopologicalModel:
         """Create from topological features and a rotation model.
 
         :param topological_features: The topological boundary and/or network features and the topological section features they reference (regular and topological lines) as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple (entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.
-        :type topological_features: FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type topological_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param anchor_plate_id: The anchored plate id used for all reconstructions (resolving topologies, and reconstructing regular features and :meth:`geometries<reconstruct_geometry>`). Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
         :type anchor_plate_id: int
         :param default_resolve_topology_parameters: Default parameters used to resolve topologies. Note that these can optionally be overridden in *topological_features*. Defaults to :meth:`default-constructed ResolveTopologyParameters<ResolveTopologyParameters.__init__>`).
@@ -16913,9 +16913,9 @@ class TopologicalSnapshot:
         """Create from topological features and a rotation model at a specific reconstruction time.
 
         :param topological_features: The topological boundary and/or network features and the topological section features they reference (regular and topological lines) as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple (entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.
-        :type topological_features: FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type topological_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param reconstruction_time: the specific geological time to resolve to
         :type reconstruction_time: float or GeoTimeInstant
         :param anchor_plate_id: The anchored plate id used for all reconstructions (resolving topologies, and reconstructing regular features). Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
@@ -16983,7 +16983,7 @@ class TopologicalSnapshot:
         """Exports the resolved topological sections of the requested type(s) to a file.
 
         :param export_filename: the name of the export file
-        :type export_filename: string/os.PathLike
+        :type export_filename: str, or os.PathLike
         :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` (or both types) are listed in the exported resolved topological sections. Note that ``pygplates.ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. Defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>`.
         :type resolve_topological_section_types: a bitwise combination of any of pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
         :param export_topological_line_sub_segments: Whether to export the individual sub-segments of each boundary segment that came from a resolved topological line (``True``) or export a single geometry per boundary segment (``False``). Defaults to ``True``.
@@ -17018,7 +17018,7 @@ class TopologicalSnapshot:
         """Exports the resolved topologies of the requested type(s) to a file.
 
         :param export_filename: the name of the export file
-        :type export_filename: string/os.PathLike
+        :type export_filename: str, or os.PathLike
         :param resolve_topology_types: specifies the resolved topology types to export - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>`)
         :type resolve_topology_types: a bitwise combination of any of pygplates.ResolveTopologyType.line, pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
         :param wrap_to_dateline: Whether to wrap/clip resolved topologies to the dateline (currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.
@@ -17784,7 +17784,7 @@ class Version:
         :param patch: the patch version number (defaults to zero)
         :type patch: int
         :param release_suffix: the optional release PEP440 suffix ``[{a|b|rc}N][.postN][.devN]`` (defaults to ``None``)
-        :type release_suffix: string or None
+        :type release_suffix: str or None
         :raises: ValueError if *release_suffix* is specified but doesn't match pattern ``[{a|b|rc}N][.postN][.devN]``
 
         To create version ``1.0``:
@@ -17803,7 +17803,7 @@ class Version:
         """Create from a version string.
 
         :param version: the version string in PEP440 format matching ``N.N[.N][{a|b|rc}N][.postN][.devN]``
-        :type version: string
+        :type version: str
         :raises: ValueError if version string doesn't match pattern ``N.N[.N][{a|b|rc}N][.postN][.devN]``
 
         To create the first development release of version ``1.0``:
@@ -18034,7 +18034,7 @@ class XsString(PropertyValue):
         """Create a string property value from a string.
 
         :param string: the string
-        :type string: string
+        :type string: str
 
         ::
 
@@ -18046,14 +18046,14 @@ class XsString(PropertyValue):
     def get_string(self) -> str:
         """Returns the string.
 
-        :rtype: string
+        :rtype: str
         """
 
     def set_string(self, string: str) -> None:
         """Sets the string.
 
         :param string: the string
-        :type string: string
+        :type string: str
         """
 
 def calculate_velocities(domain_points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], finite_rotation: FiniteRotation, time_interval_in_my: float, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> list[Vector3D]:
@@ -18102,7 +18102,7 @@ def find_crossovers(rotation_features: FeatureCollection | str | os.PathLike | F
     r"""Find crossovers in rotation features.
 
     :param rotation_features: A rotation feature collection, or rotation filename, or         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``)         of any combination of those four types
-    :type rotation_features: FeatureCollection, or string/os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
     :param crossover_filter: A predicate function to determine which crossovers to return
     :type crossover_filter: callable (accepting single Crossover argument), or None
@@ -18281,13 +18281,13 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
     """Partition features into plates.
 
     :param partitioning_features: the partitioning features
-    :type partitioning_features: FeatureCollection, or string/os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
+    :type partitioning_features: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename,         or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike,         or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike,         or Feature, or sequence of Feature, or sequence of any combination of those four types
 
     :param features_to_partition: the features to be partitioned
-    :type features_to_partition: FeatureCollection, or string/os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
+    :type features_to_partition: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features         (defaults to just the reconstruction plate ID)
     :type properties_to_copy: a sequence of any combination of PropertyName and         the PartitionProperty enumeration values (see table below)
@@ -18586,11 +18586,11 @@ def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike 
     """Reconstruct regular geological features (including motion paths and flowlines) to a specific geological time.
 
     :param reconstructable_features: the features to reconstruct as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types
-    :type reconstructable_features: FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type reconstructable_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
     :param reconstructed_geometries: the :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` (default) or :class:`reconstructed motion paths<ReconstructedMotionPath>` or :class:`reconstructed flowlines<ReconstructedFlowline>` (depending on the optional keyword argument *reconstruct_type* - see *output_parameters* table) are either exported to a file (with specified filename) or *appended* to a Python ``list`` (note that the list is *not* cleared first and note that the list contents are affected by *group_with_feature* - see *output_parameters* table)
-    :type reconstructed_geometries: string/os.PathLike or list
+    :type reconstructed_geometries: str, or os.PathLike or list
     :param reconstruction_time: the specific geological time to reconstruct to
     :type reconstruction_time: float or GeoTimeInstant
     :param anchor_plate_id: The anchored plate id used during reconstruction. Defaults to the default anchor plate of *rotation_model*.
@@ -18737,15 +18737,15 @@ def resolve_topologies(topological_features: FeatureCollection | str | os.PathLi
     """Resolve topological features (lines, boundaries and networks) to a specific geological time.
 
     :param topological_features: The topological boundary and network features and the topological section features they reference (regular and topological lines) as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple (entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.
-    :type topological_features: FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type topological_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
     :param resolved_topologies: the :class:`resolved topological lines<ResolvedTopologicalLine>`, :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (depending on the optional keyword argument *resolve_topology_types* - see *output_parameters* table) are either exported to a file (with specified filename) or *appended* to a python ``list`` (note that the list is *not* cleared first)
-    :type resolved_topologies: string/os.PathLike or list
+    :type resolved_topologies: str, or os.PathLike or list
     :param reconstruction_time: the specific geological time to resolve to
     :type reconstruction_time: float or GeoTimeInstant
     :param resolved_topological_sections: The :class:`resolved topological sections<ResolvedTopologicalSection>`  are either exported to a file (with specified filename) or *appended* to a python ``list`` (note that the list is *not* cleared first). Default is to do neither.
-    :type resolved_topological_sections: string/os.PathLike or list
+    :type resolved_topological_sections: str, or os.PathLike or list
     :param anchor_plate_id: The anchored plate id used during reconstruction. Defaults to the default anchor plate of *rotation_model*.
     :type anchor_plate_id: int
     :param default_resolve_topology_parameters: Default parameters used to resolve topologies. Note that these can optionally be overridden in *topological_features*. Defaults to :meth:`default-constructed ResolveTopologyParameters<ResolveTopologyParameters.__init__>`).
@@ -18915,9 +18915,9 @@ def reverse_reconstruct(reconstructable_features: FeatureCollection | str | os.P
     """Reverse reconstruct geological features from a specific geological time.
 
     :param reconstructable_features: A reconstructable feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types - all features used as input and output
-    :type reconstructable_features: FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type reconstructable_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
     :param reconstruction_time: the specific geological time to reverse reconstruct from (note that this also :meth:`sets the geometry import time<Feature.set_geometry_import_time>`).
     :type reconstruction_time: float or GeoTimeInstant
     :param anchor_plate_id: The anchored plate id used during reverse reconstruction. Defaults to the default anchor plate of *rotation_model*.
@@ -18966,7 +18966,7 @@ def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathL
     r"""Synchronise crossovers in rotation features.
 
     :param rotation_features: A rotation feature collection, or rotation filename, or         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``)         of any combination of those four types - all features are used as input and output
-    :type rotation_features: FeatureCollection, or string/os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
     :param crossover_filter: Optional predicate function (accepting a single crossover argument) that determines         which crossovers (in *rotation_features*) to synchronise, or an optional sequence of crossovers (in any order) to         synchronise - if nothing is specified then all crossovers (in *rotation_features*) are synchronised -         a crossover is a named-tuple 'Crossover' (see table below)
     :type crossover_filter: callable (accepting single Crossover argument), or         sequence of Crossover, or None

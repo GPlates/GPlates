@@ -203,7 +203,7 @@ def find_crossovers(
     :param rotation_features: A rotation feature collection, or rotation filename, or \
         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
         of any combination of those four types
-    :type rotation_features: FeatureCollection, or string/os.PathLike, or Feature, \
+    :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature, \
         or sequence of Feature, or sequence of any combination of those four types
     
     :param crossover_filter: A predicate function to determine which crossovers to return
@@ -521,7 +521,7 @@ def synchronise_crossovers(
     :param rotation_features: A rotation feature collection, or rotation filename, or \
         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
         of any combination of those four types - all features are used as input and output
-    :type rotation_features: FeatureCollection, or string/os.PathLike, or Feature, \
+    :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature, \
         or sequence of Feature, or sequence of any combination of those four types
     
     :param crossover_filter: Optional predicate function (accepting a single crossover argument) that determines \

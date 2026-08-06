@@ -26,9 +26,9 @@ def get_description(feature, default=''):
     Return the description of this feature.
     
     :param default: the default description (defaults to an empty string)
-    :type default: string or None
+    :type default: str or None
     :returns: the description (if exactly one `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property found), otherwise *default* is returned
-    :rtype: string, or type(default)
+    :rtype: str, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_.
@@ -78,7 +78,7 @@ def set_description(feature, description, verify_information_model=VerifyInforma
     Sets the description of this feature.
     
     :param description: the description
-    :type description: string
+    :type description: str
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the description
@@ -110,10 +110,10 @@ def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
     Return the name (or names) of this feature.
     
     :param default: the default name (defaults to an empty string), or default names
-    :type default: string or list or None
+    :type default: str or list or None
     :param property_return: whether to return exactly one name, the first name or all names
     :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
-    :rtype: string, or list of strings, or type(default)
+    :rtype: str, or list of str, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_.
@@ -205,7 +205,7 @@ def set_name(feature, name, verify_information_model=VerifyInformationModel.yes)
     Set the name (or names) of this feature.
     
     :param name: the name or names
-    :type name: string, or sequence of string
+    :type name: str, or sequence of str
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the name, or properties containing the names
@@ -564,11 +564,11 @@ def get_reconstruction_method(feature, default='ByPlateId'):
     Returns the reconstruction method of this feature.
     
     :param default: the default reconstruction method (defaults to 'ByPlateId')
-    :type default: string or None
+    :type default: str or None
     :returns: the reconstruction method (see `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_) \
         if exactly one `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ property \
         found containing an :class:`enumeration type<EnumerationType>` of 'gpml:ReconstructionMethodEnumeration', otherwise *default* is returned
-    :rtype: string, or type(default)
+    :rtype: str, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_.
@@ -614,7 +614,7 @@ def set_reconstruction_method(feature, reconstruction_method, verify_information
     Sets the reconstruction method of this feature.
     
     :param reconstruction_method: the reconstruction method (see `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_)
-    :type reconstruction_method: string
+    :type reconstruction_method: str
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the reconstruction method
@@ -1050,11 +1050,11 @@ def get_shapefile_attribute(feature, key, default_value=None):
     Returns the value of a shapefile attribute associated with a key.
     
     :param key: the key of the shapefile attribute
-    :type key: string
+    :type key: str
     :param default_value: the default value to return if *key* does not exist (if not specified then it defaults to None)
-    :type default_value: int or float or string or None
+    :type default_value: int or float or str or None
     :returns: the value of the shapefile attribute associated with *key*, otherwise *default_value* if *key* does not exist
-    :rtype: integer or float or string or type(default_value) or None
+    :rtype: int or float or str or type(default_value) or None
     
     Shapefile attributes are stored in a :class:`GpmlKeyValueDictionary` property named
     `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_
@@ -1107,9 +1107,9 @@ def set_shapefile_attribute(feature, key, value, verify_information_model=Verify
     Sets the value of a shapefile attribute associated with a key.
     
     :param key: the key of the shapefile attribute
-    :type key: string
+    :type key: str
     :param value: the value of the shapefile attribute
-    :type value: integer, float or string
+    :type value: int, float or str
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing all the shapefile attributes
@@ -1226,7 +1226,7 @@ def set_shapefile_attributes(feature, attribute_mapping=None, verify_information
     Sets the shapefile attributes of this feature.
     
     :param attribute_mapping: optional mapping of keys to values
-    :type attribute_mapping: dict mapping each key (string) to a value (integer, float or string), \
+    :type attribute_mapping: dict mapping each key (str) to a value (int, float or str), \
     or a sequence of (key, value) tuples, or None
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no

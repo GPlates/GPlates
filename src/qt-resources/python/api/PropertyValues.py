@@ -348,7 +348,7 @@ def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, t
     :param time: the time to set the value
     :type time: float or GeoTimeInstant
     :param description: description of the time sample
-    :type description: string or None
+    :type description: str or None
     :param is_enabled: whether time sample is enabled
     :type is_enabled: bool or None
     :returns: the time sample that is modified, or inserted into the time sequence

@@ -91,6 +91,17 @@ serves both readers.
    the italics (`PropertyReturn.exactly_one, PropertyReturn.first_matching ...`);
    "returns the *default* argument" cases are written `type(default)` (italics
    removed); numpy arrays are `numpy.ndarray` (linked via numpy intersphinx).
+7. **Use the real Python type names, singular** — `str` (not `string`/`strings`),
+   `int` (not `integer`/`integers`), `bool`, `float`. Only these link: Sphinx resolves
+   each identifier as a `py:class` xref, and `string` is not a Python type (the stdlib
+   `string` *module* is unrelated, and a `py:class` xref never matches a `py:module`
+   entry). Plurals never link either, so write `list of str`, not `list of strings`.
+   Likewise **never separate a union with `/`** — Sphinx's splitter is
+   `(\s*[\[\]\(\),](?:\s*o[rf]\s)?\s*|\s+o[rf]\s+|\s*\|\s*|\.\.\.)`, which does not
+   include `/`, so `string/os.PathLike` stays one unresolvable token and neither half
+   links. Write `str, or os.PathLike`. The one exception is a union used as a prose
+   container's element (`sequence of str/os.PathLike`), where `, or` would re-bind it
+   to the top level and change the meaning.
 
 Example (before → after):
 
@@ -112,7 +123,28 @@ Rendering note: swept type fields change appearance from code-font role links to
 standard Sphinx italic type style with per-identifier links — expected, and consistent
 with the wider Python ecosystem.
 
-## Step D1 — `process_docstring`: render extra overloads as `py:method` directives   [model: Opus 5]
+## Step D1 — `process_docstring`: render extra overloads as `py:method` directives   [model: Opus 5]   ✔ DONE
+
+> Outcome (2026-08-07, not yet committed — see "Commit" below): implemented in
+> `conf.py.in` as `signature_directive_lines()` (plus `resolve_dotted_name()` /
+> `is_static_method()`); the block-splitting, dedent, flush-directive and duplicate-drop
+> logic is untouched. Verified on a forced full rebuild, zero warnings.
+> **All 50 extra overloads across 13 class pages converted** — the count matches the
+> before-state literal-signature paragraphs exactly (LocalCartesian 20, RotationModel 3,
+> …), and a tag-stripped before/after text diff of those pages shows *only* the
+> signature lines changing (now Python-domain markup, `[`/`]` rendered by
+> `_pseudo_parse_arglist` as `<span class="optional">`), with the `static` prefix added
+> to the 20 LocalCartesian and 2 `Vector3D.create_normalised` overloads and correctly
+> absent from every instance method. Nested `.. note::`/`.. versionadded::` inside an
+> extra block (RotationModel's adapt overload, `DateLineWrapper.wrap`) still render
+> correctly as directive content. `:no-index:` suppresses the anchor/index entry, so no
+> duplicate-object warnings. No module-level function currently has extra overload
+> blocks, so the `py:function` branch is untested-but-correct.
+>
+> **Gotcha for Step D4**: Sphinx only tracks *config values*, not conf.py code, so
+> editing `process_docstring` does **not** invalidate the doctree cache — an incremental
+> `doc-python-api` target build silently keeps the old HTML. Delete
+> `<build>/doc-python-api/_doctrees` (or pass `-E`) when verifying handler changes.
 
 In conf.py.in's `process_docstring`, replace the inline-literal rendering of each
 extra signature block —
@@ -140,7 +172,99 @@ output.extend(['``%s``' % signature, ''])
 - Keep the existing block-splitting, per-block dedent, flush-directive protection and
   verbatim-duplicate dropping exactly as they are — only the emission changes.
 
-## Step D2 — conf.py.in / CMakeLists.txt cleanup and extras   [model: Sonnet 5]
+## Step D2 — conf.py.in / CMakeLists.txt cleanup and extras   [model: Sonnet 5]   ✔ DONE
+
+> Outcome (2026-08-07, not yet committed — see "Commit" below): all items applied as
+> specified. `needs_sphinx` bumped to `'7.1'`; `mathjax_path` override, `templates_path`,
+> the pre-Sphinx-1.3 autosummary-templates comment block, and the two stale
+> "renamed/deprecated in 1.8" comments (above `setup(app)` and above
+> `autodoc_default_options`) all deleted; `sphinx.ext.intersphinx` added with the
+> `python`/`numpy` mapping; `maximum_signature_line_length = 90` added next to
+> `autodoc_docstring_signature`. `CMakeLists.txt`: `-W -j auto` added to the
+> `python -m sphinx` invocation; the dead `SPHINX_THEME`/`SPHINX_THEME_DIR` block
+> deleted.
+>
+> Verified with a CMake reconfigure + forced full rebuild (`_doctrees`/`html` deleted
+> first, per the D1 gotcha): build succeeds under `-W -j auto` with zero warnings, so
+> each parallel Sphinx worker's re-import of `pygplates.pyd` (Windows spawn) is
+> correctly covered by the existing `os.add_dll_directory()` bootstrap. Intersphinx
+> resolves both mappings in the built HTML — eg `pygplates.RotationModel.html` links
+> `bool`/`float`/`int`/`os.PathLike`/`pathlib`/`pickle` to docs.python.org, and
+> `pygplates.GeometryOnSphere.html` links `numpy.ndarray` to numpy.org.
+>
+> **`maximum_signature_line_length` REJECTED** (tried at 90, then reverted — user
+> reported the breakage 2026-08-07). It is incompatible with our `[optional]` bracket
+> notation: those signatures are not valid Python syntax, so Sphinx parses them with
+> `_pseudo_parse_arglist()`, which emits `desc_optional` nodes for the brackets — but
+> the HTML writer's multi-line path only wraps `desc_parameter` nodes. It emits the
+> stray `[`/`]` markers *without* their enclosing `<dd>`, giving unbalanced HTML
+> (`pygplates.RotationModel.html` had 4 `<dd>` opens against 6 closes). The browser
+> then closes the signature's `<dl>` early, so the tail of the signature spills outside
+> the blue block and renders unstyled/grey — exactly as reported for
+> `RotationModel.__init__` and `Feature.create_reconstructable_feature`. After removal,
+> all 904 rendered signatures across the generated pages are balanced again (0 pages
+> with unbalanced `<dd>`). A comment in `conf.py.in` records why not to re-add it.
+
+**Follow-up found while verifying intersphinx** (2026-08-07): turning intersphinx on
+revealed that some type-field identifiers never resolve. Measured over the rendered
+`Type`/`Return type` fields: **854 linked vs 243 unlinked occurrences**. The unlinked
+ones fall into three groups:
+
+- **Non-Python spellings** — `string` (34 rendered), `strings`, `integer`, `integers`,
+  `bools`, `floats`, `sequence`, `tuples`. `str` links (`stdtypes.html#str`); `string`
+  cannot — it is not a Python type name (the stdlib `string` *module* is a different
+  thing, and a `py:class` xref will not match a `py:module` entry anyway). The corpus
+  uses `string` 106 times in `:type:`/`:rtype:` fields against `str` once.
+- **`/` as a union separator** — 30 fields use it (`string/os.PathLike`,
+  `sequence of string/os.PathLike`). Sphinx's type-field splitter is
+  `(\s*[\[\]\(\),](?:\s*o[rf]\s)?\s*|\s+o[rf]\s+|\s*\|\s*|\.\.\.)` — it splits on
+  `[ ] ( ) , | or of ...` but **not** on `/`, so `string/os.PathLike` stays one
+  unresolvable token and neither half links.
+- **Expected non-links** — `None` (88; documented as `py:data`, so a `py:class` xref
+  never matches it) and prose words from the hybrid style (`default`, `read only`,
+  `containing`, …). Not defects.
+
+### Step D2b — type-field spelling sweep   [model: Opus 5]   ✔ DONE
+
+User approved 2026-08-07 (fold into the D1+D2+D3 commit). Swept `:type x:`/`:rtype:`
+field **bodies** only — field *names* (`:type string:`, `:type integer:`) and all other
+docstring prose/examples untouched:
+
+- `string`/`strings` → `str`, `integer`/`integers` → `int`, `bools` → `bool`,
+  `floats` → `float`.
+- `X/Y` → `X, or Y`, **top level only**. `/` binds tighter than `of` in the stub
+  grammar, so `sequence of string/os.PathLike` would change meaning if split
+  (`Sequence[str | os.PathLike]` → `Sequence[str] | os.PathLike`). The one such field
+  (`FeatureCollection.read`) keeps its inner `/`: `str, or os.PathLike, or sequence of
+  str/os.PathLike`. Verified against the parser: no `, or`/`|`/bracket spelling
+  reproduces `Sequence[str | os.PathLike]`.
+
+**Two corpora, not one** — the C++ docstrings in `src/api/*.cc,*.h` (111 fields in 15
+files) *and* the Python-side docstrings in `src/qt-resources/python/api/*.py` (22 fields
+in 4 files). The second was found only because four `:rtype:` fields still rendered
+`string` after the first sweep; a repo-wide search confirms these are the only two
+in-repo type-field corpora.
+
+**Annotation-neutral, but NOT stub-file-neutral** (correcting the earlier note): the
+generator already normalizes every swept spelling (`'string': 'str'` in the spelling
+map, `/`-joined atoms folded into a union by `_parse_atom`/`_make_union`), so an
+AST annotation-only diff of the pre-sweep committed stub against the post-sweep
+regeneration is **0 differences over 1759 members**. But `__init__.pyi` embeds the
+docstring *text*, so the file itself does change and must be regenerated — done here
+(122 changed lines), leaving `--check` in sync, mypy clean and `ctest -C Release`
+passing (`pygplates-test`, `pygplates-stub-test`). The generator's missing-fields
+worklist is unchanged (33 entries) with 0 unparsed.
+
+Every swept field was accepted only after the stub parser produced an **identical
+annotation** for the before and after text (the sweep script refuses to write
+otherwise) — 133 fields, 0 refusals.
+
+Result in the built docs: auto-linked type-field identifiers rise from **854 to 896**,
+and `string`/`strings`/`integer`/`integers`/`bools`/`floats` disappear from the
+unlinked set entirely. The remaining unlinked tokens are `None` (88 — documented as
+`py:data`, so a `py:class` xref can never match it) and prose words from the hybrid
+style; note the measuring script also captures bullet-list *parameter descriptions*,
+so its residual counts overstate the type-text misses.
 
 `conf.py.in`:
 
@@ -171,7 +295,26 @@ Deferred (not in this round): `nitpicky` + `nitpick_ignore_regex` — high value
 catching unresolvable `:class:`/`:type:` references, but needs a triage pass of its
 initial warning burst first.
 
-## Step D3 — `README` → `README.md`   [model: Sonnet 5]
+## Step D3 — `README` → `README.md`   [model: Sonnet 5]   ✔ DONE
+
+> Outcome (2026-08-07, not yet committed): `git rm doc-python-api/README`, new
+> `doc-python-api/README.md` written to the outline below. Nothing else in the repo
+> referenced the old path. The type-field style guideline is carried over in full
+> (including the new rules 6/7 on Python spellings and `/`), and the docstring section
+> now states that there are **two** corpora (`src/api/` and
+> `src/qt-resources/python/api/`) and warns that `maximum_signature_line_length` must
+> not be set.
+>
+> **Re-test result** (the plan's "delete `generated/` after adding/renaming" advice —
+> re-tested empirically rather than carried over):
+> - *Adding or changing members*: nothing to do. A generated stub deliberately edited
+>   to be stale was overwritten on the next build, confirming
+>   `autosummary_generate_overwrite` (default true since Sphinx 2.0).
+> - *Removing or renaming a class/function*: the stale `generated/*.rst` must still be
+>   deleted — autosummary never removes stubs it no longer generates. With `-W` this
+>   now **fails the build** (`autodoc: failed to import 'X'` plus `document isn't
+>   included in any toctree`) instead of silently publishing a stale page. Verified by
+>   planting a `generated/pygplates.RemovedThing.rst` and watching the build exit 1.
 
 `git rm doc-python-api/README`; write `doc-python-api/README.md` covering:
 
@@ -199,7 +342,31 @@ initial warning burst first.
   to True since Sphinx 2.0, so stale stubs should regenerate; stale *removed* members
   may still need a manual delete). Document whatever the test shows.
 
-## Step D4 — Build and verify   [model: Sonnet 5]
+## Step D4 — Build and verify   [model: Sonnet 5]   ✔ DONE
+
+> Outcome (2026-08-07): CMake reconfigured and `doc-python-api` built from scratch with
+> `-W -j auto` — **exit 0, zero warnings**.
+>
+> - `pygplates.RotationModel.html` — 3 nested overload signatures, all styled
+>   Python-domain rather than inline literals.
+> - `pygplates.FeatureId.html` — exactly one italic `static` label
+>   (`create_unique_id`), zero `[staticmethod]` body text.
+> - `pygplates.LocalCartesian.html` — all 20 overloaded static converter signatures
+>   present, each with its own Parameters/Returns block.
+> - Intersphinx resolves both mappings (`docs.python.org` for `bool`/`float`/`int`/
+>   `os.PathLike`/`pathlib`/`pickle`, `numpy.org` for `numpy.ndarray`).
+> - **Sweep verification** — `TopologicalSnapshot.calculate_plate_boundary_statistics`
+>   renders the full generic union as
+>   `list[PlateBoundaryStatistic], or dict[ResolvedTopologicalSharedSubSegment,
+>   list[PlateBoundaryStatistic]]`, with `list`/`dict` linked to docs.python.org and
+>   both pygplates classes linked to their own pages.
+>
+> **Determinism check found a real defect (documented in README.md).** An incremental
+> rebuild is byte-identical to a from-scratch build *except* `searchindex.js`, where it
+> silently drops **all** index entries — `indexentries` 854 → 0, while `terms` (3723),
+> `docnames` (127), `titles`, `objects` etc. are unchanged. Reproducible across
+> repeated incremental runs. So anything published must be built from scratch (delete
+> `_doctrees` and `generated/`, or pass `-E`).
 
 1. Reconfigure CMake (conf.py.in and CMakeLists.txt changed), then build the
    `doc-python-api` target — must succeed with `-W -j auto` (zero warnings).
@@ -223,8 +390,15 @@ initial warning burst first.
 
 ## Commit
 
-One commit: conf.py.in + CMakeLists.txt + README.md (+ deleted README). (The stub-side
-work has its own commit split — see `pygplates/stub/PLAN.md` Round 2.)
+One commit: conf.py.in + CMakeLists.txt + README.md (+ deleted README).
+
+Widened by Step D2b (user-approved 2026-08-07): the same commit also carries the
+type-field spelling sweep across both docstring corpora (`src/api/*.cc,*.h`,
+`src/qt-resources/python/api/*.py`) and the resulting regeneration of
+`pygplates/stub/__init__.pyi`. The stub regen belongs here rather than with the
+stub-side split because it is a *consequence* of the docstring edits, and it is
+annotation-neutral (0 differences over 1759 members) — only the embedded docstring text
+moves.
 
 ## Suggested Claude model per step (summary)
 

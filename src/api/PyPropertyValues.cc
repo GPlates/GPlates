@@ -393,7 +393,7 @@ export_enumeration()
 				"  :param type: the type of the enumeration\n"
 				"  :type type: EnumerationType\n"
 				"  :param content: the content (value) of the enumeration\n"
-				"  :type content: string\n"
+				"  :type content: str\n"
 				"  :param verify_information_model: whether to check the information model for valid "
 				"enumeration *type* and *content*\n"
 				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
@@ -425,7 +425,7 @@ export_enumeration()
 				"get_content()\n"
 				"  Returns the content (value) of this enumeration.\n"
 				"\n"
-				"  :rtype: string\n")
+				"  :rtype: str\n")
 		.def("set_content",
 				&GPlatesApi::enumeration_set_content,
 				(bp::arg("content"),
@@ -434,7 +434,7 @@ export_enumeration()
 				"  Sets the content (value) of this enumeration.\n"
 				"\n"
 				"  :param content: the content (value)\n"
-				"  :type content: string\n"
+				"  :type content: str\n"
 				"  :param verify_information_model: whether to check the information model for valid "
 				"enumeration *value*\n"
 				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
@@ -1829,7 +1829,7 @@ export_gpml_constant_value()
 					"  :param property_value: arbitrary property value\n"
 					"  :type property_value: PropertyValue\n"
 					"  :param description: description of this constant value wrapper\n"
-					"  :type description: string or None\n"
+					"  :type description: str or None\n"
 					"\n"
 					"  Optionally provide a description string. If *description* is not specified "
 					"then :meth:`get_description` will return ``None``.\n"
@@ -1863,7 +1863,7 @@ export_gpml_constant_value()
 				"get_description()\n"
 				"  Returns the *optional* description of this constant value wrapper, or ``None``.\n"
 				"\n"
-				"  :rtype: string or None\n")
+				"  :rtype: str or None\n")
 		.def("set_description",
 				&GPlatesPropertyValues::GpmlConstantValue::set_description,
 				(bp::arg("description") = boost::optional<GPlatesUtils::UnicodeString>()),
@@ -1871,7 +1871,7 @@ export_gpml_constant_value()
 				"  Sets the description of this constant value wrapper, or removes it if none specified.\n"
 				"\n"
 				"  :param description: description of this constant value wrapper\n"
-				"  :type description: string or None\n")
+				"  :type description: str or None\n")
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
@@ -2923,8 +2923,8 @@ export_gpml_key_value_dictionary()
 				"  Create a dictionary containing zero or more key/value pairs.\n"
 				"\n"
 				"  :param key_value_mapping: optional mapping of keys to values\n"
-				"  :type key_value_mapping: dict mapping each key (string) to a value "
-				"(integer, float or string), or a sequence of (key, value) tuples, or None\n"
+				"  :type key_value_mapping: dict mapping each key (str) to a value "
+				"(int, float or str), or a sequence of (key, value) tuples, or None\n"
 				"\n"
 				"  To create an empty dictionary:\n"
 				"  ::\n"
@@ -2959,12 +2959,12 @@ export_gpml_key_value_dictionary()
 				"  Returns the value of the dictionary element associated with a key.\n"
 				"\n"
 				"  :param key: the key of the dictionary element\n"
-				"  :type key: string\n"
+				"  :type key: str\n"
 				"  :param default_value: the default value to return if the key does not exist in the "
 				"dictionary (if not specified then it defaults to None)\n"
-				"  :type default_value: int or float or string or None\n"
+				"  :type default_value: int or float or str or None\n"
 				"  :returns: the value associated with *key*, otherwise *default_value* if *key* does not exist\n"
-				"  :rtype: integer or float or string or type(default_value) or None\n"
+				"  :rtype: int or float or str or type(default_value) or None\n"
 				"\n"
 				"  To test if a key is present and retrieve its value:\n"
 				"  ::\n"
@@ -2989,9 +2989,9 @@ export_gpml_key_value_dictionary()
 				"  Sets the value of the dictionary element associated with a key.\n"
 				"\n"
 				"  :param key: the key of the dictionary element\n"
-				"  :type key: string\n"
+				"  :type key: str\n"
 				"  :param value: the value of the dictionary element\n"
-				"  :type value: integer, float or string\n"
+				"  :type value: int, float or str\n"
 				"\n"
 				"  If there is no dictionary element associated with *key* then a new element is created, "
 				"  otherwise the existing element is modified.\n")
@@ -3002,7 +3002,7 @@ export_gpml_key_value_dictionary()
 				"  Removes the dictionary element associated with a key.\n"
 				"\n"
 				"  :param key: the key of the dictionary element to remove\n"
-				"  :type key: string\n"
+				"  :type key: str\n"
 				"\n"
 				"  If *key* does not exist in the dictionary then it is ignored and nothing is done.\n")
 	;
@@ -3079,7 +3079,7 @@ export_gpml_old_plates_header()
 				"  :param string_number: string number\n"
 				"  :type string_number: int\n"
 				"  :param geographic_description: geographic description\n"
-				"  :type geographic_description: string\n"
+				"  :type geographic_description: str\n"
 				"  :param plate_id_number: plate id number\n"
 				"  :type plate_id_number: float\n"
 				"  :param age_of_appearance: age of appearance\n"
@@ -3087,11 +3087,11 @@ export_gpml_old_plates_header()
 				"  :param age_of_disappearance: age of disappearance\n"
 				"  :type age_of_disappearance: int\n"
 				"  :param data_type_code: data type code\n"
-				"  :type data_type_code: string\n"
+				"  :type data_type_code: str\n"
 				"  :param data_type_code_number: data type code number\n"
 				"  :type data_type_code_number: int\n"
 				"  :param data_type_code_number_additional: data type code number additional\n"
-				"  :type data_type_code_number_additional: string\n"
+				"  :type data_type_code_number_additional: str\n"
 				"  :param conjugate_plate_id_number: conjugate plate id number\n"
 				"  :type conjugate_plate_id_number: int\n"
 				"  :param colour_code: colour code\n"
@@ -3153,7 +3153,7 @@ export_gpml_old_plates_header()
 				"get_geographic_description()\n"
 				"  Returns the geographic description.\n"
 				"\n"
-				"  :rtype: string\n")
+				"  :rtype: str\n")
 		.def("set_geographic_description",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_geographic_description,
 				(bp::arg("geographic_description")),
@@ -3161,7 +3161,7 @@ export_gpml_old_plates_header()
 				"  Sets the geographic description.\n"
 				"\n"
 				"  :param geographic_description: geographic description\n"
-				"  :type geographic_description: string\n")
+				"  :type geographic_description: str\n")
 		.def("get_plate_id_number",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_plate_id_number,
 				"get_plate_id_number()\n"
@@ -3212,7 +3212,7 @@ export_gpml_old_plates_header()
 				"get_data_type_code()\n"
 				"  Returns the data type code.\n"
 				"\n"
-				"  :rtype: string\n")
+				"  :rtype: str\n")
 		.def("set_data_type_code",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code,
 				(bp::arg("data_type_code")),
@@ -3220,7 +3220,7 @@ export_gpml_old_plates_header()
 				"  Sets the data type code.\n"
 				"\n"
 				"  :param data_type_code: data type code\n"
-				"  :type data_type_code: string\n")
+				"  :type data_type_code: str\n")
 		.def("get_data_type_code_number",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_data_type_code_number,
 				"get_data_type_code_number()\n"
@@ -3241,7 +3241,7 @@ export_gpml_old_plates_header()
 				"get_data_type_code_number_additional()\n"
 				"  Returns the data type code number additional.\n"
 				"\n"
-				"  :rtype: string\n")
+				"  :rtype: str\n")
 		.def("set_data_type_code_number_additional",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code_number_additional,
 				(bp::arg("data_type_code_number_additional")),
@@ -3249,7 +3249,7 @@ export_gpml_old_plates_header()
 				"  Sets the data type code number additional.\n"
 				"\n"
 				"  :param data_type_code_number_additional: data type code number additional\n"
-				"  :type data_type_code_number_additional: string\n")
+				"  :type data_type_code_number_additional: str\n")
 		.def("get_conjugate_plate_id_number",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_conjugate_plate_id_number,
 				"get_conjugate_plate_id_number()\n"
@@ -3652,7 +3652,7 @@ export_gpml_polarity_chron_id()
 				"  Create a polarity chron id property value.\n"
 				"\n"
 				"  :param era: the era of the chron ('Cenozoic' or 'Mesozoic')\n"
-				"  :type era: string\n"
+				"  :type era: str\n"
 				"  :param major_region: the number indicating the major region the chron is in - "
 				"Cenozoic isochrons have been classified into broad regions identified by the numbers 1 to 34, "
 				"Mesozoic isochrons use the numbers 1 to 29\n"
@@ -3660,7 +3660,7 @@ export_gpml_polarity_chron_id()
 				"  :param minor_region: the sequence of letters indicating the sub-region the chron is "
 				"located in - the letters a-z are used for the initial sub-region, and if further polarity "
 				"reversals have been discovered within that chron, a second letter is appended, and so on\n"
-				"  :type minor_region: string\n"
+				"  :type minor_region: str\n"
 				"  :param verify_information_model: whether to check the information model for valid *era*\n"
 				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
@@ -3683,7 +3683,7 @@ export_gpml_polarity_chron_id()
 				"  Returns the era.\n"
 				"\n"
 				"  :returns: the era, or None if the era was not initialised\n"
-				"  :rtype: string or None\n")
+				"  :rtype: str or None\n")
 		.def("set_era",
 				&GPlatesApi::gpml_polarity_chron_id_set_era,
 				(bp::arg("era"),
@@ -3692,7 +3692,7 @@ export_gpml_polarity_chron_id()
 				"  Sets the era.\n"
 				"\n"
 				"  :param era: the era of the chron ('Cenozoic' or 'Mesozoic')\n"
-				"  :type era: string\n"
+				"  :type era: str\n"
 				"  :param verify_information_model: whether to check the information model for valid *era*\n"
 				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
@@ -3722,7 +3722,7 @@ export_gpml_polarity_chron_id()
 				"  Returns the minor region.\n"
 				"\n"
 				"  :returns: the minor region, or None if the minor region was not initialised\n"
-				"  :rtype: string or None\n")
+				"  :rtype: str or None\n")
 		.def("set_minor_region",
 				&GPlatesPropertyValues::GpmlPolarityChronId::set_minor_region,
 				(bp::arg("minor_region")),
@@ -3732,7 +3732,7 @@ export_gpml_polarity_chron_id()
 				"  :param minor_region: the sequence of letters indicating the sub-region the chron is "
 				"located in - the letters a-z are used for the initial sub-region, and if further polarity "
 				"reversals have been discovered within that chron, a second letter is appended, and so on\n"
-				"  :type minor_region: string\n")
+				"  :type minor_region: str\n")
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -3970,7 +3970,7 @@ export_gpml_time_sample()
 				"  :param time: the time position associated with the property value\n"
 				"  :type time: float or GeoTimeInstant\n"
 				"  :param description: description of the time sample\n"
-				"  :type description: string or None\n"
+				"  :type description: str or None\n"
 				"  :param is_enabled: whether time sample is enabled\n"
 				"  :type is_enabled: bool\n"
 				"\n"
@@ -4035,7 +4035,7 @@ export_gpml_time_sample()
 				"get_description()\n"
 				"  Returns the description of this time sample, or ``None``.\n"
 				"\n"
-				"  :rtype: string or None\n")
+				"  :rtype: str or None\n")
 		.def("set_description",
 				&GPlatesApi::gpml_time_sample_set_description,
 				(bp::arg("description") = boost::optional<GPlatesPropertyValues::TextContent>()),
@@ -4043,7 +4043,7 @@ export_gpml_time_sample()
 				"  Sets the description associated with this time sample, or removes it if none specified.\n"
 				"\n"
 				"  :param description: description of the time sample\n"
-				"  :type description: string or None\n")
+				"  :type description: str or None\n")
 		.def("is_enabled",
 				&GPlatesApi::gpml_time_sample_is_enabled,
 				"is_enabled()\n"
@@ -5458,7 +5458,7 @@ export_xs_string()
 				"  Create a string property value from a string.\n"
 				"\n"
 				"  :param string: the string\n"
-				"  :type string: string\n"
+				"  :type string: str\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -5475,7 +5475,7 @@ export_xs_string()
 				"get_string()\n"
 				"  Returns the string.\n"
 				"\n"
-				"  :rtype: string\n")
+				"  :rtype: str\n")
 		.def("set_string",
 				&GPlatesPropertyValues::XsString::set_value,
 				(bp::arg("string")),
@@ -5483,7 +5483,7 @@ export_xs_string()
 				"  Sets the string.\n"
 				"\n"
 				"  :param string: the string\n"
-				"  :type string: string\n")
+				"  :type string: str\n")
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

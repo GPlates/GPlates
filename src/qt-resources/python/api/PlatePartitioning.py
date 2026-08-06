@@ -123,7 +123,7 @@ def plate_partitioner_partition_features(
     Partitions features into partitioning plates.
     
     :param features: the features to partition
-    :type features: FeatureCollection, or string/os.PathLike, or Feature, \
+    :type features: FeatureCollection, or str, or os.PathLike, or Feature, \
         or sequence of Feature, or sequence of any combination of those four types
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
@@ -532,16 +532,16 @@ def partition_into_plates(
     Partition features into plates.
     
     :param partitioning_features: the partitioning features
-    :type partitioning_features: FeatureCollection, or string/os.PathLike, or Feature, \
+    :type partitioning_features: FeatureCollection, or str, or os.PathLike, or Feature, \
         or sequence of Feature, or sequence of any combination of those four types
     
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, \
         or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: RotationModel. Or FeatureCollection, or string/os.PathLike, \
+    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, \
         or Feature, or sequence of Feature, or sequence of any combination of those four types
     
     :param features_to_partition: the features to be partitioned
-    :type features_to_partition: FeatureCollection, or string/os.PathLike, or Feature, \
+    :type features_to_partition: FeatureCollection, or str, or os.PathLike, or Feature, \
         or sequence of Feature, or sequence of any combination of those four types
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \

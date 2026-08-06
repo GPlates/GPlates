@@ -505,6 +505,8 @@ pygplates afterwards. Two parts, two commits:
 > pre-prune stub with an identical stderr report, so the prune is a proven no-op on
 > output; items 4-5 re-verified (spot-checks, mypy clean, determinism,
 > `pygplates-stub-test` passes).
+>
+> Item 6 (user's VS Code re-check) verified 2026-08-07 — Round 2 is complete.
 
 1. Rebuild: `cmake --build build-pygplates-vs --config Release --target pygplates`.
 2. Regenerate the stub. **Invariant check**: members whose fields already parsed keep

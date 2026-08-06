@@ -102,7 +102,7 @@ export_feature_id()
 				"get_string()\n"
 				"  Returns the feature identifier as a string.\n"
 				"\n"
-				"  :rtype: string\n"
+				"  :rtype: str\n"
 				"\n"
 				"  To determine if a feature has a particular feature ID:\n"
 				"  ::\n"
@@ -184,7 +184,7 @@ export_revision_id()
 				"get_string()\n"
 				"  Returns the revision identifier as a string.\n"
 				"\n"
-				"  :rtype: string\n")
+				"  :rtype: str\n")
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__' is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.

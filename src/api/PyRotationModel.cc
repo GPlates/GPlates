@@ -678,7 +678,7 @@ export_rotation_model()
 			"  :param rotation_features: A rotation feature collection, or rotation filename, or "
 			"rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) "
 			"of any combination of those four types\n"
-			"  :type rotation_features: FeatureCollection, or string/os.PathLike, or Feature, "
+			"  :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature, "
 			"or sequence of Feature, or sequence of any combination of those four types\n"
 			"  :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. "
 			"Defaults to " << GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE << ".\n"

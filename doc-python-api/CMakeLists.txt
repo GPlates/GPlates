@@ -27,14 +27,6 @@ else()
 endif()
 
 if (SPHINX_FOUND)
-	if(NOT DEFINED SPHINX_THEME)
-		set(SPHINX_THEME default)
-	endif(NOT DEFINED SPHINX_THEME)
-
-	if(NOT DEFINED SPHINX_THEME_DIR)
-		set(SPHINX_THEME_DIR)
-	endif(NOT DEFINED SPHINX_THEME_DIR)
-
 	# configured documentation tools and intermediate build results
 	set(BINARY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/_build")
 
@@ -89,7 +81,7 @@ if (SPHINX_FOUND)
 	# Note that the source directory for sphinx is our current binary/output directory (we've copied our source ".rst" files there).
 	add_custom_target(doc-python-api
 		COMMAND "${GPLATES_PYTHON_EXECUTABLE}" -m sphinx
-			-q -b html
+			-q -b html -W -j auto
 			-c "${BINARY_BUILD_DIR}/$<CONFIG>"
 			-d "${SPHINX_CACHE_DIR}"
 			"${CMAKE_CURRENT_BINARY_DIR}"
