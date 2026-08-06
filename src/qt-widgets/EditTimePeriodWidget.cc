@@ -23,13 +23,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QEvent>
+#include <QLineEdit>
 #include <QMessageBox>
+#include <QMouseEvent>
 
 #include "EditTimePeriodWidget.h"
 
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GmlTimeInstant.h"
 #include "model/ModelUtils.h"
+#include "presentation/Application.h"
 #include "UninitialisedEditWidgetException.h"
 
 
@@ -101,6 +105,8 @@ const QString GPlatesQtWidgets::EditTimePeriodWidget::s_help_dialog_title = QObj
 GPlatesQtWidgets::EditTimePeriodWidget::EditTimePeriodWidget(
 		QWidget *parent_):
 	AbstractEditWidget(parent_),
+	d_begin_time_line_edit(NULL),
+	d_end_time_line_edit(NULL),
 	d_help_dialog(new InformationDialog(s_help_dialog_text, s_help_dialog_title, this))
 {
 	setupUi(this);
@@ -120,6 +126,21 @@ GPlatesQtWidgets::EditTimePeriodWidget::EditTimePeriodWidget(
 	QObject::connect(spinbox_time_of_disappearance, SIGNAL(valueChanged(double)),
 			this, SLOT(set_dirty()));
 	
+	// Double-clicking a time, or the label beside it, fills in the current reconstruction time.
+	// The filter goes on each spinbox's line edit rather than on the spinbox itself, so that
+	// double-clicking the step arrows still steps the value twice, as it always has. The labels
+	// are filtered too - they are a bigger, easier target than a narrow spinbox.
+	d_begin_time_line_edit = spinbox_time_of_appearance->findChild<QLineEdit *>();
+	d_end_time_line_edit = spinbox_time_of_disappearance->findChild<QLineEdit *>();
+	if (d_begin_time_line_edit != NULL) {
+		d_begin_time_line_edit->installEventFilter(this);
+	}
+	if (d_end_time_line_edit != NULL) {
+		d_end_time_line_edit->installEventFilter(this);
+	}
+	label_begin_time->installEventFilter(this);
+	label_end_time->installEventFilter(this);
+
 	QObject::connect(button_help, SIGNAL(clicked()),
 			d_help_dialog, SLOT(show()));
 	
@@ -253,6 +274,67 @@ GPlatesQtWidgets::EditTimePeriodWidget::update_property_value_from_widget()
 	}
 }
 
+
+
+void
+GPlatesQtWidgets::EditTimePeriodWidget::handle_set_begin_time_to_current_time()
+{
+	// A time of appearance in the distant past or future has no numeric value, so clear those
+	// before filling one in - otherwise the spinbox would show a time the feature doesn't use.
+	checkbox_appearance_is_distant_past->setChecked(false);
+	checkbox_appearance_is_distant_future->setChecked(false);
+	enable_or_disable_spinbox(spinbox_time_of_appearance,
+			checkbox_appearance_is_distant_past,
+			checkbox_appearance_is_distant_future);
+
+	// Setting the value emits valueChanged() which sets us dirty, but only if the value actually
+	// changes - so set dirty explicitly to also cover clearing the checkboxes above.
+	set_dirty();
+	spinbox_time_of_appearance->setValue(GPlatesPresentation::current_time());
+
+	Q_EMIT commit_me();
+}
+
+
+void
+GPlatesQtWidgets::EditTimePeriodWidget::handle_set_end_time_to_current_time()
+{
+	// As above - an end time in the distant past or future has no numeric value.
+	checkbox_disappearance_is_distant_past->setChecked(false);
+	checkbox_disappearance_is_distant_future->setChecked(false);
+	enable_or_disable_spinbox(spinbox_time_of_disappearance,
+			checkbox_disappearance_is_distant_past,
+			checkbox_disappearance_is_distant_future);
+
+	set_dirty();
+	spinbox_time_of_disappearance->setValue(GPlatesPresentation::current_time());
+
+	Q_EMIT commit_me();
+}
+
+
+bool
+GPlatesQtWidgets::EditTimePeriodWidget::eventFilter(
+		QObject *watched,
+		QEvent *event)
+{
+	if (event->type() == QEvent::MouseButtonDblClick)
+	{
+		// Note that d_begin_time_line_edit / d_end_time_line_edit may be NULL if the
+		// spinbox had no line edit to find; a NULL member simply never matches 'watched'.
+		if (watched == d_begin_time_line_edit || watched == label_begin_time)
+		{
+			handle_set_begin_time_to_current_time();
+			return true;
+		}
+		if (watched == d_end_time_line_edit || watched == label_end_time)
+		{
+			handle_set_end_time_to_current_time();
+			return true;
+		}
+	}
+	return AbstractEditWidget::eventFilter(watched, event);
+}
 
 
 void
