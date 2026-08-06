@@ -67,8 +67,14 @@ import sys
 # ---------------------------------------------------------------------------
 
 # Modules that pygplates API objects legitimately report via '__module__'.
-# ('pygplates' when the built extension is imported directly from the build directory,
-# 'pygplates.pygplates' when imported as the installed package.)
+#
+# 'pygplates.pygplates' when 'pygplates' is imported as a package - which is how it is both built and
+# installed, and hence how this generator normally sees it (the shared library lives inside the package;
+# see 'cmake/modules/Install.cmake').
+#
+# 'pygplates' when the shared library is imported directly, without the package around it. That happens
+# in the documentation build (deliberately - see 'doc-python-api/conf.py.in') and in GPlates' embedded
+# interpreter (which registers 'pygplates' via 'PyImport_AppendInittab').
 _PYGPLATES_MODULES = ('pygplates', 'pygplates.pygplates')
 
 # Module-level names to always exclude from the stub:

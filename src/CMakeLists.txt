@@ -468,6 +468,35 @@ else()  # pygplates ...
 	#
 	# Note that module libraries default to position-independent code, but we'll set it anyway.
 	set_target_properties(pygplates PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+	#
+	# Build the pygplates module library into a 'pygplates/' sub-directory of the build output directory.
+	#
+	# This gives the build tree the same shape as the installed Python package, which is a 'pygplates/' package
+	# directory containing the pygplates module library and an '__init__.py' (see 'cmake/modules/Install.cmake',
+	# which also generates that '__init__.py', and the type stub, into this same directory).
+	#
+	# So '<build_dir>/bin' (or '<build_dir>/bin/<config>' for a multi-config generator) is a directory you can
+	# put on 'sys.path' (or PYTHONPATH) to "import pygplates" exactly as an end user would - which is what our
+	# tests, and the type stub generator, do. Note this is the same directory as before this became a package,
+	# so an existing "PYTHONPATH=<build_dir>/bin/Release" still works (it now finds the package, not the library).
+	#
+	# Note: a multi-config generator (eg, Visual Studio) normally appends a per-configuration sub-directory to
+	#       LIBRARY_OUTPUT_DIRECTORY, but it does *not* do that when the value contains a generator expression -
+	#       so we have to interpose '$<CONFIG>' ourselves. And only for a multi-config generator, since a
+	#       single-config generator (eg, Ninja, Unix Makefiles) has no per-configuration sub-directory.
+	#
+	# Note: a MODULE library uses LIBRARY_OUTPUT_DIRECTORY on *all* platforms (unlike a SHARED library, whose
+	#       DLL on Windows uses RUNTIME_OUTPUT_DIRECTORY), and has no import library, so this is the only
+	#       output directory that needs redirecting.
+	#
+	if (CMAKE_CONFIGURATION_TYPES)  # multi-config generator (eg, Visual Studio, Xcode) ...
+		set(_pygplates_package_build_dir "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/$<CONFIG>/pygplates")
+	else()  # single-config generator (eg, Ninja, Unix Makefiles) ...
+		set(_pygplates_package_build_dir "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/pygplates")
+	endif()
+	set_target_properties(pygplates PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${_pygplates_package_build_dir}")
+	unset(_pygplates_package_build_dir)
 	target_sources_util(pygplates PRIVATE
 		${PROJECT_BINARY_DIR}/src/global/Version.cc
 		${PROJECT_BINARY_DIR}/src/global/License.cc
