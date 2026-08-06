@@ -6,7 +6,7 @@ set -e  # exit if any command fails
 cd /io
 cp -r cmake doc-cpp doc-python-api src CMakeLists.txt COPYING pyproject.toml README.md /pygplates
 mkdir /pygplates/pygplates
-cp -r pygplates/CMakeLists.txt pygplates/test /pygplates/pygplates
+cp -r pygplates/CMakeLists.txt pygplates/test pygplates/stub /pygplates/pygplates
 cd /pygplates
 
 # Build wheels (in the local file system) for each Python version.
