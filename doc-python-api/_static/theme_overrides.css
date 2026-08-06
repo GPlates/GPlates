@@ -6,3 +6,17 @@
 .wy-table-responsive table th {
   white-space: initial;
 }
+
+/* Workaround for long display equations spilling outside the content area.
+ * MathJax lays each one out at its natural width and does not break lines, so a wide
+ * equation overflows the ".wy-nav-content" column and runs into the page background.
+ * Confine it, and scroll horizontally when it does not fit.
+ *
+ * Only display math (a "div") is given a scrollbar - inline math is a "span", and
+ * "overflow" on an inline-block aligns its baseline to the bottom margin edge, which
+ * would drop inline equations below the surrounding line of text.
+ */
+.rst-content div.math {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
