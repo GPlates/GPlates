@@ -20,6 +20,18 @@ import sphinx_rtd_theme
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+#
+# Note that this is the directory *containing* the pygplates shared library (C++), not the parent of the
+# built 'pygplates' package directory - so "import pygplates" here imports the shared library directly,
+# rather than the package that wraps it (see the pygplates target in 'src/CMakeLists.txt').
+#
+# That is deliberate. The documentation describes the public 'pygplates.<symbol>' surface, and Sphinx
+# builds the "Bases:" cross-references of each class from its '__module__' attribute (via 'restify()').
+# Imported as a package, '__module__' is 'pygplates.pygplates' (the shared library lives inside the
+# package - see 'cmake/modules/Install.cmake'), so every base class would reference a
+# 'pygplates.pygplates.X' target that no page in this documentation defines. The displayed text would be
+# unchanged (the references are '~'-prefixed), but every "Bases:" link would silently stop resolving -
+# and a missing Python cross-reference is not a warning, so even '-W' would not catch it.
 sys.path.insert(0, "$<TARGET_FILE_DIR:pygplates>")
 
 # If on Windows and Python >= 3.8 and not in a conda environment then we need to specify the paths to all dependency DLLs of the

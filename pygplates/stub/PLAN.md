@@ -259,8 +259,15 @@ of the stub only.
 - Docstrings are fully hand-written and interpolated defaults are compile-time
   constants → cross-platform regeneration should be byte-identical; any drift surfaces
   as a freshness-test diff (easy to diagnose).
-- `pygplates.pygplates.<symbol>` (kept for pickling, Install.cmake:206–212) stays
-  untyped — private surface, acceptable.
+- `pygplates.pygplates.<symbol>` stays untyped — **decided, not a risk**. The private
+  submodule is deliberate and load-bearing (Boost.Python pickles classes by reference, so
+  its name is embedded in every pickle already written by a released pyGPlates; `dill`
+  additionally resolves it by `getattr` on the parent package; and it names every
+  exception in a traceback) — full rationale in `cmake/modules/Install.cmake`. Adding a
+  second `pygplates/pygplates.pyi` would duplicate all ~1750 members for a surface no user
+  should touch, and double the freshness-test burden. It is now covered at runtime by
+  `PackageCase` in `pygplates/test/test.py`, which the `pygplates-test` ctest can only
+  exercise because the build tree is itself the installed package layout.
 - Debug-only developers never run the freshness test (Release/MinSizeRel configurations,
   matching `pygplates-test`) — a Release ctest run (locally or CI) is what enforces
   freshness.
