@@ -211,19 +211,39 @@ else()  # pyGPlates ...
     #
     # Notes for the "__init__.py" source code:
     #
-    # Previously, once we imported symbols from the pygplates shared library (C++) into the namespace of this package (also called pygplates),
-    # we used to delete 'pygplates.pygplates' (after renaming it to something more private with a leading underscore).
-    # However we no longer do this because the '__module__' attribute of objects in pygplates remain as 'pygplates.pygplates'
-    # (since 'pygplates.{pyd,so}' is in 'pygplates/' package). And the '__module__' attribute is used during pickling
-    # (at least 'dill' appears to use it), so deleting what it references interferes with pickling (at least for 'dill').
+    # Once the symbols from the pygplates shared library (C++) are imported into the namespace of this package (which is
+    # also called pygplates) we have both 'pygplates.<symbol>' and 'pygplates.pygplates.<symbol>'. The former is the
+    # public API. We used to delete the latter (by renaming 'pygplates.pygplates' to something private with a leading
+    # underscore), but we no longer do - it turns out to be load-bearing, for the following reasons.
     #
-    # This does mean we have both pygplates.<symbol> and pygplates.pygplates.<symbol>. The former being the public API.
+    # 1) Pickling. Boost.Python's 'pickle_suite' (see 'src/api/PythonPickle.h') pickles our classes *by reference*, so a
+    #    pickle stream records each class' '__module__', and that is 'pygplates.pygplates' (because the pygplates shared
+    #    library 'pygplates.{pyd,so}' lives *inside* the 'pygplates/' package).
     #
-    # We could change the name of the module to '_pygplates' (so that we have pygplates.<symbol> and pygplates._pygplates.<symbol>) but it would
-    # require a lot of potentially confusing changes. For example, pygplates tests run on the build target (rather than the installed Python package),
-    # which would be '_pygplates'.{pyd,so}, and therefore the tests would need to 'import _pygplates' instead of 'import pygplates'.
-    # Also GPlates embeds 'pygplates' (not '_pygplates') and so we'd need to use a module name of 'pygplates' when building GPlates
-    # and '_pygplates' when building pyGPlates. So it's easier just to keep it as 'pygplates' (instead of '_pygplates').
+    #    - The standard library 'pickle' resolves that name through 'sys.modules', and so would survive a rename. This is
+    #      why our pickle round-trip tests stayed green throughout the attempt to rename it to '_impl' (commit 622931ac6,
+    #      reverted by f015a03d4).
+    #    - However 'dill' resolves a dotted module name as 'getattr(__import__(parent, None, None, [child]), child)' (see
+    #      '_import_module' in 'dill/_dill.py') - an *attribute* lookup on the parent package. Deleting or renaming that
+    #      attribute makes the lookup raise (and note that re-importing does *not* restore a deleted attribute), whereupon
+    #      dill falls back to pickling the class by value, which cannot work for a Boost.Python class.
+    #    - And a rename would invalidate every pickle written by an already released pyGPlates, since those streams embed
+    #      'pygplates.pygplates.<Class>' (and 'pygplates.pygplates.PickleBytes'). So it is a file format break, not just
+    #      a rename.
+    #
+    #    The 'pygplates-test' ctest guards this (see 'pygplates/test/test.py') - which it is only able to do because the
+    #    build tree is the very same 'pygplates/' package that we install (see above).
+    #
+    # 2) Exception names. 'src/api/PyExceptions.cc' derives the qualified name of each pygplates exception from the live
+    #    module '__name__', so a rename would change the text of every user-visible traceback.
+    #
+    # 3) GPlates embeds 'pygplates' (not '_pygplates') via 'PyImport_AppendInittab' (see 'src/gui/PythonManager.cc'), so
+    #    a rename would mean using a module name of 'pygplates' when building GPlates and '_pygplates' when building
+    #    pyGPlates.
+    #
+    # Note that '_post_import' is imported explicitly (like '__version__' and '__doc__') because "import *" skips names
+    # with a leading underscore. This also makes it available as 'pygplates._post_import', which is what the type stub
+    # 'pygplates/stub/__init__.pyi' declares.
     #
     # Note that we allow no indentation in the file content to avoid Python 'unexpected indent' errors.
     file(GENERATE
@@ -234,10 +254,11 @@ from .pygplates import *
 # Import any private symbols (with leading underscore).
 from .pygplates import __version__
 from .pygplates import __doc__
+from .pygplates import _post_import
 
 # Let the pygplates shared library (C++) know of its imported location.
 import os.path
-pygplates._post_import(os.path.dirname(__file__))
+_post_import(os.path.dirname(__file__))
 ]])
     install(FILES "$<TARGET_FILE_DIR:pygplates>/__init__.py" DESTINATION ${PYGPLATES_PYTHON_PACKAGE_DIR})
 
