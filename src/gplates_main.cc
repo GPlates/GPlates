@@ -994,6 +994,17 @@ internal_main(int argc, char* argv[])
 int
 main(int argc, char* argv[])
 {
+	// Log any exception that reaches 'std::terminate' before the process aborts.
+	//
+	// This complements 'call_main()' below (and 'GPlatesQApplication::notify()'), which can only
+	// catch exceptions that actually unwind the stack. An exception thrown from a destructor, or
+	// from any 'noexcept' function, invokes 'std::terminate' directly - so no handler, including
+	// the one below, ever gets a chance to see it.
+	//
+	// We do this here (rather than in 'internal_main()') so that it also covers the non-GUI
+	// command-line paths and the period before QApplication exists.
+	GPlatesGui::GPlatesQApplication::install_terminate_handler();
+
 	// The first of two reasons to wrap 'main()' around 'internal_main()' is to
 	// handle any uncaught exceptions that occur in main() but outside the Qt event thread.
 	// Any uncaught exceptions occurring in the Qt event thread will get caught by the
