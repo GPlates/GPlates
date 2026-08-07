@@ -21,7 +21,7 @@ Everything here arrives as its own reviewed pull request against the `gplates` b
 
 ### World Building
 
-Nothing has landed here yet. Work in this area is still in review.
+- **Place Circular Features.** **World Building > Place Circular Features...** opens a placement window that stays open while you work. Choose the appearance time, whether the result is a polygon or a closed polyline, a maximum radius, and which feature collection it goes into; then place circles with the usual two-click small-circle interaction, with a live preview clamped to the radius you set. Each one becomes a real undoable feature that stays valid through to the present and saves with the project — [#53](https://github.com/CaliTarheel/GPlates/pull/53)
 
 
 <div align="center">
