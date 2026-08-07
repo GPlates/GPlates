@@ -6,11 +6,18 @@ Everything here arrives as its own reviewed pull request against the `gplates` b
 
 ### General User Experience
 
-Nothing has landed here yet. Work in this area is still in review.
+- **Multi-vertex geometry editing.** With the Move Vertex tool, **Shift-click** a vertex to add it to the selection, or **Shift-drag** a lasso around several at once, then drag any one of them to move the whole selection together — [#5](https://github.com/CaliTarheel/GPlates/pull/5)
+- **Select Last Created Feature**, in the **Edit** menu directly below Redo. Available once you have created a feature. If that feature is not visible at the current reconstruction time, the view moves into its lifetime first, so you are taken to it rather than to an empty globe — [#9](https://github.com/CaliTarheel/GPlates/pull/9)
+- **Rotation Hierarchy viewer**, under the **Reconstruction** menu, for reading the plate circuit as a tree — [#18](https://github.com/CaliTarheel/GPlates/pull/18)
+- **Active Feature Types preferences.** Choose which feature types are offered when creating or changing a feature, so the list holds the twenty types you use rather than every type in the GPGIM — [#19](https://github.com/CaliTarheel/GPlates/pull/19)
+- **Save and load active feature type lists.** In **Preferences > Active Feature Types**, curate a list and save it beside your project, hand it to someone else, or keep it in version control. Two lists are supplied next to `gplates.exe` — `DN.txt` and `WorldbuildingPasta.txt` — [#47](https://github.com/CaliTarheel/GPlates/pull/47)
+- **Configurable Absolute Age draw style**, with usable defaults and worked examples — [#2](https://github.com/CaliTarheel/GPlates/pull/2)
 
 ### Behind the Scenes
 
 - Files stored under non-ASCII paths now load and save reliably — [#16](https://github.com/CaliTarheel/GPlates/pull/16)
+- Opening a project or clearing a session no longer aborts the application. Two discarded `Scribe` transcribe results were throwing from a destructor, which reaches `std::terminate` without unwinding, so no handler could catch it and nothing was logged — [#50](https://github.com/CaliTarheel/GPlates/pull/50)
+- Qt's font-probe logging no longer floods the log. Opening a dialog could produce twenty lines of `qt.text.font.db: OpenType support missing...`, which is Qt falling back between fonts and nothing to act on — [#48](https://github.com/CaliTarheel/GPlates/pull/48)
 
 ### World Building
 
