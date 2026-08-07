@@ -898,6 +898,26 @@ internal_main(int argc, char* argv[])
 	QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
 #endif
 
+	// Silence one of Qt's own logging categories before Qt reads its logging configuration.
+	//
+	// "qt.text.font.db: OpenType support missing for <family>, script <n>" is emitted while Qt
+	// probes installed fonts for complex-script coverage. Qt falls back to another font and carries
+	// on, so there is nothing to fix and nothing the user can act on - but it is emitted once per
+	// font per script, so opening a single dialog can produce twenty lines of it, and it reads like
+	// a GPlates fault rather than a Qt implementation detail.
+	//
+	// This is set through the environment rather than QLoggingCategory::setFilterRules() because Qt
+	// applies logging rules in the order config file, then API, then environment, with each tier
+	// overriding the one before. The environment tier is the one that reliably wins, and setting it
+	// before QApplication is constructed puts it in place before the logging registry initialises.
+	// Setting it via the API alone was tried first and did not suppress the messages.
+	if (!qEnvironmentVariableIsSet("QT_LOGGING_RULES"))
+	{
+		// Only when the user has not set their own rules. If they have, that is a deliberate
+		// debugging choice and we should not quietly override it.
+		qputenv("QT_LOGGING_RULES", "qt.text.font.db=false");
+	}
+
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 	GPlatesGui::GPlatesQApplication qapplication(argc, argv);
 
