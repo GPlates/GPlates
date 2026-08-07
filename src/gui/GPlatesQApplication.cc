@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cstdlib>
+#include <exception>
 #include <string>
 #include <sstream>
 #include <boost/bind/bind.hpp>
@@ -52,38 +54,31 @@
 namespace
 {
 	/**
-	 * Call function @a func and process any uncaught exceptions.
+	 * Report the exception that is *currently being handled*.
+	 *
+	 * NOTE: This must be called from inside a catch block (it uses a bare 'throw;' to re-dispatch on
+	 * the exception's dynamic type). That includes being called from a 'std::terminate' handler,
+	 * provided the in-flight exception has first been re-thrown into a catch block there.
+	 *
+	 * Pops up a dialog informing the user of the uncaught exception (only if @a qreceiver and
+	 * @a qevent are both non-NULL), records the exception's call stack trace from the location at
+	 * which it was thrown and logs this information with the currently installed Qt message handler.
+	 *
+	 * Does not return - ends by calling 'qFatal()'.
 	 */
-	template <typename ReturnType>
-	ReturnType
-	try_catch(
-			boost::function<ReturnType ()> func,
+	void
+	report_uncaught_exception(
 			QObject *qreceiver,
 			QEvent *qevent)
 	{
-#if !defined(GPLATES_DEBUG)
 		std::string error_message_std;
 		std::string call_stack_trace_std;
-#endif
 
 		try
 		{
-			return func();
+			// Re-throw the exception currently being handled so that we can determine its type.
+			throw;
 		}
-		catch (GPlatesGlobal::NeedExitException &ex)
-		{
-			std::ostringstream os;
-			os << ex;
-			qDebug() << os.str().c_str();
-			//use exception to exit gplates is better than call exit(0) directly.
-			return true;
-		}
-		// For debug builds we don't want to catch exceptions (except 'NeedExitException')
-		// because if we do then we lose the debugger call stack trace which is
-		// much more detailed than our own stack trace implementation that
-		// currently requires placing TRACK_CALL_STACK macros around the code.
-		// And, of course, debugging relies on the native debugger stack trace.
-#if !defined(GPLATES_DEBUG)
 		catch (GPlatesGlobal::Exception &exc)
 		{
 			// Get exception to write its message.
@@ -102,10 +97,6 @@ namespace
 		{
 			error_message_std = "unknown exception";
 		}
-
-		//
-		// If we get here then we caught an exception
-		//
 
 		QStringList error_message_stream;
 		if (qreceiver && qevent)
@@ -163,9 +154,45 @@ namespace
 		// This is where the core dump or debugger trigger happens on debug builds.
 		// On release builds this exits the application with a return value of 1.
 		qFatal("Exiting due to exception caught");
+	}
 
-		// Shouldn't get past qFatal - this just keeps compiler happy.
-		return false;
+
+	/**
+	 * Call function @a func and process any uncaught exceptions.
+	 */
+	template <typename ReturnType>
+	ReturnType
+	try_catch(
+			boost::function<ReturnType ()> func,
+			QObject *qreceiver,
+			QEvent *qevent)
+	{
+		try
+		{
+			return func();
+		}
+		catch (GPlatesGlobal::NeedExitException &ex)
+		{
+			std::ostringstream os;
+			os << ex;
+			qDebug() << os.str().c_str();
+			//use exception to exit gplates is better than call exit(0) directly.
+			return true;
+		}
+		// For debug builds we don't want to catch exceptions (except 'NeedExitException')
+		// because if we do then we lose the debugger call stack trace which is
+		// much more detailed than our own stack trace implementation that
+		// currently requires placing TRACK_CALL_STACK macros around the code.
+		// And, of course, debugging relies on the native debugger stack trace.
+#if !defined(GPLATES_DEBUG)
+		catch (...)
+		{
+			report_uncaught_exception(qreceiver, qevent);
+
+			// Shouldn't get past 'report_uncaught_exception' (it calls qFatal) - this just keeps
+			// the compiler happy.
+			return false;
+		}
 #endif // if !defined(GPLATES_DEBUG)
 	}
 
@@ -234,6 +261,46 @@ GPlatesGui::GPlatesQApplication::call_main(
 		boost::bind(main_function, argc, argv),
 		NULL/*qreceiver*/,
 		NULL/*qevent*/);
+}
+
+
+void
+GPlatesGui::GPlatesQApplication::install_terminate_handler()
+{
+	std::set_terminate(
+			[]()
+			{
+				// Guard against re-entering this handler (which would recurse indefinitely) if the
+				// reporting below happens to throw.
+				std::set_terminate(std::abort);
+
+				if (std::current_exception())
+				{
+					try
+					{
+						// Re-throw so that 'report_uncaught_exception()' has an exception to report on.
+						std::rethrow_exception(std::current_exception());
+					}
+					catch (...)
+					{
+						// Note: No dialog (ie, NULL qreceiver/qevent). Unlike the 'try_catch()' paths,
+						// no stack unwinding has taken place, the exception is still in flight and we
+						// may not even be on the Qt event thread - so popping up a modal QMessageBox
+						// here is not safe.
+						report_uncaught_exception(NULL/*qreceiver*/, NULL/*qevent*/);
+					}
+				}
+				else
+				{
+					// If we have an installed message handler then this will output to a log file.
+					qWarning() << "GPlates is terminating, with no active exception.";
+				}
+
+				// A terminate handler must not return to its caller.
+				// Note that 'qFatal()' (called by 'report_uncaught_exception()') is not marked
+				// '[[noreturn]]', so we cannot rely on it to end the process.
+				std::abort();
+			});
 }
 
 

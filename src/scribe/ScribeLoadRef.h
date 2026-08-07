@@ -66,6 +66,25 @@ namespace GPlatesScribe
 
 
 		/**
+		 * Throws Exceptions::ScribeTranscribeResultNotChecked if @a is_valid was never called
+		 * (and this is the last 'LoadRef' referencing the object).
+		 *
+		 * NOTE: This destructor is explicitly 'noexcept(false)' because, since C++11, destructors
+		 * are implicitly 'noexcept(true)' - and an exception escaping a 'noexcept' destructor calls
+		 * 'std::terminate' immediately, without unwinding the stack. That means no handler anywhere
+		 * can catch it and nothing gets logged, which would defeat the entire purpose of this check.
+		 *
+		 * This is also why the check is done here rather than in 'TrackingDeleter' (where it used to
+		 * be): the deleter is called from 'boost::detail::shared_count::~shared_count()', which is
+		 * declared without an exception-specification and hence is *also* implicitly 'noexcept(true)'
+		 * (see [class.dtor]/3). So an exception thrown by the deleter terminates inside Boost, before
+		 * it ever reaches this class. Marking this destructor 'noexcept(false)' only helps if the
+		 * throw actually originates here.
+		 */
+		~LoadRef() noexcept(false);
+
+
+		/**
 		 * Return whether this reference is valid to be dereferenced, or whether it's a NULL reference.
 		 *
 		 * To use:
