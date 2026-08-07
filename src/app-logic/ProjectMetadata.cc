@@ -295,6 +295,62 @@ GPlatesAppLogic::ProjectMetadataParser::parse(
 	metadata.planet_radius_is_valid = true;
 
 	//
+	// Intended resolution. Entirely optional - a project that says nothing about it leaves
+	// consumers to use their own default, which is a different thing from a project that says
+	// zero.
+	//
+	if (scalar_values.contains("gplates.resolution.default_km"))
+	{
+		bool resolution_is_numeric = false;
+		const double resolution_km =
+				scalar_values["gplates.resolution.default_km"].toDouble(&resolution_is_numeric);
+		if (!resolution_is_numeric || !std::isfinite(resolution_km) || resolution_km <= 0)
+		{
+			return invalid_metadata(
+					QObject::tr("gplates.resolution.default_km must be a finite positive number in kilometres."));
+		}
+		metadata.default_resolution_km = resolution_km;
+	}
+
+	// Per-feature-type overrides. The document writes bare names ("MidOceanRidge:") because a
+	// colon inside a YAML key would need quoting; the "gpml:" prefix is added here so callers can
+	// look these up by the qualified name they already hold.
+	const QString by_feature_type_prefix("gplates.resolution.by_feature_type.");
+	for (QMap<QString, QString>::const_iterator scalar_iter = scalar_values.constBegin();
+			scalar_iter != scalar_values.constEnd();
+			++scalar_iter)
+	{
+		if (!scalar_iter.key().startsWith(by_feature_type_prefix))
+		{
+			continue;
+		}
+
+		const QString feature_type_name = scalar_iter.key().mid(by_feature_type_prefix.length());
+		if (feature_type_name.isEmpty() || feature_type_name.contains('.'))
+		{
+			return invalid_metadata(
+					QObject::tr("gplates.resolution.by_feature_type expects one feature type name per entry,"
+						" such as 'MidOceanRidge: 250'."));
+		}
+
+		bool resolution_is_numeric = false;
+		const double resolution_km = scalar_iter.value().toDouble(&resolution_is_numeric);
+		if (!resolution_is_numeric || !std::isfinite(resolution_km) || resolution_km <= 0)
+		{
+			return invalid_metadata(
+					QObject::tr("The resolution for feature type '%1' must be a finite positive number in kilometres.")
+							.arg(feature_type_name));
+		}
+
+		// Accept a name already carrying its namespace, so a document that writes
+		// "'gpml:MidOceanRidge': 250" is not silently ignored.
+		const QString qualified_name = feature_type_name.contains(':')
+				? feature_type_name
+				: QString("gpml:") + feature_type_name;
+		metadata.resolution_km_by_feature_type.insert(qualified_name, resolution_km);
+	}
+
+	//
 	// Required project timestamps. Entirely optional, and validated independently of the radius
 	// above: a malformed schedule here must not disturb an otherwise-good radius, since the two
 	// are unrelated concerns that happen to share a document. A missing radius already returned
