@@ -36,32 +36,68 @@ a distance tolerance — inherits the problem.
 There is also a plainer, more common annoyance: a stray click far from where you meant creates an
 enormous segment. It is easy not to notice and irritating to find later.
 
+## What the feature is actually for
+
+The purpose is **drawing discipline**, not geometric fidelity.
+
+The problem being solved is a human one: it is easy, while digitising, to lay down a single enormous
+segment across a region that in reality has structure — and then not notice. Real coastlines,
+rifts and subduction zones are not smooth. A boundary drawn as three points across an ocean is not
+"a bit coarse", it is a different boundary, and the detail it is missing is detail only the person
+drawing it can supply.
+
+So the feature exists to **stop the user going too fast**, and prompt them to put the variation in
+themselves.
+
+This distinction decides everything below, and it rules out the option that first looks most
+attractive.
+
 ## The one decision that shapes everything else
 
 **What happens when a click would exceed the limit?**
 
 Three answers, and they are not variations on a theme — they are different features.
 
-**(a) Reject the click.** The vertex is not added; the status bar says why. Honest and simple. Also
-the most irritating option in normal use: the user is told "no" and must click again closer, and
-they will hit it constantly when drawing long ocean boundaries where a coarse line is genuinely what
-they want.
+**(a) Reject the click, or warn.** The vertex is not added, or is added with a visible complaint; the
+status bar says why. The user clicks again, closer, and the line acquires the detail they would
+otherwise have skipped.
 
 **(b) Clamp to the maximum.** The vertex is placed at the limit distance along the direction of the
 click. Never do this. It puts a vertex somewhere the user did not click, silently, and the resulting
 geometry is wrong in a way that looks deliberate.
 
 **(c) Densify.** The clicked vertex is added *and* intermediate vertices are inserted along the arc
-so that no segment exceeds the limit. The user gets the point they asked for, and the line follows
-the sphere properly.
+so that no segment exceeds the limit.
 
-**(c) is almost certainly right, and it reframes the feature.** This is not a limit on where you may
-click. It is **automatic densification while digitising** — the same operation GPlates already
-performs at reconstruction time, applied at the point of creation so the stored geometry is good.
+**(a) is right, and (c) is a trap.**
 
-That reframing matters for naming, for where the setting belongs, and for scope: once it is
-densification rather than restriction, the obvious follow-on is applying it to geometry that already
-exists, which is a separate tool and explicitly not this one.
+Densification inserts vertices **along the existing great-circle arc**. The result has more points
+and *exactly the same shape* — a smooth arc, now finely sampled. It adds no variation, because there
+is no new information to add: the software does not know where the coastline should bend, and
+inventing plausible-looking wiggle would be worse than leaving it straight.
+
+Densifying therefore satisfies a segment-length rule while defeating the entire purpose of having
+one. Worse, it does so invisibly — the user is told nothing, the vertex count goes up, and the line
+still lacks the structure they meant to draw. It would make the problem *harder* to notice, not
+easier.
+
+Densification is genuinely useful for reconstruction fidelity — which is exactly why GPlates already
+does it at reconstruction time, where a machine-generated arc is all that is wanted. It is the wrong
+answer here.
+
+## Reject or warn?
+
+Given (a), a second question: hard block, or advisory?
+
+- **Hard block** guarantees the invariant, and will be infuriating the first time someone legitimately
+  wants a long straight segment — a plate boundary that really is a straight transform, a quick
+  scaffold line, a topology section.
+- **Advisory** — draw the offending segment in a warning colour, or say so in the status bar, and let
+  the user decide — preserves judgement and still catches the case this exists for, which is *not
+  noticing*.
+
+Advisory is probably right, since the failure being prevented is inattention rather than intent. A
+user who deliberately wants one long segment should not have to go and find a setting to turn off.
 
 ## Units, and why this should not be decided alone
 
@@ -97,8 +133,8 @@ entirely on the units decision above.
 ## Which tools
 
 - **Digitise New Polyline / Polygon** — the obvious case, via `AddPointGeometryOperation`.
-- **Insert Vertex** — inserting into an existing long segment; should the insertion also densify the
-  two new segments it creates?
+- **Insert Vertex** — the natural way to fix a segment the warning flagged, so it should not fight the
+  user while they are doing exactly what they were asked to do.
 - **Move Vertex** — dragging a vertex can lengthen its two adjoining segments past the limit. Enforcing
   there is more intrusive and probably should not be in a first version.
 
@@ -107,19 +143,19 @@ value.
 
 ## Non-goals
 
-- **Fixing existing geometry.** A tool that densifies an already-drawn feature is useful and is not
-  this. Loading a project with long segments should do nothing and say nothing.
+- **Fixing existing geometry.** Loading a project with long segments should do nothing and say
+  nothing. Auditing a whole project for coarse boundaries is a reasonable idea and is not this one.
 - **Replacing reconstruction-time tessellation.** That stays; it serves consumers whose source data
   we do not control.
 - **Enforcing a *minimum* separation.** That is Weld Vertices, from the other direction.
 
 ## Open questions
 
-1. Reject, clamp, or densify — the doc argues densify, but it is the decision that defines the
-   feature and should be made explicitly.
+1. Hard block or advisory warning. The doc argues advisory, since the failure being prevented is
+   inattention rather than intent.
 2. Degrees or kilometres, and shared with Weld or not.
-3. Does densification produce vertices the user can then edit individually, or should they be marked
-   as generated? If a user moves one, the segment invariant breaks — is that allowed?
-4. Undo granularity: does one click that inserts five vertices undo as one step? It should.
+3. Does the check apply per-segment as it is drawn, or to the finished geometry on completion?
+   Per-segment catches it while the user is still thinking about that part of the line.
+4. Should an existing feature be checked when opened for editing, or only newly drawn segments?
 5. What is a sensible default, and should the feature be off by default? Off is safer; on is more
    useful to the people who need it and will never find the setting.
