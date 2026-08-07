@@ -26,9 +26,9 @@ def get_description(feature, default=''):
     Return the description of this feature.
     
     :param default: the default description (defaults to an empty string)
-    :type default: string or None
+    :type default: str or None
     :returns: the description (if exactly one `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property found), otherwise *default* is returned
-    :rtype: string, or type(*default*)
+    :rtype: str, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_.
@@ -78,11 +78,11 @@ def set_description(feature, description, verify_information_model=VerifyInforma
     Sets the description of this feature.
     
     :param description: the description
-    :type description: string
+    :type description: str
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the description
-    :rtype: :class:`Property`
+    :rtype: Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property.
     
@@ -110,10 +110,10 @@ def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
     Return the name (or names) of this feature.
     
     :param default: the default name (defaults to an empty string), or default names
-    :type default: string or list or None
+    :type default: str or list or None
     :param property_return: whether to return exactly one name, the first name or all names
-    :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*
-    :rtype: string, or list of strings, or type(*default*)
+    :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+    :rtype: str, or list of str, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_.
@@ -205,11 +205,11 @@ def set_name(feature, name, verify_information_model=VerifyInformationModel.yes)
     Set the name (or names) of this feature.
     
     :param name: the name or names
-    :type name: string, or sequence of string
+    :type name: str, or sequence of str
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the name, or properties containing the names
-    :rtype: :class:`Property`, or list of :class:`Property`
+    :rtype: Property, or list of Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ property.
     
@@ -250,7 +250,7 @@ def get_valid_time(feature, default=(float('inf'), float('-inf'))):
     :param default: the default time range (defaults to all time)
     :type default: tuple (float,float) or None
     :returns: begin and end times (if exactly one `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property found), otherwise *default* is returned
-    :rtype: tuple (float,float), or type(*default*)
+    :rtype: tuple (float,float), or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_.
@@ -298,13 +298,13 @@ def set_valid_time(feature, begin_time, end_time, verify_information_model=Verif
     Sets the valid time range of this feature.
     
     :param begin_time: the begin time (time of appearance)
-    :type begin_time: float or :class:`GeoTimeInstant`
+    :type begin_time: float or GeoTimeInstant
     :param end_time: the end time (time of disappearance)
-    :type end_time: float or :class:`GeoTimeInstant`
+    :type end_time: float or GeoTimeInstant
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the valid time range
-    :rtype: :class:`Property`
+    :rtype: Property
     :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property.
@@ -335,7 +335,7 @@ def get_geometry_import_time(feature, default=0.0):
     :param default: the default geometry import time (defaults to present day)
     :type default: float or None
     :returns: geometry import time (if exactly one `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_ property found), otherwise *default* is returned
-    :rtype: float, or type(*default*)
+    :rtype: float, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_.
@@ -378,11 +378,11 @@ def set_geometry_import_time(feature, geometry_import_time, verify_information_m
     Sets the geometry import time of this feature.
     
     :param geometry_import_time: the reconstruction time that geometry was imported
-    :type geometry_import_time: float or :class:`GeoTimeInstant`
+    :type geometry_import_time: float or GeoTimeInstant
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the geometry import time
-    :rtype: :class:`Property`
+    :rtype: Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_ property.
     
@@ -412,7 +412,7 @@ def get_left_plate(feature, default=0):
     :param default: the default left plate id (defaults zero)
     :type default: int or None
     :returns: the left plate id (if exactly one `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property found), otherwise *default* is returned
-    :rtype: int, or type(*default*)
+    :rtype: int, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_.
@@ -457,9 +457,9 @@ def set_left_plate(feature, left_plate, verify_information_model=VerifyInformati
     :param left_plate: the left plate id
     :type left_plate: int
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the left plate id
-    :rtype: :class:`Property`
+    :rtype: Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property.
     
@@ -489,7 +489,7 @@ def get_right_plate(feature, default=0):
     :param default: the default right plate id (defaults zero)
     :type default: int or None
     :returns: the right plate id (if exactly one `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property found), otherwise *default* is returned
-    :rtype: int, or type(*default*)
+    :rtype: int, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_.
@@ -534,9 +534,9 @@ def set_right_plate(feature, right_plate, verify_information_model=VerifyInforma
     :param right_plate: the right plate id
     :type right_plate: int
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the right plate id
-    :rtype: :class:`Property`
+    :rtype: Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property.
     
@@ -564,11 +564,11 @@ def get_reconstruction_method(feature, default='ByPlateId'):
     Returns the reconstruction method of this feature.
     
     :param default: the default reconstruction method (defaults to 'ByPlateId')
-    :type default: string or None
+    :type default: str or None
     :returns: the reconstruction method (see `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_) \
         if exactly one `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ property \
         found containing an :class:`enumeration type<EnumerationType>` of 'gpml:ReconstructionMethodEnumeration', otherwise *default* is returned
-    :rtype: string, or type(*default*)
+    :rtype: str, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_.
@@ -614,11 +614,11 @@ def set_reconstruction_method(feature, reconstruction_method, verify_information
     Sets the reconstruction method of this feature.
     
     :param reconstruction_method: the reconstruction method (see `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_)
-    :type reconstruction_method: string
+    :type reconstruction_method: str
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the reconstruction method
-    :rtype: :class:`Property`
+    :rtype: Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
         does not support the `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ \
         property, or *reconstruction_method* is not a recognised reconstruction method.
@@ -652,7 +652,7 @@ def get_reconstruction_plate_id(feature, default=0):
     :param default: the default reconstruction plate id (defaults zero)
     :type default: int or None
     :returns: the reconstruction plate id (if exactly one `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property found), otherwise *default* is returned
-    :rtype: int, or type(*default*)
+    :rtype: int, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_.
@@ -697,9 +697,9 @@ def set_reconstruction_plate_id(feature, reconstruction_plate_id, verify_informa
     :param reconstruction_plate_id: the reconstruction plate id
     :type reconstruction_plate_id: int
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the reconstruction plate id
-    :rtype: :class:`Property`
+    :rtype: Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property.
     
@@ -729,8 +729,8 @@ def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.ex
     :param default: the default plate ID (defaults to zero), or default plate IDs
     :type default: int or list or None
     :param property_return: whether to return exactly one ID, the first ID or all IDs
-    :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*
-    :rtype: int, or list of int, or type(*default*)
+    :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+    :rtype: int, or list of int, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_.
@@ -824,9 +824,9 @@ def set_conjugate_plate_id(feature, conjugate_plate_id, verify_information_model
     :param conjugate_plate_id: the conjugate plate ID or plate IDs
     :type conjugate_plate_id: int, or sequence of int
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the conjugate plate ID, or properties containing the conjugate plate IDs
-    :rtype: :class:`Property`, or list of :class:`Property`
+    :rtype: Property, or list of Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_ property.
     
@@ -867,7 +867,7 @@ def get_relative_plate(feature, default=0):
     :param default: the default relative plate id (defaults zero)
     :type default: int or None
     :returns: the relative plate id (if exactly one `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_ property found), otherwise *default* is returned
-    :rtype: int, or type(*default*)
+    :rtype: int, or type(default)
     
     This is a convenience method that wraps :meth:`get_value` for the common property
     `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_.
@@ -912,9 +912,9 @@ def set_relative_plate(feature, relative_plate, verify_information_model=VerifyI
     :param relative_plate: the relative plate id
     :type relative_plate: int
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the relative plate id
-    :rtype: :class:`Property`
+    :rtype: Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_ property.
     
@@ -994,11 +994,11 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
     Sets the list of times of this flowline or motion path feature.
     
     :param times: the list of times
-    :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`
+    :type times: sequence (eg, list or tuple) of float or GeoTimeInstant
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing the list of times
-    :rtype: :class:`Property`
+    :rtype: Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_ property.
     :raises: ValueError if the time values in *times* are not in monotonically increasing order, or there are fewer than two time values.
@@ -1050,11 +1050,11 @@ def get_shapefile_attribute(feature, key, default_value=None):
     Returns the value of a shapefile attribute associated with a key.
     
     :param key: the key of the shapefile attribute
-    :type key: string
+    :type key: str
     :param default_value: the default value to return if *key* does not exist (if not specified then it defaults to None)
-    :type default_value: int or float or string or None
+    :type default_value: int or float or str or None
     :returns: the value of the shapefile attribute associated with *key*, otherwise *default_value* if *key* does not exist
-    :rtype: integer or float or string or type(*default_value*) or None
+    :rtype: int or float or str or type(default_value) or None
     
     Shapefile attributes are stored in a :class:`GpmlKeyValueDictionary` property named
     `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_
@@ -1107,13 +1107,13 @@ def set_shapefile_attribute(feature, key, value, verify_information_model=Verify
     Sets the value of a shapefile attribute associated with a key.
     
     :param key: the key of the shapefile attribute
-    :type key: string
+    :type key: str
     :param value: the value of the shapefile attribute
-    :type value: integer, float or string
+    :type value: int, float or str
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing all the shapefile attributes
-    :rtype: :class:`Property` containing a :class:`GpmlKeyValueDictionary` property value
+    :rtype: Property containing a GpmlKeyValueDictionary property value
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_ \
         property (although all feature :class:`types<FeatureType>` do support it).
@@ -1173,7 +1173,7 @@ def get_shapefile_attributes(feature, default=None):
     (if not specified then it *default* defaults to ``None``)
     :type default: dict or None
     :returns: all shapefile attributes, otherwise *default* if no shapefile attributes exist
-    :rtype: dict or type(*default*) or None
+    :rtype: dict[str, int | float | str], or type(default), or None
     
     Shapefile attributes are stored in a :class:`GpmlKeyValueDictionary` property named
     `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_
@@ -1226,12 +1226,12 @@ def set_shapefile_attributes(feature, attribute_mapping=None, verify_information
     Sets the shapefile attributes of this feature.
     
     :param attribute_mapping: optional mapping of keys to values
-    :type attribute_mapping: ``dict`` mapping each key (string) to a value (integer, float or string), \
+    :type attribute_mapping: dict mapping each key (str) to a value (int, float or str), \
     or a sequence of (key, value) tuples, or None
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the property containing all the shapefile attributes
-    :rtype: :class:`Property` containing a :class:`GpmlKeyValueDictionary` property value
+    :rtype: Property containing a GpmlKeyValueDictionary property value
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_ \
         property (although all feature :class:`types<FeatureType>` do support it).
@@ -1283,8 +1283,8 @@ def get_total_reconstruction_pole(feature):
     """get_total_reconstruction_pole()
     Returns the *time-dependent* total reconstruction pole of this feature.
     
-    :rtype: tuple(int, int, :class:`GpmlIrregularSampling`) or None
-    :return: A tuple containing (fixed plate id, moving plate id, time sequence of finite rotations) or None
+    :returns: a tuple containing (fixed plate id, moving plate id, time sequence of finite rotations), or ``None``
+    :rtype: tuple[int, int, GpmlIrregularSampling], or None
     
     This is a convenience method that wraps :meth:`get_value` for the common properties
     `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_,
@@ -1354,11 +1354,11 @@ def set_total_reconstruction_pole(feature, fixed_plate_id, moving_plate_id, tota
     :param moving_plate_id: the moving plate id
     :type moving_plate_id: int
     :param total_reconstruction_pole: the time-sequence of rotations
-    :type total_reconstruction_pole: :class:`GpmlIrregularSampling` of :class:`GpmlFiniteRotation`
+    :type total_reconstruction_pole: GpmlIrregularSampling of GpmlFiniteRotation
     :param verify_information_model: whether to check the information model before setting (default) or not
-    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
     :returns: the fixed plate id property, the moving plate id property and the total reconstruction pole property
-    :rtype: tuple of three :class:`Property`
+    :rtype: tuple of three Property
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
         does not support `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_, \
         `pygplates.PropertyName.gpml_moving_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame>`_ and \

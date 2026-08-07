@@ -6,3 +6,6 @@
 *.{icns,ico,gz,dbf,shp,shx,png} binary
 
 *.sh text eol=lf
+
+# The generated pygplates type stub is byte-compared by the 'pygplates-stub-test' ctest.
+*.pyi text eol=lf

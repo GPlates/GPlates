@@ -248,10 +248,10 @@ export_great_circle_arc()
 				"  Create a great circle arc from two points.\n"
 				"\n"
 				"  :param start_point: the start point of the arc.\n"
-				"  :type start_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type start_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :param end_point: the end point of the arc.\n"
-				"  :type end_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type end_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :raises: IndeterminateResultError if points are antipodal (opposite each other)\n"
 				"\n"
@@ -276,14 +276,14 @@ export_great_circle_arc()
 				"get_start_point()\n"
 				"  Return the arc's start point geometry.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n")
+				"  :rtype: PointOnSphere\n")
 		.def("get_end_point",
 				&GPlatesMaths::GreatCircleArc::end_point,
 				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_end_point()\n"
 				"  Return the arc's end point geometry.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n")
+				"  :rtype: PointOnSphere\n")
 		.def("is_zero_length",
 				&GPlatesMaths::GreatCircleArc::is_zero_length,
 				"is_zero_length()\n"
@@ -308,7 +308,7 @@ export_great_circle_arc()
 				"  Return the unit vector normal direction of the great circle this arc lies on.\n"
 				"\n"
 				"  :returns: the unit-length 3D vector\n"
-				"  :rtype: :class:`Vector3D`\n"
+				"  :rtype: Vector3D\n"
 				"  :raises: IndeterminateGreatCircleArcNormalError if arc is zero length\n"
 				"\n"
 				"  ::\n"
@@ -388,7 +388,7 @@ export_great_circle_arc()
 				"zero is the start point, one is the end point and between zero and one are points "
 				"along the arc\n"
 				"  :type normalised_distance_from_start_point: float\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"  :raises: ValueError if arc *normalised_distance_from_start_point* is not in the "
 				"range [0,1]\n"
 				"\n"
@@ -412,7 +412,7 @@ export_great_circle_arc()
 				"along the arc\n"
 				"  :type normalised_distance_from_start_point: float\n"
 				"  :returns: the unit-length 3D vector\n"
-				"  :rtype: :class:`Vector3D`\n"
+				"  :rtype: Vector3D\n"
 				"  :raises: ValueError if arc *normalised_distance_from_start_point* is not in the "
 				"range [0,1]\n"
 				"  :raises: IndeterminateGreatCircleArcDirectionError if arc is zero length\n"
@@ -442,7 +442,7 @@ export_great_circle_arc()
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
-				"  :rtype: list :class:`points<PointOnSphere>`\n"
+				"  :rtype: list of PointOnSphere\n"
 				"  :raises: ValueError if *tessellate_radians* is negative or zero\n"
 				"\n"
 				"  .. note:: If this great circle arc subtends an angle less than *tessellate_radians* then "
@@ -478,7 +478,7 @@ export_great_circle_arc()
 				"  :type return_segment_interpolations: bool\n"
 				"  :returns: list of points, or (if *return_segment_interpolations* is ``True``) a 2-tuple containing a list of points and "
 				"a list of segment interpolations (where each uniform point is located, *on* this great circle arc, in the range [0,1])\n"
-				"  :rtype: list of :class:`PointOnSphere`, or tuple (list of :class:`PointOnSphere`, list of float) if *return_segment_interpolations* is ``True``\n"
+				"  :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[float]]\n"
 				"  :raises: ValueError if *point_spacing_radians* is negative or zero\n"
 				"\n"
 				"  .. note:: The distance (along the arc) between the last uniform point and the arc's end point "

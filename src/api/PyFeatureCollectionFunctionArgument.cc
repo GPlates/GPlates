@@ -562,8 +562,8 @@ export_feature_collection_function_argument()
 				"  :param function_argument: A feature collection, or filename, or feature, or "
 				"sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination "
 				"of those four types\n"
-				"  :type function_argument: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
-				"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
+				"  :type function_argument: FeatureCollection, or str, or os.PathLike, or Feature, "
+				"or sequence of Feature, or sequence of any combination of those four types\n"
 				"  :raises: OpenFileForReadingError if any file is not readable (when filenames specified)\n"
 				"  :raises: FileFormatNotSupportedError if any file format (identified by the filename "
 				"extensions) does not support reading (when filenames specified)\n"
@@ -594,12 +594,11 @@ export_feature_collection_function_argument()
 				&GPlatesApi::FeaturesFunctionArgument::contains_features,
 				(bp::arg("function_argument")),
 				"contains_features(function_argument)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return whether *function_argument* contains features.\n"
+				"  Return whether *function_argument* contains features.\n"
 				"\n"
 				"  :param function_argument: the function argument to test for features\n"
+				"  :type function_argument: any\n"
+				"  :rtype: bool\n"
 				"\n"
 				"  This method returns ``True`` if *function_argument* is a "
 				":class:`feature collection<FeatureCollection>`, or filename, or :class:`feature<Feature>`, "
@@ -628,7 +627,7 @@ export_feature_collection_function_argument()
 				"get_features()\n"
 				"  Returns a list of all features specified in the :meth:`constructor<__init__>`.\n"
 				"\n"
-				"  :rtype: list of :class:`Feature`\n"
+				"  :rtype: list of Feature\n"
 				"\n"
 				"  Note that any features coming from files are loaded only once in the "
 				":meth:`constructor<__init__>`. They are not loaded each time this method is called.\n"
@@ -653,7 +652,7 @@ export_feature_collection_function_argument()
 				"the :meth:`constructor<__init__>`.\n"
 				"\n"
 				"  :returns: a list of (feature collection, filename) tuples\n"
-				"  :rtype: list of (:class:`FeatureCollection`, string) tuples\n"
+				"  :rtype: list of (FeatureCollection, str) tuples\n"
 				"\n"
 				"  Only those feature collections associated with filenames (specified in the function "
 				"argument in :meth:`constructor<__init__>`) are returned. :class:`Features<Feature>` "

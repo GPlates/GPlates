@@ -100,7 +100,8 @@ namespace GPlatesApi
 	void
 	wrap_python_class_as_revisioned_vector(
 			PythonClassType &python_class,
-			const char *class_name);
+			const char *class_name,
+			const char *element_class_name);
 
 
 	/**
@@ -131,13 +132,81 @@ namespace GPlatesApi
 		 *
 		 * The implementation of the 'def' methods is provided by 'WrapperClassType' which should
 		 * either be 'RevisionedVectorWrapper' or 'RevisionedVectorDelegateWrapper'.
+		 *
+		 * @a element_class_name is the python class name of the list elements (eg, "GpmlTimeSample").
+		 * It is interpolated into the ':type:'/':rtype:' fields of the 'def' docstrings so that both
+		 * the Sphinx documentation and the generated pygplates type stub
+		 * (see pygplates/stub/generate_stub.py) know what the list contains.
 		 */
 		template <class WrapperClassType, class PythonClassType>
 		void
 		add_revisioned_vector_def_methods_to_python_class(
-				PythonClassType &python_class)
+				PythonClassType &python_class,
+				const char *element_class_name)
 		{
 			namespace bp = boost::python;
+
+			// Note: These must outlive the 'def()' calls below (which copy the docstrings).
+			const std::string element_type = std::string(":class:`") + element_class_name + "`";
+			const std::string append_docstring =
+					"append(x)\n"
+					"  Add element *x* to the end.\n"
+					"\n"
+					"  :param x: the element to add\n"
+					"  :type x: " + element_type + "\n";
+			const std::string extend_docstring =
+					"extend(t)\n"
+					"  Add the elements in sequence *t* to the end.\n"
+					"\n"
+					"  :param t: the elements to add\n"
+					"  :type t: sequence of " + element_type + "\n";
+			const std::string insert_docstring =
+					"insert(i,x)\n"
+					"  Insert element *x* at index *i*.\n"
+					"\n"
+					"  :param i: the index to insert at\n"
+					"  :type i: int\n"
+					"  :param x: the element to insert\n"
+					"  :type x: " + element_type + "\n";
+			const std::string remove_docstring =
+					"remove(x)\n"
+					"  Removes the first element that equals *x* (raises ``ValueError`` if not found).\n"
+					"\n"
+					"  :param x: the element to remove\n"
+					"  :type x: " + element_type + "\n";
+			const std::string pop_docstring =
+					"pop([i])\n"
+					"  Removes the element at index *i* and returns it (defaults to last element).\n"
+					"\n"
+					"  :param i: the index to remove at (defaults to the last element)\n"
+					"  :type i: int\n"
+					"  :rtype: " + element_type + "\n";
+			const std::string index_docstring =
+					"index(x[,i[,j]])\n"
+					"  Smallest *k* such that the *k* th element equals ``x`` and ``i <= k < j`` (raises ``ValueError`` if not found).\n"
+					"\n"
+					"  :param x: the element to search for\n"
+					"  :type x: " + element_type + "\n"
+					"  :param i: the index to start searching at (defaults to the first element)\n"
+					"  :type i: int\n"
+					"  :param j: the index to stop searching before (defaults to past the last element)\n"
+					"  :type j: int\n"
+					"  :rtype: int\n";
+			const std::string count_docstring =
+					"count(x)\n"
+					"  Number of occurrences of *x*.\n"
+					"\n"
+					"  :param x: the element to count\n"
+					"  :type x: " + element_type + "\n"
+					"  :rtype: int\n";
+			const std::string sort_docstring =
+					"sort(key[,reverse])\n"
+					"  Sort the items in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*).\n"
+					"\n"
+					"  :param key: the sort key extracted from each element\n"
+					"  :type key: callable (accepting single " + element_type + " argument)\n"
+					"  :param reverse: whether to sort in descending order (defaults to ``False``)\n"
+					"  :type reverse: bool\n";
 
 			python_class
 				.def("__iter__", &WrapperClassType::get_iter)
@@ -154,36 +223,30 @@ namespace GPlatesApi
 				.def("append",
 						&WrapperClassType::append,
 						(bp::arg("x")),
-						"append(x)\n"
-						"  Add element *x* to the end.\n")
+						append_docstring.c_str())
 				.def("extend",
 						&WrapperClassType::extend,
 						(bp::arg("t")),
-						"extend(t)\n"
-						"  Add the elements in sequence *t* to the end.\n")
+						extend_docstring.c_str())
 				.def("insert",
 						&WrapperClassType::insert,
 						(bp::arg("i"), bp::arg("x")),
-						"insert(i,x)\n"
-						"  Insert element *x* at index *i*.\n")
+						insert_docstring.c_str())
 				.def("remove",
 						&WrapperClassType::remove,
 						(bp::arg("x")),
-						"remove(x)\n"
-						"  Removes the first element that equals *x* (raises ``ValueError`` if not found).\n")
+						remove_docstring.c_str())
 				.def("pop",
 						&WrapperClassType::pop,
 						(bp::arg("i")),
-						"pop([i])\n"
-						"  Removes the element at index *i* and returns it (defaults to last element).\n")
+						pop_docstring.c_str())
 				.def("pop",
 						&WrapperClassType::pop1,
 						"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
 				.def("index",
 						&WrapperClassType::index,
 						(bp::arg("x"), bp::arg("i"), bp::arg("j")),
-						"index(x[,i[,j]])\n"
-						"  Smallest *k* such that the *k* th element equals ``x`` and ``i <= k < j`` (raises ``ValueError`` if not found).\n")
+						index_docstring.c_str())
 				.def("index",
 						&WrapperClassType::index2,
 						(bp::arg("x")),
@@ -195,8 +258,7 @@ namespace GPlatesApi
 				.def("count",
 						&WrapperClassType::count,
 						(bp::arg("x")),
-						"count(x)\n"
-						"  Number of occurrences of *x*.\n")
+						count_docstring.c_str())
 				.def("reverse",
 						&WrapperClassType::reverse,
 						"reverse()\n"
@@ -204,8 +266,7 @@ namespace GPlatesApi
 				.def("sort",
 						&WrapperClassType::sort,
 						(bp::arg("key"), bp::arg("reverse")=false),
-						"sort(key[,reverse])\n"
-						"  Sort the items in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*).\n")
+						sort_docstring.c_str())
 			;
 		}
 
@@ -556,7 +617,8 @@ namespace GPlatesApi
 						bp::no_init);
 
 			// Add the 'def' methods.
-			add_revisioned_vector_def_methods_to_python_class<this_type>(revisioned_vector_class);
+			add_revisioned_vector_def_methods_to_python_class<this_type>(
+					revisioned_vector_class, element_class_name);
 
 			// Also add equality comparison operators.
 			//
@@ -1282,7 +1344,8 @@ namespace GPlatesApi
 			void
 			wrap(
 					PythonClassType &python_class,
-					const char *class_name)
+					const char *class_name,
+					const char *element_class_name)
 			{
 				namespace bp = boost::python;
 
@@ -1305,7 +1368,8 @@ namespace GPlatesApi
 				;
 
 				// Add the 'def' methods to 'python_class'.
-				add_revisioned_vector_def_methods_to_python_class<this_type>(python_class);
+				add_revisioned_vector_def_methods_to_python_class<this_type>(
+						python_class, element_class_name);
 			}
 
 		private:
@@ -1579,7 +1643,8 @@ namespace GPlatesApi
 	void
 	wrap_python_class_as_revisioned_vector(
 			PythonClassType &python_class,
-			const char *class_name)
+			const char *class_name,
+			const char *element_class_name)
 	{
 		Implementation::RevisionedVectorDelegateWrapper<
 				ClassType,
@@ -1588,7 +1653,7 @@ namespace GPlatesApi
 				CreateClassFromVectorFunction,
 				ConvertClassToPointerFunction,
 				GetRevisionedVectorFunction>
-						::wrap(python_class, class_name);
+						::wrap(python_class, class_name, element_class_name);
 	}
 }
 

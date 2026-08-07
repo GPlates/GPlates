@@ -158,10 +158,7 @@ export_lat_lon_point()
 				&GPlatesMaths::LatLonPoint::is_valid_latitude,
 				(bp::arg("latitude")),
 				"is_valid_latitude(latitude)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns ``True`` if *latitude* is in the range [-90, 90].\n"
+				"  Returns ``True`` if *latitude* is in the range [-90, 90].\n"
 				"\n"
 				"  :param latitude: the latitude (in degrees)\n"
 				"  :type latitude: float\n"
@@ -176,10 +173,7 @@ export_lat_lon_point()
 				&GPlatesMaths::LatLonPoint::is_valid_longitude,
 				(bp::arg("longitude")),
 				"is_valid_longitude(longitude)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns ``True`` if *longitude* is in the range [-360, 360].\n"
+				"  Returns ``True`` if *longitude* is in the range [-360, 360].\n"
 				"\n"
 				"  :param longitude: the longitude (in degrees)\n"
 				"  :type longitude: float\n"
@@ -214,7 +208,7 @@ export_lat_lon_point()
 				"to_point_on_sphere()\n"
 				"  Returns the cartesian coordinates as a :class:`PointOnSphere`.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n")
+				"  :rtype: PointOnSphere\n")
 		.def("to_xyz",
 				&GPlatesApi::lat_lon_point_to_xyz,
 				"to_xyz()\n"
@@ -263,8 +257,8 @@ export_lat_lon_point()
 			"  Converts a 2D latitude/longitude point to a 3D cartesian point.\n"
 			"\n"
 			"  :param lat_lon_point: the 2D latitude/longitude point\n"
-			"  :type lat_lon_point: :class:`LatLonPoint`\n"
-			"  :rtype: :class:`PointOnSphere`\n"
+			"  :type lat_lon_point: LatLonPoint\n"
+			"  :rtype: PointOnSphere\n"
 			"\n"
 #endif
 			);
@@ -283,8 +277,8 @@ export_lat_lon_point()
 			"  Converts a 3D cartesian point to a 2D latitude/longitude point.\n"
 			"\n"
 			"  :param point: the 3D cartesian point\n"
-			"  :type point: :class:`PointOnSphere`\n"
-			"  :rtype: :class:`LatLonPoint`\n"
+			"  :type point: PointOnSphere\n"
+			"  :rtype: LatLonPoint\n"
 			"\n"
 #endif
 			);

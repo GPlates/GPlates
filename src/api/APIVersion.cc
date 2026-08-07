@@ -746,7 +746,7 @@ export_version()
 				"  :param patch: the patch version number (defaults to zero)\n"
 				"  :type patch: int\n"
 				"  :param release_suffix: the optional release PEP440 suffix ``[{a|b|rc}N][.postN][.devN]`` (defaults to ``None``)\n"
-				"  :type release_suffix: string or None\n"
+				"  :type release_suffix: str or None\n"
 				"  :raises: ValueError if *release_suffix* is specified but doesn't match pattern ``[{a|b|rc}N][.postN][.devN]``\n"
 				"\n"
 				"  To create version ``1.0``:\n"
@@ -765,7 +765,7 @@ export_version()
 				"  Create from a version string.\n"
 				"\n"
 				"  :param version: the version string in PEP440 format matching ``N.N[.N][{a|b|rc}N][.postN][.devN]``\n"
-				"  :type version: string\n"
+				"  :type version: str\n"
 				"  :raises: ValueError if version string doesn't match pattern ``N.N[.N][{a|b|rc}N][.postN][.devN]``\n"
 				"\n"
 				"  To create the first development release of version ``1.0``:\n"
@@ -799,13 +799,10 @@ export_version()
 		.def("get_imported_version",
 				&GPlatesApi::Version::get_imported_version,
 				"get_imported_version()\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return the version of the imported pyGPlates library.\n"
+				"  Return the version of the imported pyGPlates library.\n"
 				"\n"
 				"  :returns: a Version instance representing the version of the imported pyGPlates library\n"
-				"  :rtype: :class:`Version`\n"
+				"  :rtype: Version\n"
 				"\n"
 				"  To get the imported version:\n"
 				"  ::\n"

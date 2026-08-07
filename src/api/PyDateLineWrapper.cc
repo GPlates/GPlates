@@ -389,10 +389,14 @@ export_date_line_wrapper()
 				"  Wrap a geometry to the range ``[central_meridian - 180, central_meridian + 180]``.\n"
 				"\n"
 				"  :param geometry: the geometry to wrap\n"
-				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :type geometry: GeometryOnSphere\n"
 				"  :param tessellate_degrees: optional tessellation threshold (in degrees) - "
 				"threshold is clamped to the range [0, 180] if specified\n"
 				"  :type tessellate_degrees: float or None\n"
+				// Note: The ', or' separators are required - 'list of A or list of B' parses as
+				//       'list of (A or list of B)' in pygplates/stub/generate_stub.py.
+				"  :rtype: LatLonPoint, or DateLineWrapper.LatLonMultiPoint, or "
+				"list of DateLineWrapper.LatLonPolyline, or list of DateLineWrapper.LatLonPolygon\n"
 				"\n"
 				"  The following table maps the input geometry type to the return type:\n"
 				"\n"

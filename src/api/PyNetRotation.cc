@@ -744,7 +744,7 @@ export_net_rotation()
 				"get_finite_rotation()\n"
 				"  Return the net rotation as a finite rotation (over a time interval of 1Myr).\n"
 				"\n"
-				"  :rtype: :class:`FiniteRotation`\n"
+				"  :rtype: FiniteRotation\n"
 				"\n"
 				"  Returns :meth:`identity rotation<FiniteRotation.create_identity_rotation>` if the net rotation is zero.\n")
 		.def("get_rotation_rate_vector",
@@ -752,7 +752,7 @@ export_net_rotation()
 				"get_rotation_rate_vector()\n"
 				"  Return the net rotation as a rotation rate vector with a magnitude of radians per Myr.\n"
 				"\n"
-				"  :rtype: :class:`Vector3D`\n"
+				"  :rtype: Vector3D\n"
 				"\n"
 				"  Returns :class:`zero vector<Vector3D>` if the net rotation is zero.\n")
 		.def("get_area",
@@ -780,20 +780,17 @@ export_net_rotation()
 					bp::arg("finite_rotation"),
 					bp::arg("time_interval") = 1.0),
 				"create_sample_from_finite_rotation(point, sample_area, finite_rotation, [time_interval=1.0])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Creates a net rotation contribution from a finite rotation at a point sample.\n"
+				"  Creates a net rotation contribution from a finite rotation at a point sample.\n"
 				"\n"
 				"  :param point: The point that contributes to net rotation.\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param sample_area: The surface area around the point in steradians (square radians).\n"
 				"  :type sample_area: float\n"
 				"  :param finite_rotation: The finite rotation over the specified time interval.\n"
-				"  :type finite_rotation: :class:`FiniteRotation`\n"
+				"  :type finite_rotation: FiniteRotation\n"
 				"  :param time_interval: The time interval of the specified finite rotation (defaults to 1Myr).\n"
 				"  :type time_interval: float\n"
-				"  :rtype: :class:`NetRotation`\n"
+				"  :rtype: NetRotation\n"
 				"\n"
 				"  In this contrived example we calculate the net rotation of a single plate. "
 				"This is just for demonstration purposes in case you wanted to do your own intersections of point samples with plates "
@@ -825,18 +822,15 @@ export_net_rotation()
 					bp::arg("sample_area"),
 					bp::arg("rotation_rate_vector")),
 				"create_sample_from_rotation_rate(point, sample_area, rotation_rate_vector)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Creates a net rotation contribution from a rotation rate vector at a point sample.\n"
+				"  Creates a net rotation contribution from a rotation rate vector at a point sample.\n"
 				"\n"
 				"  :param point: The point that contributes to net rotation.\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param sample_area: The surface area around the point in steradians (square radians).\n"
 				"  :type sample_area: float\n"
 				"  :param rotation_rate_vector: The rotation rate vector (with magnitude in radians per Myr).\n"
-				"  :type rotation_rate_vector: :class:`Vector3D`\n"
-				"  :rtype: :class:`NetRotation`\n"
+				"  :type rotation_rate_vector: Vector3D\n"
+				"  :rtype: NetRotation\n"
 				"\n"
 				"  .. seealso:: :meth:`create_sample_from_finite_rotation`\n")
 		.staticmethod("create_sample_from_rotation_rate")
@@ -845,16 +839,13 @@ export_net_rotation()
 				(bp::arg("finite_rotation"),
 					bp::arg("time_interval") = 1.0),
 				"convert_finite_rotation_to_rotation_rate_vector(finite_rotation, [time_interval=1.0])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Convert a :class:`finite rotation<FiniteRotation>` over a time interval to a rotation rate vector (with magnitude in radians per Myr).\n"
+				"  Convert a :class:`finite rotation<FiniteRotation>` over a time interval to a rotation rate vector (with magnitude in radians per Myr).\n"
 				"\n"
 				"  :param finite_rotation: The finite rotation over the specified time interval.\n"
-				"  :type finite_rotation: :class:`FiniteRotation`\n"
+				"  :type finite_rotation: FiniteRotation\n"
 				"  :param time_interval: The time interval of the specified finite rotation (defaults to 1Myr).\n"
 				"  :type time_interval: float\n"
-				"  :rtype: :class:`Vector3D`\n"
+				"  :rtype: Vector3D\n"
 				"\n"
 				"  To convert a finite rotation over 10Myr to a rotation rate vector (in radians per Myr):"
 				"  ::\n"
@@ -866,16 +857,13 @@ export_net_rotation()
 				(bp::arg("rotation_rate_vector"),
 					bp::arg("time_interval") = 1.0),
 				"convert_rotation_rate_vector_to_finite_rotation(rotation_rate_vector, [time_interval=1.0])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Convert a rotation rate vector (with magnitude in radians per Myr) to a :class:`finite rotation<FiniteRotation>` over a time interval.\n"
+				"  Convert a rotation rate vector (with magnitude in radians per Myr) to a :class:`finite rotation<FiniteRotation>` over a time interval.\n"
 				"\n"
 				"  :param rotation_rate_vector: The rotation rate vector (with magnitude in radians per Myr).\n"
-				"  :type rotation_rate_vector: :class:`Vector3D`\n"
+				"  :type rotation_rate_vector: Vector3D\n"
 				"  :param time_interval: The time interval of the returned finite rotation (defaults to 1Myr).\n"
 				"  :type time_interval: float\n"
-				"  :rtype: :class:`FiniteRotation`\n"
+				"  :rtype: FiniteRotation\n"
 				"\n"
 				"  To convert a rotation rate vector (in radians per Myr) to a finite rotation over 10Myr (ie, having the same pole but with an angle multiplied by 10):"
 				"  ::\n"
@@ -904,21 +892,21 @@ export_net_rotation()
 			"  Create a net rotation snapshot from the specified topological snapshot, and using the requested parameters.\n"
 			"\n"
 			"  :param topological_snapshot: The topological snapshot to calculate net rotation with.\n"
-			"  :type topological_snapshot: :class:`TopologicalSnapshot`\n"
+			"  :type topological_snapshot: TopologicalSnapshot\n"
 			"  :param velocity_delta_time: The time delta used to calculate velocities for net rotation (defaults to 1 Myr).\n"
 			"  :type velocity_delta_time: float\n"
 			"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 			"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-			"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-			"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+			"  :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, "
+			"VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t\n"
 			"  :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points "
 			"sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a "
 			"point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). "
 			"If nothing specified then defaults to a `"
 			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN << " x " << 2 * GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
 			"` uniformly spaced latitude-longitude points.\n"
-			"  :type point_distribution: int, or sequence of tuple (point, float) where *point* is a "
-			":class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+			"  :type point_distribution: int, or sequence of tuple (point, float) where point is a "
+			"PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 			"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
 			"\n"
 			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:\n"
@@ -1018,7 +1006,7 @@ export_net_rotation()
 				"get_topological_snapshot()\n"
 				"  Return the associated topological snapshot.\n"
 				"\n"
-				"  :rtype: :class:`TopologicalSnapshot`\n"
+				"  :rtype: TopologicalSnapshot\n"
 				"\n"
 				"  .. note:: Parameters such as reconstruction time, anchor plate ID and rotation model can be obtained from the topological snapshot.\n")
 		.def("get_total_net_rotation",
@@ -1026,7 +1014,7 @@ export_net_rotation()
 				"get_total_net_rotation()\n"
 				"  Return the total net rotation over all resolved topologies in this snapshot.\n"
 				"\n"
-				"  :rtype: :class:`NetRotation`\n"
+				"  :rtype: NetRotation\n"
 				"\n"
 				"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:\n"
 				"\n"
@@ -1064,11 +1052,11 @@ export_net_rotation()
 				"\n"
 				"  :param resolved_topology: Optional resolved topology to retrieve net rotation for. If not specified then net rotations for all "
 				"resolved boundaries and networks that **contribute net rotation** are returned (returned as a ``dict``).\n"
-				"  :type resolved_topology: :class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork`\n"
+				"  :type resolved_topology: ResolvedTopologicalBoundary or ResolvedTopologicalNetwork\n"
 				"  :returns: If *resolved_topology* is specified then returns the :class:`NetRotation` of that resolved topology boundary or network "
 				"(or ``None`` if *resolved_topology* does **not contribute net rotation**). Otherwise returns a ``dict`` mapping each "
 				":class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` that **contributes net rotation** to its :class:`NetRotation`.\n"
-				"  :rtype: :class:`NetRotation` or ``None``, or ``dict``\n"
+				"  :rtype: NetRotation, or dict[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork, NetRotation], or None\n"
 				"  :raises: ValueError if *resolved_topology* is specified but is neither a :class:`ResolvedTopologicalBoundary` nor a :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
 				"  .. note:: Any resolved boundary or network that did not intersect any sample points (see *point_distribution* in :meth:`__init__`) will **not contribute net rotation**. "
@@ -1123,21 +1111,21 @@ export_net_rotation()
 			"  Net rotation snapshots will be calculated from the specified topological model, and using the requested parameters.\n"
 			"\n"
 			"  :param topological_model: The topological model to calculate net rotations with.\n"
-			"  :type topological_model: :class:`TopologicalModel`\n"
+			"  :type topological_model: TopologicalModel\n"
 			"  :param velocity_delta_time: The time delta used to calculate velocities for net rotation (defaults to 1 Myr).\n"
 			"  :type velocity_delta_time: float\n"
 			"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 			"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-			"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-			"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+			"  :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, "
+			"VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t\n"
 			"  :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points "
 			"sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a "
 			"point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). "
 			"If nothing specified then defaults to a `"
 			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN << " x " << 2 * GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
 			"` uniformly spaced latitude-longitude points.\n"
-			"  :type point_distribution: int, or sequence of tuple (point, float) where *point* is a "
-			":class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+			"  :type point_distribution: int, or sequence of tuple (point, float) where point is a "
+			"PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 			"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
 			"\n"
 			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in a snapshot (:meth:`NetRotationModel.net_rotation_snapshot`) is:\n"
@@ -1241,15 +1229,15 @@ export_net_rotation()
 				"  Returns a snapshot of net rotation at the requested reconstruction time.\n"
 				"\n"
 				"  :param reconstruction_time: the geological time of the snapshot\n"
-				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-				"  :rtype: :class:`NetRotationSnapshot`\n"
+				"  :type reconstruction_time: float or GeoTimeInstant\n"
+				"  :rtype: NetRotationSnapshot\n"
 				"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n")
 		.def("get_topological_model",
 				&GPlatesApi::NetRotationModel::get_topological_model,
 				"get_topological_model()\n"
 				"  Return the topological model used internally.\n"
 				"\n"
-				"  :rtype: :class:`TopologicalModel`\n")
+				"  :rtype: TopologicalModel\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

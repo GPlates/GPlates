@@ -169,14 +169,14 @@ present day geometry on moving plate :math:`P_{M}` to time :math:`t_{to}` via th
 
 .. math::
 
-   \text{geometry_moving_plate} &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times \text{geometry_present_day} \\
-                         &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times \text{geometry_present_day} \\
-                         &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M}) \times \text{geometry_present_day} \\
-                         &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times \text{geometry_stage_pole_frame} \\
-   \text{geometry_stage_pole_frame} &= R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M}) \times \text{geometry_present_day} \\
-   \text{geometry_present_day} &= R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})^{-1} \times \text{geometry_stage_pole_frame}
+   \text{geometry\_moving\_plate} &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times \text{geometry\_present\_day} \\
+                         &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times \text{geometry\_present\_day} \\
+                         &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M}) \times \text{geometry\_present\_day} \\
+                         &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times \text{geometry\_stage\_pole\_frame} \\
+   \text{geometry\_stage\_pole\_frame} &= R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M}) \times \text{geometry\_present\_day} \\
+   \text{geometry\_present\_day} &= R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})^{-1} \times \text{geometry\_stage\_pole\_frame}
 
-| The geometry :math:`\text{geometry_stage_pole_frame}` is in the stage pole frame because it gets rotated by the stage pole rotation :math:`R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M})`.
+| The geometry :math:`\text{geometry\_stage\_pole\_frame}` is in the stage pole frame because it gets rotated by the stage pole rotation :math:`R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M})`.
 | As can be seen from the last equation above, the geometry in the stage pole frame can be reverse-rotated back to present day using :math:`R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})^{-1}`.
 | And this is the same rotation we use to reverse-rotate the stage pole location to the present-day frame of the geometry of moving plate :math:`P_{M}`:
 

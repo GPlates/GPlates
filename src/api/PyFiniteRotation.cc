@@ -478,7 +478,7 @@ export_finite_rotation()
 				"  Create a finite rotation from an Euler pole and a rotation angle (in *radians*).\n"
 				"\n"
 				"  :param pole: the Euler pole.\n"
-				"  :type pole: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type pole: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :param angle_radians: the rotation angle (in *radians*).\n"
 				"  :type angle_radians: float\n"
@@ -507,10 +507,10 @@ export_finite_rotation()
 				"great circle arc connecting them.\n"
 				"\n"
 				"  :param from_point: the point to rotate *from*\n"
-				"  :type from_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type from_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :param to_point: the point to rotate *to*\n"
-				"  :type to_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
@@ -546,12 +546,9 @@ export_finite_rotation()
 		.def("create_identity_rotation",
 				&GPlatesApi::finite_rotation_create_identity_rotation,
 				"create_identity_rotation()\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Creates a finite rotation that does not rotate (it maps a vector onto the same vector).\n"
+				"  Creates a finite rotation that does not rotate (it maps a vector onto the same vector).\n"
 				"\n"
-				"  :rtype: :class:`FiniteRotation`\n"
+				"  :rtype: FiniteRotation\n"
 				"\n"
 				"  To determine if a finite rotation is an identity rotation use :meth:`represents_identity_rotation`.\n"
 				"\n"
@@ -571,19 +568,16 @@ export_finite_rotation()
 		.def("create_great_circle_point_rotation",
 				&GPlatesApi::finite_rotation_create_great_circle_point_rotation,
 				"create_great_circle_point_rotation(from_point, to_point)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a finite rotation that rotates one point to another along the "
+				"  Create a finite rotation that rotates one point to another along the "
 				"great circle arc connecting them.\n"
 				"\n"
 				"  :param from_point: the point to rotate *from*\n"
-				"  :type from_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type from_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :param to_point: the point to rotate *to*\n"
-				"  :type to_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
-				"  :rtype: :class:`FiniteRotation`\n"
+				"  :rtype: FiniteRotation\n"
 				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
 				"\n"
@@ -600,22 +594,19 @@ export_finite_rotation()
 		.def("create_small_circle_point_rotation",
 				&GPlatesApi::finite_rotation_create_small_circle_point_rotation,
 				"create_small_circle_point_rotation(rotation_pole, from_point, to_point)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a finite rotation, using the specified rotation pole, that rotates "
+				"  Create a finite rotation, using the specified rotation pole, that rotates "
 				"*from_point* to *to_point*.\n"
 				"\n"
 				"  :param rotation_pole: the rotation pole to rotate around\n"
-				"  :type rotation_pole: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type rotation_pole: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :param from_point: the point to rotate *from*\n"
-				"  :type from_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type from_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :param to_point: the point to rotate *to*\n"
-				"  :type to_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
-				"  :rtype: :class:`FiniteRotation`\n"
+				"  :rtype: FiniteRotation\n"
 				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
 				"\n"
@@ -634,24 +625,21 @@ export_finite_rotation()
 		.def("create_segment_rotation",
 				&GPlatesApi::finite_rotation_create_segment_rotation,
 				"create_segment_rotation(from_segment_start, from_segment_end, to_segment_start, to_segment_end)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a finite rotation that rotates the *from* line segment to the *to* line segment.\n"
+				"  Create a finite rotation that rotates the *from* line segment to the *to* line segment.\n"
 				"\n"
 				"  :param from_segment_start: the start point of the segment to rotate *from*\n"
-				"  :type from_segment_start: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type from_segment_start: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :param from_segment_end: the end point of the segment to rotate *from*\n"
-				"  :type from_segment_end: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type from_segment_end: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :param to_segment_start: the start point of the segment to rotate *to*\n"
-				"  :type to_segment_start: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type to_segment_start: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :param to_segment_end: the end point of the segment to rotate *to*\n"
-				"  :type to_segment_end: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type to_segment_end: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
-				"  :rtype: :class:`FiniteRotation`\n"
+				"  :rtype: FiniteRotation\n"
 				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
 				"\n"
@@ -688,15 +676,12 @@ export_finite_rotation()
 				&GPlatesApi::finite_rotation_represent_equivalent_rotations,
 				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
 				"are_equivalent(finite_rotation1, finite_rotation2)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return whether two finite rotations represent equivalent rotations.\n"
+				"  Return whether two finite rotations represent equivalent rotations.\n"
 				"\n"
 				"  :param finite_rotation1: the first finite rotation\n"
-				"  :type finite_rotation1: :class:`FiniteRotation`\n"
+				"  :type finite_rotation1: FiniteRotation\n"
 				"  :param finite_rotation2: the second finite rotation\n"
-				"  :type finite_rotation2: :class:`FiniteRotation`\n"
+				"  :type finite_rotation2: FiniteRotation\n"
 				"  :rtype: bool\n"
 				"\n"
 				"  Two rotations are equivalent if they rotate a geometry to the same final location. "
@@ -727,16 +712,13 @@ export_finite_rotation()
 						bp::arg("finite_rotation2"),
 						bp::arg("threshold_degrees") = boost::optional<double>()),
 				"are_equal(finite_rotation1, finite_rotation2, [threshold_degrees])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return whether two finite rotations have equal pole "
+				"  Return whether two finite rotations have equal pole "
 				"latitude, longitude and angle to within a threshold in degrees.\n"
 				"\n"
 				"  :param finite_rotation1: the first finite rotation\n"
-				"  :type finite_rotation1: :class:`FiniteRotation`\n"
+				"  :type finite_rotation1: FiniteRotation\n"
 				"  :param finite_rotation2: the second finite rotation\n"
-				"  :type finite_rotation2: :class:`FiniteRotation`\n"
+				"  :type finite_rotation2: FiniteRotation\n"
 				"  :param threshold_degrees: optional closeness threshold in degrees\n"
 				"  :type threshold_degrees: float\n"
 				"  :rtype: bool\n"
@@ -764,16 +746,13 @@ export_finite_rotation()
 				compose,
 				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
 				"compose(finite_rotation1, finite_rotation2)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Composes two finite rotations and returns the composed finite rotation.\n"
+				"  Composes two finite rotations and returns the composed finite rotation.\n"
 				"\n"
 				"  :param finite_rotation1: the left-hand-side finite rotation\n"
-				"  :type finite_rotation1: :class:`FiniteRotation`\n"
+				"  :type finite_rotation1: FiniteRotation\n"
 				"  :param finite_rotation2: the right-hand-side finite rotation\n"
-				"  :type finite_rotation2: :class:`FiniteRotation`\n"
-				"  :rtype: :class:`FiniteRotation`\n"
+				"  :type finite_rotation2: FiniteRotation\n"
+				"  :rtype: FiniteRotation\n"
 				"\n"
 				"  This method does the same as ``finite_rotation1 * finite_rotation2``.\n"
 				"\n"
@@ -793,22 +772,19 @@ export_finite_rotation()
 					bp::arg("time2"),
 					bp::arg("target_time")),
 				"interpolate(finite_rotation1, finite_rotation2, time1, time2, target_time)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Calculate the finite rotation which is the interpolation of two finite rotations.\n"
+				"  Calculate the finite rotation which is the interpolation of two finite rotations.\n"
 				"\n"
 				"  :param finite_rotation1: the left-hand-side finite rotation\n"
-				"  :type finite_rotation1: :class:`FiniteRotation`\n"
+				"  :type finite_rotation1: FiniteRotation\n"
 				"  :param finite_rotation2: the right-hand-side finite rotation\n"
-				"  :type finite_rotation2: :class:`FiniteRotation`\n"
+				"  :type finite_rotation2: FiniteRotation\n"
 				"  :param time1: the time associated with the left-hand-side finite rotation\n"
-				"  :type time1: float or :class:`GeoTimeInstant`\n"
+				"  :type time1: float or GeoTimeInstant\n"
 				"  :param time2: the time associated with the right-hand-side finite rotation\n"
-				"  :type time2: float or :class:`GeoTimeInstant`\n"
+				"  :type time2: float or GeoTimeInstant\n"
 				"  :param target_time: the time associated with the result of the interpolation\n"
-				"  :type target_time: float or :class:`GeoTimeInstant`\n"
-				"  :rtype: :class:`FiniteRotation`\n"
+				"  :type target_time: float or GeoTimeInstant\n"
+				"  :rtype: FiniteRotation\n"
 				"  :raises: InterpolationError if any time value is "
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
@@ -845,7 +821,7 @@ export_finite_rotation()
 				"get_inverse()\n"
 				"  Return the inverse of this finite rotation.\n"
 				"\n"
-				"  :rtype: :class:`FiniteRotation`\n"
+				"  :rtype: FiniteRotation\n"
 				"\n"
 				"  The inverse represents the reverse rotation as the following code demonstrates:\n"
 				"  ::\n"
@@ -865,7 +841,7 @@ export_finite_rotation()
 				"IndeterminateResultError (default is to return north pole axis)\n"
 				"  :type use_north_pole_for_identity: bool\n"
 				"  :returns: the tuple of (pole, angle_radians)\n"
-				"  :rtype: tuple (:class:`PointOnSphere`, float)\n"
+				"  :rtype: tuple (PointOnSphere, float)\n"
 				"  :raises: IndeterminateResultError if *use_north_pole_for_identity* is ``False`` "
 				"and this finite rotation represents the identity rotation\n"
 				"\n"
@@ -924,7 +900,7 @@ export_finite_rotation()
 				"  Return the distance that a point rotates along its small circle rotation arc (in radians).\n"
 				"\n"
 				"  :param point: the point being rotated (the start point of the rotation arc)\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :rtype: float\n"
 				"\n"

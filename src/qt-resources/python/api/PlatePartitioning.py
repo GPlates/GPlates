@@ -123,24 +123,26 @@ def plate_partitioner_partition_features(
     Partitions features into partitioning plates.
     
     :param features: the features to partition
-    :type features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
-        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    :type features: FeatureCollection, or str, or os.PathLike, or Feature, \
+        or sequence of Feature, or sequence of any combination of those four types
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
         (defaults to just the reconstruction plate ID)
-    :type properties_to_copy: a sequence of any combination of :class:`PropertyName` and \
-        the *PartitionProperty* enumeration values (see table below)
+    :type properties_to_copy: a sequence of any combination of PropertyName and \
+        the PartitionProperty enumeration values (see table below)
     
     :param partition_method: how the features are to be partitioned by the partitioning plates (defaults to *PartitionMethod.split_into_plates*)
-    :type partition_method: a *PartitionMethod* enumeration value (see table below)
+    :type partition_method: a PartitionMethod enumeration value (see table below)
     
     :param partition_return: how to return the partitioned and unpartitioned features and whether to include the partitioning plates \
         (defaults to *PartitionReturn.combined_partitioned_and_unpartitioned*)
-    :type partition_return: a *PartitionReturn* enumeration value (see table below)
+    :type partition_return: a PartitionReturn enumeration value (see table below)
     
-    :returns: the partitioned and unpartitioned features \
+    :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
+        (see table below) \
         (**note:** new features are always returned, never the originals passed in via *features*)
-    :rtype: depends on *partition_return* (see table below)
+    :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
+        tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
     
     The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the
@@ -530,41 +532,43 @@ def partition_into_plates(
     Partition features into plates.
     
     :param partitioning_features: the partitioning features
-    :type partitioning_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
-        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    :type partitioning_features: FeatureCollection, or str, or os.PathLike, or Feature, \
+        or sequence of Feature, or sequence of any combination of those four types
     
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, \
         or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, \
-        or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types
+    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, \
+        or Feature, or sequence of Feature, or sequence of any combination of those four types
     
     :param features_to_partition: the features to be partitioned
-    :type features_to_partition: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
-        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    :type features_to_partition: FeatureCollection, or str, or os.PathLike, or Feature, \
+        or sequence of Feature, or sequence of any combination of those four types
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
         (defaults to just the reconstruction plate ID)
-    :type properties_to_copy: a sequence of any combination of :class:`PropertyName` and \
-        the *PartitionProperty* enumeration values (see table below)
+    :type properties_to_copy: a sequence of any combination of PropertyName and \
+        the PartitionProperty enumeration values (see table below)
     
     :param reconstruction_time: the specific geological time to reconstruct/resolve the \
         *partitioning_features* to (defaults to zero)
-    :type reconstruction_time: float or :class:`GeoTimeInstant`
+    :type reconstruction_time: float or GeoTimeInstant
     
     :param partition_method: how the features are to be partitioned by the partitioning plates (defaults to *PartitionMethod.split_into_plates*)
-    :type partition_method: a *PartitionMethod* enumeration value (see table below)
+    :type partition_method: a PartitionMethod enumeration value (see table below)
     
     :param partition_return: how to return the partitioned and unpartitioned features and whether to include the partitioning plates \
         (defaults to *PartitionReturn.combined_partitioned_and_unpartitioned*)
-    :type partition_return: a *PartitionReturn* enumeration value (see table below)
+    :type partition_return: a PartitionReturn enumeration value (see table below)
     
     :param sort_partitioning_plates: optional sort order of partitioning plates \
         (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
-    :type sort_partitioning_plates: a *SortPartitioningPlates* enumeration value (see table below), or None
+    :type sort_partitioning_plates: a SortPartitioningPlates enumeration value (see table below), or None
     
-    :returns: the partitioned and unpartitioned features \
+    :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
+        (see table below) \
         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
-    :rtype: depends on *partition_return* (see table below)
+    :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
+        tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
     
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the

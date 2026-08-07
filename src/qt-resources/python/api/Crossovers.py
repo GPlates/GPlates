@@ -203,19 +203,19 @@ def find_crossovers(
     :param rotation_features: A rotation feature collection, or rotation filename, or \
         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
         of any combination of those four types
-    :type rotation_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
-        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature, \
+        or sequence of Feature, or sequence of any combination of those four types
     
     :param crossover_filter: A predicate function to determine which crossovers to return
-    :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or None
+    :type crossover_filter: callable (accepting single Crossover argument), or None
     
     :param crossover_type_function: A function that determines a crossover's type, or one of the \
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value
+    :type crossover_type_function: a callable, or a CrossoverType enumerated value
     
     :returns: A time-sorted list, from most recent (youngest) to least recent (oldest), of crossover named-tuple 'Crossover' (see table below)
-    :rtype: list of named-tuple 'Crossover'
+    :rtype: list[Crossover]
     
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
     to another (fixed) plate at a particular geological time.
@@ -521,15 +521,15 @@ def synchronise_crossovers(
     :param rotation_features: A rotation feature collection, or rotation filename, or \
         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
         of any combination of those four types - all features are used as input and output
-    :type rotation_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
-        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature, \
+        or sequence of Feature, or sequence of any combination of those four types
     
     :param crossover_filter: Optional predicate function (accepting a single crossover argument) that determines \
         which crossovers (in *rotation_features*) to synchronise, or an optional sequence of crossovers (in any order) to \
         synchronise - if nothing is specified then all crossovers (in *rotation_features*) are synchronised - \
         a crossover is a named-tuple 'Crossover' (see table below)
-    :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or \
-        a sequence of named-tuple 'Crossover', or None
+    :type crossover_filter: callable (accepting single Crossover argument), or \
+        sequence of Crossover, or None
     
     :param crossover_threshold_degrees: If specified then crossovers are synchronised only if the \
         old-crossover rotation latitude, longitude or angle differ from those in young-crossover rotation by \
@@ -538,9 +538,9 @@ def synchronise_crossovers(
     
     :param crossover_type_function: A function that determines a crossover's type, or one of the \
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
-        scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value, \
-        or can also be None if *crossover_filter* is a sequence (since it then gets ignored)
+        scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment* - \
+        can also be ``None`` if *crossover_filter* is a sequence (since it then gets ignored)
+    :type crossover_type_function: a callable, or a CrossoverType enumerated value, or None
     
     :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered \
         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or \
@@ -548,7 +548,7 @@ def synchronise_crossovers(
         *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or \
         *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of \
         *CrossoverType.unknown*) - the list is sorted by crossover time - default is None
-    :type crossover_results: list or None
+    :type crossover_results: list[tuple[Crossover, int]], or None
     
     :returns: True on success. False if the type of any crossover is *CrossoverType.unknown* (which \
         generates a *CrossoverResult.error* in *crossover_results*, if specified, due to inability to \

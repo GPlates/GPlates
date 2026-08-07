@@ -84,12 +84,9 @@ export_feature_id()
 		.def("create_unique_id",
 				&GPlatesApi::feature_id_create_unique_id,
 				"create_unique_id()\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a unique *FeatureId* by generating a unique string identifier.\n"
+				"  Create a unique *FeatureId* by generating a unique string identifier.\n"
 				"\n"
-				"  :rtype: :class:`FeatureId`\n"
+				"  :rtype: FeatureId\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -105,7 +102,7 @@ export_feature_id()
 				"get_string()\n"
 				"  Returns the feature identifier as a string.\n"
 				"\n"
-				"  :rtype: string\n"
+				"  :rtype: str\n"
 				"\n"
 				"  To determine if a feature has a particular feature ID:\n"
 				"  ::\n"
@@ -173,12 +170,9 @@ export_revision_id()
 		.def("create_unique_id",
 				&GPlatesApi::revision_id_create_unique_id,
 				"create_unique_id()\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a unique *RevisionId* by generating a unique string identifier.\n"
+				"  Create a unique *RevisionId* by generating a unique string identifier.\n"
 				"\n"
-				"  :rtype: :class:`RevisionId`\n"
+				"  :rtype: RevisionId\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -190,7 +184,7 @@ export_revision_id()
 				"get_string()\n"
 				"  Returns the revision identifier as a string.\n"
 				"\n"
-				"  :rtype: string\n")
+				"  :rtype: str\n")
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__' is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.

@@ -104,9 +104,9 @@ export_top_level_property()
 				"  Create a property given a property name and a property value.\n"
 				"\n"
 				"  :param property_name: property name\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param property_value: property value\n"
-				"  :type property_value: :class:`PropertyValue`\n"
+				"  :type property_value: PropertyValue\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -122,7 +122,7 @@ export_top_level_property()
 				"clone()\n"
 				"  Create a duplicate of this property instance.\n"
 				"\n"
-				"  :rtype: :class:`Property`\n"
+				"  :rtype: Property\n"
 				"\n"
 				"  This clones the :class:`PropertyName` and the :class:`PropertyValue`.\n")
   		.def("get_name",
@@ -131,7 +131,7 @@ export_top_level_property()
 				"get_name()\n"
 				"  Returns the name of the property.\n"
 				"\n"
-				"  :rtype: :class:`PropertyName`\n")
+				"  :rtype: PropertyName\n")
 		// This is a private method (has leading '_'), and we don't provide a docstring.
 		// This method is accessed by pure python API code.
 		.def("_get_value",

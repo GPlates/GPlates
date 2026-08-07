@@ -2,33 +2,31 @@
 # Generate a "doc-python-api" target that uses Sphinx to generate HTML from the docstrings in the 'pygplates' python module.
 #
 
-find_package(Sphinx)
+# Sphinx must run in the *same* Python interpreter that pygplates was built for, because the
+# 'autodoc'/'autosummary' extensions import the pygplates module in-process (that is how they
+# read the docstrings). So we run Sphinx as a module of GPLATES_PYTHON_EXECUTABLE rather than
+# searching the PATH for a 'sphinx-build' script - a 'sphinx-build' on the PATH generally
+# belongs to some other Python installation, and pygplates then fails to import with the
+# rather unhelpful "exception: no module named pygplates".
+#
+# Note: 'conf.py.in' imports 'sphinx_rtd_theme' (see 'html_theme' there), so require it too.
+execute_process(
+	COMMAND "${GPLATES_PYTHON_EXECUTABLE}" -c "import sphinx, sphinx_rtd_theme; print(sphinx.__version__)"
+	RESULT_VARIABLE SPHINX_IMPORT_RESULT
+	OUTPUT_VARIABLE SPHINX_VERSION
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+	ERROR_QUIET)
 
-IF (SPHINX_EXECUTABLE)
-  SET (SPHINX_FOUND "YES")
-  IF (NOT SPHINX_FIND_QUIETLY)
-    MESSAGE(STATUS "Looking for sphinx... - found ${SPHINX_EXECUTABLE}")
-  ENDIF (NOT SPHINX_FIND_QUIETLY)
-ELSE (SPHINX_EXECUTABLE)
-  IF (NOT SPHINX_FIND_QUIETLY)
-    IF (SPHINX_FIND_REQUIRED)
-      MESSAGE(FATAL_ERROR "Looking for sphinx... - NOT found")
-    ELSE (SPHINX_FIND_REQUIRED)
-      MESSAGE(STATUS "Looking for sphinx... - NOT found")
-      MESSAGE(STATUS "... no build target created to generate python API documentation")
-    ENDIF (SPHINX_FIND_REQUIRED)
-  ENDIF (NOT SPHINX_FIND_QUIETLY)
-ENDIF (SPHINX_EXECUTABLE)
+if (SPHINX_IMPORT_RESULT EQUAL 0)
+	set(SPHINX_FOUND "YES")
+	message(STATUS "Looking for sphinx... - found ${SPHINX_VERSION} in ${GPLATES_PYTHON_EXECUTABLE}")
+else()
+	message(STATUS "Looking for sphinx... - NOT found in ${GPLATES_PYTHON_EXECUTABLE}")
+	message(STATUS "... install it into *that* Python with, eg, 'conda install sphinx sphinx_rtd_theme'")
+	message(STATUS "... no build target created to generate python API documentation")
+endif()
 
 if (SPHINX_FOUND)
-	if(NOT DEFINED SPHINX_THEME)
-		set(SPHINX_THEME default)
-	endif(NOT DEFINED SPHINX_THEME)
-
-	if(NOT DEFINED SPHINX_THEME_DIR)
-		set(SPHINX_THEME_DIR)
-	endif(NOT DEFINED SPHINX_THEME_DIR)
-
 	# configured documentation tools and intermediate build results
 	set(BINARY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/_build")
 
@@ -82,8 +80,8 @@ if (SPHINX_FOUND)
 
 	# Note that the source directory for sphinx is our current binary/output directory (we've copied our source ".rst" files there).
 	add_custom_target(doc-python-api
-		COMMAND ${SPHINX_EXECUTABLE}
-			-q -b html
+		COMMAND "${GPLATES_PYTHON_EXECUTABLE}" -m sphinx
+			-q -b html -W -j auto
 			-c "${BINARY_BUILD_DIR}/$<CONFIG>"
 			-d "${SPHINX_CACHE_DIR}"
 			"${CMAKE_CURRENT_BINARY_DIR}"

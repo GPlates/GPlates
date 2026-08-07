@@ -77,8 +77,8 @@ def property_value_get_value(property_value, time=0):
     Extracts the value, of this possibly time-dependent property value, at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`PropertyValue` or None
+    :type time: float or GeoTimeInstant
+    :rtype: PropertyValue or None
     
     If this property value is a time-dependent property (:class:`GpmlConstantValue`,
     :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`) then a nested property
@@ -120,8 +120,8 @@ def gpml_constant_value_get_value(gpml_constant_value, time=0):
     Extracts the constant value contained within.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`PropertyValue` or None
+    :type time: float or GeoTimeInstant
+    :rtype: PropertyValue or None
     
     Since the contained property value is constant, the *time* parameter is ignored.
     
@@ -146,8 +146,8 @@ def gpml_piecewise_aggregation_get_value(gpml_piecewise_aggregation, time=0):
     Extracts the value at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`PropertyValue` or None
+    :type time: float or GeoTimeInstant
+    :rtype: PropertyValue or None
     
     Returns ``None`` if *time* is outside the time ranges of all :meth:`time windows<get_time_windows>`.
     
@@ -171,13 +171,13 @@ def gpml_piecewise_aggregation_set_value(gpml_piecewise_aggregation, property_va
     Sets the value in the specified time window.
     
     :param property_value: the property value to set
-    :type property_value: :class:`PropertyValue`
+    :type property_value: PropertyValue
     :param begin_time: the begin time of the time window for the new property value
-    :type begin_time: float or :class:`GeoTimeInstant`
+    :type begin_time: float or GeoTimeInstant
     :param end_time: the end time of the time window for the new property value
-    :type end_time: float or :class:`GeoTimeInstant`
+    :type end_time: float or GeoTimeInstant
     :returns: the time window that is inserted into the time window sequence
-    :rtype: :class:`GpmlTimeWindow`
+    :rtype: GpmlTimeWindow
     :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
 
     Any existing :meth:`time windows<get_time_windows>` that overlap the new time window
@@ -271,8 +271,8 @@ def gpml_piecewise_aggregation_get_time_window_containing_time(gpml_piecewise_ag
     Return the :class:`time window<GpmlTimeWindow>` that contains *time*.
     
     :param time: the time
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`GpmlTimeWindow` or None
+    :type time: float or GeoTimeInstant
+    :rtype: GpmlTimeWindow or None
 
     Returns ``None`` if *time* is outside the time ranges of all time windows.
     """
@@ -294,8 +294,8 @@ def gpml_irregular_sampling_get_value(gpml_irregular_sampling, time=0):
     Extracts the value at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`PropertyValue` or None
+    :type time: float or GeoTimeInstant
+    :rtype: PropertyValue or None
     :raises: InterpolationError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
     :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
@@ -344,15 +344,15 @@ def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, t
     Sets the value at the reconstruction *time*.
     
     :param property_value: the property value to set
-    :type property_value: :class:`PropertyValue`
+    :type property_value: PropertyValue
     :param time: the time to set the value
-    :type time: float or :class:`GeoTimeInstant`
+    :type time: float or GeoTimeInstant
     :param description: description of the time sample
-    :type description: string or None
+    :type description: str or None
     :param is_enabled: whether time sample is enabled
     :type is_enabled: bool or None
     :returns: the time sample that is modified, or inserted into the time sequence
-    :rtype: :class:`GpmlTimeSample`
+    :rtype: GpmlTimeSample
     :raises: ValueError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
     :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
@@ -410,11 +410,11 @@ def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampli
     Return the two adjacent :class:`time samples<GpmlTimeSample>` that surround *time*.
     
     :param time: the time
-    :type time: float or :class:`GeoTimeInstant`
+    :type time: float or GeoTimeInstant
     :param include_disabled_samples: if True then disabled time samples are included in the search
     :type include_disabled_samples: bool
-    :rtype: the tuple (:class:`GpmlTimeSample`, :class:`GpmlTimeSample`), or None
-    :return: the two time samples surrounding *time*, or None
+    :returns: the two time samples surrounding *time*, or ``None``
+    :rtype: tuple[GpmlTimeSample, GpmlTimeSample], or None
 
     Returns ``None`` if *time* is outside the range of times (later than the most recent time sample
     or earlier than the least recent time sample).

@@ -21,8 +21,8 @@ def get_value(property, time=0):
     Extracts the value, of our possibly time-dependent property, at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`PropertyValue` or None
+    :type time: float or GeoTimeInstant
+    :rtype: PropertyValue or None
     
     If this property has a time-dependent property value (:class:`GpmlConstantValue`,
     :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`) then a nested property
@@ -53,7 +53,7 @@ def get_time_dependent_value(property):
     """get_time_dependent_value()
     Returns the property value for all times (unlike :meth:`get_value` which returns for a specific time).
     
-    :rtype: :class:`PropertyValue`
+    :rtype: PropertyValue
     
     Alternatively you can use :meth:`get_value` for extracting a contained property value at a specific time.
     
@@ -82,7 +82,7 @@ def get_time_dependent_container(property):
     """get_time_dependent_container()
     Returns the time-dependent property value container.
     
-    :rtype: :class:`PropertyValue` or None
+    :rtype: PropertyValue or None
     
     Returns a time-dependent property value (:class:`GpmlConstantValue`, :class:`GpmlIrregularSampling` or
     :class:`GpmlPiecewiseAggregation`), or ``None`` if the property value is not actually time-dependent.

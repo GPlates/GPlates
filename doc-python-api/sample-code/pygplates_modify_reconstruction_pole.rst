@@ -304,26 +304,26 @@ which shows the equivalent total rotation of  moving plate :math:`P_{M}` (relati
 
 .. math::
 
-   \text{reconstructed_position} = R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present_day_position}
+   \text{reconstructed\_position} = R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present\_day\_position}
 
 Using the approach in :ref:`pygplates_primer_composing_finite_rotations` we write the *desired reconstructed position*
 in terms of the *actual reconstructed position*:
 
 .. math::
 
-   \text{desired_reconstructed_position} &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times \text{reconstructed_position} \\
-                         &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present_day_position}
+   \text{desired\_reconstructed\_position} &= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times \text{reconstructed\_position} \\
+                         &= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present\_day\_position}
 
-...where the rotation adjustment :math:`R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position})` represents the
-:class:`rotation<pygplates.FiniteRotation>` from :math:`\text{reconstructed_position}` to :math:`\text{desired_reconstructed_position}` which (in pyGPlates) is
+...where the rotation adjustment :math:`R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position})` represents the
+:class:`rotation<pygplates.FiniteRotation>` from :math:`\text{reconstructed\_position}` to :math:`\text{desired\_reconstructed\_position}` which (in pyGPlates) is
 ``pygplates.FiniteRotation(reconstructed_position, desired_reconstructed_position)``.
 
 The composed rotation from *present day position* to *desired reconstructed position* represents the adjusted *equivalent* rotation:
 
 .. math::
 
-   \text{desired_reconstructed_position} &= R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} \times \text{present_day_position} \\
-   R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M})
+   \text{desired\_reconstructed\_position} &= R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} \times \text{present\_day\_position} \\
+   R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M})
 
 | However we want to adjust a total rotation pole in a rotation feature. But a rotation feature represents a *relative* rotation between a moving and fixed plate pair.
 | So we need to rewrite the adjusted *equivalent* rotation (which is relative to the anchored plate) as an adjusted *relative* rotation (relative to the fixed plate
@@ -332,14 +332,14 @@ The composed rotation from *present day position* to *desired reconstructed posi
 
 .. math::
 
-   R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \\
-   R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} &= R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})
+   R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \\
+   R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} &= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})
 
 Pre-multiplying both sides by :math:`R(0 \rightarrow t,P_{A} \rightarrow P_{F})^{-1}` gives:
 
 .. math::
 
-   R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} = R(0 \rightarrow t,P_{A} \rightarrow P_{F})^{-1} \times R(\text{reconstructed_position} \rightarrow \text{desired_reconstructed_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})
+   R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} = R(0 \rightarrow t,P_{A} \rightarrow P_{F})^{-1} \times R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})
 
 ...which represents the *adjusted* relative rotation :math:`R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted}`
 in terms of the *original* relative rotation :math:`R(0 \rightarrow t,P_{F} \rightarrow P_{M})`.

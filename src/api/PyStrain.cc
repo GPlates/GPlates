@@ -622,7 +622,7 @@ export_strain()
 				"\n"
 				"  :param principal_angle_type: how the angle of the major principal axis is defined relative to the local coordinate system "
 				"(defaults to *PrincipalAngleType.major_south*)\n"
-				"  :type principal_angle_type: *PrincipalAngleType.major_south*, *PrincipalAngleType.major_east* or *PrincipalAngleType.major_azimuth*\n"
+				"  :type principal_angle_type: PrincipalAngleType.major_south, PrincipalAngleType.major_east or PrincipalAngleType.major_azimuth\n"
 				"  :returns: the tuple of maximum strain, minimum strain and major axis angle :math:`(e_{(1)}, e_{(2)}, \\alpha)`\n"
 				"  :rtype: tuple (float, float, float)\n"
 				"\n"
@@ -696,22 +696,19 @@ export_strain()
 				&GPlatesAppLogic::accumulate_strain,
 				(bp::arg("previous_strain"), bp::arg("previous_strain_rate"), bp::arg("current_strain_rate"), bp::arg("time_increment")),
 				"accumulate(previous_strain, previous_strain_rate, current_strain_rate, time_increment)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Accumulate previous strain using both previous and current strain rates (in units of :math:`second^{-1}`) "
+				"  Accumulate previous strain using both previous and current strain rates (in units of :math:`second^{-1}`) "
 				"over a time increment (in units of :math:`second`).\n"
 				"\n"
 				"  :param previous_strain: the *previous* strain\n"
-				"  :type previous_strain: :class:`Strain`\n"
+				"  :type previous_strain: Strain\n"
 				"  :param previous_strain_rate: the *previous* strain rate\n"
-				"  :type previous_strain_rate: :class:`StrainRate`\n"
+				"  :type previous_strain_rate: StrainRate\n"
 				"  :param current_strain_rate: the *current* strain rate\n"
-				"  :type current_strain_rate: :class:`StrainRate`\n"
+				"  :type current_strain_rate: StrainRate\n"
 				"  :param time_increment: the time increment to accumulate strain over (in units of :math:`second^{-1}`)\n"
 				"  :type time_increment: float\n"
 				"  :returns: the *current* strain (accumulated from *previous* strain)\n"
-				"  :rtype: :class:`Strain`\n"
+				"  :rtype: Strain\n"
 				"\n"
 				"  To accumulate strain from an initial undeformed state at 100Ma to its final deformed strain at present day:\n"
 				"  ::\n"

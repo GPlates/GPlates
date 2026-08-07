@@ -654,7 +654,7 @@ export_geo_time_instant()
 				"  Create a GeoTimeInstant instance from *time_value*.\n"
 				"\n"
 				"  :param time_value: the time position - positive values represent times in the *past*\n"
-				"  :type time_value: float or :class:`GeoTimeInstant`\n"
+				"  :type time_value: float or GeoTimeInstant\n"
 				"\n"
 				"  Note that if *time_value* is +infinity then :meth:`is_distant_past` will subsequently return true. "
 				"And if *time_value* is -infinity then :meth:`is_distant_future` will subsequently return true.\n"
@@ -670,12 +670,9 @@ export_geo_time_instant()
 		.def("create_distant_past",
 				&GPlatesApi::GeoTimeInstant::create_distant_past,
 				"create_distant_past()\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a GeoTimeInstant instance for the distant past.\n"
+				"  Create a GeoTimeInstant instance for the distant past.\n"
 				"\n"
-				"  :rtype: :class:`GeoTimeInstant`\n"
+				"  :rtype: GeoTimeInstant\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -690,12 +687,9 @@ export_geo_time_instant()
 		.def("create_distant_future",
 				&GPlatesApi::GeoTimeInstant::create_distant_future,
 				"create_distant_future()\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a GeoTimeInstant instance for the distant future.\n"
+				"  Create a GeoTimeInstant instance for the distant future.\n"
 				"\n"
-				"  :rtype: :class:`GeoTimeInstant`\n"
+				"  :rtype: GeoTimeInstant\n"
 				"\n"
 				"  ::\n"
 				"\n"
