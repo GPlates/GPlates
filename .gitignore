@@ -59,7 +59,8 @@ __pycache__/
 # /src/
 #
 # CMake generated...
-/src/__init__.py
+# Note: the pygplates package files ('__init__.py', '__init__.pyi', 'py.typed') are generated into
+#       '/bin/' (beside the built pygplates library), which is already ignored above.
 /src/gplates.entitlements
 /src/qt.conf
 /src/global/License.cc

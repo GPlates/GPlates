@@ -11,7 +11,11 @@ add_test(
 set_tests_properties(pygplates-test PROPERTIES
 	# Set the PYTHONPATH used in the test environment.
 	# PYTHONPATH should have precedence over everything including 'site-packages' (but not the directory containing "test.py").
-	# Set it to the location of the pygplates build output.
-	ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:pygplates>"
+	#
+	# Set it to the *parent* of the built 'pygplates' package directory, since that is what needs to be on 'sys.path'
+	# in order to "import pygplates". Note that "$<TARGET_FILE_DIR:pygplates>" is the package directory itself
+	# (the pygplates library is built into a 'pygplates/' sub-directory of the build output directory - see the
+	# pygplates target in 'src/CMakeLists.txt'), so we go up one level from it.
+	ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:pygplates>/.."
 	# If 'FAIL' is anywhere in the output then the test failed.
 	FAIL_REGULAR_EXPRESSION "FAIL|Fail|fail")
