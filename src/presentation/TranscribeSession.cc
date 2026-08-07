@@ -3200,17 +3200,32 @@ namespace GPlatesPresentation
 				return;
 			}
 
+			// Both results below must be checked. Scribe returns a value whose destructor throws
+			// ScribeTranscribeResultNotChecked if it is discarded - and because that throw comes
+			// from a destructor, it reaches std::terminate without unwinding, so no catch block
+			// anywhere sees it. The process aborts with no dialog and nothing logged.
+			//
+			// Neither field is essential, so a missing or unreadable value is recoverable rather
+			// than fatal: display names fall back to the file name per entry in
+			// restore_documents(), and an absent primary index simply means no document is
+			// primary. The document list is still worth restoring without them.
 			QStringList display_names;
-			scribe.transcribe(
+			if (!scribe.transcribe(
 					TRANSCRIBE_SOURCE,
 					display_names,
-					project_documents_tag("display_names"));
+					project_documents_tag("display_names")))
+			{
+				display_names.clear();
+			}
 
 			boost::optional<unsigned int> saved_primary_document_index;
-			scribe.transcribe(
+			if (!scribe.transcribe(
 					TRANSCRIBE_SOURCE,
 					saved_primary_document_index,
-					project_documents_tag("primary_document_index"));
+					project_documents_tag("primary_document_index")))
+			{
+				saved_primary_document_index = boost::none;
+			}
 
 			boost::optional<int> primary_document_index;
 			if (saved_primary_document_index && saved_primary_document_index.get() < static_cast<unsigned int>(file_paths->size()))
