@@ -1,6 +1,13 @@
-# This workflow builds and tests pygplates 
-# Dependencies run from conda, installed via `.github/condaenvs/env.LINUX.yml` 
-# Tests run from pygplates/test/test.py
+# Builds pyGPlates and runs its test suite on Linux, macOS and Windows.
+#
+# Dependencies come from the conda environment files in the repository root
+# (env.Linux.yml, env.macOS.yml, env.Windows.yml), which are the same files documented in
+# BUILD-Linux.md, BUILD-macOS.md and BUILD-Windows.md. So CI builds pyGPlates the same way a
+# developer does, and a dependency change only has to be made in one place.
+#
+# This uses the CMake build tree (rather than 'pip install .') because the tests are registered
+# with CTest there: 'pygplates-test' runs pygplates/test/test.py with PYTHONPATH pointing at the
+# build directory, and 'pygplates-stub-test' checks the generated .pyi stub is up to date.
 name: pygplates build and test
 
 on:
@@ -10,42 +17,72 @@ on:
     branches: [ "pygplates" ]
   workflow_dispatch:
 
-env:
-  ENV_NAME: pygplates # the conda environment name
+# Superseded runs are cancelled rather than left to finish (a build takes ~30-60 minutes).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-test:
-    strategy:
-      matrix:
-        os: ["ubuntu"] #, "macos"] #, "windows"]
-        python-version: ["3.11", "3.12"]
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
 
-    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      # Run every platform to completion, so one platform failing still reports the others.
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            environment-file: env.Linux.yml
+            shell: bash -el {0}
+          - name: macOS
+            os: macos-latest
+            environment-file: env.macOS.yml
+            shell: bash -el {0}
+          - name: Windows
+            os: windows-latest
+            environment-file: env.Windows.yml
+            # Windows uses cmd because the conda 'vs2022_win-64' package sets up the MSVC compiler
+            # environment with .bat activation scripts, which only take effect in a cmd shell.
+            # Under bash or PowerShell the Ninja generator fails with "No CMAKE_C_COMPILER could be
+            # found" (see BUILD-Windows.md).
+            shell: cmd /C call {0}
+
+    defaults:
+      run:
+        # Conda only activates in a login shell (bash) or an explicitly declared cmd shell.
+        # Without this the environment is created but never activated, and the build silently
+        # falls back to the system Python and system libraries.
+        shell: ${{ matrix.shell }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Check out repository
+        uses: actions/checkout@v6
 
+      - name: Install dependencies (conda)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          # Miniforge defaults to conda-forge, matching the 'channels' in the environment files.
+          miniforge-version: latest
+          environment-file: ${{ matrix.environment-file }}
+          # All three environment files declare 'name: gplates'.
+          activate-environment: gplates
+          # Python is deliberately left unpinned in the environment files (conda-forge picks the
+          # latest). Building every supported Python version belongs in the wheel-building
+          # workflow, not here.
 
-    - name: Set up Miniconda
-      uses: conda-incubator/setup-miniconda@v3
-      with:
-        use-mamba: true
-        # use the matrix python version
-        python-version: ${{ matrix.python-version }}
-        environment-file: .github/condaenvs/env.LINUX.yml
-        activate-environment: ${{ env.ENV_NAME }}
+      - name: Configure
+        # No -DCMAKE_PREFIX_PATH or -DBoost_ROOT: the top-level CMakeLists.txt detects the active
+        # conda environment from CONDA_PREFIX. The configure output should report
+        # "Detected active conda environment ..." - if it does not, activation above has failed.
+        run: cmake -S . -B build-pygplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DGPLATES_BUILD_GPLATES=FALSE
 
-    - name: Conda diagnostic
-      run: |
-        conda info
+      - name: Build
+        run: cmake --build build-pygplates
 
-    - name: Build pygplates
-      run: |
-        env
-        pip install -vv \
-        -C "cmake.define.CMAKE_PREFIX_PATH=$CONDA/envs/$ENV_NAME/" \
-        .
-
-    - name: Test pygplates
-      run: python pygplates/test/test.py
+      - name: Test
+        # '-C Release' is required: the tests are registered with 'CONFIGURATIONS Release MinSizeRel',
+        # so without it CTest filters them all out and reports success having run nothing.
+        run: ctest --test-dir build-pygplates -C Release --output-on-failure
