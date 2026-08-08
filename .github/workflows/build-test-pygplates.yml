@@ -8,6 +8,10 @@
 # This uses the CMake build tree (rather than 'pip install .') because the tests are registered
 # with CTest there: 'pygplates-test' runs pygplates/test/test.py with PYTHONPATH pointing at the
 # build directory, and 'pygplates-stub-test' checks the generated .pyi stub is up to date.
+#
+# Compilation goes through 'sccache' so that a push only recompiles what actually changed. A full
+# build takes ~30-60 minutes depending on platform, and is essentially the entire cost of a run
+# (configure is seconds, the tests are seconds).
 name: pygplates build and test
 
 on:
@@ -50,6 +54,18 @@ jobs:
             # found" (see BUILD-Windows.md).
             shell: cmd /C call {0}
 
+    env:
+      # Kept inside the workspace because the 'runner' context (and so 'runner.temp') is not available
+      # in a job-level 'env' block, only from the step level onwards.
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+      # A safety ceiling rather than an expected size: a full build measures 38 MiB on macOS, 67 MiB
+      # on Linux and 114 MiB on Windows, so this only binds if a build grows by an order of
+      # magnitude. It matters because the whole repository shares a 10 GB Actions cache budget with
+      # LRU eviction, and the wheel and installer workflows will want their share of it.
+      SCCACHE_CACHE_SIZE: 2G
+      # Never let the server time out mid-build.
+      SCCACHE_IDLE_TIMEOUT: 0
+
     defaults:
       run:
         # Conda only activates in a login shell (bash) or an explicitly declared cmd shell.
@@ -60,6 +76,17 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Restore compiler cache
+        # 'restore-keys' is what makes this useful: the primary key includes the commit SHA and so
+        # never hits, and the prefix fallback restores the most recent cache for this platform.
+        # A pull request can read caches written on its base branch, so PRs start warm from the
+        # last push to 'pygplates'.
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: sccache-${{ matrix.name }}-${{ github.sha }}
+          restore-keys: sccache-${{ matrix.name }}-
 
       - name: Install dependencies (conda)
         uses: conda-incubator/setup-miniconda@v3
@@ -73,14 +100,50 @@ jobs:
           # latest). Building every supported Python version belongs in the wheel-building
           # workflow, not here.
 
+      - name: Install sccache
+        # Deliberately not added to the env.*.yml files: those are the developer dependency manifest
+        # and this is a CI-only tool. sccache (rather than ccache) because it treats MSVC as a
+        # first-class target, so one configuration works unchanged on all three platforms.
+        run: conda install --yes sccache
+
       - name: Configure
         # No -DCMAKE_PREFIX_PATH or -DBoost_ROOT: the top-level CMakeLists.txt detects the active
         # conda environment from CONDA_PREFIX. The configure output should report
         # "Detected active conda environment ..." - if it does not, activation above has failed.
-        run: cmake -S . -B build-pygplates -G Ninja -DCMAKE_BUILD_TYPE=Release -DGPLATES_BUILD_GPLATES=FALSE
+        #
+        # The compiler launchers are honoured by the Ninja and Makefile generators (all our
+        # documented builds use Ninja). Note this relies on GPLATES_USE_PRECOMPILED_HEADERS staying
+        # at its default of FALSE - sccache cannot cache translation units that use a precompiled
+        # header, so enabling PCH here would quietly gut the hit rate.
+        run: >
+          cmake -S . -B build-pygplates -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DGPLATES_BUILD_GPLATES=FALSE
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Build
         run: cmake --build build-pygplates
+
+      - name: Compiler cache statistics
+        # Always reported, so the hit rate is visible in the log rather than assumed - it is the only
+        # way to tell whether the cache is earning its keep. Stopping the server flushes it to disk
+        # before the save step below.
+        if: always()
+        run: sccache --show-stats && sccache --stop-server
+
+      - name: Save compiler cache
+        # Only on push. A cache written by a pull request run is scoped to that pull request: the base
+        # branch and every other pull request cannot see it. Later runs of that same pull request can,
+        # but they gain little, because the base-branch cache already covers everything the pull
+        # request did not change - a re-run only recompiles the PR's own modified files either way.
+        # Pushes to 'pygplates' warm the cache; pull requests restore from it.
+        # 'always()' so that a failed build still saves the objects it did compile.
+        if: always() && github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: sccache-${{ matrix.name }}-${{ github.sha }}
 
       - name: Test
         # '-C Release' is required: the tests are registered with 'CONFIGURATIONS Release MinSizeRel',
