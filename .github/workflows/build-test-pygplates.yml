@@ -58,9 +58,10 @@ jobs:
       # Kept inside the workspace because the 'runner' context (and so 'runner.temp') is not available
       # in a job-level 'env' block, only from the step level onwards.
       SCCACHE_DIR: ${{ github.workspace }}/.sccache
-      # Bounded deliberately. The whole repository shares a 10 GB GitHub Actions cache budget with
-      # LRU eviction, so three unbounded caches of Boost.Python object files would evict the caches
-      # belonging to the wheel and installer workflows added later.
+      # A safety ceiling rather than an expected size: a full build measures 38 MiB on macOS, 67 MiB
+      # on Linux and 114 MiB on Windows, so this only binds if a build grows by an order of
+      # magnitude. It matters because the whole repository shares a 10 GB Actions cache budget with
+      # LRU eviction, and the wheel and installer workflows will want their share of it.
       SCCACHE_CACHE_SIZE: 2G
       # Never let the server time out mid-build.
       SCCACHE_IDLE_TIMEOUT: 0
@@ -136,9 +137,7 @@ jobs:
         # branch and every other pull request cannot see it. Later runs of that same pull request can,
         # but they gain little, because the base-branch cache already covers everything the pull
         # request did not change - a re-run only recompiles the PR's own modified files either way.
-        # That small gain is not worth another 6 GB generation against a 10 GB LRU-evicted budget
-        # shared with the wheel and installer workflows to come. Pushes to 'pygplates' warm the cache;
-        # pull requests restore from it.
+        # Pushes to 'pygplates' warm the cache; pull requests restore from it.
         # 'always()' so that a failed build still saves the objects it did compile.
         if: always() && github.event_name == 'push'
         uses: actions/cache/save@v4
