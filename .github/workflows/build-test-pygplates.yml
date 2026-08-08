@@ -1,0 +1,51 @@
+# This workflow builds and tests pygplates 
+# Dependencies run from conda, installed via `.github/condaenvs/env.LINUX.yml` 
+# Tests run from pygplates/test/test.py
+name: pygplates build and test
+
+on:
+  push:
+    branches: [ "pygplates" ]
+  pull_request:
+    branches: [ "pygplates" ]
+  workflow_dispatch:
+
+env:
+  ENV_NAME: pygplates # the conda environment name
+
+jobs:
+  build-test:
+    strategy:
+      matrix:
+        os: ["ubuntu"] #, "macos"] #, "windows"]
+        python-version: ["3.11", "3.12"]
+
+    runs-on: ${{ matrix.os }}-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+
+    - name: Set up Miniconda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        use-mamba: true
+        # use the matrix python version
+        python-version: ${{ matrix.python-version }}
+        environment-file: .github/condaenvs/env.LINUX.yml
+        activate-environment: ${{ env.ENV_NAME }}
+
+    - name: Conda diagnostic
+      run: |
+        conda info
+
+    - name: Build pygplates
+      run: |
+        env
+        pip install -vv \
+        -C "cmake.define.CMAKE_PREFIX_PATH=$CONDA/envs/$ENV_NAME/" \
+        .
+
+    - name: Test pygplates
+      run: python pygplates/test/test.py
