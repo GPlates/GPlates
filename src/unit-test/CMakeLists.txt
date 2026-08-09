@@ -10,77 +10,20 @@
 #
 set(srcs
     ApplicationStateTest.cc
-    ApplicationStateTest.h
-    AppLogicTestSuite.cc
-    AppLogicTestSuite.h
-    CanvasToolsTestSuite.cc
-    CanvasToolsTestSuite.h
-    CoregTest.cc
-    CoregTest.h
     CptPaletteTest.cc
-    CptPaletteTest.h
     DataAssociationDataTableTest.cc
-    DataAssociationDataTableTest.h
-    DataMiningTestSuite.cc
-    DataMiningTestSuite.h
-    FeatureHandleTest.cc
-    FeatureHandleTest.h
-    FeatureVisitorsTestSuite.cc
-    FeatureVisitorsTestSuite.h
-    FileIoTestSuite.cc
-    FileIoTestSuite.h
-    FilterTest.cc
-    FilterTest.h
     GenerateVelocityDomainCitcomsTest.cc
-    GenerateVelocityDomainCitcomsTest.h
-    GeometryVisitorsTestSuite.cc
-    GeometryVisitorsTestSuite.h
-    GlobalTestSuite.cc
-    GlobalTestSuite.h
-    GPlatesGlobalFixture.h
-    GPlatesTestSuite.cc
-    GPlatesTestSuite.h
-    GuiTestSuite.cc
-    GuiTestSuite.h
-    MainTestSuite.cc
-    MainTestSuite.h
-    MathsTestSuite.cc
-    MathsTestSuite.h
     MipmapperTest.cc
-    MipmapperTest.h
-    ModelTestSuite.cc
-    ModelTestSuite.h
-    MultiThreadTest.cc
-    MultiThreadTest.h
-    PresentationTestSuite.cc
-    PresentationTestSuite.h
-    PropertyValuesTestSuite.cc
-    PropertyValuesTestSuite.h
     RealTest.cc
-    RealTest.h
     ScribeExportUnitTest.h
-    ScribeTestSuite.cc
-    ScribeTestSuite.h
     SmartNodeLinkedListTest.cc
-    SmartNodeLinkedListTest.h
     StringSetTest.cc
-    StringSetTest.h
-    TestSuiteFilter.cc
-    TestSuiteFilter.h
-    TestSuiteFilterTest.cc
-    TestSuiteFilterTest.h
     TranscribeTest.cc
     TranscribeTest.h
-    UnitTestTestSuite.cc
-    UnitTestTestSuite.h
-    UtilsTestSuite.cc
-    UtilsTestSuite.h
-    ViewOperationsTestSuite.cc
-    ViewOperationsTestSuite.h
 )
 
 # Add the source files to the gplates "unit test" executable
-# (if it exists; might not exist if could not find Boost unit test framework).
+# (if it exists; might not exist if could not find GoogleTest).
 #
 # Note: This is different to the other sub-directories (which add to 'gplates-lib' static library).
 #       This is because source code in this sub-directory is only needed for unit testing.

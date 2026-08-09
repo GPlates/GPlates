@@ -1,10 +1,10 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -24,34 +24,14 @@
  */
 
 #include <QString>
+#include <gtest/gtest.h>
 
 #include "model/FeatureType.h"
-
-#include "unit-test/StringSetTest.h"
 
 #include "utils/StringSet.h"
 
 
-GPlatesUnitTest::StringSetTestSuite::StringSetTestSuite(
-		unsigned level) :
-	GPlatesUnitTest::GPlatesTestSuite(
-			"StringSetTestSuite")
-{
-	init(level);
-}
-
-
-void
-GPlatesUnitTest::StringSetTestSuite::construct_maps()
-{
-	boost::shared_ptr<StringSetTest> instance(new StringSetTest());
-
-	ADD_TESTCASE(StringSetTest, equality_test);
-}
-
-
-void
-GPlatesUnitTest::StringSetTest::equality_test()
+TEST(StringSetTest, equality)
 {
 	using GPlatesUtils::StringSet;
 	typedef StringSet::SharedIterator SharedIterator;
@@ -60,12 +40,11 @@ GPlatesUnitTest::StringSetTest::equality_test()
 
 	SharedIterator a = string_set.insert("a");
 	SharedIterator b = string_set.insert("a");
-	BOOST_CHECK(a == b);
+	EXPECT_TRUE(a == b);
 
 	using GPlatesModel::FeatureType;
 
 	FeatureType foo(GPlatesUtils::UnicodeString("gpml"), GPlatesUtils::UnicodeString("Foo"));
 	FeatureType foo2(QString("gpml"), QString("Foo"));
-	BOOST_CHECK(foo == foo2);
+	EXPECT_TRUE(foo == foo2);
 }
-

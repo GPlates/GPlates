@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <cstdlib>
 #include <memory>
 #include <sstream>
@@ -31,12 +32,13 @@
 #include <boost/optional.hpp>
 #include <boost/ref.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/test/floating_point_comparison.hpp>
 #include <boost/weak_ptr.hpp>
+#include <gtest/gtest.h>
 #include <QtGlobal>
 #include <QBuffer>
 #include <QDebug>
 #include <QFile>
+#include <QTemporaryDir>
 
 #include "TranscribeTest.h"
 
@@ -62,15 +64,28 @@
 Q_DECLARE_METATYPE(GPlatesUnitTest::TranscribePrimitivesTest::Data::StringWithEmbeddedZeros);
 
 
-GPlatesUnitTest::TranscribeTestSuite::TranscribeTestSuite(
-		unsigned level) :
-	GPlatesUnitTest::GPlatesTestSuite(
-			"TranscribeTestSuite")
-{
-	init(level);
-} 
+// Equivalent of BOOST_CHECK_CLOSE: tolerance is a *percentage* of the expected value.
+#define GPLATES_EXPECT_CLOSE_PERCENT(actual, expected, percent) \
+		EXPECT_NEAR(actual, expected, std::fabs(expected) * (percent) / 100.0)
 
-void 
+
+namespace
+{
+	/**
+	 * Returns a path (inside a process-lifetime temporary directory) for a named scratch file
+	 * used by the transcription tests, so test archive files are not written into the source tree.
+	 */
+	QString
+	test_scratch_file_path(
+			const QString &file_name)
+	{
+		static QTemporaryDir scratch_dir;
+		return scratch_dir.path() + '/' + file_name;
+	}
+}
+
+
+void
 GPlatesUnitTest::TranscribePrimitivesTest::test_case_primitives_1()
 {
 	boost::scoped_ptr<Data> before_data_scoped_ptr(new Data(10));
@@ -100,154 +115,163 @@ GPlatesUnitTest::TranscribePrimitivesTest::test_case_primitives_1()
 		//
 		// Text archive
 		//
+		{
+			SCOPED_TRACE("text archive");
 
-		std::stringstream text_archive;
+			std::stringstream text_archive;
 
-		test_case_1_write(
-				GPlatesScribe::TextArchiveWriter::create(text_archive),
-				before_data_scoped_ptr,
-				before_data,
-				before_string_array,
-				before_char_array,
-				before_non_default_constructable_array,
-				before_non_default_constructable_array_ptr,
-				before_non_default_constructable_sub_array_ptr,
-				before_non_default_constructable_sub_array_ptr_ptr,
-				before_non_default_constructable_array_element_ptr);
+			test_case_1_write(
+					GPlatesScribe::TextArchiveWriter::create(text_archive),
+					before_data_scoped_ptr,
+					before_data,
+					before_string_array,
+					before_char_array,
+					before_non_default_constructable_array,
+					before_non_default_constructable_array_ptr,
+					before_non_default_constructable_sub_array_ptr,
+					before_non_default_constructable_sub_array_ptr_ptr,
+					before_non_default_constructable_array_element_ptr);
 
-		text_archive.seekp(0);
+			text_archive.seekp(0);
 
-		test_case_1_read(
-				GPlatesScribe::TextArchiveReader::create(text_archive),
-				before_data_scoped_ptr,
-				before_data,
-				before_string_array,
-				before_char_array,
-				before_non_default_constructable_array,
-				before_non_default_constructable_array_ptr,
-				before_non_default_constructable_sub_array_ptr,
-				before_non_default_constructable_sub_array_ptr_ptr,
-				before_non_default_constructable_array_element_ptr);
+			test_case_1_read(
+					GPlatesScribe::TextArchiveReader::create(text_archive),
+					before_data_scoped_ptr,
+					before_data,
+					before_string_array,
+					before_char_array,
+					before_non_default_constructable_array,
+					before_non_default_constructable_array_ptr,
+					before_non_default_constructable_sub_array_ptr,
+					before_non_default_constructable_sub_array_ptr_ptr,
+					before_non_default_constructable_array_element_ptr);
+		}
 
 		//
 		// Binary archive
 		//
+		{
+			SCOPED_TRACE("binary archive");
 
-		QBuffer binary_archive;
-		binary_archive.open(QBuffer::WriteOnly);
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
 
-		QDataStream binary_stream_writer(&binary_archive);
+			QDataStream binary_stream_writer(&binary_archive);
 
-		test_case_1_write(
-				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
-				before_data_scoped_ptr,
-				before_data,
-				before_string_array,
-				before_char_array,
-				before_non_default_constructable_array,
-				before_non_default_constructable_array_ptr,
-				before_non_default_constructable_sub_array_ptr,
-				before_non_default_constructable_sub_array_ptr_ptr,
-				before_non_default_constructable_array_element_ptr);
+			test_case_1_write(
+					GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
+					before_data_scoped_ptr,
+					before_data,
+					before_string_array,
+					before_char_array,
+					before_non_default_constructable_array,
+					before_non_default_constructable_array_ptr,
+					before_non_default_constructable_sub_array_ptr,
+					before_non_default_constructable_sub_array_ptr_ptr,
+					before_non_default_constructable_array_element_ptr);
 
-		binary_archive.close();
+			binary_archive.close();
 
 #if 0
-		QFile archive_binary_file("archive_primitives_1.bin");
-		bool archive_binary_open_for_writing = archive_binary_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
-		BOOST_CHECK(archive_binary_open_for_writing);
-		if (archive_binary_open_for_writing)
-		{
-			archive_binary_file.write(binary_archive.data());
-		}
-		archive_binary_file.close();
+			QFile archive_binary_file(test_scratch_file_path("archive_primitives_1.bin"));
+			bool archive_binary_open_for_writing = archive_binary_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+			EXPECT_TRUE(archive_binary_open_for_writing);
+			if (archive_binary_open_for_writing)
+			{
+				archive_binary_file.write(binary_archive.data());
+			}
+			archive_binary_file.close();
 #endif
 
-		binary_archive.open(QBuffer::ReadOnly);
-		binary_archive.seek(0);
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
 
-		QDataStream binary_stream_reader(&binary_archive);
+			QDataStream binary_stream_reader(&binary_archive);
 
-		test_case_1_read(
-				GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
-				before_data_scoped_ptr,
-				before_data,
-				before_string_array,
-				before_char_array,
-				before_non_default_constructable_array,
-				before_non_default_constructable_array_ptr,
-				before_non_default_constructable_sub_array_ptr,
-				before_non_default_constructable_sub_array_ptr_ptr,
-				before_non_default_constructable_array_element_ptr);
+			test_case_1_read(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
+					before_data_scoped_ptr,
+					before_data,
+					before_string_array,
+					before_char_array,
+					before_non_default_constructable_array,
+					before_non_default_constructable_array_ptr,
+					before_non_default_constructable_sub_array_ptr,
+					before_non_default_constructable_sub_array_ptr_ptr,
+					before_non_default_constructable_array_element_ptr);
+		}
 
 		//
 		// XML archive
 		//
+		{
+			SCOPED_TRACE("XML archive");
 
-		QBuffer xml_archive;
-		xml_archive.open(QBuffer::WriteOnly);
+			QBuffer xml_archive;
+			xml_archive.open(QBuffer::WriteOnly);
 
-		QXmlStreamWriter xml_stream_writer(&xml_archive);
-		xml_stream_writer.writeStartDocument();
+			QXmlStreamWriter xml_stream_writer(&xml_archive);
+			xml_stream_writer.writeStartDocument();
 
-		test_case_1_write(
-				GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
-				before_data_scoped_ptr,
-				before_data,
-				before_string_array,
-				before_char_array,
-				before_non_default_constructable_array,
-				before_non_default_constructable_array_ptr,
-				before_non_default_constructable_sub_array_ptr,
-				before_non_default_constructable_sub_array_ptr_ptr,
-				before_non_default_constructable_array_element_ptr);
+			test_case_1_write(
+					GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
+					before_data_scoped_ptr,
+					before_data,
+					before_string_array,
+					before_char_array,
+					before_non_default_constructable_array,
+					before_non_default_constructable_array_ptr,
+					before_non_default_constructable_sub_array_ptr,
+					before_non_default_constructable_sub_array_ptr_ptr,
+					before_non_default_constructable_array_element_ptr);
 
-		xml_stream_writer.writeEndDocument();
+			xml_stream_writer.writeEndDocument();
 
-		xml_archive.close();
+			xml_archive.close();
 
 #if 0
-		QFile archive_xml_file("archive_primitives_1.xml");
-		bool archive_xml_open_for_writing = archive_xml_file.open(QIODevice::WriteOnly | QIODevice::Text);
-		BOOST_CHECK(archive_xml_open_for_writing);
-		if (archive_xml_open_for_writing)
-		{
-			archive_xml_file.write(xml_archive.data());
-		}
-		archive_xml_file.close();
+			QFile archive_xml_file(test_scratch_file_path("archive_primitives_1.xml"));
+			bool archive_xml_open_for_writing = archive_xml_file.open(QIODevice::WriteOnly | QIODevice::Text);
+			EXPECT_TRUE(archive_xml_open_for_writing);
+			if (archive_xml_open_for_writing)
+			{
+				archive_xml_file.write(xml_archive.data());
+			}
+			archive_xml_file.close();
 #endif
 
-		xml_archive.open(QBuffer::ReadOnly);
-		xml_archive.seek(0);
+			xml_archive.open(QBuffer::ReadOnly);
+			xml_archive.seek(0);
 
-		QXmlStreamReader xml_stream_reader(&xml_archive);
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isStartDocument());
+			QXmlStreamReader xml_stream_reader(&xml_archive);
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isStartDocument());
 
-		GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
-				GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
+			GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
+					GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
 
-		test_case_1_read(
-				xml_archive_reader,
-				before_data_scoped_ptr,
-				before_data,
-				before_string_array,
-				before_char_array,
-				before_non_default_constructable_array,
-				before_non_default_constructable_array_ptr,
-				before_non_default_constructable_sub_array_ptr,
-				before_non_default_constructable_sub_array_ptr_ptr,
-				before_non_default_constructable_array_element_ptr);
+			test_case_1_read(
+					xml_archive_reader,
+					before_data_scoped_ptr,
+					before_data,
+					before_string_array,
+					before_char_array,
+					before_non_default_constructable_array,
+					before_non_default_constructable_array_ptr,
+					before_non_default_constructable_sub_array_ptr,
+					before_non_default_constructable_sub_array_ptr_ptr,
+					before_non_default_constructable_array_element_ptr);
 
-		xml_archive_reader->close();
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isEndDocument());
+			xml_archive_reader->close();
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isEndDocument());
+		}
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -265,6 +289,8 @@ GPlatesUnitTest::TranscribePrimitivesTest::test_case_1_write(
 		const Data::NonDefaultConstructable (*const *const before_non_default_constructable_sub_array_ptr_ptr)[2],
 		const Data::NonDefaultConstructable *&before_non_default_constructable_array_element_ptr)
 {
+	SCOPED_TRACE("test_case_1_write");
+
 	GPlatesScribe::Scribe scribe;
 
 	scribe.transcribe(TRANSCRIBE_SOURCE, before_data_scoped_ptr, "data_scoped_ptr", GPlatesScribe::TRACK);
@@ -277,7 +303,7 @@ GPlatesUnitTest::TranscribePrimitivesTest::test_case_1_write(
 	scribe.transcribe(TRANSCRIBE_SOURCE, before_non_default_constructable_sub_array_ptr_ptr, "pps2d", GPlatesScribe::TRACK);
 	scribe.transcribe(TRANSCRIBE_SOURCE, before_non_default_constructable_array_element_ptr, "pe2d", GPlatesScribe::TRACK);
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
 	archive_writer->write_transcription(*scribe.get_transcription());
 }
@@ -295,6 +321,8 @@ GPlatesUnitTest::TranscribePrimitivesTest::test_case_1_read(
 		const Data::NonDefaultConstructable (*const *const before_non_default_constructable_sub_array_ptr_ptr)[2],
 		const Data::NonDefaultConstructable *&before_non_default_constructable_array_element_ptr)
 {
+	SCOPED_TRACE("test_case_1_read");
+
 	GPlatesScribe::Scribe scribe(archive_reader->read_transcription());
 
 	boost::scoped_ptr<Data> after_data_scoped_ptr;
@@ -311,11 +339,11 @@ GPlatesUnitTest::TranscribePrimitivesTest::test_case_1_read(
 	const Data::NonDefaultConstructable (*const *after_non_default_constructable_sub_array_ptr_ptr)[2] = NULL;
 	const Data::NonDefaultConstructable *after_non_default_constructable_array_element_ptr;
 
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data_scoped_ptr, "data_scoped_ptr", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_string_array, "string_array", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_char_array, "char_array", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_non_default_constructable_array, "2d", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data_scoped_ptr, "data_scoped_ptr", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_string_array, "string_array", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_char_array, "char_array", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_non_default_constructable_array, "2d", GPlatesScribe::TRACK));
 	Data::NonDefaultConstructable relocated_after_non_default_constructable_array[1][2] =
 	{
 		{ after_non_default_constructable_array[0][0], after_non_default_constructable_array[0][1] }
@@ -324,14 +352,14 @@ GPlatesUnitTest::TranscribePrimitivesTest::test_case_1_read(
 			TRANSCRIBE_SOURCE,
 			relocated_after_non_default_constructable_array,
 			after_non_default_constructable_array);
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_non_default_constructable_array_ptr, "p2d", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_non_default_constructable_sub_array_ptr, "ps2d", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_non_default_constructable_sub_array_ptr_ptr, "pps2d", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_non_default_constructable_array_element_ptr, "pe2d", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_non_default_constructable_array_ptr, "p2d", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_non_default_constructable_sub_array_ptr, "ps2d", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_non_default_constructable_sub_array_ptr_ptr, "pps2d", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_non_default_constructable_array_element_ptr, "pe2d", GPlatesScribe::TRACK));
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
-	BOOST_CHECK(after_data_scoped_ptr);
+	EXPECT_TRUE(after_data_scoped_ptr);
 	if (after_data_scoped_ptr)
 	{
 		before_data_scoped_ptr->check_equality(*after_data_scoped_ptr);
@@ -340,22 +368,22 @@ GPlatesUnitTest::TranscribePrimitivesTest::test_case_1_read(
 
 	for (unsigned int n = 0; n < 2; ++n)
 	{
-		BOOST_CHECK(after_string_array[n] == before_string_array[n]);
+		EXPECT_TRUE(after_string_array[n] == before_string_array[n]);
 		for (unsigned int c = 0; c < 6; ++c)
 		{
-			BOOST_CHECK(after_char_array[0][n][c] == before_char_array[0][n][c]);
+			EXPECT_TRUE(after_char_array[0][n][c] == before_char_array[0][n][c]);
 		}
 	}
 
-	BOOST_CHECK(relocated_after_non_default_constructable_array[0][0] == before_non_default_constructable_array[0][0]);
-	BOOST_CHECK(relocated_after_non_default_constructable_array[0][1] == before_non_default_constructable_array[0][1]);
-	BOOST_CHECK(after_non_default_constructable_array_element_ptr == &relocated_after_non_default_constructable_array[0][1]);
-	BOOST_CHECK(after_non_default_constructable_array_ptr == &relocated_after_non_default_constructable_array);
-	BOOST_CHECK(after_non_default_constructable_sub_array_ptr == relocated_after_non_default_constructable_array);
-	BOOST_CHECK((*after_non_default_constructable_sub_array_ptr)[1] == (*before_non_default_constructable_sub_array_ptr)[1]);
-	BOOST_CHECK((*after_non_default_constructable_sub_array_ptr)[1] == before_non_default_constructable_array[0][1]);
-	BOOST_CHECK(*after_non_default_constructable_sub_array_ptr_ptr == after_non_default_constructable_sub_array_ptr);
-	BOOST_CHECK(&(*after_non_default_constructable_sub_array_ptr)[1] == after_non_default_constructable_array_element_ptr);
+	EXPECT_TRUE(relocated_after_non_default_constructable_array[0][0] == before_non_default_constructable_array[0][0]);
+	EXPECT_TRUE(relocated_after_non_default_constructable_array[0][1] == before_non_default_constructable_array[0][1]);
+	EXPECT_TRUE(after_non_default_constructable_array_element_ptr == &relocated_after_non_default_constructable_array[0][1]);
+	EXPECT_TRUE(after_non_default_constructable_array_ptr == &relocated_after_non_default_constructable_array);
+	EXPECT_TRUE(after_non_default_constructable_sub_array_ptr == relocated_after_non_default_constructable_array);
+	EXPECT_TRUE((*after_non_default_constructable_sub_array_ptr)[1] == (*before_non_default_constructable_sub_array_ptr)[1]);
+	EXPECT_TRUE((*after_non_default_constructable_sub_array_ptr)[1] == before_non_default_constructable_array[0][1]);
+	EXPECT_TRUE(*after_non_default_constructable_sub_array_ptr_ptr == after_non_default_constructable_sub_array_ptr);
+	EXPECT_TRUE(&(*after_non_default_constructable_sub_array_ptr)[1] == after_non_default_constructable_array_element_ptr);
 }
 
 GPlatesUnitTest::TranscribePrimitivesTest::Data::Data(
@@ -631,18 +659,18 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::transcribe(
 			return scribe.get_transcribe_result();
 		}
 
-		BOOST_CHECK_CLOSE(f_from_d, d, 0.0001);
-		BOOST_CHECK(GPlatesMaths::is_negative_infinity(f_from_geo_distant_future));
-		BOOST_CHECK_CLOSE(d_from_f, f, 0.0001);
-		BOOST_CHECK_CLOSE(d_from_real, real.dval(), 0.000000001);
-		BOOST_CHECK(GPlatesMaths::is_positive_infinity(d_from_f_pos_inf));
-		BOOST_CHECK_CLOSE(real_from_f.dval(), f, 0.0001);
-		BOOST_CHECK(real_from_f_nan.is_nan());
-		BOOST_CHECK(real_from_geo_distant_past.is_positive_infinity());
-		BOOST_CHECK_CLOSE(real_from_f.dval(), f, 0.0001);
-		BOOST_CHECK_CLOSE(geo_from_f->value(), f, 0.0001);
-		BOOST_CHECK(geo_from_f_pos_inf->is_distant_past());
-		BOOST_CHECK_CLOSE(geo_from_real->value(), real.dval(), 0.000000001);
+		GPLATES_EXPECT_CLOSE_PERCENT(f_from_d, d, 0.0001);
+		EXPECT_TRUE(GPlatesMaths::is_negative_infinity(f_from_geo_distant_future));
+		GPLATES_EXPECT_CLOSE_PERCENT(d_from_f, f, 0.0001);
+		GPLATES_EXPECT_CLOSE_PERCENT(d_from_real, real.dval(), 0.000000001);
+		EXPECT_TRUE(GPlatesMaths::is_positive_infinity(d_from_f_pos_inf));
+		GPLATES_EXPECT_CLOSE_PERCENT(real_from_f.dval(), f, 0.0001);
+		EXPECT_TRUE(real_from_f_nan.is_nan());
+		EXPECT_TRUE(real_from_geo_distant_past.is_positive_infinity());
+		GPLATES_EXPECT_CLOSE_PERCENT(real_from_f.dval(), f, 0.0001);
+		GPLATES_EXPECT_CLOSE_PERCENT(geo_from_f->value(), f, 0.0001);
+		EXPECT_TRUE(geo_from_f_pos_inf->is_distant_past());
+		GPLATES_EXPECT_CLOSE_PERCENT(geo_from_real->value(), real.dval(), 0.000000001);
 
 		// Read them in again but with tracking enabled.
 		if (!scribe.transcribe(TRANSCRIBE_SOURCE, f, "f", GPlatesScribe::TRACK) ||
@@ -693,11 +721,11 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::transcribe(
 			return scribe.get_transcribe_result();
 		}
 
-		BOOST_CHECK(vv.size() == 1 &&
+		EXPECT_TRUE(vv.size() == 1 &&
 				vv[0].size() == 2 &&
 				ia_from_vv[0][0] == vv[0][0] &&
 				ia_from_vv[0][1] == vv[0][1]);
-		BOOST_CHECK(vv_from_ia.size() == 2 &&
+		EXPECT_TRUE(vv_from_ia.size() == 2 &&
 				vv_from_ia[0].size() == 2 &&
 				vv_from_ia[1].size() == 2 &&
 				vv_from_ia[0][0] == ia[0][0] &&
@@ -746,8 +774,8 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::transcribe(
 			return scribe.get_transcribe_result();
 		}
 
-		BOOST_CHECK(u_from_uw == uw.str);
-		BOOST_CHECK(uw_from_u.str == u);
+		EXPECT_TRUE(u_from_uw == uw.str);
+		EXPECT_TRUE(uw_from_u.str == u);
 
 		// Read them in again but with tracking enabled.
 		if (!scribe.transcribe(TRANSCRIBE_SOURCE, u, "u", GPlatesScribe::TRACK) ||
@@ -846,114 +874,118 @@ void
 GPlatesUnitTest::TranscribePrimitivesTest::Data::check_equality(
 		const Data &other)
 {
-	BOOST_CHECK(ia[0][0] == other.ia[0][0]);
-	BOOST_CHECK(ia[0][1] == other.ia[0][1]);
-	BOOST_CHECK(ia[1][0] == other.ia[1][0]);
-	BOOST_CHECK(ia[1][1] == other.ia[1][1]);
-	BOOST_CHECK(e == other.e);
-	BOOST_CHECK(e2 == other.e2);
-	BOOST_CHECK(b == other.b);
+	SCOPED_TRACE("check_equality");
+
+	EXPECT_TRUE(ia[0][0] == other.ia[0][0]);
+	EXPECT_TRUE(ia[0][1] == other.ia[0][1]);
+	EXPECT_TRUE(ia[1][0] == other.ia[1][0]);
+	EXPECT_TRUE(ia[1][1] == other.ia[1][1]);
+	EXPECT_TRUE(e == other.e);
+	EXPECT_TRUE(e2 == other.e2);
+	EXPECT_TRUE(b == other.b);
 	// Cast to 'double' to avoid compiler warning in boost unit test code...
-	BOOST_CHECK_CLOSE(double(f), double(other.f), 0.001);
-	BOOST_CHECK_CLOSE(d, other.d, 0.000000001);
-	BOOST_CHECK(GPlatesMaths::is_positive_infinity(f_pos_inf) && GPlatesMaths::is_positive_infinity(other.f_pos_inf));
-	BOOST_CHECK(GPlatesMaths::is_negative_infinity(f_neg_inf) && GPlatesMaths::is_negative_infinity(other.f_neg_inf));
-	BOOST_CHECK(GPlatesMaths::is_nan(f_nan) && GPlatesMaths::is_nan(other.f_nan));
-	BOOST_CHECK(GPlatesMaths::is_positive_infinity(d_pos_inf) && GPlatesMaths::is_positive_infinity(other.d_pos_inf));
-	BOOST_CHECK(GPlatesMaths::is_negative_infinity(d_neg_inf) && GPlatesMaths::is_negative_infinity(other.d_neg_inf));
-	BOOST_CHECK(GPlatesMaths::is_nan(d_nan) && GPlatesMaths::is_nan(other.d_nan));
-	BOOST_CHECK(real == other.real);
-	BOOST_CHECK(geo_real_time == other.geo_real_time);
-	BOOST_CHECK(geo_distant_past == other.geo_distant_past);
-	BOOST_CHECK(geo_distant_future == other.geo_distant_future);
-	BOOST_CHECK(c == other.c);
-	BOOST_CHECK(s == other.s);
-	BOOST_CHECK(l == other.l);
-	BOOST_CHECK(pi && other.pi && (*pi == *other.pi));
-	BOOST_CHECK(pi == &i);
-	BOOST_CHECK(pj && other.pj && (*pj == *other.pj));
-	BOOST_CHECK(pj == &j);
-	BOOST_CHECK(pk && other.pk && (*pk == *other.pk));
-	BOOST_CHECK(pl && other.pl && (*pl == *other.pl));
-	BOOST_CHECK(pl == &vv[0][1]);
-	BOOST_CHECK(ps && other.ps && (*ps == *other.ps));
-	BOOST_CHECK(ps == &int_str_map_vec[0][4]);
-	BOOST_CHECK(pqs && other.pqs && (*pqs == *other.pqs));
-	BOOST_CHECK(pqs == &int_qstr_qmap_qvec[0][4]);
-	BOOST_CHECK(pqs2 && other.pqs2 && (*pqs2 == *other.pqs2));
-	BOOST_CHECK(pqs2 == &const_cast<QString &>(*qstr_list.begin()));
-	BOOST_CHECK(ppi && other.ppi && *pi && *other.pi && (**ppi == **other.ppi));
-	BOOST_CHECK(ppi == &pi && *ppi == &i);
-	BOOST_CHECK(signed_ints == other.signed_ints);
-	BOOST_CHECK(j == other.j);
-	BOOST_CHECK(i == other.i);
-	BOOST_CHECK(u == other.u);
-	BOOST_CHECK(uw == other.uw);
-	BOOST_CHECK(pr == other.pr);
-	BOOST_CHECK(str_deq == other.str_deq);
-	BOOST_CHECK(double_stack == other.double_stack);
-	BOOST_CHECK(string_stack_queue == other.string_stack_queue);
+	GPLATES_EXPECT_CLOSE_PERCENT(double(f), double(other.f), 0.001);
+	GPLATES_EXPECT_CLOSE_PERCENT(d, other.d, 0.000000001);
+	EXPECT_TRUE(GPlatesMaths::is_positive_infinity(f_pos_inf) && GPlatesMaths::is_positive_infinity(other.f_pos_inf));
+	EXPECT_TRUE(GPlatesMaths::is_negative_infinity(f_neg_inf) && GPlatesMaths::is_negative_infinity(other.f_neg_inf));
+	EXPECT_TRUE(GPlatesMaths::is_nan(f_nan) && GPlatesMaths::is_nan(other.f_nan));
+	EXPECT_TRUE(GPlatesMaths::is_positive_infinity(d_pos_inf) && GPlatesMaths::is_positive_infinity(other.d_pos_inf));
+	EXPECT_TRUE(GPlatesMaths::is_negative_infinity(d_neg_inf) && GPlatesMaths::is_negative_infinity(other.d_neg_inf));
+	EXPECT_TRUE(GPlatesMaths::is_nan(d_nan) && GPlatesMaths::is_nan(other.d_nan));
+	EXPECT_TRUE(real == other.real);
+	EXPECT_TRUE(geo_real_time == other.geo_real_time);
+	EXPECT_TRUE(geo_distant_past == other.geo_distant_past);
+	EXPECT_TRUE(geo_distant_future == other.geo_distant_future);
+	EXPECT_TRUE(c == other.c);
+	EXPECT_TRUE(s == other.s);
+	EXPECT_TRUE(l == other.l);
+	EXPECT_TRUE(pi && other.pi && (*pi == *other.pi));
+	EXPECT_TRUE(pi == &i);
+	EXPECT_TRUE(pj && other.pj && (*pj == *other.pj));
+	EXPECT_TRUE(pj == &j);
+	EXPECT_TRUE(pk && other.pk && (*pk == *other.pk));
+	EXPECT_TRUE(pl && other.pl && (*pl == *other.pl));
+	EXPECT_TRUE(pl == &vv[0][1]);
+	EXPECT_TRUE(ps && other.ps && (*ps == *other.ps));
+	EXPECT_TRUE(ps == &int_str_map_vec[0][4]);
+	EXPECT_TRUE(pqs && other.pqs && (*pqs == *other.pqs));
+	EXPECT_TRUE(pqs == &int_qstr_qmap_qvec[0][4]);
+	EXPECT_TRUE(pqs2 && other.pqs2 && (*pqs2 == *other.pqs2));
+	EXPECT_TRUE(pqs2 == &const_cast<QString &>(*qstr_list.begin()));
+	EXPECT_TRUE(ppi && other.ppi && *pi && *other.pi && (**ppi == **other.ppi));
+	EXPECT_TRUE(ppi == &pi && *ppi == &i);
+	EXPECT_TRUE(signed_ints == other.signed_ints);
+	EXPECT_TRUE(j == other.j);
+	EXPECT_TRUE(i == other.i);
+	EXPECT_TRUE(u == other.u);
+	EXPECT_TRUE(uw == other.uw);
+	EXPECT_TRUE(pr == other.pr);
+	EXPECT_TRUE(str_deq == other.str_deq);
+	EXPECT_TRUE(double_stack == other.double_stack);
+	EXPECT_TRUE(string_stack_queue == other.string_stack_queue);
 
 	// Compare std::priority_queue<int>, but there's no equality operator...
 	std::priority_queue<int> int_priority_queue_copy = int_priority_queue;
 	std::priority_queue<int> other_int_priority_queue_copy = other.int_priority_queue;
-	BOOST_CHECK(int_priority_queue_copy.size() == other_int_priority_queue_copy.size());
+	EXPECT_TRUE(int_priority_queue_copy.size() == other_int_priority_queue_copy.size());
 	if (int_priority_queue_copy.size() == other_int_priority_queue_copy.size())
 	{
 		while (!int_priority_queue_copy.empty())
 		{
-			BOOST_CHECK(int_priority_queue_copy.top() == other_int_priority_queue_copy.top());
+			EXPECT_TRUE(int_priority_queue_copy.top() == other_int_priority_queue_copy.top());
 			int_priority_queue_copy.pop();
 			other_int_priority_queue_copy.pop();
 		}
 	}
 
-	BOOST_CHECK(v == other.v);
-	BOOST_CHECK(vv == other.vv);
-	BOOST_CHECK(vu == other.vu);
-	BOOST_CHECK(vu.size() == 1 && vu[0].str.length() == 12); // Ensure string wasn't clipped at first embedded zero.
-	BOOST_CHECK(ilist == other.ilist);
-	BOOST_CHECK(str_set == other.str_set);
-	BOOST_CHECK(int_str_map_vec == other.int_str_map_vec);
-	BOOST_CHECK(int_qstr_qmap_qvec == other.int_qstr_qmap_qvec);
-	BOOST_CHECK(qstr_set == other.qstr_set);
-	BOOST_CHECK(qstr_list == other.qstr_list);
-	BOOST_CHECK(bin == other.bin && bin == boost::none);
-	BOOST_CHECK(brin == other.brin && brin == boost::none);
-	BOOST_CHECK(bi && other.bi && (*bi == *other.bi));
-	BOOST_CHECK(bri == other.bri);
+	EXPECT_TRUE(v == other.v);
+	EXPECT_TRUE(vv == other.vv);
+	EXPECT_TRUE(vu == other.vu);
+	EXPECT_TRUE(vu.size() == 1 && vu[0].str.length() == 12); // Ensure string wasn't clipped at first embedded zero.
+	EXPECT_TRUE(ilist == other.ilist);
+	EXPECT_TRUE(str_set == other.str_set);
+	EXPECT_TRUE(int_str_map_vec == other.int_str_map_vec);
+	EXPECT_TRUE(int_qstr_qmap_qvec == other.int_qstr_qmap_qvec);
+	EXPECT_TRUE(qstr_set == other.qstr_set);
+	EXPECT_TRUE(qstr_list == other.qstr_list);
+	EXPECT_TRUE(bin == other.bin && bin == boost::none);
+	EXPECT_TRUE(brin == other.brin && brin == boost::none);
+	EXPECT_TRUE(bi && other.bi && (*bi == *other.bi));
+	EXPECT_TRUE(bri == other.bri);
 	// boost::optional<const int &> with reference to the integer inside 'bi'...
-	BOOST_CHECK(bri && bi && *bi && (&bri.get() == &bi->get()));
-	BOOST_CHECK(pbv && other.pbv && (*pbv == *other.pbv));
-	BOOST_CHECK(pbv == boost::get<QString>(&bv));
-	BOOST_CHECK(pbv2 && other.pbv2 && (*pbv2 == *other.pbv2));
-	BOOST_CHECK(pbv2 == boost::get<NonDefaultConstructable>(&bv2));
-	BOOST_CHECK(bv == other.bv);
-	BOOST_CHECK(bv2 == other.bv2);
-	BOOST_CHECK(qv == other.qv);
-	BOOST_CHECK(qv_reg.userType() == QMetaType::User && other.qv_reg.userType() == QMetaType::User &&
+	EXPECT_TRUE(bri && bi && *bi && (&bri.get() == &bi->get()));
+	EXPECT_TRUE(pbv && other.pbv && (*pbv == *other.pbv));
+	EXPECT_TRUE(pbv == boost::get<QString>(&bv));
+	EXPECT_TRUE(pbv2 && other.pbv2 && (*pbv2 == *other.pbv2));
+	EXPECT_TRUE(pbv2 == boost::get<NonDefaultConstructable>(&bv2));
+	EXPECT_TRUE(bv == other.bv);
+	EXPECT_TRUE(bv2 == other.bv2);
+	EXPECT_TRUE(qv == other.qv);
+	// Qt6: custom type ids start at QMetaType::User (Qt5 always returned User).
+	EXPECT_TRUE(qv_reg.userType() >= QMetaType::User && other.qv_reg.userType() >= QMetaType::User &&
 			qv_reg.userType() == other.qv_reg.userType() &&
 			qv_reg.canConvert<StringWithEmbeddedZeros>() && other.qv_reg.canConvert<StringWithEmbeddedZeros>() &&
 			qv_reg.value<StringWithEmbeddedZeros>() == other.qv_reg.value<StringWithEmbeddedZeros>());
-	BOOST_CHECK(lqv.size() == other.lqv.size());
+	EXPECT_TRUE(lqv.size() == other.lqv.size());
 	// 'qv_list' is just a QVariant wrapped around 'lqv'.
-	BOOST_CHECK(qv_list.userType() == QMetaType::QVariantList && other.qv_list.userType() == QMetaType::QVariantList &&
+	EXPECT_TRUE(qv_list.userType() == QMetaType::QVariantList && other.qv_list.userType() == QMetaType::QVariantList &&
 			qv_list.canConvert< QList<QVariant> >() && other.qv_list.canConvert< QList<QVariant> >() &&
 			qv_list.value< QList<QVariant> >().size() == lqv.size() &&
 			other.qv_list.value< QList<QVariant> >().size() == other.lqv.size());
 	for (int n = 0; n < lqv.size(); ++n)
 	{
-		BOOST_CHECK(lqv[n].userType() == other.lqv[n].userType());
+		EXPECT_TRUE(lqv[n].userType() == other.lqv[n].userType());
 		// 'qv_list' is just a QVariant wrapped around 'lqv'.
-		BOOST_CHECK(qv_list.value< QList<QVariant> >()[n].userType() == other.qv_list.value< QList<QVariant> >()[n].userType());
+		EXPECT_TRUE(qv_list.value< QList<QVariant> >()[n].userType() == other.qv_list.value< QList<QVariant> >()[n].userType());
 
-		if (lqv[n].userType() == QMetaType::User)
+		// Qt6: custom type ids start at QMetaType::User (Qt5 always returned User).
+		if (lqv[n].userType() >= QMetaType::User)
 		{
-			BOOST_CHECK(
+			EXPECT_TRUE(
 					lqv[n].canConvert<StringWithEmbeddedZeros>() && other.lqv[n].canConvert<StringWithEmbeddedZeros>() &&
 					lqv[n].value<StringWithEmbeddedZeros>() == other.lqv[n].value<StringWithEmbeddedZeros>());
 			// 'qv_list' is just a QVariant wrapped around 'lqv'.
-			BOOST_CHECK(
+			EXPECT_TRUE(
 					qv_list.value< QList<QVariant> >()[n].canConvert<StringWithEmbeddedZeros>() &&
 						other.qv_list.value< QList<QVariant> >()[n].canConvert<StringWithEmbeddedZeros>() &&
 					qv_list.value< QList<QVariant> >()[n].value<StringWithEmbeddedZeros>() ==
@@ -961,9 +993,9 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::check_equality(
 		}
 		else
 		{
-			BOOST_CHECK(lqv[n] == other.lqv[n]);
+			EXPECT_TRUE(lqv[n] == other.lqv[n]);
 			// 'qv_list' is just a QVariant wrapped around 'lqv'.
-			BOOST_CHECK(qv_list.value< QList<QVariant> >()[n] == other.qv_list.value< QList<QVariant> >()[n]);
+			EXPECT_TRUE(qv_list.value< QList<QVariant> >()[n] == other.qv_list.value< QList<QVariant> >()[n]);
 		}
 	}
 }
@@ -1111,7 +1143,7 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 	{
 		GPlatesScribe::Scribe scribe;
 
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, var_ptr, "var_ptr"),
 				GPlatesScribe::Exceptions::TranscribedUntrackedPointerBeforeReferencedObject);
 	}
@@ -1122,7 +1154,7 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 	{
 		GPlatesScribe::Scribe scribe;
 
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, var_ptr_ptr, "var_ptr_ptr"),
 				GPlatesScribe::Exceptions::TranscribedUntrackedPointerBeforeReferencedObject);
 	}
@@ -1140,7 +1172,7 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 
 		scribe.transcribe(TRANSCRIBE_SOURCE, var_ptr, "var_ptr", GPlatesScribe::TRACK);
 
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, var, "var"),
 				GPlatesScribe::Exceptions::UntrackingObjectWithReferences);
 	}
@@ -1153,7 +1185,7 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 		// This won't find 'var'.
 		scribe.transcribe(TRANSCRIBE_SOURCE, var_ptr, "var_ptr", GPlatesScribe::TRACK);
 
-		BOOST_CHECK(
+		EXPECT_TRUE(
 				!scribe.is_transcription_complete(false/*emit_warnings*/));
 	}
 	// Skip this test in debug build because GPlatesGlobal::Assert() aborts instead of
@@ -1165,7 +1197,7 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 		scribe.transcribe(TRANSCRIBE_SOURCE, var, "var", GPlatesScribe::TRACK);
 		scribe.transcribe(TRANSCRIBE_SOURCE, var_ptr_ptr, "var_ptr_ptr", GPlatesScribe::TRACK);
 
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, var_ptr, "var_ptr"),
 				GPlatesScribe::Exceptions::UntrackingObjectWithReferences);
 	}
@@ -1179,7 +1211,7 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 		// This won't find 'var_ptr'.
 		scribe.transcribe(TRANSCRIBE_SOURCE, var_ptr_ptr, "var_ptr_ptr", GPlatesScribe::TRACK);
 
-		BOOST_CHECK(
+		EXPECT_TRUE(
 				!scribe.is_transcription_complete(false/*emit_warnings*/));
 	}
 }
@@ -1194,106 +1226,115 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_1()
 		//
 		// Text archive
 		//
+		{
+			SCOPED_TRACE("text archive");
 
-		std::stringstream text_archive;
+			std::stringstream text_archive;
 
-		test_case_untracked_1_write(
-				GPlatesScribe::TextArchiveWriter::create(text_archive),
-				before_var);
+			test_case_untracked_1_write(
+					GPlatesScribe::TextArchiveWriter::create(text_archive),
+					before_var);
 
-		text_archive.seekp(0);
+			text_archive.seekp(0);
 
-		test_case_untracked_1_read(
-				GPlatesScribe::TextArchiveReader::create(text_archive),
-				before_var);
+			test_case_untracked_1_read(
+					GPlatesScribe::TextArchiveReader::create(text_archive),
+					before_var);
+		}
 
 		//
 		// Binary archive
 		//
+		{
+			SCOPED_TRACE("binary archive");
 
-		QBuffer binary_archive;
-		binary_archive.open(QBuffer::WriteOnly);
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
 
-		QDataStream binary_stream_writer(&binary_archive);
+			QDataStream binary_stream_writer(&binary_archive);
 
-		test_case_untracked_1_write(
-				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
-				before_var);
+			test_case_untracked_1_write(
+					GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
+					before_var);
 
-		binary_archive.close();
+			binary_archive.close();
 
 #if 0
-		QFile archive_binary_file("archive_untracked_1.bin");
-		bool archive_binary_open_for_writing = archive_binary_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
-		BOOST_CHECK(archive_binary_open_for_writing);
-		if (archive_binary_open_for_writing)
-		{
-			archive_binary_file.write(binary_archive.data());
-		}
-		archive_binary_file.close();
+			QFile archive_binary_file(test_scratch_file_path("archive_untracked_1.bin"));
+			bool archive_binary_open_for_writing = archive_binary_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+			EXPECT_TRUE(archive_binary_open_for_writing);
+			if (archive_binary_open_for_writing)
+			{
+				archive_binary_file.write(binary_archive.data());
+			}
+			archive_binary_file.close();
 #endif
 
-		binary_archive.open(QBuffer::ReadOnly);
-		binary_archive.seek(0);
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
 
-		QDataStream binary_stream_reader(&binary_archive);
+			QDataStream binary_stream_reader(&binary_archive);
 
-		test_case_untracked_1_read(
-				GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
-				before_var);
+			test_case_untracked_1_read(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
+					before_var);
+		}
 
 		//
 		// XML archive
 		//
+		{
+			SCOPED_TRACE("XML archive");
 
-		QBuffer xml_archive;
-		xml_archive.open(QBuffer::WriteOnly);
+			QBuffer xml_archive;
+			xml_archive.open(QBuffer::WriteOnly);
 
-		QXmlStreamWriter xml_stream_writer(&xml_archive);
-		xml_stream_writer.writeStartDocument();
+			QXmlStreamWriter xml_stream_writer(&xml_archive);
+			xml_stream_writer.writeStartDocument();
 
-		test_case_untracked_1_write(
-				GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
-				before_var);
+			test_case_untracked_1_write(
+					GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
+					before_var);
 
-		xml_stream_writer.writeEndDocument();
+			xml_stream_writer.writeEndDocument();
 
-		xml_archive.close();
+			xml_archive.close();
 
 #if 0
-		QFile archive_xml_file("archive_untracked_1.xml");
-		bool archive_open_for_writing = archive_xml_file.open(QIODevice::WriteOnly | QIODevice::Text);
-		BOOST_CHECK(archive_open_for_writing);
-		if (archive_open_for_writing)
-		{
-			archive_xml_file.write(xml_archive.data());
-		}
-		archive_xml_file.close();
+			QFile archive_xml_file(test_scratch_file_path("archive_untracked_1.xml"));
+			bool archive_open_for_writing = archive_xml_file.open(QIODevice::WriteOnly | QIODevice::Text);
+			EXPECT_TRUE(archive_open_for_writing);
+			if (archive_open_for_writing)
+			{
+				archive_xml_file.write(xml_archive.data());
+			}
+			archive_xml_file.close();
 #endif
 
-		xml_archive.open(QBuffer::ReadOnly);
-		xml_archive.seek(0);
+			xml_archive.open(QBuffer::ReadOnly);
+			xml_archive.seek(0);
 
-		QXmlStreamReader xml_stream_reader(&xml_archive);
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isStartDocument());
+			QXmlStreamReader xml_stream_reader(&xml_archive);
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isStartDocument());
 
-		GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
-				GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
+			GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
+					GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
 
-		test_case_untracked_1_read(
-				xml_archive_reader,
-				before_var);
+			test_case_untracked_1_read(
+					xml_archive_reader,
+					before_var);
 
-		xml_archive_reader->close();
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isEndDocument());
+			xml_archive_reader->close();
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isEndDocument());
+		}
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -1303,11 +1344,13 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_1_write(
 		const GPlatesScribe::ArchiveWriter::non_null_ptr_type &archive_writer,
 		variant_type &before_variant)
 {
+	SCOPED_TRACE("test_case_untracked_1_write");
+
 	GPlatesScribe::Scribe scribe;
 
 	scribe.transcribe(TRANSCRIBE_SOURCE, before_variant, "variant", GPlatesScribe::TRACK);
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
 	archive_writer->write_transcription(*scribe.get_transcription());
 }
@@ -1317,15 +1360,17 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_1_read(
 		const GPlatesScribe::ArchiveReader::non_null_ptr_type &archive_reader,
 		variant_type &before_variant)
 {
+	SCOPED_TRACE("test_case_untracked_1_read");
+
 	GPlatesScribe::Scribe scribe(archive_reader->read_transcription());
 
 	variant_type after_variant;
 
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_variant, "variant", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_variant, "variant", GPlatesScribe::TRACK));
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
-	BOOST_CHECK(after_variant == before_variant);
+	EXPECT_TRUE(after_variant == before_variant);
 }
 
 void 
@@ -1347,142 +1392,151 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_1()
 		//
 		// Text archive
 		//
+		{
+			SCOPED_TRACE("text archive");
 
-		std::stringstream text_archive;
+			std::stringstream text_archive;
 
-		test_case_inheritance_1_write(
-				GPlatesScribe::TextArchiveWriter::create(text_archive),
-				untranscribed_object,
-				before_d,
-				before_data,
-				before_data_ptr,
-				before_x_ptr,
-				before_data2,
-				before_e);
+			test_case_inheritance_1_write(
+					GPlatesScribe::TextArchiveWriter::create(text_archive),
+					untranscribed_object,
+					before_d,
+					before_data,
+					before_data_ptr,
+					before_x_ptr,
+					before_data2,
+					before_e);
 
-		text_archive.seekp(0);
+			text_archive.seekp(0);
 
-		test_case_inheritance_1_read(
-				GPlatesScribe::TextArchiveReader::create(text_archive),
-				untranscribed_object,
-				before_d,
-				before_data,
-				before_data_ptr,
-				before_x_ptr,
-				before_data2,
-				before_e);
+			test_case_inheritance_1_read(
+					GPlatesScribe::TextArchiveReader::create(text_archive),
+					untranscribed_object,
+					before_d,
+					before_data,
+					before_data_ptr,
+					before_x_ptr,
+					before_data2,
+					before_e);
+		}
 
 		//
 		// Binary archive
 		//
+		{
+			SCOPED_TRACE("binary archive");
 
-		QBuffer binary_archive;
-		binary_archive.open(QBuffer::WriteOnly);
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
 
-		QDataStream binary_stream_writer(&binary_archive);
+			QDataStream binary_stream_writer(&binary_archive);
 
-		test_case_inheritance_1_write(
-				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
-				untranscribed_object,
-				before_d,
-				before_data,
-				before_data_ptr,
-				before_x_ptr,
-				before_data2,
-				before_e);
+			test_case_inheritance_1_write(
+					GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
+					untranscribed_object,
+					before_d,
+					before_data,
+					before_data_ptr,
+					before_x_ptr,
+					before_data2,
+					before_e);
 
-		binary_archive.close();
+			binary_archive.close();
 
 #if 0
-		QFile archive_binary_file("archive_inheritance_1.bin");
-		bool archive_binary_open_for_writing = archive_binary_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
-		BOOST_CHECK(archive_binary_open_for_writing);
-		if (archive_binary_open_for_writing)
-		{
-			archive_binary_file.write(binary_archive.data());
-		}
-		archive_binary_file.close();
+			QFile archive_binary_file(test_scratch_file_path("archive_inheritance_1.bin"));
+			bool archive_binary_open_for_writing = archive_binary_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+			EXPECT_TRUE(archive_binary_open_for_writing);
+			if (archive_binary_open_for_writing)
+			{
+				archive_binary_file.write(binary_archive.data());
+			}
+			archive_binary_file.close();
 #endif
 
-		binary_archive.open(QBuffer::ReadOnly);
-		binary_archive.seek(0);
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
 
-		QDataStream binary_stream_reader(&binary_archive);
+			QDataStream binary_stream_reader(&binary_archive);
 
-		test_case_inheritance_1_read(
-				GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
-				untranscribed_object,
-				before_d,
-				before_data,
-				before_data_ptr,
-				before_x_ptr,
-				before_data2,
-				before_e);
+			test_case_inheritance_1_read(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
+					untranscribed_object,
+					before_d,
+					before_data,
+					before_data_ptr,
+					before_x_ptr,
+					before_data2,
+					before_e);
+		}
 
 		//
 		// XML archive
 		//
+		{
+			SCOPED_TRACE("XML archive");
 
-		QBuffer xml_archive;
-		xml_archive.open(QBuffer::WriteOnly);
+			QBuffer xml_archive;
+			xml_archive.open(QBuffer::WriteOnly);
 
-		QXmlStreamWriter xml_stream_writer(&xml_archive);
-		xml_stream_writer.writeStartDocument();
+			QXmlStreamWriter xml_stream_writer(&xml_archive);
+			xml_stream_writer.writeStartDocument();
 
-		test_case_inheritance_1_write(
-				GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
-				untranscribed_object,
-				before_d,
-				before_data,
-				before_data_ptr,
-				before_x_ptr,
-				before_data2,
-				before_e);
+			test_case_inheritance_1_write(
+					GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
+					untranscribed_object,
+					before_d,
+					before_data,
+					before_data_ptr,
+					before_x_ptr,
+					before_data2,
+					before_e);
 
-		xml_stream_writer.writeEndDocument();
+			xml_stream_writer.writeEndDocument();
 
-		xml_archive.close();
+			xml_archive.close();
 
 #if 0
-		QFile archive_xml_file("archive_inheritance_1.xml");
-		bool archive_open_for_writing = archive_xml_file.open(QIODevice::WriteOnly | QIODevice::Text);
-		BOOST_CHECK(archive_open_for_writing);
-		if (archive_open_for_writing)
-		{
-			archive_xml_file.write(xml_archive.data());
-		}
-		archive_xml_file.close();
+			QFile archive_xml_file(test_scratch_file_path("archive_inheritance_1.xml"));
+			bool archive_open_for_writing = archive_xml_file.open(QIODevice::WriteOnly | QIODevice::Text);
+			EXPECT_TRUE(archive_open_for_writing);
+			if (archive_open_for_writing)
+			{
+				archive_xml_file.write(xml_archive.data());
+			}
+			archive_xml_file.close();
 #endif
 
-		xml_archive.open(QBuffer::ReadOnly);
-		xml_archive.seek(0);
+			xml_archive.open(QBuffer::ReadOnly);
+			xml_archive.seek(0);
 
-		QXmlStreamReader xml_stream_reader(&xml_archive);
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isStartDocument());
+			QXmlStreamReader xml_stream_reader(&xml_archive);
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isStartDocument());
 
-		GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
-				GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
+			GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
+					GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
 
-		test_case_inheritance_1_read(
-				xml_archive_reader,
-				untranscribed_object,
-				before_d,
-				before_data,
-				before_data_ptr,
-				before_x_ptr,
-				before_data2,
-				before_e);
+			test_case_inheritance_1_read(
+					xml_archive_reader,
+					untranscribed_object,
+					before_d,
+					before_data,
+					before_data_ptr,
+					before_x_ptr,
+					before_data2,
+					before_e);
 
-		xml_archive_reader->close();
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isEndDocument());
+			xml_archive_reader->close();
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isEndDocument());
+		}
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -1498,6 +1552,8 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_1_write(
 		D &before_data2,
 		E &before_e)
 {
+	SCOPED_TRACE("test_case_inheritance_1_write");
+
 	GPlatesScribe::Scribe scribe;
 
 	GPlatesScribe::TranscribeContext<A> transcribe_context_a(untranscribed_object);
@@ -1512,7 +1568,7 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_1_write(
 	scribe.save(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::TRACK);
 	scribe.save(TRANSCRIBE_SOURCE, before_e, "data_e", GPlatesScribe::TRACK);
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
 	archive_writer->write_transcription(*scribe.get_transcription());
 }
@@ -1528,6 +1584,8 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_1_read(
 		D &before_data2,
 		E &before_e)
 {
+	SCOPED_TRACE("test_case_inheritance_1_read");
+
 	GPlatesScribe::Scribe scribe(archive_reader->read_transcription());
 
 	GPlatesScribe::TranscribeContext<A> transcribe_context_a(untranscribed_object);
@@ -1539,52 +1597,52 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_1_read(
 	B *after_data_ptr;
 	int *after_x_ptr;
 
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_x_ptr, "x", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_d, "d", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data_ptr, "data_ptr", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_x_ptr, "x", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_d, "d", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data_ptr, "data_ptr", GPlatesScribe::TRACK));
 
 	// 'after_data2' has reference to internal 'a' object of 'after_data' and
 	// 'after_data' gets relocated below so transcribe 'after_data2' first so we can check
 	// that its pointer reference points to the relocated 'after_data'.
 	GPlatesScribe::LoadRef<D> after_data2_ref = scribe.load<D>(TRANSCRIBE_SOURCE, "data2", GPlatesScribe::TRACK);
-	BOOST_CHECK(after_data2_ref.is_valid());
+	EXPECT_TRUE(after_data2_ref.is_valid());
 	D after_data2 = after_data2_ref;
 	scribe.relocated(TRANSCRIBE_SOURCE, after_data2, after_data2_ref);
 
 	// Test object relocation where object ('D') has a non-empty abstract base class ('A').
 	GPlatesScribe::LoadRef<D> after_data = scribe.load<D>(TRANSCRIBE_SOURCE, "data", GPlatesScribe::TRACK);
-	BOOST_CHECK(after_data.is_valid());
+	EXPECT_TRUE(after_data.is_valid());
 	D relocated_after_data(after_data);
 	scribe.relocated(TRANSCRIBE_SOURCE, relocated_after_data, after_data);
 
 	GPlatesScribe::LoadRef<E> after_e_ref = scribe.load<E>(TRANSCRIBE_SOURCE, "data_e", GPlatesScribe::TRACK);
-	BOOST_CHECK(after_e_ref.is_valid());
+	EXPECT_TRUE(after_e_ref.is_valid());
 	E after_e = after_e_ref;
 	scribe.relocated(TRANSCRIBE_SOURCE, after_e, after_e_ref);
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
-	BOOST_CHECK(after_x_ptr && (*after_x_ptr == *before_x_ptr));
+	EXPECT_TRUE(after_x_ptr && (*after_x_ptr == *before_x_ptr));
 	// Check relocation of 'D' and hence its explicit relocation handler properly relocates
 	// its pointed-to 'x' integer which should update 'after_x_ptr'.
-	BOOST_CHECK(after_x_ptr && (after_x_ptr == relocated_after_data.x.get()));
+	EXPECT_TRUE(after_x_ptr && (after_x_ptr == relocated_after_data.x.get()));
 
-	BOOST_CHECK(after_d == before_d);
+	EXPECT_TRUE(after_d == before_d);
 	// Make sure points to relocated object (not original object).
-	BOOST_CHECK(after_data_ptr && (after_data_ptr == static_cast<B *>(&relocated_after_data)));
+	EXPECT_TRUE(after_data_ptr && (after_data_ptr == static_cast<B *>(&relocated_after_data)));
 	relocated_after_data.check_equality(before_data);
 	after_data2.check_equality(before_data2);
 	// Make sure points to relocated object (not original object).
-	BOOST_CHECK(after_data2.d == &relocated_after_data.a);
+	EXPECT_TRUE(after_data2.d == &relocated_after_data.a);
 	if (after_data_ptr)
 	{
 		static_cast<D &>(*after_data_ptr).check_equality(before_data);
 	}
 	// Make sure points to untranscribed object.
-	BOOST_CHECK(&relocated_after_data.untranscribed_object == &untranscribed_object);
-	BOOST_CHECK(&after_data2.untranscribed_object == &untranscribed_object);
+	EXPECT_TRUE(&relocated_after_data.untranscribed_object == &untranscribed_object);
+	EXPECT_TRUE(&after_data2.untranscribed_object == &untranscribed_object);
 	// Make sure points to relocated object (not original object).
-	BOOST_CHECK(&after_e.b == static_cast<B *>(&relocated_after_data));
+	EXPECT_TRUE(&after_e.b == static_cast<B *>(&relocated_after_data));
 	after_e.check_equality(before_e);
 }
 
@@ -1606,136 +1664,145 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_2()
 		//
 		// Text archive
 		//
+		{
+			SCOPED_TRACE("text archive");
 
-		std::stringstream text_archive;
+			std::stringstream text_archive;
 
-		test_case_inheritance_2_write(
-				GPlatesScribe::TextArchiveWriter::create(text_archive),
-				untranscribed_object,
-				before_d,
-				before_data_ptr,
-				before_data_weak_ptr,
-				before_data_ptr2,
-				before_intrusive_ptr);
+			test_case_inheritance_2_write(
+					GPlatesScribe::TextArchiveWriter::create(text_archive),
+					untranscribed_object,
+					before_d,
+					before_data_ptr,
+					before_data_weak_ptr,
+					before_data_ptr2,
+					before_intrusive_ptr);
 
-		text_archive.seekp(0);
+			text_archive.seekp(0);
 
-		test_case_inheritance_2_read(
-				GPlatesScribe::TextArchiveReader::create(text_archive),
-				untranscribed_object,
-				before_d,
-				before_data_ptr,
-				before_data_weak_ptr,
-				before_data_ptr2,
-				before_intrusive_ptr);
+			test_case_inheritance_2_read(
+					GPlatesScribe::TextArchiveReader::create(text_archive),
+					untranscribed_object,
+					before_d,
+					before_data_ptr,
+					before_data_weak_ptr,
+					before_data_ptr2,
+					before_intrusive_ptr);
+		}
 
 		//
 		// Binary archive
 		//
+		{
+			SCOPED_TRACE("binary archive");
 
-		QBuffer binary_archive;
-		binary_archive.open(QBuffer::WriteOnly);
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
 
-		QDataStream binary_stream_writer(&binary_archive);
+			QDataStream binary_stream_writer(&binary_archive);
 
-		test_case_inheritance_2_write(
-				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
-				untranscribed_object,
-				before_d,
-				before_data_ptr,
-				before_data_weak_ptr,
-				before_data_ptr2,
-				before_intrusive_ptr);
+			test_case_inheritance_2_write(
+					GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
+					untranscribed_object,
+					before_d,
+					before_data_ptr,
+					before_data_weak_ptr,
+					before_data_ptr2,
+					before_intrusive_ptr);
 
-		binary_archive.close();
+			binary_archive.close();
 
 #if 0
-		QFile archive_binary_file("archive_inheritance_2.bin");
-		bool archive_binary_open_for_writing = archive_binary_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
-		BOOST_CHECK(archive_binary_open_for_writing);
-		if (archive_binary_open_for_writing)
-		{
-			archive_binary_file.write(binary_archive.data());
-		}
-		archive_binary_file.close();
+			QFile archive_binary_file(test_scratch_file_path("archive_inheritance_2.bin"));
+			bool archive_binary_open_for_writing = archive_binary_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+			EXPECT_TRUE(archive_binary_open_for_writing);
+			if (archive_binary_open_for_writing)
+			{
+				archive_binary_file.write(binary_archive.data());
+			}
+			archive_binary_file.close();
 #endif
 
-		binary_archive.open(QBuffer::ReadOnly);
-		binary_archive.seek(0);
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
 
-		QDataStream binary_stream_reader(&binary_archive);
+			QDataStream binary_stream_reader(&binary_archive);
 
-		test_case_inheritance_2_read(
-				GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
-				untranscribed_object,
-				before_d,
-				before_data_ptr,
-				before_data_weak_ptr,
-				before_data_ptr2,
-				before_intrusive_ptr);
+			test_case_inheritance_2_read(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
+					untranscribed_object,
+					before_d,
+					before_data_ptr,
+					before_data_weak_ptr,
+					before_data_ptr2,
+					before_intrusive_ptr);
+		}
 
 		//
 		// XML archive
 		//
+		{
+			SCOPED_TRACE("XML archive");
 
-		QBuffer xml_archive;
-		xml_archive.open(QBuffer::WriteOnly);
+			QBuffer xml_archive;
+			xml_archive.open(QBuffer::WriteOnly);
 
-		QXmlStreamWriter xml_stream_writer(&xml_archive);
-		xml_stream_writer.writeStartDocument();
+			QXmlStreamWriter xml_stream_writer(&xml_archive);
+			xml_stream_writer.writeStartDocument();
 
-		test_case_inheritance_2_write(
-				GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
-				untranscribed_object,
-				before_d,
-				before_data_ptr,
-				before_data_weak_ptr,
-				before_data_ptr2,
-				before_intrusive_ptr);
+			test_case_inheritance_2_write(
+					GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
+					untranscribed_object,
+					before_d,
+					before_data_ptr,
+					before_data_weak_ptr,
+					before_data_ptr2,
+					before_intrusive_ptr);
 
-		xml_stream_writer.writeEndDocument();
+			xml_stream_writer.writeEndDocument();
 
-		xml_archive.close();
+			xml_archive.close();
 
 #if 0
-		QFile archive_xml_file("archive_inheritance_2.xml");
-		bool archive_open_for_writing = archive_xml_file.open(QIODevice::WriteOnly | QIODevice::Text);
-		BOOST_CHECK(archive_open_for_writing);
-		if (archive_open_for_writing)
-		{
-			archive_xml_file.write(xml_archive.data());
-		}
-		archive_xml_file.close();
+			QFile archive_xml_file(test_scratch_file_path("archive_inheritance_2.xml"));
+			bool archive_open_for_writing = archive_xml_file.open(QIODevice::WriteOnly | QIODevice::Text);
+			EXPECT_TRUE(archive_open_for_writing);
+			if (archive_open_for_writing)
+			{
+				archive_xml_file.write(xml_archive.data());
+			}
+			archive_xml_file.close();
 #endif
 
-		xml_archive.open(QBuffer::ReadOnly);
-		xml_archive.seek(0);
+			xml_archive.open(QBuffer::ReadOnly);
+			xml_archive.seek(0);
 
-		QXmlStreamReader xml_stream_reader(&xml_archive);
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isStartDocument());
+			QXmlStreamReader xml_stream_reader(&xml_archive);
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isStartDocument());
 
-		GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
-				GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
+			GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
+					GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
 
-		test_case_inheritance_2_read(
-				xml_archive_reader,
-				untranscribed_object,
-				before_d,
-				before_data_ptr,
-				before_data_weak_ptr,
-				before_data_ptr2,
-				before_intrusive_ptr);
+			test_case_inheritance_2_read(
+					xml_archive_reader,
+					untranscribed_object,
+					before_d,
+					before_data_ptr,
+					before_data_weak_ptr,
+					before_data_ptr2,
+					before_intrusive_ptr);
 
-		xml_archive_reader->close();
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isEndDocument());
+			xml_archive_reader->close();
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isEndDocument());
+		}
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -1750,6 +1817,8 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_2_write(
 		boost::shared_ptr<D> &before_data_ptr2,
 		GPlatesUtils::non_null_intrusive_ptr<E> &before_intrusive_ptr)
 {
+	SCOPED_TRACE("test_case_inheritance_2_write");
+
 	GPlatesScribe::Scribe scribe;
 
 	GPlatesScribe::TranscribeContext<A> transcribe_context_a(untranscribed_object);
@@ -1764,7 +1833,7 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_2_write(
 	scribe.transcribe(TRANSCRIBE_SOURCE, before_data_ptr2, "data_ptr2", GPlatesScribe::TRACK);
 	scribe.save(TRANSCRIBE_SOURCE, before_intrusive_ptr, "data_intrusive_ptr", GPlatesScribe::TRACK);
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
 	archive_writer->write_transcription(*scribe.get_transcription());
 }
@@ -1779,6 +1848,8 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_2_read(
 		boost::shared_ptr<D> &before_data_ptr2,
 		GPlatesUtils::non_null_intrusive_ptr<E> &before_intrusive_ptr)
 {
+	SCOPED_TRACE("test_case_inheritance_2_read");
+
 	GPlatesScribe::Scribe scribe(archive_reader->read_transcription());
 
 	GPlatesScribe::TranscribeContext<A> transcribe_context_a(untranscribed_object);
@@ -1791,45 +1862,45 @@ GPlatesUnitTest::TranscribeInheritanceTest::test_case_inheritance_2_read(
 	boost::weak_ptr<B> after_data_weak_ptr;
 	boost::shared_ptr<D> after_data_ptr2;
 
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_d, "d", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_d, "d", GPlatesScribe::TRACK));
 	// Transcribe through base class pointer.
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data_weak_ptr, "data_weak_ptr", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data_ptr, "data_ptr", GPlatesScribe::TRACK));
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data_ptr2, "data_ptr2", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data_weak_ptr, "data_weak_ptr", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data_ptr, "data_ptr", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data_ptr2, "data_ptr2", GPlatesScribe::TRACK));
 
 	GPlatesScribe::LoadRef< GPlatesUtils::non_null_intrusive_ptr<E> > after_intrusive_ptr_ref =
 			scribe.load< GPlatesUtils::non_null_intrusive_ptr<E> >(
 					TRANSCRIBE_SOURCE, "data_intrusive_ptr", GPlatesScribe::TRACK);
-	BOOST_CHECK(after_intrusive_ptr_ref.is_valid());
+	EXPECT_TRUE(after_intrusive_ptr_ref.is_valid());
 	GPlatesUtils::non_null_intrusive_ptr<E> after_intrusive_ptr = after_intrusive_ptr_ref;
 	scribe.relocated(TRANSCRIBE_SOURCE, after_intrusive_ptr, after_intrusive_ptr_ref);
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
-	BOOST_CHECK(after_d);
-	BOOST_CHECK(*after_d == *before_d);
-	BOOST_CHECK(after_data_ptr);
-	BOOST_CHECK(!after_data_weak_ptr.expired());
-	BOOST_CHECK(after_data_weak_ptr.lock() == after_data_ptr);
-	BOOST_CHECK(after_data_ptr2);
+	EXPECT_TRUE(after_d);
+	EXPECT_TRUE(*after_d == *before_d);
+	EXPECT_TRUE(after_data_ptr);
+	EXPECT_TRUE(!after_data_weak_ptr.expired());
+	EXPECT_TRUE(after_data_weak_ptr.lock() == after_data_ptr);
+	EXPECT_TRUE(after_data_ptr2);
 	// Apply typeid through a raw pointer, not the smart-pointer operator* (a
 	// function call), so Clang does not flag -Wpotentially-evaluated-expression;
 	// the operand is still evaluated to obtain the dynamic (RTTI) type.
 	const B *after_data_ptr_raw = after_data_ptr.get();
-	BOOST_CHECK(after_data_ptr_raw && (typeid(*after_data_ptr_raw) == typeid(D)));
+	EXPECT_TRUE(after_data_ptr_raw && (typeid(*after_data_ptr_raw) == typeid(D)));
 	const D *after_data_ptr2_raw = after_data_ptr2.get();
-	BOOST_CHECK(after_data_ptr2_raw && (typeid(*after_data_ptr2_raw) == typeid(D)));
+	EXPECT_TRUE(after_data_ptr2_raw && (typeid(*after_data_ptr2_raw) == typeid(D)));
 	if (after_data_ptr)
 	{
 		static_cast<D &>(*after_data_ptr).check_equality(static_cast<const D &>(*before_data_ptr));
-		BOOST_CHECK(&static_cast<D &>(*after_data_ptr).untranscribed_object == &untranscribed_object);
+		EXPECT_TRUE(&static_cast<D &>(*after_data_ptr).untranscribed_object == &untranscribed_object);
 	}
 	if (after_data_ptr2)
 	{
 		static_cast<D &>(*after_data_ptr2).check_equality(static_cast<const D &>(*before_data_ptr));
-		BOOST_CHECK(&static_cast<D &>(*after_data_ptr2).untranscribed_object == &untranscribed_object);
+		EXPECT_TRUE(&static_cast<D &>(*after_data_ptr2).untranscribed_object == &untranscribed_object);
 	}
-	BOOST_CHECK(after_intrusive_ptr);
+	EXPECT_TRUE(after_intrusive_ptr);
 	if (after_intrusive_ptr)
 	{
 		after_intrusive_ptr->check_equality(*before_intrusive_ptr);
@@ -1873,8 +1944,10 @@ void
 GPlatesUnitTest::TranscribeInheritanceTest::A::check_equality(
 		const A &other) const
 {
+	SCOPED_TRACE("check_equality");
+
 	b_object.check_equality(other.b_object);
-	BOOST_CHECK(a == other.a);
+	EXPECT_TRUE(a == other.a);
 }
 
 void
@@ -1888,8 +1961,10 @@ void
 GPlatesUnitTest::TranscribeInheritanceTest::B::check_equality(
 		const B &other) const
 {
-	BOOST_CHECK(b == other.b);
-	BOOST_CHECK(int_pair == other.int_pair);
+	SCOPED_TRACE("check_equality");
+
+	EXPECT_TRUE(b == other.b);
+	EXPECT_TRUE(int_pair == other.int_pair);
 }
 
 GPlatesScribe::TranscribeResult
@@ -1989,21 +2064,23 @@ void
 GPlatesUnitTest::TranscribeInheritanceTest::D::check_equality(
 		const D &other) const
 {
+	SCOPED_TRACE("check_equality");
+
 	A::check_equality(other);
 	B::check_equality(other);
 
-	BOOST_CHECK(d && (*d == *other.d));
-	BOOST_CHECK(x && (*x == *other.x));
-	BOOST_CHECK(y == other.y);
+	EXPECT_TRUE(d && (*d == *other.d));
+	EXPECT_TRUE(x && (*x == *other.x));
+	EXPECT_TRUE(y == other.y);
 
 	if (self.expired())
 	{
-		BOOST_CHECK(other.self.expired());
+		EXPECT_TRUE(other.self.expired());
 	}
 	else
 	{
-		BOOST_CHECK(self.lock() && (self.lock().get() == this));
-		BOOST_CHECK(other.self.lock() && (other.self.lock().get() == &other));
+		EXPECT_TRUE(self.lock() && (self.lock().get() == this));
+		EXPECT_TRUE(other.self.lock() && (other.self.lock().get() == &other));
 	}
 }
 
@@ -2127,106 +2204,115 @@ GPlatesUnitTest::TranscribeCompatibilityTest::test_case_compatibility_1()
 		//
 		// Text archive
 		//
+		{
+			SCOPED_TRACE("text archive");
 
-		std::stringstream text_archive;
+			std::stringstream text_archive;
 
-		test_case_compatibility_1_write(
-				GPlatesScribe::TextArchiveWriter::create(text_archive),
-				before_smart_ptr_data);
+			test_case_compatibility_1_write(
+					GPlatesScribe::TextArchiveWriter::create(text_archive),
+					before_smart_ptr_data);
 
-		text_archive.seekp(0);
+			text_archive.seekp(0);
 
-		test_case_compatibility_1_read(
-				GPlatesScribe::TextArchiveReader::create(text_archive),
-				before_smart_ptr_data);
+			test_case_compatibility_1_read(
+					GPlatesScribe::TextArchiveReader::create(text_archive),
+					before_smart_ptr_data);
+		}
 
 		//
 		// Binary archive
 		//
+		{
+			SCOPED_TRACE("binary archive");
 
-		QBuffer binary_archive;
-		binary_archive.open(QBuffer::WriteOnly);
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
 
-		QDataStream binary_stream_writer(&binary_archive);
+			QDataStream binary_stream_writer(&binary_archive);
 
-		test_case_compatibility_1_write(
-				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
-				before_smart_ptr_data);
+			test_case_compatibility_1_write(
+					GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
+					before_smart_ptr_data);
 
-		binary_archive.close();
+			binary_archive.close();
 
 #if 0
-		QFile archive_binary_file("archive_compatibility_1.bin");
-		bool archive_binary_open_for_writing = archive_binary_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
-		BOOST_CHECK(archive_binary_open_for_writing);
-		if (archive_binary_open_for_writing)
-		{
-			archive_binary_file.write(binary_archive.data());
-		}
-		archive_binary_file.close();
+			QFile archive_binary_file(test_scratch_file_path("archive_compatibility_1.bin"));
+			bool archive_binary_open_for_writing = archive_binary_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+			EXPECT_TRUE(archive_binary_open_for_writing);
+			if (archive_binary_open_for_writing)
+			{
+				archive_binary_file.write(binary_archive.data());
+			}
+			archive_binary_file.close();
 #endif
 
-		binary_archive.open(QBuffer::ReadOnly);
-		binary_archive.seek(0);
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
 
-		QDataStream binary_stream_reader(&binary_archive);
+			QDataStream binary_stream_reader(&binary_archive);
 
-		test_case_compatibility_1_read(
-				GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
-				before_smart_ptr_data);
+			test_case_compatibility_1_read(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
+					before_smart_ptr_data);
+		}
 
 		//
 		// XML archive
 		//
+		{
+			SCOPED_TRACE("XML archive");
 
-		QBuffer xml_archive;
-		xml_archive.open(QBuffer::WriteOnly);
+			QBuffer xml_archive;
+			xml_archive.open(QBuffer::WriteOnly);
 
-		QXmlStreamWriter xml_stream_writer(&xml_archive);
-		xml_stream_writer.writeStartDocument();
+			QXmlStreamWriter xml_stream_writer(&xml_archive);
+			xml_stream_writer.writeStartDocument();
 
-		test_case_compatibility_1_write(
-				GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
-				before_smart_ptr_data);
+			test_case_compatibility_1_write(
+					GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
+					before_smart_ptr_data);
 
-		xml_stream_writer.writeEndDocument();
+			xml_stream_writer.writeEndDocument();
 
-		xml_archive.close();
+			xml_archive.close();
 
 #if 0
-		QFile archive_xml_file("archive_compatibility_1.xml");
-		bool archive_open_for_writing = archive_xml_file.open(QIODevice::WriteOnly | QIODevice::Text);
-		BOOST_CHECK(archive_open_for_writing);
-		if (archive_open_for_writing)
-		{
-			archive_xml_file.write(xml_archive.data());
-		}
-		archive_xml_file.close();
+			QFile archive_xml_file(test_scratch_file_path("archive_compatibility_1.xml"));
+			bool archive_open_for_writing = archive_xml_file.open(QIODevice::WriteOnly | QIODevice::Text);
+			EXPECT_TRUE(archive_open_for_writing);
+			if (archive_open_for_writing)
+			{
+				archive_xml_file.write(xml_archive.data());
+			}
+			archive_xml_file.close();
 #endif
 
-		xml_archive.open(QBuffer::ReadOnly);
-		xml_archive.seek(0);
+			xml_archive.open(QBuffer::ReadOnly);
+			xml_archive.seek(0);
 
-		QXmlStreamReader xml_stream_reader(&xml_archive);
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isStartDocument());
+			QXmlStreamReader xml_stream_reader(&xml_archive);
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isStartDocument());
 
-		GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
-				GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
+			GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
+					GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
 
-		test_case_compatibility_1_read(
-				xml_archive_reader,
-				before_smart_ptr_data);
+			test_case_compatibility_1_read(
+					xml_archive_reader,
+					before_smart_ptr_data);
 
-		xml_archive_reader->close();
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isEndDocument());
+			xml_archive_reader->close();
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isEndDocument());
+		}
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -2236,11 +2322,13 @@ GPlatesUnitTest::TranscribeCompatibilityTest::test_case_compatibility_1_write(
 		const GPlatesScribe::ArchiveWriter::non_null_ptr_type &archive_writer,
 		SmartPtrData &before_smart_ptr_data)
 {
+	SCOPED_TRACE("test_case_compatibility_1_write");
+
 	GPlatesScribe::Scribe scribe;
 
 	scribe.transcribe(TRANSCRIBE_SOURCE, before_smart_ptr_data, "smart_ptr_data", GPlatesScribe::TRACK);
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
 	archive_writer->write_transcription(*scribe.get_transcription());
 }
@@ -2250,21 +2338,25 @@ GPlatesUnitTest::TranscribeCompatibilityTest::test_case_compatibility_1_read(
 		const GPlatesScribe::ArchiveReader::non_null_ptr_type &archive_reader,
 		SmartPtrData &before_smart_ptr_data)
 {
+	SCOPED_TRACE("test_case_compatibility_1_read");
+
 	GPlatesScribe::Scribe scribe(archive_reader->read_transcription());
 
 	SmartPtrData after_smart_ptr_data;
 
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_smart_ptr_data, "smart_ptr_data", GPlatesScribe::TRACK));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_smart_ptr_data, "smart_ptr_data", GPlatesScribe::TRACK));
 	before_smart_ptr_data.check_equality(after_smart_ptr_data);
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 }
 
 void
 GPlatesUnitTest::TranscribeCompatibilityTest::Derived::check_equality(
 		const Derived &other) const
 {
-	BOOST_CHECK(d_value == other.d_value);
+	SCOPED_TRACE("check_equality");
+
+	EXPECT_TRUE(d_value == other.d_value);
 }
 
 GPlatesScribe::TranscribeResult
@@ -2333,57 +2425,59 @@ void
 GPlatesUnitTest::TranscribeCompatibilityTest::SmartPtrData::check_equality(
 		const SmartPtrData &other) const
 {
-	BOOST_CHECK(d_scoped_ptr && other.d_scoped_ptr);
+	SCOPED_TRACE("check_equality");
+
+	EXPECT_TRUE(d_scoped_ptr && other.d_scoped_ptr);
 	if (d_scoped_ptr && other.d_scoped_ptr)
 	{
-		BOOST_CHECK(dynamic_cast<Derived *>(d_scoped_ptr.get()) && dynamic_cast<Derived *>(other.d_scoped_ptr.get()));
+		EXPECT_TRUE(dynamic_cast<Derived *>(d_scoped_ptr.get()) && dynamic_cast<Derived *>(other.d_scoped_ptr.get()));
 		dynamic_cast<Derived *>(d_scoped_ptr.get())->check_equality(dynamic_cast<Derived &>(*other.d_scoped_ptr));
 	}
 
-	BOOST_CHECK(d_shared_ptr && other.d_shared_ptr);
+	EXPECT_TRUE(d_shared_ptr && other.d_shared_ptr);
 	if (d_shared_ptr && other.d_shared_ptr)
 	{
-		BOOST_CHECK(dynamic_cast<Derived *>(d_shared_ptr.get()) && dynamic_cast<Derived *>(other.d_shared_ptr.get()));
+		EXPECT_TRUE(dynamic_cast<Derived *>(d_shared_ptr.get()) && dynamic_cast<Derived *>(other.d_shared_ptr.get()));
 		dynamic_cast<Derived *>(d_shared_ptr.get())->check_equality(dynamic_cast<Derived &>(*other.d_shared_ptr));
 	}
 
-	BOOST_CHECK(d_shared_ptr2 && other.d_shared_ptr2);
+	EXPECT_TRUE(d_shared_ptr2 && other.d_shared_ptr2);
 	if (d_shared_ptr2 && other.d_shared_ptr2)
 	{
-		BOOST_CHECK(dynamic_cast<Derived *>(d_shared_ptr2.get()) && dynamic_cast<Derived *>(other.d_shared_ptr2.get()));
+		EXPECT_TRUE(dynamic_cast<Derived *>(d_shared_ptr2.get()) && dynamic_cast<Derived *>(other.d_shared_ptr2.get()));
 		dynamic_cast<Derived *>(d_shared_ptr2.get())->check_equality(dynamic_cast<Derived &>(*other.d_shared_ptr2));
 	}
 
-	BOOST_CHECK(d_intrusive_ptr && other.d_intrusive_ptr);
+	EXPECT_TRUE(d_intrusive_ptr && other.d_intrusive_ptr);
 	if (d_intrusive_ptr && other.d_intrusive_ptr)
 	{
-		BOOST_CHECK(dynamic_cast<Derived *>(d_intrusive_ptr.get()) && dynamic_cast<Derived *>(other.d_intrusive_ptr.get()));
+		EXPECT_TRUE(dynamic_cast<Derived *>(d_intrusive_ptr.get()) && dynamic_cast<Derived *>(other.d_intrusive_ptr.get()));
 		dynamic_cast<Derived *>(d_intrusive_ptr.get())->check_equality(dynamic_cast<Derived &>(*other.d_intrusive_ptr));
 	}
 
-	BOOST_CHECK(d_intrusive_ptr2 && other.d_intrusive_ptr2);
+	EXPECT_TRUE(d_intrusive_ptr2 && other.d_intrusive_ptr2);
 	if (d_intrusive_ptr2 && other.d_intrusive_ptr2)
 	{
-		BOOST_CHECK(dynamic_cast<Derived *>(d_intrusive_ptr2.get()) && dynamic_cast<Derived *>(other.d_intrusive_ptr2.get()));
+		EXPECT_TRUE(dynamic_cast<Derived *>(d_intrusive_ptr2.get()) && dynamic_cast<Derived *>(other.d_intrusive_ptr2.get()));
 		dynamic_cast<Derived *>(d_intrusive_ptr2.get())->check_equality(dynamic_cast<Derived &>(*other.d_intrusive_ptr2));
 	}
 
-	BOOST_CHECK(d_unique_ptr.get() && other.d_unique_ptr.get());
+	EXPECT_TRUE(d_unique_ptr.get() && other.d_unique_ptr.get());
 	if (d_unique_ptr.get() && other.d_unique_ptr.get())
 	{
-		BOOST_CHECK(dynamic_cast<Derived *>(d_unique_ptr.get()) && dynamic_cast<Derived *>(other.d_unique_ptr.get()));
+		EXPECT_TRUE(dynamic_cast<Derived *>(d_unique_ptr.get()) && dynamic_cast<Derived *>(other.d_unique_ptr.get()));
 		dynamic_cast<Derived *>(d_unique_ptr.get())->check_equality(dynamic_cast<Derived &>(*other.d_unique_ptr));
 	}
 
-	BOOST_CHECK(dynamic_cast<Derived *>(d_non_null_intrusive_ptr.get()) && dynamic_cast<Derived *>(other.d_non_null_intrusive_ptr.get()));
+	EXPECT_TRUE(dynamic_cast<Derived *>(d_non_null_intrusive_ptr.get()) && dynamic_cast<Derived *>(other.d_non_null_intrusive_ptr.get()));
 	dynamic_cast<Derived *>(d_non_null_intrusive_ptr.get())->check_equality(dynamic_cast<Derived &>(*other.d_non_null_intrusive_ptr));
 
-	BOOST_CHECK(dynamic_cast<Derived *>(other.d_post_derived_object_ptr1.get()));
+	EXPECT_TRUE(dynamic_cast<Derived *>(other.d_post_derived_object_ptr1.get()));
 	d_pre_derived_object1.check_equality(dynamic_cast<Derived &>(*other.d_post_derived_object_ptr1));
 
-	BOOST_CHECK(dynamic_cast<Derived *>(d_pre_derived_object_ptr2.get()));
+	EXPECT_TRUE(dynamic_cast<Derived *>(d_pre_derived_object_ptr2.get()));
 	dynamic_cast<Derived &>(*d_pre_derived_object_ptr2).check_equality(other.d_post_derived_object2);
-	BOOST_CHECK(other.d_post_derived_object_ptr2 == &other.d_post_derived_object2);
+	EXPECT_TRUE(other.d_post_derived_object_ptr2 == &other.d_post_derived_object2);
 }
 
 GPlatesScribe::TranscribeResult
@@ -2436,8 +2530,8 @@ GPlatesUnitTest::TranscribeCompatibilityTest::SmartPtrData::transcribe(
 			return scribe.get_transcribe_result();
 		}
 
-		BOOST_CHECK(d_shared_ptr != d_shared_ptr2);
-		BOOST_CHECK(d_intrusive_ptr != d_intrusive_ptr2);
+		EXPECT_TRUE(d_shared_ptr != d_shared_ptr2);
+		EXPECT_TRUE(d_intrusive_ptr != d_intrusive_ptr2);
 
 		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_shared_ptr, "d_shared_ptr", GPlatesScribe::TRACK) ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_shared_ptr2, "d_shared_ptr2", GPlatesScribe::TRACK) ||
@@ -2447,8 +2541,8 @@ GPlatesUnitTest::TranscribeCompatibilityTest::SmartPtrData::transcribe(
 			return scribe.get_transcribe_result();
 		}
 
-		BOOST_CHECK(d_shared_ptr == d_shared_ptr2);
-		BOOST_CHECK(d_intrusive_ptr == d_intrusive_ptr2);
+		EXPECT_TRUE(d_shared_ptr == d_shared_ptr2);
+		EXPECT_TRUE(d_intrusive_ptr == d_intrusive_ptr2);
 
 		//
 		// We can load a smart pointer from a raw pointer (and its pointed-to object).
@@ -2621,26 +2715,28 @@ void
 GPlatesUnitTest::TranscribeRawTest::Data::check_equality(
 		const Data &other) const
 {
-	BOOST_CHECK(b == other.b);
-	BOOST_CHECK(c == other.c);
-	BOOST_CHECK(s == other.s);
-	BOOST_CHECK(i == other.i);
-	BOOST_CHECK(ui == other.ui);
-	BOOST_CHECK(l == other.l);
-	BOOST_CHECK(f == other.f);
-	BOOST_CHECK(d == other.d);
-	BOOST_CHECK(real == other.real);
-	BOOST_CHECK(e == other.e);
-	BOOST_CHECK(str1 == other.str1);
-	BOOST_CHECK(str2 == other.str2);
-	BOOST_CHECK(str3 == other.str3);
-	BOOST_CHECK(qstr == other.qstr);
-	BOOST_CHECK(int_vec == other.int_vec);
-	BOOST_CHECK(str_vec == other.str_vec);
-	BOOST_CHECK(int_str_map == other.int_str_map);
-	BOOST_CHECK(opt_some == other.opt_some);
-	BOOST_CHECK(opt_none == other.opt_none);
-	BOOST_CHECK(nested.value == other.nested.value);
+	SCOPED_TRACE("check_equality");
+
+	EXPECT_TRUE(b == other.b);
+	EXPECT_TRUE(c == other.c);
+	EXPECT_TRUE(s == other.s);
+	EXPECT_TRUE(i == other.i);
+	EXPECT_TRUE(ui == other.ui);
+	EXPECT_TRUE(l == other.l);
+	EXPECT_TRUE(f == other.f);
+	EXPECT_TRUE(d == other.d);
+	EXPECT_TRUE(real == other.real);
+	EXPECT_TRUE(e == other.e);
+	EXPECT_TRUE(str1 == other.str1);
+	EXPECT_TRUE(str2 == other.str2);
+	EXPECT_TRUE(str3 == other.str3);
+	EXPECT_TRUE(qstr == other.qstr);
+	EXPECT_TRUE(int_vec == other.int_vec);
+	EXPECT_TRUE(str_vec == other.str_vec);
+	EXPECT_TRUE(int_str_map == other.int_str_map);
+	EXPECT_TRUE(opt_some == other.opt_some);
+	EXPECT_TRUE(opt_none == other.opt_none);
+	EXPECT_TRUE(nested.value == other.nested.value);
 }
 
 
@@ -2729,17 +2825,19 @@ void
 GPlatesUnitTest::TranscribeRawTest::ArrayData::check_equality(
 		const ArrayData &other) const
 {
+	SCOPED_TRACE("check_equality");
+
 	for (unsigned int n = 0; n < 4; ++n)
 	{
-		BOOST_CHECK_EQUAL(doubles[n], other.doubles[n]);
+		EXPECT_EQ(doubles[n], other.doubles[n]);
 	}
 	for (unsigned int n = 0; n < 3; ++n)
 	{
-		BOOST_CHECK_EQUAL(floats[n], other.floats[n]);
+		EXPECT_EQ(floats[n], other.floats[n]);
 	}
 	for (unsigned int n = 0; n < 5; ++n)
 	{
-		BOOST_CHECK_EQUAL(ints[n], other.ints[n]);
+		EXPECT_EQ(ints[n], other.ints[n]);
 	}
 }
 
@@ -2791,20 +2889,22 @@ void
 GPlatesUnitTest::TranscribeRawTest::FixedArrayData::check_equality(
 		const FixedArrayData &other) const
 {
+	SCOPED_TRACE("check_equality");
+
 	for (unsigned int n = 0; n < 4; ++n)
 	{
-		BOOST_CHECK_EQUAL(nums[n], other.nums[n]);
+		EXPECT_EQ(nums[n], other.nums[n]);
 	}
 	for (unsigned int i = 0; i < 2; ++i)
 	{
 		for (unsigned int j = 0; j < 3; ++j)
 		{
-			BOOST_CHECK_EQUAL(matrix[i][j], other.matrix[i][j]);
+			EXPECT_EQ(matrix[i][j], other.matrix[i][j]);
 		}
 	}
 	for (unsigned int n = 0; n < 2; ++n)
 	{
-		BOOST_CHECK_EQUAL(strs[n], other.strs[n]);
+		EXPECT_EQ(strs[n], other.strs[n]);
 	}
 }
 
@@ -2836,84 +2936,93 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_1()
 		//
 		// Text archive
 		//
+		{
+			SCOPED_TRACE("text archive");
 
-		std::stringstream text_archive;
+			std::stringstream text_archive;
 
-		test_case_raw_1_write(
-				GPlatesScribe::TextArchiveWriter::create(text_archive),
-				before_data);
+			test_case_raw_1_write(
+					GPlatesScribe::TextArchiveWriter::create(text_archive),
+					before_data);
 
-		text_archive.seekp(0);
+			text_archive.seekp(0);
 
-		test_case_raw_1_read(
-				GPlatesScribe::TextArchiveReader::create(text_archive),
-				before_data);
+			test_case_raw_1_read(
+					GPlatesScribe::TextArchiveReader::create(text_archive),
+					before_data);
+		}
 
 		//
 		// Binary archive
 		//
+		{
+			SCOPED_TRACE("binary archive");
 
-		QBuffer binary_archive;
-		binary_archive.open(QBuffer::WriteOnly);
+			QBuffer binary_archive;
+			binary_archive.open(QBuffer::WriteOnly);
 
-		QDataStream binary_stream_writer(&binary_archive);
+			QDataStream binary_stream_writer(&binary_archive);
 
-		test_case_raw_1_write(
-				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
-				before_data);
+			test_case_raw_1_write(
+					GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer),
+					before_data);
 
-		binary_archive.close();
+			binary_archive.close();
 
-		binary_archive.open(QBuffer::ReadOnly);
-		binary_archive.seek(0);
+			binary_archive.open(QBuffer::ReadOnly);
+			binary_archive.seek(0);
 
-		QDataStream binary_stream_reader(&binary_archive);
+			QDataStream binary_stream_reader(&binary_archive);
 
-		test_case_raw_1_read(
-				GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
-				before_data);
+			test_case_raw_1_read(
+					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader),
+					before_data);
+		}
 
 		//
 		// XML archive
 		//
+		{
+			SCOPED_TRACE("XML archive");
 
-		QBuffer xml_archive;
-		xml_archive.open(QBuffer::WriteOnly);
+			QBuffer xml_archive;
+			xml_archive.open(QBuffer::WriteOnly);
 
-		QXmlStreamWriter xml_stream_writer(&xml_archive);
-		xml_stream_writer.writeStartDocument();
+			QXmlStreamWriter xml_stream_writer(&xml_archive);
+			xml_stream_writer.writeStartDocument();
 
-		test_case_raw_1_write(
-				GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
-				before_data);
+			test_case_raw_1_write(
+					GPlatesScribe::XmlArchiveWriter::create(xml_stream_writer),
+					before_data);
 
-		xml_stream_writer.writeEndDocument();
+			xml_stream_writer.writeEndDocument();
 
-		xml_archive.close();
+			xml_archive.close();
 
-		xml_archive.open(QBuffer::ReadOnly);
-		xml_archive.seek(0);
+			xml_archive.open(QBuffer::ReadOnly);
+			xml_archive.seek(0);
 
-		QXmlStreamReader xml_stream_reader(&xml_archive);
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isStartDocument());
+			QXmlStreamReader xml_stream_reader(&xml_archive);
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isStartDocument());
 
-		GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
-				GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
+			GPlatesScribe::XmlArchiveReader::non_null_ptr_type xml_archive_reader =
+					GPlatesScribe::XmlArchiveReader::create(xml_stream_reader);
 
-		test_case_raw_1_read(
-				xml_archive_reader,
-				before_data);
+			test_case_raw_1_read(
+					xml_archive_reader,
+					before_data);
 
-		xml_archive_reader->close();
-		xml_stream_reader.readNext();
-		BOOST_CHECK(xml_stream_reader.isEndDocument());
+			xml_archive_reader->close();
+			xml_stream_reader.readNext();
+			EXPECT_TRUE(xml_stream_reader.isEndDocument());
+		}
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -2924,20 +3033,22 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_1_write(
 		const GPlatesScribe::ArchiveWriter::non_null_ptr_type &archive_writer,
 		Data &before_data)
 {
+	SCOPED_TRACE("test_case_raw_1_write");
+
 	GPlatesScribe::Scribe scribe;
 
 	scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
 	// The entire 'Data' subtree should have been streamed into a *single* raw stream
 	// (the nested RAW option on 'int_vec' is ignored inside the raw subtree).
-	BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
+	EXPECT_EQ(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
 
 	// Strings inside the raw stream are interned in the transcription's unique-string pool:
 	// "ENUM_VALUE_2", "shared string" (transcribed three times but interned once),
 	// "another string", the QString utf8 bytes, "alpha", "beta", "one" and "two".
-	BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_unique_string_objects(), 8u);
+	EXPECT_EQ(scribe.get_transcription()->get_num_unique_string_objects(), 8u);
 
 	archive_writer->write_transcription(*scribe.get_transcription());
 }
@@ -2948,13 +3059,15 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_1_read(
 		const GPlatesScribe::ArchiveReader::non_null_ptr_type &archive_reader,
 		Data &before_data)
 {
+	SCOPED_TRACE("test_case_raw_1_read");
+
 	GPlatesScribe::Scribe scribe(archive_reader->read_transcription());
 
 	Data after_data;
 
-	BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+	EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
 
-	BOOST_CHECK(scribe.is_transcription_complete());
+	EXPECT_TRUE(scribe.is_transcription_complete());
 
 	before_data.check_equality(after_data);
 }
@@ -2981,10 +3094,10 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_64_bit_integers()
 			scribe.transcribe(TRANSCRIBE_SOURCE, before_int64, "int64", GPlatesScribe::RAW);
 			scribe.transcribe(TRANSCRIBE_SOURCE, before_uint64, "uint64", GPlatesScribe::RAW);
 
-			BOOST_CHECK(scribe.is_transcription_complete());
+			EXPECT_TRUE(scribe.is_transcription_complete());
 
 			// Each RAW boundary object is its own raw stream.
-			BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_raw_stream_objects(), 2u);
+			EXPECT_EQ(scribe.get_transcription()->get_num_raw_stream_objects(), 2u);
 
 			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 					*scribe.get_transcription());
@@ -3004,18 +3117,18 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_64_bit_integers()
 			long long after_int64 = 0;
 			unsigned long long after_uint64 = 0;
 
-			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_int64, "int64", GPlatesScribe::RAW));
-			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_uint64, "uint64", GPlatesScribe::RAW));
+			EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_int64, "int64", GPlatesScribe::RAW));
+			EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_uint64, "uint64", GPlatesScribe::RAW));
 
-			BOOST_CHECK_EQUAL(after_int64, before_int64);
-			BOOST_CHECK_EQUAL(after_uint64, before_uint64);
+			EXPECT_EQ(after_int64, before_int64);
+			EXPECT_EQ(after_uint64, before_uint64);
 		}
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -3044,7 +3157,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_cross_type_integers()
 			scribe.transcribe(TRANSCRIBE_SOURCE, before_int, "signed", GPlatesScribe::RAW);
 			scribe.transcribe(TRANSCRIBE_SOURCE, before_uint, "unsigned", GPlatesScribe::RAW);
 
-			BOOST_CHECK(scribe.is_transcription_complete());
+			EXPECT_TRUE(scribe.is_transcription_complete());
 
 			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 					*scribe.get_transcription());
@@ -3065,11 +3178,11 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_cross_type_integers()
 			unsigned long after_ulong = 0;   // 'int' saved -> 'unsigned long' loaded.
 			long long after_llong = 0;        // 'unsigned int' saved -> 'long long' loaded.
 
-			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_ulong, "signed", GPlatesScribe::RAW));
-			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_llong, "unsigned", GPlatesScribe::RAW));
+			EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_ulong, "signed", GPlatesScribe::RAW));
+			EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_llong, "unsigned", GPlatesScribe::RAW));
 
-			BOOST_CHECK_EQUAL(after_ulong, static_cast<unsigned long>(before_int));
-			BOOST_CHECK_EQUAL(after_llong, static_cast<long long>(before_uint));
+			EXPECT_EQ(after_ulong, static_cast<unsigned long>(before_int));
+			EXPECT_EQ(after_llong, static_cast<long long>(before_uint));
 		}
 
 		//
@@ -3103,7 +3216,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_cross_type_integers()
 					GPlatesScribe::BinaryArchiveReader::create(negative_stream_reader)->read_transcription());
 
 			unsigned int after_negative = 0;
-			BOOST_CHECK_THROW(
+			EXPECT_THROW(
 					scribe.transcribe(TRANSCRIBE_SOURCE, after_negative, "negative", GPlatesScribe::RAW),
 					GPlatesScribe::Exceptions::RawStreamError);
 		}
@@ -3112,7 +3225,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_cross_type_integers()
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -3229,49 +3342,51 @@ void
 GPlatesUnitTest::TranscribeRawTest::PointerData::check_equality(
 		const PointerData &other) const
 {
+	SCOPED_TRACE("check_equality");
+
 	// Note: The aliasing (and reference count) checks are made on *both* objects - notably on
 	// 'other' which, in the test cases, is the *loaded* object.
 
-	BOOST_CHECK(scoped && other.scoped && *scoped == *other.scoped);
-	BOOST_CHECK(raw_owned && other.raw_owned && *raw_owned == *other.raw_owned);
+	EXPECT_TRUE(scoped && other.scoped && *scoped == *other.scoped);
+	EXPECT_TRUE(raw_owned && other.raw_owned && *raw_owned == *other.raw_owned);
 
 	// 'shared_a' and 'shared_b' should reference the *same* Derived object (aliasing preserved).
-	BOOST_CHECK(shared_a && shared_b && other.shared_a && other.shared_b);
+	EXPECT_TRUE(shared_a && shared_b && other.shared_a && other.shared_b);
 	if (shared_a && shared_b && other.shared_a && other.shared_b)
 	{
 		const Derived *derived = dynamic_cast<const Derived *>(shared_a.get());
-		BOOST_CHECK(derived);
-		BOOST_CHECK(derived == dynamic_cast<const Derived *>(shared_b.get()));
+		EXPECT_TRUE(derived);
+		EXPECT_TRUE(derived == dynamic_cast<const Derived *>(shared_b.get()));
 
 		const Derived *other_derived = dynamic_cast<const Derived *>(other.shared_a.get());
-		BOOST_CHECK(other_derived);
-		BOOST_CHECK(other_derived == dynamic_cast<const Derived *>(other.shared_b.get()));
+		EXPECT_TRUE(other_derived);
+		EXPECT_TRUE(other_derived == dynamic_cast<const Derived *>(other.shared_b.get()));
 
-		BOOST_CHECK_EQUAL(shared_a->a, other.shared_a->a);
-		BOOST_CHECK_EQUAL(shared_b->b, other.shared_b->b);
+		EXPECT_EQ(shared_a->a, other.shared_a->a);
+		EXPECT_EQ(shared_b->b, other.shared_b->b);
 		if (derived && other_derived)
 		{
-			BOOST_CHECK_EQUAL(derived->d, other_derived->d);
+			EXPECT_EQ(derived->d, other_derived->d);
 		}
 	}
 
 	// 'weak_a' should reference the same object as 'shared_a' (aliasing preserved).
-	BOOST_CHECK(!weak_a.expired() && weak_a.lock() == shared_a);
-	BOOST_CHECK(!other.weak_a.expired() && other.weak_a.lock() == other.shared_a);
+	EXPECT_TRUE(!weak_a.expired() && weak_a.lock() == shared_a);
+	EXPECT_TRUE(!other.weak_a.expired() && other.weak_a.lock() == other.shared_a);
 
-	BOOST_CHECK(!shared_null && !other.shared_null);
+	EXPECT_TRUE(!shared_null && !other.shared_null);
 
 	// 'intrusive_1' and 'intrusive_2' should reference the *same* object (aliasing preserved)
 	// and hence its reference count should be exactly 2 (its only owners).
-	BOOST_CHECK(intrusive_1 == intrusive_2);
-	BOOST_CHECK(other.intrusive_1 == other.intrusive_2);
-	BOOST_CHECK_EQUAL(intrusive_1->get_reference_count(), 2);
-	BOOST_CHECK_EQUAL(other.intrusive_1->get_reference_count(), 2);
-	BOOST_CHECK_EQUAL(intrusive_1->value, other.intrusive_1->value);
+	EXPECT_TRUE(intrusive_1 == intrusive_2);
+	EXPECT_TRUE(other.intrusive_1 == other.intrusive_2);
+	EXPECT_EQ(intrusive_1->get_reference_count(), 2);
+	EXPECT_EQ(other.intrusive_1->get_reference_count(), 2);
+	EXPECT_EQ(intrusive_1->value, other.intrusive_1->value);
 
-	BOOST_CHECK_EQUAL(intrusive_solo->get_reference_count(), 1);
-	BOOST_CHECK_EQUAL(other.intrusive_solo->get_reference_count(), 1);
-	BOOST_CHECK_EQUAL(intrusive_solo->value, other.intrusive_solo->value);
+	EXPECT_EQ(intrusive_solo->get_reference_count(), 1);
+	EXPECT_EQ(other.intrusive_solo->get_reference_count(), 1);
+	EXPECT_EQ(intrusive_solo->value, other.intrusive_solo->value);
 }
 
 
@@ -3321,11 +3436,11 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_pointers()
 
 				scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
 
-				BOOST_CHECK(scribe.is_transcription_complete());
+				EXPECT_TRUE(scribe.is_transcription_complete());
 
 				// The entire pointer graph (markers, class names, backrefs and pointed-to
 				// objects) should be inside a single raw stream.
-				BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
+				EXPECT_EQ(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
 
 				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 						*scribe.get_transcription());
@@ -3344,7 +3459,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_pointers()
 				GPlatesScribe::Scribe scribe(
 						GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
 
-				BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+				EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
 			}
 
 			// Note: The equality check is made *after* the load scribe is destroyed so that the
@@ -3376,7 +3491,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_pointers()
 
 				scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::TRACK);
 
-				BOOST_CHECK(scribe.is_transcription_complete());
+				EXPECT_TRUE(scribe.is_transcription_complete());
 
 				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 						*scribe.get_transcription());
@@ -3395,7 +3510,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_pointers()
 				GPlatesScribe::Scribe scribe(
 						GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
 
-				BOOST_CHECK(scribe.transcribe(
+				EXPECT_TRUE(scribe.transcribe(
 						TRANSCRIBE_SOURCE, after_data, "data",
 						GPlatesScribe::RAW | GPlatesScribe::TRACK));
 			}
@@ -3407,7 +3522,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_pointers()
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -3446,8 +3561,8 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_nested_shared_objects()
 
 			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
 
-			BOOST_CHECK(scribe.is_transcription_complete());
-			BOOST_CHECK_EQUAL(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
+			EXPECT_TRUE(scribe.is_transcription_complete());
+			EXPECT_EQ(scribe.get_transcription()->get_num_raw_stream_objects(), 1u);
 
 			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 					*scribe.get_transcription());
@@ -3466,36 +3581,36 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_nested_shared_objects()
 			GPlatesScribe::Scribe scribe(
 					GPlatesScribe::BinaryArchiveReader::create(binary_stream_reader)->read_transcription());
 
-			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+			EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
 		}
 
 		// Note: The aliasing/reference-count checks are made after the load scribe is destroyed
 		// (its internal shared-object bookkeeping no longer contributes to reference counts).
-		BOOST_REQUIRE_EQUAL(after_data.size(), 3u);
+		ASSERT_EQ(after_data.size(), 3u);
 
 		// References (not copies) so they do not contribute to the reference counts checked below.
 		const RefCountedData::non_null_ptr_type &after_parent = after_data[0];
 		const RefCountedData::non_null_ptr_type &after_child = after_data[2];
 
 		// The repeated 'parent' entry resolved to the same object (aliasing preserved).
-		BOOST_CHECK(after_data[0] == after_data[1]);
-		BOOST_CHECK_EQUAL(after_parent->value, 200);
+		EXPECT_TRUE(after_data[0] == after_data[1]);
+		EXPECT_EQ(after_parent->value, 200);
 
 		// The nested child aliases the separately-owned 'child' entry (nested backref resolved).
-		BOOST_REQUIRE(static_cast<bool>(after_parent->child));
-		BOOST_CHECK(*after_parent->child == after_child);
-		BOOST_CHECK_EQUAL(after_child->value, 100);
+		ASSERT_TRUE(static_cast<bool>(after_parent->child));
+		EXPECT_TRUE(*after_parent->child == after_child);
+		EXPECT_EQ(after_child->value, 100);
 
 		// 'parent' is owned by 'after_data[0]' and 'after_data[1]' (reference count 2).
-		BOOST_CHECK_EQUAL(after_parent->get_reference_count(), 2);
+		EXPECT_EQ(after_parent->get_reference_count(), 2);
 		// 'child' is owned by 'parent->child' and 'after_data[2]' (reference count 2).
-		BOOST_CHECK_EQUAL(after_child->get_reference_count(), 2);
+		EXPECT_EQ(after_child->get_reference_count(), 2);
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -3528,7 +3643,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_compatibility()
 
 				scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data");
 
-				BOOST_CHECK(scribe.is_transcription_complete());
+				EXPECT_TRUE(scribe.is_transcription_complete());
 
 				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 						*scribe.get_transcription());
@@ -3547,7 +3662,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_compatibility()
 
 				Data after_data;
 
-				BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+				EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
 
 				before_data.check_equality(after_data);
 			}
@@ -3568,7 +3683,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_compatibility()
 
 				scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
 
-				BOOST_CHECK(scribe.is_transcription_complete());
+				EXPECT_TRUE(scribe.is_transcription_complete());
 
 				GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 						*scribe.get_transcription());
@@ -3587,7 +3702,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_compatibility()
 
 				Data after_data;
 
-				BOOST_CHECK(!scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
+				EXPECT_TRUE(!scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
 			}
 		}
 	}
@@ -3595,7 +3710,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_compatibility()
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -3719,7 +3834,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 		TranscribeRawTestImpl::ReferenceData reference_data;
 		reference_data.target = 1;
 
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, reference_data, "data", GPlatesScribe::RAW),
 				GPlatesScribe::Exceptions::InvalidRawTranscribeOperation);
 	}
@@ -3735,7 +3850,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 		pointer_data.value = 1;
 		pointer_data.value_ptr = &pointer_data.value;
 
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, pointer_data, "data", GPlatesScribe::RAW),
 				GPlatesScribe::Exceptions::InvalidRawTranscribeOperation);
 	}
@@ -3751,7 +3866,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 
 		scribe.transcribe(TRANSCRIBE_SOURCE, value, "value", GPlatesScribe::TRACK);
 
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(
 						TRANSCRIBE_SOURCE, value_ptr, "value_ptr",
 						GPlatesScribe::RAW | GPlatesScribe::TRACK),
@@ -3770,7 +3885,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
 
 		int after_int;
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, after_int, "data", GPlatesScribe::RAW),
 				GPlatesScribe::Exceptions::UnsupportedRawStreamVersion);
 	}
@@ -3787,7 +3902,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
 
 		float after_float;
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, after_float, "data", GPlatesScribe::RAW),
 				GPlatesScribe::Exceptions::RawStreamError);
 	}
@@ -3803,7 +3918,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
 
 		double after_double;
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, after_double, "data", GPlatesScribe::RAW),
 				GPlatesScribe::Exceptions::RawStreamError);
 	}
@@ -3819,8 +3934,8 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
 
 		double after_double;
-		BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_double, "data", GPlatesScribe::RAW));
-		BOOST_CHECK(after_double == 0);
+		EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_double, "data", GPlatesScribe::RAW));
+		EXPECT_TRUE(after_double == 0);
 	}
 
 	//
@@ -3835,7 +3950,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 		const unsigned int unknown_class_name_index =
 				transcription->get_or_create_unique_string_index(
 						"GPlatesUnitTest::TranscribeRawTest::RemovedInThisVersion");
-		BOOST_REQUIRE(unknown_class_name_index < 128); // Fits in a single varint byte.
+		ASSERT_TRUE(unknown_class_name_index < 128); // Fits in a single varint byte.
 
 		std::vector<char> raw_stream_data;
 		raw_stream_data.push_back(0x00); // Codec version 0.
@@ -3847,8 +3962,8 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 		GPlatesScribe::Scribe scribe(transcription);
 
 		boost::shared_ptr<TranscribeRawTest::BaseA> after_ptr;
-		BOOST_CHECK(!scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW));
-		BOOST_CHECK(scribe.get_transcribe_result() == GPlatesScribe::TRANSCRIBE_UNKNOWN_TYPE);
+		EXPECT_TRUE(!scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW));
+		EXPECT_TRUE(scribe.get_transcribe_result() == GPlatesScribe::TRANSCRIBE_UNKNOWN_TYPE);
 	}
 
 	//
@@ -3863,7 +3978,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
 
 		boost::shared_ptr<TranscribeRawTest::BaseA> after_ptr;
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW),
 				GPlatesScribe::Exceptions::RawStreamError);
 	}
@@ -3881,7 +3996,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 				TranscribeRawTestImpl::create_transcription_with_raw_stream(raw_stream_data));
 
 		boost::shared_ptr<TranscribeRawTest::BaseA> after_ptr;
-		BOOST_CHECK_THROW(
+		EXPECT_THROW(
 				scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW),
 				GPlatesScribe::Exceptions::RawStreamError);
 	}
@@ -3909,7 +4024,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_array()
 
 			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
 
-			BOOST_CHECK(scribe.is_transcription_complete());
+			EXPECT_TRUE(scribe.is_transcription_complete());
 
 			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 					*scribe.get_transcription());
@@ -3928,7 +4043,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_array()
 
 			ArrayData after_data;
 
-			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+			EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
 
 			before_data.check_equality(after_data);
 		}
@@ -3937,7 +4052,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_array()
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 
@@ -3955,7 +4070,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_array()
 
 			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data");
 
-			BOOST_CHECK(scribe.is_transcription_complete());
+			EXPECT_TRUE(scribe.is_transcription_complete());
 
 			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 					*scribe.get_transcription());
@@ -3974,7 +4089,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_array()
 
 			ArrayData after_data;
 
-			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
+			EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
 
 			before_data.check_equality(after_data);
 		}
@@ -3983,7 +4098,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_array()
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
@@ -4009,7 +4124,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_fixed_array()
 
 			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data", GPlatesScribe::RAW);
 
-			BOOST_CHECK(scribe.is_transcription_complete());
+			EXPECT_TRUE(scribe.is_transcription_complete());
 
 			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 					*scribe.get_transcription());
@@ -4028,7 +4143,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_fixed_array()
 
 			FixedArrayData after_data;
 
-			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
+			EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data", GPlatesScribe::RAW));
 
 			before_data.check_equality(after_data);
 		}
@@ -4037,7 +4152,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_fixed_array()
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 
@@ -4055,7 +4170,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_fixed_array()
 
 			scribe.transcribe(TRANSCRIBE_SOURCE, before_data, "data");
 
-			BOOST_CHECK(scribe.is_transcription_complete());
+			EXPECT_TRUE(scribe.is_transcription_complete());
 
 			GPlatesScribe::BinaryArchiveWriter::create(binary_stream_writer)->write_transcription(
 					*scribe.get_transcription());
@@ -4074,7 +4189,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_fixed_array()
 
 			FixedArrayData after_data;
 
-			BOOST_CHECK(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
+			EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_data, "data"));
 
 			before_data.check_equality(after_data);
 		}
@@ -4083,62 +4198,83 @@ GPlatesUnitTest::TranscribeRawTest::test_case_fixed_array()
 	{
 		std::ostringstream message;
 		message << "Error transcribing: " << scribe_exception;
-		BOOST_ERROR(message.str().c_str());
+		ADD_FAILURE() << message.str().c_str();
 		return;
 	}
 }
 
 
-void
-GPlatesUnitTest::TranscribeTestSuite::construct_maps()
+TEST(TranscribeTest, primitives_1)
 {
-	construct_transcribe_primitives_test();
-	construct_transcribe_untracked_test();
-	construct_transcribe_inheritance_test();
-	construct_transcribe_compatibility_test();
-	construct_transcribe_raw_test();
+	GPlatesUnitTest::TranscribePrimitivesTest().test_case_primitives_1();
 }
 
-void
-GPlatesUnitTest::TranscribeTestSuite::construct_transcribe_primitives_test()
+TEST(TranscribeTest, untracked_exception)
 {
-	boost::shared_ptr<TranscribePrimitivesTest> instance(new TranscribePrimitivesTest());
-	ADD_TESTCASE(TranscribePrimitivesTest,test_case_primitives_1);
-}
-void
-GPlatesUnitTest::TranscribeTestSuite::construct_transcribe_untracked_test()
-{
-	boost::shared_ptr<TranscribeUntrackedTest> instance(new TranscribeUntrackedTest());
-	ADD_TESTCASE(TranscribeUntrackedTest,test_case_untracked_exception);
-	ADD_TESTCASE(TranscribeUntrackedTest,test_case_untracked_1);
+	GPlatesUnitTest::TranscribeUntrackedTest().test_case_untracked_exception();
 }
 
-void
-GPlatesUnitTest::TranscribeTestSuite::construct_transcribe_inheritance_test()
+TEST(TranscribeTest, untracked_1)
 {
-	boost::shared_ptr<TranscribeInheritanceTest> instance(new TranscribeInheritanceTest());
-	ADD_TESTCASE(TranscribeInheritanceTest,test_case_inheritance_1);
-	ADD_TESTCASE(TranscribeInheritanceTest,test_case_inheritance_2);
+	GPlatesUnitTest::TranscribeUntrackedTest().test_case_untracked_1();
 }
 
-void
-GPlatesUnitTest::TranscribeTestSuite::construct_transcribe_compatibility_test()
+TEST(TranscribeTest, inheritance_1)
 {
-	boost::shared_ptr<TranscribeCompatibilityTest> instance(new TranscribeCompatibilityTest());
-	ADD_TESTCASE(TranscribeCompatibilityTest,test_case_compatibility_1);
+	GPlatesUnitTest::TranscribeInheritanceTest().test_case_inheritance_1();
 }
 
-void
-GPlatesUnitTest::TranscribeTestSuite::construct_transcribe_raw_test()
+TEST(TranscribeTest, inheritance_2)
 {
-	boost::shared_ptr<TranscribeRawTest> instance(new TranscribeRawTest());
-	ADD_TESTCASE(TranscribeRawTest,test_case_raw_1);
-	ADD_TESTCASE(TranscribeRawTest,test_case_raw_64_bit_integers);
-	ADD_TESTCASE(TranscribeRawTest,test_case_raw_cross_type_integers);
-	ADD_TESTCASE(TranscribeRawTest,test_case_raw_pointers);
-	ADD_TESTCASE(TranscribeRawTest,test_case_raw_nested_shared_objects);
-	ADD_TESTCASE(TranscribeRawTest,test_case_raw_compatibility);
-	ADD_TESTCASE(TranscribeRawTest,test_case_raw_errors);
-	ADD_TESTCASE(TranscribeRawTest,test_case_raw_array);
-	ADD_TESTCASE(TranscribeRawTest,test_case_fixed_array);
+	GPlatesUnitTest::TranscribeInheritanceTest().test_case_inheritance_2();
+}
+
+TEST(TranscribeTest, compatibility_1)
+{
+	GPlatesUnitTest::TranscribeCompatibilityTest().test_case_compatibility_1();
+}
+
+TEST(TranscribeTest, raw_1)
+{
+	GPlatesUnitTest::TranscribeRawTest().test_case_raw_1();
+}
+
+TEST(TranscribeTest, raw_64_bit_integers)
+{
+	GPlatesUnitTest::TranscribeRawTest().test_case_raw_64_bit_integers();
+}
+
+TEST(TranscribeTest, raw_cross_type_integers)
+{
+	GPlatesUnitTest::TranscribeRawTest().test_case_raw_cross_type_integers();
+}
+
+TEST(TranscribeTest, raw_pointers)
+{
+	GPlatesUnitTest::TranscribeRawTest().test_case_raw_pointers();
+}
+
+TEST(TranscribeTest, raw_nested_shared_objects)
+{
+	GPlatesUnitTest::TranscribeRawTest().test_case_raw_nested_shared_objects();
+}
+
+TEST(TranscribeTest, raw_compatibility)
+{
+	GPlatesUnitTest::TranscribeRawTest().test_case_raw_compatibility();
+}
+
+TEST(TranscribeTest, raw_errors)
+{
+	GPlatesUnitTest::TranscribeRawTest().test_case_raw_errors();
+}
+
+TEST(TranscribeTest, raw_array)
+{
+	GPlatesUnitTest::TranscribeRawTest().test_case_raw_array();
+}
+
+TEST(TranscribeTest, fixed_array)
+{
+	GPlatesUnitTest::TranscribeRawTest().test_case_fixed_array();
 }

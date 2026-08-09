@@ -1,10 +1,10 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -25,34 +25,26 @@
 #include <iostream>
 
 #include <QDebug>
+#include <QTemporaryDir>
+#include <gtest/gtest.h>
 
-#include "unit-test/DataAssociationDataTableTest.h"
-
+#include "data-mining/DataTable.h"
 #include "data-mining/OpaqueDataToQString.h"
 
-GPlatesUnitTest::DataAssociationDataTableTestSuite::DataAssociationDataTableTestSuite(
-		unsigned level) :
-	GPlatesUnitTest::GPlatesTestSuite(
-			"DataAssociationDataTableTestSuite")
+namespace
 {
-	init(level);
-} 
-
-
-void
-GPlatesUnitTest::DataAssociationDataTableTestSuite::construct_maps()
-{
-	boost::shared_ptr<DataAssociationDataTableTest> instance(
-		new DataAssociationDataTableTest());
-
-	ADD_TESTCASE(DataAssociationDataTableTest,test_data_table);
+	// Route the CSV export to a scratch location so the source tree stays clean.
+	QString
+	get_export_as_csv_path()
+	{
+		static QTemporaryDir dir;
+		return dir.path() + "/export_as_CSV.csv";
+	}
 }
 
-void
-GPlatesUnitTest::DataAssociationDataTableTest::test_data_table()
+TEST(DataAssociationDataTableTest, data_table)
 {
-
-	BOOST_TEST_MESSAGE( "DataAssociationDataTableTest::test_data_table." );
+	GPlatesDataMining::DataTable d_data_table;
 
 	GPlatesDataMining::DataRowSharedPtr row(
 			new GPlatesDataMining::DataRow);
@@ -63,17 +55,17 @@ GPlatesUnitTest::DataAssociationDataTableTest::test_data_table()
 			GPlatesDataMining::OpaqueData(QString("hello world!")));
 	row->append_cell(
 			GPlatesDataMining::OpaqueData(true));
-			
-	d_data_table->push_back(row);
-	d_data_table->push_back(row);
-	d_data_table->push_back(row);
 
-	GPlatesDataMining::DataRowSharedPtr ret_row = d_data_table->at(0);
+	d_data_table.push_back(row);
+	d_data_table.push_back(row);
+	d_data_table.push_back(row);
+
+	GPlatesDataMining::DataRowSharedPtr ret_row = d_data_table.at(0);
 
 	GPlatesDataMining::OpaqueData o_data;
 	QString con_str;
 	ret_row->get_cell(
-			0, 
+			0,
 			o_data);
 	int j = boost::get<int>(
 			o_data);
@@ -81,6 +73,7 @@ GPlatesUnitTest::DataAssociationDataTableTest::test_data_table()
 			GPlatesDataMining::ConvertOpaqueDataToString(),
 			o_data);
 	std::cout << "the int is: " << j << std::endl;
+	EXPECT_EQ(j, 7);
 
 
 	ret_row->get_cell(
@@ -92,6 +85,7 @@ GPlatesUnitTest::DataAssociationDataTableTest::test_data_table()
 			GPlatesDataMining::ConvertOpaqueDataToString(),
 			o_data);
 	std::cout << "the string is: " << str_r.toStdString() << std::endl;
+	EXPECT_EQ(str_r, "hello world!");
 
 	ret_row->get_cell(
 			2,
@@ -102,7 +96,7 @@ GPlatesUnitTest::DataAssociationDataTableTest::test_data_table()
 			GPlatesDataMining::ConvertOpaqueDataToString(),
 			o_data);
 	std::cout << "the bool is: " << ret_b << std::endl;
+	EXPECT_TRUE(ret_b);
 
-	d_data_table->export_as_CSV(QString("export_as_CSV.csv"));
-
+	d_data_table.export_as_CSV(get_export_as_csv_path());
 }
