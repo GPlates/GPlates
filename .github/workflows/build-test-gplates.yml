@@ -141,13 +141,13 @@ jobs:
         run: sccache --show-stats && sccache --stop-server
 
       - name: Save compiler cache
-        # TEMPORARY (PR iteration): saving on every event, not just push, so that successive runs of
-        # the pull request that introduces this workflow start warm (a PR-written cache is readable
-        # by later runs of the same PR). Revert to the pygplates workflow's condition -
-        #   if: always() && github.event_name == 'push'
-        # - in the final commit before this PR merges.
+        # Only on push. A cache written by a pull request run is scoped to that pull request: the base
+        # branch and every other pull request cannot see it. Later runs of that same pull request can,
+        # but they gain little, because the base-branch cache already covers everything the pull
+        # request did not change - a re-run only recompiles the PR's own modified files either way.
+        # Pushes to 'gplates' warm the cache; pull requests restore from it.
         # 'always()' so that a failed build still saves the objects it did compile.
-        if: always()
+        if: always() && github.event_name == 'push'
         uses: actions/cache/save@v4
         with:
           path: ${{ env.SCCACHE_DIR }}
