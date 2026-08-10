@@ -286,26 +286,6 @@ _post_import(os.path.dirname(__file__))
 endif()
 
 
-#
-# Install Python scripts (but only for the gplates target).
-#
-if (GPLATES_BUILD_GPLATES)  # GPlates ...
-    foreach (_script )  # currently empty but we can add scripts here in the future if needed
-        if (EXISTS "${PROJECT_SOURCE_DIR}/scripts/${_script}")
-            if (GPLATES_INSTALL_STANDALONE)
-                # For standalone we want to bundle everything together so it's relocatable.
-                if (APPLE)
-                    install(FILES "${PROJECT_SOURCE_DIR}/scripts/${_script}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/gplates.app/Contents/Resources/scripts)
-                else()
-                    install(FILES "${PROJECT_SOURCE_DIR}/scripts/${_script}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/scripts)
-                endif()
-            else()
-                install(FILES "${PROJECT_SOURCE_DIR}/scripts/${_script}" DESTINATION share/gplates/scripts)
-            endif()
-        endif()
-    endforeach()
-endif()
-
 # Install geodata if requested (but only for the gplates target).
 #
 # The variables GPLATES_INSTALL_GEO_DATA and GPLATES_INSTALL_GEO_DATA_DIR are cache variables that the user can set to control this.

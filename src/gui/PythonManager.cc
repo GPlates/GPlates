@@ -410,11 +410,11 @@ GPlatesGui::PythonManager::get_external_scripts()
 	QFileInfoList module_file_list;
 	QStringList filters = (QStringList() << "*.py" << "*.pyc");
 
-	// We might not need this (current working directory) now that internal scripts are supported,
-	// because development builds no longer need to access the 'scripts/' subdirectory of GPlates source code.
-	// But keep anyway, might be useful during development because can try out new scripts
-	// simply by placing them in the 'scripts/' subdirectory of the GPlates source code
-	// (provided the root of the source directory is the current working directory).
+	// We might not need this (current working directory) now that internal scripts are supported.
+	// But keep anyway, might be useful during development because can try out new scripts simply by
+	// creating a 'scripts/' subdirectory and placing them in there (provided that directory is the
+	// current working directory). Note that GPlates no longer keeps a 'scripts/' subdirectory in its
+	// source code, so one must be created locally if this is wanted.
 	QDir cwd;
 	cwd.setNameFilters(filters);
 	if (cwd.cd("scripts")) {
