@@ -120,6 +120,11 @@ GPlatesQtWidgets::MeasureDistanceWidget::make_signal_slot_connections()
 	// connect to MeasureDistanceState
 	QObject::connect(
 			d_measure_distance_state_ptr,
+			SIGNAL(radius_changed(double)),
+			this,
+			SLOT(update_radius(double)));
+	QObject::connect(
+			d_measure_distance_state_ptr,
 			SIGNAL(quick_measure_updated(
 					boost::optional<GPlatesMaths::PointOnSphere>,
 					boost::optional<GPlatesMaths::PointOnSphere>,
@@ -159,6 +164,15 @@ GPlatesQtWidgets::MeasureDistanceWidget::make_signal_slot_connections()
 			SIGNAL(feature_measure_highlight_changed(bool)),
 			this,
 			SLOT(change_feature_measure_highlight(bool)));
+}
+
+
+void
+GPlatesQtWidgets::MeasureDistanceWidget::update_radius(
+		double radius_in_kilometres)
+{
+	lineedit_radius->setText(QString::number(radius_in_kilometres, 'g', 15));
+	restore_background_colour(lineedit_radius);
 }
 
 

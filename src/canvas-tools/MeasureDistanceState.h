@@ -127,13 +127,13 @@ namespace GPlatesCanvasTools
 		get_feature_segment_distance();
 
 		/**
-		 * Sets the radius of the earth and emits updated()
+		 * Sets the physical planet radius and emits updated()
 		 * if the new radius is different from the old radius
 		 */
 		void
 		set_radius(real_t radius);
 
-		//! Gets the radius of the earth used by the measure distance tool
+		//! Gets the planet radius used by the measure distance tool
 		real_t
 		get_radius()
 		{
@@ -172,7 +172,7 @@ namespace GPlatesCanvasTools
 
 	private:
 
-		//! The radius of the earth in kilometres
+		//! The physical planet radius in kilometres
 		real_t d_radius;
 
 		//! Quick measure tool start point
@@ -242,6 +242,10 @@ namespace GPlatesCanvasTools
 		reexamine_geometry_builder();
 
 	Q_SIGNALS:
+		//! Emitted when the physical planet radius changes.
+		void
+		radius_changed(
+				double radius_in_kilometres);
 
 		//! Emitted when the Quick Measure state is cleared
 		void

@@ -85,15 +85,20 @@ namespace GPlatesAppLogic
 		non_null_ptr_type
 		create(
 				const VelocityParams &velocity_params = VelocityParams(),
+				double planet_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 				unsigned int max_num_velocity_results_in_cache = MAX_NUM_VELOCITY_RESULTS_IN_CACHE)
 		{
 			return non_null_ptr_type(
 					new VelocityFieldCalculatorLayerProxy(
-							velocity_params, max_num_velocity_results_in_cache));
+							velocity_params, planet_radius_in_kms, max_num_velocity_results_in_cache));
 		}
 
 
 		~VelocityFieldCalculatorLayerProxy();
+
+		void
+		set_planet_radius_in_kms(
+				double planet_radius_in_kms);
 
 
 		//
@@ -392,10 +397,13 @@ namespace GPlatesAppLogic
 		 */
 		mutable GPlatesUtils::SubjectToken d_subject_token;
 
+		double d_planet_radius_in_kms;
+
 
 		explicit
 		VelocityFieldCalculatorLayerProxy(
 				const VelocityParams &velocity_params,
+				double planet_radius_in_kms,
 				unsigned int max_num_velocity_results_in_cache);
 
 

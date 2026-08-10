@@ -36,6 +36,8 @@
 #include "LayerTask.h"
 #include "LayerTaskRegistry.h"
 #include "LogModel.h"
+#include "PlanetaryParameters.h"
+#include "ProjectDocumentRegistry.h"
 #include "ReconstructGraph.h"
 #include "ReconstructMethodRegistry.h"
 #include "ReconstructUtils.h"
@@ -87,6 +89,8 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 					*d_feature_collection_file_format_registry,
 					*d_feature_collection_file_state)),
 	d_user_preferences_ptr(new UserPreferences(NULL)),
+	d_project_document_registry(new ProjectDocumentRegistry(this)),
+	d_planetary_parameters(new PlanetaryParameters(*d_project_document_registry, this)),
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_log_model(new LogModel(NULL)),
@@ -131,6 +135,34 @@ GPlatesAppLogic::ApplicationState::~ApplicationState()
 	// it resets 'd_current_topological_sections' which is also destroyed by the time this happens and
 	// (on some systems such as Ubuntu 18.04+) this results in attempting to free the same memory twice.
 	QObject::disconnect(&get_feature_collection_file_state(), 0, this, 0);
+}
+
+
+GPlatesAppLogic::ProjectDocumentRegistry &
+GPlatesAppLogic::ApplicationState::get_project_document_registry()
+{
+	return *d_project_document_registry;
+}
+
+
+const GPlatesAppLogic::ProjectDocumentRegistry &
+GPlatesAppLogic::ApplicationState::get_project_document_registry() const
+{
+	return *d_project_document_registry;
+}
+
+
+GPlatesAppLogic::PlanetaryParameters &
+GPlatesAppLogic::ApplicationState::get_planetary_parameters()
+{
+	return *d_planetary_parameters;
+}
+
+
+const GPlatesAppLogic::PlanetaryParameters &
+GPlatesAppLogic::ApplicationState::get_planetary_parameters() const
+{
+	return *d_planetary_parameters;
 }
 
 
@@ -513,6 +545,13 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,
 					GPlatesAppLogic::Layer)),
+			this,
+			SLOT(reconstruct()));
+
+	// Physical calculations cached by layers depend on the effective radius.
+	QObject::connect(
+			d_planetary_parameters.get(),
+			SIGNAL(effective_radius_changed(double)),
 			this,
 			SLOT(reconstruct()));
 }

@@ -30,6 +30,7 @@
 #include "ApplicationState.h"
 #include "AppLogicUtils.h"
 #include "LayerProxyUtils.h"
+#include "PlanetaryParameters.h"
 #include "ReconstructMethodRegistry.h"
 #include "ReconstructUtils.h"
 #include "TopologyGeometryResolverLayerProxy.h"
@@ -37,19 +38,25 @@
 
 
 GPlatesAppLogic::ReconstructLayerTask::ReconstructLayerTask(
-		const ReconstructMethodRegistry &reconstruct_method_registry) :
+		ApplicationState &application_state) :
 	d_layer_params(ReconstructLayerParams::create()),
 	d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
 	d_using_default_reconstruction_layer_proxy(true),
 	d_reconstruct_layer_proxy(
 			ReconstructLayerProxy::create(
-					reconstruct_method_registry,
-					d_layer_params->get_reconstruct_params()))
+					application_state.get_reconstruct_method_registry(),
+					d_layer_params->get_reconstruct_params(),
+					application_state.get_planetary_parameters().effective_radius_kilometres()))
 {
 	// Notify our layer output whenever the layer params are modified.
 	QObject::connect(
 			d_layer_params.get(), SIGNAL(modified_reconstruct_params(GPlatesAppLogic::ReconstructLayerParams &)),
 			this, SLOT(handle_reconstruct_params_modified(GPlatesAppLogic::ReconstructLayerParams &)));
+	QObject::connect(
+			&application_state.get_planetary_parameters(),
+			SIGNAL(effective_radius_changed(double)),
+			this,
+			SLOT(handle_planetary_radius_changed(double)));
 }
 
 
@@ -69,8 +76,7 @@ GPlatesAppLogic::ReconstructLayerTask::create_layer_task(
 		ApplicationState &application_state)
 {
 	return boost::shared_ptr<ReconstructLayerTask>(
-			new ReconstructLayerTask(
-					application_state.get_reconstruct_method_registry()));
+			new ReconstructLayerTask(application_state));
 }
 
 std::vector<GPlatesAppLogic::LayerInputChannelType>
@@ -368,4 +374,12 @@ GPlatesAppLogic::ReconstructLayerTask::handle_reconstruct_params_modified(
 {
 	// Update our reconstruct layer proxy.
 	d_reconstruct_layer_proxy->set_current_reconstruct_params(layer_params.get_reconstruct_params());
+}
+
+
+void
+GPlatesAppLogic::ReconstructLayerTask::handle_planetary_radius_changed(
+		double radius_metres)
+{
+	d_reconstruct_layer_proxy->set_planet_radius_in_kms(radius_metres / 1000.0);
 }

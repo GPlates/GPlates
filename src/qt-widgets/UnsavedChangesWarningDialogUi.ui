@@ -91,7 +91,7 @@
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="standardButtons">
-      <set>QDialogButtonBox::Abort|QDialogButtonBox::Discard</set>
+      <set>QDialogButtonBox::Abort|QDialogButtonBox::Discard|QDialogButtonBox::SaveAll</set>
      </property>
     </widget>
    </item>

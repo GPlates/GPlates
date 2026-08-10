@@ -212,7 +212,8 @@ GPlatesAppLogic::register_default_layer_task_types(
 
 	// Layer task to calculate velocity fields.
 	layer_task_registry.register_layer_task_type(
-			&VelocityFieldCalculatorLayerTask::create_layer_task,
+			boost::bind(&VelocityFieldCalculatorLayerTask::create_layer_task,
+					boost::ref(application_state)),
 			&VelocityFieldCalculatorLayerTask::can_process_feature_collection,
 			GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR);
 

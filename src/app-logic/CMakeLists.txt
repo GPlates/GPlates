@@ -93,6 +93,12 @@ set(srcs
     PlateBoundaryStats.h
     PlateVelocityUtils.cc
     PlateVelocityUtils.h
+    PlanetaryParameters.cc
+    PlanetaryParameters.h
+    ProjectDocumentRegistry.cc
+    ProjectDocumentRegistry.h
+    ProjectMetadata.cc
+    ProjectMetadata.h
     PropertyExtractors.cc
     PropertyExtractors.h
     RasterLayerParams.cc

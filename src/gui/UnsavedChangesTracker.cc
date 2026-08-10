@@ -26,10 +26,13 @@
 #include <algorithm>
 #include <boost/foreach.hpp>
 #include <QDialogButtonBox>
+#include <QMessageBox>
 #include <QtGlobal>
 #include <QDebug>
 
 #include "UnsavedChangesTracker.h"
+
+#include "app-logic/ProjectDocumentRegistry.h"
 
 #include "Dialogs.h"
 #include "FileIOFeedback.h"
@@ -111,10 +114,12 @@ namespace
 			GPlatesQtWidgets::UnsavedChangesWarningDialog *warning_dialog_ptr,
 			GPlatesQtWidgets::UnsavedChangesWarningDialog::ActionRequested action_requested,
 			QStringList unsaved_feature_collection_filenames,
+			QStringList unsaved_project_document_filenames,
 			bool has_unsaved_project_changes)
 	{
 		// See if have no unsaved changes.
 		if (unsaved_feature_collection_filenames.isEmpty() &&
+			unsaved_project_document_filenames.isEmpty() &&
 			!has_unsaved_project_changes)
 		{
 			// All saved, all good.
@@ -127,6 +132,7 @@ namespace
 		warning_dialog_ptr->set_action_requested(
 				action_requested,
 				unsaved_feature_collection_filenames,
+				unsaved_project_document_filenames,
 				has_unsaved_project_changes);
 
 		switch (warning_dialog_ptr->exec())
@@ -134,6 +140,9 @@ namespace
 		case QDialogButtonBox::Discard:
 			// The unsaved changes will be discarded.
 			return GPlatesGui::UnsavedChangesTracker::DISCARD_UNSAVED_CHANGES;
+
+		case QDialogButtonBox::SaveAll:
+			return GPlatesGui::UnsavedChangesTracker::SAVE_UNSAVED_CHANGES;
 
 		default:
 		case QDialogButtonBox::Abort:
@@ -150,6 +159,7 @@ GPlatesGui::UnsavedChangesTracker::UnsavedChangesTracker(
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state_,
 		GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io_,
+		GPlatesAppLogic::ProjectDocumentRegistry &project_document_registry_,
 		GPlatesPresentation::SessionManagement &session_management_,
 		QObject *parent_):
 	QObject(parent_),
@@ -157,10 +167,23 @@ GPlatesGui::UnsavedChangesTracker::UnsavedChangesTracker(
 	d_warning_dialog_ptr(new GPlatesQtWidgets::UnsavedChangesWarningDialog(d_viewport_window_ptr)),
 	d_file_state_ptr(&file_state_),
 	d_feature_collection_file_io_ptr(&feature_collection_file_io_),
+	d_project_document_registry_ptr(&project_document_registry_),
 	d_session_management_ptr(&session_management_)
 {
 	setObjectName("UnsavedChangesTracker");
 	connect_to_file_state_signals();
+	QObject::connect(
+			d_project_document_registry_ptr,
+			SIGNAL(dirty_state_changed(bool)),
+			this,
+			SLOT(handle_model_has_changed()));
+}
+
+
+QStringList
+GPlatesGui::UnsavedChangesTracker::list_unsaved_project_document_filenames() const
+{
+	return d_project_document_registry_ptr->dirty_document_names();
 }
 
 
@@ -224,11 +247,33 @@ GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult
 GPlatesGui::UnsavedChangesTracker::close_event_hook()
 {
 	// If any unsaved changes then they will either be discarded when GPlates quits, or we won't quit GPlates.
-	return get_unsaved_changes_result(
+	UnsavedChangesResult result = get_unsaved_changes_result(
 			d_warning_dialog_ptr,
 			GPlatesQtWidgets::UnsavedChangesWarningDialog::CLOSE_GPLATES,
 			list_unsaved_feature_collection_filenames(),
+			list_unsaved_project_document_filenames(),
 			d_session_management_ptr->is_current_session_a_project_with_unsaved_changes()/*has_unsaved_project_changes*/);
+	if (result == SAVE_UNSAVED_CHANGES)
+	{
+		const bool feature_collections_saved = file_io_feedback().save_all(true, true);
+		QStringList document_errors;
+		const bool documents_saved = d_project_document_registry_ptr->save_all_dirty_documents(&document_errors);
+		if (!documents_saved)
+		{
+			QMessageBox::critical(&viewport_window(), tr("Unable to Save Project Documents"), document_errors.join("\n"));
+		}
+		if (!feature_collections_saved || !documents_saved)
+		{
+			return DONT_DISCARD_UNSAVED_CHANGES;
+		}
+		return get_unsaved_changes_result(
+				d_warning_dialog_ptr,
+				GPlatesQtWidgets::UnsavedChangesWarningDialog::CLOSE_GPLATES,
+				list_unsaved_feature_collection_filenames(),
+				list_unsaved_project_document_filenames(),
+				d_session_management_ptr->is_current_session_a_project_with_unsaved_changes());
+	}
+	return result;
 }
 
 
@@ -237,11 +282,33 @@ GPlatesGui::UnsavedChangesTracker::clear_session_event_hook()
 {
 	// If any unsaved changes then they will either be discarded when the session is cleared, or
 	// we won't clear the session.
-	return get_unsaved_changes_result(
+	UnsavedChangesResult result = get_unsaved_changes_result(
 			d_warning_dialog_ptr,
 			GPlatesQtWidgets::UnsavedChangesWarningDialog::CLEAR_SESSION,
 			list_unsaved_feature_collection_filenames(),
+			list_unsaved_project_document_filenames(),
 			d_session_management_ptr->is_current_session_a_project_with_unsaved_changes()/*has_unsaved_project_changes*/);
+	if (result == SAVE_UNSAVED_CHANGES)
+	{
+		const bool feature_collections_saved = file_io_feedback().save_all(true, true);
+		QStringList document_errors;
+		const bool documents_saved = d_project_document_registry_ptr->save_all_dirty_documents(&document_errors);
+		if (!documents_saved)
+		{
+			QMessageBox::critical(&viewport_window(), tr("Unable to Save Project Documents"), document_errors.join("\n"));
+		}
+		if (!feature_collections_saved || !documents_saved)
+		{
+			return DONT_DISCARD_UNSAVED_CHANGES;
+		}
+		return get_unsaved_changes_result(
+				d_warning_dialog_ptr,
+				GPlatesQtWidgets::UnsavedChangesWarningDialog::CLEAR_SESSION,
+				list_unsaved_feature_collection_filenames(),
+				list_unsaved_project_document_filenames(),
+				d_session_management_ptr->is_current_session_a_project_with_unsaved_changes());
+	}
+	return result;
 }
 
 
@@ -250,11 +317,33 @@ GPlatesGui::UnsavedChangesTracker::load_previous_session_event_hook()
 {
 	// If any unsaved changes then they will either be discarded (and then a previous session loaded), or
 	// we won't load a previous session.
-	return get_unsaved_changes_result(
+	UnsavedChangesResult result = get_unsaved_changes_result(
 			d_warning_dialog_ptr,
 			GPlatesQtWidgets::UnsavedChangesWarningDialog::LOAD_PREVIOUS_SESSION,
 			list_unsaved_feature_collection_filenames(),
+			list_unsaved_project_document_filenames(),
 			d_session_management_ptr->is_current_session_a_project_with_unsaved_changes()/*has_unsaved_project_changes*/);
+	if (result == SAVE_UNSAVED_CHANGES)
+	{
+		const bool feature_collections_saved = file_io_feedback().save_all(true, true);
+		QStringList document_errors;
+		const bool documents_saved = d_project_document_registry_ptr->save_all_dirty_documents(&document_errors);
+		if (!documents_saved)
+		{
+			QMessageBox::critical(&viewport_window(), tr("Unable to Save Project Documents"), document_errors.join("\n"));
+		}
+		if (!feature_collections_saved || !documents_saved)
+		{
+			return DONT_DISCARD_UNSAVED_CHANGES;
+		}
+		return get_unsaved_changes_result(
+				d_warning_dialog_ptr,
+				GPlatesQtWidgets::UnsavedChangesWarningDialog::LOAD_PREVIOUS_SESSION,
+				list_unsaved_feature_collection_filenames(),
+				list_unsaved_project_document_filenames(),
+				d_session_management_ptr->is_current_session_a_project_with_unsaved_changes());
+	}
+	return result;
 }
 
 
@@ -263,20 +352,45 @@ GPlatesGui::UnsavedChangesTracker::load_project_event_hook()
 {
 	// If any unsaved changes then they will either be discarded (and then a project loaded), or
 	// we won't load a project.
-	return get_unsaved_changes_result(
+	UnsavedChangesResult result = get_unsaved_changes_result(
 			d_warning_dialog_ptr,
 			GPlatesQtWidgets::UnsavedChangesWarningDialog::LOAD_PROJECT,
 			list_unsaved_feature_collection_filenames(),
+			list_unsaved_project_document_filenames(),
 			d_session_management_ptr->is_current_session_a_project_with_unsaved_changes()/*has_unsaved_project_changes*/);
+	if (result == SAVE_UNSAVED_CHANGES)
+	{
+		const bool feature_collections_saved = file_io_feedback().save_all(true, true);
+		QStringList document_errors;
+		const bool documents_saved = d_project_document_registry_ptr->save_all_dirty_documents(&document_errors);
+		if (!documents_saved)
+		{
+			QMessageBox::critical(&viewport_window(), tr("Unable to Save Project Documents"), document_errors.join("\n"));
+		}
+		if (!feature_collections_saved || !documents_saved)
+		{
+			return DONT_DISCARD_UNSAVED_CHANGES;
+		}
+		return get_unsaved_changes_result(
+				d_warning_dialog_ptr,
+				GPlatesQtWidgets::UnsavedChangesWarningDialog::LOAD_PROJECT,
+				list_unsaved_feature_collection_filenames(),
+				list_unsaved_project_document_filenames(),
+				d_session_management_ptr->is_current_session_a_project_with_unsaved_changes());
+	}
+	return result;
 }
 
 
 void
 GPlatesGui::UnsavedChangesTracker::handle_model_has_changed()
 {
-	if (has_unsaved_feature_collections()) {
+	const QStringList unsaved_feature_collections = list_unsaved_feature_collection_filenames();
+	const QStringList unsaved_project_documents = list_unsaved_project_document_filenames();
+	if (!unsaved_feature_collections.isEmpty() || !unsaved_project_documents.isEmpty()) {
 		// Build a tooltip to list the files which need saving.
-		QStringList files = list_unsaved_feature_collection_filenames();
+		QStringList files = unsaved_feature_collections;
+		files.append(unsaved_project_documents);
 		QString tip;
 		if (files.size() < 10) {
 			tip = tr("The following files have unsaved changes:-\n");

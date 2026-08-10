@@ -137,15 +137,20 @@ namespace GPlatesAppLogic
 		create(
 				const ReconstructMethodRegistry &reconstruct_method_registry,
 				const ReconstructParams &reconstruct_params = ReconstructParams(),
+				double planet_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 				unsigned int max_num_reconstructions_in_cache = MAX_NUM_RECONSTRUCTIONS_IN_CACHE)
 		{
 			return non_null_ptr_type(
 					new ReconstructLayerProxy(
-							reconstruct_method_registry, reconstruct_params, max_num_reconstructions_in_cache));
+						reconstruct_method_registry, reconstruct_params, planet_radius_in_kms, max_num_reconstructions_in_cache));
 		}
 
 
 		~ReconstructLayerProxy();
+
+		void
+		set_planet_radius_in_kms(
+				double planet_radius_in_kms);
 
 
 		//
@@ -1225,11 +1230,14 @@ namespace GPlatesAppLogic
 		 */
 		mutable GPlatesUtils::SubjectToken d_reconstructable_feature_collections_subject_token;
 
+		double d_planet_radius_in_kms;
+
 
 		explicit
 		ReconstructLayerProxy(
 				const ReconstructMethodRegistry &reconstruct_method_registry,
 				const ReconstructParams &reconstruct_params,
+				double planet_radius_in_kms,
 				unsigned int max_num_reconstructions_in_cache);
 
 
