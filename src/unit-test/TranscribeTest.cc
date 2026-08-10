@@ -2723,8 +2723,10 @@ GPlatesUnitTest::TranscribeRawTest::Data::check_equality(
 	EXPECT_TRUE(i == other.i);
 	EXPECT_TRUE(ui == other.ui);
 	EXPECT_TRUE(l == other.l);
-	EXPECT_TRUE(f == other.f);
-	EXPECT_TRUE(d == other.d);
+	// Note: Using EXPECT_EQ (rather than EXPECT_TRUE) for the floating-point types since
+	// transcribing should round-trip them *exactly* (and it avoids a -Wfloat-equal warning).
+	EXPECT_EQ(f, other.f);
+	EXPECT_EQ(d, other.d);
 	EXPECT_TRUE(real == other.real);
 	EXPECT_TRUE(e == other.e);
 	EXPECT_TRUE(str1 == other.str1);
@@ -3935,7 +3937,7 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 
 		double after_double;
 		EXPECT_TRUE(scribe.transcribe(TRANSCRIBE_SOURCE, after_double, "data", GPlatesScribe::RAW));
-		EXPECT_TRUE(after_double == 0);
+		EXPECT_EQ(after_double, 0.0);
 	}
 
 	//
