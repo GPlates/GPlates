@@ -41,8 +41,18 @@ gplates:
   schema_version: 1
   planet:
     radius_m: 6900000
+  resolution:
+    default_km: 500
+    by_feature_type:
+      MidOceanRidge: 250
   reconstruction:
     required_timestamps_ma: "1000, 950, 900, 850, 800, 750, 700, 650, 600, 560, 520, 480, 440, 400, 370, 340, 310, 280, 250, 225, 200, 180, 160, 140, 120, 100, 80, 60, 40, 20, 10, 0"
+    granularity_my: 5
+  subduction:
+    initiation_my: 10
+    propagation_km_per_my: 30
+    reversal_my: 8
+    breakoff_my: 15
 ---
 
 # Honua
@@ -63,10 +73,30 @@ Timeline; it does not sort, regularize, interpolate, or rewrite them. Hold
 **Alt** while clicking the backward (`<<`) or forward (`>>`) View buttons to
 move to the adjacent older or younger Project Timestamp.
 
-The radius remains required whenever front matter is present; the timestamp
-schedule is optional. The two are validated independently, so an invalid
-schedule disables Project Timeline navigation without discarding a valid
-radius, rather than failing the document as a whole.
+`gplates.resolution.default_km` is the intended level of detail, expressed as
+the longest segment a line should have. `by_feature_type` overrides it for named
+feature types, written without their `gpml:` prefix because a colon inside a
+YAML key would have to be quoted. It is a statement of intent, not a rule
+enforced behind the user's back: holding **Shift** while placing a vertex clamps
+that vertex to this distance from the previous one, and a plain click is
+untouched.
+
+`gplates.reconstruction.granularity_my` is the step, in My, the world is meant
+to be evolved by, and the `gplates.subduction` rates say how quickly subduction
+spreads once it exists: `initiation_my` from onset to a working arc,
+`propagation_km_per_my` along a trench's own strike, `reversal_my` for a
+polarity reversal, and `breakoff_my` for slab detachment after a collision.
+These describe processes that take a known amount of time, so a tool modelling
+one can tell whether the project's step makes it a single event or something
+watched over several steps. They are rules of thumb rather than constants, which
+is why they live in the project rather than being compiled in.
+
+The radius remains required whenever front matter is present; every other field
+is optional, and each is validated on its own. An invalid timestamp schedule
+disables Project Timeline navigation without discarding a valid radius, rather
+than failing the document as a whole. Optional numbers must be finite and
+positive when present: saying nothing leaves a consumer its own default, which
+is deliberately not the same as saying zero.
 
 After the primary document is saved or reloaded, GPlates reparses it and
 updates the project-wide effective radius. Measurement distances and polygon

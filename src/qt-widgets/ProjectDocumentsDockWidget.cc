@@ -70,6 +70,15 @@ GPlatesQtWidgets::ProjectDocumentsDockWidget::ProjectDocumentsDockWidget(
 	QVBoxLayout *layout = new QVBoxLayout(contents);
 	layout->setContentsMargins(4, 4, 4, 4);
 
+	QLabel *introduction = new QLabel(
+			tr("Associate ordinary Markdown files with this project. Create or Add one, then Set"
+				" Primary on the one whose front matter GPlates should read (planet radius,"
+				" resolution, required timestamps, time step, subduction rates) - Save it"
+				" whenever you edit that front matter."),
+			contents);
+	introduction->setWordWrap(true);
+	layout->addWidget(introduction);
+
 	QToolBar *toolbar = new QToolBar(contents);
 	toolbar->setIconSize(QSize(16, 16));
 	d_create_action = toolbar->addAction(tr("Create"), this, SLOT(create_document()));
@@ -80,6 +89,11 @@ GPlatesQtWidgets::ProjectDocumentsDockWidget::ProjectDocumentsDockWidget(
 	d_remove_action->setToolTip(tr("Remove from Project (does not delete the file)"));
 	toolbar->addSeparator();
 	d_set_primary_action = toolbar->addAction(tr("Set Primary"), this, SLOT(set_primary_document()));
+	d_set_primary_action->setToolTip(tr(
+			"Make this the Primary Project Document - the one whose front matter GPlates reads"
+			" for planet radius, digitising resolution, the required timestamp schedule, the"
+			" intended time step, and the subduction rates."
+			" A project can have other associated documents, but only one primary."));
 	d_save_action = toolbar->addAction(tr("Save"), this, SLOT(save_document()));
 	d_save_action->setShortcut(QKeySequence::Save);
 	d_save_action->setShortcutContext(Qt::WidgetWithChildrenShortcut);

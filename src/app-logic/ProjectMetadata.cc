@@ -115,6 +115,43 @@ namespace
 	}
 
 
+	/**
+	 * Reads an optional front-matter scalar that has to be a finite positive number.
+	 *
+	 * Saying nothing is left alone: @a value keeps its absent state and the consumer applies its
+	 * own default. That is deliberately a different thing from saying zero, or a negative, or
+	 * something that is not a number at all, each of which is a mistake in the document worth
+	 * reporting rather than quietly treating as "unset".
+	 *
+	 * Returns false with @a diagnostic set when the value is present but unusable.
+	 */
+	bool
+	read_optional_positive_scalar(
+			const QMap<QString, QString> &scalar_values,
+			const QString &path,
+			const QString &units,
+			boost::optional<double> &value,
+			QString &diagnostic)
+	{
+		const QMap<QString, QString>::const_iterator scalar_iter = scalar_values.find(path);
+		if (scalar_iter == scalar_values.constEnd())
+		{
+			return true;
+		}
+
+		bool is_numeric = false;
+		const double number = scalar_iter.value().toDouble(&is_numeric);
+		if (!is_numeric || !std::isfinite(number) || number <= 0)
+		{
+			diagnostic = QObject::tr("%1 must be a finite positive number in %2.").arg(path, units);
+			return false;
+		}
+
+		value = number;
+		return true;
+	}
+
+
 	GPlatesAppLogic::ProjectMetadata
 	invalid_metadata(
 			const QString &diagnostic)
@@ -293,6 +330,92 @@ GPlatesAppLogic::ProjectMetadataParser::parse(
 
 	metadata.planet_radius_metres = radius_metres;
 	metadata.planet_radius_is_valid = true;
+
+	//
+	// Intended resolution. Entirely optional - a project that says nothing about it leaves
+	// consumers to use their own default, which is a different thing from a project that says
+	// zero.
+	//
+	QString scalar_problem;
+	if (!read_optional_positive_scalar(
+			scalar_values, "gplates.resolution.default_km", QObject::tr("kilometres"),
+			metadata.default_resolution_km, scalar_problem))
+	{
+		return invalid_metadata(scalar_problem);
+	}
+
+	// Per-feature-type overrides. The document writes bare names ("MidOceanRidge:") because a
+	// colon inside a YAML key would need quoting; the "gpml:" prefix is added here so callers can
+	// look these up by the qualified name they already hold.
+	const QString by_feature_type_prefix("gplates.resolution.by_feature_type.");
+	for (QMap<QString, QString>::const_iterator scalar_iter = scalar_values.constBegin();
+			scalar_iter != scalar_values.constEnd();
+			++scalar_iter)
+	{
+		if (!scalar_iter.key().startsWith(by_feature_type_prefix))
+		{
+			continue;
+		}
+
+		const QString feature_type_name = scalar_iter.key().mid(by_feature_type_prefix.length());
+		if (feature_type_name.isEmpty() || feature_type_name.contains('.'))
+		{
+			return invalid_metadata(
+					QObject::tr("gplates.resolution.by_feature_type expects one feature type name per entry,"
+						" such as 'MidOceanRidge: 250'."));
+		}
+
+		bool resolution_is_numeric = false;
+		const double resolution_km = scalar_iter.value().toDouble(&resolution_is_numeric);
+		if (!resolution_is_numeric || !std::isfinite(resolution_km) || resolution_km <= 0)
+		{
+			return invalid_metadata(
+					QObject::tr("The resolution for feature type '%1' must be a finite positive number in kilometres.")
+							.arg(feature_type_name));
+		}
+
+		// Accept a name already carrying its namespace, so a document that writes
+		// "'gpml:MidOceanRidge': 250" is not silently ignored.
+		const QString qualified_name = feature_type_name.contains(':')
+				? feature_type_name
+				: QString("gpml:") + feature_type_name;
+		metadata.resolution_km_by_feature_type.insert(qualified_name, resolution_km);
+	}
+
+	//
+	// The remaining intent fields: how big a step the world is evolved by, and how quickly
+	// subduction spreads once it exists. All optional and read here, above the timestamp schedule,
+	// because a bad value in any of them fails the document outright - doing that below would
+	// throw away a timestamp diagnostic that had already been gathered.
+	//
+	// The template documents each of these, so a document setting one has every reason to expect
+	// it to mean something. Reading them here is what makes that true: unknown keys are otherwise
+	// accepted and ignored, and a value nobody reads is indistinguishable from a typo.
+	//
+	struct OptionalScalar
+	{
+		const char *path;
+		QString units;
+		boost::optional<double> *value;
+	};
+	const QString my_units = QObject::tr("millions of years");
+	const OptionalScalar optional_scalars[] = {
+		{ "gplates.reconstruction.granularity_my", my_units, &metadata.granularity_my },
+		{ "gplates.subduction.initiation_my", my_units, &metadata.subduction_initiation_my },
+		{ "gplates.subduction.propagation_km_per_my", QObject::tr("kilometres per million years"),
+				&metadata.subduction_propagation_km_per_my },
+		{ "gplates.subduction.reversal_my", my_units, &metadata.subduction_reversal_my },
+		{ "gplates.subduction.breakoff_my", my_units, &metadata.subduction_breakoff_my }
+	};
+	for (const OptionalScalar &optional_scalar : optional_scalars)
+	{
+		if (!read_optional_positive_scalar(
+				scalar_values, optional_scalar.path, optional_scalar.units,
+				*optional_scalar.value, scalar_problem))
+		{
+			return invalid_metadata(scalar_problem);
+		}
+	}
 
 	//
 	// Required project timestamps. Entirely optional, and validated independently of the radius

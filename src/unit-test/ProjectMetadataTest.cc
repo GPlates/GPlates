@@ -152,6 +152,80 @@ GPlatesUnitTest::ProjectMetadataTest::test_front_matter_parsing()
 	BOOST_CHECK_CLOSE(independent_fields.planet_radius_metres.get(), 6371000.0, 1e-10);
 	BOOST_CHECK(!independent_fields.required_timestamps_are_valid);
 	BOOST_CHECK(!independent_fields.required_timestamps_diagnostic.isEmpty());
+
+	// Granularity and the subduction rates. The template documents all of these, so a document
+	// setting them expects them to mean something rather than being accepted and ignored.
+	const GPlatesAppLogic::ProjectMetadata intent =
+			GPlatesAppLogic::ProjectMetadataParser::parse(
+					"---\n"
+					"gplates:\n"
+					"  schema_version: 1\n"
+					"  planet:\n"
+					"    radius_m: 6371000\n"
+					"  reconstruction:\n"
+					"    granularity_my: 5\n"
+					"  subduction:\n"
+					"    initiation_my: 10\n"
+					"    propagation_km_per_my: 30\n"
+					"    reversal_my: 8\n"
+					"    breakoff_my: 15\n"
+					"---\n");
+	BOOST_CHECK(intent.is_valid);
+	BOOST_REQUIRE(intent.granularity_my);
+	BOOST_CHECK_CLOSE(intent.granularity_my.get(), 5.0, 1e-10);
+	BOOST_REQUIRE(intent.subduction_initiation_my);
+	BOOST_CHECK_CLOSE(intent.subduction_initiation_my.get(), 10.0, 1e-10);
+	BOOST_REQUIRE(intent.subduction_propagation_km_per_my);
+	BOOST_CHECK_CLOSE(intent.subduction_propagation_km_per_my.get(), 30.0, 1e-10);
+	BOOST_REQUIRE(intent.subduction_reversal_my);
+	BOOST_CHECK_CLOSE(intent.subduction_reversal_my.get(), 8.0, 1e-10);
+	BOOST_REQUIRE(intent.subduction_breakoff_my);
+	BOOST_CHECK_CLOSE(intent.subduction_breakoff_my.get(), 15.0, 1e-10);
+
+	// Each is independently optional: pinning one down leaves the rest to the consumer's own
+	// defaults rather than forcing the whole section to be written out.
+	const GPlatesAppLogic::ProjectMetadata partial_intent =
+			GPlatesAppLogic::ProjectMetadataParser::parse(
+					"---\n"
+					"gplates:\n"
+					"  schema_version: 1\n"
+					"  planet:\n"
+					"    radius_m: 6371000\n"
+					"  subduction:\n"
+					"    reversal_my: 12\n"
+					"---\n");
+	BOOST_CHECK(partial_intent.is_valid);
+	BOOST_CHECK(!partial_intent.granularity_my);
+	BOOST_CHECK(!partial_intent.subduction_initiation_my);
+	BOOST_CHECK(!partial_intent.subduction_propagation_km_per_my);
+	BOOST_CHECK(!partial_intent.subduction_breakoff_my);
+	BOOST_REQUIRE(partial_intent.subduction_reversal_my);
+	BOOST_CHECK_CLOSE(partial_intent.subduction_reversal_my.get(), 12.0, 1e-10);
+
+	// The whole PROJECT-template.md front matter, with every documented key present and set to
+	// the value the template ships. A template that does not parse is worse than no template.
+	const GPlatesAppLogic::ProjectMetadata whole_template =
+			GPlatesAppLogic::ProjectMetadataParser::parse(
+					"---\n"
+					"gplates:\n"
+					"  schema_version: 1\n"
+					"  planet:\n"
+					"    radius_m: 6371000\n"
+					"  resolution:\n"
+					"    default_km: 500\n"
+					"    by_feature_type:\n"
+					"      MidOceanRidge: 250\n"
+					"  reconstruction:\n"
+					"    required_timestamps_ma: \"1000, 500, 0\"\n"
+					"    granularity_my: 5\n"
+					"  subduction:\n"
+					"    initiation_my: 10\n"
+					"    propagation_km_per_my: 30\n"
+					"    reversal_my: 8\n"
+					"    breakoff_my: 15\n"
+					"---\n");
+	BOOST_CHECK(whole_template.is_valid);
+	BOOST_CHECK(whole_template.diagnostic.isEmpty());
 }
 
 
@@ -169,7 +243,18 @@ GPlatesUnitTest::ProjectMetadataTest::test_invalid_front_matter()
 			<< "---\ngplates:\n  planet:\n    radius_m: .inf\n---\n"
 			<< "---\ngplates:\n  planet:\n    radius_m: nan\n---\n"
 			<< "---\ngplates:\n  planet:\n    radius_m: 1\n    radius_m: 2\n---\n"
-			<< "---\ngplates:\n  planet:\n    radius_m: 1\n";
+			<< "---\ngplates:\n  planet:\n    radius_m: 1\n"
+			// Present but unusable is a mistake in the document, and deliberately not the same
+			// as absent - saying nothing leaves the consumer its own default, saying zero does
+			// not. Every optional number is held to this, not just the ones with consumers today.
+			<< "---\ngplates:\n  planet:\n    radius_m: 6371000\n  resolution:\n    default_km: 0\n---\n"
+			<< "---\ngplates:\n  planet:\n    radius_m: 6371000\n  reconstruction:\n    granularity_my: 0\n---\n"
+			<< "---\ngplates:\n  planet:\n    radius_m: 6371000\n  reconstruction:\n    granularity_my: -5\n---\n"
+			<< "---\ngplates:\n  planet:\n    radius_m: 6371000\n  reconstruction:\n    granularity_my: soon\n---\n"
+			<< "---\ngplates:\n  planet:\n    radius_m: 6371000\n  subduction:\n    initiation_my: -1\n---\n"
+			<< "---\ngplates:\n  planet:\n    radius_m: 6371000\n  subduction:\n    propagation_km_per_my: 0\n---\n"
+			<< "---\ngplates:\n  planet:\n    radius_m: 6371000\n  subduction:\n    reversal_my: .inf\n---\n"
+			<< "---\ngplates:\n  planet:\n    radius_m: 6371000\n  subduction:\n    breakoff_my: nan\n---\n";
 
 	for (int index = 0; index < invalid_documents.size(); ++index)
 	{
