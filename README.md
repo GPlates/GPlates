@@ -12,6 +12,7 @@ Everything here arrives as its own reviewed pull request against the `gplates` b
 - **Active Feature Types preferences.** Choose which feature types are offered when creating or changing a feature, so the list holds the twenty types you use rather than every type in the GPGIM — [#19](https://github.com/CaliTarheel/GPlates/pull/19)
 - **Save and load active feature type lists.** In **Preferences > Active Feature Types**, curate a list and save it beside your project, hand it to someone else, or keep it in version control. Two lists are supplied next to `gplates.exe` — `DN.txt` and `WorldbuildingPasta.txt` — [#47](https://github.com/CaliTarheel/GPlates/pull/47)
 - **Configurable Absolute Age draw style**, with usable defaults and worked examples — [#2](https://github.com/CaliTarheel/GPlates/pull/2)
+- **Double-click a Begin or End time** — either the number itself or the label beside it — to fill in the reconstruction time you are currently viewing, instead of reading it off the main window and typing it back in. Works both when creating a feature and when editing an existing feature's properties. The spinbox step arrows are untouched and still step — [#43](https://github.com/CaliTarheel/GPlates/pull/43)
 
 ### Behind the Scenes
 
