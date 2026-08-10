@@ -34,7 +34,7 @@ TEST(CptPaletteTest, cpt_palette)
 	using namespace GPlatesGui;
 	std::cout << "testing cpt palette" << std::endl;
 
-	CptPalette cpt_palette(GPLATES_UNIT_TEST_DATA_DIR "/cpt_unit_test.txt");
+	CptPalette cpt_palette(GPLATES_UNIT_TEST_DATA_DIR "/cpt/cpt_unit_test.txt");
 
 	boost::optional<Colour> c = cpt_palette.get_colour(Palette::Key(125));
 	EXPECT_TRUE(QColor(*c).name().toStdString()=="#ffa500");
