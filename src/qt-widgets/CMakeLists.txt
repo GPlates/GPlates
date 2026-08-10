@@ -477,6 +477,9 @@ set(srcs
     RasterPropertiesDialogUi.ui
     ReadErrorAccumulationDialog.cc
     ReadErrorAccumulationDialog.h
+
+    RotationHierarchyDialog.cc
+    RotationHierarchyDialog.h
     ReadErrorAccumulationDialogUi.ui
     ReconstructionLayerOptionsWidget.cc
     ReconstructionLayerOptionsWidget.h

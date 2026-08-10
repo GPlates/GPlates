@@ -94,6 +94,7 @@
     <addaction name="separator"/>
     <addaction name="action_Specify_Anchored_Plate_ID"/>
     <addaction name="action_View_Reconstruction_Poles"/>
+    <addaction name="action_View_Rotation_Hierarchy"/>
     <addaction name="separator"/>
     <addaction name="action_Export"/>
    </widget>
@@ -609,6 +610,17 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="action_View_Rotation_Hierarchy">
+   <property name="text">
+    <string>View Rotation &amp;Hierarchy...</string>
+   </property>
+   <property name="toolTip">
+    <string>View the plate circuit as a tree, with plate speeds and reparenting</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
