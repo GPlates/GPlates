@@ -45,6 +45,7 @@
 #include "model/FeatureHandle.h"
 
 #include "utils/ReferenceCount.h"
+#include "utils/Earth.h"
 
 
 namespace GPlatesAppLogic
@@ -124,9 +125,11 @@ namespace GPlatesAppLogic
 			Context(
 					const ReconstructParams &reconstruct_params_,
 					const ReconstructionTreeCreator &reconstruction_tree_creator_,
-					boost::optional<TopologyReconstruct::non_null_ptr_to_const_type> topology_reconstruct_ = boost::none) :
+					boost::optional<TopologyReconstruct::non_null_ptr_to_const_type> topology_reconstruct_ = boost::none,
+					double planet_radius_in_kms_ = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) :
 				reconstruct_params(reconstruct_params_),
-				reconstruction_tree_creator(reconstruction_tree_creator_)
+				reconstruction_tree_creator(reconstruction_tree_creator_),
+				planet_radius_in_kms(planet_radius_in_kms_)
 			{
 				if (topology_reconstruct_)
 				{
@@ -137,6 +140,7 @@ namespace GPlatesAppLogic
 			ReconstructParams reconstruct_params;
 			ReconstructionTreeCreator reconstruction_tree_creator;
 			boost::optional<TopologyReconstruct::non_null_ptr_to_const_type> topology_reconstruct;
+			double planet_radius_in_kms;
 		};
 
 

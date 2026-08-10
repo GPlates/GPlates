@@ -74,6 +74,9 @@ namespace GPlatesAppLogic
 	class LayerTask;
 	class LayerTaskRegistry;
 	class LogModel;
+	class PlanetaryParameters;
+	class ProjectDocumentRegistry;
+	class ProjectTimestampSchedule;
 	class ReconstructGraph;
 	class ReconstructMethodRegistry;
 	class UserPreferences;
@@ -109,6 +112,17 @@ namespace GPlatesAppLogic
 		{
 			return d_reconstruction_time;
 		}
+
+		/**
+		 * Clamps a requested displayed reconstruction time to the default View range
+		 * configured in User Preferences.
+		 */
+		double
+		clamp_reconstruction_time_to_default_view_range(
+				double reconstruction_time) const;
+
+		bool
+		is_reconstruction_time_locked_to_default_view_range() const;
 
 		GPlatesModel::integer_plate_id_type
 		get_current_anchored_plate_id() const
@@ -175,6 +189,30 @@ namespace GPlatesAppLogic
 		//! Const overload.
 		const UserPreferences &
 		get_user_preferences() const;
+
+		/**
+		 * Markdown documents associated with the current project/session.
+		 */
+		ProjectDocumentRegistry &
+		get_project_document_registry();
+
+		const ProjectDocumentRegistry &
+		get_project_document_registry() const;
+
+		/**
+		 * Effective physical parameters supplied by project metadata.
+		 */
+		PlanetaryParameters &
+		get_planetary_parameters();
+
+		const PlanetaryParameters &
+		get_planetary_parameters() const;
+
+		ProjectTimestampSchedule &
+		get_project_timestamp_schedule();
+
+		const ProjectTimestampSchedule &
+		get_project_timestamp_schedule() const;
 
 
 		/**
@@ -498,6 +536,15 @@ namespace GPlatesAppLogic
 		boost::scoped_ptr<FeatureCollectionFileIO> d_feature_collection_file_io;
 
 		boost::scoped_ptr<UserPreferences> d_user_preferences_ptr;
+
+		//! Associated ordinary Markdown documents.
+		boost::scoped_ptr<ProjectDocumentRegistry> d_project_document_registry;
+
+		//! Project-wide typed planetary parameters derived from the primary document.
+		boost::scoped_ptr<PlanetaryParameters> d_planetary_parameters;
+
+		//! Exact required reconstruction timestamps derived from the primary document.
+		boost::scoped_ptr<ProjectTimestampSchedule> d_project_timestamp_schedule;
 
 		/**
 		 * A registry for various ways to reconstruct a feature into @a ReconstructedFeatureGeometry objects.

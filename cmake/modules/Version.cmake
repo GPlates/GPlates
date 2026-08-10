@@ -46,7 +46,7 @@ option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)."
 #   2.6.0
 #   2.6.1
 #
-set(GPLATES_SEMANTIC_VERSION 2.6.0-6)
+set(GPLATES_SEMANTIC_VERSION 2.6.0-8)
 
 
 #
@@ -77,7 +77,7 @@ set(GPLATES_SEMANTIC_VERSION 2.6.0-6)
 #   1.0.0
 #   1.0.1
 #
-set(PYGPLATES_PEP440_VERSION 1.1.0.dev6)
+set(PYGPLATES_PEP440_VERSION 1.1.0.dev8)
 
 
 ##################

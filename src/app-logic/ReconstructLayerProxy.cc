@@ -94,6 +94,7 @@ const double GPlatesAppLogic::ReconstructLayerProxy::POLYGON_MESH_EDGE_LENGTH_TH
 GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
 		const ReconstructMethodRegistry &reconstruct_method_registry,
 		const ReconstructParams &reconstruct_params,
+		double planet_radius_in_kms,
 		unsigned int max_num_reconstructions_in_cache) :
 	d_reconstruct_method_registry(reconstruct_method_registry),
 	d_reconstruct_context(reconstruct_method_registry),
@@ -104,7 +105,8 @@ GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
 	d_cached_reconstructions(
 			boost::bind(&ReconstructLayerProxy::create_reconstruction_info, this, boost::placeholders::_1),
 			max_num_reconstructions_in_cache),
-	d_cached_reconstructions_default_maximum_size(max_num_reconstructions_in_cache)
+	d_cached_reconstructions_default_maximum_size(max_num_reconstructions_in_cache),
+	d_planet_radius_in_kms(planet_radius_in_kms)
 {
 }
 
@@ -113,6 +115,20 @@ GPlatesAppLogic::ReconstructLayerProxy::~ReconstructLayerProxy()
 {
 	// Defined in ".cc" file because...
 	// non_null_ptr destructors require complete type of class they're referring to.
+}
+
+
+void
+GPlatesAppLogic::ReconstructLayerProxy::set_planet_radius_in_kms(
+		double planet_radius_in_kms)
+{
+	if (GPlatesMaths::are_almost_exactly_equal(d_planet_radius_in_kms, planet_radius_in_kms))
+	{
+		return;
+	}
+	d_planet_radius_in_kms = planet_radius_in_kms;
+	reset_reconstruction_cache();
+	d_subject_token.invalidate();
 }
 
 
@@ -654,7 +670,9 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstruct_method_context(
 		return ReconstructMethodInterface::Context(
 				reconstruct_params,
 				// The reconstruction tree creator...
-				d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator());
+				d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
+				boost::none,
+				d_planet_radius_in_kms);
 	}
 
 	const TimeSpanUtils::TimeRange time_range(
@@ -793,7 +811,8 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstruct_method_context(
 	return ReconstructMethodInterface::Context(
 			reconstruct_params,
 			reconstruction_tree_creator,
-			topology_reconstruct);
+			topology_reconstruct,
+			d_planet_radius_in_kms);
 }
 
 

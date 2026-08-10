@@ -28,7 +28,7 @@
          </font>
         </property>
         <property name="text">
-         <string>On GPlates startup, the initial time range of the View slider and Animation / Export settings are:-</string>
+         <string>Sets the startup range for the View slider and Animation / Export settings. The optional lock below can also keep interactive reconstruction times inside this range.</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -160,6 +160,16 @@
          </widget>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkbox_lock_view_time_to_range">
+        <property name="toolTip">
+         <string>Reject accidental View times outside the Start/End range and restore the last accepted value.</string>
+        </property>
+        <property name="text">
+         <string>Keep reconstruction time inside the View time range</string>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QCheckBox" name="checkbox_show_stars">

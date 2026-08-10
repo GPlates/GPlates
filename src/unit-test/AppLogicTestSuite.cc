@@ -31,6 +31,8 @@
 #include "unit-test/TestSuiteFilter.h"
 #include "unit-test/DataAssociationDataTableTest.h"
 #include "unit-test/GenerateVelocityDomainCitcomsTest.h"
+#include "unit-test/ProjectMetadataTest.h"
+#include "unit-test/ProjectTimestampScheduleTest.h"
 
 
 GPlatesUnitTest::AppLogicTestSuite::AppLogicTestSuite(
@@ -46,5 +48,7 @@ GPlatesUnitTest::AppLogicTestSuite::construct_maps()
 {
 	ADD_TESTSUITE(ApplicationState);
 	ADD_TESTSUITE(GenerateVelocityDomainCitcoms);
+	ADD_TESTSUITE(ProjectMetadata);
+	ADD_TESTSUITE(ProjectTimestampSchedule);
 }
 

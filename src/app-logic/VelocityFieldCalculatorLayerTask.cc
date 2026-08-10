@@ -25,21 +25,31 @@
 
 #include "VelocityFieldCalculatorLayerTask.h"
 
+#include "ApplicationState.h"
 #include "AppLogicUtils.h"
 #include "LayerProxyUtils.h"
 #include "PlateVelocityUtils.h"
+#include "PlanetaryParameters.h"
 #include "VelocityFieldCalculatorLayerProxy.h"
 
 
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VelocityFieldCalculatorLayerTask() :
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VelocityFieldCalculatorLayerTask(
+		ApplicationState &application_state) :
 	d_layer_params(VelocityFieldCalculatorLayerParams::create()),
 	d_velocity_field_calculator_layer_proxy(
-			VelocityFieldCalculatorLayerProxy::create())
+			VelocityFieldCalculatorLayerProxy::create(
+					VelocityParams(),
+					application_state.get_planetary_parameters().effective_radius_kilometres()))
 {
 	// Notify our layer output whenever the layer params are modified.
 	QObject::connect(
 			d_layer_params.get(), SIGNAL(modified_velocity_params(GPlatesAppLogic::VelocityFieldCalculatorLayerParams &)),
 			this, SLOT(handle_velocity_params_modified(GPlatesAppLogic::VelocityFieldCalculatorLayerParams &)));
+	QObject::connect(
+			&application_state.get_planetary_parameters(),
+			SIGNAL(effective_radius_changed(double)),
+			this,
+			SLOT(handle_planetary_radius_changed(double)));
 }
 
 
@@ -52,10 +62,11 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::can_process_feature_collectio
 
 
 boost::shared_ptr<GPlatesAppLogic::VelocityFieldCalculatorLayerTask>
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::create_layer_task()
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::create_layer_task(
+		ApplicationState &application_state)
 {
 	return boost::shared_ptr<VelocityFieldCalculatorLayerTask>(
-			new VelocityFieldCalculatorLayerTask());
+			new VelocityFieldCalculatorLayerTask(application_state));
 }
 
 
@@ -305,4 +316,12 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::handle_velocity_params_modifi
 {
 	// Update our velocity layer proxy.
 	d_velocity_field_calculator_layer_proxy->set_current_velocity_params(layer_params.get_velocity_params());
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::handle_planetary_radius_changed(
+		double radius_metres)
+{
+	d_velocity_field_calculator_layer_proxy->set_planet_radius_in_kms(radius_metres / 1000.0);
 }

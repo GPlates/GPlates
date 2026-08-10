@@ -27,6 +27,7 @@
 #define GPLATES_SCRIBE_SCRIBELOADREFIMPL_H
 
 #include <boost/checked_delete.hpp>
+#include <QDebug>
 
 #include "Scribe.h"
 #include "ScribeExceptions.h"
@@ -66,38 +67,12 @@ namespace GPlatesScribe
 			// This is the file/line at which a load call was made which, in turn, returned a 'LoadRef<>'.
 			GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
-			// If we've already thrown an exception then don't throw another one.
-			//
-			// We shouldn't be throwing any exceptions in deleter anyway, but this exception is to
-			// force programmer to correct the program to check validity.
-			//
-			// NOTE: We can only detect exceptions we've thrown (eg, in 'LoadRef<>::get()').
-			// So we can only prevent double exceptions in that case.
-			// If an exception came from outside then the program will terminate with no exception
-			// information if we throw a second exception below.
-			// But this is unlikely because the programmer should be calling 'LoadRef<>::is_valid()'
-			// straight after getting a 'LoadRef<>' instance - and that should provide no window of
-			// opportunity for double exceptions to get thrown (outside exception and our is-valid exception).
-			if (!exception_thrown)
-			{
-				// Throw exception if 'LoadRef<>::is_valid()' has not been checked by the caller.
-				//
-				// If this assertion is triggered then it means:
-				//   * A Scribe client has called 'Scribe::load()', or 'Scribe::load_reference()',
-				//     but has not checked 'LoadRef<>::is_valid()' on the returned LoadRef.
-				//
-				// To fix this do something like:
-				//
-				//	GPlatesScribe::LoadRef<X> x = scribe.load<X>(TRANSCRIBE_SOURCE, "x");
-				//	if (!x.is_valid())
-				//	{
-				//		return scribe.get_transcribe_result();
-				//	}
-				//
-				GPlatesGlobal::Assert<Exceptions::ScribeTranscribeResultNotChecked>(
-						is_valid_called,
-						GPLATES_ASSERTION_SOURCE);
-			}
+			// NOTE: The 'is_valid()-was-not-called' check is *not* done here - it's done in
+			// '~LoadRef()' instead. This deleter is called from
+			// 'boost::detail::shared_count::~shared_count()' which, being a destructor declared
+			// without an exception-specification, is implicitly 'noexcept(true)'
+			// (see [class.dtor]/3) - so any exception thrown here would call 'std::terminate'
+			// without unwinding the stack (no handler could catch it and nothing would be logged).
 
 			// Release the object if we are not referencing an existing object but instead own
 			// the object we are referencing.
@@ -140,6 +115,75 @@ namespace GPlatesScribe
 		bool release; //!< Whether to delete the object or not.
 		bool exception_thrown; //!< Avoid throwing exception in LoadRef<>::get() and subsequently in ~LoadRef<>().
 	};
+
+
+	template <typename ObjectType>
+	LoadRef<ObjectType>::~LoadRef() noexcept(false)
+	{
+		if (!d_object)
+		{
+			return;
+		}
+
+		TrackingDeleter *const tracking_deleter = boost::get_deleter<TrackingDeleter>(d_object);
+
+		if (tracking_deleter == NULL ||
+			tracking_deleter->is_valid_called)
+		{
+			return;
+		}
+
+		// If 'LoadRef<>::get()' has already thrown this same exception then don't throw another one.
+		// Note that this covers the case where that exception was *caught* (and hence we are no
+		// longer unwinding), which the 'is_unwinding()' test below would not detect.
+		if (tracking_deleter->exception_thrown)
+		{
+			return;
+		}
+
+		// Only the *last* 'LoadRef' referencing the object gets to complain. The object is allowed
+		// to be checked via any copy, so the verdict is only final once no other copy could still
+		// call 'is_valid()'.
+		if (d_object.use_count() > 1)
+		{
+			return;
+		}
+
+		// Track the file/line of the call site for exception messages.
+		// This is the file/line at which a load call was made which, in turn, returned a 'LoadRef<>'.
+		GPlatesUtils::CallStackTracker call_stack_tracker(tracking_deleter->transcribe_source);
+
+		// If an exception is already propagating then throwing here would call 'std::terminate' and
+		// destroy the information carried by that (more interesting) exception. So just log instead.
+		//
+		// This should be rare, since the programmer should be calling 'LoadRef<>::is_valid()' straight
+		// after getting a 'LoadRef<>' instance - which leaves no real window for an outside exception
+		// to arrive first.
+		if (InternalUtils::is_unwinding())
+		{
+			qWarning() << "Incorrect Scribe usage: 'LoadRef<>::is_valid()' was not called "
+					"(not throwing, since an exception is already propagating).";
+			return;
+		}
+
+		// Throw exception if 'LoadRef<>::is_valid()' has not been checked by the caller.
+		//
+		// If this assertion is triggered then it means:
+		//   * A Scribe client has called 'Scribe::load()', or 'Scribe::load_reference()',
+		//     but has not checked 'LoadRef<>::is_valid()' on the returned LoadRef.
+		//
+		// To fix this do something like:
+		//
+		//	GPlatesScribe::LoadRef<X> x = scribe.load<X>(TRANSCRIBE_SOURCE, "x");
+		//	if (!x.is_valid())
+		//	{
+		//		return scribe.get_transcribe_result();
+		//	}
+		//
+		GPlatesGlobal::Assert<Exceptions::ScribeTranscribeResultNotChecked>(
+				false,
+				GPLATES_ASSERTION_SOURCE);
+	}
 
 
 	template <typename ObjectType>
@@ -210,8 +254,8 @@ namespace GPlatesScribe
 			// This is the file/line at which a load call was made which, in turn, returned a 'LoadRef<>'.
 			GPlatesUtils::CallStackTracker call_stack_tracker(tracking_deleter->transcribe_source);
 
-			// Tell deleter not to also throw when the exception below unwinds the call stack
-			// and triggers deleter.
+			// Tell '~LoadRef()' not to also throw when the exception below unwinds the call stack
+			// (or, if it gets caught, when this 'LoadRef' is subsequently destroyed).
 			tracking_deleter->exception_thrown = true;
 
 			GPlatesGlobal::Assert<Exceptions::ScribeTranscribeResultNotChecked>(

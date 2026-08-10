@@ -78,6 +78,7 @@
 #include "ReconstructionViewWidget.h"
 #include "SaveFileDialog.h"
 #include "SearchResultsDockWidget.h"
+#include "ProjectDocumentsDockWidget.h"
 #include "TaskPanel.h"
 #include "VisualLayersDialog.h"
 
@@ -87,6 +88,7 @@
 #include "api/Sleeper.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/PlanetaryParameters.h"
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
@@ -213,6 +215,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				*this,
 				get_application_state().get_feature_collection_file_state(),
 				get_application_state().get_feature_collection_file_io(),
+				get_application_state().get_project_document_registry(),
 				get_view_state().get_session_management(),
 				this)),
 	d_file_io_feedback_ptr(
@@ -236,6 +239,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				this)),
 	d_search_results_dock_ptr(NULL),
 	d_canvas_tools_dock_ptr(NULL),
+	d_project_documents_dock_ptr(NULL),
 	d_reconstruction_view_widget_ptr(
 			new ReconstructionViewWidget(
 				*this,
@@ -280,6 +284,26 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			canvas_tool_workflows(),
 			*this);
 	d_canvas_tools_dock_ptr->dock_at_left();
+
+	// Project documents are ordinary Markdown files associated with this session.
+	d_project_documents_dock_ptr = new ProjectDocumentsDockWidget(
+			*d_dock_state_ptr,
+			get_view_state(),
+			*this);
+	d_project_documents_dock_ptr->dock_at_right();
+	d_project_documents_dock_ptr->hide();
+
+	// Keep physical distance and area measurements synchronized with project metadata.
+	d_measure_distance_state_ptr->set_radius(
+			get_application_state().get_planetary_parameters().effective_radius_kilometres());
+	QObject::connect(
+			&get_application_state().get_planetary_parameters(),
+			&GPlatesAppLogic::PlanetaryParameters::effective_radius_changed,
+			this,
+			[this](double radius_metres)
+			{
+				d_measure_distance_state_ptr->set_radius(radius_metres / 1000.0);
+			});
 
 	// Specify which dock widget area should occupy the bottom left corner of the main window.
 	//
@@ -329,6 +353,17 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			boost::bind(&canvas_tool_status_message, boost::ref(*this), boost::placeholders::_1),
 			get_view_state(),
 			*this);
+
+	// Project timestamp navigation reports where it landed, or why it could not move, in the
+	// status bar - the same place ordinary time changes are reported.
+	QObject::connect(
+			&get_view_state().get_animation_controller(),
+			&GPlatesGui::AnimationController::project_timestamp_navigation_message,
+			this,
+			[this](const QString &message)
+			{
+				status_message(message);
+			});
 
 	// Connect all the Signal/Slot relationships of ViewportWindow's
 	// toolbar buttons and menu items.
@@ -830,6 +865,8 @@ GPlatesQtWidgets::ViewportWindow::connect_reconstruction_menu_actions()
 			&dialogs(), SLOT(pop_up_specify_anchored_plate_id_dialog()));
 	QObject::connect(action_View_Reconstruction_Poles, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_total_reconstruction_poles_dialog()));
+	QObject::connect(action_View_Rotation_Hierarchy, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_rotation_hierarchy_dialog()));
 	// ----
 	QObject::connect(action_Export, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_export_animation_dialog()));
@@ -933,6 +970,11 @@ GPlatesQtWidgets::ViewportWindow::connect_window_menu_actions()
 	menu_Window->insertAction(action_Show_Bottom_Panel_Placeholder, action_show_bottom_panel);
 	menu_Window->removeAction(action_Show_Bottom_Panel_Placeholder);
 
+	QAction *action_show_project_documents = d_project_documents_dock_ptr->toggleViewAction();
+	action_show_project_documents->setText(tr("Show Project &Documents"));
+	action_show_project_documents->setObjectName("action_Show_Project_Documents");
+	menu_Window->insertAction(action_Log_Dialog, action_show_project_documents);
+
 	QObject::connect(action_Log_Dialog, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_log_dialog()));
 	// ----
@@ -966,6 +1008,13 @@ GPlatesQtWidgets::SearchResultsDockWidget &
 GPlatesQtWidgets::ViewportWindow::search_results_dock_widget()
 {
 	return *d_search_results_dock_ptr;
+}
+
+
+GPlatesQtWidgets::ProjectDocumentsDockWidget &
+GPlatesQtWidgets::ViewportWindow::project_documents_dock_widget()
+{
+	return *d_project_documents_dock_ptr;
 }
 
 

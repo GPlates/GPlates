@@ -28,7 +28,10 @@
 
 #include "AnimationController.h"
 
+#include <QApplication>
+
 #include "app-logic/ApplicationState.h"
+#include "app-logic/ProjectTimestampSchedule.h"
 #include "app-logic/UserPreferences.h"
 
 #include "maths/MathsUtils.h"
@@ -369,10 +372,40 @@ GPlatesGui::AnimationController::set_play_or_pause(
 void
 GPlatesGui::AnimationController::step_forward()
 {
+	if (QApplication::keyboardModifiers() & Qt::AltModifier)
+	{
+		const GPlatesAppLogic::ProjectTimestampSchedule &schedule =
+				d_application_state_ptr->get_project_timestamp_schedule();
+		if (schedule.source() == GPlatesAppLogic::ProjectTimestampSchedule::PROJECT_MARKDOWN)
+		{
+			const boost::optional<double> younger = schedule.next_younger_timestamp(view_time());
+			if (younger)
+			{
+				set_view_time(younger.get());
+			}
+			else
+			{
+				Q_EMIT project_timestamp_navigation_message(
+						tr("The View is already at or younger than the youngest Project Timestamp."));
+			}
+			return;
+		}
+
+		Q_EMIT project_timestamp_navigation_message(
+				schedule.diagnostic().isEmpty()
+						? tr("No valid Project Timeline is active; using the ordinary frame step.")
+						: schedule.diagnostic() + tr(" Using the ordinary frame step."));
+	}
+
 	// Step forward through the animation, towards the 'end' time.
 	// Remember that the 'start' and 'end' times may be reversed,
 	// and do not necessarily correspond to 'past' and 'future'.
 	double new_time_value = view_time() + d_time_increment;
+	if (d_application_state_ptr->is_reconstruction_time_locked_to_default_view_range())
+	{
+		new_time_value = d_application_state_ptr->clamp_reconstruction_time_to_default_view_range(
+				new_time_value);
+	}
 
 	// If the user attempts to use the step buttons to move past 0.0 (into the future!),
 	// we should clamp the view time to 0.0.
@@ -387,10 +420,40 @@ GPlatesGui::AnimationController::step_forward()
 void
 GPlatesGui::AnimationController::step_back()
 {
+	if (QApplication::keyboardModifiers() & Qt::AltModifier)
+	{
+		const GPlatesAppLogic::ProjectTimestampSchedule &schedule =
+				d_application_state_ptr->get_project_timestamp_schedule();
+		if (schedule.source() == GPlatesAppLogic::ProjectTimestampSchedule::PROJECT_MARKDOWN)
+		{
+			const boost::optional<double> older = schedule.next_older_timestamp(view_time());
+			if (older)
+			{
+				set_view_time(older.get());
+			}
+			else
+			{
+				Q_EMIT project_timestamp_navigation_message(
+						tr("The View is already at or older than the oldest Project Timestamp."));
+			}
+			return;
+		}
+
+		Q_EMIT project_timestamp_navigation_message(
+				schedule.diagnostic().isEmpty()
+						? tr("No valid Project Timeline is active; using the ordinary frame step.")
+						: schedule.diagnostic() + tr(" Using the ordinary frame step."));
+	}
+
 	// Step back through the animation, towards the 'start' time.
 	// Remember that the 'start' and 'end' times may be reversed,
 	// and do not necessarily correspond to 'past' and 'future'.
 	double new_time_value = view_time() - d_time_increment;
+	if (d_application_state_ptr->is_reconstruction_time_locked_to_default_view_range())
+	{
+		new_time_value = d_application_state_ptr->clamp_reconstruction_time_to_default_view_range(
+				new_time_value);
+	}
 
 	// If the user attempts to use the step buttons to move past 0.0 (into the future!),
 	// we should clamp the view time to 0.0.
@@ -420,17 +483,33 @@ void
 GPlatesGui::AnimationController::set_view_time(
 		const double new_time)
 {
+	const double clamped_time =
+			d_application_state_ptr->clamp_reconstruction_time_to_default_view_range(new_time);
+	if (d_application_state_ptr->is_reconstruction_time_locked_to_default_view_range() &&
+			!GPlatesMaths::are_geo_times_approximately_equal(new_time, clamped_time))
+	{
+		// Direct time entry outside the configured View range is rejected rather
+		// than jumping to an endpoint. Re-emit the accepted value so the editing
+		// widget immediately restores what is actually displayed.
+		Q_EMIT view_time_changed(view_time());
+		return;
+	}
+	const double accepted_time =
+			d_application_state_ptr->is_reconstruction_time_locked_to_default_view_range()
+					? clamped_time
+					: new_time;
+
 	// Ensure the new reconstruction time is valid.
 	// FIXME: Move this function somewhere more appropriate and call the new version.
-	if ( ! is_valid_reconstruction_time(new_time)) {
+	if ( ! is_valid_reconstruction_time(accepted_time)) {
 		return;
 	}
 
 	// Only modify the reconstruction time and emit signals if the time has
 	// actually been changed.
-	if ( ! GPlatesMaths::are_geo_times_approximately_equal(view_time(), new_time)) {
+	if ( ! GPlatesMaths::are_geo_times_approximately_equal(view_time(), accepted_time)) {
 		// This will perform a new reconstruction.
-		d_application_state_ptr->set_reconstruction_time(new_time);
+		d_application_state_ptr->set_reconstruction_time(accepted_time);
 	}
 }
 

@@ -36,6 +36,9 @@
 #include "property-values/GmlTimePeriod.h"
 
 
+class QLineEdit;
+
+
 namespace GPlatesQtWidgets
 {
 	class EditTimePeriodWidget:
@@ -127,6 +130,18 @@ namespace GPlatesQtWidgets
 		bool
 		valid();
 
+	protected:
+
+		/**
+		 * Double-clicking a Begin/End time, or the label beside it, fills that field in
+		 * with the reconstruction time currently being viewed. The label is a fair-sized,
+		 * easy target next to a small spinbox, so it is worth being able to hit either.
+		 */
+		bool
+		eventFilter(
+				QObject *watched,
+				QEvent *event) override;
+
 	private Q_SLOTS:
 	
 		void
@@ -140,6 +155,18 @@ namespace GPlatesQtWidgets
 	
 		void
 		handle_disappearance_is_distant_future_check();
+
+		/**
+		 * Set the begin (appearance) time to the reconstruction time currently being viewed.
+		 */
+		void
+		handle_set_begin_time_to_current_time();
+
+		/**
+		 * Set the end (disappearance) time to the reconstruction time currently being viewed.
+		 */
+		void
+		handle_set_end_time_to_current_time();
 
 	private:
 		
@@ -157,6 +184,19 @@ namespace GPlatesQtWidgets
 		 * adding brand new properties to the model.
 		 */
 		boost::intrusive_ptr<GPlatesPropertyValues::GmlTimePeriod> d_time_period_ptr;
+
+		/**
+		 * The line edit inside each time spinbox - the part that shows the number, as
+		 * distinct from the step arrows beside it.
+		 *
+		 * The double-click filter is installed on these rather than on the spinboxes
+		 * themselves, so that double-clicking the step arrows still steps the value twice
+		 * instead of jumping to the current reconstruction time.
+		 *
+		 * Memory managed by Qt; each is owned by its spinbox.
+		 */
+		QLineEdit *d_begin_time_line_edit;
+		QLineEdit *d_end_time_line_edit;
 
 		/**
 		 * "What does this mean?" blue question mark help dialog.

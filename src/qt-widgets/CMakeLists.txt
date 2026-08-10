@@ -439,6 +439,8 @@ set(srcs
     PreferencesPaneViewUi.ui
     ProgressDialog.h
     ProgressDialogUi.ui
+    ProjectDocumentsDockWidget.cc
+    ProjectDocumentsDockWidget.h
     ProjectionControlWidget.cc
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui
@@ -478,6 +480,9 @@ set(srcs
     RasterPropertiesDialogUi.ui
     ReadErrorAccumulationDialog.cc
     ReadErrorAccumulationDialog.h
+
+    RotationHierarchyDialog.cc
+    RotationHierarchyDialog.h
     ReadErrorAccumulationDialogUi.ui
     ReconstructionLayerOptionsWidget.cc
     ReconstructionLayerOptionsWidget.h

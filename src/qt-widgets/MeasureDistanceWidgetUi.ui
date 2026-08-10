@@ -22,7 +22,7 @@
      <item>
       <widget class="QLabel" name="label_radius">
        <property name="text">
-        <string>Earth radius:</string>
+        <string>Planet radius:</string>
        </property>
       </widget>
      </item>

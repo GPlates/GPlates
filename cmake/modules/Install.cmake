@@ -235,6 +235,32 @@ endif()
 
 
 #
+#
+# Install the project document template (but only for the gplates target).
+#
+# It sits beside the executable rather than in a subfolder so that someone who has never used
+# GPlates can find it without being told where to look. It is the documentation for the front
+# matter as much as it is a starting point: every supported key is written out with an
+# explanation, so the format explains itself rather than needing a manual elsewhere. Anyone can
+# edit their own copy, or replace it with a newer one from the repository, without a new build.
+#
+if (GPLATES_BUILD_GPLATES)
+    if (EXISTS "${PROJECT_SOURCE_DIR}/PROJECT-template.md")
+        if (GPLATES_INSTALL_STANDALONE)
+            # For standalone we want to bundle everything together so it's relocatable.
+            if (APPLE)
+                install(FILES "${PROJECT_SOURCE_DIR}/PROJECT-template.md" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/gplates.app/Contents/Resources)
+            else()
+                install(FILES "${PROJECT_SOURCE_DIR}/PROJECT-template.md" DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
+            endif()
+        else()
+            install(FILES "${PROJECT_SOURCE_DIR}/PROJECT-template.md" DESTINATION share/gplates)
+        endif()
+    endif()
+endif()
+
+
+
 # Install Python scripts (but only for the gplates target).
 #
 if (GPLATES_BUILD_GPLATES)  # GPlates ...

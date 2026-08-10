@@ -1,0 +1,91 @@
+# Builds the GPlates desktop application on macOS and produces a .dmg.
+#
+# There is no way to build a macOS package anywhere but macOS, so this exists to produce the
+# artifact that cannot be produced on the Windows machine the fork is otherwise built on.
+#
+# Run it by hand from the Actions tab, or let it fire on a version tag - in which case the .dmg is
+# attached to the matching release.
+#
+# Note: the .dmg is NOT code signed or notarised. macOS Gatekeeper will refuse to open it on a
+# first attempt; the user has to right-click the app and choose Open, or clear the quarantine
+# attribute. Signing requires a paid Apple Developer account.
+name: GPlates macOS build
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload_to_release:
+        description: "Attach the .dmg to the release for this tag (leave blank to just keep the artifact)"
+        required: false
+        default: ""
+  push:
+    tags:
+      - "*-SR*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    defaults:
+      run:
+        # Required for the conda environment to be active in each step.
+        shell: bash -el {0}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Miniconda with the macOS build environment
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          use-mamba: true
+          environment-file: env.macOS.yml
+          activate-environment: gplates
+
+      - name: Environment diagnostic
+        run: |
+          conda info
+          conda list
+          cmake --version
+          echo "arch: $(uname -m)"
+
+      - name: Configure
+        run: |
+          cmake -S . -B build-gplates -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+            -DGPLATES_INSTALL_STANDALONE=ON
+
+      - name: Build
+        run: cmake --build build-gplates --target gplates
+
+      - name: Package as .dmg
+        run: |
+          cd build-gplates
+          cpack -G DragNDrop -B "$GITHUB_WORKSPACE/packages"
+
+      - name: Show what was produced
+        run: ls -lh "$GITHUB_WORKSPACE/packages"/*.dmg
+
+      # Keep the artifact regardless, so a manual run is useful on its own and a failed upload does
+      # not throw away an hour of build time.
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gplates-macos-dmg
+          path: packages/*.dmg
+          if-no-files-found: error
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/') || inputs.upload_to_release != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ inputs.upload_to_release }}"
+          if [ -z "$TAG" ]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          gh release upload "$TAG" "$GITHUB_WORKSPACE"/packages/*.dmg --clobber --repo "$GITHUB_REPOSITORY"

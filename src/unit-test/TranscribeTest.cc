@@ -931,7 +931,12 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::check_equality(
 	BOOST_CHECK(bv == other.bv);
 	BOOST_CHECK(bv2 == other.bv2);
 	BOOST_CHECK(qv == other.qv);
-	BOOST_CHECK(qv_reg.userType() == QMetaType::User && other.qv_reg.userType() == QMetaType::User &&
+	// A registered custom type's id is allocated *at or above* QMetaType::User, not equal to it.
+	// Qt 5 happened to hand out QMetaType::User itself to the first type registered, so '==' held
+	// by luck; Qt 6 does not, and the check failed for every archive format while the round trip
+	// it was guarding was working perfectly. The equality that matters is the one on the next
+	// line - the two ids agreeing with each other - together with the value comparison below.
+	BOOST_CHECK(qv_reg.userType() >= QMetaType::User && other.qv_reg.userType() >= QMetaType::User &&
 			qv_reg.userType() == other.qv_reg.userType() &&
 			qv_reg.canConvert<StringWithEmbeddedZeros>() && other.qv_reg.canConvert<StringWithEmbeddedZeros>() &&
 			qv_reg.value<StringWithEmbeddedZeros>() == other.qv_reg.value<StringWithEmbeddedZeros>());

@@ -71,6 +71,7 @@ namespace GPlatesQtWidgets
 			set_action_requested(
 					CLOSE_GPLATES,
 					QStringList()/*unsaved_feature_collection_filenames*/,
+					QStringList()/*unsaved_project_document_filenames*/,
 					false/*has_unsaved_project_changes*/);
 
 			connect_buttons();
@@ -91,11 +92,19 @@ namespace GPlatesQtWidgets
 		set_action_requested(
 				ActionRequested act,
 				QStringList unsaved_feature_collection_filenames,
+				QStringList unsaved_project_document_filenames,
 				bool has_unsaved_project_changes)
 		{
-			tweak_file_list(unsaved_feature_collection_filenames);
-			tweak_buttons(act);
-			tweak_label(act, !unsaved_feature_collection_filenames.isEmpty(), has_unsaved_project_changes);
+			tweak_file_list(unsaved_feature_collection_filenames, unsaved_project_document_filenames);
+			tweak_buttons(
+					act,
+					!unsaved_feature_collection_filenames.isEmpty() ||
+							!unsaved_project_document_filenames.isEmpty());
+			tweak_label(
+					act,
+					!unsaved_feature_collection_filenames.isEmpty(),
+					!unsaved_project_document_filenames.isEmpty(),
+					has_unsaved_project_changes);
 
 			adjustSize();
 			ensurePolished();
@@ -116,6 +125,12 @@ namespace GPlatesQtWidgets
 			done(QDialogButtonBox::Abort);
 		}
 
+		void
+		save_changes()
+		{
+			done(QDialogButtonBox::SaveAll);
+		}
+
 	private:
 
 		/**
@@ -123,13 +138,17 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		tweak_file_list(
-				QStringList unsaved_feature_collection_filenames)
+				QStringList unsaved_feature_collection_filenames,
+				QStringList unsaved_project_document_filenames)
 		{
 			list_files->clear();
+			QStringList unsaved_files = unsaved_feature_collection_filenames;
+			unsaved_files.append(unsaved_project_document_filenames);
 
-			if (!unsaved_feature_collection_filenames.isEmpty())
+			if (!unsaved_files.isEmpty())
 			{
-				list_files->addItems(unsaved_feature_collection_filenames);
+				list_files->addItems(unsaved_files);
+				label_the_following->setText(tr("The following files have unsaved changes:"));
 				unsaved_feature_collections_widget->setVisible(true);
 			}
 			else // no unsaved files so hide the list widget...
@@ -144,10 +163,18 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		tweak_buttons(
-				ActionRequested act)
+				ActionRequested act,
+				bool has_unsaved_files)
 		{
 			static QPushButton *discard = buttonbox->button(QDialogButtonBox::Discard);
 			static QPushButton *abort = buttonbox->button(QDialogButtonBox::Abort);
+			static QPushButton *save_all = buttonbox->button(QDialogButtonBox::SaveAll);
+			if (!save_all)
+			{
+				save_all = buttonbox->addButton(QDialogButtonBox::SaveAll);
+			}
+			save_all->setText(tr("&Save all"));
+			save_all->setVisible(has_unsaved_files);
 			
 			switch (act)
 			{
@@ -203,6 +230,7 @@ namespace GPlatesQtWidgets
 		tweak_label(
 				ActionRequested act,
 				bool has_unsaved_feature_collections,
+				bool has_unsaved_project_documents,
 				bool has_unsaved_project_changes)
 		{
 			QString label_text;
@@ -227,17 +255,17 @@ namespace GPlatesQtWidgets
 					break;
 			}
 
-			if (has_unsaved_feature_collections)
+			if (has_unsaved_feature_collections || has_unsaved_project_documents)
 			{
 				if (has_unsaved_project_changes)
 				{
 					label_text +=
 							"The current project has unsaved session changes.\n"
-							"And there are unsaved feature collections.";
+							"And there are unsaved files.";
 				}
 				else
 				{
-					label_text += "There are unsaved feature collections.";
+					label_text += "There are unsaved files.";
 				}
 			}
 			else if (has_unsaved_project_changes)
@@ -259,6 +287,8 @@ namespace GPlatesQtWidgets
 					this, SLOT(discard_changes()));
 			connect(buttonbox->button(QDialogButtonBox::Abort), SIGNAL(clicked()),
 					this, SLOT(abort_close()));
+			connect(buttonbox->button(QDialogButtonBox::SaveAll), SIGNAL(clicked()),
+					this, SLOT(save_changes()));
 		}
 			
 	};

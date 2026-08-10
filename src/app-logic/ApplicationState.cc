@@ -36,6 +36,9 @@
 #include "LayerTask.h"
 #include "LayerTaskRegistry.h"
 #include "LogModel.h"
+#include "PlanetaryParameters.h"
+#include "ProjectDocumentRegistry.h"
+#include "ProjectTimestampSchedule.h"
 #include "ReconstructGraph.h"
 #include "ReconstructMethodRegistry.h"
 #include "ReconstructUtils.h"
@@ -55,6 +58,10 @@
 
 namespace
 {
+	const char *DEFAULT_VIEW_RANGE_START_KEY = "view/animation/default_time_range_start";
+	const char *DEFAULT_VIEW_RANGE_END_KEY = "view/animation/default_time_range_end";
+	const char *LOCK_VIEW_TIME_TO_RANGE_KEY = "view/animation/lock_view_time_to_range";
+
 	bool
 	has_reconstruction_time_changed(
 			const double &old_reconstruction_time,
@@ -87,6 +94,9 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 					*d_feature_collection_file_format_registry,
 					*d_feature_collection_file_state)),
 	d_user_preferences_ptr(new UserPreferences(NULL)),
+	d_project_document_registry(new ProjectDocumentRegistry(this)),
+	d_planetary_parameters(new PlanetaryParameters(*d_project_document_registry, this)),
+	d_project_timestamp_schedule(new ProjectTimestampSchedule(*d_project_document_registry, this)),
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_log_model(new LogModel(NULL)),
@@ -110,6 +120,24 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 
 	mediate_signal_slot_connections();
 
+	// Keep the interactive displayed time valid when the optional range lock or one
+	// of its endpoints changes. Scientific reconstruction callers remain unrestricted.
+	QObject::connect(
+			d_user_preferences_ptr.get(),
+			&GPlatesAppLogic::UserPreferences::key_value_updated,
+			this,
+			[this](const QString &key)
+			{
+				if ((key == DEFAULT_VIEW_RANGE_START_KEY ||
+						key == DEFAULT_VIEW_RANGE_END_KEY ||
+						key == LOCK_VIEW_TIME_TO_RANGE_KEY) &&
+						is_reconstruction_time_locked_to_default_view_range())
+				{
+					set_reconstruction_time(
+							clamp_reconstruction_time_to_default_view_range(d_reconstruction_time));
+				}
+			});
+
 	// Register a model callback so we can reconstruct whenever the feature store is modified.
 	d_callback_feature_store.attach_callback(new FeatureStoreIsModified(*this));
 }
@@ -131,6 +159,70 @@ GPlatesAppLogic::ApplicationState::~ApplicationState()
 	// it resets 'd_current_topological_sections' which is also destroyed by the time this happens and
 	// (on some systems such as Ubuntu 18.04+) this results in attempting to free the same memory twice.
 	QObject::disconnect(&get_feature_collection_file_state(), 0, this, 0);
+}
+
+
+GPlatesAppLogic::ProjectDocumentRegistry &
+GPlatesAppLogic::ApplicationState::get_project_document_registry()
+{
+	return *d_project_document_registry;
+}
+
+
+const GPlatesAppLogic::ProjectDocumentRegistry &
+GPlatesAppLogic::ApplicationState::get_project_document_registry() const
+{
+	return *d_project_document_registry;
+}
+
+
+GPlatesAppLogic::PlanetaryParameters &
+GPlatesAppLogic::ApplicationState::get_planetary_parameters()
+{
+	return *d_planetary_parameters;
+}
+
+
+const GPlatesAppLogic::PlanetaryParameters &
+GPlatesAppLogic::ApplicationState::get_planetary_parameters() const
+{
+	return *d_planetary_parameters;
+}
+
+
+GPlatesAppLogic::ProjectTimestampSchedule &
+GPlatesAppLogic::ApplicationState::get_project_timestamp_schedule()
+{
+	return *d_project_timestamp_schedule;
+}
+
+
+const GPlatesAppLogic::ProjectTimestampSchedule &
+GPlatesAppLogic::ApplicationState::get_project_timestamp_schedule() const
+{
+	return *d_project_timestamp_schedule;
+}
+
+
+double
+GPlatesAppLogic::ApplicationState::clamp_reconstruction_time_to_default_view_range(
+		double reconstruction_time) const
+{
+	const double first_endpoint =
+			d_user_preferences_ptr->get_value(DEFAULT_VIEW_RANGE_START_KEY).toDouble();
+	const double second_endpoint =
+			d_user_preferences_ptr->get_value(DEFAULT_VIEW_RANGE_END_KEY).toDouble();
+	const double youngest_time = std::min(first_endpoint, second_endpoint);
+	const double oldest_time = std::max(first_endpoint, second_endpoint);
+
+	return std::max(youngest_time, std::min(reconstruction_time, oldest_time));
+}
+
+
+bool
+GPlatesAppLogic::ApplicationState::is_reconstruction_time_locked_to_default_view_range() const
+{
+	return d_user_preferences_ptr->get_value(LOCK_VIEW_TIME_TO_RANGE_KEY).toBool();
 }
 
 
@@ -513,6 +605,13 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,
 					GPlatesAppLogic::Layer)),
+			this,
+			SLOT(reconstruct()));
+
+	// Physical calculations cached by layers depend on the effective radius.
+	QObject::connect(
+			d_planetary_parameters.get(),
+			SIGNAL(effective_radius_changed(double)),
 			this,
 			SLOT(reconstruct()));
 }

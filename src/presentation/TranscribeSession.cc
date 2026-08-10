@@ -50,6 +50,7 @@
 #include "app-logic/Layer.h"
 #include "app-logic/LayerParamsVisitor.h"
 #include "app-logic/LayerTaskRegistry.h"
+#include "app-logic/ProjectDocumentRegistry.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/RasterLayerParams.h"
 #include "app-logic/ReconstructionLayerParams.h"
@@ -3148,6 +3149,95 @@ namespace GPlatesPresentation
 
 
 		void
+		save_project_documents(
+				const GPlatesScribe::ObjectTag &session_state_tag,
+				GPlatesScribe::Scribe &scribe,
+				const GPlatesAppLogic::ProjectDocumentRegistry &document_registry)
+		{
+			const GPlatesScribe::ObjectTag project_documents_tag = session_state_tag("project_documents");
+
+			// FilePath transcription makes these paths participate in the existing
+			// project-relative path and missing-file recovery machinery.
+			GPlatesScribe::TranscribeUtils::save_file_paths(
+					scribe,
+					TRANSCRIBE_SOURCE,
+					document_registry.file_paths(),
+					project_documents_tag("file_paths"));
+
+			scribe.save(
+					TRANSCRIBE_SOURCE,
+					document_registry.display_names(),
+					project_documents_tag("display_names"));
+
+			boost::optional<unsigned int> primary_document_index;
+			if (document_registry.primary_document_index())
+			{
+				primary_document_index = document_registry.primary_document_index().get();
+			}
+			scribe.save(
+					TRANSCRIBE_SOURCE,
+					primary_document_index,
+					project_documents_tag("primary_document_index"));
+		}
+
+
+		void
+		load_project_documents(
+				const GPlatesScribe::ObjectTag &session_state_tag,
+				GPlatesScribe::Scribe &scribe,
+				GPlatesAppLogic::ProjectDocumentRegistry &document_registry)
+		{
+			const GPlatesScribe::ObjectTag project_documents_tag = session_state_tag("project_documents");
+			const boost::optional<QStringList> file_paths =
+					GPlatesScribe::TranscribeUtils::load_file_paths(
+							scribe,
+							TRANSCRIBE_SOURCE,
+							project_documents_tag("file_paths"));
+			if (!file_paths)
+			{
+				// Older sessions have no project-document state.
+				document_registry.clear();
+				return;
+			}
+
+			// Both results below must be checked. Scribe returns a value whose destructor throws
+			// ScribeTranscribeResultNotChecked if it is discarded - and because that throw comes
+			// from a destructor, it reaches std::terminate without unwinding, so no catch block
+			// anywhere sees it. The process aborts with no dialog and nothing logged.
+			//
+			// Neither field is essential, so a missing or unreadable value is recoverable rather
+			// than fatal: display names fall back to the file name per entry in
+			// restore_documents(), and an absent primary index simply means no document is
+			// primary. The document list is still worth restoring without them.
+			QStringList display_names;
+			if (!scribe.transcribe(
+					TRANSCRIBE_SOURCE,
+					display_names,
+					project_documents_tag("display_names")))
+			{
+				display_names.clear();
+			}
+
+			boost::optional<unsigned int> saved_primary_document_index;
+			if (!scribe.transcribe(
+					TRANSCRIBE_SOURCE,
+					saved_primary_document_index,
+					project_documents_tag("primary_document_index")))
+			{
+				saved_primary_document_index = boost::none;
+			}
+
+			boost::optional<int> primary_document_index;
+			if (saved_primary_document_index && saved_primary_document_index.get() < static_cast<unsigned int>(file_paths->size()))
+			{
+				primary_document_index = static_cast<int>(saved_primary_document_index.get());
+			}
+
+			document_registry.restore_documents(file_paths.get(), display_names, primary_document_index);
+		}
+
+
+		void
 		save_view_state(
 				const GPlatesScribe::ObjectTag &session_state_tag,
 				GPlatesScribe::Scribe &scribe,
@@ -3279,6 +3369,12 @@ namespace GPlatesPresentation
 			// Save the view state.
 			save_view_state(session_state_tag, scribe, view_state);
 
+			// Save ordinary Markdown document associations (not their contents).
+			save_project_documents(
+					session_state_tag,
+					scribe,
+					application_state.get_project_document_registry());
+
 			// Save the feature collection filenames.
 			save_feature_collection_filenames(
 					session_state_tag,
@@ -3322,6 +3418,13 @@ namespace GPlatesPresentation
 			// If we loaded after the layers then each view state setting will likely signal
 			// a redraw of all the layers.
 			load_view_state(session_state_tag, scribe, view_state);
+
+			// Load ordinary Markdown document associations before files/layers so
+			// project metadata is available to subsequent calculations.
+			load_project_documents(
+					session_state_tag,
+					scribe,
+					application_state.get_project_document_registry());
 
 			// Load the feature collection files.
 			QStringList feature_collection_filenames;
