@@ -961,7 +961,18 @@ GPlatesQtWidgets::DrawStyleDialog::update_gradient_bar(
 			}
 			else if(item_name.contains("time", Qt::CaseInsensitive))
 			{
-				times.append(item->get_value().trimmed());
+				QString label = item->get_value().trimmed();
+
+				// Carry over the unit the setting was named with - "Endpoint 1 time (Ma)" -
+				// so that the number under the ramp says what it is.
+				const qsizetype unit_start = item_name.indexOf('(');
+				const qsizetype unit_end = item_name.indexOf(')', unit_start + 1);
+				if(!label.isEmpty() && unit_start >= 0 && unit_end > unit_start + 1)
+				{
+					label += " " + item_name.mid(unit_start + 1, unit_end - unit_start - 1);
+				}
+
+				times.append(label);
 			}
 		}
 	}
