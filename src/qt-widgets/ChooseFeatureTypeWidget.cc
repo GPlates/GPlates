@@ -86,7 +86,8 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::ChooseFeatureTypeWidget(
 
 void
 GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
-		boost::optional<GPlatesPropertyValues::StructuralType> property_type)
+		boost::optional<GPlatesPropertyValues::StructuralType> property_type,
+		const QStringList &excluded_feature_types)
 {
 	// Remember the current selection so we can re-select if it exists after re-populating.
 	boost::optional<GPlatesModel::FeatureType> previously_selected_feature_type = get_feature_type();
@@ -102,6 +103,12 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
 	// Iterate over all the feature types.
 	BOOST_FOREACH(const GPlatesModel::FeatureType &feature_type, all_feature_types)
 	{
+		if (excluded_feature_types.contains(
+				GPlatesModel::convert_qualified_xml_name_to_qstring(feature_type)))
+		{
+			continue;
+		}
+
 		// Filter out feature types that don't have properties matching the target property type (if specified).
 		if (property_type &&
 			// Do any of the current feature's properties match the target property type ?
@@ -147,6 +154,14 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::get_feature_type() const
 	return boost::optional<GPlatesModel::FeatureType>(
 			d_selection_widget->get_data<DefaultConstructibleFeatureType>(
 				d_selection_widget->get_current_index()));
+}
+
+
+bool
+GPlatesQtWidgets::ChooseFeatureTypeWidget::has_feature_type(
+		const GPlatesModel::FeatureType &feature_type) const
+{
+	return d_selection_widget->find_data<DefaultConstructibleFeatureType>(feature_type) != -1;
 }
 
 
@@ -199,4 +214,3 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::make_signal_slot_connections()
 			this,
 			SLOT(handle_current_index_changed(int)));
 }
-
