@@ -1,11 +1,59 @@
 # Design: maximum segment length while digitising
 
-**Status:** design only — no implementation in this PR.
-**Target release:** not yet assigned.
+**Status:** implemented, in a shape this document did not anticipate — see **Outcome** below before
+relying on anything here.
+**Shipped in:** 2.6.0-dev8-SR4, on `gplates` as the Shift-clamp.
 **Related:** Weld Vertices (shares the threshold question), vertex snapping while digitising,
 `ReconstructParams::topology_reconstruction_line_tessellation_degrees` (existing precedent).
 
-This document exists so the shape of the feature is agreed before any code is written.
+This document exists so the shape of the feature is agreed before any code is written. It is kept
+after the fact because the reasoning below is what the shipped feature was argued from, including
+the parts the outcome overturned.
+
+---
+
+## Outcome
+
+The recommendation below — **(a) reject or warn**, delivered as an advisory — was built and
+rejected. A status-bar message that appears after the click has already landed turned out to be the
+wrong shape of advisory: passive, easy to miss, and arriving too late to change the decision it was
+commenting on. It was reverted rather than shipped.
+
+What shipped instead is a fourth option this document did not consider: **clamping, but only when
+the user asks for it.** Holding **Shift** while placing a vertex puts it no further from the
+previous vertex than the project's resolution, measured along the great circle towards the click. A
+plain click is untouched.
+
+That is not a reversal of the verdict on **(b)** below, and the wording there should be read with
+this in mind. The objection to clamping was that it puts a vertex somewhere the user did not click,
+*silently*, in a way that looks deliberate. Every word of that stands. Shift removes the only thing
+that made it wrong: the clamp becomes the thing the user asked for rather than something done
+behind their back, and the unmodified click remains available at all times. The principle survived;
+it was the assumption that clamping could only be unconditional that did not.
+
+The digitisation tools also turn out to be the one place where Shift is free. It means "add to the
+selection" elsewhere in GPlates, but these tools place points rather than select anything, so there
+is no selection for Shift to extend — `DigitiseGeometry` had never overridden `handle_shift_left_click`
+at all.
+
+### What this settles, and what it does not
+
+- **Units: kilometres**, from `gplates.resolution.default_km` in the Primary Project Document,
+  falling back to 500 km. So the threshold travels with the project and means the same thing on a
+  planet of any size, which the degrees option could not manage.
+- **Where the setting lives: a project setting.** As predicted below, that followed from the units
+  decision.
+- **Per-segment, as drawn** — open question 3.
+- **Off unless asked for** — open question 5, answered by the Shift gate rather than by a preference.
+- **Still open:** whether Weld Vertices and vertex snapping share this threshold. The argument below
+  that all three should draw on one concept is unaffected by anything that has shipped, and
+  `resolution` is now the obvious candidate for it.
+- **Not taken:** the advice that this should follow Weld rather than precede it. It preceded it.
+  Whether that costs anything will show up when Weld needs a threshold of its own.
+
+Per-feature-type overrides (`resolution.by_feature_type`) exist but deliberately do not apply while
+digitising: a geometry being drawn has no feature type yet, since the user chooses that when the
+feature is created.
 
 ---
 
@@ -66,6 +114,9 @@ otherwise have skipped.
 click. Never do this. It puts a vertex somewhere the user did not click, silently, and the resulting
 geometry is wrong in a way that looks deliberate.
 
+> Read "silently" as load-bearing here. This is what shipped, gated behind Shift so that it is not
+> silent — see **Outcome**. As an unconditional response to a plain click, the verdict stands.
+
 **(c) Densify.** The clicked vertex is added *and* intermediate vertices are inserted along the arc
 so that no segment exceeds the limit.
 
@@ -98,6 +149,10 @@ Given (a), a second question: hard block, or advisory?
 
 Advisory is probably right, since the failure being prevented is inattention rather than intent. A
 user who deliberately wants one long segment should not have to go and find a setting to turn off.
+
+> This is the recommendation that was built and rejected. The reasoning in the second half held —
+> the user who wants a long segment does not have to turn anything off — but it was delivered by
+> making the limit opt-in rather than by making the warning ignorable. See **Outcome**.
 
 ## Units, and why this should not be decided alone
 
@@ -150,6 +205,10 @@ value.
 - **Enforcing a *minimum* separation.** That is Weld Vertices, from the other direction.
 
 ## Open questions
+
+Questions 1, 2, 3 and 5 have since been answered, several of them differently from the expectation
+recorded here; **Outcome** has the resolutions. Question 4 and the shared-threshold half of
+question 2 are genuinely still open.
 
 1. Hard block or advisory warning. The doc argues advisory, since the failure being prevented is
    inattention rather than intent.
