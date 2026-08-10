@@ -60,10 +60,12 @@ gplates:
 Project notes begin here.
 ```
 
-`gplates.planet.radius_m` is a finite, positive number in metres. Schema
-version 1 is supported; omitting `schema_version` currently implies version 1.
-Unknown keys are ignored and are never rewritten. A bare `radius` key is not
-recognized, and units are never inferred from prose.
+`gplates.planet.radius_m` is a finite, positive number in metres. It is
+optional: a document that says nothing about its planet is describing Earth, and
+GPlates applies Earth's radius without complaint. Schema version 1 is supported;
+omitting `schema_version` currently implies version 1. Unknown keys are ignored
+and are never rewritten. A bare `radius` key is not recognized, and units are
+never inferred from prose.
 
 `gplates.reconstruction.required_timestamps_ma` is an optional quoted,
 comma-separated scalar. Ages must be finite values from 0 through 10000 Ma,
@@ -91,12 +93,21 @@ one can tell whether the project's step makes it a single event or something
 watched over several steps. They are rules of thumb rather than constants, which
 is why they live in the project rather than being compiled in.
 
-The radius remains required whenever front matter is present; every other field
-is optional, and each is validated on its own. An invalid timestamp schedule
-disables Project Timeline navigation without discarding a valid radius, rather
-than failing the document as a whole. Optional numbers must be finite and
-positive when present: saying nothing leaves a consumer its own default, which
-is deliberately not the same as saying zero.
+Every field is optional, and each stands or falls on its own. Numbers must be
+finite and positive when present: saying nothing leaves a consumer its own
+default, which is deliberately not the same as saying zero.
+
+A bad value costs only its own field. That field is left unset, so its consumer
+applies the default it would have used had the document said nothing, and the
+reason is reported — naming the offending value, and saying that the rest of the
+document is still being used. A radius of zero does not discard the timestamp
+schedule; an unreadable schedule does not discard the resolution; one unusable
+`by_feature_type` override does not discard the others or the project default.
+
+This applies only to values. A document that could not be parsed at all — a
+missing closing delimiter, broken indentation, a duplicate key, a construct
+outside the supported subset, an unsupported `schema_version` — fails as a
+whole, because nothing was successfully read and there is nothing to salvage.
 
 After the primary document is saved or reloaded, GPlates reparses it and
 updates the project-wide effective radius. Measurement distances and polygon

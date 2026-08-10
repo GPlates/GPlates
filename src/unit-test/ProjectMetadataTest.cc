@@ -153,6 +153,90 @@ GPlatesUnitTest::ProjectMetadataTest::test_front_matter_parsing()
 	BOOST_CHECK(!independent_fields.required_timestamps_are_valid);
 	BOOST_CHECK(!independent_fields.required_timestamps_diagnostic.isEmpty());
 
+	// The radius is optional. A document that says nothing about its planet is describing Earth,
+	// which is applied downstream by PlanetaryParameters rather than invented here.
+	const GPlatesAppLogic::ProjectMetadata no_radius =
+			GPlatesAppLogic::ProjectMetadataParser::parse(
+					"---\n"
+					"gplates:\n"
+					"  schema_version: 1\n"
+					"  resolution:\n"
+					"    default_km: 250\n"
+					"---\n");
+	BOOST_CHECK(no_radius.is_valid);
+	BOOST_CHECK(no_radius.diagnostic.isEmpty());
+	BOOST_CHECK(no_radius.planet_radius_is_valid);
+	BOOST_CHECK(!no_radius.planet_radius_metres);
+	BOOST_REQUIRE(no_radius.default_resolution_km);
+	BOOST_CHECK_CLOSE(no_radius.default_resolution_km.get(), 250.0, 1e-10);
+
+	// Front matter carrying nothing at all is well-formed, not an error.
+	const GPlatesAppLogic::ProjectMetadata empty_front_matter =
+			GPlatesAppLogic::ProjectMetadataParser::parse("---\ngplates:\n  schema_version: 1\n---\n");
+	BOOST_CHECK(empty_front_matter.has_front_matter);
+	BOOST_CHECK(empty_front_matter.is_valid);
+	BOOST_CHECK(!empty_front_matter.planet_radius_metres);
+
+	// The point of the whole arrangement: one unusable value costs only its own field. This
+	// document has a bad radius, a bad granularity and a bad per-feature-type override, and every
+	// other field in it still arrives intact.
+	const GPlatesAppLogic::ProjectMetadata salvaged =
+			GPlatesAppLogic::ProjectMetadataParser::parse(
+					"---\n"
+					"gplates:\n"
+					"  schema_version: 1\n"
+					"  planet:\n"
+					"    radius_m: 0\n"
+					"  resolution:\n"
+					"    default_km: 500\n"
+					"    by_feature_type:\n"
+					"      MidOceanRidge: 250\n"
+					"      Coastline: -3\n"
+					"  reconstruction:\n"
+					"    required_timestamps_ma: \"1000, 500, 0\"\n"
+					"    granularity_my: nonsense\n"
+					"  subduction:\n"
+					"    initiation_my: 10\n"
+					"---\n");
+	BOOST_CHECK(!salvaged.is_valid);
+
+	// The three bad fields are unset, and each is named in the diagnostic along with its value.
+	BOOST_CHECK(!salvaged.planet_radius_is_valid);
+	BOOST_CHECK(!salvaged.planet_radius_metres);
+	BOOST_CHECK(!salvaged.granularity_my);
+	BOOST_CHECK(!salvaged.resolution_km_by_feature_type.contains("gpml:Coastline"));
+	BOOST_CHECK(salvaged.diagnostic.contains("radius_m"));
+	BOOST_CHECK(salvaged.diagnostic.contains("granularity_my"));
+	BOOST_CHECK(salvaged.diagnostic.contains("Coastline"));
+	BOOST_CHECK(salvaged.diagnostic.contains("still being used"));
+
+	// Everything else survived.
+	BOOST_REQUIRE(salvaged.default_resolution_km);
+	BOOST_CHECK_CLOSE(salvaged.default_resolution_km.get(), 500.0, 1e-10);
+	BOOST_REQUIRE(salvaged.resolution_km_by_feature_type.contains("gpml:MidOceanRidge"));
+	BOOST_CHECK_CLOSE(salvaged.resolution_km_by_feature_type.value("gpml:MidOceanRidge"), 250.0, 1e-10);
+	BOOST_CHECK(salvaged.required_timestamps_are_valid);
+	BOOST_REQUIRE(salvaged.required_timestamps_ma);
+	BOOST_REQUIRE_EQUAL(salvaged.required_timestamps_ma->size(), 3);
+	BOOST_REQUIRE(salvaged.subduction_initiation_my);
+	BOOST_CHECK_CLOSE(salvaged.subduction_initiation_my.get(), 10.0, 1e-10);
+
+	// A document that could not be parsed at all is still fatal - there is nothing to salvage,
+	// because nothing was successfully read. Contrast with the case above.
+	const GPlatesAppLogic::ProjectMetadata unparseable =
+			GPlatesAppLogic::ProjectMetadataParser::parse(
+					"---\n"
+					"gplates:\n"
+					"  planet:\n"
+					"    radius_m: 6371000\n"
+					"  reconstruction:\n"
+					"    required_timestamps_ma: \"1000, 500, 0\"\n"
+					"  resolution: [500]\n"
+					"---\n");
+	BOOST_CHECK(!unparseable.is_valid);
+	BOOST_CHECK(!unparseable.required_timestamps_ma);
+	BOOST_CHECK(!unparseable.planet_radius_metres);
+
 	// Granularity and the subduction rates. The template documents all of these, so a document
 	// setting them expects them to mean something rather than being accepted and ignored.
 	const GPlatesAppLogic::ProjectMetadata intent =
@@ -338,6 +422,18 @@ GPlatesUnitTest::ProjectMetadataTest::test_invalid_metadata_fallback()
 	BOOST_CHECK_EQUAL(parameters.effective_radius_metres(), 8000000.0);
 	BOOST_REQUIRE(registry.set_primary_document(invalid_index));
 	BOOST_CHECK_EQUAL(parameters.radius_source(), GPlatesAppLogic::PlanetaryParameters::INVALID_PROJECT_METADATA_USING_EARTH_DEFAULT);
+
+	// Front matter that simply does not mention the planet falls back to Earth the quiet way, with
+	// no diagnostic. This is the distinction the parser draws: saying nothing is Earth by
+	// omission, while saying something unusable - the invalid document above - keeps the Earth
+	// radius but says so.
+	const QString silent_path = QDir(temporary_directory.path()).filePath("silent.md");
+	write_utf8_file(silent_path, "---\ngplates:\n  schema_version: 1\n---\n\n# Notes\n");
+	const int silent_index = registry.add_document(silent_path);
+	BOOST_REQUIRE(registry.set_primary_document(silent_index));
+	BOOST_CHECK_EQUAL(parameters.radius_source(), GPlatesAppLogic::PlanetaryParameters::EARTH_DEFAULT);
+	BOOST_CHECK(parameters.radius_diagnostic().isEmpty());
+	BOOST_CHECK_EQUAL(parameters.effective_radius_metres(), GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS * 1000.0);
 }
 
 

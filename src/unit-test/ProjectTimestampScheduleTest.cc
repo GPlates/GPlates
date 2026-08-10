@@ -38,7 +38,7 @@ GPlatesUnitTest::ProjectTimestampScheduleTestSuite::construct_maps()
 	ADD_TESTCASE(ProjectTimestampScheduleTest, test_single_timestamp);
 	ADD_TESTCASE(ProjectTimestampScheduleTest, test_invalid_schedule);
 	ADD_TESTCASE(ProjectTimestampScheduleTest, test_project_document_schedule);
-	ADD_TESTCASE(ProjectTimestampScheduleTest, test_schedule_needs_a_readable_document);
+	ADD_TESTCASE(ProjectTimestampScheduleTest, test_schedule_survives_other_bad_fields);
 }
 
 
@@ -97,9 +97,8 @@ GPlatesUnitTest::ProjectTimestampScheduleTest::test_project_document_schedule()
 	const QString document_path = QDir(temporary_directory.path()).filePath("PROJECT.md");
 	QFile document(document_path);
 	BOOST_REQUIRE(document.open(QIODevice::WriteOnly));
-	// The radius is mandatory whenever front matter is present, so a document meaning to supply a
-	// schedule has to supply one too - see test_schedule_needs_a_readable_document() for what
-	// happens when it does not.
+	// A whole, well-formed document. test_schedule_survives_other_bad_fields() covers the schedule
+	// arriving intact when the rest of the document is missing or wrong.
 	const QByteArray markdown(
 			"---\n"
 			"gplates:\n"
@@ -135,35 +134,80 @@ GPlatesUnitTest::ProjectTimestampScheduleTest::test_project_document_schedule()
 
 
 void
-GPlatesUnitTest::ProjectTimestampScheduleTest::test_schedule_needs_a_readable_document()
+GPlatesUnitTest::ProjectTimestampScheduleTest::test_schedule_survives_other_bad_fields()
 {
-	// A document that supplies a schedule but no planet radius does not yield a schedule, because
-	// the radius is mandatory whenever front matter is present and its absence fails the document
-	// as a whole. Pinned here so the coupling is deliberate rather than discovered: the schedule
-	// is reported as invalid with a diagnostic, which AnimationController shows in the status bar
-	// before falling back to the ordinary frame step, so the user is told why Alt did nothing.
+	// A schedule does not depend on anything else in the document being present or usable. This
+	// document has no planet section at all, and a second has a radius that is nonsense; both
+	// still navigate. The schedule is the user's data and is not collateral damage from a mistake
+	// in an unrelated field.
 	QTemporaryDir temporary_directory;
 	BOOST_REQUIRE(temporary_directory.isValid());
-	const QString document_path = QDir(temporary_directory.path()).filePath("PROJECT.md");
-	QFile document(document_path);
-	BOOST_REQUIRE(document.open(QIODevice::WriteOnly));
-	const QByteArray markdown(
+
+	const QString no_planet_path = QDir(temporary_directory.path()).filePath("PROJECT.md");
+	QFile no_planet(no_planet_path);
+	BOOST_REQUIRE(no_planet.open(QIODevice::WriteOnly));
+	const QByteArray no_planet_markdown(
 			"---\n"
 			"gplates:\n"
 			"  reconstruction:\n"
 			"    required_timestamps_ma: \"1000, 500, 0\"\n"
 			"---\n");
-	BOOST_REQUIRE_EQUAL(document.write(markdown), markdown.size());
-	document.close();
+	BOOST_REQUIRE_EQUAL(no_planet.write(no_planet_markdown), no_planet_markdown.size());
+	no_planet.close();
 
 	GPlatesAppLogic::ProjectDocumentRegistry registry;
 	GPlatesAppLogic::ProjectTimestampSchedule schedule(registry);
-	registry.add_document(document_path);
+	registry.add_document(no_planet_path);
+	BOOST_CHECK_EQUAL(
+			schedule.source(),
+			GPlatesAppLogic::ProjectTimestampSchedule::PROJECT_MARKDOWN);
+	BOOST_REQUIRE_EQUAL(schedule.timestamps_older_to_younger().size(), 3);
+	BOOST_REQUIRE(schedule.next_older_timestamp(500.0));
+	BOOST_CHECK_EQUAL(schedule.next_older_timestamp(500.0).get(), 1000.0);
+
+	const QString bad_radius_path = QDir(temporary_directory.path()).filePath("BAD-RADIUS.md");
+	QFile bad_radius(bad_radius_path);
+	BOOST_REQUIRE(bad_radius.open(QIODevice::WriteOnly));
+	const QByteArray bad_radius_markdown(
+			"---\n"
+			"gplates:\n"
+			"  planet:\n"
+			"    radius_m: 0\n"
+			"  reconstruction:\n"
+			"    required_timestamps_ma: \"800, 400, 0\"\n"
+			"---\n");
+	BOOST_REQUIRE_EQUAL(bad_radius.write(bad_radius_markdown), bad_radius_markdown.size());
+	bad_radius.close();
+
+	const int bad_radius_index = registry.add_document(bad_radius_path);
+	BOOST_REQUIRE(registry.set_primary_document(bad_radius_index));
+	BOOST_CHECK_EQUAL(
+			schedule.source(),
+			GPlatesAppLogic::ProjectTimestampSchedule::PROJECT_MARKDOWN);
+	BOOST_REQUIRE_EQUAL(schedule.timestamps_older_to_younger().size(), 3);
+	BOOST_REQUIRE(schedule.next_younger_timestamp(400.0));
+	BOOST_CHECK_EQUAL(schedule.next_younger_timestamp(400.0).get(), 0.0);
+
+	// A schedule that is itself unreadable is still reported, which AnimationController shows in
+	// the status bar before falling back to the ordinary frame step, so Alt doing nothing is
+	// explained rather than silent.
+	const QString bad_schedule_path = QDir(temporary_directory.path()).filePath("BAD-SCHEDULE.md");
+	QFile bad_schedule(bad_schedule_path);
+	BOOST_REQUIRE(bad_schedule.open(QIODevice::WriteOnly));
+	const QByteArray bad_schedule_markdown(
+			"---\n"
+			"gplates:\n"
+			"  reconstruction:\n"
+			"    required_timestamps_ma: \"100, 50, 50, 0\"\n"
+			"---\n");
+	BOOST_REQUIRE_EQUAL(bad_schedule.write(bad_schedule_markdown), bad_schedule_markdown.size());
+	bad_schedule.close();
+
+	const int bad_schedule_index = registry.add_document(bad_schedule_path);
+	BOOST_REQUIRE(registry.set_primary_document(bad_schedule_index));
 	BOOST_CHECK_EQUAL(
 			schedule.source(),
 			GPlatesAppLogic::ProjectTimestampSchedule::INVALID_PROJECT_METADATA);
 	BOOST_CHECK(!schedule.diagnostic().isEmpty());
 	BOOST_CHECK(schedule.timestamps_older_to_younger().empty());
-	BOOST_CHECK(!schedule.next_older_timestamp(500.0));
-	BOOST_CHECK(!schedule.next_younger_timestamp(500.0));
 }

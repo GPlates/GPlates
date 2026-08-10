@@ -2,11 +2,16 @@
 gplates:
   schema_version: 1
 
-  # The planet this project is built on. Required.
+  # The planet this project is built on.
   #
   # Earth is 6371000. A larger world means a degree of arc covers more ground, so this is what
   # lets GPlates report real distances rather than angles that mean something different per
   # project.
+  #
+  # Optional. Leave the whole section out and GPlates uses Earth's radius - a project that says
+  # nothing about its planet is describing Earth, and there is no reason to make you write that
+  # out. Setting it to something unusable is a different matter: GPlates says so, uses Earth's
+  # radius, and carries on reading the rest of this document.
   planet:
     radius_m: 6371000
 
