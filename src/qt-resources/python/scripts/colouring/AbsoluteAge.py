@@ -86,12 +86,13 @@ def _interpolate_colour(colour_1, colour_2, position):
 		colour_1.get_alpha() + (colour_2.get_alpha() - colour_1.get_alpha()) * position)
 
 
-def _variant(youngest_colour, youngest_time, oldest_colour, oldest_time, steps):
+def _variant(colour_1, time_1, colour_2, time_2, steps):
+	# Endpoint 1 is not required to be the younger time - see the reversed example below.
 	return {
-		'Endpoint 1 colour': youngest_colour,
-		'Endpoint 1 time (Ma)': _format_time(youngest_time),
-		'Endpoint 2 colour': oldest_colour,
-		'Endpoint 2 time (Ma)': _format_time(oldest_time),
+		'Endpoint 1 colour': colour_1,
+		'Endpoint 1 time (Ma)': _format_time(time_1),
+		'Endpoint 2 colour': colour_2,
+		'Endpoint 2 time (Ma)': _format_time(time_2),
 		'Steps (or smooth)': steps,
 	}
 
@@ -125,12 +126,18 @@ class AbsoluteAge:
 		}
 
 	def get_config_variants(self):
-		# Several worked examples rather than one empty starting point. Seeing a few
-		# configurations side by side is the quickest way to understand that this style is an
-		# age-to-colour ramp between two editable endpoints - which is not obvious from a single
-		# default, and was not obvious at all when the list started empty.
+		# Worked examples rather than one empty starting point. Seeing several configurations
+		# side by side is the quickest way to understand that this style is an age-to-colour ramp
+		# between two editable endpoints - which is not obvious from a single default, and was not
+		# obvious at all when the list started empty.
+		#
+		# Each example is here to demonstrate something the style can do - the whole range, a
+		# narrowed range, a reversed range, quantisation into bands - rather than being just
+		# another pair of colours. Select one and click New to get an editable copy of it.
 		youngest_time, oldest_time = _default_times()
-		midpoint_time = youngest_time + (oldest_time - youngest_time) / 2.0
+		span = oldest_time - youngest_time
+		midpoint_time = youngest_time + span / 2.0
+		near_present_time = youngest_time + span / 8.0
 
 		return {
 			# Newest orange, oldest green, across the project's whole range.
@@ -142,14 +149,39 @@ class AbsoluteAge:
 			'Banded (6 steps)': _variant(
 				YOUNGEST_COLOUR, youngest_time, OLDEST_COLOUR, oldest_time, '6'),
 
+			# Two steps is the smallest banding that means anything: one hard boundary at the
+			# middle of the range, so every feature reads as simply older or younger than that.
+			'Two tone (2 steps)': _variant(
+				YOUNGEST_COLOUR, youngest_time, OLDEST_COLOUR, oldest_time, '2'),
+
 			# Only the more recent half of the range, so recent features are separated instead
 			# of being crushed into one end of the ramp. Anything older clamps to the old colour.
-			'Recent detail': _variant(
+			'Recent half': _variant(
 				YOUNGEST_COLOUR, youngest_time, OLDEST_COLOUR, midpoint_time, 'smooth'),
+
+			# The mirror of the above: spread the ramp over the older half instead, for reading
+			# basement ages when the recent end is not what is being looked at.
+			'Ancient half': _variant(
+				YOUNGEST_COLOUR, midpoint_time, OLDEST_COLOUR, oldest_time, 'smooth'),
+
+			# A narrow window close to the present. Clamping is what makes a narrow window
+			# usable: everything older than the window simply takes the old colour.
+			'Near present': _variant(
+				YOUNGEST_COLOUR, youngest_time, OLDEST_COLOUR, near_present_time, 'smooth'),
+
+			# Endpoint 1 does not have to be the younger time. Give the two times the other way
+			# round and the ramp runs backwards, so the oldest features take the first colour.
+			'Reversed': _variant(
+				YOUNGEST_COLOUR, oldest_time, OLDEST_COLOUR, youngest_time, 'smooth'),
 
 			# A cool-to-warm alternative for when orange and green are already in use.
 			'Blue to red': _variant(
 				'#2c7bb6', youngest_time, '#d7191c', oldest_time, 'smooth'),
+
+			# Sequential yellow to brown, which stays readable under the common forms of colour
+			# blindness that make the orange and green of the default hard to tell apart.
+			'Yellow to brown': _variant(
+				'#fff7bc', youngest_time, '#993404', oldest_time, 'smooth'),
 
 			# Neutral ramp for figures that are printed or reproduced in greyscale.
 			'Greyscale': _variant(
