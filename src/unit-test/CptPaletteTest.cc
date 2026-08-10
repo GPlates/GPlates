@@ -1,10 +1,10 @@
 /* $Id:  $ */
 
 /**
- * \file 
+ * \file
  * $Revision: 7584 $
  * $Date: 2010-02-10 19:29:36 +1100 (Wed, 10 Feb 2010) $
- * 
+ *
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -25,121 +25,43 @@
 #include <iostream>
 
 #include <QDebug>
+#include <gtest/gtest.h>
+
 #include "gui/Palette.h"
-#include "unit-test/CptPaletteTest.h"
 
-//copy the following code into directory level test suite file
-//for example, if the test class is in data-mining directory, the following code will
-//be copied to DataMiningTestSuite.cc
-//#include "unit-test/CptPaletteTest.h"
-//ADD_TESTSUITE(CptPalette);
-
-//./gplates-unit-test --detect_memory_leaks=0 --G_test_to_run=*/Coreg
-
-GPlatesUnitTest::CptPaletteTestSuite::CptPaletteTestSuite(
-		unsigned level) :
-	GPlatesUnitTest::GPlatesTestSuite(
-			"CptPaletteTestSuite")
-{
-	init(level);
-} 
-
-void 
-GPlatesUnitTest::CptPaletteTest::test_case_1()
+TEST(CptPaletteTest, cpt_palette)
 {
 	using namespace GPlatesGui;
 	std::cout << "testing cpt palette" << std::endl;
 
-	Palette* cpt_palette = 
-		new CptPalette("unit-test-data/cpt_unit_test.txt");
-	
-	boost::optional<Colour> c = cpt_palette->get_colour(Palette::Key(125));
-	BOOST_CHECK(QColor(*c).name().toStdString()=="#ffa500");
+	CptPalette cpt_palette(GPLATES_UNIT_TEST_DATA_DIR "/cpt_unit_test.txt");
+
+	boost::optional<Colour> c = cpt_palette.get_colour(Palette::Key(125));
+	EXPECT_TRUE(QColor(*c).name().toStdString()=="#ffa500");
 	std::cout << QColor(*c).name().toStdString() << std::endl;
 
-	c = cpt_palette->get_colour(Palette::Key(801));
-	BOOST_CHECK(QColor(*c).name().toStdString()=="#00ff00");
+	c = cpt_palette.get_colour(Palette::Key(801));
+	EXPECT_TRUE(QColor(*c).name().toStdString()=="#00ff00");
 	std::cout << QColor(*c).name().toStdString() << std::endl;
 
-	c = cpt_palette->get_colour(Palette::Key(600));
-	BOOST_CHECK(QColor(*c).name().toStdString()=="#568a4d");
+	c = cpt_palette.get_colour(Palette::Key(600));
+	EXPECT_TRUE(QColor(*c).name().toStdString()=="#568a4d");
 	std::cout << QColor(*c).name().toStdString() << std::endl;
 
-	c = cpt_palette->get_colour(Palette::Key(450));
-	BOOST_CHECK(QColor(*c).name().toStdString()=="#bfadaf");
+	c = cpt_palette.get_colour(Palette::Key(450));
+	EXPECT_TRUE(QColor(*c).name().toStdString()=="#bfadaf");
 	std::cout << QColor(*c).name().toStdString() << std::endl;
 
-	c = cpt_palette->get_colour(Palette::Key(800));
-	BOOST_CHECK(QColor(*c).name().toStdString()=="#d38d7c");
+	c = cpt_palette.get_colour(Palette::Key(800));
+	EXPECT_TRUE(QColor(*c).name().toStdString()=="#d38d7c");
 	std::cout << QColor(*c).name().toStdString() << std::endl;
 
 	Colour b, f, n;
-	boost::tie(b,f,n) = cpt_palette->get_BFN_colour();
+	boost::tie(b,f,n) = cpt_palette.get_BFN_colour();
 	std::cout << QColor(b).name().toStdString() << std::endl;
-	BOOST_CHECK(QColor(b).name().toStdString()=="#000000");
+	EXPECT_TRUE(QColor(b).name().toStdString()=="#000000");
 	std::cout << QColor(f).name().toStdString() << std::endl;
-	BOOST_CHECK(QColor(f).name().toStdString()=="#ffffff");
+	EXPECT_TRUE(QColor(f).name().toStdString()=="#ffffff");
 	std::cout << QColor(n).name().toStdString() << std::endl;
-	BOOST_CHECK(QColor(n).name().toStdString()=="#808080");
-	
-	delete cpt_palette;
-	return;
+	EXPECT_TRUE(QColor(n).name().toStdString()=="#808080");
 }
-
-void 
-GPlatesUnitTest::CptPaletteTest::test_case_2()
-{
-	//Add you test code here
-	return;
-}
-
-void 
-GPlatesUnitTest::CptPaletteTest::test_case_3()
-{
-	//Add you test code here
-	return;
-}
-
-void 
-GPlatesUnitTest::CptPaletteTest::test_case_4()
-{
-	//Add you test code here
-	return;
-}
-
-void 
-GPlatesUnitTest::CptPaletteTest::test_case_5()
-{
-	//Add you test code here
-	return;
-}
-
-void 
-GPlatesUnitTest::CptPaletteTest::test_case_6()
-{
-	//Add you test code here
-	return;
-}
-
-void 
-GPlatesUnitTest::CptPaletteTest::test_case_7()
-{
-	//Add you test code here
-	return;
-}
-
-void
-GPlatesUnitTest::CptPaletteTestSuite::construct_maps()
-{
-	boost::shared_ptr<CptPaletteTest> instance(
-		new CptPaletteTest());
-
-	ADD_TESTCASE(CptPaletteTest,test_case_1);
-	ADD_TESTCASE(CptPaletteTest,test_case_2);
-	ADD_TESTCASE(CptPaletteTest,test_case_3);
-	ADD_TESTCASE(CptPaletteTest,test_case_4);
-	ADD_TESTCASE(CptPaletteTest,test_case_5);
-	ADD_TESTCASE(CptPaletteTest,test_case_6);
-	ADD_TESTCASE(CptPaletteTest,test_case_7);
-}
-

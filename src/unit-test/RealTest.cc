@@ -1,10 +1,10 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -25,66 +25,39 @@
 #include <iostream>
 
 #include <QDebug>
+#include <gtest/gtest.h>
 
-#include "unit-test/RealTest.h"
-#include "maths/MathsUtils.h"
+#include "maths/Real.h"
 
-using GPlatesMaths::are_almost_exactly_equal;
-
-GPlatesUnitTest::RealTestSuite::RealTestSuite(
-		unsigned level) :
-	GPlatesUnitTest::GPlatesTestSuite(
-			"RealTestSuite")
+TEST(RealTest, positive_infinity)
 {
-	init(level);
+	EXPECT_TRUE(GPlatesMaths::is_infinity(GPlatesMaths::positive_infinity<double>()));
+	EXPECT_TRUE(GPlatesMaths::is_positive_infinity(GPlatesMaths::positive_infinity<double>()));
+	EXPECT_TRUE(!GPlatesMaths::is_negative_infinity(GPlatesMaths::positive_infinity<double>()));
+	EXPECT_TRUE(!GPlatesMaths::is_nan(GPlatesMaths::positive_infinity<double>()));
 }
 
 
-void
-GPlatesUnitTest::RealTestSuite::construct_maps()
+TEST(RealTest, negative_infinity)
 {
-	boost::shared_ptr<RealTest> instance(
-		new RealTest());
-
-	ADD_TESTCASE(RealTest,test_positive_infinity);
-	ADD_TESTCASE(RealTest,test_negative_infinity);
-	ADD_TESTCASE(RealTest,test_nan);
-	ADD_TESTCASE(RealTest,test_zero);
+	EXPECT_TRUE(GPlatesMaths::is_infinity(GPlatesMaths::negative_infinity<double>()));
+	EXPECT_TRUE(!GPlatesMaths::is_positive_infinity(GPlatesMaths::negative_infinity<double>()));
+	EXPECT_TRUE(GPlatesMaths::is_negative_infinity(GPlatesMaths::negative_infinity<double>()));
+	EXPECT_TRUE(!GPlatesMaths::is_nan(GPlatesMaths::negative_infinity<double>()));
 }
 
-void
-GPlatesUnitTest::RealTest::test_positive_infinity()
+TEST(RealTest, nan)
 {
-	BOOST_CHECK(GPlatesMaths::is_infinity(GPlatesMaths::positive_infinity<double>()));
-	BOOST_CHECK(GPlatesMaths::is_positive_infinity(GPlatesMaths::positive_infinity<double>()));
-	BOOST_CHECK(!GPlatesMaths::is_negative_infinity(GPlatesMaths::positive_infinity<double>()));
-	BOOST_CHECK(!GPlatesMaths::is_nan(GPlatesMaths::positive_infinity<double>()));
+	EXPECT_TRUE(!GPlatesMaths::is_infinity(GPlatesMaths::quiet_nan<double>()));
+	EXPECT_TRUE(!GPlatesMaths::is_positive_infinity(GPlatesMaths::quiet_nan<double>()));
+	EXPECT_TRUE(!GPlatesMaths::is_negative_infinity(GPlatesMaths::quiet_nan<double>()));
+	EXPECT_TRUE(GPlatesMaths::is_nan(GPlatesMaths::quiet_nan<double>()));
 }
 
-void
-GPlatesUnitTest::RealTest::test_negative_infinity()
+TEST(RealTest, zero)
 {
-	BOOST_CHECK(GPlatesMaths::is_infinity(GPlatesMaths::negative_infinity<double>()));
-	BOOST_CHECK(!GPlatesMaths::is_positive_infinity(GPlatesMaths::negative_infinity<double>()));
-	BOOST_CHECK(GPlatesMaths::is_negative_infinity(GPlatesMaths::negative_infinity<double>()));
-	BOOST_CHECK(!GPlatesMaths::is_nan(GPlatesMaths::negative_infinity<double>()));
+	EXPECT_TRUE(!GPlatesMaths::is_infinity(0.0));
+	EXPECT_TRUE(!GPlatesMaths::is_positive_infinity(0.0));
+	EXPECT_TRUE(!GPlatesMaths::is_negative_infinity(0.0));
+	EXPECT_TRUE(!GPlatesMaths::is_nan(0.0));
 }
-
-void 
-GPlatesUnitTest::RealTest::test_nan()
-{
-	BOOST_CHECK(!GPlatesMaths::is_infinity(GPlatesMaths::quiet_nan<double>()));
-	BOOST_CHECK(!GPlatesMaths::is_positive_infinity(GPlatesMaths::quiet_nan<double>()));
-	BOOST_CHECK(!GPlatesMaths::is_negative_infinity(GPlatesMaths::quiet_nan<double>()));
-	BOOST_CHECK(GPlatesMaths::is_nan(GPlatesMaths::quiet_nan<double>()));
-}
-
-void
-GPlatesUnitTest::RealTest::test_zero()
-{
-	BOOST_CHECK(!GPlatesMaths::is_infinity(0.0));
-	BOOST_CHECK(!GPlatesMaths::is_positive_infinity(0.0));
-	BOOST_CHECK(!GPlatesMaths::is_negative_infinity(0.0));
-	BOOST_CHECK(!GPlatesMaths::is_nan(0.0));
-}
-

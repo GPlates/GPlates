@@ -1,10 +1,10 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -27,8 +27,7 @@
 #include <iostream>
 
 #include <QDebug>
-
-#include "MipmapperTest.h"
+#include <gtest/gtest.h>
 
 #include "file-io/RasterFileCacheFormat.h"
 
@@ -44,33 +43,7 @@ using GPlatesGui::rgba8_t;
 using namespace GPlatesPropertyValues;
 
 
-GPlatesUnitTest::MipmapperTestSuite::MipmapperTestSuite(
-		unsigned level) :
-	GPlatesUnitTest::GPlatesTestSuite(
-			"MipmapperTestSuite")
-{
-	init(level);
-}
-
-
-void
-GPlatesUnitTest::MipmapperTestSuite::construct_maps()
-{
-	boost::shared_ptr<MipmapperTest> instance(
-		new MipmapperTest());
-
-	ADD_TESTCASE(MipmapperTest, test_extend_raster1);
-	ADD_TESTCASE(MipmapperTest, test_extend_raster2);
-	ADD_TESTCASE(MipmapperTest, test_extend_raster3);
-	ADD_TESTCASE(MipmapperTest, test_extend_raster4);
-	ADD_TESTCASE(MipmapperTest, test_rgba_mipmapper);
-	ADD_TESTCASE(MipmapperTest, test_float_mipmapper);
-	ADD_TESTCASE(MipmapperTest, test_int_mipmapper);
-}
-
-
-void
-GPlatesUnitTest::MipmapperTest::test_extend_raster1()
+TEST(MipmapperTest, extend_raster_even_width_even_height)
 {
 	// Test 1: even width, even height.
 	// Because the raster already has even width/height, extending it should do nothing.
@@ -84,12 +57,11 @@ GPlatesUnitTest::MipmapperTest::test_extend_raster1()
 
 	Int32RawRaster::non_null_ptr_to_const_type result = GPlatesGui::MipmapperInternals::extend_raster(*raster);
 
-	BOOST_CHECK(std::memcmp(raster->data(), result->data(), SIZE * SIZE * sizeof(boost::int32_t)) == 0);
+	EXPECT_TRUE(std::memcmp(raster->data(), result->data(), SIZE * SIZE * sizeof(boost::int32_t)) == 0);
 }
 
 
-void
-GPlatesUnitTest::MipmapperTest::test_extend_raster2()
+TEST(MipmapperTest, extend_raster_odd_width_even_height)
 {
 	// Test 2: odd width, even height.
 	// After extending, it should be one pixel wider.
@@ -99,7 +71,7 @@ GPlatesUnitTest::MipmapperTest::test_extend_raster2()
 		/* 2nd row */ rgba8_t(40, 50, 60, 70), rgba8_t(41, 51, 61, 71), rgba8_t(42, 52, 62, 72)
 	};
 	std::memcpy(raster->data(), raster_data, sizeof(raster_data));
-	
+
 	rgba8_t expected_result[] = {
 		/* 1st row */ rgba8_t(0, 10, 20, 30), rgba8_t(1, 11, 21, 31), rgba8_t(2, 12, 22, 32), rgba8_t(2, 12, 22, 32),
 		/* 2nd row */ rgba8_t(40, 50, 60, 70), rgba8_t(41, 51, 61, 71), rgba8_t(42, 52, 62, 72), rgba8_t(42, 52, 62, 72)
@@ -107,12 +79,11 @@ GPlatesUnitTest::MipmapperTest::test_extend_raster2()
 
 	Rgba8RawRaster::non_null_ptr_to_const_type result = GPlatesGui::MipmapperInternals::extend_raster(*raster);
 
-	BOOST_CHECK(std::memcmp(expected_result, result->data(), 8 * sizeof(rgba8_t)) == 0);
+	EXPECT_TRUE(std::memcmp(expected_result, result->data(), 8 * sizeof(rgba8_t)) == 0);
 }
 
 
-void
-GPlatesUnitTest::MipmapperTest::test_extend_raster3()
+TEST(MipmapperTest, extend_raster_even_width_odd_height)
 {
 	// Test 3: even width, odd height.
 	// After extending, it should be one pixel higher.
@@ -133,12 +104,11 @@ GPlatesUnitTest::MipmapperTest::test_extend_raster3()
 
 	Rgba8RawRaster::non_null_ptr_to_const_type result = GPlatesGui::MipmapperInternals::extend_raster(*raster);
 
-	BOOST_CHECK(std::memcmp(expected_result, result->data(), 8 * sizeof(rgba8_t)) == 0);
+	EXPECT_TRUE(std::memcmp(expected_result, result->data(), 8 * sizeof(rgba8_t)) == 0);
 }
 
 
-void
-GPlatesUnitTest::MipmapperTest::test_extend_raster4()
+TEST(MipmapperTest, extend_raster_odd_width_odd_height)
 {
 	// Test 4: odd width, odd height.
 	// After extending, it should be one pixel wider and higher.
@@ -159,12 +129,11 @@ GPlatesUnitTest::MipmapperTest::test_extend_raster4()
 
 	Rgba8RawRaster::non_null_ptr_to_const_type result = GPlatesGui::MipmapperInternals::extend_raster(*raster);
 
-	BOOST_CHECK(std::memcmp(expected_result, result->data(), 16 * sizeof(rgba8_t)) == 0);
+	EXPECT_TRUE(std::memcmp(expected_result, result->data(), 16 * sizeof(rgba8_t)) == 0);
 }
 
 
-void
-GPlatesUnitTest::MipmapperTest::test_rgba_mipmapper()
+TEST(MipmapperTest, rgba_mipmapper)
 {
 	// Let's mipmap a 3x5 raster.
 	Rgba8RawRaster::non_null_ptr_type raster = Rgba8RawRaster::create(5, 3);
@@ -179,7 +148,7 @@ GPlatesUnitTest::MipmapperTest::test_rgba_mipmapper()
 
 	// Level 1 should be 2x3.
 	mipmapper.generate_next();
-	BOOST_CHECK(
+	EXPECT_TRUE(
 			mipmapper.get_current_mipmap()->height() == 2 &&
 			mipmapper.get_current_mipmap()->width() == 3 &&
 			mipmapper.get_current_coverage() == boost::none);
@@ -194,22 +163,21 @@ GPlatesUnitTest::MipmapperTest::test_rgba_mipmapper()
 
 	// Level 2 should be 1x2.
 	mipmapper.generate_next();
-	BOOST_CHECK(
+	EXPECT_TRUE(
 			mipmapper.get_current_mipmap()->height() == 1 &&
 			mipmapper.get_current_mipmap()->width() == 2 &&
 			mipmapper.get_current_coverage() == boost::none);
 
 	// Level 3 should be 1x1.
 	mipmapper.generate_next();
-	BOOST_CHECK(
+	EXPECT_TRUE(
 			mipmapper.get_current_mipmap()->height() == 1 &&
 			mipmapper.get_current_mipmap()->width() == 1 &&
 			mipmapper.get_current_coverage() == boost::none);
 }
 
 
-void
-GPlatesUnitTest::MipmapperTest::test_float_mipmapper()
+TEST(MipmapperTest, float_mipmapper)
 {
 	// Let's mipmap a 3x5 raster.
 	FloatRawRaster::non_null_ptr_type raster = FloatRawRaster::create(5, 3);
@@ -225,14 +193,14 @@ GPlatesUnitTest::MipmapperTest::test_float_mipmapper()
 
 	// Level 1 should be 2x3 with coverage raster.
 	mipmapper.generate_next();
-	BOOST_CHECK(
+	EXPECT_TRUE(
 			mipmapper.get_current_mipmap()->height() == 2 &&
 			mipmapper.get_current_mipmap()->width() == 3 &&
 			mipmapper.get_current_coverage());
 
 	// Level 2 should be 1x2 with coverage raster.
 	mipmapper.generate_next();
-	BOOST_CHECK(
+	EXPECT_TRUE(
 			mipmapper.get_current_mipmap()->height() == 1 &&
 			mipmapper.get_current_mipmap()->width() == 2 &&
 			mipmapper.get_current_coverage());
@@ -247,7 +215,7 @@ GPlatesUnitTest::MipmapperTest::test_float_mipmapper()
 
 	// Level 3 should be 1x1 with coverage raster.
 	mipmapper.generate_next();
-	BOOST_CHECK(
+	EXPECT_TRUE(
 			mipmapper.get_current_mipmap()->height() == 1 &&
 			mipmapper.get_current_mipmap()->width() == 1 &&
 			mipmapper.get_current_coverage());
@@ -257,8 +225,7 @@ GPlatesUnitTest::MipmapperTest::test_float_mipmapper()
 }
 
 
-void
-GPlatesUnitTest::MipmapperTest::test_int_mipmapper()
+TEST(MipmapperTest, int_mipmapper)
 {
 	// Let's mipmap a 3x5 raster.
 	Int32RawRaster::non_null_ptr_type raster = Int32RawRaster::create(5, 3);
@@ -274,14 +241,14 @@ GPlatesUnitTest::MipmapperTest::test_int_mipmapper()
 
 	// Level 1 should be 2x3 with no coverage raster.
 	mipmapper.generate_next();
-	BOOST_CHECK(
+	EXPECT_TRUE(
 			mipmapper.get_current_mipmap()->height() == 2 &&
 			mipmapper.get_current_mipmap()->width() == 3 &&
 			mipmapper.get_current_coverage());
 
 	// Level 2 should be 1x2 with coverage raster.
 	mipmapper.generate_next();
-	BOOST_CHECK(
+	EXPECT_TRUE(
 			mipmapper.get_current_mipmap()->height() == 1 &&
 			mipmapper.get_current_mipmap()->width() == 2 &&
 			mipmapper.get_current_coverage());
@@ -296,7 +263,7 @@ GPlatesUnitTest::MipmapperTest::test_int_mipmapper()
 
 	// Level 3 should be 1x1 with coverage raster.
 	mipmapper.generate_next();
-	BOOST_CHECK(
+	EXPECT_TRUE(
 			mipmapper.get_current_mipmap()->height() == 1 &&
 			mipmapper.get_current_mipmap()->width() == 1 &&
 			mipmapper.get_current_coverage());
@@ -304,4 +271,3 @@ GPlatesUnitTest::MipmapperTest::test_int_mipmapper()
 	std::cout << *(*mipmapper.get_current_coverage())->data() << std::endl;
 #endif
 }
-

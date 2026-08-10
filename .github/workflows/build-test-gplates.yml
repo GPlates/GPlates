@@ -1,0 +1,171 @@
+# Builds the GPlates desktop application and runs its C++ unit tests (GoogleTest via CTest)
+# on Linux, macOS and Windows.
+#
+# Dependencies come from the conda environment files in the repository root
+# (env.Linux.yml, env.macOS.yml, env.Windows.yml), which are the same files documented in
+# BUILD-Linux.md, BUILD-macOS.md and BUILD-Windows.md. So CI builds GPlates the same way a
+# developer does, and a dependency change only has to be made in one place.
+#
+# Both the 'gplates' executable and the 'gplates-unit-test' executable are built: the former
+# validates the full application link, and the latter is EXCLUDE_FROM_ALL so it must be (and is)
+# named explicitly - which also makes the build fail loudly if GoogleTest was not found at
+# configure time (the target would not exist).
+#
+# Compilation goes through 'sccache' so that a push only recompiles what actually changed. A full
+# build takes ~30-60 minutes depending on platform, and is essentially the entire cost of a run
+# (configure is seconds, the tests are seconds-to-minutes).
+name: gplates build and test
+
+on:
+  push:
+    branches: [ "gplates" ]
+  pull_request:
+    branches: [ "gplates" ]
+  workflow_dispatch:
+
+# Superseded runs are cancelled rather than left to finish (a build takes ~30-60 minutes).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+
+    strategy:
+      # Run every platform to completion, so one platform failing still reports the others.
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            environment-file: env.Linux.yml
+            shell: bash -el {0}
+          - name: macOS
+            os: macos-latest
+            environment-file: env.macOS.yml
+            shell: bash -el {0}
+          - name: Windows
+            os: windows-latest
+            environment-file: env.Windows.yml
+            # Windows uses cmd because the conda 'vs2022_win-64' package sets up the MSVC compiler
+            # environment with .bat activation scripts, which only take effect in a cmd shell.
+            # Under bash or PowerShell the Ninja generator fails with "No CMAKE_C_COMPILER could be
+            # found" (see BUILD-Windows.md).
+            shell: cmd /C call {0}
+
+    env:
+      # Kept inside the workspace because the 'runner' context (and so 'runner.temp') is not available
+      # in a job-level 'env' block, only from the step level onwards.
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+      # A safety ceiling rather than an expected size (the pygplates workflow's builds measure
+      # 38-114 MiB per platform and this build is comparable). It matters because the whole
+      # repository shares a 10 GB Actions cache budget with LRU eviction.
+      SCCACHE_CACHE_SIZE: 2G
+      # Never let the server time out mid-build.
+      SCCACHE_IDLE_TIMEOUT: 0
+
+    defaults:
+      run:
+        # Conda only activates in a login shell (bash) or an explicitly declared cmd shell.
+        # Without this the environment is created but never activated, and the build silently
+        # falls back to the system Python and system libraries.
+        shell: ${{ matrix.shell }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Restore compiler cache
+        # 'restore-keys' is what makes this useful: the primary key includes the commit SHA and so
+        # never hits, and the prefix fallback restores the most recent cache for this platform.
+        # A pull request can read caches written on its base branch, so PRs start warm from the
+        # last push to 'gplates'.
+        #
+        # The keys are namespaced 'sccache-gplates-*' (unlike the pygplates workflow's
+        # 'sccache-<platform>-*'): 'gplates' is the repository's default branch, so caches saved
+        # here are visible to every ref, and the GPlates and pyGPlates builds share no cache
+        # entries at all (every shared translation unit differs in -fPIC and in the
+        # GPLATES_PYTHON_EMBEDDING compile definition). Distinct prefixes stop either workflow
+        # from downloading the other's (useless to it) cache.
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: sccache-gplates-${{ matrix.name }}-${{ github.sha }}
+          restore-keys: sccache-gplates-${{ matrix.name }}-
+
+      - name: Install dependencies (conda)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          # Miniforge defaults to conda-forge, matching the 'channels' in the environment files.
+          miniforge-version: latest
+          environment-file: ${{ matrix.environment-file }}
+          # All three environment files declare 'name: gplates'.
+          activate-environment: gplates
+
+      - name: Install sccache
+        # Deliberately not added to the env.*.yml files: those are the developer dependency manifest
+        # and this is a CI-only tool. sccache (rather than ccache) because it treats MSVC as a
+        # first-class target, so one configuration works unchanged on all three platforms.
+        run: conda install --yes sccache
+
+      - name: Configure
+        # No -DCMAKE_PREFIX_PATH or -DBoost_ROOT: the top-level CMakeLists.txt detects the active
+        # conda environment from CONDA_PREFIX. The configure output should report
+        # "Detected active conda environment ..." - if it does not, activation above has failed.
+        #
+        # The compiler launchers are honoured by the Ninja and Makefile generators (all our
+        # documented builds use Ninja). Note this relies on GPLATES_USE_PRECOMPILED_HEADERS staying
+        # at its default of FALSE - sccache cannot cache translation units that use a precompiled
+        # header, so enabling PCH here would quietly gut the hit rate.
+        run: >
+          cmake -S . -B build-gplates -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DGPLATES_BUILD_GPLATES=TRUE
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+      - name: Build
+        # Both targets named explicitly: see the header comment. Building 'gplates-unit-test' also
+        # triggers CTest test discovery (the executable is run with '--gtest_list_tests', which its
+        # main() answers without needing a display).
+        run: cmake --build build-gplates --target gplates gplates-unit-test
+
+      - name: Compiler cache statistics
+        # Always reported, so the hit rate is visible in the log rather than assumed - it is the only
+        # way to tell whether the cache is earning its keep. Stopping the server flushes it to disk
+        # before the save step below.
+        if: always()
+        run: sccache --show-stats && sccache --stop-server
+
+      - name: Save compiler cache
+        # Only on push. A cache written by a pull request run is scoped to that pull request: the base
+        # branch and every other pull request cannot see it. Later runs of that same pull request can,
+        # but they gain little, because the base-branch cache already covers everything the pull
+        # request did not change - a re-run only recompiles the PR's own modified files either way.
+        # Pushes to 'gplates' warm the cache; pull requests restore from it.
+        # 'always()' so that a failed build still saves the objects it did compile.
+        if: always() && github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: sccache-gplates-${{ matrix.name }}-${{ github.sha }}
+
+      - name: Test
+        # '-C Release' matches the pygplates workflow. The unit tests are discovered by
+        # gtest_discover_tests() (which cannot attach CONFIGURATIONS), so unlike the pygplates tests
+        # they are not configuration-gated - but the tests are only registered for non-Debug builds
+        # (see src/CMakeLists.txt), and this build tree is Release.
+        # QT_QPA_PLATFORM defaults to 'offscreen' inside the test executable itself.
+        run: ctest --test-dir build-gplates -C Release --output-on-failure
+
+      - name: Upload test logs
+        # CTest keeps the full output of every test (including passing ones) under
+        # Testing/Temporary/ (LastTest.log) - upload it for post-mortem when a test fails.
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-logs-${{ matrix.name }}
+          path: build-gplates/Testing/Temporary/
