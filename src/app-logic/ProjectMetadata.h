@@ -74,6 +74,30 @@ namespace GPlatesAppLogic
 		 */
 		QMap<QString, double> resolution_km_by_feature_type;
 
+		/**
+		 * The step, in My, the project intends to evolve the world by. Optional.
+		 *
+		 * A statement of how finely the user means to work, not a limit. It matters to anything
+		 * that takes a known amount of time to happen: at a 1 My step, subduction initiation is
+		 * something watched over ten of them; at 10 My it arrives as a single event. A tool
+		 * modelling such a process reads this to know which of the two it is giving the user.
+		 */
+		boost::optional<double> granularity_my;
+
+		/**
+		 * How quickly subduction spreads once it exists. All optional, and independent of one
+		 * another - a project may pin down one of these and leave the rest to the consumer.
+		 *
+		 * These are rules of thumb rather than constants. The template's numbers are Earth's,
+		 * and a world with hotter mantle or weaker lithosphere has every right to different
+		 * ones. They live in the project so that "how long should this take?" has an answer
+		 * written down rather than guessed at afresh each time.
+		 */
+		boost::optional<double> subduction_initiation_my;
+		boost::optional<double> subduction_propagation_km_per_my;
+		boost::optional<double> subduction_reversal_my;
+		boost::optional<double> subduction_breakoff_my;
+
 		QString diagnostic;
 	};
 
