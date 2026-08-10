@@ -94,7 +94,17 @@ namespace
 		if (first_character == '[' || first_character == '{' ||
 			first_character == '&' || first_character == '*' ||
 			first_character == '!' || first_character == '|' ||
-			first_character == '>' || first_character == '-')
+			first_character == '>')
+		{
+			return false;
+		}
+
+		// A leading '-' is a sequence entry only when a space follows it, or when it stands alone.
+		// "-3" is a negative number, and reading it as a scalar is what lets it be reported as a
+		// bad value for its own field rather than failing the whole document as an unsupported
+		// construct - a negative radius should cost the radius, not the timestamp schedule.
+		if (first_character == '-' &&
+			(trimmed_scalar.size() == 1 || trimmed_scalar[1] == ' '))
 		{
 			return false;
 		}
@@ -143,7 +153,8 @@ namespace
 		const double number = scalar_iter.value().toDouble(&is_numeric);
 		if (!is_numeric || !std::isfinite(number) || number <= 0)
 		{
-			diagnostic = QObject::tr("%1 must be a finite positive number in %2.").arg(path, units);
+			diagnostic = QObject::tr("%1 is '%2'; it must be a finite positive number in %3.")
+					.arg(path, scalar_iter.value(), units);
 			return false;
 		}
 
@@ -316,20 +327,47 @@ GPlatesAppLogic::ProjectMetadataParser::parse(
 		}
 	}
 
-	if (!scalar_values.contains("gplates.planet.radius_m"))
-	{
-		return invalid_metadata(QObject::tr("The Primary Project Document does not define gplates.planet.radius_m."));
-	}
+	//
+	// From here on, every field stands or falls on its own.
+	//
+	// Above this point a failure means the document could not be read at all - a missing
+	// delimiter, broken indentation, a construct outside the supported subset - and there is
+	// nothing to salvage, because nothing was successfully parsed. Below it, the document parsed
+	// and we are looking at individual values. One bad number there is a mistake in one field, and
+	// discarding the other four because of it helps nobody: a project whose radius says zero still
+	// has a perfectly good timestamp schedule, and the user would rather have it.
+	//
+	// So a bad value leaves its own field unset - the consumer applies its own default, exactly as
+	// if the document had said nothing - and records why. Everything else is still read.
+	//
+	QStringList diagnostics;
 
-	bool radius_is_numeric = false;
-	const double radius_metres = scalar_values["gplates.planet.radius_m"].toDouble(&radius_is_numeric);
-	if (!radius_is_numeric || !std::isfinite(radius_metres) || radius_metres <= 0)
+	//
+	// Planet radius. Optional: a document that says nothing about its planet is describing Earth,
+	// which is the overwhelmingly common case and not worth making anyone write out.
+	//
+	// Present but unusable is a different matter, and is reported rather than quietly swapped for
+	// Earth's, because that is a typo rather than an omission and hiding it helps nobody.
+	//
+	if (scalar_values.contains("gplates.planet.radius_m"))
 	{
-		return invalid_metadata(QObject::tr("gplates.planet.radius_m must be a finite positive number in metres."));
+		bool radius_is_numeric = false;
+		const double radius_metres =
+				scalar_values["gplates.planet.radius_m"].toDouble(&radius_is_numeric);
+		if (!radius_is_numeric || !std::isfinite(radius_metres) || radius_metres <= 0)
+		{
+			const QString radius_problem =
+					QObject::tr("gplates.planet.radius_m is '%1'; it must be a finite positive number in metres.")
+							.arg(scalar_values["gplates.planet.radius_m"]);
+			metadata.planet_radius_is_valid = false;
+			metadata.planet_radius_diagnostic = radius_problem;
+			diagnostics.append(radius_problem);
+		}
+		else
+		{
+			metadata.planet_radius_metres = radius_metres;
+		}
 	}
-
-	metadata.planet_radius_metres = radius_metres;
-	metadata.planet_radius_is_valid = true;
 
 	//
 	// Intended resolution. Entirely optional - a project that says nothing about it leaves
@@ -341,7 +379,7 @@ GPlatesAppLogic::ProjectMetadataParser::parse(
 			scalar_values, "gplates.resolution.default_km", QObject::tr("kilometres"),
 			metadata.default_resolution_km, scalar_problem))
 	{
-		return invalid_metadata(scalar_problem);
+		diagnostics.append(scalar_problem);
 	}
 
 	// Per-feature-type overrides. The document writes bare names ("MidOceanRidge:") because a
@@ -357,21 +395,26 @@ GPlatesAppLogic::ProjectMetadataParser::parse(
 			continue;
 		}
 
+		// One unusable override costs only that feature type. The others, and the project default,
+		// are still worth having.
 		const QString feature_type_name = scalar_iter.key().mid(by_feature_type_prefix.length());
 		if (feature_type_name.isEmpty() || feature_type_name.contains('.'))
 		{
-			return invalid_metadata(
+			diagnostics.append(
 					QObject::tr("gplates.resolution.by_feature_type expects one feature type name per entry,"
 						" such as 'MidOceanRidge: 250'."));
+			continue;
 		}
 
 		bool resolution_is_numeric = false;
 		const double resolution_km = scalar_iter.value().toDouble(&resolution_is_numeric);
 		if (!resolution_is_numeric || !std::isfinite(resolution_km) || resolution_km <= 0)
 		{
-			return invalid_metadata(
-					QObject::tr("The resolution for feature type '%1' must be a finite positive number in kilometres.")
-							.arg(feature_type_name));
+			diagnostics.append(
+					QObject::tr("The resolution for feature type '%1' is '%2'; it must be a finite positive"
+						" number in kilometres.")
+							.arg(feature_type_name, scalar_iter.value()));
+			continue;
 		}
 
 		// Accept a name already carrying its namespace, so a document that writes
@@ -384,9 +427,7 @@ GPlatesAppLogic::ProjectMetadataParser::parse(
 
 	//
 	// The remaining intent fields: how big a step the world is evolved by, and how quickly
-	// subduction spreads once it exists. All optional and read here, above the timestamp schedule,
-	// because a bad value in any of them fails the document outright - doing that below would
-	// throw away a timestamp diagnostic that had already been gathered.
+	// subduction spreads once it exists. All optional, and all independent of one another.
 	//
 	// The template documents each of these, so a document setting one has every reason to expect
 	// it to mean something. Reading them here is what makes that true: unknown keys are otherwise
@@ -413,17 +454,19 @@ GPlatesAppLogic::ProjectMetadataParser::parse(
 				scalar_values, optional_scalar.path, optional_scalar.units,
 				*optional_scalar.value, scalar_problem))
 		{
-			return invalid_metadata(scalar_problem);
+			diagnostics.append(scalar_problem);
 		}
 	}
 
 	//
-	// Required project timestamps. Entirely optional, and validated independently of the radius
-	// above: a malformed schedule here must not disturb an otherwise-good radius, since the two
-	// are unrelated concerns that happen to share a document. A missing radius already returned
-	// above, so nothing below this point can retroactively invalidate it.
+	// Required project timestamps. Entirely optional, and validated independently of everything
+	// above: a malformed schedule must not disturb an otherwise-good radius or resolution, since
+	// they are unrelated concerns that happen to share a document.
 	//
-	QStringList diagnostics;
+	// This one carries its own validity flag as well as joining the shared diagnostics, because
+	// ProjectTimestampSchedule needs to tell "no schedule was asked for" apart from "a schedule
+	// was asked for and could not be read" - the first is silence, the second is a warning.
+	//
 	if (scalar_values.contains("gplates.reconstruction.required_timestamps_ma"))
 	{
 		const QStringList encoded_timestamps =
@@ -478,6 +521,14 @@ GPlatesAppLogic::ProjectMetadataParser::parse(
 	}
 
 	metadata.is_valid = diagnostics.isEmpty();
+	if (!diagnostics.isEmpty())
+	{
+		// Say what is wrong, then say what still works. A user reading a warning about one field
+		// has no way of knowing, otherwise, whether the rest of the document survived - and the
+		// answer is that it did.
+		diagnostics.append(
+				QObject::tr("Everything else in the document is still being used."));
+	}
 	metadata.diagnostic = diagnostics.join(" ");
 	return metadata;
 }

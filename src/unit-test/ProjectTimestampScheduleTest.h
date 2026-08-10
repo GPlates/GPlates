@@ -26,7 +26,7 @@ namespace GPlatesUnitTest
 		void test_single_timestamp();
 		void test_invalid_schedule();
 		void test_project_document_schedule();
-		void test_schedule_needs_a_readable_document();
+		void test_schedule_survives_other_bad_fields();
 	};
 
 	class ProjectTimestampScheduleTestSuite :
