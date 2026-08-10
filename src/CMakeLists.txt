@@ -302,8 +302,8 @@ find_package(Boost ${_GPLATES_MIN_BOOST_VERSION} REQUIRED
 			#         But for accessing the NumPy C API via Boost.Python.NumPy (which we don't do yet) it means
 			#         Boost.Python itself must be built against NumPy 2.0. And ensuring this is a bit more work.
 			#         For example, on Windows you'd need to make sure you install NumPy 2.0 into your Python versions
-			#         prior to building Boost from source code. And with MacPorts (on macOS) you'd need to ensure that
-			#         your 'py-numpy' port is updated (to 2.0).
+			#         prior to building Boost from source code. And on macOS/Linux you'd need to ensure that the
+			#         NumPy installed into your build environment (eg, conda) is updated (to 2.0).
 			#
 			#         So, since we're not yet using Boost.Python.NumPy we'll just disable it to avoid the possible runtime error:
 			#           "A module that was compiled using NumPy 1.x cannot be run in NumPy 2.0.0 as it may crash."

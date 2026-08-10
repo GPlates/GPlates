@@ -102,7 +102,7 @@ endif()
 
 #
 # Proj does not have a CONFIG package (at least not all platforms were installed as a CMake package) but more recent versions should.
-# Note that Proj 4.9 is still used by Ubuntu Bionic (18.04).
+# Note that our minimum supported Ubuntu release (Jammy 22.04) ships Proj via apt without a CMake CONFIG package.
 #
 
 if (PROJ_VERBOSE)
@@ -111,65 +111,17 @@ endif()
 
 # Find the PROJ header location.
 find_path(PROJ_INCLUDE_DIR
-  NAMES proj.h proj_api.h
-  PATHS
-    # Macports stores Proj in locations that are difficult for CMake to find without some help
-    # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH or via the PATH environment variable)...
-    /opt/local/lib/proj9/include
-    /opt/local/lib/proj8/include
-    /opt/local/lib/proj7/include
-    /opt/local/lib/proj6/include
-    /opt/local/lib/proj5/include
-    /opt/local/lib/proj49/include
-    # Homebrew...
-    /usr/local/opt/proj9/include
-    /usr/local/opt/proj8/include
-    /usr/local/opt/proj7/include
-    /usr/local/opt/proj6/include
-    /usr/local/opt/proj5/include
-    /usr/local/opt/proj49/include)
+  NAMES proj.h proj_api.h)
 
 # Find the PROJ library.
 find_library(PROJ_LIBRARY
   NAMES proj proj_i
-  NAMES_PER_DIR
-  PATHS
-    # Macports stores Proj in locations that are difficult for CMake to find without some help
-    # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH or via the PATH environment variable)...
-    /opt/local/lib/proj9/lib
-    /opt/local/lib/proj8/lib
-    /opt/local/lib/proj7/lib
-    /opt/local/lib/proj6/lib
-    /opt/local/lib/proj5/lib
-    /opt/local/lib/proj49/lib
-    # Homebrew...
-    /usr/local/opt/proj9/lib
-    /usr/local/opt/proj8/lib
-    /usr/local/opt/proj7/lib
-    /usr/local/opt/proj6/lib
-    /usr/local/opt/proj5/lib
-    /usr/local/opt/proj49/lib)
+  NAMES_PER_DIR)
 
 # Find the 'proj' executable.
 find_program(PROJ_EXE
     NAMES proj
-    NAMES_PER_DIR
-    PATHS
-        # Macports stores Proj in locations that are difficult for CMake to find without some help
-        # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH or via the PATH environment variable)...
-        /opt/local/lib/proj9/bin
-        /opt/local/lib/proj8/bin
-        /opt/local/lib/proj7/bin
-        /opt/local/lib/proj6/bin
-        /opt/local/lib/proj5/bin
-        /opt/local/lib/proj49/bin
-        # Homebrew...
-        /usr/local/opt/proj9/bin
-        /usr/local/opt/proj8/bin
-        /usr/local/opt/proj7/bin
-        /usr/local/opt/proj6/bin
-        /usr/local/opt/proj5/bin
-        /usr/local/opt/proj49/bin)
+    NAMES_PER_DIR)
 
 # Make sure we found the PROJ include header location and library.
 find_package_handle_standard_args(PROJ REQUIRED_VARS PROJ_LIBRARY PROJ_INCLUDE_DIR PROJ_EXE)
