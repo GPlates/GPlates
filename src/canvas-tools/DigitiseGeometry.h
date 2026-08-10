@@ -103,7 +103,21 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold);
-		
+
+		/**
+		 * Adds a vertex no further from the previous one than the project's intended resolution.
+		 *
+		 * Holding Shift is an explicit request to be held to that distance, so clamping here is
+		 * something the user asked for rather than something done behind their back. A plain
+		 * click is left alone.
+		 */
+		virtual
+		void
+		handle_shift_left_click(
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
+
 	private:
 
 		/**
