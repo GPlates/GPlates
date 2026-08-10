@@ -47,6 +47,9 @@ GPlatesQtWidgets::PreferencesPaneView::PreferencesPaneView(
 			"view/animation/default_time_range_end", toolbutton_reset_time_range);
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(spinbox_time_range_increment, prefs,
 			"view/animation/default_time_increment", toolbutton_reset_time_range);
+	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(
+			checkbox_lock_view_time_to_range, prefs,
+			"view/animation/lock_view_time_to_range", NULL);
 
 	// Misc view options link:-
 	

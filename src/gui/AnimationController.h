@@ -27,6 +27,7 @@
 #ifndef GPLATES_GUI_ANIMATIONCONTROLLER_H
 #define GPLATES_GUI_ANIMATIONCONTROLLER_H
 
+#include <QString>
 #include <QTimer>
 
 #include "utils/AnimationSequenceUtils.h"
@@ -387,6 +388,10 @@ namespace GPlatesGui
 		void
 		should_adjust_bounds_to_contain_current_time_changed(
 				bool adjust_bounds);
+
+		void
+		project_timestamp_navigation_message(
+				const QString &message);
 
 		void
 		animation_started();
