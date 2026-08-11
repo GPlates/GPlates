@@ -227,7 +227,7 @@ Now you can use pyGPlates. For example, to see the pyGPlates version:
   | The build scripts are more robust because they install the shared library dependencies into the wheel using ``auditwheel`` on Linux, ``delocate`` on macOS,
     and ``delvewheel`` on Windows. This generates *unique* shared library names to avoid potential conflicts with other installed Python packages that have
     the same dependencies as pyGPlates (eg, the GDAL dependency). This is in contrast to installing pyGPlates directly from source code (as described above), which does **not**
-    generate unique names because the dependency libraries (that you built above) are simply copied into the Python ``site-packages`` installation without renaming them.
+    generate unique names because the dependency libraries (that you installed above) are simply copied into the Python ``site-packages`` installation without renaming them.
 
 
 .. _pygplates_getting_started_troubleshooting:
