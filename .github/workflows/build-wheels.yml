@@ -1,0 +1,90 @@
+# Builds the pyGPlates sdist and wheels with cibuildwheel.
+#
+# The wheel configuration (Python versions, images, CMake defines, test command) lives in
+# '[tool.cibuildwheel]' in 'pyproject.toml' - this workflow just provides the runners.
+# The Linux builds run inside the dependency images from
+# '.github/workflows/build-wheel-images.yml'; see 'pygplates/wheel/README.md' for the
+# whole picture (including how to build a wheel locally).
+#
+# Full runs (every Python version) happen on release tags and manual dispatch. A pull request
+# that touches the wheel machinery instead builds a single Python version per platform - enough
+# to prove the machinery works without spending six builds' worth of runner time.
+#
+# The sdist is built here too: it's what PyPI users without a matching wheel fall back to,
+# and it's what the conda-forge feedstock pulls. A future publish workflow uploads these
+# artifacts to PyPI - until then they can be downloaded from the workflow run page.
+name: pygplates wheels
+
+on:
+  push:
+    tags: [ "PyGPlates-*" ]
+  pull_request:
+    branches: [ "pygplates" ]
+    paths:
+      - pygplates/wheel/**
+      - pyproject.toml
+      - .github/workflows/build-wheels.yml
+  workflow_dispatch:
+
+# Superseded runs are cancelled rather than left to finish (a full wheel matrix takes hours).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-sdist:
+    name: sdist
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - name: Check sdist
+        run: pipx run twine check dist/*.tar.gz
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  build-wheels:
+    name: wheels ${{ matrix.id }}
+    runs-on: ${{ matrix.os }}
+    # A full run is six Python versions: the first compiles pyGPlates from scratch (~40
+    # minutes) and the rest mostly hit the sccache populated by the first.
+    timeout-minutes: 360
+
+    strategy:
+      # Run every platform to completion, so one platform failing still reports the others.
+      fail-fast: false
+      matrix:
+        include:
+          - id: linux-x86_64
+            os: ubuntu-24.04
+          - id: linux-aarch64
+            os: ubuntu-24.04-arm
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Limit pull request runs to a single Python version
+        # A smoke test of the wheel machinery, not a release build. Setting CIBW_BUILD here
+        # overrides the 'build' list in pyproject.toml for this run only.
+        if: github.event_name == 'pull_request'
+        run: echo "CIBW_BUILD=cp313-*" >> "$GITHUB_ENV"
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v4.2.0
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.id }}
+          path: wheelhouse/*.whl

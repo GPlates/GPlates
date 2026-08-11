@@ -21,11 +21,7 @@ requires = [
     #
     # Note: We must *build* against NumPy 2.x in order to support both NumPy 1.x and 2.x at *runtime*.
     #       However the NumPy *runtime* requirement (in 'dependencies' below) needs no version restriction.
-    'numpy>=2.0; python_version>="3.9"',
-    # Note: Python 3.8 is not supported by NumPy 2.0.
-    #       Also note that *building* against NumPy 1.x does NOT support earlier (<1.x) versions at runtime.
-    #       So we use the oldest supported NumPy for the Python version and platform.
-    'oldest-supported-numpy; python_version<"3.9"'
+    'numpy>=2.0'
 ]
 
 #
@@ -36,7 +32,7 @@ name = "pygplates"
 description = "Python library for fine-grained access to GPlates functionality."
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = ["numpy"]
 license.file = "COPYING"
 authors = [
@@ -56,12 +52,12 @@ classifiers = [
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: GIS",
 ]
 
@@ -174,3 +170,69 @@ GPLATES_BUILD_GPLATES = "FALSE"
 provider = "scikit_build_core.metadata.regex"
 input = "cmake/modules/Version.cmake"
 regex = 'set\(\s*PYGPLATES_PEP440_VERSION\s*(?P<value>\S+)\s*\)'
+
+#
+# Cibuildwheel.
+#
+# All wheels (local and CI) are built with cibuildwheel - see 'pygplates/wheel/README.md' for
+# how to build one locally and '.github/workflows/build-wheels.yml' for the CI builds.
+#
+[tool.cibuildwheel]
+
+# The Python versions to build wheels for.
+#
+# An explicit list (rather than cibuildwheel's default of everything) so that a new Python
+# version is added deliberately: NumPy must ship wheels for it first (we build against the
+# NumPy C API), and the Linux images must be rebuilt with its Boost.Python library
+# (see 'pygplates/wheel/manylinux_2_28.dockerfile' - keep its Python versions in sync).
+build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
+
+# Belt-and-braces versus the explicit 'build' list above:
+# - musllinux (Alpine etc) would need a separate dependency stack built against musl
+#   (Alpine users can build from the sdist instead).
+# - PyPy is untested with Boost.Python.
+skip = ["*musllinux*", "pp*"]
+
+# Print the pip/build output (the default of 0 hides the entire CMake build behind a spinner,
+# which makes CI failures undiagnosable).
+build-verbosity = 1
+
+# Run the pyGPlates test suite against each repaired wheel.
+#
+# 'test-sources' copies 'pygplates/test' into the test working directory (preserving the
+# relative path), so the test command below finds it without referencing {project}
+# (which is unavailable when testing on a different machine/container than the build).
+test-sources = ["pygplates/test"]
+test-command = "python pygplates/test/test.py"
+
+[tool.cibuildwheel.config-settings]
+# The wheel-repair step (auditwheel/delocate/delvewheel) vendors the dependency shared
+# libraries into the wheel and mangles their names - so CMake must not copy them in as well.
+# This must be explicit: the automatic disabling of it keys on CONDA_BUILD, not on conda
+# presence (see 'cmake/modules/ConfigDefault.cmake').
+#
+# NOTE: Platform 'config-settings' tables below do NOT merge with this table - they override
+#       it entirely, so each platform table repeats this define.
+"cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
+
+[tool.cibuildwheel.linux]
+# Custom manylinux_2_28 images with the pyGPlates dependencies pre-installed - built and
+# pushed to GHCR by '.github/workflows/build-wheel-images.yml' from
+# 'pygplates/wheel/manylinux_2_28.dockerfile' (which can also build them locally).
+manylinux-x86_64-image = "ghcr.io/gplates/pygplates-manylinux_2_28_x86_64:latest"
+manylinux-aarch64-image = "ghcr.io/gplates/pygplates-manylinux_2_28_aarch64:latest"
+
+[tool.cibuildwheel.linux.config-settings]
+# See the note in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
+"cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
+# Link the LEGACY 'libGL' rather than the GLVND 'libOpenGL': auditwheel whitelists 'libGL'
+# (leaves it to come from the end user's system) but vendors 'libOpenGL' along with its
+# 'libGLdispatch' dependency into the wheel - and since Qt uses 'libGL' (which loads the
+# *system* libGLdispatch), that produced two OpenGL dispatch tables in one process and a
+# segmentation fault at 'import pygplates'. See 'pygplates/wheel/README.md' for the history.
+"cmake.define.OpenGL_GL_PREFERENCE" = "LEGACY"
+# Compile through sccache (installed in the images above). The cache only lives for the
+# duration of the cibuildwheel run, but the per-Python-version builds share most of their
+# object files, so the second and later Python versions build many times faster.
+"cmake.define.CMAKE_C_COMPILER_LAUNCHER" = "sccache"
+"cmake.define.CMAKE_CXX_COMPILER_LAUNCHER" = "sccache"

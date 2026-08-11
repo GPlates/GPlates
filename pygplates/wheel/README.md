@@ -1,143 +1,173 @@
 # Building Wheels
 
-Build Python wheels for pyGPlates on macOS, Windows and Linux (manylinux).
+PyGPlates wheels are built with [cibuildwheel](https://cibuildwheel.pypa.io/) - both in CI and
+locally. Cibuildwheel drives the whole per-wheel pipeline: build pyGPlates for each Python
+version, repair the wheel (copy the dependency shared libraries into it and give them unique
+names - `auditwheel` on Linux, `delocate` on macOS, `delvewheel` on Windows) and run the
+pyGPlates test suite against the repaired wheel.
 
-## Building wheels on macOS
+The pieces fit together like this:
 
-Building wheels on macOS involves running the `build_macos_wheels.sh` script.
-
-This will build the wheels for each currently supported Python minor version, test them and then copy them to the
-`wheelhouse` sub-directory of the root source directory.
-
-The script assumes you've used Macports to install the dependencies of pyGPlates, and
-as such you need to run it with root priveleges (eg, using sudo).
-
-> [!NOTE]
-> You may need to modify how the script activates the boost library variant associated with the current Python version
-> if you have a different boost version (eg, `port activate boost176 @1.76.0_10+no_single+no_static+python${cp_version}`).
-
-Also, it's a good idea to set the macOS deployment target using the MACOSX_DEPLOYMENT_TARGET environment variable.
-This can be set to a macOS version earlier than your build machine (so users on older systems can still use the wheel).
+| Piece | What it does |
+|---|---|
+| `[tool.cibuildwheel]` in the root `pyproject.toml` | The wheel configuration: Python versions, dependency images, CMake defines, test command. |
+| `manylinux_2_28.dockerfile` (this directory) | Docker image with the pyGPlates dependency libraries, that the Linux wheels are built inside. |
+| `.github/workflows/build-wheel-images.yml` | Builds the Docker images (natively, per architecture) and pushes them to GHCR. |
+| `.github/workflows/build-wheels.yml` | CI builds of the sdist and the wheels (full matrix on release tags and manual dispatch; single-Python smoke test on pull requests touching the wheel machinery). |
 
 > [!NOTE]
-> If you do this then you'll also need the same deployment target set in your dependency libraries.
->
-> For example, with Macports you can specify the following in your `/opt/local/etc/macports/macports.conf` file (prior to installing the ports):
->
->>```
->>    buildfromsource            always
->>    macosx_deployment_target   11.0
->>```
->
-> This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.  
-> For Apple Silicon, targeting 11.0 is sufficient (since M1/arm64 wasn't introduced until macOS 11.0).  
-> For Apple Intel, 10.15 (Catalina) is sufficient.
+> macOS and Windows are not migrated to cibuildwheel yet - see the legacy sections at the end.
+
+## Building a wheel locally
+
+Run cibuildwheel from the root source directory, selecting a single build with `--only`
+(otherwise it builds every Python version). For example:
+
+```
+pipx run cibuildwheel==4.2.* --only cp313-manylinux_x86_64
+```
+
+The repaired (and tested) wheel ends up in the `wheelhouse` sub-directory of the root source
+directory.
+
+On Linux, cibuildwheel runs the build inside Docker (so Docker must be installed) using the
+dependency image described below - it pulls the image from GHCR automatically, or uses your
+locally built copy if you have one (see the next section).
+
+## The Linux dependency image
+
+Linux wheels are `manylinux_2_28` wheels (AlmaLinux 8, glibc 2.28+), which work on every
+non-EOL mainstream distribution. `manylinux_2_28.dockerfile` extends the official
+`quay.io/pypa/manylinux_2_28` image with the pyGPlates dependency libraries. Qt is built from
+source in the image because EL8 has no Qt6 packages; Boost.Python is built once per supported
+Python version against the interpreters the base image provides in `/opt/python`.
+
+There is one image per architecture, both built by `.github/workflows/build-wheel-images.yml`:
+
+- `ghcr.io/gplates/pygplates-manylinux_2_28_x86_64`
+- `ghcr.io/gplates/pygplates-manylinux_2_28_aarch64`
+
+Each push is tagged `latest` (what wheel builds pull, as configured in
+`[tool.cibuildwheel.linux]` in `pyproject.toml`) and with the commit SHA it was built from
+(so older images remain pullable, eg, to rebuild an old release or bisect a dependency
+problem).
+
+### Rebuilding the image
+
+The images only need rebuilding when a dependency changes (ie, when the dockerfile changes).
+In CI that happens automatically: the workflow triggers on any push to the `pygplates` branch
+that touches the dockerfile (and can also be dispatched manually).
+
+To build the image locally instead (eg, to test a dockerfile change before pushing):
+
+```
+docker build -t ghcr.io/gplates/pygplates-manylinux_2_28_x86_64:latest -f manylinux_2_28.dockerfile .
+```
+
+...from this directory (add `--build-arg ARCH=aarch64` and adjust the tag when building on an
+arm64 machine, eg, Apple Silicon). Using the GHCR name as the local tag means a subsequent
+local `cibuildwheel` run uses your local image rather than pulling from GHCR.
 
 > [!NOTE]
-MACOSX_DEPLOYMENT_TARGET is used by scikit-build-core (see pyproject.toml) to determine the wheel tag.
-And CMake will use MACOSX_DEPLOYMENT_TARGET to set the default value for CMAKE_OSX_DEPLOYMENT_TARGET.
+> The GHCR packages must be *public* for unauthenticated pulls (eg, local cibuildwheel runs).
+> This is a one-time manual step after the first push of a new package:
+> GitHub organization -> Packages -> package settings -> Change visibility.
 
-For example, to build wheels supporting macOS 11.0 (and above):
+## Why the wheels are configured the way they are
+
+These are the reasons behind the non-obvious `[tool.cibuildwheel]` settings in
+`pyproject.toml` (learned the hard way with the pre-cibuildwheel wheel scripts).
+
+### `GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=FALSE`
+
+We set the CMake variable `GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES` to `FALSE`
+since we don't want to install shared library dependencies into the wheel - they will get
+installed (copied into the wheel) when `auditwheel` (or `delocate`/`delvewheel`) is
+subsequently run to repair our wheel. Note that this variable is only used if
+`GPLATES_INSTALL_STANDALONE` is `TRUE`, which it is by default when building using
+scikit-build-core (eg, `pip wheel ...`) outside of conda.
+
+### `OpenGL_GL_PREFERENCE=LEGACY` (Linux)
+
+We set the CMake variable `OpenGL_GL_PREFERENCE` to `LEGACY` (instead of the default `GLVND`).
+This causes pyGPlates to prefer to use the `libGL` LEGACY dependency (instead of the default
+`libOpenGL` GLVND dependency). The `libGL` library is whitelisted by auditwheel (meaning it
+will not be copied into the wheel repaired by auditwheel). This is presumably because it is
+available by default on all Linux distributions. Whereas `libOpenGL` is NOT whitelisted
+(presumably because it is NOT available by default on all Linux distros) and hence would need
+to be copied into the wheel (if it was used). However copying into the wheel is problematic if
+`libOpenGL` itself needs to come from the end machine (eg, if it's NOT hardware-independent -
+see <https://github.com/pypa/auditwheel/issues/241>). Alternatively, if `libOpenGL` actually
+is hardware-independent and we copy it into the wheel then the end machine might still need to
+have the `libglvnd` package installed (which is not the case for all Linux distros by
+default - see <https://github.com/linuxdeploy/linuxdeploy/issues/152#issuecomment-830975582>).
+So we prefer to link to `libGL` instead (which should be available by default on all Linux
+distros).
+
+Besides pyGPlates, Qt is the other library that uses `libGL`. And they made an effort to not
+use `libOpenGL` for the same reasons (ie, it's not installed by default on all Linux distros).
+See <https://bugreports.qt.io/browse/QTBUG-89754>.
+
+Previously we linked to `libOpenGL` (because we didn't set `OpenGL_GL_PREFERENCE` to `LEGACY`)
+and so it was copied into the wheel (because it's not whitelisted by auditwheel). It, in turn,
+links to `libGLdispatch` and so that was also copied into the wheel. That caused a
+segmentation fault during `import pygplates` because there were two copies of `libGLdispatch`
+being referenced. One was copied into the wheel (due to being a dependency of `libOpenGL` that
+was referenced by pyGPlates). The other was referenced by `libGL` (via Qt) and hence was not
+copied into the wheel (since `libGL` is whitelisted). The segmentation fault was most likely
+because, according to <https://github.com/NVIDIA/libglvnd>:
+
+> "since all OpenGL functions are dispatched through the same table in libGLdispatch,
+> it doesn't matter which library is used to find the entrypoint"
+
+...where by "it doesn't matter which library is used to find the entrypoint" they mean
+`libOpenGL` and `libGL` (not `libGLdispatch`). So having Qt reference
+`/usr/lib64/libGLdispatch.so.0` (via `libGL`) and pyGPlates reference the `libGLdispatch`
+copied into the wheel (via `libOpenGL`) would result in *two* dispatch tables (instead of one
+central table). And this is likely what caused the segmentation fault.
+
+The same two-dispatch-tables segfault can be reintroduced through *any* dependency that links
+the GLVND libraries, not just pyGPlates itself. It resurfaced twice while moving the image to
+manylinux_2_28 (reproduced with gdb - the crash is a null jump in `__glDispatchInit`):
+
+- EL8's `glew-devel` package links `libGLX`/`libOpenGL`/`libGLdispatch` (the CentOS 7 package
+  linked plain `libGL`) - so the image builds GLEW from source against `libGL` instead.
+- Qt 6 links `libEGL` (which also drags in `libGLdispatch`) when EGL headers are present at
+  configure time - so the image configures Qt with `FEATURE_egl=OFF` (desktop OpenGL on X11
+  goes through GLX and does not need EGL).
+
+The image's final sanity-check layer fails the build if `libQt6Gui` or `libGLEW` links any
+GLVND library, so a dependency change that reintroduces one is caught at image-build time.
+
+## Updating Python versions
+
+Wheels are built for the [currently supported Python versions](https://devguide.python.org/versions/)
+that NumPy ships wheels for (we build against the NumPy C API, so a Python version without
+NumPy wheels is not usable anyway). To add or remove a version:
+
+1. Update the `build` list in `[tool.cibuildwheel]` in `pyproject.toml`
+   (and `requires-python`/classifiers in `[project]` if the floor changed).
+2. Update the Boost.Python versions in `manylinux_2_28.dockerfile` to match, and rebuild the
+   Linux images (a push of the dockerfile change rebuilds them automatically).
+
+## Building wheels on macOS (legacy - not yet migrated to cibuildwheel)
+
+The `build_macos_wheels.sh` script builds, tests and copies wheels into the `wheelhouse`
+sub-directory of the root source directory, for each Python version listed in the script. It
+predates the conda-first dependency setup (it assumes MacPorts dependencies, run as root) and
+will be replaced by a cibuildwheel configuration in a follow-up.
 
 ```
 sudo -H MACOSX_DEPLOYMENT_TARGET=11.0 ./build_macos_wheels.sh
 ```
 
-The final wheels are in the `wheelhouse` sub-directory of the root source directory.
+## Building wheels on Windows (legacy - not yet migrated to cibuildwheel)
 
-> [!NOTE]
-> By default all available CPU cores will be used when building pyGPlates. You can change this by adding
-> the CMAKE_BUILD_PARALLEL_LEVEL environment variable (set to the desired number of cores to use).
-> For example, `sudo -H CMAKE_BUILD_PARALLEL_LEVEL=4 ...`.
-
-## Building wheels on Windows
-
-Building wheels on Windows involves running the `build_windows_wheels.bat` batch file in a Command Prompt.
-
-This will build the wheels for each currently supported Python minor version, test them and then copy them to the
-`wheelhouse` sub-directory of the root source directory.
-
-The script assumes you've installed the currently supported Python versions (to be accessed using `py -<version> ...`, eg, `py -3.10 ...`)
-and that you've installed the dependencies of pyGPlates.
-
-To build the wheels, run the following in a Command Prompt:
+The `build_windows_wheels.bat` batch file builds, tests and copies wheels into the
+`wheelhouse` sub-directory of the root source directory, for each Python version listed in the
+batch file (accessed via the `py -<version>` launcher). It will be replaced by a cibuildwheel
+configuration in a follow-up.
 
 ```
 cmd /c build_windows_wheels.bat
 ```
-
-## Building wheels on Linux
-
-Building wheels on Linux generates manylinux2014 wheels that should work on all Linux systems compatible with CentOS 7 (glibc 2.17).
-
-This involves first building a Docker image using `manylinux.dockerfile` and then running it to build manylinux2014 wheels
-for currently supported Python versions.
-
-The final wheels are in the `wheelhouse` sub-directory of the root source directory.
-
-### Build the pyGPlates manylinux Docker image
-
-The dockerfile `manylinux.dockerfile` is used to build a Docker image that extends `quay.io/pypa/manylinux2014_x86_64`
-by installing the pyGPlates dependency libraries. It can be built using something like:
-
-```
-docker build --build-arg NUM_CORES=4 -t pygplates-manylinux -f ./manylinux.dockerfile .
-```
-
-...from this directory to produce the docker image `pygplates-manylinux`.
-And where NUM_CORES specifies the number of CPU cores used to compile the dependency libraries (of pyGPlates).
-
-When building on an Arm64 architecture (eg, Apple Silicon), you'll need to specify a different architecture
-(the default is `x86_64`). This can be done by adding the ARCH variable (set to `aarch64`):
-
-```
-docker build --build-arg ARCH=aarch64 ...
-```
-
-...to build a Docker image that extends `quay.io/pypa/manylinux2014_aarch64`.
-
-### Create pyGPlates manylinux wheels
-
-Using the above Docker image you can then build the manylinux wheels for pyGPlates using something like:
-
-```
-docker run --rm --mount type=bind,source=$(pwd)/../../,target=/io pygplates-manylinux
-```
-
-...from this directory and it will build wheels using this source code (ie, `$(pwd)/../../` is the root source directory).
-The mount option binds the host directory `$(pwd)/../../` to the Docker container directory `/io/`
-(which is referenced by the wheel-building script `build_manylinux_wheels.sh` within the Docker container).
-On Windows this command-line should work in PowerShell (command-line console).
-
-This will build the wheels for each currently supported Python minor version, test them and then copy them to the
-`wheelhouse` sub-directory of the root source directory (ie, `$(pwd)/../../wheelhouse/`) on the host (ie, outside Docker container).
-
-By default all available CPU cores will be used when building pyGPlates. You can change this by adding
-the CMAKE_BUILD_PARALLEL_LEVEL environment variable (set to the desired number of cores to use).
-For example:
-
-```
-docker run --env CMAKE_BUILD_PARALLEL_LEVEL=4 ...
-```
-
-The final wheels are in the `wheelhouse` sub-directory of the root source directory.
-
-## Updating Python versions
-
-Wheels are built for the [currently supported Python versions](https://devguide.python.org/versions/).
-As those versions change, the Python versions specified in the build scripts will need to be updated.
-
-### macOS
-
-The script that builds the pyGPlates wheels is `build_macos_wheels.sh`.
-To update the Python versions just specify them in the line containing `for cp_version in ...` in that script.
-
-### Windows
-
-The batch file that builds the pyGPlates wheels is `build_windows_wheels.bat`.
-To update the Python versions just specify them in the line containing `for %%v in (...)` in that batch file.
-
-### Linux
-
-The script that builds the pyGPlates wheels is `build_manylinux_wheels.sh` (it is copied into the Docker image).
-To update the Python versions just specify them in the line containing `for cp_version in ...` in that script and rebuild the Docker image.
