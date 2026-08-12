@@ -27,11 +27,11 @@
 #include <limits>
 #include <boost/foreach.hpp>
 
-#include <fstream>
 #include <sstream>
 #include <string>
 #include <QBuffer>
 #include <QFile>
+#include <QTextStream>
 
 #include "PlatesRotationFileProxy.h"
 
@@ -1025,13 +1025,26 @@ GPlatesFileIO::GrotWriterWithoutCfg::visit_gpml_metadata(
 	gpml_metadata.get_data().serialize(buf);
 	d_output_stream->seek(0);
 	
-	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
-	std::ifstream ifs(d_file_ref.get_file_info().get_qfileinfo().filePath().toStdString().c_str());
-	std::string str(
-			(std::istreambuf_iterator<char>(ifs)),
-			std::istreambuf_iterator<char>());
+	// Read the file through QFile rather than std::ifstream so that paths containing
+	// non-ASCII characters work. QString::toStdString() encodes as UTF-8, but the narrow
+	// std::ifstream constructor interprets its path using the process' ANSI code page on
+	// Windows, so any path outside that code page silently failed to open and the existing
+	// file contents were dropped from the output.
+	QString existing_contents;
+	QFile existing_file(d_file_ref.get_file_info().get_qfileinfo().filePath());
+	if (existing_file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		QTextStream existing_stream(&existing_file);
+		// Match the UTF-8 encoding that the output stream is written with.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		existing_stream.setEncoding(QStringConverter::Utf8);
+#else
+		existing_stream.setCodec("UTF-8");
+#endif
+		existing_contents = existing_stream.readAll();
+	}
 	(*d_output_stream) << buf;
-	(*d_output_stream) << str.c_str();
+	(*d_output_stream) << existing_contents;
 }
 
 
