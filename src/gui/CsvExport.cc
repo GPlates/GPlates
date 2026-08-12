@@ -25,15 +25,72 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <stdexcept>
+#include <QFile>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QString>
 #include <QTableWidget>
+#include <QTextStream>
+#include <QtGlobal>
 
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "CsvExport.h"
 
 namespace {
+
+	/**
+	 * Opens @a file for writing and attaches @a os to it as a UTF-8 text stream.
+	 *
+	 * The file is opened through QFile rather than std::ofstream so that paths containing
+	 * non-ASCII characters work. QString::toStdString() encodes as UTF-8, but the narrow
+	 * std::ofstream constructor interprets its path using the process' ANSI code page on
+	 * Windows, so any path outside that code page failed to open.
+	 */
+	void
+	open_csv_file(
+			QFile &file,
+			QTextStream &os)
+	{
+		if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+		{
+			throw GPlatesFileIO::ErrorOpeningFileForWritingException(
+					GPLATES_EXCEPTION_SOURCE,
+					file.fileName());
+		}
+
+		os.setDevice(&file);
+
+		// The replaced code wrote UTF-8 bytes (via QString::toStdString()), so ask for UTF-8
+		// explicitly rather than inheriting the locale codec under Qt5.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		os.setEncoding(QStringConverter::Utf8);
+#else
+		os.setCodec("UTF-8");
+#endif
+	}
+
+	/**
+	 * Flushes @a os and throws if anything went wrong while writing.
+	 *
+	 * The replaced std::ofstream had exceptions enabled for badbit/failbit; QTextStream
+	 * reports failures through its device instead, so they are checked explicitly.
+	 */
+	void
+	close_csv_file(
+			QFile &file,
+			QTextStream &os)
+	{
+		// Flush the stream into the file and the file to the OS: an error such as a full disk
+		// can surface at either point, and QFile::close() retains the error status.
+		os.flush();
+		file.close();
+
+		if (file.error() != QFile::NoError)
+		{
+			throw std::runtime_error(file.errorString().toStdString());
+		}
+	}
 
 	/**
 	 * Attempts to apply quoting/escaping rules to a single CSV field
@@ -70,7 +127,7 @@ namespace {
 	void
 	export_table_view_header(
 			const QTableView &table_view,
-			std::ofstream &os,
+			QTextStream &os,
 			const GPlatesGui::CsvExport::ExportOptions &options)
 	{
 		int num_columns = table_view.model()->columnCount();
@@ -80,14 +137,16 @@ namespace {
 			QVariant header = table_view.model()->headerData(column,Qt::Horizontal);
 
 			header_item_as_string = csv_quote_if_necessary(header.toString(), options);
-			os << header_item_as_string.toStdString().c_str();
+			os << header_item_as_string;
 
 			// Separate fields with a delimiter.
 			if (column < (num_columns - 1)) {
 				os << options.delimiter;
 			}
 		}
-		os << std::endl;
+		// The file is opened with QIODevice::Text, so this becomes the platform line ending
+		// just as the replaced std::ofstream's text mode did.
+		os << "\n";
 
 	}
 
@@ -103,11 +162,11 @@ namespace GPlatesGui
 			const QTableWidget &table)
 	{
 		QFileInfo file_info(filename);
+		QFile file(filename);
+		QTextStream os;
 		try{
 
-			std::ofstream os;
-			os.exceptions(std::ios::badbit | std::ios::failbit);
-			os.open(filename.toStdString().c_str());
+			open_csv_file(file, os);
 
 			int num_columns = table.columnCount();
 			int num_rows = table.rowCount();
@@ -126,7 +185,7 @@ namespace GPlatesGui
 					item = table.item(row, column);
 					if (item) {
 						item_as_str = csv_quote_if_necessary(item->text(), options);
-						os << item_as_str.toStdString().c_str();
+						os << item_as_str;
 					}
 
 					// Separate fields with a delimiter.
@@ -136,9 +195,18 @@ namespace GPlatesGui
 
 				}
 
-				os << std::endl;
+				os << "\n";
 
 			}
+
+			close_csv_file(file, os);
+		}
+		catch (GPlatesFileIO::ErrorOpeningFileForWritingException &)
+		{
+			QString message = QObject::tr("Error opening file '%1' for writing")
+					.arg(file_info.filePath());
+			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
+								  QMessageBox::Ok, QMessageBox::Ok);
 		}
 		catch (std::exception &exc)
 		{
@@ -166,12 +234,11 @@ namespace GPlatesGui
 			const QTableView &table)
 	{
 		QFileInfo file_info(filename);
+		QFile file(filename);
+		QTextStream os;
 		try{
 
-			std::ofstream os;
-			os.exceptions(std::ios::badbit | std::ios::failbit);
-			os.open(filename.toStdString().c_str());
-
+			open_csv_file(file, os);
 
 			QAbstractItemModel *model = table.model();
 
@@ -192,7 +259,7 @@ namespace GPlatesGui
 						// if no item has been set at the (row, column) position.
 						QVariant data = model->index(row,column).data();
 						item_as_str = csv_quote_if_necessary(data.toString(), options);
-						os << item_as_str.toStdString().c_str();
+						os << item_as_str;
 
 						// Separate fields with a delimiter.
 						if (column < (num_columns - 1)) {
@@ -201,10 +268,19 @@ namespace GPlatesGui
 
 					}
 
-					os << std::endl;
+					os << "\n";
 
 				}
 			}
+
+			close_csv_file(file, os);
+		}
+		catch (GPlatesFileIO::ErrorOpeningFileForWritingException &)
+		{
+			QString message = QObject::tr("Error opening file '%1' for writing")
+					.arg(file_info.filePath());
+			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
+								  QMessageBox::Ok, QMessageBox::Ok);
 		}
 		catch (std::exception &exc)
 		{
@@ -228,17 +304,17 @@ namespace GPlatesGui
 
 	void
 	CsvExport::export_line(
-			std::ofstream &os,
+			QTextStream &os,
 			const CsvExport::ExportOptions &options,
 			const LineDataType &line_data)
 	{
-		
+
 		std::vector<QString>::const_iterator it;
 
 		for(it=line_data.begin();it!=line_data.end();it++)
 		{
 			QString str = csv_quote_if_necessary(*it, options);
-			os << str.toStdString().c_str();
+			os << str;
 
 			if (it!=(line_data.end() - 1))
 			{
@@ -246,7 +322,7 @@ namespace GPlatesGui
 			}
 
 		}
-		os << std::endl;
+		os << "\n";
 		return;
 	}
 
@@ -256,35 +332,40 @@ namespace GPlatesGui
 			const CsvExport::ExportOptions &options,
 			const std::vector<CsvExport::LineDataType> &data)
 	{
-		std::ofstream os;
 		QFileInfo file_info(filename);
-		try{	
-			os.exceptions(std::ios::badbit | std::ios::failbit);
-			os.open(filename.toStdString().c_str());
+		QFile file(filename);
+		QTextStream os;
+		try{
+			open_csv_file(file, os);
 			std::vector<CsvExport::LineDataType>::const_iterator it;
 			for(it=data.begin();it!=data.end();it++)
 			{
 				export_line(os,options,*it);
 			}
 
+			close_csv_file(file, os);
+		}
+		catch (GPlatesFileIO::ErrorOpeningFileForWritingException &)
+		{
+			QString message = QObject::tr("Error opening file '%1' for writing")
+					.arg(file_info.filePath());
+			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
+					QMessageBox::Ok, QMessageBox::Ok);
 		}
 		catch (std::exception &exc)
 		{
-			os.close();
 			QString message = QObject::tr("Error writing to file '%1': %2")
 					.arg(file_info.filePath()).arg(exc.what());
 			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
-					QMessageBox::Ok, QMessageBox::Ok);					
+					QMessageBox::Ok, QMessageBox::Ok);
 		}
 		catch(...)
 		{
-			os.close();
 			QString message = QObject::tr("An error occurred while writing to file '%1'")
 				.arg(file_info.filePath());
 			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);					
+				QMessageBox::Ok, QMessageBox::Ok);
 		}
-		os.close();
 		return;
 	}
 
