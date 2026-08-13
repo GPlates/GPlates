@@ -3,8 +3,9 @@
 #
 # The images extend the official manylinux_2_28 images with the pyGPlates dependency libraries
 # (see 'pygplates/wheel/manylinux_2_28.dockerfile'). They only need rebuilding when a dependency
-# changes (ie, when the dockerfile changes) - the wheel builds themselves just pull the images
-# (see '.github/workflows/build-wheels.yml' and '[tool.cibuildwheel.linux]' in 'pyproject.toml').
+# changes (ie, when the dockerfile or the version pins in 'pygplates/wheel/versions.sh' change) -
+# the wheel builds themselves just pull the images (see '.github/workflows/build-wheels.yml'
+# and '[tool.cibuildwheel.linux]' in 'pyproject.toml').
 #
 # Each architecture builds natively on its own runner (no QEMU emulation - a Qt source build
 # under emulation would take many times longer than the native ~2 hours).
@@ -22,6 +23,7 @@ on:
     branches: [ "pygplates" ]
     paths:
       - pygplates/wheel/manylinux_2_28.dockerfile
+      - pygplates/wheel/versions.sh
       - .github/workflows/build-wheel-images.yml
   workflow_dispatch:
 
