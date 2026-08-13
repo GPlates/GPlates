@@ -10,13 +10,16 @@ The pieces fit together like this:
 
 | Piece | What it does |
 |---|---|
-| `[tool.cibuildwheel]` in the root `pyproject.toml` | The wheel configuration: Python versions, dependency images, CMake defines, test command. |
+| `[tool.cibuildwheel]` in the root `pyproject.toml` | The wheel configuration: Python versions, dependency images, hooks, CMake defines, test command. |
+| `versions.sh` (this directory) | The dependency version pins - the single source of truth shared by the Linux image and the macOS dependency build. |
 | `manylinux_2_28.dockerfile` (this directory) | Docker image with the pyGPlates dependency libraries, that the Linux wheels are built inside. |
+| `build_macos_deps.sh` (this directory) | Builds the pyGPlates dependency libraries on macOS (run automatically by cibuildwheel, once per machine; cached in CI). |
+| `build_boost_python.sh` (this directory) | Builds Boost.Python against each wheel's Python version (run automatically by cibuildwheel before each wheel build). |
 | `.github/workflows/build-wheel-images.yml` | Builds the Docker images (natively, per architecture) and pushes them to GHCR. |
 | `.github/workflows/build-wheels.yml` | CI builds of the sdist and the wheels (full matrix on release tags and manual dispatch; single-Python smoke test on pull requests touching the wheel machinery). |
 
 > [!NOTE]
-> macOS and Windows are not migrated to cibuildwheel yet - see the legacy sections at the end.
+> Windows is not migrated to cibuildwheel yet - see the legacy section at the end.
 
 ## Building a wheel locally
 
@@ -27,12 +30,17 @@ Run cibuildwheel from the root source directory, selecting a single build with `
 pipx run cibuildwheel==4.2.* --only cp313-manylinux_x86_64
 ```
 
-The repaired (and tested) wheel ends up in the `wheelhouse` sub-directory of the root source
+...or `--only cp313-macosx_arm64` on Apple Silicon (`cp313-macosx_x86_64` on Intel). The
+repaired (and tested) wheel ends up in the `wheelhouse` sub-directory of the root source
 directory.
 
 On Linux, cibuildwheel runs the build inside Docker (so Docker must be installed) using the
 dependency image described below - it pulls the image from GHCR automatically, or uses your
 locally built copy if you have one (see the next section).
+
+On macOS, the first run builds the dependency libraries into `~/pygplates-wheel-deps` (about
+an hour - later runs reuse them; see the macOS section below). Xcode command line tools,
+`python3` and `cmake` must be installed.
 
 ## The Linux dependency image
 
@@ -54,9 +62,10 @@ problem).
 
 ### Rebuilding the image
 
-The images only need rebuilding when a dependency changes (ie, when the dockerfile changes).
-In CI that happens automatically: the workflow triggers on any push to the `pygplates` branch
-that touches the dockerfile (and can also be dispatched manually).
+The images only need rebuilding when a dependency changes (ie, when the dockerfile or the
+version pins in `versions.sh` change). In CI that happens automatically: the workflow triggers
+on any push to the `pygplates` branch that touches either file (and can also be dispatched
+manually).
 
 To build the image locally instead (eg, to test a dockerfile change before pushing):
 
@@ -72,6 +81,33 @@ local `cibuildwheel` run uses your local image rather than pulling from GHCR.
 > The GHCR packages must be *public* for unauthenticated pulls (eg, local cibuildwheel runs).
 > This is a one-time manual step after the first push of a new package:
 > GitHub organization -> Packages -> package settings -> Change visibility.
+> (The CI wheel builds log in with `GITHUB_TOKEN`, so they work either way.)
+
+## The macOS dependency libraries
+
+macOS wheels are thin (single-architecture) `macosx_11_0_arm64` and `macosx_11_0_x86_64`
+wheels, built natively on each architecture. There is no dependency image on macOS - instead
+cibuildwheel runs `build_macos_deps.sh` (its `before-all` hook) once per machine, which
+installs the dependency libraries into a single prefix, `~/pygplates-wheel-deps`:
+
+- Qt comes as the official binaries (downloaded with [aqtinstall](https://github.com/miurahr/aqtinstall)),
+  with each framework library thinned from universal to the build architecture - halving what
+  delocate later vendors into the wheels.
+- Qwt, GLEW, Boost, PROJ, GDAL, GMP, MPFR and CGAL are built from source (macOS has no
+  system package manager, and Homebrew binaries must not leak into the wheels - see below).
+  The versions come from `versions.sh`, shared with the Linux image - so the platforms
+  cannot drift apart.
+- Boost.Python is the exception: it must match each wheel's Python version, so cibuildwheel
+  runs `build_boost_python.sh` (its `before-build` hook) with each build's Python on PATH,
+  reusing the Boost source tree that `build_macos_deps.sh` leaves in the prefix. Each version
+  is built only once (about a minute) and then reused.
+
+In CI the whole prefix is cached (`.github/workflows/build-wheels.yml`), keyed on the hash of
+`versions.sh` and the two scripts plus the deployment target - so bumping a dependency version
+rebuilds the cache automatically, and runs with an up-to-date cache spend about a minute
+restoring it instead of about an hour building dependencies. `build_macos_deps.sh` is
+idempotent (each dependency is stamped once installed), so a partial cache saved by a failed
+run is completed by the next run, not rebuilt from scratch.
 
 ## Why the wheels are configured the way they are
 
@@ -139,6 +175,35 @@ manylinux_2_28 (reproduced with gdb - the crash is a null jump in `__glDispatchI
 The image's final sanity-check layer fails the build if `libQt6Gui` or `libGLEW` links any
 GLVND library, so a dependency change that reintroduces one is caught at image-build time.
 
+### `CMAKE_INSTALL_RPATH` (macOS)
+
+The Qt frameworks and the CMake-built dependencies (PROJ, GDAL) have `@rpath/...` install
+names, and delocate resolves those through the rpaths recorded in the binaries that reference
+them. But CMake *strips* the build rpaths from the pygplates module when it installs it (and
+the pyGPlates build system doesn't set an install rpath of its own) - leaving delocate unable
+to resolve any `@rpath/...` dependency. So `pyproject.toml` passes `CMAKE_INSTALL_RPATH`
+(pointing at the deps prefix's `lib` and Qt `lib` directories) to the pyGPlates build, and
+`build_macos_deps.sh` does the equivalent for the dependencies' own dependencies (PROJ's rpath
+in GDAL, Qt's in Qwt). The rpaths only need to be valid on the *build* machine: delocate
+follows them to find the libraries, copies the libraries into the wheel, and rewrites every
+reference to `@loader_path/...`.
+
+### No Homebrew, no libpython (macOS)
+
+The GitHub macOS runners carry a large Homebrew installation, and any dependency configured
+against it would get Homebrew libraries vendored into the wheels - libraries built for the
+runner's macOS version (much newer than `MACOSX_DEPLOYMENT_TARGET`) that can change ABI
+whenever the runner image updates. So the source builds only look in the deps prefix and the
+macOS SDK (GDAL's other optional dependencies are explicitly disabled - it uses its internal
+copies), and `build_macos_deps.sh` ends with a sanity check that fails the run if anything
+links a Homebrew path.
+
+Similarly, `libboost_python` must not link `libpython`: delocate would vendor a second Python
+runtime into the wheel. `build_boost_python.sh` gives b2 no Python library to link against -
+Boost.Python's Python symbols resolve at import time (`-undefined dynamic_lookup`, standard
+practice for anything loaded into a Python process) - and fails if the built library links a
+Python runtime anyway.
+
 ## Updating Python versions
 
 Wheels are built for the [currently supported Python versions](https://devguide.python.org/versions/)
@@ -147,19 +212,10 @@ NumPy wheels is not usable anyway). To add or remove a version:
 
 1. Update the `build` list in `[tool.cibuildwheel]` in `pyproject.toml`
    (and `requires-python`/classifiers in `[project]` if the floor changed).
-2. Update the Boost.Python versions in `manylinux_2_28.dockerfile` to match, and rebuild the
-   Linux images (a push of the dockerfile change rebuilds them automatically).
-
-## Building wheels on macOS (legacy - not yet migrated to cibuildwheel)
-
-The `build_macos_wheels.sh` script builds, tests and copies wheels into the `wheelhouse`
-sub-directory of the root source directory, for each Python version listed in the script. It
-predates the conda-first dependency setup (it assumes MacPorts dependencies, run as root) and
-will be replaced by a cibuildwheel configuration in a follow-up.
-
-```
-sudo -H MACOSX_DEPLOYMENT_TARGET=11.0 ./build_macos_wheels.sh
-```
+2. Update `PYTHON_VERSIONS` in `versions.sh` to match, and rebuild the Linux images
+   (a push of the change rebuilds them automatically).
+   (macOS needs no equivalent step: `build_boost_python.sh` builds Boost.Python for whatever
+   Python versions the `build` list asks for.)
 
 ## Building wheels on Windows (legacy - not yet migrated to cibuildwheel)
 

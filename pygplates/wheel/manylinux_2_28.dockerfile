@@ -23,6 +23,9 @@
 # Qt 6.7 is the last series supporting macOS 11, which the macOS wheels target - the Linux
 # image uses the same version so all wheels ship the same Qt.
 #
+# The dependency versions come from 'versions.sh' (in this directory), shared with the macOS
+# dependency build so the platforms cannot drift apart.
+#
 # Everything is installed under /usr/local (which CMake and the compiler search by default) and
 # registered with the dynamic linker via /etc/ld.so.conf.d - deliberately no reliance on ENV
 # variables like LD_LIBRARY_PATH or CMAKE_PREFIX_PATH surviving into cibuildwheel's shell.
@@ -82,13 +85,19 @@ RUN pipx install ninja
 RUN printf '/usr/local/lib\n/usr/local/lib64\n' > /etc/ld.so.conf.d/pygplates-deps.conf && \
     ldconfig
 
+# The dependency version pins - shared with the macOS dependency build ('versions.sh' is the
+# single source of truth for both platforms). Each build step below sources it (rather than
+# receiving per-version ARGs) so that a local 'docker build' needs no --build-arg plumbing -
+# at the cost that a version bump invalidates every layer from here down (fine: the CI image
+# builds start from scratch anyway).
+COPY versions.sh /tmp/versions.sh
+
 # sccache (a static musl binary, so it has no dependencies on the image).
 #
 # Not used when building this image - it's for the wheel builds this image hosts:
 # cibuildwheel builds pyGPlates once per Python version, and the six builds share most of
 # their object files, so builds 2-6 hit the cache populated by build 1.
-ARG SCCACHE_VERSION=0.17.0
-RUN cd /tmp && \
+RUN . /tmp/versions.sh && cd /tmp && \
     curl -sSL https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-${ARCH}-unknown-linux-musl.tar.gz | tar xz && \
     install -m 755 sccache-v${SCCACHE_VERSION}-${ARCH}-unknown-linux-musl/sccache /usr/local/bin/sccache && \
     rm -rf /tmp/sccache-v${SCCACHE_VERSION}-${ARCH}-unknown-linux-musl
@@ -102,9 +111,8 @@ RUN cd /tmp && \
 
 # SQLite3 (for PROJ and GDAL - EL8's sqlite 3.26 is older than they like).
 WORKDIR /tmp/build
-ARG SQLITE3_YEAR=2024
-ARG SQLITE3_VERSION=3460000
-RUN curl -sSL https://sqlite.org/${SQLITE3_YEAR}/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz | tar xz --strip-components=1 && \
+RUN . /tmp/versions.sh && \
+    curl -sSL https://sqlite.org/${SQLITE3_YEAR}/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz | tar xz --strip-components=1 && \
     ./configure && \
     make -j $(nproc) && \
     make install && \
@@ -119,9 +127,9 @@ RUN curl -sSL https://sqlite.org/${SQLITE3_YEAR}/sqlite-autoconf-${SQLITE3_VERSI
 # vendored into the wheel - recreating the two-libGLdispatch-copies segmentation fault at
 # 'import pygplates' that OpenGL_GL_PREFERENCE=LEGACY exists to prevent
 # (see 'pygplates/wheel/README.md' for that history).
-ARG GLEW_VERSION=2.2.0
 WORKDIR /tmp/build
-RUN curl -sSL https://github.com/nigels-com/glew/releases/download/glew-${GLEW_VERSION}/glew-${GLEW_VERSION}.tgz | tar xz --strip-components=1 && \
+RUN . /tmp/versions.sh && \
+    curl -sSL https://github.com/nigels-com/glew/releases/download/glew-${GLEW_VERSION}/glew-${GLEW_VERSION}.tgz | tar xz --strip-components=1 && \
     make -j $(nproc) GLEW_DEST=/usr/local && \
     make install GLEW_DEST=/usr/local && \
     ldconfig && \
@@ -141,10 +149,10 @@ RUN curl -sSL https://github.com/nigels-com/glew/releases/download/glew-${GLEW_V
 # OpenGL_GL_PREFERENCE=LEGACY for the same reason: Qt's build uses CMake's FindOpenGL, whose
 # default GLVND preference makes libQt6Gui link libGLX/libOpenGL directly (both vendored by
 # auditwheel) instead of the whitelisted legacy libGL.
-ARG QT_VERSION_MAJOR_MINOR=6.7
-ARG QT_VERSION=6.7.3
+# (${QT_VERSION%.*} strips the patch level - the download path groups releases by series.)
 WORKDIR /tmp/build
-RUN curl -sSL https://download.qt.io/archive/qt/${QT_VERSION_MAJOR_MINOR}/${QT_VERSION}/submodules/qtbase-everywhere-src-${QT_VERSION}.tar.xz | tar xJ --strip-components=1 && \
+RUN . /tmp/versions.sh && \
+    curl -sSL https://download.qt.io/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/qtbase-everywhere-src-${QT_VERSION}.tar.xz | tar xJ --strip-components=1 && \
     mkdir build && cd build && \
     cmake -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -161,7 +169,8 @@ RUN curl -sSL https://download.qt.io/archive/qt/${QT_VERSION_MAJOR_MINOR}/${QT_V
     ldconfig && \
     rm -rf /tmp/build
 WORKDIR /tmp/build
-RUN curl -sSL https://download.qt.io/archive/qt/${QT_VERSION_MAJOR_MINOR}/${QT_VERSION}/submodules/qtsvg-everywhere-src-${QT_VERSION}.tar.xz | tar xJ --strip-components=1 && \
+RUN . /tmp/versions.sh && \
+    curl -sSL https://download.qt.io/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/qtsvg-everywhere-src-${QT_VERSION}.tar.xz | tar xJ --strip-components=1 && \
     mkdir build && cd build && \
     cmake -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -175,7 +184,8 @@ RUN curl -sSL https://download.qt.io/archive/qt/${QT_VERSION_MAJOR_MINOR}/${QT_V
     ldconfig && \
     rm -rf /tmp/build
 WORKDIR /tmp/build
-RUN curl -sSL https://download.qt.io/archive/qt/${QT_VERSION_MAJOR_MINOR}/${QT_VERSION}/submodules/qt5compat-everywhere-src-${QT_VERSION}.tar.xz | tar xJ --strip-components=1 && \
+RUN . /tmp/versions.sh && \
+    curl -sSL https://download.qt.io/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/qt5compat-everywhere-src-${QT_VERSION}.tar.xz | tar xJ --strip-components=1 && \
     mkdir build && cd build && \
     cmake -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -196,9 +206,9 @@ RUN curl -sSL https://download.qt.io/archive/qt/${QT_VERSION_MAJOR_MINOR}/${QT_V
 # The designer plugin is disabled because it needs Qt Designer headers (from the qttools
 # module, which is not built here); the examples/playground/tests (all on by default) are
 # disabled because they just waste build time.
-ARG QWT_VERSION=6.3.0
 WORKDIR /tmp/build
-RUN curl -sSL -o qwt.tar.bz2 https://sourceforge.net/projects/qwt/files/qwt/${QWT_VERSION}/qwt-${QWT_VERSION}.tar.bz2 && \
+RUN . /tmp/versions.sh && \
+    curl -sSL -o qwt.tar.bz2 https://sourceforge.net/projects/qwt/files/qwt/${QWT_VERSION}/qwt-${QWT_VERSION}.tar.bz2 && \
     tar xjf qwt.tar.bz2 --strip-components=1 && \
     sed -i \
         -e 's|^\([[:space:]]*QWT_INSTALL_PREFIX[[:space:]]*=\).*|\1 /usr/local|' \
@@ -213,14 +223,15 @@ RUN curl -sSL -o qwt.tar.bz2 https://sourceforge.net/projects/qwt/files/qwt/${QW
 # Boost (EL8's boost 1.66 is far too old).
 #
 # Boost.Python is built once per Python version in /opt/python (the interpreters the base
-# image provides, and the same ones cibuildwheel builds wheels with). Keep the Python versions
-# here in sync with the 'build' list in '[tool.cibuildwheel]' in 'pyproject.toml'.
+# image provides, and the same ones cibuildwheel builds wheels with). The versions come from
+# PYTHON_VERSIONS in 'versions.sh' (feeding the user-config.jam interpreter list and b2's
+# 'python=' build request alike - b2 silently builds only the versions that argument lists).
 # The interpreters have no shared libpython - that's fine, libboost_python leaves the Python
 # symbols unresolved until import time (standard practice for Python extensions on Linux).
-ARG BOOST_VERSION=1.91.0
 WORKDIR /tmp/build
-RUN curl -sSL https://archives.boost.io/release/${BOOST_VERSION}/source/boost_$(echo ${BOOST_VERSION} | tr . _).tar.bz2 | tar xj --strip-components=1 && \
-    for python_version in 3.9 3.10 3.11 3.12 3.13 3.14; do \
+RUN . /tmp/versions.sh && \
+    curl -sSL https://archives.boost.io/release/${BOOST_VERSION}/source/boost_$(echo ${BOOST_VERSION} | tr . _).tar.bz2 | tar xj --strip-components=1 && \
+    for python_version in ${PYTHON_VERSIONS}; do \
         cp_tag=cp$(echo ${python_version} | tr -d .); \
         python_prefix=/opt/python/${cp_tag}-${cp_tag}; \
         echo "using python : ${python_version} : ${python_prefix}/bin/python : ${python_prefix}/include/python${python_version} ;" >> ./user-config.jam; \
@@ -228,15 +239,15 @@ RUN curl -sSL https://archives.boost.io/release/${BOOST_VERSION}/source/boost_$(
     ./bootstrap.sh && \
     ./b2 --user-config=./user-config.jam -j $(nproc) \
         --with-program_options --with-thread --with-python \
-        python=3.9,3.10,3.11,3.12,3.13,3.14 \
+        python=$(echo ${PYTHON_VERSIONS} | tr ' ' ',') \
         install && \
     ldconfig && \
     rm -rf /tmp/build
 
 # PROJ (for GDAL and pyGPlates - EL8's proj 4.x is far too old).
-ARG PROJ_VERSION=9.4.0
 WORKDIR /tmp/build
-RUN curl -sSL https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz | tar xz --strip-components=1 && \
+RUN . /tmp/versions.sh && \
+    curl -sSL https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz | tar xz --strip-components=1 && \
     mkdir build && cd build && \
     cmake \
         -DENABLE_CURL:BOOL=OFF \
@@ -251,9 +262,9 @@ RUN curl -sSL https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz | tar 
     rm -rf /tmp/build
 
 # GDAL.
-ARG GDAL_VERSION=3.8.5
 WORKDIR /tmp/build
-RUN curl -sSL https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz | tar xz --strip-components=1 && \
+RUN . /tmp/versions.sh && \
+    curl -sSL https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz | tar xz --strip-components=1 && \
     mkdir build && cd build && \
     cmake \
         -DBUILD_PYTHON_BINDINGS:BOOL=OFF \
@@ -264,21 +275,24 @@ RUN curl -sSL https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/g
     rm -rf /tmp/build
 
 # CGAL (header-only since CGAL 5 - this just installs the headers and CMake config).
-ARG CGAL_VERSION=6.0.3
 WORKDIR /tmp/build
-RUN curl -sSL https://github.com/CGAL/cgal/releases/download/v${CGAL_VERSION}/CGAL-${CGAL_VERSION}.tar.xz | tar xJ --strip-components=1 && \
+RUN . /tmp/versions.sh && \
+    curl -sSL https://github.com/CGAL/cgal/releases/download/v${CGAL_VERSION}/CGAL-${CGAL_VERSION}.tar.xz | tar xJ --strip-components=1 && \
     cmake -DCMAKE_INSTALL_PREFIX=/usr/local . && \
     make install && \
     rm -rf /tmp/build
 
 # Sanity-check the installs (fails the image build if anything is missing).
 WORKDIR /
-RUN ldconfig && \
+RUN . /tmp/versions.sh && \
+    ldconfig && \
     qmake -query QT_VERSION && \
     test -f /usr/local/lib/libQt6Core5Compat.so -o -f /usr/local/lib64/libQt6Core5Compat.so && \
     test -f /usr/local/lib/libQt6Svg.so -o -f /usr/local/lib64/libQt6Svg.so && \
     ls /usr/local/lib/libqwt.so && \
-    ls /usr/local/lib/libboost_python39.so /usr/local/lib/libboost_python314.so && \
+    for python_version in ${PYTHON_VERSIONS}; do \
+        ls /usr/local/lib/libboost_python$(echo ${python_version} | tr -d .).so || exit 1; \
+    done && \
     ls /usr/local/lib*/libGLEW.so && \
     ls /usr/local/lib*/libproj.so && \
     ls /usr/local/lib*/libgdal.so && \

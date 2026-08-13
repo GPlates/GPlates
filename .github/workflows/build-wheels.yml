@@ -3,8 +3,9 @@
 # The wheel configuration (Python versions, images, CMake defines, test command) lives in
 # '[tool.cibuildwheel]' in 'pyproject.toml' - this workflow just provides the runners.
 # The Linux builds run inside the dependency images from
-# '.github/workflows/build-wheel-images.yml'; see 'pygplates/wheel/README.md' for the
-# whole picture (including how to build a wheel locally).
+# '.github/workflows/build-wheel-images.yml'; the macOS builds build their dependencies
+# on the runner (cached). See 'pygplates/wheel/README.md' for the whole picture
+# (including how to build a wheel locally).
 #
 # Full runs (every Python version) happen on release tags and manual dispatch. A pull request
 # that touches the wheel machinery instead builds a single Python version per platform - enough
@@ -69,10 +70,66 @@ jobs:
             os: ubuntu-24.04
           - id: linux-aarch64
             os: ubuntu-24.04-arm
+          # The macOS runners are pinned to the oldest non-deprecated image per architecture
+          # (macos-latest is much newer) - not that the runner version matters much, since the
+          # wheels target the macOS 11 of MACOSX_DEPLOYMENT_TARGET in pyproject.toml.
+          - id: macos-x86_64
+            os: macos-15-intel
+          - id: macos-arm64
+            os: macos-14
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Log in to the GitHub container registry
+        # The Linux builds run inside the dependency images on GHCR. Anonymous pulls work
+        # once the packages have been made public (see 'pygplates/wheel/README.md'), but
+        # logging in also covers a not-(yet-)public package.
+        if: runner.os == 'Linux'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute the dependency-libraries cache key
+        # The macOS dependency libraries are built by cibuildwheel's 'before-all' hook
+        # ('pygplates/wheel/build_macos_deps.sh') straight onto the runner - caching its
+        # output directory reduces that to about a minute on later runs. The key hashes the
+        # version pins and the dependency-building scripts (so bumping a dependency rebuilds
+        # the cache) and includes the deployment target from 'pyproject.toml' (the
+        # dependencies are compiled against it, so changing it must not reuse dylibs compiled
+        # for the old target). (The Linux dependencies live in the GHCR images instead, at no
+        # cache cost.)
+        if: runner.os == 'macOS'
+        id: deps-cache-key
+        run: |
+          target=$(sed -n 's/^MACOSX_DEPLOYMENT_TARGET *= *"\([^"]*\)".*/\1/p' pyproject.toml)
+          [ -n "${target}" ] # fail here if the pyproject.toml line was reformatted
+          echo "key=pygplates-wheel-deps-${{ matrix.id }}-target${target}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/build_macos_deps.sh', 'pygplates/wheel/build_boost_python.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the dependency-libraries cache
+        # The primary key never hits (it ends in this run's unique id) - the 'restore-keys'
+        # prefix restores the most recent cache for the computed key instead. That is what
+        # lets an incomplete cache saved by a failed run be *completed*: saved cache keys are
+        # immutable, so finishing the prefix off needs a fresh save under a fresh key.
+        if: runner.os == 'macOS'
+        id: restore-deps-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/pygplates-wheel-deps
+          key: ${{ steps.deps-cache-key.outputs.key }}-${{ github.run_id }}
+          restore-keys: ${{ steps.deps-cache-key.outputs.key }}-
+
+      - name: Check whether the restored dependencies are complete
+        # 'build_macos_deps.sh' stamps the prefix once everything is built and checked. If the
+        # stamp was already present when restored, this run has nothing to add and the save
+        # step below is skipped - re-saving an identical multi-gigabyte cache every run would
+        # evict more useful caches from the repository's 10 GB budget.
+        if: runner.os == 'macOS'
+        id: deps-complete
+        run: echo "complete=$([ -f ~/pygplates-wheel-deps/stamps/complete ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Limit pull request runs to a single Python version
         # A smoke test of the wheel machinery, not a release build. Setting CIBW_BUILD here
@@ -80,8 +137,57 @@ jobs:
         if: github.event_name == 'pull_request'
         run: echo "CIBW_BUILD=cp313-*" >> "$GITHUB_ENV"
 
+      - name: Enable crash reporting
+        # The runner images ship with the ReportCrash agent unloaded - reload it so a crashing
+        # test command leaves a crash report behind for the 'Report crashes' step below.
+        if: runner.os == 'macOS'
+        run: |
+          launchctl load -w /System/Library/LaunchAgents/com.apple.ReportCrash.plist 2>/dev/null || true
+          sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.ReportCrash.Root.plist 2>/dev/null || true
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.2.0
+
+      - name: Report crashes
+        # If a test command crashed outright (rather than failing an assertion), the exit code
+        # is all cibuildwheel reports - the native stack trace is in the crash report macOS
+        # writes to a DiagnosticReports directory (as JSON '.ips' since macOS 12). ReportCrash
+        # writes it asynchronously, so poll for up to two minutes before giving up. Reports
+        # older than two hours are ignored - the runner images ship with stale reports from
+        # when the image was baked, which would otherwise satisfy the poll immediately.
+        # ('|| true' because find exits non-zero when a directory is missing - ReportCrash
+        # only creates the user directory when it writes its first report - and that must
+        # not kill the step under the shell's '-e' before the report appears.)
+        if: failure() && runner.os == 'macOS'
+        run: |
+          for i in $(seq 12); do
+            reports=$(sudo find ~/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports \
+                \( -name '*.ips' -o -name '*.crash' \) -mmin -120 2>/dev/null || true)
+            [ -n "$reports" ] && break
+            sleep 10
+          done
+          if [ -n "$reports" ]; then
+            echo "$reports" | while read -r report; do
+              echo "::group::${report}"
+              sudo cat "$report"
+              echo "::endgroup::"
+            done
+          else
+            echo "No crash reports found."
+          fi
+
+      - name: Save the dependency-libraries cache
+        # Saved explicitly (rather than by actions/cache's success-only post step) so that
+        # the dependencies built by a *failed* wheel build are still cached - the next attempt
+        # then resumes from them instead of rebuilding for an hour ('build_macos_deps.sh' is
+        # idempotent, so a partially-built cache is picked up where it left off) and, because
+        # its own save key is fresh, can save the completed prefix. Skipped only when this
+        # run restored an already-complete prefix and so has nothing new to save.
+        if: always() && runner.os == 'macOS' && steps.deps-complete.outputs.complete != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/pygplates-wheel-deps
+          key: ${{ steps.restore-deps-cache.outputs.cache-primary-key }}
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4

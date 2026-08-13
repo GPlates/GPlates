@@ -184,7 +184,7 @@ regex = 'set\(\s*PYGPLATES_PEP440_VERSION\s*(?P<value>\S+)\s*\)'
 # An explicit list (rather than cibuildwheel's default of everything) so that a new Python
 # version is added deliberately: NumPy must ship wheels for it first (we build against the
 # NumPy C API), and the Linux images must be rebuilt with its Boost.Python library
-# (see 'pygplates/wheel/manylinux_2_28.dockerfile' - keep its Python versions in sync).
+# (keep PYTHON_VERSIONS in 'pygplates/wheel/versions.sh' in sync with this list).
 build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
 
 # Belt-and-braces versus the explicit 'build' list above:
@@ -202,8 +202,10 @@ build-verbosity = 1
 # 'test-sources' copies 'pygplates/test' into the test working directory (preserving the
 # relative path), so the test command below finds it without referencing {project}
 # (which is unavailable when testing on a different machine/container than the build).
+# -X faulthandler prints the Python stack if the native library crashes (a crash otherwise
+# reports nothing but the exit code, which makes CI failures undiagnosable).
 test-sources = ["pygplates/test"]
-test-command = "python pygplates/test/test.py"
+test-command = "python -X faulthandler pygplates/test/test.py"
 
 [tool.cibuildwheel.config-settings]
 # The wheel-repair step (auditwheel/delocate/delvewheel) vendors the dependency shared
@@ -234,5 +236,51 @@ manylinux-aarch64-image = "ghcr.io/gplates/pygplates-manylinux_2_28_aarch64:late
 # Compile through sccache (installed in the images above). The cache only lives for the
 # duration of the cibuildwheel run, but the per-Python-version builds share most of their
 # object files, so the second and later Python versions build many times faster.
+"cmake.define.CMAKE_C_COMPILER_LAUNCHER" = "sccache"
+"cmake.define.CMAKE_CXX_COMPILER_LAUNCHER" = "sccache"
+
+[tool.cibuildwheel.macos]
+# The dependency libraries are built once per machine into $HOME/pygplates-wheel-deps
+# ('before-all' runs once, before any wheel builds; in CI the directory is restored from a
+# cache - see '.github/workflows/build-wheels.yml'). Boost.Python is the one per-Python-version
+# dependency, so it's built by 'before-build' instead (which runs with each wheel build's
+# Python on PATH), into the same prefix.
+before-all = "bash {project}/pygplates/wheel/build_macos_deps.sh"
+before-build = "bash {project}/pygplates/wheel/build_boost_python.sh"
+
+[tool.cibuildwheel.macos.environment]
+# The oldest macOS the wheels support (it also determines the wheel tag, eg, macosx_11_0_arm64).
+# It governs the dependency builds too: the hooks above and the pyGPlates build all run with
+# this environment (clang reads MACOSX_DEPLOYMENT_TARGET directly, and CMake uses it to
+# initialise CMAKE_OSX_DEPLOYMENT_TARGET).
+MACOSX_DEPLOYMENT_TARGET = "11.0"
+# Where 'build_macos_deps.sh' installs the dependency libraries ($HOME rather than a
+# reference to another variable, since cibuildwheel only expands pre-existing environment
+# variables here). 'qt/current' is a symlink to the installed Qt version, so the Qt version
+# lives only in 'build_macos_deps.sh'.
+PYGPLATES_DEPS = "$HOME/pygplates-wheel-deps"
+# So CMake finds the dependency libraries (colon-separated; Qt is a separate prefix).
+CMAKE_PREFIX_PATH = "$HOME/pygplates-wheel-deps:$HOME/pygplates-wheel-deps/qt/current"
+# scikit-build-core appends these to its CMake configure command.
+#
+# CMAKE_INSTALL_RPATH (a semicolon-separated CMake list) makes the installed pygplates module
+# record where the dependency libraries live: CMake strips the build rpaths when it installs,
+# and without rpaths delocate cannot resolve the '@rpath/...' install names that the Qt
+# frameworks and the CMake-built dependencies use (it follows the module's rpaths to find
+# them). This has to be an environment variable rather than a 'cmake.define' below because
+# it references $HOME.
+CMAKE_ARGS = "-DCMAKE_INSTALL_RPATH=$HOME/pygplates-wheel-deps/lib;$HOME/pygplates-wheel-deps/qt/current/lib"
+# For the sccache launchers below ('build_macos_deps.sh' installs sccache into the deps prefix).
+PATH = "$HOME/pygplates-wheel-deps/bin:$PATH"
+
+[tool.cibuildwheel.macos.config-settings]
+# See the note in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
+"cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
+# Prefer dylibs/headers over Apple frameworks when CMake searches - otherwise dependencies
+# like Python and zlib can resolve to a framework rather than the intended library. (The root
+# CMakeLists.txt only sets this for conda builds - a -D define beats its cache default.)
+"cmake.define.CMAKE_FIND_FRAMEWORK" = "LAST"
+# Compile through sccache, as on Linux: the cache only lives for the duration of the
+# cibuildwheel run, but the second and later Python versions build many times faster.
 "cmake.define.CMAKE_C_COMPILER_LAUNCHER" = "sccache"
 "cmake.define.CMAKE_CXX_COMPILER_LAUNCHER" = "sccache"
