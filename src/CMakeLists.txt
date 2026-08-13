@@ -830,7 +830,20 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 	if (NOT GPLATES_PUBLIC_RELEASE)
 		# Disable some warnings.
 		set(_DISABLE_WARNINGS
-				-Wno-clobbered -Wno-maybe-uninitialized)
+				-Wno-clobbered -Wno-maybe-uninitialized
+				# Keep the ABI-change notes out of the build log, eg "parameter passing for
+				# argument of type 'GPlatesMaths::Real' when C++17 is enabled changed to match
+				# C++14 in GCC 10.1". These fire on aarch64 (and ppc64le) for our small classes
+				# wrapping one or two doubles, in the thousands - drowning out real diagnostics.
+				#
+				# They warn that GCC before 10.1 passed such an argument differently when
+				# compiling as C++17, so they only matter if objects compiled by an older GCC
+				# are linked with objects compiled by GCC 10.1 or later. That cannot happen when
+				# the project and its dependencies come from a single toolchain (eg, the wheel
+				# builds compile everything with the manylinux image's GCC), and any dependency
+				# binaries we don't build ourselves (conda-forge, system packages) have long
+				# since been built with a newer GCC - 10.1 was released in May 2020.
+				-Wno-psabi)
 
 		# Disable '-Wuninitialized' for g++ >= 12 and Boost <= 1.80.
 		#
