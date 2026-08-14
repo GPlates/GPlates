@@ -154,6 +154,12 @@ if [ ! -f "${PYGPLATES_DEPS}/stamps/boost-${BOOST_VERSION}" ]; then
     # source tree with a 'boost_*' glob, which must never match a stale tree left over from
     # an older Boost version.
     rm -rf boost_*
+    # The Boost.Python libraries built against the *previous* Boost go too. b2 overwrites the
+    # libraries this step installs, but not those, and 'build_boost_python.sh' skips a version
+    # it finds already built - so without this a prefix that survives a BOOST_VERSION bump (any
+    # local one; in CI the version is part of the cache key) would link a Boost.Python from the
+    # old Boost against the new Boost's headers.
+    rm -f "${PYGPLATES_DEPS}"/lib/libboost_python*
     curl -sSL https://archives.boost.io/release/${BOOST_VERSION}/source/boost_$(echo ${BOOST_VERSION} | tr . _).tar.bz2 | tar xj
     cd boost_$(echo ${BOOST_VERSION} | tr . _)
     ./bootstrap.sh

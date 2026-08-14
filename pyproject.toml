@@ -204,8 +204,15 @@ build-verbosity = 1
 # (which is unavailable when testing on a different machine/container than the build).
 # -X faulthandler prints the Python stack if the native library crashes (a crash otherwise
 # reports nothing but the exit code, which makes CI failures undiagnosable).
-test-sources = ["pygplates/test"]
-test-command = "python -X faulthandler pygplates/test/test.py"
+#
+# 'check_wheel_contents.py' runs after the suite because it checks the wheel rather than the code:
+# the test suite passes against a wheel whose PROJ and GDAL data never made it in (which is how
+# the Windows wheels came to ship without them), so the packaging needs a check of its own.
+test-sources = ["pygplates/test", "pygplates/wheel/check_wheel_contents.py"]
+test-command = [
+    "python -X faulthandler pygplates/test/test.py",
+    "python pygplates/wheel/check_wheel_contents.py",
+]
 
 [tool.cibuildwheel.config-settings]
 # The wheel-repair step (auditwheel/delocate/delvewheel) vendors the dependency shared
@@ -284,3 +291,63 @@ PATH = "$HOME/pygplates-wheel-deps/bin:$PATH"
 # cibuildwheel run, but the second and later Python versions build many times faster.
 "cmake.define.CMAKE_C_COMPILER_LAUNCHER" = "sccache"
 "cmake.define.CMAKE_CXX_COMPILER_LAUNCHER" = "sccache"
+
+[tool.cibuildwheel.windows]
+# Only 64-bit Intel wheels: 32-bit Python is long past relevant for a package like this, and
+# Windows-on-ARM users are served (through emulation) by the x64 wheels until there is demand.
+archs = ["AMD64"]
+
+# The dependency libraries are built once per machine into C:/pygplates-wheel-deps ('before-all'
+# runs once, before any wheel builds; in CI a separate job builds them and the wheel builds
+# restore them from a cache - see '.github/workflows/build-wheels.yml'). Boost.Python is the one
+# per-Python-version dependency, so it's built by 'before-build' instead (which runs with each
+# wheel build's Python on PATH), into the same prefix.
+#
+# They are bash scripts (as on macOS) run through 'bash': cibuildwheel runs these hooks in a cmd
+# shell, and Git for Windows - which provides bash - is installed on any machine that cloned this
+# repository, and on the GitHub Windows runners.
+before-all = "bash {project}/pygplates/wheel/build_windows_deps.sh"
+before-build = "bash {project}/pygplates/wheel/build_boost_python.sh"
+
+# Windows has no rpath: a DLL records only its name, and is looked for in a list of directories.
+# So delvewheel is told where the dependency DLLs are - the deps prefix (Boost, which b2 installs
+# beside its import libraries), Qt's own 'bin', and the vcpkg libraries' 'bin' - since it cannot
+# follow the module's own dependency chain to them the way delocate does on macOS. The list is
+# quoted because ';' separates commands in the cmd shell that runs this.
+repair-wheel-command = "delvewheel repair --add-path \"C:/pygplates-wheel-deps/lib;C:/pygplates-wheel-deps/bin;C:/pygplates-wheel-deps/qt/bin;C:/pygplates-wheel-deps/vcpkg/x64-windows/bin\" -w {dest_dir} {wheel}"
+
+[tool.cibuildwheel.windows.environment]
+# Where 'build_windows_deps.sh' installs the dependency libraries. Forward slashes throughout,
+# here and below: these values are read by CMake, by delvewheel and by a bash script, and a
+# backslash means something else to the last two. A short path at the root of the drive because
+# the dependency builds nest deeply enough to meet the 260-character path limit.
+PYGPLATES_DEPS = "C:/pygplates-wheel-deps"
+# So CMake finds the dependency libraries (Qt and the vcpkg libraries are separate prefixes).
+# Semicolon-separated, which is what CMake expects from this environment variable on Windows.
+# The value is not quoted here even though it has to reach a shell parser with its semicolons
+# intact: cibuildwheel builds the assignment as NAME="value" itself, and quoting it here would
+# only nest one pair of quotes inside another - which it rejects as a malformed option.
+CMAKE_PREFIX_PATH = "C:/pygplates-wheel-deps;C:/pygplates-wheel-deps/qt;C:/pygplates-wheel-deps/vcpkg/x64-windows"
+# Build with the Visual Studio generator rather than Ninja. The VS generator locates the compiler
+# itself; Ninja needs the MSVC environment to be already set up, which neither cibuildwheel nor
+# scikit-build-core does - so a local wheel build would have to be started from a developer
+# command prompt. (The cost is that the wheel builds cannot use a compiler cache: the VS generator
+# ignores CMAKE_<LANG>_COMPILER_LAUNCHER, which is what the Linux and macOS builds set to sccache.
+# The CI workflow builds each Python version in its own job instead.)
+CMAKE_GENERATOR = "Visual Studio 17 2022"
+# Where PROJ and GDAL keep the data files they read at run time (the coordinate reference
+# system database, and GDAL's driver data). The build copies both into the wheel, so that an
+# installed pyGPlates carries its own - it points the two libraries at them when it is
+# imported, which is why these variables do not have to be right on a user's machine, only
+# here. On the other platforms the build finds the directories on its own; the vcpkg ones are
+# named because vcpkg installs PROJ's tools away from its libraries, so 'projinfo' - which the
+# build asks where PROJ's data is - would answer for a directory layout that is not this one.
+PROJ_DATA = "C:/pygplates-wheel-deps/vcpkg/x64-windows/share/proj"
+GDAL_DATA = "C:/pygplates-wheel-deps/vcpkg/x64-windows/share/gdal"
+# So the build can find 'projinfo' itself: CMake searches this for programs, and vcpkg keeps
+# a port's tools in a directory of their own rather than in 'bin'.
+CMAKE_PROGRAM_PATH = "C:/pygplates-wheel-deps/vcpkg/x64-windows/tools/proj"
+
+[tool.cibuildwheel.windows.config-settings]
+# See the note in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
+"cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"

@@ -11,15 +11,16 @@ The pieces fit together like this:
 | Piece | What it does |
 |---|---|
 | `[tool.cibuildwheel]` in the root `pyproject.toml` | The wheel configuration: Python versions, dependency images, hooks, CMake defines, test command. |
-| `versions.sh` (this directory) | The dependency version pins - the single source of truth shared by the Linux image and the macOS dependency build. |
+| `versions.sh` (this directory) | The dependency version pins - the single source of truth shared by all three platforms. |
 | `manylinux_2_28.dockerfile` (this directory) | Docker image with the pyGPlates dependency libraries, that the Linux wheels are built inside. |
 | `build_macos_deps.sh` (this directory) | Builds the pyGPlates dependency libraries on macOS (run automatically by cibuildwheel, once per machine; cached in CI). |
-| `build_boost_python.sh` (this directory) | Builds Boost.Python against each wheel's Python version (run automatically by cibuildwheel before each wheel build). |
+| `build_windows_deps.sh` (this directory) | The same on Windows. |
+| `vcpkg.json` (this directory) | The subset of the Windows dependency libraries that vcpkg supplies, and the vcpkg baseline that pins their versions. |
+| `msvc_env.sh` (this directory) | Puts the MSVC toolchain into the environment of the two Windows scripts above (they build with `b2` and `nmake`, which cannot find Visual Studio for themselves). |
+| `build_boost_python.sh` (this directory) | Builds Boost.Python against each wheel's Python version, on macOS and Windows (run automatically by cibuildwheel before each wheel build). |
+| `check_wheel_contents.py` (this directory) | Checks each repaired wheel carries the data PROJ and GDAL read at run time (run automatically by cibuildwheel, after the test suite). |
 | `.github/workflows/build-wheel-images.yml` | Builds the Docker images (natively, per architecture) and pushes them to GHCR. |
 | `.github/workflows/build-wheels.yml` | CI builds of the sdist and the wheels (full matrix on release tags and manual dispatch; single-Python smoke test on pull requests touching the wheel machinery). |
-
-> [!NOTE]
-> Windows is not migrated to cibuildwheel yet - see the legacy section at the end.
 
 ## Building a wheel locally
 
@@ -30,9 +31,9 @@ Run cibuildwheel from the root source directory, selecting a single build with `
 pipx run cibuildwheel==4.2.* --only cp313-manylinux_x86_64
 ```
 
-...or `--only cp313-macosx_arm64` on Apple Silicon (`cp313-macosx_x86_64` on Intel). The
-repaired (and tested) wheel ends up in the `wheelhouse` sub-directory of the root source
-directory.
+...or `--only cp313-macosx_arm64` on Apple Silicon (`cp313-macosx_x86_64` on Intel), or
+`--only cp313-win_amd64` on Windows. The repaired (and tested) wheel ends up in the `wheelhouse`
+sub-directory of the root source directory.
 
 On Linux, cibuildwheel runs the build inside Docker (so Docker must be installed) using the
 dependency image described below - it pulls the image from GHCR automatically, or uses your
@@ -41,6 +42,11 @@ locally built copy if you have one (see the next section).
 On macOS, the first run builds the dependency libraries into `~/pygplates-wheel-deps` (about
 an hour - later runs reuse them; see the macOS section below). Xcode command line tools,
 `python3` and `cmake` must be installed.
+
+On Windows, the first run builds them into `C:\pygplates-wheel-deps` (see the Windows section
+below), and Visual Studio 2022 - or its Build Tools - with the C++ x64 toolset, Git for Windows
+(which provides the `bash` those scripts are written for), Python and CMake must be installed.
+No developer command prompt is needed: an ordinary one will do.
 
 ## The Linux dependency image
 
@@ -108,6 +114,42 @@ rebuilds the cache automatically, and runs with an up-to-date cache spend about 
 restoring it instead of about an hour building dependencies. `build_macos_deps.sh` is
 idempotent (each dependency is stamped once installed), so a partial cache saved by a failed
 run is completed by the next run, not rebuilt from scratch.
+
+## The Windows dependency libraries
+
+Windows wheels are `win_amd64` wheels. As on macOS there is no dependency image - cibuildwheel
+runs `build_windows_deps.sh` (its `before-all` hook) once per machine, which installs the
+dependency libraries into a single prefix, `C:\pygplates-wheel-deps` (a short path at the root of
+the drive, because the dependency builds nest deeply enough to run into the 260-character Windows
+path limit):
+
+- Qt comes as the official binaries, downloaded with aqtinstall, as on macOS. The debug symbols
+  that the official MSVC packages carry - most of their size - are deleted afterwards. The debug
+  libraries themselves stay, unused: Qt's CMake package declares a Debug configuration for every
+  imported target and CMake checks that each file it names is there.
+- GLEW, zlib, PROJ, GDAL, GMP and MPFR come from [vcpkg](https://vcpkg.io) (see `vcpkg.json`).
+  PROJ's and GDAL's run-time data - the coordinate reference system database and GDAL's driver
+  data, which the build copies into the wheel - are named explicitly in `pyproject.toml`, since
+  vcpkg installs a port's tools apart from its libraries and `projinfo`, which the build asks
+  where PROJ's data is, would otherwise answer for a directory layout that is not this one.
+  GMP and MPFR are the reason vcpkg is here at all: they have no MSVC build system. PROJ and GDAL
+  come along with them because they are a deep stack that vcpkg already knows how to build on
+  Windows. These versions are pinned by the vcpkg baseline commit in `vcpkg.json` rather than by
+  `versions.sh`, so they can differ from the versions the Linux and macOS wheels use.
+- Qwt, Boost and CGAL are built from source against the `versions.sh` pins, as on the other
+  platforms. Qwt is built as a *static* library, because a Qwt DLL would require everything that
+  includes its headers to be compiled with `-DQWT_DLL`.
+- Boost.Python is per-Python-version, so - as on macOS - cibuildwheel runs
+  `build_boost_python.sh` (its `before-build` hook) with each build's Python on PATH, reusing the
+  Boost source tree left in the prefix.
+
+Neither Boost's `b2` nor Qwt's `qmake`/`nmake` is a CMake build, so neither can locate Visual
+Studio for itself. Both scripts therefore source `msvc_env.sh`, which runs `vcvarsall.bat` in a
+cmd shell and imports the environment it produces. That is what lets them run under cibuildwheel,
+whose hooks run in a plain cmd shell, instead of requiring an "x64 Native Tools Command Prompt".
+
+In CI the prefix is cached the same way as on macOS, but it is built by a job of its own - see
+the Windows part of "Why the wheels are configured the way they are" below for why.
 
 ## Why the wheels are configured the way they are
 
@@ -204,6 +246,56 @@ Boost.Python's Python symbols resolve at import time (`-undefined dynamic_lookup
 practice for anything loaded into a Python process) - and fails if the built library links a
 Python runtime anyway.
 
+### Checking the wheel, not just the code
+
+`test-command` runs the pyGPlates test suite and then `check_wheel_contents.py`, which confirms the
+wheel carries PROJ's coordinate reference system database and GDAL's driver data.
+
+The suite cannot stand in for that check, because it passes either way. `cmake/modules/Install.cmake`
+locates both data directories while configuring, and used to report failure as a CMake warning and
+carry on - so the Windows wheels were built, repaired, tested and reported green for as long as the
+Windows job existed while shipping neither, with PROJ printing `Cannot find proj.db` to stderr and
+coordinate reference systems quietly failing to resolve.
+
+Those warnings are now errors, raised when the bundle is *installed* rather than when it is
+configured - the same way the code signing and Qt version checks at the top of that file work. That
+stops a broken bundle being produced without stopping a build: `GPLATES_INSTALL_STANDALONE` is on by
+default for Windows and macOS GPlates builds too, and someone who only wants to compile and run from
+their build tree should not have to satisfy it. Building a wheel runs `cmake --install`, so the
+wheels are covered either way.
+
+That much covers the causes the build can see. `check_wheel_contents.py` covers the rest of the
+path, since the data still has to survive installation and the repair step to reach the user.
+
+### The Visual Studio generator, and a job per Python version (Windows)
+
+pyGPlates is built with the `Visual Studio 17 2022` generator (`CMAKE_GENERATOR` in
+`[tool.cibuildwheel.windows.environment]`), because that generator locates the compiler itself.
+The Ninja generator scikit-build-core would otherwise use needs the MSVC environment to be set up
+*before* cibuildwheel starts, which neither cibuildwheel nor scikit-build-core does - so every
+local wheel build would have to be started from a developer command prompt.
+
+The price is that Windows gets no compiler cache. `CMAKE_<LANG>_COMPILER_LAUNCHER` - what points
+the Linux and macOS builds at sccache, and what makes the second and later Python versions there
+cheap - is ignored by the Visual Studio generator. A cold pyGPlates build takes about an hour on
+a runner, so building six of them in one job would run past the six-hour ceiling GitHub puts on a
+job. `.github/workflows/build-wheels.yml` therefore gives each Python version a job of its own
+(they run in parallel), and builds the dependency libraries in a separate job before them - since
+six wheel jobs would otherwise each build the same dependencies and then race to save the same
+cache.
+
+### `delvewheel --add-path` (Windows)
+
+Windows has no rpath: a DLL records only the *name* of each DLL it needs, which is then searched
+for in a list of directories. So delvewheel cannot follow the pyGPlates module's own dependency
+chain to the dependency libraries the way delocate does on macOS, and `repair-wheel-command` in
+`pyproject.toml` names the directories they are in (Boost's, Qt's and vcpkg's) instead.
+
+Windows is also where Boost.Python *does* link a Python library (`python313.lib` and friends):
+an extension module resolves its Python symbols at link time here, rather than leaving them to
+the interpreter at load time as on macOS and Linux. That is expected - delvewheel excludes the
+Python DLL from what it vendors, so the wheel still runs against the interpreter's own runtime.
+
 ## Updating Python versions
 
 Wheels are built for the [currently supported Python versions](https://devguide.python.org/versions/)
@@ -213,17 +305,7 @@ NumPy wheels is not usable anyway). To add or remove a version:
 1. Update the `build` list in `[tool.cibuildwheel]` in `pyproject.toml`
    (and `requires-python`/classifiers in `[project]` if the floor changed).
 2. Update `PYTHON_VERSIONS` in `versions.sh` to match, and rebuild the Linux images
-   (a push of the change rebuilds them automatically).
+   (a push of the change rebuilds them automatically). `PYTHON_VERSIONS` is also what the
+   per-version Windows wheel jobs are generated from.
    (macOS needs no equivalent step: `build_boost_python.sh` builds Boost.Python for whatever
-   Python versions the `build` list asks for.)
-
-## Building wheels on Windows (legacy - not yet migrated to cibuildwheel)
-
-The `build_windows_wheels.bat` batch file builds, tests and copies wheels into the
-`wheelhouse` sub-directory of the root source directory, for each Python version listed in the
-batch file (accessed via the `py -<version>` launcher). It will be replaced by a cibuildwheel
-configuration in a follow-up.
-
-```
-cmd /c build_windows_wheels.bat
-```
+   Python version each wheel build brings.)
