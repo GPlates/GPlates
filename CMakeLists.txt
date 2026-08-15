@@ -116,6 +116,31 @@ else()
             LANGUAGES C CXX)
 endif()
 
+# When compiling MSVC through sccache, pass SYSTEM include directories as plain '-I' rather than
+# letting CMake use '-external:I' (which it does for MSVC >= 19.29, see Modules/Compiler/MSVC.cmake).
+#
+# The difference matters only to the cache. sccache hashes a compilation as its preprocessed
+# output plus the flags that affect code generation; '-I' is neither (its effect is already in the
+# preprocessed output), but '-external:I <dir>' is hashed as an opaque flag - so when a SYSTEM
+# include directory's *path* varies while its *contents* do not, every object misses for no
+# reason. That is exactly what the wheel builds do: cibuildwheel installs each Python version
+# (and its NumPy) under a path of its own, so with '-external:I' the second Python version reused
+# nothing, and with '-I' it reuses ~90% (matching Linux and macOS, whose '-isystem' sccache
+# likewise resolves through the preprocessed output).
+#
+# The cost is that MSVC warnings from dependency headers (Qt, Boost, CGAL...) reappear at /W3 in
+# sccache builds, since nothing is marked external any more ('-external:W0' suppressed them).
+#
+# A normal 'set()' deliberately shadowing the value from CMake's compiler module - which runs at
+# 'project()' above, so this must come after it. Scoped to wheel builds (SKBUILD is defined by
+# scikit-build-core) using sccache: the conda CI also compiles MSVC through sccache, but its
+# include paths never move between runs, so it loses nothing to '-external:I' and keeps the
+# quieter logs - as do plain developer builds.
+if (SKBUILD AND MSVC AND CMAKE_CXX_COMPILER_LAUNCHER MATCHES "sccache")
+    set(CMAKE_INCLUDE_SYSTEM_FLAG_C "-I")
+    set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")
+endif()
+
 # Enable testing of GPlates (the 'gplates-unit-test' executable) or pyGPlates (the Python test suite),
 # either via running 'ctest', or 'make test', or building 'RUN_TESTS' in Visual Studio.
 enable_testing()

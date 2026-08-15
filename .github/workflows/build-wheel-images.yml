@@ -63,6 +63,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
+      - name: Check the Python version lists agree
+        # The dockerfile builds a Boost.Python library for each version in 'versions.sh' - do
+        # not publish an image whose version list has drifted from the authoritative 'build'
+        # list in 'pyproject.toml' (Linux wheel builds against such an image fail much later,
+        # with a linker error naming Boost). This workflow runs on pushes that touch
+        # 'versions.sh', which the equivalent check in 'build-wheels.yml' never sees.
+        run: python3 pygplates/wheel/check_python_versions.py
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:

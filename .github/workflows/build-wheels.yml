@@ -8,8 +8,9 @@
 # (including how to build a wheel locally).
 #
 # Full runs (every Python version) happen on release tags and manual dispatch. A pull request
-# that touches the wheel machinery instead builds a single Python version per platform - enough
-# to prove the machinery works without spending six builds' worth of runner time.
+# that touches the wheel machinery instead builds two Python versions per platform - enough to
+# prove the machinery works, and to show the compiler cache carrying from the first version to
+# the second, without spending six builds' worth of runner time.
 #
 # The sdist is built here too: it's what PyPI users without a matching wheel fall back to,
 # and it's what the conda-forge feedstock pulls. A future publish workflow uploads these
@@ -29,8 +30,11 @@ on:
       # PROJ and GDAL data among it - and the wheels once shipped without that data because nothing
       # here ran when it changed. The whole directory rather than that one file, so the next thing
       # to move between these files does not quietly fall outside the list again; changes under
-      # 'cmake/' are rare enough that the occasional extra smoke run costs little.
+      # 'cmake/' are rare enough that the occasional extra smoke run costs little. The root
+      # CMakeLists.txt is in the same position: it carries wheel-affecting configuration (the
+      # conda detection, the sccache SYSTEM-include override).
       - cmake/**
+      - CMakeLists.txt
   workflow_dispatch:
 
 # Superseded runs are cancelled rather than left to finish (a full wheel matrix takes hours).
@@ -48,6 +52,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
+      - name: Check the Python version lists agree
+        # A mismatch means Linux wheel builds fail much later with a Boost linker error - the
+        # script's header has the full story. Checked here, in the job every run starts with
+        # (the wheel matrix 'needs' this job, so a mismatch stops it before the multi-hour
+        # builds start); 'build-wheel-images.yml' runs the same check before publishing images.
+        run: python3 pygplates/wheel/check_python_versions.py
+
       - name: Build sdist
         run: pipx run build --sdist
 
@@ -62,15 +73,47 @@ jobs:
 
   build-wheels:
     name: wheels ${{ matrix.id }}
+    # So a version-list mismatch (or an sdist that will not even build) is caught before hours
+    # of wheel builds start. The sdist job takes under a minute.
+    needs: build-sdist
     runs-on: ${{ matrix.os }}
-    # A full run is six Python versions: the first compiles pyGPlates from scratch (~40
-    # minutes) and the rest mostly hit the sccache populated by the first.
-    timeout-minutes: 360
+    # A full run is six Python versions: the first compiles pyGPlates from scratch and the rest
+    # reuse about 90% of its object files from the compiler cache (measured - only the ~100
+    # sources that include Python's own headers really differ between versions).
+    #
+    # The worst case is a fully cold run on the slowest platform (Windows): ~64 minutes building
+    # the dependencies, ~63 minutes compiling the first wheel from scratch, then ~23 minutes per
+    # remaining wheel - about 4.5 hours in all (measured, 2026-08). So this limit is not expected
+    # to trip; hitting it means something is broken (a hung build, or compile times have
+    # genuinely grown). It sits deliberately below GitHub's hard 6-hour kill so that on a timeout
+    # the 'always()' steps below still get a window to salvage the run's work: the dependency
+    # cache is saved (the retry then starts warm) and the wheels already built are uploaded.
+    #
+    # If the arithmetic ever creeps toward the ceiling (eg, many more sources come to include
+    # Python.h, eroding the ~90% compiler-cache reuse), the fallback is to build the dependencies
+    # in an explicit step with the cache saved immediately after, before the cibuildwheel step
+    # ('before-all' then no-ops on the prefix's stamps) - that guarantees the dependencies
+    # survive any mid-wheels death without relying on the post-timeout grace window.
+    timeout-minutes: 330
+
+    defaults:
+      run:
+        # bash on every platform - including Windows, whose default is pwsh. In pwsh,
+        # "$GITHUB_ENV" and "$GITHUB_OUTPUT" name (undefined) pwsh variables rather than the
+        # environment variables, so 'echo ... >> "$GITHUB_ENV"' appends to nowhere and reports
+        # success - a silent trap for any cross-platform step added later. One shell also keeps
+        # every step below to one syntax on all five runners.
+        shell: bash
 
     strategy:
       # Run every platform to completion, so one platform failing still reports the others.
       fail-fast: false
       matrix:
+        # 'deps-path' is where the dependency libraries are built and cached, spelled once here
+        # for every step that names it (a second spelling that drifted would fail silently - eg,
+        # the completeness check below never finding its stamp and every run re-saving the
+        # multi-gigabyte cache). The Linux entries have none: their dependencies live in the
+        # GHCR images, and every deps step is gated on runner.os != 'Linux'.
         include:
           - id: linux-x86_64
             os: ubuntu-24.04
@@ -81,8 +124,16 @@ jobs:
           # wheels target the macOS 11 of MACOSX_DEPLOYMENT_TARGET in pyproject.toml.
           - id: macos-x86_64
             os: macos-15-intel
+            deps-path: ~/pygplates-wheel-deps
           - id: macos-arm64
             os: macos-14
+            deps-path: ~/pygplates-wheel-deps
+          # Visual Studio 2022 (windows-latest has moved on to VS 2026, which nothing here has
+          # been built against). The deps path is the 'C:/' form: git-bash and actions/cache
+          # both accept it, so one spelling serves every step.
+          - id: windows-x64
+            os: windows-2022
+            deps-path: C:/pygplates-wheel-deps
 
     steps:
       - name: Check out repository
@@ -100,48 +151,62 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compute the dependency-libraries cache key
-        # The macOS dependency libraries are built by cibuildwheel's 'before-all' hook
-        # ('pygplates/wheel/build_macos_deps.sh') straight onto the runner - caching its
-        # output directory reduces that to about a minute on later runs. The key hashes the
-        # version pins and the dependency-building scripts (so bumping a dependency rebuilds
-        # the cache) and includes the deployment target from 'pyproject.toml' (the
-        # dependencies are compiled against it, so changing it must not reuse dylibs compiled
-        # for the old target). (The Linux dependencies live in the GHCR images instead, at no
-        # cache cost.)
-        if: runner.os == 'macOS'
+        # The macOS and Windows dependency libraries are built by cibuildwheel's 'before-all'
+        # hook ('pygplates/wheel/build_macos_deps.sh', 'build_windows_deps.sh') straight onto the
+        # runner - caching its output directory reduces that to about a minute on later runs. The
+        # key hashes the version pins and the dependency-building scripts, so bumping a dependency
+        # rebuilds the cache. macOS adds the deployment target from 'pyproject.toml' (the
+        # dependencies are compiled against it, so changing it must not reuse dylibs built for the
+        # old target); Windows adds 'vcpkg.json', which pins the vcpkg baseline that fixes the
+        # versions of the libraries vcpkg supplies. (The Linux dependencies live in the GHCR
+        # images instead, at no cache cost.)
+        if: runner.os != 'Linux'
         id: deps-cache-key
         run: |
-          target=$(sed -n 's/^MACOSX_DEPLOYMENT_TARGET *= *"\([^"]*\)".*/\1/p' pyproject.toml)
-          [ -n "${target}" ] # fail here if the pyproject.toml line was reformatted
-          echo "key=pygplates-wheel-deps-${{ matrix.id }}-target${target}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/build_macos_deps.sh', 'pygplates/wheel/build_boost_python.sh') }}" >> "$GITHUB_OUTPUT"
+          if [ "${{ runner.os }}" = macOS ]; then
+              target=$(sed -n 's/^MACOSX_DEPLOYMENT_TARGET *= *"\([^"]*\)".*/\1/p' pyproject.toml)
+              [ -n "${target}" ] # fail here if the pyproject.toml line was reformatted
+              key=pygplates-wheel-deps-${{ matrix.id }}-target${target}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/build_macos_deps.sh', 'pygplates/wheel/build_boost_python.sh') }}
+          else
+              key=pygplates-wheel-deps-${{ matrix.id }}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/vcpkg.json', 'pygplates/wheel/build_windows_deps.sh', 'pygplates/wheel/build_boost_python.sh', 'pygplates/wheel/msvc_env.sh') }}
+          fi
+          echo "key=${key}" >> "$GITHUB_OUTPUT"
 
       - name: Restore the dependency-libraries cache
         # The primary key never hits (it ends in this run's unique id) - the 'restore-keys'
         # prefix restores the most recent cache for the computed key instead. That is what
         # lets an incomplete cache saved by a failed run be *completed*: saved cache keys are
         # immutable, so finishing the prefix off needs a fresh save under a fresh key.
-        if: runner.os == 'macOS'
+        if: runner.os != 'Linux'
         id: restore-deps-cache
         uses: actions/cache/restore@v4
         with:
-          path: ~/pygplates-wheel-deps
+          path: ${{ matrix.deps-path }}
           key: ${{ steps.deps-cache-key.outputs.key }}-${{ github.run_id }}
           restore-keys: ${{ steps.deps-cache-key.outputs.key }}-
 
       - name: Check whether the restored dependencies are complete
-        # 'build_macos_deps.sh' stamps the prefix once everything is built and checked. If the
+        # The dependency scripts stamp the prefix once everything is built and checked. If the
         # stamp was already present when restored, this run has nothing to add and the save
         # step below is skipped - re-saving an identical multi-gigabyte cache every run would
         # evict more useful caches from the repository's 10 GB budget.
-        if: runner.os == 'macOS'
+        if: runner.os != 'Linux'
         id: deps-complete
-        run: echo "complete=$([ -f ~/pygplates-wheel-deps/stamps/complete ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+        # The assignment is unquoted so the '~' in the macOS path still tilde-expands.
+        run: |
+          deps=${{ matrix.deps-path }}
+          echo "complete=$([ -f "${deps}/stamps/complete" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
-      - name: Limit pull request runs to a single Python version
+      - name: Limit pull request runs to two Python versions
         # A smoke test of the wheel machinery, not a release build. Setting CIBW_BUILD here
         # overrides the 'build' list in pyproject.toml for this run only.
+        #
+        # Two versions rather than one because everything a full run relies on to stay inside
+        # its time limit happens on the *second*: the first compiles pyGPlates from scratch and
+        # the rest are meant to come mostly from the compiler cache. One version never exercises
+        # that, so the 'before-test' cache report in pyproject.toml would have nothing to show.
         if: github.event_name == 'pull_request'
-        run: echo "CIBW_BUILD=cp313-*" >> "$GITHUB_ENV"
+        run: echo "CIBW_BUILD=cp312-* cp313-*" >> "$GITHUB_ENV"
 
       - name: Enable crash reporting
         # The runner images ship with the ReportCrash agent unloaded - reload it so a crashing
@@ -150,6 +215,41 @@ jobs:
         run: |
           launchctl load -w /System/Library/LaunchAgents/com.apple.ReportCrash.plist 2>/dev/null || true
           sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.ReportCrash.Root.plist 2>/dev/null || true
+
+      - name: Set up the MSVC environment
+        # The Windows wheels are built with Ninja (see CMAKE_GENERATOR in 'pyproject.toml'), which
+        # compiles with whatever 'cl' the environment provides - and cibuildwheel builds each
+        # wheel's environment from this job's. 'msvc_env.sh' is the same importer the dependency
+        # scripts use; here its results are handed back to the job, so the step below inherits
+        # them. (Locally the equivalent is starting from an "x64 Native Tools Command Prompt".)
+        if: runner.os == 'Windows'
+        run: |
+          path_before=${PATH}
+          . pygplates/wheel/msvc_env.sh
+          # The variables the compiler and the linker read - named by MSVC_ENV_VARS so that
+          # 'msvc_env.sh' and this step always hand over the same set. Already Windows paths.
+          for name in ${MSVC_ENV_VARS}; do
+              value=${!name:-}
+              if [ -n "${value}" ]; then
+                  echo "${name}=${value}" >> "$GITHUB_ENV"
+              fi
+          done
+          # PATH is this shell's, in Unix form - so hand back only what vcvarsall added to it,
+          # converted to the Windows form the rest of the job needs. Written back in *reverse*:
+          # the runner prepends each GITHUB_PATH line in turn, so the last line written ends up
+          # first on PATH - reversing here preserves vcvarsall's own ordering.
+          added=()
+          IFS=:
+          for entry in ${PATH}; do
+              case ":${path_before}:" in
+                  *":${entry}:"*) ;;
+                  *) added+=("${entry}") ;;
+              esac
+          done
+          unset IFS
+          for ((i = ${#added[@]} - 1; i >= 0; i--)); do
+              cygpath --windows "${added[i]}" >> "$GITHUB_PATH"
+          done
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.2.0
@@ -189,151 +289,21 @@ jobs:
         # idempotent, so a partially-built cache is picked up where it left off) and, because
         # its own save key is fresh, can save the completed prefix. Skipped only when this
         # run restored an already-complete prefix and so has nothing new to save.
-        if: always() && runner.os == 'macOS' && steps.deps-complete.outputs.complete != 'true'
+        if: always() && runner.os != 'Linux' && steps.deps-complete.outputs.complete != 'true'
         uses: actions/cache/save@v4
         with:
-          path: ~/pygplates-wheel-deps
+          path: ${{ matrix.deps-path }}
           key: ${{ steps.restore-deps-cache.outputs.cache-primary-key }}
 
       - name: Upload wheels
+        # 'always()' so the wheels already built and repaired survive a later version failing
+        # (or the job timing out) - a full run is six sequential builds, and losing five good
+        # wheels to a test flake on the sixth would force the whole job to run again.
+        # 'if-no-files-found: ignore' keeps the step green when the failure came before any
+        # wheel finished.
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.id }}
           path: wheelhouse/*.whl
-
-  # Windows is built by its own pair of jobs rather than as another entry in the matrix above.
-  #
-  # The reason is that Windows has no compiler cache: pyGPlates is built with the Visual Studio
-  # generator (see 'pyproject.toml' for why), which ignores the sccache launchers that make the
-  # second and later Python versions cheap on Linux and macOS. A cold pyGPlates build takes about
-  # an hour here, so building six of them in one job would run past the six-hour ceiling GitHub
-  # puts on a job. Each Python version therefore gets a job of its own, and they run in parallel.
-  #
-  # That in turn is why the dependency libraries are built by a separate job first: six wheel jobs
-  # starting at once would otherwise each build the same dependencies, and then race to save the
-  # same cache.
-  build-windows-deps:
-    name: windows deps
-    runs-on: windows-2022
-    timeout-minutes: 180
-
-    outputs:
-      # The dependency cache key, so the wheel jobs restore what this job saved without having to
-      # repeat the recipe for computing it.
-      cache-key: ${{ steps.deps-cache-key.outputs.key }}
-      # The Python versions to build wheels for, as cibuildwheel build selectors.
-      builds: ${{ steps.builds.outputs.builds }}
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Compute the dependency-libraries cache key
-        # As on macOS: the key hashes the version pins and the dependency-building scripts, so
-        # bumping a dependency rebuilds the cache. There is no deployment target to include here,
-        # but there is 'vcpkg.json' - it pins the vcpkg baseline, which is what fixes the versions
-        # of the libraries vcpkg supplies.
-        id: deps-cache-key
-        shell: bash
-        run: echo "key=pygplates-wheel-deps-windows-x64-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/vcpkg.json', 'pygplates/wheel/build_windows_deps.sh', 'pygplates/wheel/build_boost_python.sh', 'pygplates/wheel/msvc_env.sh') }}" >> "$GITHUB_OUTPUT"
-
-      - name: Restore the dependency-libraries cache
-        # The primary key never hits (it ends in this run's unique id) - the 'restore-keys' prefix
-        # restores the most recent cache for the computed key instead. That is what lets an
-        # incomplete cache saved by a failed run be *completed*: saved cache keys are immutable,
-        # so finishing the prefix off needs a fresh save under a fresh key.
-        id: restore-deps-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: C:/pygplates-wheel-deps
-          key: ${{ steps.deps-cache-key.outputs.key }}-${{ github.run_id }}
-          restore-keys: ${{ steps.deps-cache-key.outputs.key }}-
-
-      - name: Check whether the restored dependencies are complete
-        # 'build_windows_deps.sh' stamps the prefix once everything is built and checked. If the
-        # stamp was already present when restored, this run has nothing to add and the save step
-        # below is skipped - re-saving an identical multi-gigabyte cache every run would evict
-        # more useful caches from the repository's 10 GB budget.
-        id: deps-complete
-        shell: bash
-        run: echo "complete=$([ -f /c/pygplates-wheel-deps/stamps/complete ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-
-      - name: Build the dependency libraries
-        # Normally cibuildwheel's 'before-all' hook runs this, and still does in the wheel jobs
-        # below - where it finds everything stamped and only re-runs its sanity checks. Running it
-        # here as well is what gets the dependencies built once rather than once per wheel job.
-        if: steps.deps-complete.outputs.complete != 'true'
-        shell: bash
-        run: bash pygplates/wheel/build_windows_deps.sh
-        env:
-          PYGPLATES_DEPS: C:/pygplates-wheel-deps
-
-      - name: Save the dependency-libraries cache
-        # Saved explicitly (rather than by actions/cache's success-only post step) so that
-        # dependencies built by a *failed* run are still cached - the next attempt then resumes
-        # from them instead of rebuilding ('build_windows_deps.sh' is idempotent, so a partially
-        # built prefix is picked up where it left off) and, because its own save key is fresh, can
-        # save the completed prefix.
-        if: always() && steps.deps-complete.outputs.complete != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: C:/pygplates-wheel-deps
-          key: ${{ steps.restore-deps-cache.outputs.cache-primary-key }}
-
-      - name: List the Python versions to build
-        # A pull request builds a single Python version - a smoke test of the wheel machinery,
-        # not a release build. Everything else builds the versions in 'versions.sh' (which the
-        # 'build' list in 'pyproject.toml' is kept in step with).
-        id: builds
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = pull_request ]; then
-            python_versions=3.13
-          else
-            . pygplates/wheel/versions.sh
-            python_versions=${PYTHON_VERSIONS}
-          fi
-          builds=
-          for python_version in ${python_versions}; do
-            builds="${builds}${builds:+,}\"cp${python_version/./}\""
-          done
-          echo "builds=[${builds}]" >> "$GITHUB_OUTPUT"
-
-  build-windows-wheels:
-    name: wheels windows-x64 ${{ matrix.build }}
-    needs: build-windows-deps
-    runs-on: windows-2022
-    # A single Python version, from a cold compiler: about an hour, with room for a dependency
-    # build if the cache went missing between the job above and this one.
-    timeout-minutes: 240
-
-    strategy:
-      # Run every Python version to completion, so one failing still reports the others.
-      fail-fast: false
-      matrix:
-        build: ${{ fromJSON(needs.build-windows-deps.outputs.builds) }}
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Restore the dependency-libraries cache
-        # Read-only: the job above is what builds and saves this cache. (If it is missing anyway,
-        # cibuildwheel's 'before-all' hook builds the dependencies in this job instead.)
-        uses: actions/cache/restore@v4
-        with:
-          path: C:/pygplates-wheel-deps
-          key: ${{ needs.build-windows-deps.outputs.cache-key }}-${{ github.run_id }}
-          restore-keys: ${{ needs.build-windows-deps.outputs.cache-key }}-
-
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v4.2.0
-        env:
-          # This job's Python version. Overrides the 'build' list in 'pyproject.toml'.
-          CIBW_BUILD: ${{ matrix.build }}-*
-
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-windows-x64-${{ matrix.build }}
-          path: wheelhouse/*.whl
+          if-no-files-found: ignore

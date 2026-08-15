@@ -5,9 +5,12 @@
 #   . "$(dirname "$0")/msvc_env.sh"
 #
 # The Windows dependency builds need it because they are not CMake builds: Boost's b2 and Qwt's
-# qmake/nmake compile with whatever 'cl' the environment provides. (The pyGPlates wheel build
-# itself needs nothing from here - it is a CMake build with the Visual Studio generator, which
-# locates Visual Studio by itself.)
+# qmake/nmake compile with whatever 'cl' the environment provides. The pyGPlates wheel build
+# needs it too, since it moved from the Visual Studio generator (which locates Visual Studio by
+# itself) to Ninja (which does not) - but a cibuildwheel hook cannot set the environment for the
+# CMake build that follows it, so that comes from the shell cibuildwheel is started from: in CI
+# the workflow imports this file's results into the whole job (see 'build-wheels.yml'), and a
+# local wheel build starts from an "x64 Native Tools Command Prompt" instead.
 #
 # Visual Studio provides the environment as a batch file, 'vcvarsall.bat', which is only usable
 # from a cmd shell - so it is run in one, and the environment it produces is imported back into
@@ -16,8 +19,16 @@
 # hooks run in a plain cmd shell.
 #
 # Skipped when the environment is already set up (eg, when the scripts *are* run from a
-# developer command prompt, or when a wheel build's 'before-build' hook follows 'before-all'
-# in one already-configured shell).
+# developer command prompt, when the CI workflow set one up for Ninja before starting
+# cibuildwheel, or when a wheel build's 'before-build' hook follows 'before-all' in one
+# already-configured shell). Either way the environment is checked before this file returns.
+
+# The variables vcvarsall.bat sets that the builds actually read (besides PATH, which needs
+# per-shell translation and so is handled on its own below). One list, exported, so the CI
+# workflow's environment step hands the job exactly the set imported here - a second copy of
+# this list would drift silently (the workflow's export of VCINSTALLDIR makes this file's
+# import a no-op there, so its copy would be the one CI builds actually got).
+export MSVC_ENV_VARS="INCLUDE LIB LIBPATH UCRTVersion VCToolsVersion VSINSTALLDIR WindowsSdkDir WindowsSDKVersion VCINSTALLDIR VSCMD_ARG_TGT_ARCH"
 
 # ...but only if that environment targets x64, which is what everything built here is. An "x86
 # Native Tools Command Prompt" also sets VCINSTALLDIR, and taking it would build Boost and Qwt
@@ -76,17 +87,25 @@ if [ -z "${VCINSTALLDIR:-}" ]; then
         case "${_name}" in
             PATH)
                 export PATH="$(cygpath --unix --path "${_value}")" ;;
-            INCLUDE|LIB|LIBPATH|UCRTVersion|VCToolsVersion|VSINSTALLDIR|WindowsSdkDir|WindowsSDKVersion|VCINSTALLDIR|VSCMD_ARG_TGT_ARCH)
-                export "${_name}=${_value}" ;;
+            *)
+                # The space-padded 'case' is a containment test: import _name only if it is
+                # one of the MSVC_ENV_VARS words.
+                case " ${MSVC_ENV_VARS} " in
+                    *" ${_name} "*) export "${_name}=${_value}" ;;
+                esac ;;
         esac
     done < <(cd "${_vcvars_dir}" && cmd //c vcvars.bat | tr -d '\r')
 
     rm -rf "${_vcvars_dir}"
 
-    if ! command -v cl > /dev/null; then
-        echo "error: the MSVC environment was imported but 'cl' is still not on PATH" >&2
-        return 1
-    fi
-
     unset _vswhere _vs_install _vcvarsall _vcvars_dir _name _value
+fi
+
+# Outside the block above, so it checks the environment that was already there as well as the one
+# just imported. The CI workflow sets one up before running cibuildwheel (Ninja compiles with
+# whatever 'cl' it finds), and that path used to go entirely unverified - VCINSTALLDIR alone was
+# taken as proof of a working toolchain.
+if ! command -v cl > /dev/null; then
+    echo "error: the MSVC environment names a Visual Studio installation but 'cl' is not on PATH" >&2
+    return 1
 fi

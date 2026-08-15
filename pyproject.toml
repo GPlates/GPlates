@@ -78,9 +78,17 @@ Discussions = "https://discourse.gplates.org/"
 # Scikit-build-core minimum version required.
 minimum-version = "build-system.requires"
 
-# Optionally specify a build directory (uses temp dir by default).
-# This can give rebuild speedups (eg, during development).
+# Where CMake builds. Left at scikit-build-core's default, a fresh temporary directory each time,
+# so that a 'pip install .' from this source tree - the install route BUILD-Linux.md,
+# BUILD-macOS.md and BUILD-Windows.md all document - can never reuse a build tree left behind by
+# another Python version.
+#
+# Uncomment for rebuild speedups while developing, keeping the '{wheel_tag}' so that different
+# Python versions still get a tree each.
 #build-dir = "dist/build/{wheel_tag}"
+#
+# The wheel builds do share one directory across Python versions, deliberately and together with
+# the wipe that makes it safe - see [tool.cibuildwheel.config-settings] below.
 
 # Build target is 'pygplates'.
 build.targets = ["pygplates"]
@@ -224,6 +232,22 @@ test-command = [
 #       it entirely, so each platform table repeats this define.
 "cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
 
+# Build every Python version in the one directory, overriding the temporary directory that
+# [tool.scikit-build] leaves everything else with.
+#
+# The compiler cache depends on it. sccache keys on the *preprocessor output*, which carries a
+# '# line "<path>"' marker for every header the translation unit includes - so when the generated
+# headers (config.h, and Qt's moc and ui output) sit in a different directory each time, every
+# source that includes one hashes differently and cannot be reused. Measured before this was
+# pinned: the second Python version reused 435 of 971 objects, on Linux and macOS alike.
+#
+# 'before-build' empties it, so this is not an incremental build across Python versions: the
+# objects are reused through the cache, which validates them by hashing what went into them,
+# rather than by leaving a build tree in place that CMake and Ninja must reason about after the
+# Python version underneath it changed. That pairing is why this is set here, with the wheel
+# builds that do the wiping, rather than as the default for every build of this project.
+"build-dir" = "build/wheel"
+
 [tool.cibuildwheel.linux]
 # Custom manylinux_2_28 images with the pyGPlates dependencies pre-installed - built and
 # pushed to GHCR by '.github/workflows/build-wheel-images.yml' from
@@ -231,9 +255,27 @@ test-command = [
 manylinux-x86_64-image = "ghcr.io/gplates/pygplates-manylinux_2_28_x86_64:latest"
 manylinux-aarch64-image = "ghcr.io/gplates/pygplates-manylinux_2_28_aarch64:latest"
 
+# Empty the build directory before each wheel build. The 'build-dir' in the config-settings below
+# points every Python version at one path, so the compiler cache can reuse objects across them;
+# wiping it keeps that from also being an incremental build, in which a stale object compiled
+# against another version's Python headers would be linked into a released wheel if CMake or Ninja
+# ever failed to notice.
+before-build = "rm -rf {project}/build/wheel"
+
+# Report the compiler cache after each wheel is built - cibuildwheel says nothing about it
+# otherwise, so the sccache defines below have never been shown to do anything.
+#
+# 'before-test' runs once per Python version, after that version's wheel is built and repaired.
+# The figures are cumulative over the cibuildwheel run, so what each version added is the
+# difference between successive reports - which is the measurement that matters here, since the
+# cache exists to make the *second and later* versions cheap. (Run inside the container, where
+# the compiling happens; the image installs sccache on the default PATH.)
+before-test = "sccache --show-stats"
+
 [tool.cibuildwheel.linux.config-settings]
-# See the note in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
+# See the notes in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
 "cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
+"build-dir" = "build/wheel"
 # Link the LEGACY 'libGL' rather than the GLVND 'libOpenGL': auditwheel whitelists 'libGL'
 # (leaves it to come from the end user's system) but vendors 'libOpenGL' along with its
 # 'libGLdispatch' dependency into the wheel - and since Qt uses 'libGL' (which loads the
@@ -253,7 +295,15 @@ manylinux-aarch64-image = "ghcr.io/gplates/pygplates-manylinux_2_28_aarch64:late
 # dependency, so it's built by 'before-build' instead (which runs with each wheel build's
 # Python on PATH), into the same prefix.
 before-all = "bash {project}/pygplates/wheel/build_macos_deps.sh"
-before-build = "bash {project}/pygplates/wheel/build_boost_python.sh"
+# The wipe is for the same reason as on Linux (see the note there); the commands run in order.
+before-build = [
+    "rm -rf {project}/build/wheel",
+    "bash {project}/pygplates/wheel/build_boost_python.sh",
+]
+
+# Report the compiler cache after each wheel is built, as on Linux (see the note there). sccache
+# is on PATH from the dependency prefix, which the environment below puts there.
+before-test = "sccache --show-stats"
 
 [tool.cibuildwheel.macos.environment]
 # The oldest macOS the wheels support (it also determines the wheel tag, eg, macosx_11_0_arm64).
@@ -281,8 +331,9 @@ CMAKE_ARGS = "-DCMAKE_INSTALL_RPATH=$HOME/pygplates-wheel-deps/lib;$HOME/pygplat
 PATH = "$HOME/pygplates-wheel-deps/bin:$PATH"
 
 [tool.cibuildwheel.macos.config-settings]
-# See the note in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
+# See the notes in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
 "cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
+"build-dir" = "build/wheel"
 # Prefer dylibs/headers over Apple frameworks when CMake searches - otherwise dependencies
 # like Python and zlib can resolve to a framework rather than the intended library. (The root
 # CMakeLists.txt only sets this for conda builds - a -D define beats its cache default.)
@@ -298,16 +349,26 @@ PATH = "$HOME/pygplates-wheel-deps/bin:$PATH"
 archs = ["AMD64"]
 
 # The dependency libraries are built once per machine into C:/pygplates-wheel-deps ('before-all'
-# runs once, before any wheel builds; in CI a separate job builds them and the wheel builds
-# restore them from a cache - see '.github/workflows/build-wheels.yml'). Boost.Python is the one
-# per-Python-version dependency, so it's built by 'before-build' instead (which runs with each
-# wheel build's Python on PATH), into the same prefix.
+# runs once, before any wheel builds; in CI the workflow caches that directory, so later runs
+# restore it in minutes and 'before-all' finds everything already stamped - see
+# '.github/workflows/build-wheels.yml'). Boost.Python is the one per-Python-version dependency,
+# so it's built by 'before-build' instead (which runs with each wheel build's Python on PATH),
+# into the same prefix.
 #
 # They are bash scripts (as on macOS) run through 'bash': cibuildwheel runs these hooks in a cmd
 # shell, and Git for Windows - which provides bash - is installed on any machine that cloned this
 # repository, and on the GitHub Windows runners.
 before-all = "bash {project}/pygplates/wheel/build_windows_deps.sh"
-before-build = "bash {project}/pygplates/wheel/build_boost_python.sh"
+# The wipe is for the same reason as on Linux (see the note there). Run through bash because these
+# hooks run in a cmd shell, which has no 'rm'.
+before-build = [
+    "bash -c \"rm -rf {project}/build/wheel\"",
+    "bash {project}/pygplates/wheel/build_boost_python.sh",
+]
+
+# Report the compiler cache after each wheel is built, as on Linux (see the note there). sccache
+# is on PATH from the dependency prefix, which the environment below puts there.
+before-test = "sccache --show-stats"
 
 # Windows has no rpath: a DLL records only its name, and is looked for in a list of directories.
 # So delvewheel is told where the dependency DLLs are - the deps prefix (Boost, which b2 installs
@@ -328,13 +389,21 @@ PYGPLATES_DEPS = "C:/pygplates-wheel-deps"
 # intact: cibuildwheel builds the assignment as NAME="value" itself, and quoting it here would
 # only nest one pair of quotes inside another - which it rejects as a malformed option.
 CMAKE_PREFIX_PATH = "C:/pygplates-wheel-deps;C:/pygplates-wheel-deps/qt;C:/pygplates-wheel-deps/vcpkg/x64-windows"
-# Build with the Visual Studio generator rather than Ninja. The VS generator locates the compiler
-# itself; Ninja needs the MSVC environment to be already set up, which neither cibuildwheel nor
-# scikit-build-core does - so a local wheel build would have to be started from a developer
-# command prompt. (The cost is that the wheel builds cannot use a compiler cache: the VS generator
-# ignores CMAKE_<LANG>_COMPILER_LAUNCHER, which is what the Linux and macOS builds set to sccache.
-# The CI workflow builds each Python version in its own job instead.)
-CMAKE_GENERATOR = "Visual Studio 17 2022"
+# Build with Ninja rather than the Visual Studio generator, so that the compiler cache below is
+# used at all: the VS generator ignores CMAKE_<LANG>_COMPILER_LAUNCHER, and without a cache every
+# Python version pays a full compile of about an hour.
+#
+# What it costs: Ninja compiles with whatever 'cl' the environment provides, and neither
+# cibuildwheel nor scikit-build-core sets the MSVC environment up (scikit-build-core does that
+# only for "Visual Studio" generators). So a local wheel build has to be started from an "x64
+# Native Tools Command Prompt for VS 2022" - see 'pygplates/wheel/README.md'. In CI the workflow
+# imports that environment with 'msvc_env.sh' before running cibuildwheel. The dependency scripts
+# are unaffected either way: they set their own environment up, since they run as hooks *inside*
+# cibuildwheel and cannot reach back out to it.
+CMAKE_GENERATOR = "Ninja"
+# So the wheel builds find sccache, which 'build_windows_deps.sh' installs into the deps prefix.
+# (Forward slashes are fine in a PATH entry - Windows accepts them as separators.)
+PATH = "C:/pygplates-wheel-deps/bin;$PATH"
 # Where PROJ and GDAL keep the data files they read at run time (the coordinate reference
 # system database, and GDAL's driver data). The build copies both into the wheel, so that an
 # installed pyGPlates carries its own - it points the two libraries at them when it is
@@ -349,5 +418,15 @@ GDAL_DATA = "C:/pygplates-wheel-deps/vcpkg/x64-windows/share/gdal"
 CMAKE_PROGRAM_PATH = "C:/pygplates-wheel-deps/vcpkg/x64-windows/tools/proj"
 
 [tool.cibuildwheel.windows.config-settings]
-# See the note in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
+# See the notes in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
 "cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
+"build-dir" = "build/wheel"
+# Compile with MSVC. The Visual Studio generator would imply it; Ninja instead has CMake search
+# PATH, which on a machine with Visual Studio finds the LLVM it bundles ('VC/Tools/Llvm') and
+# builds the wheel with clang - against Qt, Boost and the vcpkg libraries that were all built
+# with MSVC. Named rather than pathed, so CMake takes the one the environment set up.
+"cmake.define.CMAKE_C_COMPILER" = "cl"
+"cmake.define.CMAKE_CXX_COMPILER" = "cl"
+# Compile through sccache, as on Linux and macOS - which is what CMAKE_GENERATOR above is for.
+"cmake.define.CMAKE_C_COMPILER_LAUNCHER" = "sccache"
+"cmake.define.CMAKE_CXX_COMPILER_LAUNCHER" = "sccache"
