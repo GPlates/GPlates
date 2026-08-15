@@ -46,7 +46,7 @@ requirements:
   host:
     - python
     - pip
-    - scikit-build-core <0.11  # avoid version 0.11 for now (causing problems with license.file)
+    - scikit-build-core >=0.11.1  # 0.11.0 broke the 'License:' metadata header (and with it the numpy runtime dependency)
     - numpy
     - cgal-cpp
     - gmp
