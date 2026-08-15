@@ -15,9 +15,10 @@
     "'builtin-baseline' is a commit of https://github.com/microsoft/vcpkg - a vcpkg release tag,",
     "which is what pins these libraries' versions. 'build_windows_deps.sh' reads it from here to",
     "check out the matching vcpkg, and stamps the installed tree with it, so bumping it below",
-    "rebuilds them. Note this makes these versions independent of 'versions.sh' (which pins what",
-    "we build ourselves): they follow the vcpkg release, and so can differ from the versions the",
-    "Linux and macOS wheels use."
+    "rebuilds them. For the libraries the other platforms also ship - GLEW, PROJ and GDAL - the",
+    "pins in 'versions.sh' are kept equal to what this baseline supplies, so every platform's",
+    "wheels carry the same versions of the libraries a user can feel; bump the baseline and",
+    "those three pins together, as one act ('build_windows_deps.sh' fails if they drift apart)."
   ],
 
   "name": "pygplates-wheel-dependencies",

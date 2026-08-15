@@ -261,13 +261,19 @@ RUN . /tmp/versions.sh && \
     ldconfig && \
     rm -rf /tmp/build
 
-# GDAL.
+# GDAL. External libraries are off (beyond zlib, and the SQLite built above) so the driver set
+# comes from GDAL's internal copies rather than from whatever EL8 happens to provide - the same
+# configuration as the macOS build, and the closest the source builds come to the vcpkg port's
+# feature set on Windows ('vcpkg.json' explains the correspondence).
 WORKDIR /tmp/build
 RUN . /tmp/versions.sh && \
     curl -sSL https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz | tar xz --strip-components=1 && \
     mkdir build && cd build && \
     cmake \
         -DBUILD_PYTHON_BINDINGS:BOOL=OFF \
+        -DGDAL_USE_EXTERNAL_LIBS:BOOL=OFF \
+        -DGDAL_USE_ZLIB:BOOL=ON \
+        -DGDAL_USE_SQLITE3:BOOL=ON \
         .. && \
     cmake --build . --config Release --parallel $(nproc) && \
     cmake --build . --config Release --target install && \

@@ -339,6 +339,25 @@ require_dir() {
         exit 1
     fi
 }
+# The libraries pinned both by the vcpkg baseline (for this build) and by 'versions.sh' (for the
+# Linux and macOS builds) must be pinned to the same versions - that agreement is the only thing
+# keeping the wheels' geospatial behaviour identical across platforms, and nothing else notices
+# when a baseline bump quietly moves one side. What vcpkg installed is read from its status file,
+# the dpkg-style database it keeps in the install root: the port version lives there and nowhere
+# in the installed headers ('Version:' is the upstream version alone - the '#N' port revision is
+# a separate 'Port-Version:' field, so no stripping is needed).
+require_vcpkg_version() {
+    _got=$(awk -v port="$1" \
+        '$1 == "Package:" { _pkg = $2 } $1 == "Version:" && _pkg == port { print $2; exit }' \
+        "${PYGPLATES_DEPS}/vcpkg/vcpkg/status")
+    if [ "${_got}" != "$2" ]; then
+        echo "error: vcpkg installed $1 ${_got:-(nothing)} but 'versions.sh' pins $1 $2. The vcpkg" >&2
+        echo "       baseline in 'vcpkg.json' and the GLEW/PROJ/GDAL pins in 'versions.sh' are meant" >&2
+        echo "       to move together, as one act, so every platform's wheels ship the same versions" >&2
+        echo "       of the libraries a user can feel." >&2
+        exit 1
+    fi
+}
 #
 # The vcpkg libraries are checked by their headers rather than their import libraries: a port
 # decides for itself what to call the library it installs (glew32.lib, proj_9.lib, ...), whereas
@@ -357,6 +376,9 @@ require_file "${VCPKG_PREFIX}/include/proj.h" "PROJ"
 require_file "${VCPKG_PREFIX}/include/gdal.h" "GDAL"
 require_file "${VCPKG_PREFIX}/include/gmp.h" "GMP"
 require_file "${VCPKG_PREFIX}/include/mpfr.h" "MPFR"
+require_vcpkg_version glew "${GLEW_VERSION}"
+require_vcpkg_version proj "${PROJ_VERSION}"
+require_vcpkg_version gdal "${GDAL_VERSION}"
 # PROJ and GDAL read these data directories at run time, and the wheel build copies both into
 # the wheel ('pyproject.toml' names them; cmake/modules/Install.cmake does the copying), so a
 # missing one has to fail here rather than produce a wheel that cannot resolve a coordinate
