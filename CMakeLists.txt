@@ -43,10 +43,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Generate compile_commands.json 
 #  - A plain activated environment (manual "cmake ..."/"pip install ...") uses CONDA_PREFIX.
 #
 # Handling it here (rather than requiring the user to pass '-DCMAKE_PREFIX_PATH=$CONDA_PREFIX' etc) makes it
-# work for every entry point with no extra flags. It is especially important for 'pip install ...':
-# scikit-build-core builds the CMake command line itself (populating CMAKE_PREFIX_PATH from site-packages and
-# overriding any CMAKE_PREFIX_PATH passed via 'cmake.define'), but these *environment* variables still reach
-# the CMake process.
+# work for every entry point with no extra flags: a plain 'cmake ...', a conda recipe, and 'pip install ...'
+# - scikit-build-core builds the CMake command line itself, but these *environment* variables still reach
+# the CMake process. (Passing the path explicitly to pip also works, as the pyGPlates 1.0 conda-forge
+# recipe did: a 'cmake.define.CMAKE_PREFIX_PATH' becomes a '-D' argument, which overrides the prefix-path
+# cache preset scikit-build-core writes via '-C'. This is just the route that needs no flags anywhere.)
 #
 # This must precede 'project()':
 #  - On macOS, CMAKE_FIND_FRAMEWORK only reliably affects the later find_library()/find_path() calls when set
