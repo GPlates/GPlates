@@ -137,7 +137,11 @@ path limit):
   GMP and MPFR are the reason vcpkg is here at all: they have no MSVC build system. PROJ and GDAL
   come along with them because they are a deep stack that vcpkg already knows how to build on
   Windows. These versions are pinned by the vcpkg baseline commit in `vcpkg.json` rather than by
-  `versions.sh`, so they can differ from the versions the Linux and macOS wheels use.
+  `versions.sh` - but the `versions.sh` pins for GLEW, PROJ and GDAL are kept equal to what the
+  baseline supplies, so every platform's wheels ship the same versions of the libraries a user
+  can feel (CRS handling, datum grids, driver behaviour). Bump the baseline and those three pins
+  together, as one act, with vcpkg setting the cadence; `build_windows_deps.sh` compares what
+  vcpkg installed against `versions.sh` and fails if they have drifted apart.
 - Qwt, Boost and CGAL are built from source against the `versions.sh` pins, as on the other
   platforms. Qwt is built as a *static* library, because a Qwt DLL would require everything that
   includes its headers to be compiled with `-DQWT_DLL`.

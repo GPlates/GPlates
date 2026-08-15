@@ -205,11 +205,6 @@ fi
 if [ ! -f "${PYGPLATES_DEPS}/stamps/gdal-${GDAL_VERSION}" ]; then
     rm -rf gdal && mkdir gdal && cd gdal
     curl -sSL https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz | tar xz --strip-components=1
-    # GDAL's bundled libpng predates libpng commit 893b811: recent Apple clang predefines
-    # TARGET_OS_MAC, which sends pngpriv.h down a classic-Mac-OS branch that includes the
-    # long-gone <fp.h>. Mirror the upstream fix (plain <math.h>) by dropping that macro from
-    # the guard. (A no-op once a GDAL release bundles the fixed libpng.)
-    sed -i '' 's/ || defined(TARGET_OS_MAC)//' frmts/png/libpng/pngpriv.h
     mkdir build && cd build
     cmake \
         -DCMAKE_BUILD_TYPE=Release \
