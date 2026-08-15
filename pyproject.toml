@@ -30,7 +30,12 @@ dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = ["numpy"]
-license.file = "COPYING"
+# A PEP 639 SPDX license expression (metadata 2.4) - the 'License:' header becomes this short
+# expression instead of the whole of COPYING inlined, which is the very thing that went wrong
+# in scikit-build-core 0.11.0 (see [build-system] above). The full text still ships in the
+# wheel, via 'license-files'.
+license = "GPL-2.0-only"
+license-files = ["COPYING"]
 authors = [
   { name = "John Cannon", email = "john.cannon@sydney.edu.au" },
 ]
@@ -43,7 +48,6 @@ classifiers = [
   "Intended Audience :: Education",
   "Intended Audience :: End Users/Desktop",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
   "Operating System :: MacOS :: MacOS X",
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX :: Linux",
@@ -109,9 +113,6 @@ wheel.cmake = true
 # Disable Python file inclusion entirely, and rely only on CMake’s install mechanism.
 # Our 'install' target will install pyGPlates as a package (complete with __init__.py).
 wheel.packages = []
-
-# License file to include in wheel.
-wheel.license-files = ["COPYING"]
 
 #
 # CMake arguments/defines.
