@@ -16,7 +16,7 @@ The pieces fit together like this:
 | `build_macos_deps.sh` (this directory) | Builds the pyGPlates dependency libraries on macOS (run automatically by cibuildwheel, once per machine; cached in CI). |
 | `build_windows_deps.sh` (this directory) | The same on Windows. |
 | `vcpkg.json` (this directory) | The subset of the Windows dependency libraries that vcpkg supplies, and the vcpkg baseline that pins their versions. |
-| `msvc_env.sh` (this directory) | Puts the MSVC toolchain into the environment of the two Windows scripts above (they build with `b2` and `nmake`, which cannot find Visual Studio for themselves). |
+| `msvc_env.sh` (this directory) | Puts the MSVC toolchain into the environment: the two Windows scripts above source it (they build with `b2` and `nmake`, which cannot find Visual Studio for themselves), and the CI job runs it to set up the environment Ninja compiles in. |
 | `build_boost_python.sh` (this directory) | Builds Boost.Python against each wheel's Python version, on macOS and Windows (run automatically by cibuildwheel before each wheel build). |
 | `check_wheel_contents.py` (this directory) | Checks each repaired wheel carries the data PROJ and GDAL read at run time (run automatically by cibuildwheel, after the test suite). |
 | `.github/workflows/build-wheel-images.yml` | Builds the Docker images (natively, per architecture) and pushes them to GHCR. |
@@ -46,7 +46,9 @@ an hour - later runs reuse them; see the macOS section below). Xcode command lin
 On Windows, the first run builds them into `C:\pygplates-wheel-deps` (see the Windows section
 below), and Visual Studio 2022 - or its Build Tools - with the C++ x64 toolset, Git for Windows
 (which provides the `bash` those scripts are written for), Python and CMake must be installed.
-No developer command prompt is needed: an ordinary one will do.
+Start it from an **"x64 Native Tools Command Prompt for VS 2022"**: the wheels are built with
+Ninja, which compiles with whatever `cl` the environment provides, and neither cibuildwheel nor
+scikit-build-core sets that environment up (see "Ninja and the compiler cache" below).
 
 ## The Linux dependency image
 
@@ -148,8 +150,9 @@ Studio for itself. Both scripts therefore source `msvc_env.sh`, which runs `vcva
 cmd shell and imports the environment it produces. That is what lets them run under cibuildwheel,
 whose hooks run in a plain cmd shell, instead of requiring an "x64 Native Tools Command Prompt".
 
-In CI the prefix is cached the same way as on macOS, but it is built by a job of its own - see
-the Windows part of "Why the wheels are configured the way they are" below for why.
+In CI the prefix is cached exactly as on macOS. The CI job does not run from a developer command
+prompt either - it imports the same environment with `msvc_env.sh` before running cibuildwheel,
+which is the one thing a local build has to arrange for itself.
 
 ## Why the wheels are configured the way they are
 
@@ -267,22 +270,39 @@ wheels are covered either way.
 That much covers the causes the build can see. `check_wheel_contents.py` covers the rest of the
 path, since the data still has to survive installation and the repair step to reach the user.
 
-### The Visual Studio generator, and a job per Python version (Windows)
+### Ninja and the compiler cache (Windows)
 
-pyGPlates is built with the `Visual Studio 17 2022` generator (`CMAKE_GENERATOR` in
-`[tool.cibuildwheel.windows.environment]`), because that generator locates the compiler itself.
-The Ninja generator scikit-build-core would otherwise use needs the MSVC environment to be set up
-*before* cibuildwheel starts, which neither cibuildwheel nor scikit-build-core does - so every
-local wheel build would have to be started from a developer command prompt.
+pyGPlates is built with Ninja on every platform, Windows included (`CMAKE_GENERATOR` in
+`[tool.cibuildwheel.windows.environment]`). The Visual Studio generator would locate the compiler
+by itself, which is convenient, but it ignores `CMAKE_<LANG>_COMPILER_LAUNCHER` - so there would
+be no compiler cache, and each of the six Python versions would pay a full compile of about an
+hour.
 
-The price is that Windows gets no compiler cache. `CMAKE_<LANG>_COMPILER_LAUNCHER` - what points
-the Linux and macOS builds at sccache, and what makes the second and later Python versions there
-cheap - is ignored by the Visual Studio generator. A cold pyGPlates build takes about an hour on
-a runner, so building six of them in one job would run past the six-hour ceiling GitHub puts on a
-job. `.github/workflows/build-wheels.yml` therefore gives each Python version a job of its own
-(they run in parallel), and builds the dependency libraries in a separate job before them - since
-six wheel jobs would otherwise each build the same dependencies and then race to save the same
-cache.
+What Ninja costs is that it compiles with whatever `cl` the environment provides, and neither
+cibuildwheel nor scikit-build-core arranges one (scikit-build-core sets the MSVC environment up
+only for "Visual Studio" generators). So a local wheel build must be started from an "x64 Native
+Tools Command Prompt for VS 2022", and the CI job imports the same environment with `msvc_env.sh`
+before running cibuildwheel. The dependency scripts are unaffected either way - they source
+`msvc_env.sh` themselves, because as cibuildwheel hooks they cannot set up the environment of the
+process that runs them.
+
+Ninja also means CMake has to *find* a compiler, rather than being told one by the generator - and
+what it finds on a machine with Visual Studio installed is the LLVM that Visual Studio bundles, in
+`VC/Tools/Llvm`. So the wheel would be built with clang against a Qt, Boost and vcpkg stack built
+with MSVC. `CMAKE_C_COMPILER`/`CMAKE_CXX_COMPILER` in the `config-settings` therefore name `cl`.
+
+The cache earns it. Only about a hundred of the thousand-odd sources include Python's own
+headers, so the second and later Python versions reuse around 90% of the first's object files -
+measured on Linux and macOS, where the same arrangement cut the second wheel from 33 to 14
+minutes. Windows is therefore one job per platform like everything else, rather than a
+dependency job followed by one wheel job per Python version.
+
+For that reuse to happen at all, every Python version must build in the *same* directory: sccache
+keys on preprocessor output, which names the path of every header included, so a per-version
+build directory makes each source that includes a generated header (`config.h`, Qt's moc and ui
+output) hash differently for no reason. Hence `build-dir` in the cibuildwheel `config-settings`,
+together with the `before-build` that empties it - the emptying is what keeps a shared directory
+from also being an incremental build across Python versions.
 
 ### `delvewheel --add-path` (Windows)
 
@@ -305,7 +325,7 @@ NumPy wheels is not usable anyway). To add or remove a version:
 1. Update the `build` list in `[tool.cibuildwheel]` in `pyproject.toml`
    (and `requires-python`/classifiers in `[project]` if the floor changed).
 2. Update `PYTHON_VERSIONS` in `versions.sh` to match, and rebuild the Linux images
-   (a push of the change rebuilds them automatically). `PYTHON_VERSIONS` is also what the
-   per-version Windows wheel jobs are generated from.
-   (macOS needs no equivalent step: `build_boost_python.sh` builds Boost.Python for whatever
-   Python version each wheel build brings.)
+   (a push of the change rebuilds them automatically). The `sdist` job fails if the two lists
+   disagree, so this cannot be forgotten quietly.
+   (macOS and Windows need no equivalent step: `build_boost_python.sh` builds Boost.Python for
+   whatever Python version each wheel build brings.)

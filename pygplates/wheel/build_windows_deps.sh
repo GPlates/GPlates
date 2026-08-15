@@ -37,9 +37,13 @@
 # invokes it as 'bash ...'), and python and cmake on PATH. All are present on the GitHub Windows
 # runners.
 #
-# Note: there is no sccache here, unlike the Linux and macOS builds. The Visual Studio generator
-#       ignores CMAKE_<LANG>_COMPILER_LAUNCHER, so the wheel builds cannot use a compiler cache;
-#       the CI workflow builds each Python version in its own parallel job instead.
+# The wheel builds compile through sccache, as on Linux and macOS - which is why they are built
+# with Ninja rather than the Visual Studio generator (that one ignores
+# CMAKE_<LANG>_COMPILER_LAUNCHER). Ninja needs the MSVC environment set up before CMake runs, and
+# cibuildwheel cannot do that from 'pyproject.toml', so a *local* wheel build has to be started
+# from an "x64 Native Tools Command Prompt for VS 2022". This script does not: it sets its own
+# environment up (see 'msvc_env.sh') so it runs from any shell - the CI workflow imports that
+# same file's results into its job, which is what its wheel builds compile with.
 
 set -e -u
 
@@ -95,6 +99,21 @@ cd "${PYGPLATES_DEPS}/src"
 # Each source-building step below removes any leftover source tree before starting: CI saves the
 # deps cache even when a build fails (see 'build-wheels.yml'), so a later run can find the
 # half-built tree of the step that failed - it restarts that step from a clean extraction.
+
+# sccache.
+#
+# Not used by this script - it is for the wheel builds: cibuildwheel builds pyGPlates once per
+# Python version, and the versions share all but the hundred or so sources that include Python's
+# own headers, so the later builds mostly reuse the objects of the first (measured at 90%).
+# Installed into the deps prefix, which 'pyproject.toml' puts on PATH.
+if [ ! -f "${PYGPLATES_DEPS}/stamps/sccache-${SCCACHE_VERSION}" ]; then
+    sccache_dir=sccache-v${SCCACHE_VERSION}-x86_64-pc-windows-msvc
+    rm -rf "${sccache_dir}"
+    curl -sSL https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/${sccache_dir}.tar.gz | tar xz
+    install -m 755 "${sccache_dir}/sccache.exe" "${PYGPLATES_DEPS}/bin/sccache.exe"
+    rm -rf "${sccache_dir}"
+    touch "${PYGPLATES_DEPS}/stamps/sccache-${SCCACHE_VERSION}"
+fi
 
 # Qt (the official binaries, downloaded with aqtinstall - the same binaries the Qt online
 # installer provides, and the same ones the macOS deps script uses).
@@ -296,6 +315,31 @@ fi
 
 # Sanity-check the installs (fails the run if anything is missing).
 #
+# Through these three, rather than a bare 'test -f': that aborts the script under 'set -e' having
+# printed nothing at all, in the one section whose whole purpose is to fail where the cause is
+# visible.
+require_file() {
+    if [ ! -f "$1" ]; then
+        echo "error: $2 is missing from the dependency prefix ($1) - the build that installs it" >&2
+        echo "       either failed or installed it somewhere else." >&2
+        exit 1
+    fi
+}
+require_exe() {
+    if [ ! -x "$1" ]; then
+        echo "error: $2 is missing from the dependency prefix ($1) - the build that installs it" >&2
+        echo "       either failed or installed it somewhere else." >&2
+        exit 1
+    fi
+}
+require_dir() {
+    if [ ! -d "$1" ]; then
+        echo "error: $2 is missing from the dependency prefix ($1) - the build that installs it" >&2
+        echo "       either failed or installed it somewhere else." >&2
+        exit 1
+    fi
+}
+#
 # The vcpkg libraries are checked by their headers rather than their import libraries: a port
 # decides for itself what to call the library it installs (glew32.lib, proj_9.lib, ...), whereas
 # the header a dependent compiles against is the port's contract. The library directories are
@@ -307,20 +351,21 @@ ls "${QT_DIR}/bin/Qt6Core.dll" "${QT_DIR}/bin/Qt6Gui.dll" "${QT_DIR}/bin/Qt6Widg
     "${QT_DIR}/bin/Qt6Core5Compat.dll"
 ls "${PYGPLATES_DEPS}/lib/qwt.lib"
 ls "${PYGPLATES_DEPS}/lib/boost_program_options.lib" "${PYGPLATES_DEPS}/lib/boost_thread.lib"
-test -f "${VCPKG_PREFIX}/include/GL/glew.h"
-test -f "${VCPKG_PREFIX}/include/zlib.h"
-test -f "${VCPKG_PREFIX}/include/proj.h"
-test -f "${VCPKG_PREFIX}/include/gdal.h"
-test -f "${VCPKG_PREFIX}/include/gmp.h"
-test -f "${VCPKG_PREFIX}/include/mpfr.h"
+require_file "${VCPKG_PREFIX}/include/GL/glew.h" "GLEW"
+require_file "${VCPKG_PREFIX}/include/zlib.h" "zlib"
+require_file "${VCPKG_PREFIX}/include/proj.h" "PROJ"
+require_file "${VCPKG_PREFIX}/include/gdal.h" "GDAL"
+require_file "${VCPKG_PREFIX}/include/gmp.h" "GMP"
+require_file "${VCPKG_PREFIX}/include/mpfr.h" "MPFR"
 # PROJ and GDAL read these data directories at run time, and the wheel build copies both into
 # the wheel ('pyproject.toml' names them; cmake/modules/Install.cmake does the copying), so a
 # missing one has to fail here rather than produce a wheel that cannot resolve a coordinate
 # reference system. 'projinfo' is how the build asks PROJ where its data is.
-test -f "${VCPKG_PREFIX}/share/proj/proj.db"
-test -f "${VCPKG_PREFIX}/share/gdal/gdalvrt.xsd"
-test -x "${VCPKG_PREFIX}/tools/proj/projinfo.exe"
-test -d "${PYGPLATES_DEPS}/include/CGAL"
+require_file "${VCPKG_PREFIX}/share/proj/proj.db" "PROJ's data, which the wheel carries a copy of"
+require_file "${VCPKG_PREFIX}/share/gdal/gdalvrt.xsd" "GDAL's data, which the wheel carries a copy of"
+require_exe "${VCPKG_PREFIX}/tools/proj/projinfo.exe" "projinfo (the proj port's 'tools' feature), which the wheel build runs to find PROJ's data"
+require_dir "${PYGPLATES_DEPS}/include/CGAL" "CGAL"
+"${PYGPLATES_DEPS}/bin/sccache.exe" --version
 ls "${PYGPLATES_DEPS}/lib" "${VCPKG_PREFIX}/lib" "${VCPKG_PREFIX}/bin"
 
 # Mark the whole prefix built and checked. The CI cache-save step skips re-saving a prefix that

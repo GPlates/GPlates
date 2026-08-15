@@ -12,12 +12,12 @@
 # Keep this file to plain NAME=VALUE assignments and comments - it is sourced by /bin/sh in
 # the Docker build steps.
 
-# The Python versions to build Boost.Python for. Must match the 'build' list in
-# '[tool.cibuildwheel]' in 'pyproject.toml' (the authoritative list of wheel Python versions).
-# The Linux image builds a Boost.Python library for each of them, and the Windows wheel jobs
-# in '.github/workflows/build-wheels.yml' are generated from this list (one job per version).
-# macOS needs neither: 'build_boost_python.sh' builds Boost.Python for whatever Python version
-# each wheel build brings.
+# The Python versions to build Boost.Python for, in the Linux image - which is the only thing
+# that reads this. Must match the 'build' list in '[tool.cibuildwheel]' in 'pyproject.toml' (the
+# authoritative list of wheel Python versions); the sdist job in
+# '.github/workflows/build-wheels.yml' fails if the two ever disagree. macOS and Windows need no
+# such list: 'build_boost_python.sh' builds Boost.Python for whatever Python version each wheel
+# build brings.
 PYTHON_VERSIONS="3.9 3.10 3.11 3.12 3.13 3.14"
 
 QT_VERSION=6.7.3
