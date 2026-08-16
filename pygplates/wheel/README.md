@@ -20,7 +20,7 @@ The pieces fit together like this:
 | `build_boost_python.sh` (this directory) | Builds Boost.Python against each wheel's Python version, on macOS and Windows (run automatically by cibuildwheel before each wheel build). |
 | `check_wheel_contents.py` (this directory) | Checks each repaired wheel carries the data PROJ and GDAL read at run time (run automatically by cibuildwheel, after the test suite). |
 | `.github/workflows/build-wheel-images.yml` | Builds the Docker images (natively, per architecture) and pushes them to GHCR. |
-| `.github/workflows/build-wheels.yml` | CI builds of the sdist and the wheels (full matrix on release tags and manual dispatch; single-Python smoke test on pull requests touching the wheel machinery). |
+| `.github/workflows/build-wheels.yml` | CI builds of the sdist and the wheels (full matrix on release tags and manual dispatch; two-Python smoke test on pull requests touching the wheel machinery). On a release tag it also publishes to PyPI - see [Publishing a release](#publishing-a-release). |
 
 ## Building a wheel locally
 
@@ -333,3 +333,72 @@ NumPy wheels is not usable anyway). To add or remove a version:
    disagree, so this cannot be forgotten quietly.
    (macOS and Windows need no equivalent step: `build_boost_python.sh` builds Boost.Python for
    whatever Python version each wheel build brings.)
+
+## Publishing a release
+
+Releasing to [PyPI](https://pypi.org/p/pygplates) is part of `build-wheels.yml`: pushing a
+release tag builds the full matrix and then publishes it, with two safeguards between building
+and the real index. Nothing holds an API token - the publish jobs authenticate with
+[Trusted Publishing](https://docs.pypi.org/trusted-publishers/), where the index trusts short-lived
+OIDC tokens GitHub mints for this specific workflow file.
+
+The flow, end to end:
+
+1. Set the release version in `cmake/modules/Version.cmake` (`PYGPLATES_PEP440_VERSION`) and
+   commit. For a first pass at a release, use an `rc` version (eg, `1.1.0rc1`): pip ignores
+   release candidates by default, so it exercises this whole pipeline - the tag check, the
+   rehearsal, the approval gate, a real PyPI upload - with low stakes.
+2. Tag that commit `PyGPlates-<version>` (exactly the version string - the run fails in its
+   first minute if the two disagree, or if the version is a `.dev` one) and push the tag.
+3. The run builds the sdist and every wheel (about 2.5 hours warm, 4.5 cold), then uploads the
+   sdist plus one platform's wheels to [TestPyPI](https://test.pypi.org/p/pygplates) - a
+   rehearsal that catches anything the index itself would reject (metadata, most of all)
+   before the real upload.
+4. The run then sits at **waiting** until a maintainer approves the `pypi` deployment (repo
+   page -> the run -> "Review deployments"). This is the moment to eyeball the TestPyPI
+   project page. Approval waits expire after 30 days.
+5. On approval the whole matrix - one sdist, one wheel per Python version per platform, counted
+   before upload - goes to PyPI, each file with a [PEP 740](https://peps.python.org/pep-0740/)
+   attestation.
+
+Recovery paths, should something fail:
+
+- **A build failed**: "Re-run failed jobs". The publish jobs only start once every build job is
+  green, and wheels already built are not rebuilt (they upload from the run's artifacts, which
+  is also why re-runs must happen within the artifact retention window - 90 days).
+- **An upload failed partway**: also "Re-run failed jobs". `skip-existing` on the publish steps
+  skips the files that made it and uploads the rest - without that, the index's refusal to
+  accept a filename twice would wedge the release permanently.
+- **Something is wrong with the release itself**: don't approve; cancel the run, fix, bump the
+  version, re-tag. PyPI reserves every uploaded filename forever (deleting a release does not
+  free its names), which is why a suspect release should be stopped *before* approval.
+
+Housekeeping to be aware of:
+
+- PyPI's default project quota is 10 GiB, and a full release is ~1.2 GiB - about seven releases'
+  worth. File a [size-limit increase](https://docs.pypi.org/project-management/storage-limits/)
+  before it becomes urgent, and delete superseded `rc` releases (deletion does free quota - it's
+  only the *filenames* that stay reserved).
+- TestPyPI has the same quota and rehearsals accrete there too; delete old ones now and then.
+
+### One-time setup (already done - recorded for when it must be redone)
+
+The trusted-publisher registrations bind to this repository **and the workflow filename**, so
+renaming `build-wheels.yml` (or moving the repository) silently breaks publishing until the
+registrations are updated to match. The order below matters: a workflow run referencing a
+deployment environment that does not exist *auto-creates it unprotected*, so the environments
+must exist - with their protection rules - before the first tag push.
+
+1. Create the `pypi` [environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
+   in the repository settings: required reviewers = the release maintainer(s); deployment
+   branches/tags restricted to tags matching `PyGPlates-*`. Leave "prevent self-review" off -
+   a lone maintainer must be able to approve their own release.
+2. Create the `testpypi` environment (no reviewers - the rehearsal is what runs unattended).
+3. On **TestPyPI** (separate account from PyPI, 2FA required): pygplates doesn't exist there,
+   so register a [pending publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/):
+   owner `GPlates`, repository `GPlates`, workflow `build-wheels.yml`, environment `testpypi`.
+   (A pending publisher doesn't reserve the name, so do this close to first use; it becomes a
+   normal publisher on the first upload.)
+4. On **PyPI**, in the pygplates project -> Settings -> Publishing, add the trusted publisher:
+   owner `GPlates`, repository `GPlates`, workflow `build-wheels.yml`, environment `pypi`.
+5. After the first successful trusted publish, revoke any remaining pygplates API tokens.

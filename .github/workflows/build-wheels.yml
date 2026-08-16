@@ -13,8 +13,14 @@
 # the second, without spending six builds' worth of runner time.
 #
 # The sdist is built here too: it's what PyPI users without a matching wheel fall back to,
-# and it's what the conda-forge feedstock pulls. A future publish workflow uploads these
-# artifacts to PyPI - until then they can be downloaded from the workflow run page.
+# and it's what the conda-forge feedstock pulls.
+#
+# A release tag also publishes. Once every build has succeeded, the run rehearses the upload
+# against TestPyPI, then waits for a maintainer to approve the 'pypi' deployment environment
+# before uploading to PyPI - all via OIDC Trusted Publishing, so no API token is stored
+# anywhere. The trusted-publisher registrations on both indexes name this file, so renaming it
+# breaks publishing until they are updated to match. The release process, the one-time index
+# and environment setup, and the recovery paths are documented in 'pygplates/wheel/README.md'.
 name: pygplates wheels
 
 on:
@@ -37,7 +43,15 @@ on:
       - CMakeLists.txt
   workflow_dispatch:
 
+# The build jobs only read the repository. The publish jobs declare what they need themselves
+# (the OIDC token for the indexes) - job-level 'permissions' blocks replace this one entirely
+# for their job, they don't add to it.
+permissions:
+  contents: read
+
 # Superseded runs are cancelled rather than left to finish (a full wheel matrix takes hours).
+# The group is per-ref, so a release run - which can sit in 'waiting' for days at the approval
+# gate below - can only be superseded by re-pushing its own tag, never by other work.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -51,6 +65,27 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Check the tag matches the version
+        # A release tag must be 'PyGPlates-' plus the version in 'cmake/modules/Version.cmake'
+        # (extracted with the same pattern as pyproject.toml's version provider). Anything else
+        # means the tag was pushed without bumping the version - far better caught here, in the
+        # run's first minute, than noticed in what the publish jobs upload five hours later.
+        # Development versions are rejected outright: pip never installs them by default, and
+        # publishing one would permanently reserve its filenames on PyPI for nothing.
+        if: github.ref_type == 'tag'
+        run: |
+          version=$(sed -n 's/^set(\s*PYGPLATES_PEP440_VERSION\s\+\(\S\+\)\s*).*/\1/p' cmake/modules/Version.cmake)
+          [ -n "${version}" ] # fail here if the Version.cmake line was reformatted
+          if [ "${GITHUB_REF_NAME}" != "PyGPlates-${version}" ]; then
+              echo "Tag '${GITHUB_REF_NAME}' does not match 'PyGPlates-${version}'" \
+                   "(from cmake/modules/Version.cmake)." >&2
+              exit 1
+          fi
+          case ${version} in *.dev*)
+              echo "'${version}' is a development version - not something to tag and release." >&2
+              exit 1
+          esac
 
       - name: Check the Python version lists agree
         # A mismatch means Linux wheel builds fail much later with a Boost linker error - the
@@ -307,3 +342,132 @@ jobs:
           name: wheels-${{ matrix.id }}
           path: wheelhouse/*.whl
           if-no-files-found: ignore
+
+  publish-testpypi:
+    name: publish to TestPyPI
+    # A rehearsal of the release upload, against the index where a rejection costs nothing:
+    # what the indexes validate server-side (the metadata, most of all) is exactly what local
+    # checks cannot prove will be accepted. Only a subset is uploaded - the sdist plus one
+    # platform's wheels - because every wheel carries the same metadata, so one platform
+    # rehearses everything the index could object to, while a full ~1.2 GB matrix would burn
+    # through TestPyPI's project quota in a handful of releases.
+    #
+    # Publishing is for release tags pushed to the upstream repository: not pull requests, not
+    # manual dispatches (even of a tag ref), and not forks - where these jobs are skipped,
+    # which also stops GitHub silently auto-creating the deployment environments there.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/PyGPlates-') && github.repository == 'GPlates/GPlates'
+    # Every leg of the matrix green - not merely "artifacts exist", which even failed legs
+    # leave behind ('if: always()' above). ('build-sdist' is implied, 'build-wheels' needs it.)
+    needs: build-wheels
+    runs-on: ubuntu-24.04
+    # Bounds a hung upload.
+    timeout-minutes: 30
+
+    # The OIDC token this job trades for upload permission carries the environment name, and
+    # TestPyPI's trusted-publisher registration requires it to be 'testpypi' - see the README's
+    # one-time setup. No approval gate on this environment: the rehearsal is what runs first.
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/pygplates
+
+    # Mandatory for Trusted Publishing - and, being a job-level block, it also drops every
+    # other permission (this job checks nothing out).
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download the sdist
+        uses: actions/download-artifact@v6
+        with:
+          name: sdist
+          path: dist
+
+      - name: Download one platform's wheels
+        uses: actions/download-artifact@v6
+        with:
+          name: wheels-linux-x86_64
+          path: dist
+
+      - name: Publish to TestPyPI
+        # 'release/v1' is the branch the PyPA maintains for exactly this use - an exact pin
+        # would rot silently here (no dependabot), and has broken before for others (the
+        # v1.12 prebuilt-container switch). Attestations (PEP 740) are generated and uploaded
+        # by default under Trusted Publishing. 'skip-existing' makes a re-run idempotent:
+        # an index rejects re-uploads of a filename it has already accepted, so without it a
+        # rehearsal could never be run twice for the same release.
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  publish-pypi:
+    name: publish to PyPI
+    # Runs only after the TestPyPI rehearsal succeeded - and then waits for a maintainer to
+    # approve the deployment to the 'pypi' environment (a required reviewer configured on the
+    # environment, see the README). The same trigger condition again, even though 'needs' on a
+    # skipped job would skip this one anyway: the gate on the real index should never depend
+    # on another job's condition staying correct.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/PyGPlates-') && github.repository == 'GPlates/GPlates'
+    needs: publish-testpypi
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pygplates
+
+    # 'id-token' is mandatory for Trusted Publishing; 'contents' is for the checkout, which is
+    # only there so the completeness check can read the Python version list. Everything else
+    # this job might have been given is dropped by this block existing.
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Download the sdist
+        uses: actions/download-artifact@v6
+        with:
+          name: sdist
+          path: dist
+
+      - name: Download the wheels
+        # All the wheel artifacts, merged into 'dist/' alongside the sdist. Two named download
+        # steps rather than one bare merge of every artifact in the run, so that a future
+        # non-distribution artifact (crash logs, say) can never leak into the upload.
+        uses: actions/download-artifact@v6
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - name: Check every distribution is present
+        # One sdist, and one wheel per Python version per platform. 'needs' above already
+        # proves every job succeeded - this proves they built what a release needs: a job goes
+        # green building whatever CIBW_BUILD selects, so a selection mistake (say, the pull
+        # request limiter's condition drifting) would otherwise publish a release with holes
+        # in its wheel matrix. The Python versions come from the same list the builds use; the
+        # platform count is this file's 'build-wheels' matrix.
+        run: |
+          python_count=$(sed -n 's/^PYTHON_VERSIONS="\(.*\)"/\1/p' pygplates/wheel/versions.sh | wc -w)
+          [ "${python_count}" -gt 0 ] # fail here if the versions.sh line was reformatted
+          expected_wheels=$((python_count * 5))
+          sdist_count=$(find dist -name '*.tar.gz' | wc -l)
+          wheel_count=$(find dist -name '*.whl' | wc -l)
+          echo "dist/ holds ${sdist_count} sdist (expected 1) and ${wheel_count} wheels (expected ${expected_wheels})."
+          [ "${sdist_count}" -eq 1 ] && [ "${wheel_count}" -eq "${expected_wheels}" ]
+
+      - name: Publish to PyPI
+        # See the TestPyPI step for the choice of 'release/v1' and the attestations note.
+        # 'skip-existing' here is what makes a partial upload recoverable: PyPI reserves
+        # filenames forever (even after deletion) and rejects re-uploads, and the upload stops
+        # at the first rejection - so a network failure partway through 31 files would
+        # otherwise wedge the release permanently, with re-runs dying on the first
+        # already-uploaded file. With it, "Re-run failed jobs" finishes the job. The risk
+        # 'skip-existing' usually carries - quietly not uploading a stale rebuild - is closed
+        # by the tag check in 'build-sdist': what is in 'dist/' can only be the tagged version.
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
