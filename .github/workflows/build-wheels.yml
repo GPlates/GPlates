@@ -43,11 +43,13 @@ on:
       - CMakeLists.txt
   workflow_dispatch:
 
-# The build jobs only read the repository. The publish jobs declare what they need themselves
-# (the OIDC token for the indexes) - job-level 'permissions' blocks replace this one entirely
-# for their job, they don't add to it.
+# What the build jobs need: the repository, and the GHCR packages the Linux builds pull their
+# dependency image from. Both are spelled out because naming any permission drops every one not
+# named - which is also why the publish jobs' own 'permissions' blocks restate what they need
+# rather than adding to this.
 permissions:
   contents: read
+  packages: read
 
 # Superseded runs are cancelled rather than left to finish (a full wheel matrix takes hours).
 # The group is per-ref, so a release run - which can sit in 'waiting' for days at the approval
@@ -101,10 +103,13 @@ jobs:
         run: pipx run twine check dist/*.tar.gz
 
       - name: Upload sdist
+        # 'overwrite' for the same reason as the wheels below: re-running every job of a run
+        # that already uploaded would otherwise be refused as a duplicate artifact name.
         uses: actions/upload-artifact@v4
         with:
           name: sdist
           path: dist/*.tar.gz
+          overwrite: true
 
   build-wheels:
     name: wheels ${{ matrix.id }}
@@ -149,6 +154,10 @@ jobs:
         # the completeness check below never finding its stamp and every run re-saving the
         # multi-gigabyte cache). The Linux entries have none: their dependencies live in the
         # GHCR images, and every deps step is gated on runner.os != 'Linux'.
+        #
+        # Adding or removing an entry here changes how many wheels a release consists of:
+        # 'publish-pypi' multiplies the number of entries by the number of Python versions to
+        # know what a complete release looks like, and cannot read this list for itself.
         include:
           - id: linux-x86_64
             os: ubuntu-24.04
@@ -336,12 +345,18 @@ jobs:
         # wheels to a test flake on the sixth would force the whole job to run again.
         # 'if-no-files-found: ignore' keeps the step green when the failure came before any
         # wheel finished.
+        # 'overwrite' because an artifact belongs to the run, not to the attempt: a leg that
+        # died on its last wheel has already uploaded the earlier ones, and without this the
+        # re-run that the comment above is describing would rebuild everything and then fail
+        # at this step, refused as a duplicate name. (Safe here, unlike the case it guards
+        # against upstream: each leg writes its own artifact name, never a shared one.)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.id }}
           path: wheelhouse/*.whl
           if-no-files-found: ignore
+          overwrite: true
 
   publish-testpypi:
     name: publish to TestPyPI
@@ -451,8 +466,10 @@ jobs:
         # in its wheel matrix. The Python versions come from the same list the builds use; the
         # platform count is this file's 'build-wheels' matrix.
         run: |
-          python_count=$(sed -n 's/^PYTHON_VERSIONS="\(.*\)"/\1/p' pygplates/wheel/versions.sh | wc -w)
+          python_count=$(sed -n 's/^PYTHON_VERSIONS="\(.*\)".*/\1/p' pygplates/wheel/versions.sh | wc -w)
           [ "${python_count}" -gt 0 ] # fail here if the versions.sh line was reformatted
+          # The five entries of the 'build-wheels' matrix above (which is not readable from
+          # here); that block says so too, since this is the side that fails if they part.
           expected_wheels=$((python_count * 5))
           sdist_count=$(find dist -name '*.tar.gz' | wc -l)
           wheel_count=$(find dist -name '*.whl' | wc -l)

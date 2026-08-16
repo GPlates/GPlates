@@ -363,9 +363,10 @@ The flow, end to end:
 
 Recovery paths, should something fail:
 
-- **A build failed**: "Re-run failed jobs". The publish jobs only start once every build job is
-  green, and wheels already built are not rebuilt (they upload from the run's artifacts, which
-  is also why re-runs must happen within the artifact retention window - 90 days).
+- **A build failed**: "Re-run failed jobs" - only the failed platform runs again (from its
+  dependency cache), and the publish jobs then start as if the run had been green all along.
+  They upload what the run's artifacts hold, so this works within the artifact retention
+  window - 90 days.
 - **An upload failed partway**: also "Re-run failed jobs". `skip-existing` on the publish steps
   skips the files that made it and uploads the rest - without that, the index's refusal to
   accept a filename twice would wedge the release permanently.
