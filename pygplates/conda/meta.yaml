@@ -46,7 +46,10 @@ requirements:
   host:
     - python
     - pip
-    - scikit-build-core >=0.11.1  # 0.11.0 broke the 'License:' metadata header (and with it the numpy runtime dependency)
+    # Keep in sync with the [build-system] requires bounds in the root 'pyproject.toml', which
+    # explains them - conda-build runs pip without build isolation, so this pin (not that one)
+    # selects the backend version here.
+    - scikit-build-core >=0.11.1,<2
     - numpy
     - cgal-cpp
     - gmp

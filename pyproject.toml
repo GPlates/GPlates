@@ -6,12 +6,29 @@ build-backend = "scikit_build_core.build"
 requires = [
     # Using scikit-build-core backend build system.
     #
-    # Version 0.11.0 must be avoided: it inlined the license file into the 'License:' metadata
-    # header in a way that broke RFC 822 header folding on the form feeds in COPYING, ending
-    # the header block early - so pip never saw 'Requires-Dist: numpy' (and older Pythons
-    # raised outright). Fixed in 0.11.1, the floor here.
+    # The floor: the PEP 639 license metadata used in [project] below ('license' as an SPDX
+    # expression, plus 'license-files') needs scikit-build-core 0.11 - older versions reject
+    # it. And 0.11.0 itself must be avoided: it inlined the license file into the 'License:'
+    # metadata header in a way that broke RFC 822 header folding on the form feeds in COPYING,
+    # ending the header block early - so pip never saw 'Requires-Dist: numpy' (and older
+    # Pythons raised outright). The SPDX expression means nothing is inlined any more, but the
+    # floor stays at the fixed release.
     # See https://github.com/scikit-build/scikit-build-core/issues/1006.
-    'scikit-build-core>=0.11.1',
+    #
+    # The cap: scikit-build-core 1.0 deprecated the '[tool.scikit-build.metadata]' table that
+    # provides our version (below), in favour of '[[tool.dynamic-metadata]]' - a migration that
+    # would raise the floor to 1.0, which not every build environment has yet. The deprecated
+    # table keeps working throughout 1.x because 'minimum-version' (see [tool.scikit-build])
+    # freezes behaviour at the floor version; the cap stops the major that could complete the
+    # removal from being picked up as it releases - which would break building every
+    # already-published sdist. Bump it deliberately, checking the table (or its replacement)
+    # still resolves the version.
+    #
+    # Keep these bounds in sync with the host dependency in 'pygplates/conda/meta.yaml':
+    # conda builds run pip without build isolation, so that pin - not this one - selects the
+    # backend version there (and only a *floor* drift fails loudly, via 'minimum-version'; an
+    # exclusion applied here alone would go unenforced in conda builds).
+    'scikit-build-core>=0.11.1,<2',
 
     # PyGPlates accesses the NumPy C API.
     #
@@ -30,10 +47,12 @@ dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = ["numpy"]
-# A PEP 639 SPDX license expression (metadata 2.4) - the 'License:' header becomes this short
-# expression instead of the whole of COPYING inlined, which is the very thing that went wrong
-# in scikit-build-core 0.11.0 (see [build-system] above). The full text still ships in the
-# wheel, via 'license-files'.
+# A PEP 639 SPDX license expression (metadata 2.4) - the 'License:' header becomes a short
+# 'License-Expression:' instead of an inlined license text (see [build-system] above for how
+# that once went wrong). The full text still ships in the wheel, via 'license-files', at
+# '.dist-info/licenses/COPYING' ('pygplates/wheel/check_wheel_contents.py' verifies it got
+# there). Note that *reading* metadata 2.4 needs twine >= 6.1 / pkginfo >= 1.12; older ones
+# fail with a misleading "Metadata is missing required fields: Name, Version".
 license = "GPL-2.0-only"
 license-files = ["COPYING"]
 authors = [
@@ -75,7 +94,11 @@ Discussions = "https://discourse.gplates.org/"
 #
 [tool.scikit-build]
 
-# Scikit-build-core minimum version required.
+# Freeze scikit-build-core's default behaviours at our floor version (resolved from the
+# [build-system] requires entry above) instead of letting them track whatever backend version
+# happens to be installed. This is also what keeps the deprecated '[tool.scikit-build.metadata]'
+# table working under scikit-build-core 1.x (see [build-system]). Not redundant with the
+# requires floor, which only constrains what may be *installed*.
 minimum-version = "build-system.requires"
 
 # Where CMake builds. Left at scikit-build-core's default, a fresh temporary directory each time,
