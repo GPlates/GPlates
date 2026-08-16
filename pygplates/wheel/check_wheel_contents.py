@@ -1,5 +1,6 @@
 """
-Check that a built pyGPlates wheel carries the data files its dependencies read at run time.
+Check that a built pyGPlates wheel carries the data files its dependencies read at run time,
+and the license text.
 
 Run against each repaired wheel by cibuildwheel's 'test-command' (see '[tool.cibuildwheel]' in the
 root 'pyproject.toml'), so it inspects the installed package rather than the build tree.
@@ -14,6 +15,7 @@ covers the causes the *build* can see. This covers the rest of the path: the dat
 survive installation and the wheel repair step to reach the user.
 """
 
+import importlib.metadata
 import pathlib
 import sys
 
@@ -43,14 +45,27 @@ def main():
         path = package_dir / relative_path
         found = path.is_file()
         if not found:
-            missing.append((library, path))
+            missing.append(library)
         print("  {:5} {:7}  {}".format(library, "ok" if found else "MISSING", path))
+
+    # The GPL license text: COPYING, at the '.dist-info/licenses/' location where PEP 639
+    # ('license-files' in the root 'pyproject.toml') puts it. Placing it there is entirely the
+    # build backend's doing, and the backend has no pinned upper bound within its major version
+    # (see [build-system] in 'pyproject.toml') - and unlike a lost numpy dependency, which fails
+    # loudly (importing pygplates initialises the NumPy C API), a wheel that lost its license
+    # text would not be visibly broken at all.
+    license_text = importlib.metadata.distribution("pygplates").read_text("licenses/COPYING")
+    license_found = license_text is not None and "GNU GENERAL PUBLIC LICENSE" in license_text
+    if not license_found:
+        missing.append("the license (COPYING)")
+    print("  {:5} {:7}  {}".format("GPL2", "ok" if license_found else "MISSING",
+                                   ".dist-info/licenses/COPYING"))
 
     if missing:
         sys.exit(
-            "error: this wheel is missing run-time data for: {}. It would import and pass the test "
-            "suite, but fail to resolve coordinate reference systems.".format(
-                ", ".join(library for library, _ in missing)
+            "error: this wheel is missing: {}. It would import and pass the test suite anyway, "
+            "which is exactly the failure mode this check exists to catch.".format(
+                ", ".join(missing)
             )
         )
 
