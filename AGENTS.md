@@ -47,20 +47,33 @@ cmake --build <build-dir>
   most recently configured in-source build tree. Edit `.clangd.in`, never `.clangd`. Generation
   is skipped for out-of-tree builds (`pip install .`, `conda build`) and for VS/Xcode generators.
 
-Full instructions: @BUILD-Windows.md, @BUILD-macOS.md, @BUILD-Linux.md
+Full instructions: `BUILD-Windows.md`, `BUILD-macOS.md`, `BUILD-Linux.md`.
 
 ## Test
 
-CTest is the only top-level test runner, and **`-C Release` is mandatory**:
+CTest is the only top-level test runner. **Always configure Release and always pass
+`-C Release`:**
 
 ```
 ctest --test-dir build-pygplates -C Release --output-on-failure
 ctest --test-dir build-gplates   -C Release --output-on-failure
 ```
 
-Without `-C Release`, CTest filters out every test and **reports success having run nothing** —
-the tests are registered `CONFIGURATIONS Release MinSizeRel` because `GPlatesGlobal::Assert`
-aborts in Debug rather than throwing.
+A Debug test run is unsupported either way, because `GPlatesGlobal::Assert` calls `std::abort()`
+in Debug instead of throwing, which kills every test that exercises an error path. But the two
+products enforce that differently, and the difference decides how you fix an empty run:
+
+- **pyGPlates** tests are registered `CONFIGURATIONS Release MinSizeRel`. Omitting `-C Release`
+  matches nothing and CTest still **exits 0**, so the run looks like a pass.
+- **GPlates** tests are registered by `gtest_discover_tests()`, which cannot attach
+  `CONFIGURATIONS`, so they are instead skipped at *configure* time by
+  `if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")` (`src/CMakeLists.txt`). A Debug build tree contains
+  no registered tests at all and **no `-C` value will reveal any** — reconfigure as Release. On a
+  single-config Release tree a bare `ctest` does work; `-C Release` matters for the multi-config
+  generators (Visual Studio, Xcode).
+
+So: zero tests from `build-pygplates` usually means a missing `-C Release`; zero tests from
+`build-gplates` usually means the tree was configured Debug.
 
 The GPlates unit-test binary is `EXCLUDE_FROM_ALL`, so build it explicitly:
 
@@ -70,7 +83,7 @@ cmake --build build-gplates --target gplates gplates-unit-test
 
 Use GoogleTest for all new C++ tests; do not mix frameworks. Conventions (headless,
 working-directory independent, `GPLATES_UNIT_TEST_DATA_DIR`, `QTemporaryDir`, and leaving
-`git status` clean) are in @doc-cpp/design/testing/README.md.
+`git status` clean) are in `doc-cpp/design/testing/README.md`.
 
 ## Python API docstrings and the `.pyi` stub
 
@@ -85,13 +98,16 @@ check both when searching, and **any convention or style sweep must cover both**
 verify the stub rather than leaving it stale.
 
 ```
-python pygplates/stub/generate_stub.py --module-dir <dir-containing-built-pygplates> --check <committed-stub>
+# Rewrite the committed stub, and report whether it had drifted:
+python pygplates/stub/generate_stub.py --module-dir <dir-containing-built-pygplates>     --output pygplates/stub/__init__.pyi --check pygplates/stub/__init__.pyi
 ```
+
+`--check` only compares and exits non-zero; `--output` is what actually rewrites the stub.
 
 `*.pyi` is pinned to LF in `.gitattributes` because `pygplates-stub-test` compares bytes.
 
 The docstring conventions are strict and are the highest-value style document in the repo:
-@doc-python-api/README.md
+`doc-python-api/README.md`
 
 ## Docs
 
@@ -152,7 +168,7 @@ Where this guidance and a specific file disagree, match the file you are editing
 
 ## Branches and pull requests
 
-The branching model is a gitflow variant, described in @README.md.
+The branching model is a gitflow variant, described in `README.md`.
 
 - **develop** branches: `gplates` (the repository's default branch) and `pygplates`. These are
   kept closely in sync — GPlates-related work is done on `gplates` and pyGPlates-related work on
@@ -165,10 +181,10 @@ The branching model is a gitflow variant, described in @README.md.
 never on a `release-*` branch.** CI enforces this: `build-test-pygplates.yml` only runs on
 `pygplates` and `build-test-gplates.yml` only on `gplates`.
 
-The GitHub remote is `https://github.com/GPlates/GPlates.git`. This checkout names it `public`
-rather than the usual `origin`, so **always name the remote explicitly** in push and fetch
-commands. There is an active downstream fork tracking the `gplates` branch, so changes merged
-there warrant extra care.
+The GitHub remote is `https://github.com/GPlates/GPlates.git`, usually named `origin`. Some
+checkouts give it another name and have no `origin` at all, so **name the remote explicitly** in
+push and fetch commands rather than assuming. There is an active downstream fork tracking the
+`gplates` branch, so changes merged there warrant extra care.
 
 ## Releases (pyGPlates wheels)
 
@@ -178,7 +194,7 @@ Publishing uses PyPI Trusted Publishing (OIDC, no tokens) and pauses for manual 
 `pypi` deployment environment. **Renaming `.github/workflows/build-wheels.yml` silently breaks
 publishing** — the trusted-publisher registration binds to the filename. Adding a Python version
 requires updating both `[tool.cibuildwheel].build` in `pyproject.toml` and `PYTHON_VERSIONS` in
-`pygplates/wheel/versions.sh`, or the sdist job fails. Details: @pygplates/wheel/README.md
+`pygplates/wheel/versions.sh`, or the sdist job fails. Details: `pygplates/wheel/README.md`.
 
 ## Working agreements
 

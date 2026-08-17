@@ -34,7 +34,9 @@ products and the flag makes the intent unambiguous in the shell history and in `
 Do not add `-DCMAKE_PREFIX_PATH` or `-DBoost_ROOT`. Confirm the configure output contains
 `Detected active conda environment`; if it does not, the environment was not active.
 
-Skip configure if `build-gplates/CMakeCache.txt` already exists with `GPLATES_BUILD_GPLATES=TRUE`.
+Skip configure only if `build-gplates/CMakeCache.txt` already has **both**
+`GPLATES_BUILD_GPLATES=TRUE` and `CMAKE_BUILD_TYPE=Release`. A Debug cache must be
+reconfigured — see step 4.
 
 ## 3. Build
 
@@ -53,8 +55,17 @@ For an application-only build, `cmake --build build-gplates` is fine.
 ctest --test-dir build-gplates -C Release --output-on-failure
 ```
 
-**`-C Release` is mandatory** — the tests carry `CONFIGURATIONS Release MinSizeRel`, so without it
-CTest runs nothing and still exits 0. Treat "0 tests" as a failed invocation, not a pass.
+**The build tree must have been configured `Release`.** Unlike the pyGPlates tests, the GPlates
+tests are registered by `gtest_discover_tests()`, which cannot attach `CONFIGURATIONS`; they are
+skipped at *configure* time instead, by `if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")` in
+`src/CMakeLists.txt`. So a Debug tree has no registered tests and **no `-C` value will reveal
+any** — reconfigure as Release.
+
+Pass `-C Release` regardless: it is required for the multi-config generators (Visual Studio,
+Xcode), and harmless on a single-config Release tree.
+
+If the run reports 0 tests, check `CMAKE_BUILD_TYPE` in `build-gplates/CMakeCache.txt` before
+anything else — do not simply retry the command.
 
 Tests are GoogleTest cases and run headless. On failure, CI uploads
 `build-gplates/Testing/Temporary/`; locally, read that directory for the detailed log.

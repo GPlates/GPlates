@@ -33,6 +33,12 @@ on:
       # Documentation and repository metadata cannot affect the build or the tests.
       # Note '.gitattributes' is deliberately NOT listed: it controls line endings, and
       # 'pygplates-stub-test' byte-compares the '.pyi' stub.
+      # Caveat: GitHub does not synthesise a skipped-but-successful check for a
+      # path-filtered trigger - the run simply never happens. That is fine while
+      # these workflows are not *required* status checks (they are not, as of
+      # 2026-08: the branch has no protection rules). If they are ever made
+      # required, a docs-only PR would wait forever on a check that cannot run;
+      # the usual fix is to move the filter into a job-level 'if' instead.
       - '**.md'
       - '.claude/**'
       - 'AUTHORS'

@@ -17,8 +17,8 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
 
 ## Before starting
 
-- Confirm the working tree is clean and on the `pygplates` branch, up to date with the `public`
-  remote (this checkout has no `origin`; name the remote explicitly).
+- Confirm the working tree is clean and on the `pygplates` branch, up to date with the GitHub
+  remote. Name that remote explicitly rather than assuming `origin` — not every checkout has one.
 - If this is a first pass at a release, suggest an `rc` version (e.g. `1.1.0rc1`). pip ignores
   release candidates by default, so it exercises the whole pipeline — tag check, TestPyPI
   rehearsal, approval gate, real PyPI upload — at low stakes.
@@ -29,7 +29,7 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
    target version and commit. A `.dev` version cannot be released — the run rejects it.
 2. **Tag exactly `PyGPlates-<version>`.** The tag's version string must match
    `PYGPLATES_PEP440_VERSION` character for character; the run fails in its first minute if they
-   disagree. Push the tag to the `public` remote (and, per local convention, also to `private`).
+   disagree. Push the tag to the GitHub remote. Ask which remote if there is more than one.
 3. **Wait for the build.** `build-wheels.yml` builds the sdist and the full matrix — roughly
    2.5 hours warm, 4.5 cold — then uploads the sdist plus one platform's wheels to TestPyPI as a
    rehearsal.

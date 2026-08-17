@@ -24,10 +24,12 @@ the built module in-process. The CMake target handles this by invoking
 produces HTML identical to a clean build except for `searchindex.js`, where it silently drops
 *every* index entry (`indexentries` goes from hundreds to 0). Nothing warns about this.
 
-So before building, delete the doctree and generated-stub caches:
+So before building, delete the doctree and generated-stub caches. Use `cmake -E rm -rf` rather
+than `rm -rf`, which does not exist in the Anaconda Prompt (cmd) or PowerShell that the build
+skills direct Windows users to:
 
 ```
-rm -rf <build-dir>/doc-python-api/_doctrees <build-dir>/doc-python-api/generated
+cmake -E rm -rf <build-dir>/doc-python-api/_doctrees <build-dir>/doc-python-api/generated
 cmake --build <build-dir> --config Release --target doc-python-api
 ```
 
