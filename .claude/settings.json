@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{ sed -n 's/.*\"file_path\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' | grep -qEi \"src[\\\\/]+(api[\\\\/]+[^\\\"]*\\.(cc|h)|qt-resources[\\\\/]+python[\\\\/]+api[\\\\/]+[^\\\"]*\\.py)$\" && printf %s '{\"hookSpecificOutput\": {\"hookEventName\": \"PostToolUse\", \"additionalContext\": \"You edited a pyGPlates API docstring source. The .pyi stub is generated from these docstrings by pygplates/stub/generate_stub.py, so it may now be stale. Verify with: ctest --test-dir build-pygplates -C Release -R pygplates-stub-test  (the -C Release is mandatory: without it CTest runs nothing and still exits 0). See the api-docstring skill for the docstring conventions.\"}}'; } 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -17,8 +17,28 @@ name: pygplates build and test
 on:
   push:
     branches: [ "pygplates" ]
+    paths-ignore:
+      # Documentation and repository metadata cannot affect the build or the tests.
+      # Note '.gitattributes' is deliberately NOT listed: it controls line endings, and
+      # 'pygplates-stub-test' byte-compares the '.pyi' stub.
+      - '**.md'
+      - '.claude/**'
+      - 'AUTHORS'
+      - 'COPYING'
+      - 'CREDITS'
+      - 'CHANGELOG'
   pull_request:
     branches: [ "pygplates" ]
+    paths-ignore:
+      # Documentation and repository metadata cannot affect the build or the tests.
+      # Note '.gitattributes' is deliberately NOT listed: it controls line endings, and
+      # 'pygplates-stub-test' byte-compares the '.pyi' stub.
+      - '**.md'
+      - '.claude/**'
+      - 'AUTHORS'
+      - 'COPYING'
+      - 'CREDITS'
+      - 'CHANGELOG'
   workflow_dispatch:
 
 # Superseded runs are cancelled rather than left to finish (a build takes ~30-60 minutes).
