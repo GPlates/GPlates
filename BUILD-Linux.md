@@ -189,16 +189,26 @@ A `pygplates` package should then be importable in the environment (`python3 -m 
 
 Editors and IDEs that use [clangd](https://clangd.llvm.org/) (including the Claude Code `clangd-lsp`
 plugin) provide code navigation, diagnostics and completion. clangd needs a `compile_commands.json`
-compilation database, which the build generates automatically: the Ninja generator emits it and
+compilation database, which the Ninja build generates automatically:
 `CMAKE_EXPORT_COMPILE_COMMANDS` is enabled by default (override with
-`-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF`). The committed `.clangd` at the repo root points clangd at the
-`build-gplates` tree, so once you have configured `build-gplates` (above) there is nothing else to set
-up.
+`-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF`). Configuring a build tree *also* writes a `.clangd` file at the
+repo root that points clangd at that tree, so once you have configured `build-gplates` (above) there
+is nothing else to set up.
 
-- **clangd binary:** install it via your package manager — Ubuntu/Debian `sudo apt install clangd`,
-  Fedora `sudo dnf install clang-tools-extra`, Arch `sudo pacman -S clang`. Or from conda-forge:
-  `conda install clangdev` (provides `clangd` in the environment).
-- The database lives inside the (git-ignored) `build-gplates` directory and is refreshed on each
-  configure/build. It is portable across git worktrees (the `.clangd` path is relative).
-- To edit against the pyGPlates tree instead, change `CompilationDatabase` in `.clangd` to
-  `build-pygplates`.
+- **clangd binary:** install it via your package manager - Ubuntu/Debian `sudo apt install clangd`,
+  Fedora `sudo dnf install clang-tools-extra`, Arch `sudo pacman -S clang`. Prefer this to installing
+  clangd into the conda environment: the `clangd-lsp` plugin launches `clangd` from `PATH`, so a
+  binary that lives in the `gplates` environment is only found when that environment happens to be
+  activated.
+- **Which build tree:** `.clangd` is generated (from the committed `.clangd.in`) every time you
+  configure, and points at the tree you configured *most recently* - so it follows
+  `GPLATES_BUILD_GPLATES` by itself. Configure `build-pygplates` with `-DGPLATES_BUILD_GPLATES=FALSE`
+  and clangd switches to the pyGPlates compile commands; re-configure `build-gplates` to switch back.
+  Re-configuring an already-configured tree is enough (`cmake -S . -B build-pygplates`, a second or
+  two), and the generated file names the target it was written for, so its header tells you which one
+  is currently active. Only build trees *inside* the source directory are used, so a `pip install .`
+  (or `conda build`) - which configures into a temporary directory - never clobbers your setting.
+- The database lives inside the (git-ignored) build directory and is refreshed on each
+  configure/build. The path recorded in `.clangd` is relative, so it works in any git worktree.
+- `.clangd` is git-ignored because it is generated. To hand-maintain your own instead, configure with
+  `-DGPLATES_WRITE_CLANGD_CONFIG=FALSE` and CMake will leave the file alone.

@@ -17,9 +17,9 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 include (Version)
 
 # Generate a 'compile_commands.json' compilation database by default, for clangd / IDE code
-# intelligence (see the committed '.clangd' at the repo root). Honoured by the Ninja and Makefile
-# generators (all our documented builds use Ninja); silently ignored by the Visual Studio and Xcode
-# generators. Override with '-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF' if not wanted.
+# intelligence (the '.clangd' pointing at it is written by 'cmake/modules/ClangdConfig.cmake').
+# Honoured by the Ninja and Makefile generators (all our documented builds use Ninja); silently
+# ignored by the Visual Studio and Xcode generators. Override with '-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF' if not wanted.
 #
 # This must precede 'project()' below: 'project()' creates the CMAKE_EXPORT_COMPILE_COMMANDS cache
 # entry itself, so a 'set(... CACHE ...)' default placed after it would be a silent no-op. Setting it
@@ -152,6 +152,11 @@ list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")  # Ignored if CMake < 3
 # Include configuration options (default options and options overridden by user).
 #
 include (ConfigDefault)
+
+#
+# Write a '.clangd' pointing clangd (code intelligence) at this build tree's compilation database.
+#
+include (ClangdConfig)
 
 #
 # Add new custom build configurations (ProfileGprof and ProfileGplates) to
