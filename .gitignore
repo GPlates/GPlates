@@ -79,3 +79,12 @@ __pycache__/
 /pygplates/wheel/*.bz2
 /pygplates/wheel/*.gz
 /pygplates/wheel/*.xz
+
+#
+# Claude Code private, per-developer instructions (not shared).
+#
+/CLAUDE.local.md
+#
+# Claude Code per-developer settings (the shared ones are in .claude/settings.json).
+#
+/.claude/settings.local.json
