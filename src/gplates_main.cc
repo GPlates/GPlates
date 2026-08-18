@@ -613,9 +613,15 @@ namespace
 			if (!first_arg.empty())
 			{
 				// See if the first argument looks like an option.
-				if (first_arg[0] == '-')
+				//
+				// Note: A leading '@' names a response file. The command-line parser turns
+				// "@filename" into the "--response-file" option wherever it appears, so it is
+				// an option here too (otherwise "gplates @filename" was rejected as an
+				// unrecognised command, unlike "gplates --file x @filename").
+				if (first_arg[0] == '-' ||
+					first_arg[0] == '@')
 				{
-					// It looks like an option since it starts with the '-' character.
+					// It looks like an option since it starts with the '-' or '@' character.
 					return FIRST_ARG_IS_OPTION;
 				}
 
