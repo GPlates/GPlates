@@ -108,11 +108,18 @@ jobs:
         # never hits, and the prefix fallback restores the most recent cache for this platform.
         # A pull request can read caches written on its base branch, so PRs start warm from the
         # last push to 'pygplates'.
+        #
+        # The keys are namespaced 'sccache-pygplates-*', and the GPlates workflow's
+        # 'sccache-gplates-*': the two builds share no cache entries at all (every shared
+        # translation unit differs in -fPIC and in the GPLATES_PYTHON_EMBEDDING compile
+        # definition), and 'gplates' is the repository's default branch, so caches saved there are
+        # visible to every ref. Distinct prefixes stop either workflow from downloading the
+        # other's (useless to it) cache.
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: sccache-${{ matrix.name }}-${{ github.sha }}
-          restore-keys: sccache-${{ matrix.name }}-
+          key: sccache-pygplates-${{ matrix.name }}-${{ github.sha }}
+          restore-keys: sccache-pygplates-${{ matrix.name }}-
 
       - name: Install dependencies (conda)
         uses: conda-incubator/setup-miniconda@v3
@@ -175,7 +182,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: sccache-${{ matrix.name }}-${{ github.sha }}
+          key: sccache-pygplates-${{ matrix.name }}-${{ github.sha }}
 
       - name: Test
         # '-C Release' is required: the tests are registered with 'CONFIGURATIONS Release MinSizeRel',

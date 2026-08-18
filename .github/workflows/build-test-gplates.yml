@@ -110,8 +110,8 @@ jobs:
         # A pull request can read caches written on its base branch, so PRs start warm from the
         # last push to 'gplates'.
         #
-        # The keys are namespaced 'sccache-gplates-*' (unlike the pygplates workflow's
-        # 'sccache-<platform>-*'): 'gplates' is the repository's default branch, so caches saved
+        # This workflow's keys are namespaced 'sccache-gplates-*' and the pyGPlates workflow's
+        # 'sccache-pygplates-*': 'gplates' is the repository's default branch, so caches saved
         # here are visible to every ref, and the GPlates and pyGPlates builds share no cache
         # entries at all (every shared translation unit differs in -fPIC and in the
         # GPLATES_PYTHON_EMBEDDING compile definition). Distinct prefixes stop either workflow
