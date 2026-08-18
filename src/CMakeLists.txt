@@ -267,17 +267,22 @@ if (Boost_VERSION VERSION_LESS 1.67.0)
 	endif()
 else()
 	# Boost 1.67 and above use Python version suffixes (eg, 'python37' and 'numpy37').
-	if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.30 AND NOT WIN32)
+	if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.30 AND NOT WIN32 AND Boost_VERSION VERSION_LESS 1.71)
 		# CMake 3.30 removed the FindBoost module (thus requiring boost-cmake). (This also means our Boost version must be >= 1.70).
-		# We could use Python version suffixes but there's an error in the boost-cmake scripts (fixed in
+		# We could use Python version suffixes but Boost 1.70's boost-cmake scripts have an error (fixed in Boost 1.71 by
 		# https://github.com/boostorg/boost_install/commit/e193f08) where it fails to detect 3-digits Python version (ie, boost_python310).
-		# However specifying NO version works (except on Windows), so we'll just specify no version (except on Windows).
-		# Note: On Windows, it appears that the boost-python target WITHOUT a version (eg, Boost::python) has trouble finding the DLL at runtime
-		#       (so we specify a target WITH version on Windows, eg, Boost::python310).
+		# However specifying NO version works, so we'll just specify no version (for this old Boost).
 		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python)
 		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy)
 	else()
 		# Match Boost Python with the Python version we found earlier.
+		#
+		# Note: An unversioned component (eg, 'python' rather than 'python313') would also work via boost-cmake when
+		#       only one Boost.Python variant is installed. But when multiple variants are installed (eg, the manylinux
+		#       wheel image installs boost_python39...boost_python314 side by side) the unversioned config just picks
+		#       the first variant it finds - which is the wrong Python version for all but one wheel. So always request
+		#       the exact variant. Also, on Windows, the boost-python target WITHOUT a version (eg, Boost::python)
+		#       has trouble finding the DLL at runtime.
 		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
 		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
 	endif()
@@ -302,8 +307,8 @@ find_package(Boost ${_GPLATES_MIN_BOOST_VERSION} REQUIRED
 			#         But for accessing the NumPy C API via Boost.Python.NumPy (which we don't do yet) it means
 			#         Boost.Python itself must be built against NumPy 2.0. And ensuring this is a bit more work.
 			#         For example, on Windows you'd need to make sure you install NumPy 2.0 into your Python versions
-			#         prior to building Boost from source code. And with MacPorts (on macOS) you'd need to ensure that
-			#         your 'py-numpy' port is updated (to 2.0).
+			#         prior to building Boost from source code. And on macOS/Linux you'd need to ensure that the
+			#         NumPy installed into your build environment (eg, conda) is updated (to 2.0).
 			#
 			#         So, since we're not yet using Boost.Python.NumPy we'll just disable it to avoid the possible runtime error:
 			#           "A module that was compiled using NumPy 1.x cannot be run in NumPy 2.0.0 as it may crash."
@@ -825,7 +830,20 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 	if (NOT GPLATES_PUBLIC_RELEASE)
 		# Disable some warnings.
 		set(_DISABLE_WARNINGS
-				-Wno-clobbered -Wno-maybe-uninitialized)
+				-Wno-clobbered -Wno-maybe-uninitialized
+				# Keep the ABI-change notes out of the build log, eg "parameter passing for
+				# argument of type 'GPlatesMaths::Real' when C++17 is enabled changed to match
+				# C++14 in GCC 10.1". These fire on aarch64 (and ppc64le) for our small classes
+				# wrapping one or two doubles, in the thousands - drowning out real diagnostics.
+				#
+				# They warn that GCC before 10.1 passed such an argument differently when
+				# compiling as C++17, so they only matter if objects compiled by an older GCC
+				# are linked with objects compiled by GCC 10.1 or later. That cannot happen when
+				# the project and its dependencies come from a single toolchain (eg, the wheel
+				# builds compile everything with the manylinux image's GCC), and any dependency
+				# binaries we don't build ourselves (conda-forge, system packages) have long
+				# since been built with a newer GCC - 10.1 was released in May 2020.
+				-Wno-psabi)
 
 		# Disable '-Wuninitialized' for g++ >= 12 and Boost <= 1.80.
 		#

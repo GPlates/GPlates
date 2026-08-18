@@ -1,0 +1,62 @@
+{
+  "$comment": [
+    "The dependency libraries that vcpkg supplies for the Windows wheel builds - installed by",
+    "'build_windows_deps.sh' (cibuildwheel's 'before-all' hook). JSON has no comments, hence",
+    "these '$'-prefixed fields, which vcpkg ignores.",
+    "",
+    "Only the libraries that are painful to build with MSVC by hand are taken from vcpkg. GMP",
+    "and MPFR are the reason vcpkg is here at all: they have no MSVC build system (vcpkg builds",
+    "them through msys2 and installs MSVC-linkable import libraries), and CGAL needs both. PROJ",
+    "and GDAL come along because they are a deep stack (SQLite, TIFF, GeoTIFF, JSON-C) that",
+    "vcpkg already knows how to build on Windows. Qt, Qwt, Boost and CGAL are NOT here: they are",
+    "built by 'build_windows_deps.sh' from the version pins in 'versions.sh', so they stay in",
+    "step with the Linux and macOS wheels (and vcpkg's Qt is a multi-hour source build).",
+    "",
+    "'builtin-baseline' is a commit of https://github.com/microsoft/vcpkg - a vcpkg release tag,",
+    "which is what pins these libraries' versions. 'build_windows_deps.sh' reads it from here to",
+    "check out the matching vcpkg, and stamps the installed tree with it, so bumping it below",
+    "rebuilds them. For the libraries the other platforms also ship - GLEW, PROJ and GDAL - the",
+    "pins in 'versions.sh' are kept equal to what this baseline supplies, so every platform's",
+    "wheels carry the same versions of the libraries a user can feel; bump the baseline and",
+    "those three pins together, as one act ('build_windows_deps.sh' fails if they drift apart)."
+  ],
+
+  "name": "pygplates-wheel-dependencies",
+  "version-string": "0",
+  "builtin-baseline": "9e593bb18ea69cc5095e012465dcd675a822ed0d",
+
+  "dependencies": [
+    "glew",
+    "gmp",
+    "mpfr",
+    "zlib",
+    {
+      "$comment": [
+        "Only the drivers the other platforms build: the Linux image and the macOS deps script",
+        "configure GDAL with GDAL_USE_EXTERNAL_LIBS=OFF plus zlib and SQLite, so the internal",
+        "PNG/JPEG/... copies are used and GeoPackage still works. 'default-features: false' is",
+        "the vcpkg equivalent (zlib, TIFF, GeoTIFF and JSON-C are core dependencies of the port",
+        "and come regardless); 'sqlite3' is added back for the same reason as on the others."
+      ],
+      "name": "gdal",
+      "default-features": false,
+      "features": [ "sqlite3" ]
+    },
+    {
+      "$comment": [
+        "pyGPlates uses PROJ directly, so it is named here rather than left to arrive as GDAL's",
+        "dependency. The 'tiff' feature is GDAL's requirement, not ours (the Linux and macOS",
+        "builds configure PROJ with ENABLE_TIFF=OFF); asking for the same feature set as the",
+        "GDAL port does keeps vcpkg from having to build PROJ twice.",
+        "",
+        "'tools' builds the PROJ command line programs, of which the build needs one: it runs",
+        "'projinfo --searchpaths' to find the directory holding 'proj.db', which it then copies",
+        "into the wheel (see cmake/modules/Install.cmake). The other platforms get 'projinfo'",
+        "with the PROJ they build themselves."
+      ],
+      "name": "proj",
+      "default-features": false,
+      "features": [ "tiff", "tools" ]
+    }
+  ]
+}

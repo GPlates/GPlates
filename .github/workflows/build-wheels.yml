@@ -1,0 +1,490 @@
+# Builds the pyGPlates sdist and wheels with cibuildwheel.
+#
+# The wheel configuration (Python versions, images, CMake defines, test command) lives in
+# '[tool.cibuildwheel]' in 'pyproject.toml' - this workflow just provides the runners.
+# The Linux builds run inside the dependency images from
+# '.github/workflows/build-wheel-images.yml'; the macOS and Windows builds build their
+# dependencies on the runner (cached). See 'pygplates/wheel/README.md' for the whole picture
+# (including how to build a wheel locally).
+#
+# Full runs (every Python version) happen on release tags and manual dispatch. A pull request
+# that touches the wheel machinery instead builds two Python versions per platform - enough to
+# prove the machinery works, and to show the compiler cache carrying from the first version to
+# the second, without spending six builds' worth of runner time.
+#
+# The sdist is built here too: it's what PyPI users without a matching wheel fall back to,
+# and it's what the conda-forge feedstock pulls.
+#
+# A release tag also publishes. Once every build has succeeded, the run rehearses the upload
+# against TestPyPI, then waits for a maintainer to approve the 'pypi' deployment environment
+# before uploading to PyPI - all via OIDC Trusted Publishing, so no API token is stored
+# anywhere. The trusted-publisher registrations on both indexes name this file, so renaming it
+# breaks publishing until they are updated to match. The release process, the one-time index
+# and environment setup, and the recovery paths are documented in 'pygplates/wheel/README.md'.
+name: pygplates wheels
+
+on:
+  push:
+    tags: [ "PyGPlates-*" ]
+  pull_request:
+    branches: [ "pygplates" ]
+    paths:
+      - pygplates/wheel/**
+      - pyproject.toml
+      - .github/workflows/build-wheels.yml
+      # 'cmake/modules/Install.cmake' decides what a wheel carries besides the module itself - the
+      # PROJ and GDAL data among it - and the wheels once shipped without that data because nothing
+      # here ran when it changed. The whole directory rather than that one file, so the next thing
+      # to move between these files does not quietly fall outside the list again; changes under
+      # 'cmake/' are rare enough that the occasional extra smoke run costs little. The root
+      # CMakeLists.txt is in the same position: it carries wheel-affecting configuration (the
+      # conda detection, the sccache SYSTEM-include override).
+      - cmake/**
+      - CMakeLists.txt
+  workflow_dispatch:
+
+# What the build jobs need: the repository, and the GHCR packages the Linux builds pull their
+# dependency image from. Both are spelled out because naming any permission drops every one not
+# named - which is also why the publish jobs' own 'permissions' blocks restate what they need
+# rather than adding to this.
+permissions:
+  contents: read
+  packages: read
+
+# Superseded runs are cancelled rather than left to finish (a full wheel matrix takes hours).
+# The group is per-ref, so a release run - which can sit in 'waiting' for days at the approval
+# gate below - can only be superseded by re-pushing its own tag, never by other work.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-sdist:
+    name: sdist
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Check the tag matches the version
+        # A release tag must be 'PyGPlates-' plus the version in 'cmake/modules/Version.cmake'
+        # (extracted with the same pattern as pyproject.toml's version provider). Anything else
+        # means the tag was pushed without bumping the version - far better caught here, in the
+        # run's first minute, than noticed in what the publish jobs upload five hours later.
+        # Development versions are rejected outright: pip never installs them by default, and
+        # publishing one would permanently reserve its filenames on PyPI for nothing.
+        if: github.ref_type == 'tag'
+        run: |
+          version=$(sed -n 's/^set(\s*PYGPLATES_PEP440_VERSION\s\+\(\S\+\)\s*).*/\1/p' cmake/modules/Version.cmake)
+          [ -n "${version}" ] # fail here if the Version.cmake line was reformatted
+          if [ "${GITHUB_REF_NAME}" != "PyGPlates-${version}" ]; then
+              echo "Tag '${GITHUB_REF_NAME}' does not match 'PyGPlates-${version}'" \
+                   "(from cmake/modules/Version.cmake)." >&2
+              exit 1
+          fi
+          case ${version} in *.dev*)
+              echo "'${version}' is a development version - not something to tag and release." >&2
+              exit 1
+          esac
+
+      - name: Check the Python version lists agree
+        # A mismatch means Linux wheel builds fail much later with a Boost linker error - the
+        # script's header has the full story. Checked here, in the job every run starts with
+        # (the wheel matrix 'needs' this job, so a mismatch stops it before the multi-hour
+        # builds start); 'build-wheel-images.yml' runs the same check before publishing images.
+        run: python3 pygplates/wheel/check_python_versions.py
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - name: Check sdist
+        run: pipx run twine check dist/*.tar.gz
+
+      - name: Upload sdist
+        # 'overwrite' for the same reason as the wheels below: re-running every job of a run
+        # that already uploaded would otherwise be refused as a duplicate artifact name.
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+          overwrite: true
+
+  build-wheels:
+    name: wheels ${{ matrix.id }}
+    # So a version-list mismatch (or an sdist that will not even build) is caught before hours
+    # of wheel builds start. The sdist job takes under a minute.
+    needs: build-sdist
+    runs-on: ${{ matrix.os }}
+    # A full run is six Python versions: the first compiles pyGPlates from scratch and the rest
+    # reuse about 90% of its object files from the compiler cache (measured - only the ~100
+    # sources that include Python's own headers really differ between versions).
+    #
+    # The worst case is a fully cold run on the slowest platform (Windows): ~64 minutes building
+    # the dependencies, ~63 minutes compiling the first wheel from scratch, then ~23 minutes per
+    # remaining wheel - about 4.5 hours in all (measured, 2026-08). So this limit is not expected
+    # to trip; hitting it means something is broken (a hung build, or compile times have
+    # genuinely grown). It sits deliberately below GitHub's hard 6-hour kill so that on a timeout
+    # the 'always()' steps below still get a window to salvage the run's work: the dependency
+    # cache is saved (the retry then starts warm) and the wheels already built are uploaded.
+    #
+    # If the arithmetic ever creeps toward the ceiling (eg, many more sources come to include
+    # Python.h, eroding the ~90% compiler-cache reuse), the fallback is to build the dependencies
+    # in an explicit step with the cache saved immediately after, before the cibuildwheel step
+    # ('before-all' then no-ops on the prefix's stamps) - that guarantees the dependencies
+    # survive any mid-wheels death without relying on the post-timeout grace window.
+    timeout-minutes: 330
+
+    defaults:
+      run:
+        # bash on every platform - including Windows, whose default is pwsh. In pwsh,
+        # "$GITHUB_ENV" and "$GITHUB_OUTPUT" name (undefined) pwsh variables rather than the
+        # environment variables, so 'echo ... >> "$GITHUB_ENV"' appends to nowhere and reports
+        # success - a silent trap for any cross-platform step added later. One shell also keeps
+        # every step below to one syntax on all five runners.
+        shell: bash
+
+    strategy:
+      # Run every platform to completion, so one platform failing still reports the others.
+      fail-fast: false
+      matrix:
+        # 'deps-path' is where the dependency libraries are built and cached, spelled once here
+        # for every step that names it (a second spelling that drifted would fail silently - eg,
+        # the completeness check below never finding its stamp and every run re-saving the
+        # multi-gigabyte cache). The Linux entries have none: their dependencies live in the
+        # GHCR images, and every deps step is gated on runner.os != 'Linux'.
+        #
+        # Adding or removing an entry here changes how many wheels a release consists of:
+        # 'publish-pypi' multiplies the number of entries by the number of Python versions to
+        # know what a complete release looks like, and cannot read this list for itself.
+        include:
+          - id: linux-x86_64
+            os: ubuntu-24.04
+          - id: linux-aarch64
+            os: ubuntu-24.04-arm
+          # The macOS runners are pinned to the oldest non-deprecated image per architecture
+          # (macos-latest is much newer) - not that the runner version matters much, since the
+          # wheels target the macOS 11 of MACOSX_DEPLOYMENT_TARGET in pyproject.toml.
+          - id: macos-x86_64
+            os: macos-15-intel
+            deps-path: ~/pygplates-wheel-deps
+          - id: macos-arm64
+            os: macos-14
+            deps-path: ~/pygplates-wheel-deps
+          # Visual Studio 2022 (windows-latest has moved on to VS 2026, which nothing here has
+          # been built against). The deps path is the 'C:/' form: git-bash and actions/cache
+          # both accept it, so one spelling serves every step.
+          - id: windows-x64
+            os: windows-2022
+            deps-path: C:/pygplates-wheel-deps
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Log in to the GitHub container registry
+        # The Linux builds run inside the dependency images on GHCR. Anonymous pulls work
+        # once the packages have been made public (see 'pygplates/wheel/README.md'), but
+        # logging in also covers a not-(yet-)public package.
+        if: runner.os == 'Linux'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute the dependency-libraries cache key
+        # The macOS and Windows dependency libraries are built by cibuildwheel's 'before-all'
+        # hook ('pygplates/wheel/build_macos_deps.sh', 'build_windows_deps.sh') straight onto the
+        # runner - caching its output directory reduces that to about a minute on later runs. The
+        # key hashes the version pins and the dependency-building scripts, so bumping a dependency
+        # rebuilds the cache. macOS adds the deployment target from 'pyproject.toml' (the
+        # dependencies are compiled against it, so changing it must not reuse dylibs built for the
+        # old target); Windows adds 'vcpkg.json', which pins the vcpkg baseline that fixes the
+        # versions of the libraries vcpkg supplies. (The Linux dependencies live in the GHCR
+        # images instead, at no cache cost.)
+        if: runner.os != 'Linux'
+        id: deps-cache-key
+        run: |
+          if [ "${{ runner.os }}" = macOS ]; then
+              target=$(sed -n 's/^MACOSX_DEPLOYMENT_TARGET *= *"\([^"]*\)".*/\1/p' pyproject.toml)
+              [ -n "${target}" ] # fail here if the pyproject.toml line was reformatted
+              key=pygplates-wheel-deps-${{ matrix.id }}-target${target}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/build_macos_deps.sh', 'pygplates/wheel/build_boost_python.sh') }}
+          else
+              key=pygplates-wheel-deps-${{ matrix.id }}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/vcpkg.json', 'pygplates/wheel/build_windows_deps.sh', 'pygplates/wheel/build_boost_python.sh', 'pygplates/wheel/msvc_env.sh') }}
+          fi
+          echo "key=${key}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the dependency-libraries cache
+        # The primary key never hits (it ends in this run's unique id) - the 'restore-keys'
+        # prefix restores the most recent cache for the computed key instead. That is what
+        # lets an incomplete cache saved by a failed run be *completed*: saved cache keys are
+        # immutable, so finishing the prefix off needs a fresh save under a fresh key.
+        if: runner.os != 'Linux'
+        id: restore-deps-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ matrix.deps-path }}
+          key: ${{ steps.deps-cache-key.outputs.key }}-${{ github.run_id }}
+          restore-keys: ${{ steps.deps-cache-key.outputs.key }}-
+
+      - name: Check whether the restored dependencies are complete
+        # The dependency scripts stamp the prefix once everything is built and checked. If the
+        # stamp was already present when restored, this run has nothing to add and the save
+        # step below is skipped - re-saving an identical multi-gigabyte cache every run would
+        # evict more useful caches from the repository's 10 GB budget.
+        if: runner.os != 'Linux'
+        id: deps-complete
+        # The assignment is unquoted so the '~' in the macOS path still tilde-expands.
+        run: |
+          deps=${{ matrix.deps-path }}
+          echo "complete=$([ -f "${deps}/stamps/complete" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Limit pull request runs to two Python versions
+        # A smoke test of the wheel machinery, not a release build. Setting CIBW_BUILD here
+        # overrides the 'build' list in pyproject.toml for this run only.
+        #
+        # Two versions rather than one because everything a full run relies on to stay inside
+        # its time limit happens on the *second*: the first compiles pyGPlates from scratch and
+        # the rest are meant to come mostly from the compiler cache. One version never exercises
+        # that, so the 'before-test' cache report in pyproject.toml would have nothing to show.
+        if: github.event_name == 'pull_request'
+        run: echo "CIBW_BUILD=cp312-* cp313-*" >> "$GITHUB_ENV"
+
+      - name: Enable crash reporting
+        # The runner images ship with the ReportCrash agent unloaded - reload it so a crashing
+        # test command leaves a crash report behind for the 'Report crashes' step below.
+        if: runner.os == 'macOS'
+        run: |
+          launchctl load -w /System/Library/LaunchAgents/com.apple.ReportCrash.plist 2>/dev/null || true
+          sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.ReportCrash.Root.plist 2>/dev/null || true
+
+      - name: Set up the MSVC environment
+        # The Windows wheels are built with Ninja (see CMAKE_GENERATOR in 'pyproject.toml'), which
+        # compiles with whatever 'cl' the environment provides - and cibuildwheel builds each
+        # wheel's environment from this job's. 'msvc_env.sh' is the same importer the dependency
+        # scripts use; here its results are handed back to the job, so the step below inherits
+        # them. (Locally the equivalent is starting from an "x64 Native Tools Command Prompt".)
+        if: runner.os == 'Windows'
+        run: |
+          path_before=${PATH}
+          . pygplates/wheel/msvc_env.sh
+          # The variables the compiler and the linker read - named by MSVC_ENV_VARS so that
+          # 'msvc_env.sh' and this step always hand over the same set. Already Windows paths.
+          for name in ${MSVC_ENV_VARS}; do
+              value=${!name:-}
+              if [ -n "${value}" ]; then
+                  echo "${name}=${value}" >> "$GITHUB_ENV"
+              fi
+          done
+          # PATH is this shell's, in Unix form - so hand back only what vcvarsall added to it,
+          # converted to the Windows form the rest of the job needs. Written back in *reverse*:
+          # the runner prepends each GITHUB_PATH line in turn, so the last line written ends up
+          # first on PATH - reversing here preserves vcvarsall's own ordering.
+          added=()
+          IFS=:
+          for entry in ${PATH}; do
+              case ":${path_before}:" in
+                  *":${entry}:"*) ;;
+                  *) added+=("${entry}") ;;
+              esac
+          done
+          unset IFS
+          for ((i = ${#added[@]} - 1; i >= 0; i--)); do
+              cygpath --windows "${added[i]}" >> "$GITHUB_PATH"
+          done
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v4.2.0
+
+      - name: Report crashes
+        # If a test command crashed outright (rather than failing an assertion), the exit code
+        # is all cibuildwheel reports - the native stack trace is in the crash report macOS
+        # writes to a DiagnosticReports directory (as JSON '.ips' since macOS 12). ReportCrash
+        # writes it asynchronously, so poll for up to two minutes before giving up. Reports
+        # older than two hours are ignored - the runner images ship with stale reports from
+        # when the image was baked, which would otherwise satisfy the poll immediately.
+        # ('|| true' because find exits non-zero when a directory is missing - ReportCrash
+        # only creates the user directory when it writes its first report - and that must
+        # not kill the step under the shell's '-e' before the report appears.)
+        if: failure() && runner.os == 'macOS'
+        run: |
+          for i in $(seq 12); do
+            reports=$(sudo find ~/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports \
+                \( -name '*.ips' -o -name '*.crash' \) -mmin -120 2>/dev/null || true)
+            [ -n "$reports" ] && break
+            sleep 10
+          done
+          if [ -n "$reports" ]; then
+            echo "$reports" | while read -r report; do
+              echo "::group::${report}"
+              sudo cat "$report"
+              echo "::endgroup::"
+            done
+          else
+            echo "No crash reports found."
+          fi
+
+      - name: Save the dependency-libraries cache
+        # Saved explicitly (rather than by actions/cache's success-only post step) so that
+        # the dependencies built by a *failed* wheel build are still cached - the next attempt
+        # then resumes from them instead of rebuilding for an hour ('build_macos_deps.sh' is
+        # idempotent, so a partially-built cache is picked up where it left off) and, because
+        # its own save key is fresh, can save the completed prefix. Skipped only when this
+        # run restored an already-complete prefix and so has nothing new to save.
+        if: always() && runner.os != 'Linux' && steps.deps-complete.outputs.complete != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ matrix.deps-path }}
+          key: ${{ steps.restore-deps-cache.outputs.cache-primary-key }}
+
+      - name: Upload wheels
+        # 'always()' so the wheels already built and repaired survive a later version failing
+        # (or the job timing out) - a full run is six sequential builds, and losing five good
+        # wheels to a test flake on the sixth would force the whole job to run again.
+        # 'if-no-files-found: ignore' keeps the step green when the failure came before any
+        # wheel finished.
+        # 'overwrite' because an artifact belongs to the run, not to the attempt: a leg that
+        # died on its last wheel has already uploaded the earlier ones, and without this the
+        # re-run that the comment above is describing would rebuild everything and then fail
+        # at this step, refused as a duplicate name. (Safe here, unlike the case it guards
+        # against upstream: each leg writes its own artifact name, never a shared one.)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.id }}
+          path: wheelhouse/*.whl
+          if-no-files-found: ignore
+          overwrite: true
+
+  publish-testpypi:
+    name: publish to TestPyPI
+    # A rehearsal of the release upload, against the index where a rejection costs nothing:
+    # what the indexes validate server-side (the metadata, most of all) is exactly what local
+    # checks cannot prove will be accepted. Only a subset is uploaded - the sdist plus one
+    # platform's wheels - because every wheel carries the same metadata, so one platform
+    # rehearses everything the index could object to, while a full ~1.2 GB matrix would burn
+    # through TestPyPI's project quota in a handful of releases.
+    #
+    # Publishing is for release tags pushed to the upstream repository: not pull requests, not
+    # manual dispatches (even of a tag ref), and not forks - where these jobs are skipped,
+    # which also stops GitHub silently auto-creating the deployment environments there.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/PyGPlates-') && github.repository == 'GPlates/GPlates'
+    # Every leg of the matrix green - not merely "artifacts exist", which even failed legs
+    # leave behind ('if: always()' above). ('build-sdist' is implied, 'build-wheels' needs it.)
+    needs: build-wheels
+    runs-on: ubuntu-24.04
+    # Bounds a hung upload.
+    timeout-minutes: 30
+
+    # The OIDC token this job trades for upload permission carries the environment name, and
+    # TestPyPI's trusted-publisher registration requires it to be 'testpypi' - see the README's
+    # one-time setup. No approval gate on this environment: the rehearsal is what runs first.
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/pygplates
+
+    # Mandatory for Trusted Publishing - and, being a job-level block, it also drops every
+    # other permission (this job checks nothing out).
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download the sdist
+        uses: actions/download-artifact@v6
+        with:
+          name: sdist
+          path: dist
+
+      - name: Download one platform's wheels
+        uses: actions/download-artifact@v6
+        with:
+          name: wheels-linux-x86_64
+          path: dist
+
+      - name: Publish to TestPyPI
+        # 'release/v1' is the branch the PyPA maintains for exactly this use - an exact pin
+        # would rot silently here (no dependabot), and has broken before for others (the
+        # v1.12 prebuilt-container switch). Attestations (PEP 740) are generated and uploaded
+        # by default under Trusted Publishing. 'skip-existing' makes a re-run idempotent:
+        # an index rejects re-uploads of a filename it has already accepted, so without it a
+        # rehearsal could never be run twice for the same release.
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  publish-pypi:
+    name: publish to PyPI
+    # Runs only after the TestPyPI rehearsal succeeded - and then waits for a maintainer to
+    # approve the deployment to the 'pypi' environment (a required reviewer configured on the
+    # environment, see the README). The same trigger condition again, even though 'needs' on a
+    # skipped job would skip this one anyway: the gate on the real index should never depend
+    # on another job's condition staying correct.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/PyGPlates-') && github.repository == 'GPlates/GPlates'
+    needs: publish-testpypi
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pygplates
+
+    # 'id-token' is mandatory for Trusted Publishing; 'contents' is for the checkout, which is
+    # only there so the completeness check can read the Python version list. Everything else
+    # this job might have been given is dropped by this block existing.
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Download the sdist
+        uses: actions/download-artifact@v6
+        with:
+          name: sdist
+          path: dist
+
+      - name: Download the wheels
+        # All the wheel artifacts, merged into 'dist/' alongside the sdist. Two named download
+        # steps rather than one bare merge of every artifact in the run, so that a future
+        # non-distribution artifact (crash logs, say) can never leak into the upload.
+        uses: actions/download-artifact@v6
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - name: Check every distribution is present
+        # One sdist, and one wheel per Python version per platform. 'needs' above already
+        # proves every job succeeded - this proves they built what a release needs: a job goes
+        # green building whatever CIBW_BUILD selects, so a selection mistake (say, the pull
+        # request limiter's condition drifting) would otherwise publish a release with holes
+        # in its wheel matrix. The Python versions come from the same list the builds use; the
+        # platform count is this file's 'build-wheels' matrix.
+        run: |
+          python_count=$(sed -n 's/^PYTHON_VERSIONS="\(.*\)".*/\1/p' pygplates/wheel/versions.sh | wc -w)
+          [ "${python_count}" -gt 0 ] # fail here if the versions.sh line was reformatted
+          # The five entries of the 'build-wheels' matrix above (which is not readable from
+          # here); that block says so too, since this is the side that fails if they part.
+          expected_wheels=$((python_count * 5))
+          sdist_count=$(find dist -name '*.tar.gz' | wc -l)
+          wheel_count=$(find dist -name '*.whl' | wc -l)
+          echo "dist/ holds ${sdist_count} sdist (expected 1) and ${wheel_count} wheels (expected ${expected_wheels})."
+          [ "${sdist_count}" -eq 1 ] && [ "${wheel_count}" -eq "${expected_wheels}" ]
+
+      - name: Publish to PyPI
+        # See the TestPyPI step for the choice of 'release/v1' and the attestations note.
+        # 'skip-existing' here is what makes a partial upload recoverable: PyPI reserves
+        # filenames forever (even after deletion) and rejects re-uploads, and the upload stops
+        # at the first rejection - so a network failure partway through 31 files would
+        # otherwise wedge the release permanently, with re-runs dying on the first
+        # already-uploaded file. With it, "Re-run failed jobs" finishes the job. The risk
+        # 'skip-existing' usually carries - quietly not uploading a stale rebuild - is closed
+        # by the tag check in 'build-sdist': what is in 'dist/' can only be the tagged version.
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true

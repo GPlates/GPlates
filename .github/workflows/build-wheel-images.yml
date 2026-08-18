@@ -1,0 +1,94 @@
+# Builds the Docker images that the pyGPlates Linux wheels are built inside, and pushes them
+# to the GitHub container registry (GHCR).
+#
+# The images extend the official manylinux_2_28 images with the pyGPlates dependency libraries
+# (see 'pygplates/wheel/manylinux_2_28.dockerfile'). They only need rebuilding when a dependency
+# changes (ie, when the dockerfile or the version pins in 'pygplates/wheel/versions.sh' change) -
+# the wheel builds themselves just pull the images (see '.github/workflows/build-wheels.yml'
+# and '[tool.cibuildwheel.linux]' in 'pyproject.toml').
+#
+# Each architecture builds natively on its own runner (no QEMU emulation - a Qt source build
+# under emulation would take many times longer than the native ~2 hours).
+#
+# Images are tagged ':latest' (what wheel builds pull) and ':<commit-sha>' (so any previous
+# image remains pullable, eg, to rebuild an old release or bisect a dependency problem).
+#
+# NOTE: After the very first push, the two GHCR packages must be manually marked *public*
+#       (GitHub organization -> Packages -> package settings -> Change visibility) so that
+#       local cibuildwheel runs can pull them without authenticating.
+name: pygplates wheel images
+
+on:
+  push:
+    branches: [ "pygplates" ]
+    paths:
+      - pygplates/wheel/manylinux_2_28.dockerfile
+      - pygplates/wheel/versions.sh
+      - .github/workflows/build-wheel-images.yml
+  workflow_dispatch:
+
+# Superseded runs are cancelled rather than left to finish (an image build takes ~2 hours).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-image:
+    name: ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    # A Qt source build on a 4-core runner dominates this (~1-2 hours); the rest of the
+    # dependencies add another hour or so.
+    timeout-minutes: 300
+
+    permissions:
+      # To push to GHCR. 'contents: read' restated because specifying any permission
+      # drops all the unspecified ones (and checkout needs it).
+      contents: read
+      packages: write
+
+    strategy:
+      # Run both architectures to completion, so one failing still reports the other.
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            os: ubuntu-24.04
+          - arch: aarch64
+            os: ubuntu-24.04-arm
+
+    env:
+      IMAGE: ghcr.io/gplates/pygplates-manylinux_2_28_${{ matrix.arch }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Check the Python version lists agree
+        # The dockerfile builds a Boost.Python library for each version in 'versions.sh' - do
+        # not publish an image whose version list has drifted from the authoritative 'build'
+        # list in 'pyproject.toml' (Linux wheel builds against such an image fail much later,
+        # with a linker error naming Boost). This workflow runs on pushes that touch
+        # 'versions.sh', which the equivalent check in 'build-wheels.yml' never sees.
+        run: python3 pygplates/wheel/check_python_versions.py
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        # '--pull' so a stale locally cached manylinux base (with old /opt/python interpreters)
+        # is never used - the Boost.Python builds need the base image to be current.
+        run: >
+          docker build
+          --pull
+          --build-arg ARCH=${{ matrix.arch }}
+          -t ${{ env.IMAGE }}:latest
+          -t ${{ env.IMAGE }}:${{ github.sha }}
+          -f pygplates/wheel/manylinux_2_28.dockerfile
+          pygplates/wheel
+
+      - name: Push image
+        run: docker push --all-tags ${{ env.IMAGE }}

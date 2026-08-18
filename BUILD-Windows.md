@@ -206,20 +206,34 @@ Editors and IDEs that use [clangd](https://clangd.llvm.org/) (including the Clau
 plugin) provide code navigation, diagnostics and completion. clangd needs a `compile_commands.json`
 compilation database, which the **Ninja** build generates automatically:
 `CMAKE_EXPORT_COMPILE_COMMANDS` is enabled by default (override with
-`-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF`). The committed `.clangd` at the repo root points clangd at the
-`build-gplates` tree, so once you have configured the Ninja `build-gplates` (above) there is nothing
-else to set up. clangd understands the MSVC (`cl.exe`) command lines that CMake records.
+`-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF`). Configuring a build tree *also* writes a `.clangd` file at the
+repo root that points clangd at that tree, so once you have configured `build-gplates` (above) there
+is nothing else to set up. clangd understands the MSVC (`cl.exe`) command lines that CMake records,
+and locates the Visual Studio and Windows SDK headers itself (it does not need a developer command
+prompt).
 
-- **clangd binary:** install LLVM — `winget install LLVM.LLVM` (then add its `bin` to `PATH`) or
-  download from the [LLVM releases](https://github.com/llvm/llvm-project/releases). Or from
-  conda-forge: `conda install clangdev`.
-- The database lives inside the (git-ignored) `build-gplates` directory and is refreshed on each
-  configure/build. It is portable across git worktrees (the `.clangd` path is relative).
-- To edit against the pyGPlates tree instead, change `CompilationDatabase` in `.clangd` to
-  `build-pygplates`.
+- **clangd binary:** `winget install LLVM.clangd` installs the standalone clangd (a ~50 MB download)
+  and adds it to your `PATH` - restart your terminal, and your editor, afterwards. Use
+  `winget install LLVM.LLVM` instead if you also want the rest of the LLVM tools (clang-tidy,
+  clang-format); it is a much larger download. Prefer either of these to installing clangd into the
+  conda environment: the `clangd-lsp` plugin launches `clangd` from `PATH`, so a binary that lives in
+  the `gplates` environment is only found when that environment happens to be activated.
+- **Which build tree:** `.clangd` is generated (from the committed `.clangd.in`) every time you
+  configure, and points at the tree you configured *most recently* - so it follows
+  `GPLATES_BUILD_GPLATES` by itself. Configure `build-pygplates` with `-DGPLATES_BUILD_GPLATES=FALSE`
+  and clangd switches to the pyGPlates compile commands; re-configure `build-gplates` to switch back.
+  Re-configuring an already-configured tree is enough (`cmake -S . -B build-pygplates`, a second or
+  two), and the generated file names the target it was written for, so its header tells you which one
+  is currently active. Only build trees *inside* the source directory are used, so a `pip install .`
+  (or `conda build`) - which configures into a temporary directory - never clobbers your setting.
+- The database lives inside the (git-ignored) build directory and is refreshed on each
+  configure/build. The path recorded in `.clangd` is relative, so it works in any git worktree.
+- `.clangd` is git-ignored because it is generated. To hand-maintain your own instead, configure with
+  `-DGPLATES_WRITE_CLANGD_CONFIG=FALSE` and CMake will leave the file alone.
 
 > **Visual Studio generator caveat:** the optional `build-gplates-vs` tree
 > ([Using the Visual Studio IDE](#using-the-visual-studio-ide)) uses the "Visual Studio 17 2022"
-> generator, which does **not** emit `compile_commands.json` — the flag above only affects the Ninja
-> (and Makefile) generators. That is fine: keep a Ninja `build-gplates` configured for clangd, and use
-> Visual Studio's own IntelliSense inside the IDE.
+> generator, which does **not** emit `compile_commands.json` - the flag above only affects the Ninja
+> (and Makefile) generators. Configuring it therefore leaves `.clangd` pointing at your last Ninja
+> tree rather than at a tree with no database. Keep a Ninja `build-gplates` configured for clangd, and
+> use Visual Studio's own IntelliSense inside the IDE.

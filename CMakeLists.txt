@@ -17,9 +17,9 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 include (Version)
 
 # Generate a 'compile_commands.json' compilation database by default, for clangd / IDE code
-# intelligence (see the committed '.clangd' at the repo root). Honoured by the Ninja and Makefile
-# generators (all our documented builds use Ninja); silently ignored by the Visual Studio and Xcode
-# generators. Override with '-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF' if not wanted.
+# intelligence (the '.clangd' pointing at it is written by 'cmake/modules/ClangdConfig.cmake').
+# Honoured by the Ninja and Makefile generators (all our documented builds use Ninja); silently
+# ignored by the Visual Studio and Xcode generators. Override with '-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF' if not wanted.
 #
 # This must precede 'project()' below: 'project()' creates the CMAKE_EXPORT_COMPILE_COMMANDS cache
 # entry itself, so a 'set(... CACHE ...)' default placed after it would be a silent no-op. Setting it
@@ -43,10 +43,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Generate compile_commands.json 
 #  - A plain activated environment (manual "cmake ..."/"pip install ...") uses CONDA_PREFIX.
 #
 # Handling it here (rather than requiring the user to pass '-DCMAKE_PREFIX_PATH=$CONDA_PREFIX' etc) makes it
-# work for every entry point with no extra flags. It is especially important for 'pip install ...':
-# scikit-build-core builds the CMake command line itself (populating CMAKE_PREFIX_PATH from site-packages and
-# overriding any CMAKE_PREFIX_PATH passed via 'cmake.define'), but these *environment* variables still reach
-# the CMake process.
+# work for every entry point with no extra flags: a plain 'cmake ...', a conda recipe, and 'pip install ...'
+# - scikit-build-core builds the CMake command line itself, but these *environment* variables still reach
+# the CMake process. (Passing the path explicitly to pip also works, as the pyGPlates 1.0 conda-forge
+# recipe did: a 'cmake.define.CMAKE_PREFIX_PATH' becomes a '-D' argument, which overrides the prefix-path
+# cache preset scikit-build-core writes via '-C'. This is just the route that needs no flags anywhere.)
 #
 # This must precede 'project()':
 #  - On macOS, CMAKE_FIND_FRAMEWORK only reliably affects the later find_library()/find_path() calls when set
@@ -116,6 +117,31 @@ else()
             LANGUAGES C CXX)
 endif()
 
+# When compiling MSVC through sccache, pass SYSTEM include directories as plain '-I' rather than
+# letting CMake use '-external:I' (which it does for MSVC >= 19.29, see Modules/Compiler/MSVC.cmake).
+#
+# The difference matters only to the cache. sccache hashes a compilation as its preprocessed
+# output plus the flags that affect code generation; '-I' is neither (its effect is already in the
+# preprocessed output), but '-external:I <dir>' is hashed as an opaque flag - so when a SYSTEM
+# include directory's *path* varies while its *contents* do not, every object misses for no
+# reason. That is exactly what the wheel builds do: cibuildwheel installs each Python version
+# (and its NumPy) under a path of its own, so with '-external:I' the second Python version reused
+# nothing, and with '-I' it reuses ~90% (matching Linux and macOS, whose '-isystem' sccache
+# likewise resolves through the preprocessed output).
+#
+# The cost is that MSVC warnings from dependency headers (Qt, Boost, CGAL...) reappear at /W3 in
+# sccache builds, since nothing is marked external any more ('-external:W0' suppressed them).
+#
+# A normal 'set()' deliberately shadowing the value from CMake's compiler module - which runs at
+# 'project()' above, so this must come after it. Scoped to wheel builds (SKBUILD is defined by
+# scikit-build-core) using sccache: the conda CI also compiles MSVC through sccache, but its
+# include paths never move between runs, so it loses nothing to '-external:I' and keeps the
+# quieter logs - as do plain developer builds.
+if (SKBUILD AND MSVC AND CMAKE_CXX_COMPILER_LAUNCHER MATCHES "sccache")
+    set(CMAKE_INCLUDE_SYSTEM_FLAG_C "-I")
+    set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")
+endif()
+
 # Enable testing of GPlates (the 'gplates-unit-test' executable) or pyGPlates (the Python test suite),
 # either via running 'ctest', or 'make test', or building 'RUN_TESTS' in Visual Studio.
 enable_testing()
@@ -126,6 +152,11 @@ list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")  # Ignored if CMake < 3
 # Include configuration options (default options and options overridden by user).
 #
 include (ConfigDefault)
+
+#
+# Write a '.clangd' pointing clangd (code intelligence) at this build tree's compilation database.
+#
+include (ClangdConfig)
 
 #
 # Add new custom build configurations (ProfileGprof and ProfileGplates) to
