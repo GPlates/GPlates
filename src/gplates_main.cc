@@ -265,8 +265,7 @@ namespace
 
 	GuiCommandLineOptions
 	parse_gui_command_line_options(
-			int argc, 
-			char *argv[])
+			const QStringList &command_line_arguments)
 	{
 		GPlatesUtils::CommandLineParser::InputOptions input_options;
 
@@ -331,7 +330,7 @@ namespace
 		try
 		{
 			GPlatesUtils::CommandLineParser::parse_command_line_options(
-				vm, argc, argv, input_options);
+				vm, command_line_arguments, input_options);
 		}
 		catch (std::exception &exc)
 		{
@@ -378,7 +377,8 @@ namespace
 					vm[POSITIONAL_FILENAMES_OPTION_NAME].as<std::vector<std::string> >();
 			for (unsigned int i=0; i<filenames.size(); i++)
 			{
-				const QString filename = QString(filenames[i].c_str());
+				// Note: The option values are UTF-8 encoded.
+				const QString filename = QString::fromStdString(filenames[i]);
 
 				// If the filename does not belong to a project file then consider it a feature collection.
 				if (filename.endsWith(GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION, Qt::CaseInsensitive))
@@ -423,13 +423,14 @@ namespace
 			for (unsigned int i=0; i<feature_collection_filenames.size(); i++)
 			{
 				command_line_options.feature_collection_filenames.push_back(
-						feature_collection_filenames[i].c_str());
+						QString::fromStdString(feature_collection_filenames[i]));
 			}
 		}
 
 		if (vm.count(PROJECT_FILENAME_OPTION_NAME))
 		{
-			const QString project_filename = vm[PROJECT_FILENAME_OPTION_NAME].as<std::string>().c_str();
+			const QString project_filename =
+					QString::fromStdString(vm[PROJECT_FILENAME_OPTION_NAME].as<std::string>());
 
 			if (!project_filename.endsWith(
 					GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION,
@@ -511,7 +512,8 @@ namespace
 			const std::string &command,
 			GPlatesCli::CommandDispatcher &command_dispatcher,
 			int argc,
-			char* argv[])
+			char* argv[],
+			const QStringList &command_line_arguments)
 	{
 		// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 		// NOTE: This enables the console (command-line) version of GPlates to pop up error message
@@ -552,7 +554,7 @@ namespace
 		{
 			// Parse the command-line options.
 			GPlatesUtils::CommandLineParser::parse_command_line_options(
-					vm, argc, argv, input_options);
+					vm, command_line_arguments, input_options);
 		}
 		catch (std::exception &exc)
 		{
@@ -592,17 +594,17 @@ namespace
 	get_command(
 			std::string &command,
 			GPlatesCli::CommandDispatcher &command_dispatcher,
-			int argc,
-			char* argv[])
+			const QStringList &command_line_arguments)
 	{
-		if (argc < 2)
+		if (command_line_arguments.size() < 2)
 		{
 			command.clear();
 			// Is there a command-line argument to test even ?
 			return FIRST_ARG_IS_NONEXISTENT;
 		}
 
-		const std::string first_arg = argv[1];
+		const QString first_qarg = command_line_arguments[1];
+		const std::string first_arg = first_qarg.toStdString();
 		command = first_arg;
 
 		// See if the first command-line argument is a recognised command.
@@ -618,7 +620,7 @@ namespace
 				}
 
 				// See if the first argument is the filename of an existing file.
-				if (QFileInfo(QString(first_arg.c_str())).exists())
+				if (QFileInfo(first_qarg).exists())
 				{
 					return FIRST_ARG_IS_FILENAME;
 				}
@@ -653,11 +655,18 @@ namespace
 		 */
 		GPlatesCli::CommandDispatcher command_dispatcher;
 
+		// Get the command-line arguments.
+		//
+		// Note: These are used in place of 'argv' since, on Windows, 'argv' cannot represent
+		// characters outside the process' ANSI code page (such as in a non-ASCII filename).
+		const QStringList command_line_arguments =
+				GPlatesUtils::CommandLineParser::get_command_line_arguments(argc, argv);
+
 		// Get the user-specified command (this is the first positional argument on the
 		// command-line).
 		std::string command;
 		const FirstCommandLineArgumentType first_arg_type =
-				get_command(command, command_dispatcher, argc, argv);
+				get_command(command, command_dispatcher, command_line_arguments);
 
 		switch (first_arg_type)
 		{
@@ -669,7 +678,7 @@ namespace
 			// GUI options (or simple options such as help and version) were specified.
 			//
 			// NOTE: This is the only case where GPlates runs as the familiar GUI application.
-			return parse_gui_command_line_options(argc, argv);
+			return parse_gui_command_line_options(command_line_arguments);
 
 		case FIRST_ARG_IS_UNRECOGNISED_COMMAND:
 			// The first command-line argument was not a recognised command or existing filename
@@ -683,7 +692,7 @@ namespace
 
 		case FIRST_ARG_IS_COMMAND:
 			// Process the specified command.
-			parse_and_run_command(command, command_dispatcher, argc, argv);
+			parse_and_run_command(command, command_dispatcher, argc, argv, command_line_arguments);
 			// Notify the caller that the GPlates GUI should *not* be started since the user
 			// has requested GPlates process a command instead.
 			return boost::none;
