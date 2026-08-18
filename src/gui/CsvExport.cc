@@ -81,14 +81,37 @@ namespace {
 			QFile &file,
 			QTextStream &os)
 	{
-		// Flush the stream into the file and the file to the OS: an error such as a full disk
-		// can surface at either point, and QFile::close() retains the error status.
+		// Flush the stream into the file: an error such as a full disk can surface here.
 		os.flush();
-		file.close();
 
+		// Note: The file's error is taken *before* it is closed. QFileDevice::close() clears the
+		// error status when its own final flush succeeds, and that flush can succeed after an
+		// earlier write has already failed, since the failed write left nothing behind to flush.
+		QString error_string;
 		if (file.error() != QFile::NoError)
 		{
-			throw std::runtime_error(file.errorString().toStdString());
+			error_string = file.errorString();
+		}
+
+		// Closing flushes the file to the operating system, which can fail in turn.
+		file.close();
+		if (error_string.isEmpty() &&
+			file.error() != QFile::NoError)
+		{
+			error_string = file.errorString();
+		}
+
+		// QTextStream records a failed write as well, and unlike QFile it does not forget one,
+		// so ask it too - it is what noticed if a write failed part-way through the table.
+		if (error_string.isEmpty() &&
+			os.status() != QTextStream::Ok)
+		{
+			error_string = QObject::tr("writing to the file failed");
+		}
+
+		if (!error_string.isEmpty())
+		{
+			throw std::runtime_error(error_string.toStdString());
 		}
 	}
 
