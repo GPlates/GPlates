@@ -34,6 +34,7 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <QtGlobal>
+#include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
@@ -512,13 +513,21 @@ namespace
 			const std::string &command,
 			GPlatesCli::CommandDispatcher &command_dispatcher,
 			int argc,
-			char* argv[],
-			const QStringList &command_line_arguments)
+			char* argv[])
 	{
 		// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 		// NOTE: This enables the console (command-line) version of GPlates to pop up error message
 		// dialogs such as QMessageBox (which happens in some file I/O code, but really shouldn't).
 		GPlatesGui::GPlatesQApplication qapplication(argc, argv);
+
+		// Get the command-line arguments from QCoreApplication, now that there is one, rather
+		// than from CommandLineParser::get_command_line_arguments().
+		//
+		// QApplication removes the arguments it recognises (such as '-platform' and '-style')
+		// from 'argv', and QCoreApplication::arguments() removes them from the wide Windows
+		// command-line in the same way. Otherwise they would reach the option parser below,
+		// which does not know them.
+		const QStringList command_line_arguments = QCoreApplication::arguments();
 
 		// Add some simple options.
 		GPlatesUtils::CommandLineParser::InputOptions input_options;
@@ -698,7 +707,7 @@ namespace
 
 		case FIRST_ARG_IS_COMMAND:
 			// Process the specified command.
-			parse_and_run_command(command, command_dispatcher, argc, argv, command_line_arguments);
+			parse_and_run_command(command, command_dispatcher, argc, argv);
 			// Notify the caller that the GPlates GUI should *not* be started since the user
 			// has requested GPlates process a command instead.
 			return boost::none;
