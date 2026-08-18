@@ -1,0 +1,268 @@
+# Deletes GitHub Actions caches that nothing can restore any more.
+#
+# The whole repository shares a 10 GB Actions cache budget with LRU eviction. Nothing ever
+# reclaimed it, and in August 2026 it filled to the point where every 'sccache-gplates-*' entry
+# had been evicted and a merge built all three platforms cold - a 30-60 minute penalty per
+# platform. GitHub's own 7-day idle expiry does eventually clear the debris, so the point of this
+# workflow is not garbage collection for its own sake: it is keeping the *peak* under 10 GB during
+# an active week, which is exactly when an eviction costs the most.
+#
+# Two kinds of cache go stale here, for different reasons.
+#
+# Superseded entries. Every cache key in this repository deliberately ends in a segment that never
+# repeats - the commit SHA for the compiler caches, the run id for the wheel dependencies - so the
+# primary key never hits and 'restore-keys' does the real work by prefix. That is what lets an
+# incomplete cache be completed by a later run. But it also means every push and every run adds an
+# entry under each prefix while nothing removes the old ones, and because 'restore-keys' returns
+# the *most recently created* match, only the newest entry of each prefix is reachable at all.
+# Everything behind it is already dead.
+#
+# Abandoned pull-request caches. A cache is scoped to the ref that wrote it, and a run can restore
+# only from its own ref, its base branch and the default branch. 'build-wheels.yml' runs on
+# 'pull_request', so its multi-gigabyte dependency caches land on 'refs/pull/<n>/merge' and become
+# unreachable the moment the pull request closes. That is where the bulk of the waste is: one
+# merged wheels pull request was holding 1.39 GB of the 1.92 GB in use.
+#
+# Deleting a cache is not free - it costs whoever needed it a rebuild - so both rules are
+# conservative, and 'workflow_dispatch' can rehearse the sweep without deleting anything.
+name: prune actions caches
+
+on:
+  schedule:
+    # Daily, at 03:27 in Sydney (17:27 UTC). Off the hour because GitHub's scheduler is most
+    # congested there and delays a run by however long the backlog takes to clear.
+    #
+    # Note that GitHub disables scheduled workflows in a repository that has seen no activity for
+    # 60 days; if the sweep ever goes quiet, check that first.
+    - cron: '27 17 * * *'
+  pull_request_target:
+    # Frees a pull request's caches as it closes, rather than leaving up to a gigabyte and a half
+    # parked until the nightly sweep notices.
+    #
+    # 'pull_request_target' rather than 'pull_request' for two reasons: it runs the base branch's
+    # copy of this file, so a pull request need not carry it, and it gets a token that can write,
+    # which a pull request from a fork does not. The usual reason to be wary of this trigger -
+    # that it grants a writable token to a workflow which may be handling untrusted code - does
+    # not apply: the job below checks nothing out and runs nothing from the pull request. It reads
+    # one integer from the event payload and calls the REST API with it.
+    types: [ closed ]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: List what would be deleted, without deleting anything
+        type: boolean
+        default: true
+
+# Not per-ref, unlike the build workflows: two sweeps must never race on the same delete. Note
+# GitHub holds at most one *pending* run per group - a newer pending run cancels the older one,
+# 'cancel-in-progress: false' notwithstanding (that only protects the run in progress) - so a
+# burst of pull requests closing together can drop a close-event run outright. That is fine: the
+# nightly sweep's catch-up pass reclaims anything a dropped run would have.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    name: prune
+    runs-on: ubuntu-latest
+    # Seconds of API calls. The ceiling is only here to stop a hung request holding a runner.
+    timeout-minutes: 10
+
+    # Being a job-level block this drops every unnamed permission, which is right: the job checks
+    # nothing out and touches nothing but the cache API and pull-request state. 'pull-requests:
+    # read' is load-bearing, not a courtesy - 'gh pr view' goes through the GraphQL API, where the
+    # workflow token gets no default read access even on a public repository, so without the scope
+    # every state lookup fails, and the abandoned-ref pass silently reclaims nothing.
+    permissions:
+      actions: write
+      pull-requests: read
+
+    env:
+      # 'gh' needs a token and a repository. Supplying both here is what lets the job skip the
+      # checkout that 'gh' would otherwise need to infer the repository from the git remote.
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      # Only 'workflow_dispatch' offers the input; on the other two events the 'inputs' context is
+      # empty and this falls through to a real run.
+      DRY_RUN: ${{ inputs.dry-run || false }}
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Delete the caches of the closed pull request
+        if: github.event_name == 'pull_request_target'
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        # Listed before deleting because 'gh cache delete --all' reports only a count, and the run
+        # summary is the only place anyone will look. '--succeed-on-no-caches' is mandatory
+        # alongside '--all': without it a pull request that cached nothing fails the run.
+        run: |
+          ref="refs/pull/${PR_NUMBER}/merge"
+
+          # No '|| true': an empty listing exits 0, so a non-zero exit means the API call itself
+          # failed, and that must fail the step red rather than read as "nothing to list".
+          rows=$(gh cache list --limit 1000 --ref "${ref}" --sort size_in_bytes --order desc \
+                     --json key,sizeInBytes \
+                     -q '.[] | "| `\(.key)` | \(.sizeInBytes / 1048576 | floor) MiB |"')
+
+          gh cache delete --all --ref "${ref}" --succeed-on-no-caches
+
+          {
+              echo "### Caches freed by closing #${PR_NUMBER}"
+              echo
+              if [ -n "${rows}" ]; then
+                  echo "| key | size |"
+                  echo "| --- | ---: |"
+                  echo "${rows}"
+              else
+                  echo "None - the pull request left no caches on \`${ref}\`."
+              fi
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Prune superseded and abandoned caches
+        if: github.event_name != 'pull_request_target'
+        # Both passes work from one listing, ordered newest first: 'restore-keys' returns the most
+        # recently created match, so within any group the first row is the only one CI can still
+        # restore.
+        run: |
+          # No '|| true': an empty listing exits 0, so a non-zero exit means the API call itself
+          # failed, and that must fail the step red - masking it would disable the whole sweep
+          # while every run stayed green.
+          all=$(gh cache list --limit 1000 --sort created_at --order desc \
+                    --json id,key,ref,sizeInBytes \
+                    -q '.[] | [.id, .key, .ref, .sizeInBytes] | @tsv')
+
+          if [ -z "${all}" ]; then
+              echo "### Cache prune" >> "${GITHUB_STEP_SUMMARY}"
+              echo >> "${GITHUB_STEP_SUMMARY}"
+              echo "The repository holds no caches." >> "${GITHUB_STEP_SUMMARY}"
+              exit 0
+          fi
+
+          # Pass 1: refs belonging to pull requests that are no longer open. Such a cache can only
+          # ever be restored by that same pull request, so it is unreachable by construction
+          # whatever its key. The 'pull_request_target' trigger above catches these as they close;
+          # this is the catch-up path for pull requests that closed before this workflow existed,
+          # or whose close-event run failed.
+          #
+          # Only an explicit MERGED or CLOSED counts. Anything else - including an API call that
+          # failed - leaves the ref alone, because the cost of guessing wrong is a cold rebuild.
+          # But failed lookups are *counted* and surfaced in the summary: if every one fails (say,
+          # the token has lost the 'pull-requests: read' scope) this pass is doing nothing, and
+          # that must not look like a healthy sweep of a tidy repository.
+          # (The '|| true' belongs to grep, whose exit 1 just means no pull-request refs exist.)
+          abandoned_refs=""
+          unknown=0
+          for ref in $(printf '%s\n' "${all}" | cut -f3 | grep '^refs/pull/' | sort -u || true); do
+              number=${ref#refs/pull/}
+              number=${number%/merge}
+              state=$(gh pr view "${number}" --json state -q .state 2>/dev/null || echo UNKNOWN)
+              echo "pull request #${number} is ${state}"
+              case "${state}" in
+                  MERGED|CLOSED) abandoned_refs="${abandoned_refs}${ref}"$'\n' ;;
+                  OPEN) ;;
+                  *) unknown=$((unknown + 1)) ;;
+              esac
+          done
+
+          # Pass 2: entries superseded within their own (ref, key prefix) group. Only the key
+          # shapes named below take part; in each of them the volatile segment - the commit SHA or
+          # the run id - is last, so stripping the last '-'-separated segment recovers exactly the
+          # prefix CI restores by:
+          # 'sccache-gplates-<platform>-<sha>', 'sccache-pygplates-<platform>-<sha>' and
+          # 'pygplates-wheel-deps-<id>[-target<x>]-<hash>-<run-id>'.
+          #
+          # Any key this sweep does not recognise is logged and left to GitHub's 7-day idle
+          # expiry. Fail closed, because "newest per prefix" is only the reachable set for keys
+          # built the 'restore-keys' way: a future cache restored by exact key (the
+          # 'key: foo-<hashFiles(...)>' idiom, with no 'restore-keys') keeps its *older* entries
+          # reachable too, and whoever adds one has no reason to know this file exists.
+          #
+          # Grouping by ref as well as prefix is not optional: caches are ref-scoped, and dropping
+          # the newest 'refs/heads/pygplates' entry because a newer 'refs/heads/gplates' one
+          # happened to share its prefix would cost that branch a cold build.
+          #
+          # Keeping exactly one per group is not a heuristic - it is the reachable set. It also
+          # needs no special case for a partial cache saved by a failed build: that partial is the
+          # newest, so it is the one kept, and the next run restores it and completes it.
+          recognised='^(sccache-(gplates|pygplates)-|pygplates-wheel-deps-)'
+          printf '%s\n' "${all}" | awk -F'\t' -v re="${recognised}" \
+              '$2 !~ re { print "pass 2 does not recognise " $2 " (" $3 ") - leaving it alone" }'
+          superseded=$(printf '%s\n' "${all}" | awk -F'\t' -v re="${recognised}" '
+              $2 !~ re { next }
+              { prefix = $2; sub(/-[^-]*$/, "", prefix) }
+              seen[$3 "\t" prefix]++ { print }
+          ')
+
+          doomed=$(
+              {
+                  printf '%s' "${abandoned_refs}" | while read -r ref; do
+                      [ -n "${ref}" ] || continue
+                      printf '%s\n' "${all}" | awk -F'\t' -v ref="${ref}" '$3 == ref'
+                  done
+                  printf '%s\n' "${superseded}"
+              } | grep -v '^[[:space:]]*$' | sort -u || true
+          )
+
+          {
+              echo "### Cache prune"
+              echo
+              if [ "${DRY_RUN}" = true ]; then
+                  echo "Dry run - nothing was deleted."
+                  echo
+              fi
+              if [ "${unknown}" -gt 0 ]; then
+                  echo "**Warning: ${unknown} pull-request state lookup(s) failed** - those refs" \
+                       "were left alone this run. If this repeats nightly, the abandoned-ref pass" \
+                       "is broken (a missing 'pull-requests: read' permission, most likely)."
+                  echo
+              fi
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          if [ -z "${doomed}" ]; then
+              echo "Every cache is still reachable; nothing to delete." >> "${GITHUB_STEP_SUMMARY}"
+              exit 0
+          fi
+
+          # A here-string rather than a pipe, so the totals survive the loop.
+          deleted=0
+          freed=0
+          rows=""
+          while IFS=$'\t' read -r id key ref size; do
+              [ -n "${id}" ] || continue
+              if [ "${DRY_RUN}" = true ]; then
+                  echo "would delete ${id} ${key} (${ref})"
+              else
+                  echo "deleting ${id} ${key} (${ref})"
+                  # One failure must not abandon the rest of the sweep: a cache can disappear
+                  # between the listing and the delete, and the next run would retry it anyway.
+                  gh cache delete "${id}" || { echo "  ...failed, skipping"; continue; }
+              fi
+              deleted=$((deleted + 1))
+              freed=$((freed + size))
+              rows="${rows}| \`${key}\` | \`${ref}\` | $((size / 1048576)) MiB |"$'\n'
+          done <<< "${doomed}"
+
+          {
+              echo "| key | ref | size |"
+              echo "| --- | --- | ---: |"
+              printf '%s' "${rows}"
+              echo
+              echo "**${deleted} entries, $((freed / 1048576)) MiB.**"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Report the remaining cache usage
+        # Against the 10 GB budget every workflow in this repository is competing for. Always, so
+        # the figure is in the summary even when a prune step failed part way.
+        if: always()
+        run: |
+          usage=$(gh api "repos/${GH_REPO}/actions/cache/usage" \
+                      -q '"\(.active_caches_count) entries, \(.active_caches_size_in_bytes / 1048576 | floor) MiB of 10240 MiB"')
+
+          {
+              echo
+              echo "In use after this run: ${usage}."
+          } >> "${GITHUB_STEP_SUMMARY}"

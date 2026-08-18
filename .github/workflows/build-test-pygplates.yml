@@ -108,11 +108,19 @@ jobs:
         # never hits, and the prefix fallback restores the most recent cache for this platform.
         # A pull request can read caches written on its base branch, so PRs start warm from the
         # last push to 'pygplates'.
+        #
+        # The keys are namespaced 'sccache-pygplates-*', and the GPlates workflow's
+        # 'sccache-gplates-*': the two builds share no cache entries at all (every shared
+        # translation unit differs in -fPIC and in the GPLATES_PYTHON_EMBEDDING compile
+        # definition), and 'gplates' is the repository's default branch, so caches saved there are
+        # visible to every ref. Distinct prefixes stop either workflow from downloading the
+        # other's (useless to it) cache.
+        id: restore-compiler-cache
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: sccache-${{ matrix.name }}-${{ github.sha }}
-          restore-keys: sccache-${{ matrix.name }}-
+          key: sccache-pygplates-${{ matrix.name }}-${{ github.sha }}
+          restore-keys: sccache-pygplates-${{ matrix.name }}-
 
       - name: Install dependencies (conda)
         uses: conda-incubator/setup-miniconda@v3
@@ -164,12 +172,21 @@ jobs:
         # but they gain little, because the base-branch cache already covers everything the pull
         # request did not change - a re-run only recompiles the PR's own modified files either way.
         # Pushes to 'pygplates' warm the cache; pull requests restore from it.
-        # 'always()' so that a failed build still saves the objects it did compile.
-        if: always() && github.event_name == 'push'
+        # 'always()' rather than 'success()', so that a failed build still saves the objects it
+        # did compile - and so does one that hits 'timeout-minutes', which the runner delivers as
+        # a cancellation. The restore-outcome guard is what a bare 'always()' would be missing:
+        # the concurrency group above can cancel a run before or during the restore step, and an
+        # unguarded save would then write a near-empty directory under a newer key. Since
+        # 'restore-keys' matches the most recently created cache, that fragment would shadow the
+        # complete one for every later run. (A restore that finds no cache to restore still
+        # succeeds, so a cold build salvages normally.)
+        if: >-
+          always() && steps.restore-compiler-cache.outcome == 'success' &&
+          github.event_name == 'push'
         uses: actions/cache/save@v4
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: sccache-${{ matrix.name }}-${{ github.sha }}
+          key: sccache-pygplates-${{ matrix.name }}-${{ github.sha }}
 
       - name: Test
         # '-C Release' is required: the tests are registered with 'CONFIGURATIONS Release MinSizeRel',

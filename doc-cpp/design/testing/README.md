@@ -120,11 +120,12 @@ take everything.
 - The two workflows are branch-scoped: `build-test-gplates.yml` on `gplates`,
   `build-test-pygplates.yml` on `pygplates`. The branches are normally at the same HEAD, so the
   per-branch split covers both products without doubling CI cost.
-- sccache cache keys are namespaced per product (`sccache-gplates-*` vs the pygplates workflow's
-  `sccache-<platform>-*`): `gplates` is the repository's *default* branch, so its caches are
-  visible to every ref, and the two build configurations share no cache entries (every common
-  translation unit differs in `-fPIC` and the `GPLATES_PYTHON_EMBEDDING` define). All caches
-  share the repository's 10 GB Actions budget.
+- sccache cache keys are namespaced per product (`sccache-gplates-*` and `sccache-pygplates-*`):
+  `gplates` is the repository's *default* branch, so its caches are visible to every ref, and the
+  two build configurations share no cache entries (every common translation unit differs in
+  `-fPIC` and the `GPLATES_PYTHON_EMBEDDING` define). All caches share the repository's 10 GB
+  Actions budget, which `prune-caches.yml` sweeps nightly — see its header for what it deletes and
+  why an entry stops being reachable.
 - A possible future change: pyGPlates may stop linking Qt Widgets (it is a non-graphical Python
   module). Nothing in the C++ test design depends on pyGPlates linking Qt GUI libraries — the
   `gplates-unit-test` executable exists only in GPlates build configs.
