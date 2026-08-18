@@ -1043,6 +1043,13 @@ GPlatesFileIO::GrotWriterWithoutCfg::visit_gpml_metadata(
 #endif
 		existing_contents = existing_stream.readAll();
 	}
+	else
+	{
+		// Not fatal, but the existing contents are about to be dropped from the output, so
+		// don't let that happen silently.
+		qWarning() << "Failed to open file for reading -- "
+				+ d_file_ref.get_file_info().get_qfileinfo().absoluteFilePath();
+	}
 	(*d_output_stream) << buf;
 	(*d_output_stream) << existing_contents;
 }

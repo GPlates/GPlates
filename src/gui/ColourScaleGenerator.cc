@@ -26,7 +26,7 @@
 #include <cmath>
 #include <utility>
 #include <boost/foreach.hpp>
-#include <boost/numeric/conversion/converter.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include <boost/optional.hpp>
 #include <QPainter>
 #include <QBrush>
@@ -70,21 +70,38 @@ namespace
 		return r.dval();
 	}
 
-	typedef boost::numeric::converter<
-		int,
-		double,
-		boost::numeric::conversion_traits<int, double>,
-		boost::numeric::def_overflow_handler,
-		boost::numeric::Ceil< boost::numeric::conversion_traits<int, double>::source_type >
-	> round_up;
+	/**
+	 * Round a double up (or down) to the nearest int, throwing if it will not fit in an int.
+	 *
+	 * These were 'boost::numeric::converter' instantiations with 'Ceil' and 'Floor' rounding
+	 * policies. That is a compile error from Clang 21 on, and only for 'Floor': a policy carries
+	 * its rounding style as a 'std::float_round_style', Boost.MPL's 'integral_c' unconditionally
+	 * computes a 'next_value' one greater than the value it holds, and 'Floor' names
+	 * 'round_toward_neg_infinity' - the *last* enumerator - so that 'next_value' lands outside the
+	 * enumeration's range. Clang used to warn about the resulting cast and now rejects it as not a
+	 * constant expression. ('Ceil' escaped only because its enumerator is not the last one.)
+	 *
+	 * Rounding first and converting afterwards avoids naming a rounding policy at all.
+	 * 'boost::numeric_cast' keeps the range check that 'def_overflow_handler' was here for, and its
+	 * own (truncating) rounding does nothing to a value that is already integral. It throws
+	 * 'bad_numeric_cast' where the converter threw 'positive_overflow'/'negative_overflow', which
+	 * the only caller that catches anything here catches all the same.
+	 */
+	inline
+	int
+	round_up(
+			double d)
+	{
+		return boost::numeric_cast<int>(std::ceil(d));
+	}
 
-	typedef boost::numeric::converter<
-		int,
-		double,
-		boost::numeric::conversion_traits<int, double>,
-		boost::numeric::def_overflow_handler,
-		boost::numeric::Floor< boost::numeric::conversion_traits<int, double>::source_type >
-	> round_down;
+	inline
+	int
+	round_down(
+			double d)
+	{
+		return boost::numeric_cast<int>(std::floor(d));
+	}
 
 	/**
 	 * Calculates the number that the annotations should be a multiple of.
@@ -99,7 +116,7 @@ namespace
 		{
 			// First find the power of 10 that maximises the number of rows that we can
 			// display while staying under max_rows.
-			double pow_of_10 = std::pow(10.0, round_up::convert(std::log10(range / max_rows)));
+			double pow_of_10 = std::pow(10.0, round_up(std::log10(range / max_rows)));
 
 			// Try the largest multiple of 2 * 10^k smaller than pow_of_10.
 			double test = pow_of_10 / 5;
@@ -337,8 +354,8 @@ namespace
 							double multiplier = calculate_linear_annotation_multiplier(maximum_value - minimum_value, max_rows);
 							if (multiplier > 0)
 							{
-								int start = round_up::convert(interp.get_value_at(d_pixmap_height - 1) / multiplier);
-								int end = round_down::convert(interp.get_value_at(0) / multiplier) + 1;
+								int start = round_up(interp.get_value_at(d_pixmap_height - 1) / multiplier);
+								int end = round_down(interp.get_value_at(0) / multiplier) + 1;
 
 								for (int i = start; i != end; ++i)
 								{

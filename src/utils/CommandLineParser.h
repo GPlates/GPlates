@@ -29,6 +29,7 @@
 #define GPLATES_UTILS_COMMAND_LINE_PARSER_H
 
 #include <boost/program_options.hpp>
+#include <QStringList>
 
 namespace GPlatesUtils
 {
@@ -85,8 +86,28 @@ namespace GPlatesUtils
 				const GPlatesUtils::CommandLineParser::InputOptions &input_options);
 
 		/**
+		* Returns the command-line arguments, the first of which is the program name.
+		*
+		* On Windows the narrow @a argv passed to 'main()' has already been converted to the
+		* process' ANSI code page by the C runtime, so any character outside that code page is
+		* lost before 'main()' is even entered. In that case the original wide command-line is
+		* obtained from Windows instead. This is what QCoreApplication::arguments() does, but
+		* the arguments are needed before there is a QCoreApplication to ask.
+		*/
+		QStringList
+		get_command_line_arguments(
+				int argc,
+				char* argv[]);
+
+		/**
 		* Parse the command-line options and also parse any response file and config files
 		* that are specified and store parsed results in @a vm.
+		*
+		* @a command_line_arguments should come from @a get_command_line_arguments - in particular
+		* its first element is the program name, which is not parsed as an option.
+		*
+		* Option values are stored in @a vm as UTF-8 encoded std::string, so a filename retrieved
+		* from @a vm should be converted back to a QString with QString::fromStdString().
 		*
 		* @a command_line_style contains options for how boost::program_options processes the command-line.
 		*
@@ -95,8 +116,7 @@ namespace GPlatesUtils
 		void
 		parse_command_line_options(
 				boost::program_options::variables_map &vm,
-				int argc,
-				char* argv[],
+				const QStringList &command_line_arguments,
 				const InputOptions &input_options,
 				int command_line_style = boost::program_options::command_line_style::default_style);
 

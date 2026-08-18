@@ -28,9 +28,9 @@
 #ifndef GPLATES_GUI_CSVEXPORT_H
 #define GPLATES_GUI_CSVEXPORT_H
 
-#include <iostream>
-#include <fstream>
+#include <vector>
 #include <QTableWidget>
+#include <QTextStream>
 namespace GPlatesGui {
 
 	/**
@@ -77,7 +77,7 @@ namespace GPlatesGui {
 		static
 		void
 		export_line(
-				std::ofstream &os,
+				QTextStream &os,
 				const ExportOptions &options,
 				const LineDataType &line_data);
 
