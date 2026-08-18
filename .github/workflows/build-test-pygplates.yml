@@ -164,8 +164,14 @@ jobs:
         # but they gain little, because the base-branch cache already covers everything the pull
         # request did not change - a re-run only recompiles the PR's own modified files either way.
         # Pushes to 'pygplates' warm the cache; pull requests restore from it.
-        # 'always()' so that a failed build still saves the objects it did compile.
-        if: always() && github.event_name == 'push'
+        # '!cancelled()' rather than 'success()', so that a failed build still saves the objects it
+        # did compile - and rather than 'always()', so that a cancelled one does not. A run
+        # cancelled mid-build would save no less than it restored, and is harmless; but the
+        # concurrency group above can equally cancel a run before or during the restore step, and
+        # that saves a near-empty directory under a newer key. Since 'restore-keys' matches the
+        # most recently created cache, that fragment then shadows the complete one for every
+        # later run.
+        if: "!cancelled() && github.event_name == 'push'"
         uses: actions/cache/save@v4
         with:
           path: ${{ env.SCCACHE_DIR }}

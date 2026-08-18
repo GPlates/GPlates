@@ -333,7 +333,13 @@ jobs:
         # idempotent, so a partially-built cache is picked up where it left off) and, because
         # its own save key is fresh, can save the completed prefix. Skipped only when this
         # run restored an already-complete prefix and so has nothing new to save.
-        if: always() && runner.os != 'Linux' && steps.deps-complete.outputs.complete != 'true'
+        #
+        # '!cancelled()' rather than 'always()' for the same reason as the compiler caches in
+        # 'build-test-*.yml': a run cancelled before or during the restore step would save a
+        # near-empty directory under a newer key, and the completeness check above - which has no
+        # 'always()' of its own - would not have run to veto it, so the fragment shadows a usable
+        # prefix for every later run of this pull request.
+        if: "!cancelled() && runner.os != 'Linux' && steps.deps-complete.outputs.complete != 'true'"
         uses: actions/cache/save@v4
         with:
           path: ${{ matrix.deps-path }}
