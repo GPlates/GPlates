@@ -10,6 +10,7 @@
 #
 set(srcs
     ApplicationStateTest.cc
+    CommandLineParserTest.cc
     CptPaletteTest.cc
     CsvExportTest.cc
     DataAssociationDataTableTest.cc
