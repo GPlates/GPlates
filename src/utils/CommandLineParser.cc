@@ -363,7 +363,28 @@ GPlatesUtils::CommandLineParser::get_command_line_arguments(
 
 	for (int n = 0; n < argc; ++n)
 	{
-		command_line_arguments.append(QString::fromLocal8Bit(argv[n]));
+		const QString argument = QString::fromLocal8Bit(argv[n]);
+
+		// Warn if the argument did not survive being decoded, rather than leave the user to
+		// wonder why a file that exists cannot be opened.
+		//
+		// A filename is a byte string that need not be text in the local encoding (UTF-8 on
+		// Unix), but a QString cannot represent such bytes - each becomes a replacement
+		// character - and GPlates works with QString filenames throughout.
+		//
+		// Note: Encode the argument for the console rather than as UTF-8, otherwise a
+		// non-ASCII argument is printed as mojibake.
+		if (argument.toLocal8Bit() != QByteArray(argv[n]))
+		{
+			std::cerr
+				<< "Warning: command-line argument " << n
+				<< " is not valid in the local encoding and was read as '"
+				<< argument.toLocal8Bit().constData()
+				<< "'."
+				<< std::endl;
+		}
+
+		command_line_arguments.append(argument);
 	}
 
 	return command_line_arguments;
