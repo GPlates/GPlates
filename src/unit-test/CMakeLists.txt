@@ -11,6 +11,7 @@
 set(srcs
     ApplicationStateTest.cc
     CptPaletteTest.cc
+    CsvExportTest.cc
     DataAssociationDataTableTest.cc
     GenerateVelocityDomainCitcomsTest.cc
     MipmapperTest.cc
