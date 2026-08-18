@@ -334,12 +334,17 @@ jobs:
         # its own save key is fresh, can save the completed prefix. Skipped only when this
         # run restored an already-complete prefix and so has nothing new to save.
         #
-        # '!cancelled()' rather than 'always()' for the same reason as the compiler caches in
-        # 'build-test-*.yml': a run cancelled before or during the restore step would save a
+        # 'always()' is what keeps the salvage-on-timeout promise made by the 'timeout-minutes'
+        # comment above - the runner delivers a timeout as a cancellation, so anything weaker
+        # skips this step exactly when the retry needs it most. The restore-outcome guard closes
+        # the loophole 'always()' alone would leave (the same one as the compiler caches in
+        # 'build-test-*.yml'): a run cancelled before or during the restore step would save a
         # near-empty directory under a newer key, and the completeness check above - which has no
-        # 'always()' of its own - would not have run to veto it, so the fragment shadows a usable
-        # prefix for every later run of this pull request.
-        if: "!cancelled() && runner.os != 'Linux' && steps.deps-complete.outputs.complete != 'true'"
+        # 'always()' of its own - would not have run to veto it, so the fragment would shadow a
+        # usable prefix for every later run of this pull request.
+        if: >-
+          always() && steps.restore-deps-cache.outcome == 'success' &&
+          runner.os != 'Linux' && steps.deps-complete.outputs.complete != 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ matrix.deps-path }}

@@ -115,6 +115,7 @@ jobs:
         # definition), and 'gplates' is the repository's default branch, so caches saved there are
         # visible to every ref. Distinct prefixes stop either workflow from downloading the
         # other's (useless to it) cache.
+        id: restore-compiler-cache
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.SCCACHE_DIR }}
@@ -171,14 +172,17 @@ jobs:
         # but they gain little, because the base-branch cache already covers everything the pull
         # request did not change - a re-run only recompiles the PR's own modified files either way.
         # Pushes to 'pygplates' warm the cache; pull requests restore from it.
-        # '!cancelled()' rather than 'success()', so that a failed build still saves the objects it
-        # did compile - and rather than 'always()', so that a cancelled one does not. A run
-        # cancelled mid-build would save no less than it restored, and is harmless; but the
-        # concurrency group above can equally cancel a run before or during the restore step, and
-        # that saves a near-empty directory under a newer key. Since 'restore-keys' matches the
-        # most recently created cache, that fragment then shadows the complete one for every
-        # later run.
-        if: "!cancelled() && github.event_name == 'push'"
+        # 'always()' rather than 'success()', so that a failed build still saves the objects it
+        # did compile - and so does one that hits 'timeout-minutes', which the runner delivers as
+        # a cancellation. The restore-outcome guard is what a bare 'always()' would be missing:
+        # the concurrency group above can cancel a run before or during the restore step, and an
+        # unguarded save would then write a near-empty directory under a newer key. Since
+        # 'restore-keys' matches the most recently created cache, that fragment would shadow the
+        # complete one for every later run. (A restore that finds no cache to restore still
+        # succeeds, so a cold build salvages normally.)
+        if: >-
+          always() && steps.restore-compiler-cache.outcome == 'success' &&
+          github.event_name == 'push'
         uses: actions/cache/save@v4
         with:
           path: ${{ env.SCCACHE_DIR }}
