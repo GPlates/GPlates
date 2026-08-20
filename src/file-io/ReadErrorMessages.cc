@@ -413,6 +413,12 @@ namespace
 		{ GPlatesFileIO::ReadErrors::NoGeometriesFoundInMultiGeometry,
 				QT_TR_NOOP("No geometries were found in the multi-geometry."),
 				QT_TR_NOOP("No geometries were found in the multi-geometry.") },
+		{ GPlatesFileIO::ReadErrors::ErrorReadingOgrMappingFile,
+				QT_TR_NOOP("Error reading the attribute mapping file."),
+				QT_TR_NOOP("The '.gplates.xml' file recording how attributes map to model properties could not be parsed.") },
+		{ GPlatesFileIO::ReadErrors::ErrorWritingOgrMappingFile,
+				QT_TR_NOOP("Error writing the attribute mapping file."),
+				QT_TR_NOOP("The '.gplates.xml' file recording how attributes map to model properties could not be written.") },
 
 		// Errors relating to raster files in general
 		{ GPlatesFileIO::ReadErrors::InsufficientMemoryToLoadRaster,
@@ -583,6 +589,10 @@ namespace
 		  QT_TR_NOOP("No right Plate-id was created for this feature.") },
 		{ GPlatesFileIO::ReadErrors::AttributeIgnored,
 				QT_TR_NOOP("The attribute was not mapped to a model property.") },
+		{ GPlatesFileIO::ReadErrors::NoMappingLoadedForFile,
+				QT_TR_NOOP("No attribute mapping was loaded for the file; you will be asked to map its attributes.") },
+		{ GPlatesFileIO::ReadErrors::MappingNotSavedForFile,
+				QT_TR_NOOP("The attribute mapping was not saved; you will be asked to map the attributes again next time.") },
 		{ GPlatesFileIO::ReadErrors::UnclassifiedOgrFeatureCreated,
 				QT_TR_NOOP("An unclassifiedFeature was created.") },
 		{ GPlatesFileIO::ReadErrors::FeatureIgnored,
