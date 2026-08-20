@@ -421,12 +421,6 @@ if (GPLATES_BUILD_GPLATES)
 	target_link_libraries(gplates PRIVATE gplates-lib)
 
 	#
-	# Add 'gplates-no-gui' executable target (linked to gplates-lib).
-	#
-	add_executable(gplates-no-gui EXCLUDE_FROM_ALL gplates_demo_no_gui_main.cc ScribeExportGPlatesDemoNoGui.cc)
-	target_link_libraries(gplates-no-gui PRIVATE gplates-lib)
-
-	#
 	# Add 'gplates-unit-test' executable (linked to gplates-lib).
 	#
 	# It's only added if GoogleTest is available (eg, the conda-forge 'gtest' package, which provides
