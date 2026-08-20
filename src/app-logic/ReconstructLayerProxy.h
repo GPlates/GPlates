@@ -31,6 +31,7 @@
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
@@ -589,8 +590,9 @@ namespace GPlatesAppLogic
 		/**
 		 * The (reconstructed) present day polygon meshes in OpenGL form at the current reconstruction time.
 		 */
-		// Defined in the ".cc": returning the pointer by value odr-uses its destructor,
-		// which needs the complete GLReconstructedStaticPolygonMeshes.
+		// Both overloads are defined in "ReconstructLayerProxyOpenGL.cc", which is only
+		// compiled into GPlates - pyGPlates never renders, and this keeps the "opengl/"
+		// headers out of every translation unit the pyGPlates module compiles.
 		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes>::non_null_ptr_type
 		get_reconstructed_static_polygon_meshes(
 				GPlatesOpenGL::GLRenderer &renderer,
@@ -1091,18 +1093,24 @@ namespace GPlatesAppLogic
 		 */
 		struct GLReconstructedPolygonMeshes
 		{
-			// Defined in the ".cc": destroying the cached pointer needs the complete
-			// GLReconstructedStaticPolygonMeshes, which this header deliberately hides.
-			~GLReconstructedPolygonMeshes();
-
 			void
-			invalidate();
+			invalidate()
+			{
+				cached_reconstructed_static_polygon_meshes.reset();
+				cached_reconstruction_time = boost::none;
+				cached_reconstructing_with_age_grid = boost::none;
+			}
 
 			/**
 			 * The cached reconstructed polygon meshes in OpenGL vertex array form - used to render
 			 * a reconstructed raster.
+			 *
+			 * A shared_ptr (rather than the usual non_null intrusive pointer) so this header,
+			 * and the invalidation paths compiled into pyGPlates, never need the complete
+			 * GLReconstructedStaticPolygonMeshes - a shared_ptr captures its deleter on
+			 * construction, which only happens in ReconstructLayerProxyOpenGL.cc.
 			 */
-			boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes>::non_null_ptr_type>
+			boost::shared_ptr<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes>
 					cached_reconstructed_static_polygon_meshes;
 
 			/**

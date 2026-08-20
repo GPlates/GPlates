@@ -28,6 +28,7 @@
 
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "CoRegistrationData.h"
 #include "LayerProxy.h"
@@ -38,8 +39,6 @@
 
 #include "data-mining/CoRegConfigurationTable.h"
 
-#include "global/PointerTraits.h"
-
 #include "model/FeatureId.h"
 
 #include "utils/SubjectObserverToken.h"
@@ -47,6 +46,10 @@
 
 namespace GPlatesOpenGL
 {
+	// Only named through references or a shared_ptr below, so the "opengl/" headers stay
+	// out of this one - the OpenGL-backed methods are defined in
+	// "CoRegistrationLayerProxyOpenGL.cc", which is only compiled into GPlates (pyGPlates
+	// never renders, and does not link OpenGL or GLEW).
 	class GLRasterCoRegistration;
 	class GLRenderer;
 }
@@ -273,9 +276,13 @@ namespace GPlatesAppLogic
 		 * The one instance is used to co-register all/any rasters and is only created when first used.
 		 *
 		 * NOTE: Used the method @a get_raster_co_registration to retrieve this.
+		 *
+		 * A shared_ptr (rather than the usual non_null intrusive pointer) so this header,
+		 * and the destructor compiled into pyGPlates, never need the complete
+		 * GLRasterCoRegistration - a shared_ptr captures its deleter on construction,
+		 * which only happens in "CoRegistrationLayerProxyOpenGL.cc".
 		 */
-		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRasterCoRegistration>::non_null_ptr_type>
-				d_raster_co_registration;
+		boost::shared_ptr<GPlatesOpenGL::GLRasterCoRegistration> d_raster_co_registration;
 
 		/**
 		 * The cached co-registration data - the output of co-registration.

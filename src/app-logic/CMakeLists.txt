@@ -23,6 +23,7 @@ set(srcs
     CoRegistrationLayerParams.h
     CoRegistrationLayerProxy.cc
     CoRegistrationLayerProxy.h
+    CoRegistrationLayerProxyOpenGL.cc
     CoRegistrationLayerTask.cc
     CoRegistrationLayerTask.h
     DeformationStrain.cc
@@ -101,6 +102,7 @@ set(srcs
     RasterLayerParams.h
     RasterLayerProxy.cc
     RasterLayerProxy.h
+    RasterLayerProxyOpenGL.cc
     RasterLayerTask.cc
     RasterLayerTask.h
     ReconstructContext.cc
@@ -155,6 +157,7 @@ set(srcs
     ReconstructLayerParams.h
     ReconstructLayerProxy.cc
     ReconstructLayerProxy.h
+    ReconstructLayerProxyOpenGL.cc
     ReconstructLayerTask.cc
     ReconstructLayerTask.h
     ReconstructMethodByPlateId.cc

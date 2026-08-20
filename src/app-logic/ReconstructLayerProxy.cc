@@ -32,7 +32,6 @@
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructLayerProxy.h"
 
-#include "opengl/GLReconstructedStaticPolygonMeshes.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
@@ -108,30 +107,6 @@ GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
 			max_num_reconstructions_in_cache),
 	d_cached_reconstructions_default_maximum_size(max_num_reconstructions_in_cache)
 {
-}
-
-
-GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes>::non_null_ptr_type
-GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_static_polygon_meshes(
-		GPlatesOpenGL::GLRenderer &renderer,
-		bool reconstructing_with_age_grid)
-{
-	return get_reconstructed_static_polygon_meshes(
-			renderer, reconstructing_with_age_grid, d_current_reconstruction_time);
-}
-
-
-GPlatesAppLogic::ReconstructLayerProxy::GLReconstructedPolygonMeshes::~GLReconstructedPolygonMeshes()
-{
-}
-
-
-void
-GPlatesAppLogic::ReconstructLayerProxy::GLReconstructedPolygonMeshes::invalidate()
-{
-	cached_reconstructed_static_polygon_meshes = boost::none;
-	cached_reconstruction_time = boost::none;
-	cached_reconstructing_with_age_grid = boost::none;
 }
 
 
@@ -523,104 +498,6 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_topological_sections(
 			topological_sections_referenced,
 			reconstruction_info.context_state,
 			reconstruction_time);
-}
-
-
-GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
-GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_static_polygon_meshes(
-		GPlatesOpenGL::GLRenderer &renderer,
-		bool reconstructing_with_age_grid,
-		const double &reconstruction_time)
-{
-	PROFILE_FUNC();
-
-	bool need_to_update = false;
-
-	// Rebuild the GLReconstructedStaticPolygonMeshes object if necessary.
-	// If it doesn't exist then either it has never been requested or it was invalidated
-	// because the reconstructable feature collections have changed in some way causing the
-	// present day polygon meshes to (possibly) change.
-	if (!d_cached_reconstructed_polygon_meshes.cached_reconstructed_static_polygon_meshes)
-	{
-		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes =
-				GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create(
-						renderer,
-						get_present_day_polygon_meshes(),
-						get_present_day_geometries(),
-						reconstruction_time,
-						get_reconstructions_spatial_partition(reconstruction_time));
-		d_cached_reconstructed_polygon_meshes.cached_reconstructed_static_polygon_meshes = reconstructed_polygon_meshes;
-
-		// Even though we just created the 'GLReconstructedStaticPolygonMeshes' we still need to
-		// update it in case we're using age grids which need a reconstructions spatial partition
-		// that ignores the active time periods of features.
-		need_to_update = true;
-
-		// We have taken measures to be up-to-date with respect to the reconstructed polygon geometries.
-		get_subject_token().update_observer(
-				d_cached_reconstructed_polygon_meshes.cached_reconstructed_polygons_observer_token);
-	}
-
-	// Update if the reconstruction time has changed...
-	if (d_cached_reconstructed_polygon_meshes.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
-	{
-		need_to_update = true;
-
-		d_cached_reconstructed_polygon_meshes.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
-	}
-
-	// Update if we're changing decision to reconstruct with an age grid...
-	if (d_cached_reconstructed_polygon_meshes.cached_reconstructing_with_age_grid != reconstructing_with_age_grid)
-	{
-		need_to_update = true;
-
-		d_cached_reconstructed_polygon_meshes.cached_reconstructing_with_age_grid = reconstructing_with_age_grid;
-	}
-
-	// Update if we're not up-to-date with respect to the reconstructed polygon geometries...
-	if (!get_subject_token().is_observer_up_to_date(
-			d_cached_reconstructed_polygon_meshes.cached_reconstructed_polygons_observer_token))
-	{
-		need_to_update = true;
-
-		// We have taken measures to be up-to-date with respect to the reconstructed polygon geometries.
-		get_subject_token().update_observer(
-				d_cached_reconstructed_polygon_meshes.cached_reconstructed_polygons_observer_token);
-	}
-
-	if (need_to_update)
-	{
-		//
-		// Update our cached reconstructed polygon meshes.
-		//
-
-		// The reconstructions spatial partition for *active* features.
-		const GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type
-				reconstructions_spatial_partition =
-						get_reconstructions_spatial_partition(reconstruction_time);
-
-		// The reconstructions spatial partition for *active* or *inactive* features.
-		boost::optional<GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type>
-						active_or_inactive_reconstructions_spatial_partition;
-		// It's only needed if we've been asked to help reconstruct a raster with the aid of an age grid.
-		if (reconstructing_with_age_grid)
-		{
-			// Use the same reconstruct params but specify that reconstructions should include *inactive* features also.
-			GPlatesAppLogic::ReconstructParams reconstruct_params = get_current_reconstruct_params();
-			reconstruct_params.set_reconstruct_by_plate_id_outside_active_time_period(true);
-
-			// Get a new reconstructions spatial partition that includes *inactive* reconstructions.
-			active_or_inactive_reconstructions_spatial_partition =
-					get_reconstructions_spatial_partition(reconstruct_params, reconstruction_time);
-		}
-
-		d_cached_reconstructed_polygon_meshes.cached_reconstructed_static_polygon_meshes.get()->update(
-				reconstruction_time,
-				reconstructions_spatial_partition,
-				active_or_inactive_reconstructions_spatial_partition);
-	}
-
-	return d_cached_reconstructed_polygon_meshes.cached_reconstructed_static_polygon_meshes.get();
 }
 
 

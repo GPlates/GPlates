@@ -29,6 +29,7 @@
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
@@ -40,17 +41,6 @@
 #include "maths/types.h"
 
 #include "model/FeatureHandle.h"
-
-#include "opengl/GLAgeGridMaskSource.h"
-#include "opengl/GLDataRasterSource.h"
-#include "opengl/GLMultiResolutionCubeMesh.h"
-#include "opengl/GLMultiResolutionCubeRaster.h"
-#include "opengl/GLMultiResolutionCubeRasterInterface.h"
-#include "opengl/GLMultiResolutionCubeReconstructedRaster.h"
-#include "opengl/GLMultiResolutionRaster.h"
-#include "opengl/GLMultiResolutionRasterInterface.h"
-#include "opengl/GLMultiResolutionStaticPolygonReconstructedRaster.h"
-#include "opengl/GLReconstructedStaticPolygonMeshes.h"
 
 #include "property-values/CoordinateTransformation.h"
 #include "property-values/Georeferencing.h"
@@ -64,6 +54,13 @@
 
 namespace GPlatesOpenGL
 {
+	// Only named through references or PointerTraits pointers below, so the "opengl/"
+	// headers stay out of this one - the OpenGL-backed methods and caches are defined
+	// in "RasterLayerProxyOpenGL.cc", which is only compiled into GPlates (pyGPlates
+	// never renders, and does not link OpenGL or GLEW).
+	class GLMultiResolutionCubeRaster;
+	class GLMultiResolutionCubeRasterInterface;
+	class GLMultiResolutionRasterInterface;
 	class GLRenderer;
 }
 
@@ -266,42 +263,36 @@ namespace GPlatesAppLogic
 		 * (see the multi-resolution raster interface) and the user can judge when/if the memory usage
 		 * is too high for their system (eg, if their hard drive starts to thrash).
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
+		// NOTE: All the OpenGL-backed methods below (accepting a GLRenderer) are defined in
+		// "RasterLayerProxyOpenGL.cc", which is only compiled into GPlates - see the comment
+		// on the GPlatesOpenGL forward declarations above.
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionRasterInterface>::non_null_ptr_type>
 		get_multi_resolution_data_raster(
-				GPlatesOpenGL::GLRenderer &renderer)
-		{
-			return get_multi_resolution_data_raster(renderer, d_current_reconstruction_time, d_current_raster_band_name);
-		}
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		/**
 		 * Returns the possibly reconstructed (multi-resolution) *data* raster, for the current
 		 * reconstruction time and specified raster band name.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionRasterInterface>::non_null_ptr_type>
 		get_multi_resolution_data_raster(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesPropertyValues::TextContent &raster_band_name)
-		{
-			return get_multi_resolution_data_raster(renderer, d_current_reconstruction_time, raster_band_name);
-		}
+				const GPlatesPropertyValues::TextContent &raster_band_name);
 
 		/**
 		 * Returns the possibly reconstructed (multi-resolution) *data* raster, current raster
 		 * band name at the specified time.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionRasterInterface>::non_null_ptr_type>
 		get_multi_resolution_data_raster(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const double &reconstruction_time)
-		{
-			return get_multi_resolution_data_raster(renderer, reconstruction_time, d_current_raster_band_name);
-		}
+				const double &reconstruction_time);
 
 		/**
 		 * Returns the possibly reconstructed (multi-resolution) *data* raster, for the specified
 		 * time and specified raster band name.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionRasterInterface>::non_null_ptr_type>
 		get_multi_resolution_data_raster(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &reconstruction_time,
@@ -325,42 +316,33 @@ namespace GPlatesAppLogic
 		 *
 		 * See @a get_multi_resolution_data_raster for more details.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface>::non_null_ptr_type>
 		get_multi_resolution_data_cube_raster(
-				GPlatesOpenGL::GLRenderer &renderer)
-		{
-			return get_multi_resolution_data_cube_raster(renderer, d_current_reconstruction_time, d_current_raster_band_name);
-		}
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		/**
 		 * Returns the possibly reconstructed (multi-resolution) *data* cube raster, for the current
 		 * reconstruction time and specified raster band name.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface>::non_null_ptr_type>
 		get_multi_resolution_data_cube_raster(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesPropertyValues::TextContent &raster_band_name)
-		{
-			return get_multi_resolution_data_cube_raster(renderer, d_current_reconstruction_time, raster_band_name);
-		}
+				const GPlatesPropertyValues::TextContent &raster_band_name);
 
 		/**
 		 * Returns the possibly reconstructed (multi-resolution) *data* cube raster, current raster
 		 * band name at the specified time.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface>::non_null_ptr_type>
 		get_multi_resolution_data_cube_raster(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const double &reconstruction_time)
-		{
-			return get_multi_resolution_data_cube_raster(renderer, reconstruction_time, d_current_raster_band_name);
-		}
+				const double &reconstruction_time);
 
 		/**
 		 * Returns the possibly reconstructed (multi-resolution) *data* cube raster, for the specified
 		 * time and specified raster band name.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface>::non_null_ptr_type>
 		get_multi_resolution_data_cube_raster(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &reconstruction_time,
@@ -379,45 +361,33 @@ namespace GPlatesAppLogic
 		 * the results of age comparisons against a specific reconstruction time
 		 * (see GLAgeGridMaskSource), is returned.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionCubeRaster>::non_null_ptr_type>
 		get_multi_resolution_age_grid_mask(
-				GPlatesOpenGL::GLRenderer &renderer)
-		{
-			return get_multi_resolution_age_grid_mask(
-					renderer, d_current_reconstruction_time, d_current_raster_band_name);
-		}
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		/**
 		 * Returns the multi-resolution age grid mask cube raster for the current
 		 * reconstruction time and specified raster band.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionCubeRaster>::non_null_ptr_type>
 		get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesPropertyValues::TextContent &raster_band_name)
-		{
-			return get_multi_resolution_age_grid_mask(
-					renderer, d_current_reconstruction_time, raster_band_name);
-		}
+				const GPlatesPropertyValues::TextContent &raster_band_name);
 
 		/**
 		 * Returns the multi-resolution age grid mask cube raster for the specified
 		 * reconstruction time and current raster band.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionCubeRaster>::non_null_ptr_type>
 		get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const double &reconstruction_time)
-		{
-			return get_multi_resolution_age_grid_mask(
-					renderer, reconstruction_time, d_current_raster_band_name);
-		}
+				const double &reconstruction_time);
 
 		/**
 		 * Returns the multi-resolution age grid mask cube raster for the specified
 		 * reconstruction time and specified raster band.
 		 */
-		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLMultiResolutionCubeRaster>::non_null_ptr_type>
 		get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &reconstruction_time,
@@ -585,148 +555,45 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Base class for the cached OpenGL state, allowing the invalidation paths (which are
+		 * compiled into pyGPlates) to invalidate the caches without the complete cache types.
+		 *
+		 * The concrete cache structs hold OpenGL objects, so they are defined in
+		 * "RasterLayerProxyOpenGL.cc" (only compiled into GPlates) and created on first use
+		 * by the OpenGL-backed methods - in pyGPlates the cache pointers are always null.
+		 */
+		struct OpenGLCache
+		{
+			virtual
+			~OpenGLCache()
+			{  }
+
+			/**
+			 * Resets any cached state forcing it to be recalculated next time it's accessed.
+			 */
+			virtual
+			void
+			invalidate() = 0;
+		};
+
+		/**
 		 * A cached OpenGL multi-resolution *data* raster (and its raster data source) containing numerical raster data.
 		 *
 		 * The raster is reconstructed if we are connected to a reconstructed polygons layer.
 		 */
-		struct MultiResolutionDataRaster
-		{
-			void
-			invalidate()
-			{
-				// NOTE: We don't actually clear the OpenGL multi-resolution (unreconstructed) *data* raster
-				// because it has its own observer token so it can track when it needs to be rebuilt.
-				// Allows it to more efficiently rebuild in the presence of time-dependent rasters.
-
-				// We do however invalidate the reconstructed raster since it depends on other layers such as
-				// the reconstructed polygons layer and the age grid layer.
-				cached_data_reconstructed_raster = boost::none;
-
-				// Invalidate structures from other layers used to reconstruct the raster.
-				cached_reconstructed_polygon_meshes.clear();
-				cached_age_grid_mask_cube_raster = boost::none;
-			}
-
-			/**
-			 * Determines when/if the multi-resolution raster should be rebuilt because out-of-date.
-			 *
-			 * NOTE: Allows more efficient rebuilds in the presence of time-dependent rasters.
-			 */
-			GPlatesUtils::ObserverToken cached_proxied_raster_observer;
-
-			/**
-			 * Cached OpenGL raster data source (for the currently cached proxied raster).
-			 *
-			 * NOTE: If raster is RGBA (ie, not numerical data) then it is never cached.
-			 * This is application logic level data that has nothing to do with visualisation (ie, colour).
-			 */
-			boost::optional<GPlatesOpenGL::GLDataRasterSource::non_null_ptr_type> cached_data_raster_source;
-
-			/**
-			 * Cached OpenGL (unreconstructed) multi-resolution *data* raster (for the currently cached proxied raster).
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_data_raster;
-
-			/**
-			 * Cached OpenGL multi-resolution cube *data* raster (for the currently cached proxied raster).
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> cached_data_cube_raster;
-
-			/**
-			 * Cached OpenGL reconstructed polygon meshes (from other layers) for reconstructing the raster.
-			 */
-			std::vector<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
-					cached_reconstructed_polygon_meshes;
-
-			/**
-			 * Mesh that used when *not* reconstructing raster (but still using age grid).
-			 *
-			 * This is constant so could be shared by multiple layers if uses a lot of memory.
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type>
-					cached_multi_resolution_cube_mesh;
-
-			/**
-			 * Cached OpenGL age grid mask (from another layer) for reconstructing the raster.
-			 *
-			 * NOTE: This is different than the age grid in @a MultiResolutionAgeGridRaster.
-			 * Here the age grid refers to *another* layer (not this layer).
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> cached_age_grid_mask_cube_raster;
-
-			/**
-			 * Cached OpenGL (reconstructed) multi-resolution *data* raster (for the currently cached proxied raster).
-			 *
-			 * This is only valid if we are currently connected to a reconstructed polygons layer.
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
-					cached_data_reconstructed_raster;
-
-			/**
-			 * Cached OpenGL (reconstructed) multi-resolution cube *data* raster (for the currently cached proxied raster).
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::non_null_ptr_type>
-					cached_data_reconstructed_cube_raster;
-		};
-
+		struct MultiResolutionDataRaster;
 
 		/**
 		 * A cached OpenGL multi-resolution *age grid* raster.
 		 *
-		 * The following are used if *this* layer is treated as an age grid.
-		 * In other words if *this* layer is used to assist with the reconstruction of a raster
-		 * in *another* layer.
+		 * Used if *this* layer is treated as an age grid - in other words if *this* layer is
+		 * used to assist with the reconstruction of a raster in *another* layer.
 		 *
 		 * NOTE: A raster layer can simultaneously serve as a regular raster and an age grid raster.
 		 * This happens when the age grid raster is visualised/analysed *and* assists with the
 		 * reconstruction of *another* raster (in a different layer).
 		 */
-		struct MultiResolutionAgeGridRaster
-		{
-			void
-			invalidate()
-			{
-				cached_age_grid_mask_source = boost::none;
-				cached_age_grid_mask_raster = boost::none;
-				cached_age_grid_mask_cube_raster = boost::none;
-				cached_age_grid_reconstruction_time = boost::none;
-			}
-
-			/**
-			 * Cached OpenGL age grid mask source (for the currently cached proxied raster).
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterSource::non_null_ptr_type> cached_age_grid_mask_source;
-
-			/**
-			 * Cached OpenGL multi-resolution age grid mask (for the currently cached proxied raster).
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_age_grid_mask_raster;
-
-			/**
-			 * Cached OpenGL multi-resolution age grid mask cube raster (for the currently cached proxied raster).
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> cached_age_grid_mask_cube_raster;
-
-			/**
-			 * The reconstruction time of the cached age grid.
-			 */
-			boost::optional<GPlatesMaths::real_t> cached_age_grid_reconstruction_time;
-
-			/**
-			 * If returns true then use a floating-point raster containing actual age values instead
-			 * of a fixed-point raster containing age masks (results of age comparisons against
-			 * a specific reconstruction time).
-			 */
-			bool
-			use_age_grid_data_source(
-					GPlatesOpenGL::GLRenderer &renderer) const;
-
-		private:
-			/**
-			 * If true then use a GLDataRasterSource for age grid (instead of GLAgeGridMaskSource).
-			 */
-			mutable boost::optional<bool> d_use_age_grid_data_source;
-		};
+		struct MultiResolutionAgeGridRaster;
 
 
 		/**
@@ -774,11 +641,22 @@ namespace GPlatesAppLogic
 		//! Time-varying (potentially) raster feature properties.
 		ResolvedRasterFeatureProperties d_cached_resolved_raster_feature_properties;
 
-		//! An OpenGL (possibly reconstructed) multi-resolution *data* raster containing numerical raster data.
-		MultiResolutionDataRaster d_cached_multi_resolution_data_raster;
+		/**
+		 * An OpenGL (possibly reconstructed) multi-resolution *data* raster containing numerical raster data.
+		 *
+		 * A shared_ptr to a @a MultiResolutionDataRaster - null until first used by the
+		 * OpenGL-backed methods (so always null in pyGPlates). A shared_ptr captures its
+		 * deleter on construction, so destroying it never needs the complete cache type.
+		 */
+		boost::shared_ptr<OpenGLCache> d_cached_multi_resolution_data_raster;
 
-		//! An OpenGL multi-resolution *age grid* raster.
-		MultiResolutionAgeGridRaster d_cached_multi_resolution_age_grid_raster;
+		/**
+		 * An OpenGL multi-resolution *age grid* raster.
+		 *
+		 * A shared_ptr to a @a MultiResolutionAgeGridRaster - see
+		 * @a d_cached_multi_resolution_data_raster for why it's an @a OpenGLCache shared_ptr.
+		 */
+		boost::shared_ptr<OpenGLCache> d_cached_multi_resolution_age_grid_raster;
 
 		/**
 		 * Used to notify polling observers that we've been updated.
