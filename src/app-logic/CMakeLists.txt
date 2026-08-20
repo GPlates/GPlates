@@ -55,6 +55,8 @@ set(srcs
     GeometryUtils.h
     GPlatesQtMsgHandler.cc
     GPlatesQtMsgHandler.h
+    HellingerModel.cc
+    HellingerModel.h
     Layer.cc
     Layer.h
     LayerInputChannelName.cc

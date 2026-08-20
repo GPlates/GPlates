@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QTWIDGETS_HELLINGERMODEL_H
-#define GPLATES_QTWIDGETS_HELLINGERMODEL_H
+#ifndef GPLATES_APPLOGIC_HELLINGERMODEL_H
+#define GPLATES_APPLOGIC_HELLINGERMODEL_H
 
 #include <vector>
 
@@ -37,7 +37,7 @@ const QString DEFAULT_OUTPUT_FILE_EXTENSION(".dat");
 const double INITIAL_AMOEBA_TWO_WAY_RESIDUAL = 1e-10;
 const double INITIAL_AMOEBA_THREE_WAY_RESIDUAL = 0.005;
 
-namespace GPlatesQtWidgets
+namespace GPlatesAppLogic
 {
 	enum HellingerFitType
 	{
@@ -615,4 +615,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif //GPLATES_QTWIDGETS_HELLINGERMODEL_H
+#endif //GPLATES_APPLOGIC_HELLINGERMODEL_H

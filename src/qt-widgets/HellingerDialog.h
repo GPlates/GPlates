@@ -35,12 +35,17 @@
 #include "view-operations/RenderedGeometryCollection.h"
 #include "GPlatesDialog.h"
 #include "HellingerConfigurationWidget.h"
-#include "HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 #include "ui_HellingerDialogUi.h"
 #include "HellingerThread.h"
 #include "OpenDirectoryDialog.h"
 
 
+
+namespace GPlatesAppLogic
+{
+	class HellingerModel;
+}
 
 namespace GPlatesPresentation
 {
@@ -61,7 +66,6 @@ namespace GPlatesQtWidgets
 	class HellingerFitWidget;
 	class HellingerPickWidget;
 	class HellingerStatsDialog;
-	class HellingerModel;
 	class HellingerThread;
 	class ReadErrorAccumulationDialog;
 
@@ -146,7 +150,7 @@ namespace GPlatesQtWidgets
 		};
 
 		typedef std::map<int,bool> expanded_status_map_type;
-		typedef std::vector<hellinger_model_type::const_iterator > geometry_to_model_map_type;
+		typedef std::vector<GPlatesAppLogic::hellinger_model_type::const_iterator > geometry_to_model_map_type;
 
 		HellingerDialog(
 				GPlatesPresentation::ViewState &view_state,
@@ -238,7 +242,7 @@ namespace GPlatesQtWidgets
 
 		void
 		update_after_new_or_edited_pick(
-				const hellinger_model_type::const_iterator &it,
+				const GPlatesAppLogic::hellinger_model_type::const_iterator &it,
 				const int segment_number);
 
 		void
@@ -302,7 +306,7 @@ namespace GPlatesQtWidgets
 			return d_output_path_is_valid;
 		}
 
-		const HellingerFitType &
+		const GPlatesAppLogic::HellingerFitType &
 		get_fit_type();
 
 		const Configuration &
@@ -378,7 +382,7 @@ namespace GPlatesQtWidgets
 
 		void
 		highlight_selected_pick(
-				const HellingerPick& pick);
+				const GPlatesAppLogic::HellingerPick& pick);
 
 		void
 		highlight_selected_segment(
@@ -398,7 +402,7 @@ namespace GPlatesQtWidgets
 
 		void
 		draw_error_ellipse(
-				const GPlatesQtWidgets::HellingerPlatePairType &type = GPlatesQtWidgets::PLATES_1_2_PAIR_TYPE);
+				const GPlatesAppLogic::HellingerPlatePairType &type = GPlatesAppLogic::PLATES_1_2_PAIR_TYPE);
 
 
 		/**
@@ -410,14 +414,14 @@ namespace GPlatesQtWidgets
 
 		void
 		draw_picks_of_plate_index(
-				const HellingerPlateIndex &fixed_plate_index);
+				const GPlatesAppLogic::HellingerPlateIndex &fixed_plate_index);
 
 		void
 		draw_picks();
 
 		void
 		draw_pole_estimate(
-				const HellingerPoleEstimate &estimate,
+				const GPlatesAppLogic::HellingerPoleEstimate &estimate,
 				const HellingerConfigurationWidget::HellingerColour &colour);
 
 		void
@@ -596,7 +600,7 @@ namespace GPlatesQtWidgets
 		child_layer_ptr_type d_pole_estimate_layer_ptr;
 
 		ReadErrorAccumulationDialog &d_read_error_accumulation_dialog;
-		HellingerModel d_hellinger_model;
+		GPlatesAppLogic::HellingerModel d_hellinger_model;
 		HellingerStatsDialog *d_hellinger_stats_dialog;
 		HellingerPointDialog *d_hellinger_edit_point_dialog;
 		HellingerPointDialog *d_hellinger_new_point_dialog;

@@ -29,31 +29,31 @@
 #include <QFileInfo>
 #include <QStringList>
 
-#include "qt-widgets/HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 
 #include "HellingerWriter.h"
 
 namespace
 {
-	GPlatesQtWidgets::HellingerPlateIndex
+	GPlatesAppLogic::HellingerPlateIndex
 	get_plate_index(
-			const GPlatesQtWidgets::HellingerPlateIndex index,
+			const GPlatesAppLogic::HellingerPlateIndex index,
 			bool enabled)
 	{
-		if ((index == GPlatesQtWidgets::PLATE_ONE_PICK_TYPE) ||
-				(index == GPlatesQtWidgets::DISABLED_PLATE_ONE_PICK_TYPE))
+		if ((index == GPlatesAppLogic::PLATE_ONE_PICK_TYPE) ||
+				(index == GPlatesAppLogic::DISABLED_PLATE_ONE_PICK_TYPE))
 		{
-			return enabled ? GPlatesQtWidgets::PLATE_ONE_PICK_TYPE : GPlatesQtWidgets::DISABLED_PLATE_ONE_PICK_TYPE;
+			return enabled ? GPlatesAppLogic::PLATE_ONE_PICK_TYPE : GPlatesAppLogic::DISABLED_PLATE_ONE_PICK_TYPE;
 		}
-		else if ((index == GPlatesQtWidgets::PLATE_TWO_PICK_TYPE) ||
-				 (index == GPlatesQtWidgets::DISABLED_PLATE_TWO_PICK_TYPE))
+		else if ((index == GPlatesAppLogic::PLATE_TWO_PICK_TYPE) ||
+				 (index == GPlatesAppLogic::DISABLED_PLATE_TWO_PICK_TYPE))
 		{
-			return enabled ? GPlatesQtWidgets::PLATE_TWO_PICK_TYPE : GPlatesQtWidgets::DISABLED_PLATE_TWO_PICK_TYPE;
+			return enabled ? GPlatesAppLogic::PLATE_TWO_PICK_TYPE : GPlatesAppLogic::DISABLED_PLATE_TWO_PICK_TYPE;
 		}
-		else if ((index == GPlatesQtWidgets::PLATE_THREE_PICK_TYPE) ||
-				 (index == GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE))
+		else if ((index == GPlatesAppLogic::PLATE_THREE_PICK_TYPE) ||
+				 (index == GPlatesAppLogic::DISABLED_PLATE_THREE_PICK_TYPE))
 		{
-			return enabled ? GPlatesQtWidgets::PLATE_THREE_PICK_TYPE : GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE;
+			return enabled ? GPlatesAppLogic::PLATE_THREE_PICK_TYPE : GPlatesAppLogic::DISABLED_PLATE_THREE_PICK_TYPE;
 		}
 		return index;
 	}
@@ -63,7 +63,7 @@ namespace
 void
 GPlatesFileIO::HellingerWriter::write_pick_file(
 		QString &filename,
-		GPlatesQtWidgets::HellingerModel &hellinger_model,
+		GPlatesAppLogic::HellingerModel &hellinger_model,
 		bool export_disabled_picks,
 		bool add_missing_pick_extension)
 {
@@ -85,13 +85,13 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 
 	if (file.open(QIODevice::WriteOnly))
 	{
-		GPlatesQtWidgets::hellinger_model_type::const_iterator it = hellinger_model.begin();
+		GPlatesAppLogic::hellinger_model_type::const_iterator it = hellinger_model.begin();
 
 
 		for (; it != hellinger_model.end() ; ++it)
 		{
 			int segment = it->first;
-			GPlatesQtWidgets::HellingerPick pick = it->second;
+			GPlatesAppLogic::HellingerPick pick = it->second;
 
 			bool enabled = pick.d_is_enabled;
 
@@ -104,7 +104,7 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 
 			QString line;
 
-			GPlatesQtWidgets::HellingerPlateIndex index = get_plate_index(pick.d_segment_type,pick.d_is_enabled);
+			GPlatesAppLogic::HellingerPlateIndex index = get_plate_index(pick.d_segment_type,pick.d_is_enabled);
 			line.append(QString::number(index));
 			line.append(" ");
 
@@ -135,7 +135,7 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 void
 GPlatesFileIO::HellingerWriter::write_com_file(
 		QString &filename,
-		GPlatesQtWidgets::HellingerModel &hellinger_model)
+		GPlatesAppLogic::HellingerModel &hellinger_model)
 {
 	// NOTE: We may want to set up a more informative .com file structure, but as this would mess up use of these files in users'
 	// FORTRAN routines, leave things as they are for now.
@@ -143,7 +143,7 @@ GPlatesFileIO::HellingerWriter::write_com_file(
 	//		- legacy .com file for FORTRAN compliance
 	//		- GPlates .com (or some other suitable extension) for use with GPlates. Here we would have free rein
 	//			on the format, content etc.
-	boost::optional<GPlatesQtWidgets::HellingerComFileStructure> com_struct = hellinger_model.get_com_file();
+	boost::optional<GPlatesAppLogic::HellingerComFileStructure> com_struct = hellinger_model.get_com_file();
 	if (com_struct)
 	{
 		static const QString com_extension("com");

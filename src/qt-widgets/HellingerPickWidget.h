@@ -29,15 +29,19 @@
 #include "boost/optional.hpp"
 
 
-#include "HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 #include "ui_HellingerPickWidgetUi.h"
 
+
+namespace GPlatesAppLogic
+{
+	class HellingerModel;
+}
 
 namespace GPlatesQtWidgets
 {
 
 	class HellingerDialog;
-	class HellingerModel;
 
 	class HellingerPickWidget:
 			public QWidget,
@@ -54,7 +58,7 @@ namespace GPlatesQtWidgets
 
 		HellingerPickWidget(
 				HellingerDialog *hellinger_dialog,
-				HellingerModel *hellinger_model);
+				GPlatesAppLogic::HellingerModel *hellinger_model);
 
 
 		virtual
@@ -80,7 +84,7 @@ namespace GPlatesQtWidgets
 		boost::optional<unsigned int>
 		selected_row();
 
-		boost::optional<hellinger_model_type::const_iterator>
+		boost::optional<GPlatesAppLogic::hellinger_model_type::const_iterator>
 		selected_pick();
 
 		tree_items_collection_type
@@ -112,7 +116,7 @@ namespace GPlatesQtWidgets
 
 		void
 		update_after_new_or_edited_pick(
-				const hellinger_model_type::const_iterator &it,
+				const GPlatesAppLogic::hellinger_model_type::const_iterator &it,
 				const int segment_number);
 
 		void
@@ -216,11 +220,11 @@ namespace GPlatesQtWidgets
 
 		void
 		set_selected_pick(
-				const hellinger_model_type::const_iterator &it);
+				const GPlatesAppLogic::hellinger_model_type::const_iterator &it);
 
 
 		HellingerDialog *d_hellinger_dialog_ptr;
-		HellingerModel *d_hellinger_model_ptr;
+		GPlatesAppLogic::HellingerModel *d_hellinger_model_ptr;
 
 		tree_items_collection_type d_tree_items;
 
@@ -234,7 +238,7 @@ namespace GPlatesQtWidgets
 		 * @brief d_selected_pick - the selected pick in the tree_widget, if a pick
 		 * has been selected
 		 */
-		boost::optional<hellinger_model_type::const_iterator> d_selected_pick;
+		boost::optional<GPlatesAppLogic::hellinger_model_type::const_iterator> d_selected_pick;
 
 		/**
 		 * @brief d_segment_number_of_selected_pick - if a pick has been selected,

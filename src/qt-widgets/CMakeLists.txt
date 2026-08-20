@@ -311,8 +311,6 @@ set(srcs
     HellingerFitWidget.cc
     HellingerFitWidget.h
     HellingerFitWidgetUi.ui
-    HellingerModel.cc
-    HellingerModel.h
     HellingerNewSegmentWarning.cc
     HellingerNewSegmentWarning.h
     HellingerNewSegmentWarningUi.ui
