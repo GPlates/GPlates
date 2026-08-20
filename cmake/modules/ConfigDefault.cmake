@@ -291,6 +291,11 @@ option(GPLATES_PROFILE_CODE "Enable GPlates custom CPU profiling functionality."
 # Pre-compiled headers are turned off by default.
 #
 # Developers may want to turn this on using the cmake command-line or cmake GUI.
+# It is worth doing: a full pyGPlates build measured ~286s with pre-compiled headers off and
+# ~150s with them on (1.9x) on a 16-core machine with MSVC 14.44, Ninja and 'Release'.
+#
+# Note: Our CI builds must keep this off - they use a compiler cache (sccache), which cannot
+#       cache pre-compiled header translation units.
 if (COMMAND target_precompile_headers)
 	option(GPLATES_USE_PRECOMPILED_HEADERS "Use pre-compiled headers to speed up build times." false)
 endif()
@@ -298,11 +303,16 @@ endif()
 if (MSVC)
 	# When using Visual Studio this shows included headers (used by 'list_external_includes.py').
 	# This disables pre-compiled headers (regardless of value of 'GPLATES_USE_PRECOMPILED_HEADERS').
-	set(GPLATES_MSVC_SHOW_INCLUDES false)
+	#
+	# Note: This is an 'option' (ie, a cache variable) so that it can be enabled with
+	#       '-DGPLATES_MSVC_SHOW_INCLUDES=TRUE' on the cmake command-line. A plain 'set()' here would
+	#       create a normal variable that shadows the cache variable, silently ignoring the command-line.
+	option(GPLATES_MSVC_SHOW_INCLUDES "Show each included header (used by 'list_external_includes.py' to generate the pch headers)." false)
 	# Disable pre-compiled headers if showing include headers.
 	# The only reason to show include headers is to use 'list_external_includes.py' script to generates pch header.
 	if (GPLATES_MSVC_SHOW_INCLUDES)
-		# Note: This sets the non-cache variable ('option' above sets the cache variable of same name).
+		# Note: This sets the non-cache variable 'GPLATES_USE_PRECOMPILED_HEADERS'
+		#       (the 'option(GPLATES_USE_PRECOMPILED_HEADERS ...)' above sets the cache variable of same name).
 		#       The non-cache variable will get precedence when subsequently accessed.
 		#       It's also important to set this *after* 'option' since, prior to CMake 3.21, whenever a cache variable is added
 		#       (eg, on the first run if not yet present in "CMakeCache.txt") the normal variable is removed.
