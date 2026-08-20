@@ -228,7 +228,16 @@ set(srcs
 # Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
 # It has been deprecated since Qt 5.13.
 #
-# TODO: Find a replacement library.
+# TODO: Find a replacement library. Re-implementing these sources on one is a sizeable job, and whether
+#       the GeoSciML support is worth preserving at all has not been investigated - so for now they
+#       simply build against Qt5 and not against Qt6.
+#
+# Note: "GeoscimlProfile.cc" creates a QProgressDialog directly, so a Qt5 build of "file-io" links Qt
+#       Widgets even though nothing else in this directory does. That is left as is deliberately.
+#       pyGPlates is built against Qt6 - by the conda environments ("qt6-main" in "env.*.yml") and by the
+#       wheels ("QT_VERSION" in "pygplates/wheel/versions.sh") - so no pyGPlates we ship compiles this
+#       file at all, and the Qt Widgets dependency it would introduce cannot reach the module. Building
+#       pyGPlates against Qt5 is an undocumented path; the pyGPlates linkage test is what would catch it.
 if (QT_VERSION_MAJOR LESS 6)
     list(APPEND srcs
         ArbitraryNodeProcessor.h
