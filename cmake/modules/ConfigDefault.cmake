@@ -292,7 +292,7 @@ option(GPLATES_PROFILE_CODE "Enable GPlates custom CPU profiling functionality."
 #
 # Developers may want to turn this on using the cmake command-line or cmake GUI.
 # It is worth doing: a full pyGPlates build measured ~286s with pre-compiled headers off and
-# ~150s with them on (1.9x) on a 16-core machine with MSVC 14.44, Ninja and 'Release'.
+# ~157s with them on (1.8x) on a 16-core machine with MSVC 14.44, Ninja and 'Release'.
 #
 # Note: Our CI builds must keep this off - they use a compiler cache (sccache), which cannot
 #       cache pre-compiled header translation units.
