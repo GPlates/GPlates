@@ -34,7 +34,6 @@
 #include <boost/none.hpp>
 #include <boost/noncopyable.hpp>
 
-#include <QTreeWidget>
 #include <QLocale>
 #include <QDebug>
 #include <QList>

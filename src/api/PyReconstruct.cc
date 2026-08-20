@@ -41,7 +41,6 @@
 #include "PyReconstructSnapshot.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
-#include "PythonUtils.h"
 #include "PythonVariableFunctionArguments.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"

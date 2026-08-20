@@ -40,7 +40,6 @@
 #include "PyTopologicalSnapshot.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
-#include "PythonUtils.h"
 #include "PythonVariableFunctionArguments.h"
 
 #include "app-logic/ReconstructionGeometry.h"

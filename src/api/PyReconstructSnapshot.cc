@@ -33,7 +33,6 @@
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 #include "PythonPickle.h"
-#include "PythonUtils.h"
 #include "PythonVariableFunctionArguments.h"
 
 #include "app-logic/GeometryCookieCutter.h"
