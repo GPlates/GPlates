@@ -33,6 +33,7 @@
 # that MSVC prints. That could only be run from a Visual Studio build tree, and nothing anybody
 # builds here is one - which is why the pch headers went un-regenerated across a whole Qt major
 # version and stopped compiling.
+# The CMake option that fed it, GPLATES_MSVC_SHOW_INCLUDES, has been removed along with it.
 #
 # Usage:
 #

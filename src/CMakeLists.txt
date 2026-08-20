@@ -736,11 +736,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 			target_compile_options(${SOURCE_TARGET} PUBLIC /MP)
 		endif()
 	endif()
-	# If we've been asked to output a list of header files included by source files.
-	if (GPLATES_MSVC_SHOW_INCLUDES)
-		target_compile_options(${SOURCE_TARGET} PUBLIC /showIncludes)
-	endif()
-	
 	# Some C++ object files (like "PyPropertyValues.obj") contain a lot of sections (enough to require increasing the limit).
 	target_compile_options(${SOURCE_TARGET} PUBLIC /bigobj)
 	
