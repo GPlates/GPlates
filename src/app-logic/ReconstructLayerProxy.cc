@@ -31,6 +31,8 @@
 
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructLayerProxy.h"
+
+#include "opengl/GLReconstructedStaticPolygonMeshes.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
@@ -106,6 +108,30 @@ GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
 			max_num_reconstructions_in_cache),
 	d_cached_reconstructions_default_maximum_size(max_num_reconstructions_in_cache)
 {
+}
+
+
+GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes>::non_null_ptr_type
+GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_static_polygon_meshes(
+		GPlatesOpenGL::GLRenderer &renderer,
+		bool reconstructing_with_age_grid)
+{
+	return get_reconstructed_static_polygon_meshes(
+			renderer, reconstructing_with_age_grid, d_current_reconstruction_time);
+}
+
+
+GPlatesAppLogic::ReconstructLayerProxy::GLReconstructedPolygonMeshes::~GLReconstructedPolygonMeshes()
+{
+}
+
+
+void
+GPlatesAppLogic::ReconstructLayerProxy::GLReconstructedPolygonMeshes::invalidate()
+{
+	cached_reconstructed_static_polygon_meshes = boost::none;
+	cached_reconstruction_time = boost::none;
+	cached_reconstructing_with_age_grid = boost::none;
 }
 
 
