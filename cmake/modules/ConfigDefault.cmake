@@ -301,15 +301,15 @@ if (COMMAND target_precompile_headers)
 endif()
 
 if (MSVC)
-	# When using Visual Studio this shows included headers (used by 'list_external_includes.py').
+	# When using Visual Studio this shows included headers (used by 'generate_precompiled_headers.py').
 	# This disables pre-compiled headers (regardless of value of 'GPLATES_USE_PRECOMPILED_HEADERS').
 	#
 	# Note: This is an 'option' (ie, a cache variable) so that it can be enabled with
 	#       '-DGPLATES_MSVC_SHOW_INCLUDES=TRUE' on the cmake command-line. A plain 'set()' here would
 	#       create a normal variable that shadows the cache variable, silently ignoring the command-line.
-	option(GPLATES_MSVC_SHOW_INCLUDES "Show each included header (used by 'list_external_includes.py' to generate the pch headers)." false)
+	option(GPLATES_MSVC_SHOW_INCLUDES "Show each included header (used by 'generate_precompiled_headers.py' to generate the pch headers)." false)
 	# Disable pre-compiled headers if showing include headers.
-	# The only reason to show include headers is to use 'list_external_includes.py' script to generates pch header.
+	# The only reason to show include headers is to use 'generate_precompiled_headers.py' script to generates pch header.
 	if (GPLATES_MSVC_SHOW_INCLUDES)
 		# Note: This sets the non-cache variable 'GPLATES_USE_PRECOMPILED_HEADERS'
 		#       (the 'option(GPLATES_USE_PRECOMPILED_HEADERS ...)' above sets the cache variable of same name).

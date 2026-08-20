@@ -15,13 +15,18 @@
 #   header are deliberately left out: including the toplevel header pulls them in anyway, and
 #   they are implementation details that change with the version of the library installed.
 #
-# This works by scanning our own sources, which means it needs no build, no MSVC and no Visual
-# Studio generator - only a configured build tree, for two things:
+# This works by scanning our own sources, so it needs no MSVC, no Visual Studio generator and no
+# compilation of our C++. What it does need is a build tree, for three things:
 #
 #   - "compile_commands.json", which says which sources the target actually compiles and with
 #     which include directories (so an include can be resolved exactly as the compiler would).
 #     Ninja and Makefile generators write it when CMAKE_EXPORT_COMPILE_COMMANDS is on.
 #   - "CMakeCache.txt", to tell which Qt major version the build tree was configured against.
+#   - CMake's AUTOUIC and AUTOMOC output ("ui_*.h", "moc_*.cpp"). Our sources include these, and
+#     a "ui_*.h" names Qt widget headers that nothing else does, so a tree without them scans as
+#     though we included far less Qt than we do. Unlike the other two, this needs the tree to have
+#     been built - "cmake --build <build-dir> --target <target>_autogen" is enough. Generating
+#     from a tree that lacks it is refused, not warned about: see check_build_trees_built().
 #
 # The previous version of this script instead parsed MSBuild logs of a Visual Studio build made
 # with the '/showIncludes' compiler option, and inferred "toplevel" from the indentation depth
@@ -32,13 +37,51 @@
 # Usage:
 #
 #   # Regenerate one header from one build tree.
-#   python cmake/list_external_includes.py build-pygplates
+#   python cmake/generate_precompiled_headers.py build-pygplates
 #
 #   # Regenerate "gplates-lib_pch.h" so that it serves both Qt majors.
-#   python cmake/list_external_includes.py build-gplates build-gplates-qt5
+#   python cmake/generate_precompiled_headers.py build-gplates build-gplates-qt5
 #
 #   # Report what changed without writing anything (exits non-zero if a header is out of date).
-#   python cmake/list_external_includes.py --check --report build-gplates build-gplates-qt5
+#   python cmake/generate_precompiled_headers.py --check --report build-gplates build-gplates-qt5
+#
+#
+# What the scan collects, and why
+# -------------------------------
+#
+# Each build tree carries its own "compile_commands.json", so several can be scanned in one run
+# and their results merged. That is what the Qt version guards below rely on, and it is the
+# opposite of ".clangd" (generated from ".clangd.in"), which can only point at whichever build
+# tree was configured last.
+#
+# * Only *unconditional* includes are collected. Anything inside a preprocessor conditional is
+#   left out, and --report says what and under which condition.
+#
+#   This costs little and buys a lot: only 50 of ~6800 angle-bracket includes in "src/" are
+#   genuinely conditional, and they are precisely the platform- and version-dependent set -
+#   <windows.h>, <OpenGL/gl.h>, <io.h>, the '_MSC_VER' headers. Those must not be pinned into a
+#   header shared by Windows, macOS and Linux. A pch header is an optimisation, so leaving one
+#   out costs a little compile time, whereas emitting a wrong one breaks the build outright.
+#
+#   Two things that look conditional are not: a header's own include guard, and any of
+#   ALWAYS_TRUE_CONDITIONS below.
+#
+# * Because nothing conditional is collected, an include that resolves on none of the include
+#   directories of the command line must still exist - the translation unit that reached it does
+#   compile. So it is external, supplied by the compiler's own built-in include path. That is not
+#   an edge case: it is how MSVC's entire standard library is found, since those directories come
+#   from the INCLUDE environment variable rather than from the command line.
+#
+# * The whole *internal* include closure of every translation unit is walked, not just the ".cc"
+#   files, because most of what a target includes it includes through its own headers.
+#
+# * Qt version guards. Given a build tree per Qt major version, an include found in only one of
+#   them is emitted under an "#if QT_VERSION" guard, which is what lets one committed header
+#   serve both. Qt major is the only configuration axis this has to cover: it is the only thing
+#   that changes which sources CMake compiles (see 'QT_VERSION_MAJOR' in
+#   "src/file-io/CMakeLists.txt" and "src/qt-widgets/CMakeLists.txt"). Nothing gates a source file
+#   on the platform - platform differences live inside the sources, as conditionals, and are
+#   therefore already excluded.
 #
 
 from __future__ import print_function
@@ -57,6 +100,9 @@ import sys
 # 'GPLATES_BUILD_GPLATES' selects the product, so a build tree contains one of these, never both.
 #
 PCH_TARGETS = ('gplates-lib', 'pygplates')
+
+# How this script is spelled in the banner of each generated header.
+SCRIPT_PATH = 'cmake/generate_precompiled_headers.py'
 
 #
 # Sources whose includes must not reach a pch header.
@@ -83,6 +129,16 @@ EXCLUDED_SOURCES = (
 # widget headers, and they are a true statement about what the widget needs.
 #
 MOC_OUTPUT_RE = re.compile(r'(^|/)(moc_[^/]+\.cpp|mocs_compilation(_[^/]+)?\.cpp|[^/]+\.moc)$')
+
+#
+# Everything CMake's AUTOUIC/AUTOMOC/AUTORCC generate into a build tree.
+#
+# These exist only once the build tree has been built, and a tree missing them scans as though our
+# sources included far less Qt than they do - see check_build_tree_built().
+#
+GENERATED_OUTPUT_RE = re.compile(
+    r'(^|/)(ui_[^/]+\.h|moc_[^/]+\.(cpp|h)|mocs_compilation(_[^/]+)?\.cpp|qrc_[^/]+\.cpp'
+    r'|[^/]+\.moc)$')
 
 #
 # Includes that are never written to a pch header, whatever the scan finds.
@@ -299,6 +355,9 @@ class ScanResult(object):
         self.compiler_supplied = set()
         # [(spelling, source), ...] - external, but reached with quotes rather than angle brackets.
         self.quoted_external = []
+        # Includes that name uic/moc output which is not there. Non-empty means the build tree has
+        # been configured but not built, and its scan is incomplete - see check_build_tree_built().
+        self.missing_generated = set()
         self.denied = {}
         self.sources_scanned = 0
         self.internal_headers_scanned = 0
@@ -382,7 +441,13 @@ def scan_target(commands, internal_roots, result):
                     # compiler supplies from its own built-in include path - the standard library
                     # under MSVC, whose include directories come from the environment rather than
                     # from the command line.
-                    result.compiler_supplied.add(include.spelling)
+                    #
+                    # Unless it names uic or moc output, which is ours and is generated into the
+                    # build tree - so if that is missing, the tree has not been built.
+                    if GENERATED_OUTPUT_RE.search(include.spelling.replace('\\', '/')):
+                        result.missing_generated.add(include.spelling)
+                    else:
+                        result.compiler_supplied.add(include.spelling)
 
                 if include.is_quoted:
                     # An external header reached with quotes. Angle brackets would resolve it the
@@ -433,16 +498,27 @@ def generate_header(target, includes, guards, build_dirs, source_dir):
         % target,
         '// include directly.',
         '//',
-        '// GENERATED by "cmake/list_external_includes.py" - do not edit by hand. Regenerate with:',
+        '// GENERATED by "%s" - do not edit by hand. Regenerate with:' % SCRIPT_PATH,
         '//',
-        '//   python cmake/list_external_includes.py %s'
-        % ' '.join(os.path.relpath(b, source_dir).replace('\\', '/') for b in build_dirs),
-        '//',
-        '// Note: <QtGlobal> is included first for QT_VERSION and QT_VERSION_CHECK, used by the',
-        '//       "#if" guards below on headers that exist in only one Qt major version.',
-        '#include <QtGlobal>',
-        '',
+        '//   python %s %s'
+        % (SCRIPT_PATH,
+           ' '.join(os.path.relpath(b, source_dir).replace('\\', '/') for b in build_dirs)),
     ]
+
+    remaining = set(includes)
+
+    # Only worth saying, and only worth including up front, when there is a guard that needs
+    # QT_VERSION and QT_VERSION_CHECK. Generated from a single Qt major version there are none,
+    # and <QtGlobal> is then just another Qt header the scan found (or did not).
+    if guards:
+        lines += [
+            '//',
+            '// Note: <QtGlobal> is included first for QT_VERSION and QT_VERSION_CHECK, used by',
+            '//       the "#if" guards below on headers that exist in only one Qt major version.',
+            '#include <QtGlobal>',
+        ]
+        remaining.discard('QtGlobal')
+    lines.append('')
 
     def emit(spelling):
         guard = guards.get(spelling)
@@ -452,8 +528,6 @@ def generate_header(target, includes, guards, build_dirs, source_dir):
             lines.append('#endif')
         else:
             lines.append('#include <%s>' % spelling)
-
-    remaining = set(includes)
 
     prologue = [s for s in INCLUDE_PROLOGUE if s in remaining]
     if prologue:
@@ -530,6 +604,35 @@ def report(target, results_by_build_dir):
               % (len(result.compiler_supplied), len(result.external)))
 
 
+def check_build_trees_built(scans):
+    """Refuses to generate from a build tree that has been configured but not built.
+
+    CMake's AUTOUIC and AUTOMOC output only exists once a tree has been built. A tree without it
+    scans as though our sources included far less Qt than they do, and the damage is silent and
+    worse than a plain omission: compared against a tree that *has* been built, every Qt header
+    that only a "ui_*.h" names looks like it belongs to that one configuration, and comes out
+    under an "#if QT_VERSION" guard it has nothing to do with.
+    """
+
+    unbuilt = []
+    for target, target_scans in sorted(scans.items()):
+        for build_dir, _, result in target_scans:
+            if result.missing_generated:
+                unbuilt.append((build_dir, target, sorted(result.missing_generated)))
+
+    if not unbuilt:
+        return
+
+    for build_dir, target, missing in unbuilt:
+        print('error: "%s" is configured but not built - %d generated headers are missing,\n'
+              '       starting with "%s". Build it first, or at least generate them with:\n'
+              '           cmake --build %s --target %s_autogen'
+              % (build_dir, len(missing), missing[0], build_dir, target), file=sys.stderr)
+    raise SystemExit(
+        'error: refusing to generate from an unbuilt build tree - the result would be wrong,\n'
+        '       not merely incomplete.')
+
+
 def main(argv):
     parser = argparse.ArgumentParser(
         description='Generates the "src/<target>_pch.h" pre-compiled headers by scanning the '
@@ -576,6 +679,8 @@ def main(argv):
 
     if not scans:
         raise SystemExit('error: none of the build trees given build a pre-compiled header target.')
+
+    check_build_trees_built(scans)
 
     up_to_date = True
     for target, target_scans in sorted(scans.items()):
