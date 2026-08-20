@@ -157,10 +157,13 @@ export_cpp_python_api()
 	// qt-widgets directory.
 	export_main_window();
 
+	// gui directory.
+	export_colour();
 	export_style();
 	
 	//export_topology_tools();
 
+	//export_co_registration();
 	export_coregistration_layer_proxy();
 #endif	
 	// utils namespace
@@ -217,9 +220,6 @@ export_cpp_python_api()
 	export_topological_model();
 	export_topological_snapshot();
 	export_net_rotation(); // Must be called after 'export_reconstruction_geometries()'.
-
-	//export_co_registration();
-	export_colour();
 }
 
 

@@ -32,29 +32,6 @@ class AmbiguousGeometryCoverageError(PreconditionViolationError): ...
 
 class AssertionFailureError(GPlatesError): ...
 
-class Colour:
-    def __init__(self, *args: Any, **kwargs: Any) -> None: ...
-
-    black: ClassVar[Colour]
-
-    blue: ClassVar[Colour]
-
-    green: ClassVar[Colour]
-
-    grey: ClassVar[Colour]
-
-    navy: ClassVar[Colour]
-
-    purple: ClassVar[Colour]
-
-    red: ClassVar[Colour]
-
-    silver: ClassVar[Colour]
-
-    white: ClassVar[Colour]
-
-    yellow: ClassVar[Colour]
-
 class CoverageReturn(int):
     geometry_only: ClassVar[CoverageReturn]
     geometry_and_scalars: ClassVar[CoverageReturn]
@@ -9420,17 +9397,6 @@ class OldFeatureCollection:
 class OpenFileForReadingError(GPlatesError): ...
 
 class OpenFileForWritingError(GPlatesError): ...
-
-class Palette:
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Raises an exception
-        This class cannot be instantiated from Python
-        """
-
-    def get_color(self, *args: Any, **kwargs: Any) -> Any: ...
-
-class PaletteKey:
-    def __init__(self, *args: Any, **kwargs: Any) -> None: ...
 
 class PartitionMethod(int):
     split_into_plates: ClassVar[PartitionMethod]
