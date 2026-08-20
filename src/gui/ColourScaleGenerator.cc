@@ -164,7 +164,7 @@ namespace
 				painter.setPen(pen);
 				painter.drawLine(0, y, pixmap_width, y);
 
-				GLfloat grey = (colour->red() + colour->green() + colour->blue()) / 3;
+				float grey = (colour->red() + colour->green() + colour->blue()) / 3;
 				GPlatesGui::Colour disabled_colour(grey, grey, grey, colour->alpha());
 				pen.setColor(QColor(disabled_colour));
 				disabled_painter.setPen(pen);

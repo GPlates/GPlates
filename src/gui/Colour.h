@@ -32,7 +32,6 @@
 #include <iosfwd>
 #include <boost/cstdint.hpp>
 #include <boost/operators.hpp>
-#include <opengl/OpenGL.h>
 #include <QColor>
 #include <QDataStream>
 #include <QDebug>
@@ -398,10 +397,10 @@ namespace GPlatesGui
 		 */
 		explicit
 		Colour(
-				const GLfloat &red = 0.0,
-				const GLfloat &green = 0.0,
-				const GLfloat &blue = 0.0,
-				const GLfloat &alpha = 1.0);
+				const float &red = 0.0,
+				const float &green = 0.0,
+				const float &blue = 0.0,
+				const float &alpha = 1.0);
 
 		/**
 		 * Construct a Colour from its QColor equivalent.
@@ -423,25 +422,25 @@ namespace GPlatesGui
 
 		// Accessor methods
 
-		GLfloat
+		float
 		red() const
 		{
 			return d_rgba[RED_INDEX];
 		}
 
-		GLfloat
+		float
 		green() const
 		{
 			return d_rgba[GREEN_INDEX];
 		}
 
-		GLfloat
+		float
 		blue() const
 		{
 			return d_rgba[BLUE_INDEX];
 		}
 
-		GLfloat
+		float
 		alpha() const
 		{
 			return d_rgba[ALPHA_INDEX];
@@ -449,25 +448,25 @@ namespace GPlatesGui
 
 		// Accessor methods which allow modification
 
-		GLfloat &
+		float &
 		red()
 		{
 			return d_rgba[RED_INDEX];
 		}
 
-		GLfloat &
+		float &
 		green()
 		{
 			return d_rgba[GREEN_INDEX];
 		}
 
-		GLfloat &
+		float &
 		blue()
 		{
 			return d_rgba[BLUE_INDEX];
 		}
 
-		GLfloat &
+		float &
 		alpha()
 		{
 			return d_rgba[ALPHA_INDEX];
@@ -478,12 +477,12 @@ namespace GPlatesGui
 		 * OpenGL colour commands.
 		 */
 
-		operator GLfloat*()
+		operator float*()
 		{
 			return &d_rgba[0];
 		}
 
-		operator const GLfloat*() const
+		operator const float*() const
 		{
 			return &d_rgba[0];
 		}
@@ -619,7 +618,7 @@ namespace GPlatesGui
 		 * faster than passing (and hence copying each
 		 * individual component.
 		 */
-		GLfloat d_rgba[RGBA_SIZE];
+		float d_rgba[RGBA_SIZE];
 
 
 		/**

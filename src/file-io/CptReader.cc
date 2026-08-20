@@ -101,9 +101,9 @@ GPlatesFileIO::CptReaderInternals::make_rgb_colour(
 	if (in_rgb_range(r) && in_rgb_range(g) && in_rgb_range(b))
 	{
 		return GPlatesGui::Colour(
-				static_cast<GLfloat>(r / 255.0),
-				static_cast<GLfloat>(g / 255.0),
-				static_cast<GLfloat>(b / 255.0));
+				static_cast<float>(r / 255.0),
+				static_cast<float>(g / 255.0),
+				static_cast<float>(b / 255.0));
 	}
 	else
 	{
@@ -191,7 +191,7 @@ GPlatesFileIO::CptReaderInternals::make_grey_colour(
 {
 	if (in_grey_range(value))
 	{
-		GLfloat f = static_cast<GLfloat>(value / 255.0);
+		float f = static_cast<float>(value / 255.0);
 		return GPlatesGui::Colour(f, f, f);
 	}
 	else
