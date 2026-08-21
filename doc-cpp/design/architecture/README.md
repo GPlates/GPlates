@@ -89,7 +89,9 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
   `export_cpp_python_api()`.
 - **Error reporting in shared code** goes through return values / exceptions /
   `ReadErrorAccumulation` — never a `QMessageBox` or other widget (shared code cannot assume
-  a GUI, or even Qt Widgets at link time).
+  a GUI, or even Qt Widgets at link time). When shared code genuinely needs a GUI decision,
+  inject an interface the GPlates side implements: `file-io/PropertyMapper.h` (implemented by
+  `qt-widgets/ShapefilePropertyMapper`) is the pattern.
 
 ## Deferred / follow-up work (not in the build-graph-split PR)
 

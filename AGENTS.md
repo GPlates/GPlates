@@ -101,7 +101,11 @@ CI coverage gap: each develop branch's workflow builds only its own product
 (`build-test-pygplates.yml` → pyGPlates, `build-test-gplates.yml` → GPlates), so a change
 to the shared sources or the CMake source lists must be **locally** built for both products
 (GPlates under Qt6 and Qt5, pyGPlates under Qt6) before pushing — CI will not catch the
-other product breaking.
+other product breaking. The nastiest case: a change landing on `gplates` (the default
+branch, which the downstream fork tracks) that breaks pyGPlates surfaces only at the next
+sync merge into `pygplates`, where it looks like the merge's fault. Closing the gap means
+adding the other product's configure+build to each workflow — decide that separately, now
+that the split has landed and the real build cost can be measured.
 
 ## Python API docstrings and the `.pyi` stub
 
