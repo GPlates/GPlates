@@ -51,15 +51,6 @@ __pycache__/
 /cmake/modules/PackageGeneratorOverrides.cmake
 
 #
-# /doc/
-#
-/doc/doxygen.conf
-/doc/html
-/doc/*.tmp
-/doc/*.eps
-/doc/*.png
-
-#
 # /src/
 #
 # CMake generated...

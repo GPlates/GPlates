@@ -315,11 +315,6 @@ if (MSVC)
 endif()
 
 
-# Specify which source directories (relative to the 'doc/' directory) should be scanned by doxygen.
-set(GPLATES_DOXYGEN_INPUT
-    "../src/feature-visitors ../src/file-io ../src/model ../src/property-values ../src/utils")
-
-
 # The location of the GPlates executable is placed here when it is built (but not installed).
 # Note that this is different from the "RUNTIME DESTINATION" in the "install" command which specifies
 # the suffix path of where the installed executable goes (versus the built executable).

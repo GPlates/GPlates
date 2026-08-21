@@ -170,14 +170,12 @@ include (CustomBuildConfigs)
 add_subdirectory(src)
 
 #
-# GPlates or pyGPlates specific sub-directories.
+# pyGPlates specific sub-directories.
 #
-if (GPLATES_BUILD_GPLATES)
-    #
-    # Recurse into C++ documentation sub-directory.
-    #
-    add_subdirectory(doc-cpp)
-else()
+# Note: 'doc-cpp/' is not built - it holds the C++ design docs (and the man page installed
+#       by 'cmake/modules/Install.cmake').
+#
+if (NOT GPLATES_BUILD_GPLATES)
     #
     # Recurse into the sub-directory for testing/installing the pyGPlates Python module.
     #
