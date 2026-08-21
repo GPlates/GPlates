@@ -174,8 +174,15 @@ scikit-build-core (eg, `pip wheel ...`) outside of conda.
 
 ### `OpenGL_GL_PREFERENCE=LEGACY` (Linux)
 
-We set the CMake variable `OpenGL_GL_PREFERENCE` to `LEGACY` (instead of the default `GLVND`).
-This causes pyGPlates to prefer to use the `libGL` LEGACY dependency (instead of the default
+> **Historical note:** pyGPlates itself no longer finds or links OpenGL at all (the module
+> compiles only the include closure of the pyGPlates API — see
+> `cmake/pygplates_source_closure.py` — and the `pygplates-linkage-test` fails if a GL
+> library reappears), so `pyproject.toml` no longer sets `OpenGL_GL_PREFERENCE`. The
+> manylinux docker image still sets it when building **Qt** (which does link `libGL`), and
+> the GLVND background below explains why that image-side care remains necessary.
+
+We used to set the CMake variable `OpenGL_GL_PREFERENCE` to `LEGACY` (instead of the default `GLVND`).
+This caused pyGPlates to prefer to use the `libGL` LEGACY dependency (instead of the default
 `libOpenGL` GLVND dependency). The `libGL` library is whitelisted by auditwheel (meaning it
 will not be copied into the wheel repaired by auditwheel). This is presumably because it is
 available by default on all Linux distributions. Whereas `libOpenGL` is NOT whitelisted

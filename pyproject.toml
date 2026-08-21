@@ -296,12 +296,11 @@ before-test = "sccache --show-stats"
 # See the notes in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
 "cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
 "build-dir" = "build/wheel"
-# Link the LEGACY 'libGL' rather than the GLVND 'libOpenGL': auditwheel whitelists 'libGL'
-# (leaves it to come from the end user's system) but vendors 'libOpenGL' along with its
-# 'libGLdispatch' dependency into the wheel - and since Qt uses 'libGL' (which loads the
-# *system* libGLdispatch), that produced two OpenGL dispatch tables in one process and a
-# segmentation fault at 'import pygplates'. See 'pygplates/wheel/README.md' for the history.
-"cmake.define.OpenGL_GL_PREFERENCE" = "LEGACY"
+# Note: 'cmake.define.OpenGL_GL_PREFERENCE=LEGACY' used to be set here (see the history in
+# 'pygplates/wheel/README.md'), but pyGPlates itself no longer finds or links OpenGL at all
+# (the module compiles only the include closure of the pyGPlates API - see
+# 'cmake/pygplates_source_closure.py'). The manylinux docker image still sets it when building
+# Qt, which does link libGL.
 # Compile through sccache (installed in the images above). The cache only lives for the
 # duration of the cibuildwheel run, but the per-Python-version builds share most of their
 # object files, so the second and later Python versions build many times faster.
