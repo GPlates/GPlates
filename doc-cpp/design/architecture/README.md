@@ -62,11 +62,11 @@ outside the `GPLATES_PYTHON_EMBEDDING` guard (`src/api/PyGPlatesModule.cc`), plu
 
 Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
 
-- **pygplates-source-closure** re-runs the tracer against the source list the configure step
+- **pygplates-source-closure-test** re-runs the tracer against the source list the configure step
   actually gave the `pygplates` target (`<build>/pygplates_sources.txt`), failing on over-
   *and* under-inclusion, on any reach into a forbidden directory or a Qt Widgets / OpenGL /
   Qwt angle include, and on drift of the committed `dependency-matrix.md`.
-- **pygplates-linkage** inspects the built module's direct shared-library dependencies
+- **pygplates-linkage-test** inspects the built module's direct shared-library dependencies
   (`dumpbin` / `readelf` / `otool`), failing if a GUI/GL library (Qt Widgets, Qt OpenGL,
   Qwt, OpenGL) appears.
 
