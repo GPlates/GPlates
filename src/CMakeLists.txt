@@ -9,21 +9,21 @@
 # Find dependencies #
 #####################
 
-###############
-# Find OpenGL #
+###########################################
+# Find OpenGL and GLEW (GPlates only)     #
 #
-# Note: CMake 3.8 introduced import targets for OpenGL.
-#       So since our min CMake requirement exceeds this we don't need to add imported targets ourself.
+# The pygplates module compiles none of the rendering code (its source list is the include
+# closure of the pyGPlates API - see 'cmake/pygplates_source_closure.py'), so it needs
+# neither OpenGL nor GLEW.
+#
+# Note: CMake 3.8 introduced import targets for OpenGL (and CMake 3.1 for GLEW).
+#       So since our min CMake requirement exceeds these we don't need to add imported targets ourself.
 # Note: For CMake >= 3.11 on Linux systems when the *legacy* OpenGL libraries are not found, the default (for OpenGL_GL_PREFERENCE)
 #       is to utilize GLVND - in this case using the OpenGL::GL target will instead use the GLVND targets OpenGL::OpenGL and OpenGL::GLX.
-find_package(OpenGL REQUIRED)
-
-#############
-# Find GLEW #
-#
-# Note: CMake 3.1 introduced import targets for GLEW.
-#       So since our min CMake requirement exceeds this we don't need to add imported targets ourself.
-find_package(GLEW REQUIRED)
+if (GPLATES_BUILD_GPLATES)
+	find_package(OpenGL REQUIRED)
+	find_package(GLEW REQUIRED)
+endif()
 
 #############
 # Find ZLIB #
@@ -329,25 +329,40 @@ set(CMAKE_AUTORCC ON)
 #
 # Our minimum supported Ubuntu is Jammy 22.04 which uses Qt 5.15.
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+#
+# The pygplates module needs only the non-GUI Qt modules (Core, Gui for value types like
+# QColor/QImage, Network, Xml) - Svg, Widgets and the OpenGL modules serve code the module
+# does not compile (see 'cmake/pygplates_source_closure.py' and the pygplates-linkage test).
+#
 if (QT_VERSION_MAJOR EQUAL 6)
 	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
 	# For example, QRegExp instead of QRegularExpression.
 	# Remove Core5Compat when no longer supporting Qt5.
 	#
 	# Also Qt6 moved the QOpenGL* classes from (Gui and Widgets modules in Qt5) into OpenGL (and new OpenGLWidgets) modules.
-	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
+	if (GPLATES_BUILD_GPLATES)
+		find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
+	else()
+		find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Xml Core5Compat)
+	endif()
 else()
 	# In Qt5, the modern QOpenGL* classes are in the Gui and Widgets modules (not OpenGL and OpenGLWidgets modules).
-	find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
+	if (GPLATES_BUILD_GPLATES)
+		find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
+	else()
+		find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Xml XmlPatterns)
+	endif()
 endif()
 
 ############
-# Find Qwt #
+# Find Qwt (GPlates only) #
 #
 # Note that we find this *after* finding Qt since we use the Qt include directory to help find Qwt.
 # And we use our own "FindQwt.cmake" module, which also defines the Qwt::Qwt imported target.
 #
-find_package(Qwt REQUIRED)
+if (GPLATES_BUILD_GPLATES)
+	find_package(Qwt REQUIRED)
+endif()
 
 #############
 # Find GDAL #
@@ -980,18 +995,20 @@ endif()
 ########################
 
 #
-# OpenGL (and GLEW) dependency.
+# OpenGL (and GLEW) dependency (GPlates only - the pygplates module does no rendering).
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC OpenGL::GL OpenGL::GLU GLEW::GLEW)
-# Define GL_SILENCE_DEPRECATION to avoid a bunch of OpenGL deprecation warnings.
-# Currently happens when compiling on macOS mojave (10.14).
-# We will eventually replace OpenGL with Vulkan, but not for a while since
-# Apple are unlikely to 'remove' OpenGL in their drivers anytime soon.
-#
-# Set as usage requirements (INTERFACE) on the OpenGL imported library target.
-#
-# Note: CMake 3.11 is required for the 'target_*()' commands to set INTERFACE_ properties on imported targets.
-target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
+if (GPLATES_BUILD_GPLATES)
+	target_link_libraries(${SOURCE_TARGET} PUBLIC OpenGL::GL OpenGL::GLU GLEW::GLEW)
+	# Define GL_SILENCE_DEPRECATION to avoid a bunch of OpenGL deprecation warnings.
+	# Currently happens when compiling on macOS mojave (10.14).
+	# We will eventually replace OpenGL with Vulkan, but not for a while since
+	# Apple are unlikely to 'remove' OpenGL in their drivers anytime soon.
+	#
+	# Set as usage requirements (INTERFACE) on the OpenGL imported library target.
+	#
+	# Note: CMake 3.11 is required for the 'target_*()' commands to set INTERFACE_ properties on imported targets.
+	target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
+endif()
 
 #
 # ZLIB dependency.
@@ -1016,20 +1033,26 @@ endif()
 #
 # Qt dependency.
 #
+# The pygplates module links only the non-GUI Qt modules (see the Qt find_package split above).
 target_link_libraries(${SOURCE_TARGET} PUBLIC
 		Qt${QT_VERSION_MAJOR}::Core
 		Qt${QT_VERSION_MAJOR}::Gui
 		Qt${QT_VERSION_MAJOR}::Network
-		Qt${QT_VERSION_MAJOR}::Svg
-		Qt${QT_VERSION_MAJOR}::Widgets
 		Qt${QT_VERSION_MAJOR}::Xml)
+if (GPLATES_BUILD_GPLATES)
+	target_link_libraries(${SOURCE_TARGET} PUBLIC
+			Qt${QT_VERSION_MAJOR}::Svg
+			Qt${QT_VERSION_MAJOR}::Widgets)
+endif()
 if (QT_VERSION_MAJOR EQUAL 6)
 	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
 	# For example, QRegExp instead of QRegularExpression.
 	# Remove this when no longer supporting Qt5.
 	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::Core5Compat)
-	# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
-	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
+	if (GPLATES_BUILD_GPLATES)
+		# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
+		target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
+	endif()
 else()
 	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::XmlPatterns)
 endif()
@@ -1058,16 +1081,18 @@ target_include_directories(${SOURCE_TARGET} PUBLIC
 target_compile_definitions(Qt${QT_VERSION_MAJOR}::Core INTERFACE QT_NO_KEYWORDS)
 
 #
-# Qwt dependency.
+# Qwt dependency (GPlates only - Qwt serves the GUI widgets the module does not compile).
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC Qwt::Qwt)
-# Define Qwt version keywords.
-#
-# Set as usage requirements (INTERFACE) on the Qwt imported library target.
-target_compile_definitions(Qwt::Qwt INTERFACE
-	QWT_MAJOR_VERSION=${QWT_MAJOR_VERSION}
-	QWT_MINOR_VERSION=${QWT_MINOR_VERSION}
-	QWT_PATCH_VERSION=${QWT_PATCH_VERSION})
+if (GPLATES_BUILD_GPLATES)
+	target_link_libraries(${SOURCE_TARGET} PUBLIC Qwt::Qwt)
+	# Define Qwt version keywords.
+	#
+	# Set as usage requirements (INTERFACE) on the Qwt imported library target.
+	target_compile_definitions(Qwt::Qwt INTERFACE
+		QWT_MAJOR_VERSION=${QWT_MAJOR_VERSION}
+		QWT_MINOR_VERSION=${QWT_MINOR_VERSION}
+		QWT_PATCH_VERSION=${QWT_PATCH_VERSION})
+endif()
 
 #
 # CGAL dependency.
