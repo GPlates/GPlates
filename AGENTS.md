@@ -85,6 +85,24 @@ Use GoogleTest for all new C++ tests; do not mix frameworks. Conventions (headle
 working-directory independent, `GPLATES_UNIT_TEST_DATA_DIR`, `QTemporaryDir`, and leaving
 `git status` clean) are in `doc-cpp/design/testing/README.md`.
 
+## The pyGPlates module boundary
+
+The pygplates module compiles only the **include closure of the pyGPlates API** — not the
+whole tree. The layering, the rules for new files (which directory kind defaults to
+GPlates-only, `.h`/`.cc` pairing for AUTOMOC, no `QMessageBox` in shared code) and the
+enforcement are described in `doc-cpp/design/architecture/README.md`. Two pyGPlates CTests
+enforce the boundary: `pygplates-source-closure-test` (the source list must equal the
+closure computed by `cmake/pygplates_source_closure.py`, which also drift-checks the
+committed dependency matrix) and `pygplates-linkage-test` (the built module must have no
+GUI/GL direct dependencies). When either fails after adding a file or an `#include`, the
+failure message says which CMake list to fix — do that rather than weakening the tracer.
+
+CI coverage gap: each develop branch's workflow builds only its own product
+(`build-test-pygplates.yml` → pyGPlates, `build-test-gplates.yml` → GPlates), so a change
+to the shared sources or the CMake source lists must be **locally** built for both products
+(GPlates under Qt6 and Qt5, pyGPlates under Qt6) before pushing — CI will not catch the
+other product breaking.
+
 ## Python API docstrings and the `.pyi` stub
 
 Docstrings are hand-written in **two** locations — `src/api/*.cc` (C++) and

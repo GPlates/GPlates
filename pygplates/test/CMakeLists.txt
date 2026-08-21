@@ -22,6 +22,19 @@ add_test(
 	# Match the other pygplates tests (see the note on 'pygplates-test' above).
 	CONFIGURATIONS Release MinSizeRel)
 
+# Add the linkage test: the built module's *direct* shared-library dependencies must not
+# include any GUI/GL library (Qt Widgets, Qt Svg, the Qt OpenGL modules, Qwt, GLEW, OpenGL).
+# The binary-level complement of pygplates-source-closure-test above.
+#
+# Note: on Windows the dependency lister is dumpbin, so (like the build itself) this test
+# must run from an MSVC-enabled environment; the script fails loudly rather than silently
+# passing if the lister is unavailable.
+add_test(
+	NAME pygplates-linkage-test
+	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/check_linkage.py" "$<TARGET_FILE:pygplates>"
+	# Match the other pygplates tests (see the note on 'pygplates-test' above).
+	CONFIGURATIONS Release MinSizeRel)
+
 # Set test properties.
 set_tests_properties(pygplates-test PROPERTIES
 	# Set the PYTHONPATH used in the test environment.
