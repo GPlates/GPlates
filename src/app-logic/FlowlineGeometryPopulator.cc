@@ -32,7 +32,6 @@
 #include "FlowlineGeometryPopulator.h"
 #include "FlowlineUtils.h"
 
-#include "Reconstruction.h"
 #include "ReconstructedFlowline.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"

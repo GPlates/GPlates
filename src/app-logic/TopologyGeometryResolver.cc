@@ -33,7 +33,6 @@
 
 #include "GeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
-#include "Reconstruction.h"
 #include "ReconstructionGeometryUtils.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyUtils.h"

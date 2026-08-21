@@ -34,7 +34,6 @@
 #include <boost/optional.hpp>
 
 #include "ProxiedRasterCache.h"
-#include "RasterType.h"
 #include "SpatialReferenceSystem.h"
 #include "ValueObjectType.h"
 #include "XsString.h"
