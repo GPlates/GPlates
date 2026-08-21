@@ -78,11 +78,13 @@
 #
 # * Qt version guards. Given a build tree per Qt major version, an include found in only one of
 #   them is emitted under an "#if QT_VERSION" guard, which is what lets one committed header
-#   serve both. Qt major is the only configuration axis this has to cover: it is the only thing
-#   that changes which sources CMake compiles (see 'QT_VERSION_MAJOR' in
-#   "src/file-io/CMakeLists.txt" and "src/qt-widgets/CMakeLists.txt"). Nothing gates a source file
-#   on the platform - platform differences live inside the sources, as conditionals, and are
-#   therefore already excluded.
+#   serve both. Qt major is the only configuration axis that needs *guards*: the product axis
+#   also changes which sources CMake compiles (the pygplates module compiles only the include
+#   closure of the pyGPlates API - see 'cmake/pygplates_source_closure.py' - which is why
+#   "pygplates_pch.h" is much smaller than "gplates-lib_pch.h"), but each product has its own
+#   committed pch header, so no guard is needed for it; and nothing gates a source file on the
+#   platform - platform differences live inside the sources, as conditionals, and are therefore
+#   already excluded.
 #
 
 from __future__ import print_function
