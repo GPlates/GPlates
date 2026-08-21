@@ -35,6 +35,7 @@
 
 #include "data-mining/CoRegConfigurationTable.h"
 #include "data-mining/DataTable.h"
+#include "data-mining/DataSelector.h"
 
 
 GPlatesAppLogic::CoRegistrationLayerTask::CoRegistrationLayerTask() :
