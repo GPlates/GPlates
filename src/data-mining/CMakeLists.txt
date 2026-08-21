@@ -53,5 +53,9 @@ set(srcs
     WeightedMeanReducer.h
 )
 
-# Add the source files to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})
+if (TARGET gplates-lib)
+    # Add the source files to the gplates static library.
+    # (The pygplates module compiles nothing from this directory - see
+    # "cmake/pygplates_source_closure.py".)
+    target_sources_util(gplates-lib PRIVATE ${srcs})
+endif()

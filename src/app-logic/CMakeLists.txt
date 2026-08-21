@@ -278,5 +278,146 @@ set(srcs
     VgpPartitionFeatureTask.h
 )
 
+# GPlates-only sources: excluded from the pygplates module, whose source list is the
+# include closure of the pyGPlates API (see "cmake/pygplates_source_closure.py"; the
+# pygplates-source-closure test fails if this list drifts from that closure).
+# Keep ".h"/".cc" pairs together: AUTOMOC mocs any Q_OBJECT header listed in the
+# module's sources, and a moc'ed header whose ".cc" is excluded fails at link time.
+set(gplates_only_srcs
+    AgeModelCollection.cc
+    AgeModelCollection.h
+    ApplicationState.cc
+    ApplicationState.h
+    AssignPlateIds.cc
+    AssignPlateIds.h
+    CoRegistrationData.cc
+    CoRegistrationData.h
+    CoRegistrationLayerParams.cc
+    CoRegistrationLayerParams.h
+    CoRegistrationLayerProxy.cc
+    CoRegistrationLayerProxy.h
+    CoRegistrationLayerTask.cc
+    CoRegistrationLayerTask.h
+    DependentTopologicalSectionLayers.cc
+    DependentTopologicalSectionLayers.h
+    FeatureCollectionFileIO.cc
+    FeatureCollectionFileIO.h
+    FeatureCollectionFileState.cc
+    FeatureCollectionFileState.h
+    GPlatesQtMsgHandler.cc
+    GPlatesQtMsgHandler.h
+    GenerateVelocityDomainCitcoms.cc
+    GenerateVelocityDomainCitcoms.h
+    GenerateVelocityDomainTerra.cc
+    GenerateVelocityDomainTerra.h
+    GenericPartitionFeatureTask.cc
+    GenericPartitionFeatureTask.h
+    HellingerModel.cc
+    HellingerModel.h
+    Layer.cc
+    Layer.h
+    LayerInputChannelName.cc
+    LayerInputChannelName.h
+    LayerInputChannelType.h
+    LayerParams.h
+    LayerParamsVisitor.h
+    LayerProxy.h
+    LayerProxyUtils.cc
+    LayerProxyUtils.h
+    LayerProxyVisitor.h
+    LayerTask.h
+    LayerTaskRegistry.cc
+    LayerTaskRegistry.h
+    LayerTaskType.cc
+    LayerTaskType.h
+    LogModel.cc
+    LogModel.h
+    LogToModelHandler.cc
+    LogToModelHandler.h
+    PalaeomagUtils.cc
+    PalaeomagUtils.h
+    PartitionFeatureTask.cc
+    PartitionFeatureTask.h
+    PartitionFeatureUtils.cc
+    PartitionFeatureUtils.h
+    PropertyExtractors.cc
+    PropertyExtractors.h
+    RasterLayerParams.cc
+    RasterLayerParams.h
+    RasterLayerProxy.cc
+    RasterLayerProxy.h
+    RasterLayerTask.cc
+    RasterLayerTask.h
+    ReconstructGraph.cc
+    ReconstructGraph.h
+    ReconstructGraphImpl.cc
+    ReconstructGraphImpl.h
+    ReconstructLayerParams.cc
+    ReconstructLayerParams.h
+    ReconstructLayerProxy.cc
+    ReconstructLayerProxy.h
+    ReconstructLayerTask.cc
+    ReconstructLayerTask.h
+    ReconstructScalarCoverageLayerParams.cc
+    ReconstructScalarCoverageLayerParams.h
+    ReconstructScalarCoverageLayerProxy.cc
+    ReconstructScalarCoverageLayerProxy.h
+    ReconstructScalarCoverageLayerTask.cc
+    ReconstructScalarCoverageLayerTask.h
+    ReconstructScalarCoverageParams.cc
+    ReconstructScalarCoverageParams.h
+    Reconstruction.cc
+    Reconstruction.h
+    ReconstructionLayerParams.h
+    ReconstructionLayerProxy.cc
+    ReconstructionLayerProxy.h
+    ReconstructionLayerTask.cc
+    ReconstructionLayerTask.h
+    ReconstructionParams.cc
+    ReconstructionParams.h
+    ResolvedRaster.cc
+    ResolvedRaster.h
+    ResolvedScalarField3D.cc
+    ResolvedScalarField3D.h
+    ScalarField3DLayerParams.cc
+    ScalarField3DLayerParams.h
+    ScalarField3DLayerProxy.cc
+    ScalarField3DLayerProxy.h
+    ScalarField3DLayerTask.cc
+    ScalarField3DLayerTask.h
+    TRSUtils.cc
+    TRSUtils.h
+    TopologyGeometryResolverLayerProxy.cc
+    TopologyGeometryResolverLayerProxy.h
+    TopologyGeometryResolverLayerTask.cc
+    TopologyGeometryResolverLayerTask.h
+    TopologyNetworkLayerParams.h
+    TopologyNetworkResolverLayerProxy.cc
+    TopologyNetworkResolverLayerProxy.h
+    TopologyNetworkResolverLayerTask.cc
+    TopologyNetworkResolverLayerTask.h
+    UserPreferences.cc
+    UserPreferences.h
+    VelocityFieldCalculatorLayerParams.cc
+    VelocityFieldCalculatorLayerParams.h
+    VelocityFieldCalculatorLayerProxy.cc
+    VelocityFieldCalculatorLayerProxy.h
+    VelocityFieldCalculatorLayerTask.cc
+    VelocityFieldCalculatorLayerTask.h
+    VelocityParams.cc
+    VelocityParams.h
+    VgpPartitionFeatureTask.cc
+    VgpPartitionFeatureTask.h
+)
+# Guard against stale entries (eg, after a file rename).
+foreach(gplates_only_src ${gplates_only_srcs})
+    if (NOT gplates_only_src IN_LIST srcs)
+        message(FATAL_ERROR "'${gplates_only_src}' is not in srcs")
+    endif()
+endforeach()
+if (NOT TARGET gplates-lib)
+    list(REMOVE_ITEM srcs ${gplates_only_srcs})
+endif()
+
 # Add the source files to the gplates static library (or pygplates extension module).
 target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})

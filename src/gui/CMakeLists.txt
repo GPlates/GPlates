@@ -264,5 +264,35 @@ set(srcs
     VisualLayersProxy.h
 )
 
-# Add the source files to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})
+if (TARGET gplates-lib)
+    # Add the source files to the gplates static library.
+    target_sources_util(gplates-lib PRIVATE ${srcs})
+else()
+    # The pygplates module takes only these dependency-free value types (colours,
+    # palettes and the mipmapper used by the raster property values) - the include
+    # closure of the pyGPlates API (see "cmake/pygplates_source_closure.py" and its
+    # GUI_ALLOWLIST; the pygplates-source-closure test fails if this list drifts).
+    # A new "gui/" file therefore defaults to GPlates-only, the safe direction.
+    set(pygplates_srcs
+        Colour.cc
+        Colour.h
+        ColourPalette.h
+        ColourPaletteAdapter.h
+        ColourPaletteVisitor.h
+        ColourRawRaster.h
+        ColourSpectrum.cc
+        ColourSpectrum.h
+        Mipmapper.cc
+        Mipmapper.h
+        RasterColourPalette.cc
+        RasterColourPalette.h
+    )
+    # Guard against stale entries (eg, after a file rename).
+    foreach(pygplates_src ${pygplates_srcs})
+        if (NOT pygplates_src IN_LIST srcs)
+            message(FATAL_ERROR "'${pygplates_src}' is not in srcs")
+        endif()
+    endforeach()
+    # Add the source files to the pygplates extension module.
+    target_sources_util(pygplates PRIVATE ${pygplates_srcs})
+endif()

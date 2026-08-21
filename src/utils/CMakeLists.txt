@@ -89,5 +89,53 @@ set(srcs
     XQueryUtils.h
 )
 
+# GPlates-only sources: excluded from the pygplates module, whose source list is the
+# include closure of the pyGPlates API (see "cmake/pygplates_source_closure.py"; the
+# pygplates-source-closure test fails if this list drifts from that closure).
+# Keep ".h"/".cc" pairs together: AUTOMOC mocs any Q_OBJECT header listed in the
+# module's sources, and a moc'ed header whose ".cc" is excluded fails at link time.
+set(gplates_only_srcs
+    AnimationSequenceUtils.cc
+    AnimationSequenceUtils.h
+    CommandLineParser.cc
+    CommandLineParser.h
+    ComponentManager.h
+    ConfigBundle.cc
+    ConfigBundle.h
+    ConfigBundleUtils.cc
+    ConfigBundleUtils.h
+    ConfigInterface.h
+    CopyOnWrite.h
+    DeferredCallEvent.cc
+    DeferredCallEvent.h
+    Environment.cc
+    Environment.h
+    FeatureUtils.cc
+    FeatureUtils.h
+    FunctionTypes.h
+    GetPropertyAsPythonObjVisitor.cc
+    GetPropertyAsPythonObjVisitor.h
+    LatLonAreaSampling.h
+    Mapper.h
+    NetworkUtils.cc
+    NetworkUtils.h
+    ObjectCache.h
+    QtFormattingUtils.h
+    Reducer.h
+    SubjectObserverToken.h
+    VirtualProxy.h
+    XPath.cc
+    XPath.h
+)
+# Guard against stale entries (eg, after a file rename).
+foreach(gplates_only_src ${gplates_only_srcs})
+    if (NOT gplates_only_src IN_LIST srcs)
+        message(FATAL_ERROR "'${gplates_only_src}' is not in srcs")
+    endif()
+endforeach()
+if (NOT TARGET gplates-lib)
+    list(REMOVE_ITEM srcs ${gplates_only_srcs})
+endif()
+
 # Add the source files to the gplates static library (or pygplates extension module).
 target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})

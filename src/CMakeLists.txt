@@ -532,6 +532,14 @@ else()  # pygplates ...
 		${PROJECT_BINARY_DIR}/src/global/License.cc
 		${PROJECT_BINARY_DIR}/src/global/config.h)
 
+	#
+	# Write the module's full source list at generate time, for the pygplates-source-closure test
+	# (which diffs it against the include closure of the pyGPlates API - the module must compile
+	# exactly that closure; see 'cmake/pygplates_source_closure.py').
+	#
+	file(GENERATE OUTPUT "${PROJECT_BINARY_DIR}/pygplates_sources.txt"
+		CONTENT "$<JOIN:$<TARGET_PROPERTY:pygplates,SOURCES>,\n>")
+
 endif()
 
 
