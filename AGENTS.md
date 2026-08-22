@@ -93,9 +93,10 @@ GPlates-only, `.h`/`.cc` pairing for AUTOMOC, no `QMessageBox` in shared code) a
 enforcement are described in `doc-cpp/design/architecture/README.md`. Two pyGPlates CTests
 enforce the boundary: `pygplates-source-closure-test` (the source list must equal the
 closure computed by `cmake/pygplates_source_closure.py`, which also drift-checks the
-committed dependency matrix) and `pygplates-linkage-test` (the built module must have no
-GUI/GL direct dependencies). When either fails after adding a file or an `#include`, the
-failure message says which CMake list to fix — do that rather than weakening the tracer.
+committed dependency matrix) and `pygplates-linkage-test` (`cmake/check_linkage.py` - the
+built module must have no direct dependency on GPlates' GUI/rendering libraries). When
+either fails after adding a file or an `#include`, the failure message says which CMake list
+to fix — do that rather than weakening the tracer.
 
 CI coverage gap: each develop branch's workflow builds only its own product
 (`build-test-pygplates.yml` → pyGPlates, `build-test-gplates.yml` → GPlates), so a change

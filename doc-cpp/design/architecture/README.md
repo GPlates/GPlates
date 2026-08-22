@@ -67,8 +67,12 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
   *and* under-inclusion, on any reach into a forbidden directory or a Qt Widgets / OpenGL /
   Qwt angle include, and on drift of the committed `dependency-matrix.md`.
 - **pygplates-linkage-test** inspects the built module's direct shared-library dependencies
-  (`dumpbin` / `readelf` / `otool`), failing if a GUI/GL library (Qt Widgets, Qt OpenGL,
-  Qwt, OpenGL) appears.
+  (`dumpbin` / `readelf` / `otool`), failing if one of GPlates' GUI/rendering libraries
+  (Qt Widgets, Qt Svg, the Qt OpenGL modules, Qwt, GLEW) appears. The platform's own OpenGL
+  is exempt: Qt's GUI library links it on Linux and macOS, and `Qt6::Gui` propagates that
+  onto everything linking it, so the module carries a GL dependency it never asked for and
+  cannot drop while it uses `QImage`/`QColor`. Which OpenGL family that is still matters to
+  the Linux wheels — see `OpenGL_GL_PREFERENCE` in `pygplates/wheel/README.md`.
 
 ## Rules for new files
 
