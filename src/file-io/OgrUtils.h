@@ -45,7 +45,7 @@
 
 namespace GPlatesFileIO
 {
-	class ReadErrorAccumulation;
+	struct ReadErrorAccumulation;
 
 	namespace OgrUtils
 	{
