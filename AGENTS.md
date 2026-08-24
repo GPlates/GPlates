@@ -215,6 +215,23 @@ The branching model is a gitflow variant, described in `README.md`.
 never on a `release-*` branch.** CI enforces this: `build-test-pygplates.yml` only runs on
 `pygplates` and `build-test-gplates.yml` only on `gplates`.
 
+Pull requests are merged with a merge commit (`Merge pull request #N from …`), so a branch's
+commits become the permanent record. **Whether to tidy a branch before merging is a judgement
+about that branch, not a convention** — neither develop branch has a squash policy, and they do
+not differ in this any more than in anything else. Ask what a reader hitting the commit in
+`git log` or `git bisect` a year from now gets from it:
+
+- **Squash** commits that exist only because of iteration — "fix the CI", "try again", a typo
+  fixed three commits later, a build fixed in the next commit. They carry no information and
+  they make `bisect` land on broken trees. The cibuildwheel PRs each landed as one or two
+  commits for exactly this reason; the CI thrash behind them was worth nothing to anyone.
+- **Keep** commits that record a distinct decision — including a revert whose message says why
+  the change turned out to be unnecessary. That is history, not churn.
+
+When in doubt, keep. Rewriting a branch that has already been pushed is a decision for the
+author, not something to do in passing: force-pushing detaches any review comments, and other
+people may have fetched it.
+
 The GitHub remote is `https://github.com/GPlates/GPlates.git`, usually named `origin`. Some
 checkouts give it another name and have no `origin` at all, so **name the remote explicitly** in
 push and fetch commands rather than assuming. There is an active downstream fork tracking the
