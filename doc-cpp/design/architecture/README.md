@@ -99,10 +99,21 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
 
 ## Deferred / follow-up work (not in the build-graph-split PR)
 
+- Drop `Qt6::Gui` from the module — the last GUI-flavoured library it links, and not a free
+  one: `Qt6::Gui` propagates Qt's own OpenGL dependency, so on Linux the module carries a
+  direct `libGL.so.1` it never asked for. In a bare `python:3.x-slim` container the wheel
+  therefore fails to import (`libGL.so.1`, and then `libglib-2.0.so.0` behind it) until ~40
+  apt packages are installed; nothing needs a display, it is purely a load-time link
+  requirement. Gui is reached through `gui/Colour`'s `QColor`/`QRgb` conversions and
+  `file-io/RgbaRasterReader`'s use of `QImage`.
 - Decouple `GmlFile` from its `ProxiedRasterCache` member (TODO at
   `property-values/GmlFile.h`): today loading a raster GPML opens the raster through GDAL at
-  parse time, and this coupling is what keeps `RasterReader`/GDAL and the mipmap machinery in
-  the module's closure.
+  parse time. Worth doing on its own merits, but note that it does **not** shrink the module —
+  it removes exactly one translation unit. `RasterReader`/GDAL, `gui/Mipmapper` and
+  `gui/RasterColourPalette` are reached independently of `GmlFile`, through the
+  `RasterBandReaderHandle` member of `property-values/RawRaster.h`, which
+  `app-logic/ExtractRasterFeatureProperties.h` puts on the API's own feature-collection
+  classification path.
 - Physically move the `app-logic` layers machinery into its own directory, and the ~17
   embedded-interpreter files out of `src/api/` (they serve `gui/PythonManager`, not the API).
   Directory moves multiply merge risk across the two develop branches, the `vulkan` branch
