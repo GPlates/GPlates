@@ -32,29 +32,6 @@ class AmbiguousGeometryCoverageError(PreconditionViolationError): ...
 
 class AssertionFailureError(GPlatesError): ...
 
-class Colour:
-    def __init__(self, *args: Any, **kwargs: Any) -> None: ...
-
-    black: ClassVar[Colour]
-
-    blue: ClassVar[Colour]
-
-    green: ClassVar[Colour]
-
-    grey: ClassVar[Colour]
-
-    navy: ClassVar[Colour]
-
-    purple: ClassVar[Colour]
-
-    red: ClassVar[Colour]
-
-    silver: ClassVar[Colour]
-
-    white: ClassVar[Colour]
-
-    yellow: ClassVar[Colour]
-
 class CoverageReturn(int):
     geometry_only: ClassVar[CoverageReturn]
     geometry_and_scalars: ClassVar[CoverageReturn]
@@ -9383,54 +9360,9 @@ class NetworkTriangulation:
         .. note:: The returned sequence is *read-only* and cannot be modified.
         """
 
-class OldFeature:
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Raises an exception
-        This class cannot be instantiated from Python
-        """
-
-    def begin_time(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def end_time(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def feature_id(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def feature_type(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def get_all_property_names(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def get_properties(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def get_properties_by_name(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def plate_id(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def valid_time(self, *args: Any, **kwargs: Any) -> Any: ...
-
-class OldFeatureCollection:
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Raises an exception
-        This class cannot be instantiated from Python
-        """
-
-    def features(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def size(self, *args: Any, **kwargs: Any) -> Any: ...
-
 class OpenFileForReadingError(GPlatesError): ...
 
 class OpenFileForWritingError(GPlatesError): ...
-
-class Palette:
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Raises an exception
-        This class cannot be instantiated from Python
-        """
-
-    def get_color(self, *args: Any, **kwargs: Any) -> Any: ...
-
-class PaletteKey:
-    def __init__(self, *args: Any, **kwargs: Any) -> None: ...
 
 class PartitionMethod(int):
     split_into_plates: ClassVar[PartitionMethod]

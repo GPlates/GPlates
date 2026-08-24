@@ -157,10 +157,20 @@ export_cpp_python_api()
 	// qt-widgets directory.
 	export_main_window();
 
+	// api directory - the old feature wrappers. Both classes are "no_init" and the only
+	// things that hand one to Python are export_instance(), export_main_window() and
+	// export_coregistration_layer_proxy() above, so outside the embedded interpreter they
+	// are unreachable surface.
+	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
+	export_old_feature_collection();
+
+	// gui directory.
+	export_colour();
 	export_style();
 	
 	//export_topology_tools();
 
+	//export_co_registration();
 	export_coregistration_layer_proxy();
 #endif	
 	// utils namespace
@@ -195,8 +205,6 @@ export_cpp_python_api()
 	export_feature_collection_function_argument();
 	export_file_path_function_argument();
 	export_topological_feature_collection_function_argument();
-	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
-	export_old_feature_collection();
 	export_property_values();
 	export_property_value_visitor();
 	export_top_level_property();
@@ -217,9 +225,6 @@ export_cpp_python_api()
 	export_topological_model();
 	export_topological_snapshot();
 	export_net_rotation(); // Must be called after 'export_reconstruction_geometries()'.
-
-	//export_co_registration();
-	export_colour();
 }
 
 

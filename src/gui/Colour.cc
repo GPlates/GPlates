@@ -262,10 +262,10 @@ GPlatesGui::pre_multiply_alpha(
 
 
 GPlatesGui::Colour::Colour(
-		const GLfloat &red_,
-		const GLfloat &green_,
-		const GLfloat &blue_,
-		const GLfloat &alpha_)
+		const float &red_,
+		const float &green_,
+		const float &blue_,
+		const float &alpha_)
 {
 	d_rgba[RED_INDEX]   = red_;
 	d_rgba[GREEN_INDEX] = green_;
@@ -277,10 +277,10 @@ GPlatesGui::Colour::Colour(
 GPlatesGui::Colour::Colour(
 		const QColor &qcolor)
 {
-	d_rgba[RED_INDEX] = static_cast<GLfloat>(qcolor.redF());
-	d_rgba[GREEN_INDEX] = static_cast<GLfloat>(qcolor.greenF());
-	d_rgba[BLUE_INDEX] = static_cast<GLfloat>(qcolor.blueF());
-	d_rgba[ALPHA_INDEX] = static_cast<GLfloat>(qcolor.alphaF());
+	d_rgba[RED_INDEX] = static_cast<float>(qcolor.redF());
+	d_rgba[GREEN_INDEX] = static_cast<float>(qcolor.greenF());
+	d_rgba[BLUE_INDEX] = static_cast<float>(qcolor.blueF());
+	d_rgba[ALPHA_INDEX] = static_cast<float>(qcolor.alphaF());
 }
 
 
@@ -348,13 +348,13 @@ GPlatesGui::Colour::linearly_interpolate(
 	const double one_minus_position = (1.0 - position);
 
 	return Colour(
-			static_cast<GLfloat>(first.red() * one_minus_position +
+			static_cast<float>(first.red() * one_minus_position +
 				second.red() * position),
-			static_cast<GLfloat>(first.green() * one_minus_position +
+			static_cast<float>(first.green() * one_minus_position +
 				second.green() * position),
-			static_cast<GLfloat>(first.blue() * one_minus_position +
+			static_cast<float>(first.blue() * one_minus_position +
 				second.blue() * position),
-			static_cast<GLfloat>(first.alpha() * one_minus_position +
+			static_cast<float>(first.alpha() * one_minus_position +
 				second.alpha() * position));
 }
 
@@ -370,13 +370,13 @@ GPlatesGui::Colour::linearly_interpolate(
 	const double interp_third = 1.0 - interp_first - interp_second;
 
 	return Colour(
-			static_cast<GLfloat>(
+			static_cast<float>(
 				first.red() * interp_first + second.red() * interp_second + third.red() * interp_third),
-			static_cast<GLfloat>(
+			static_cast<float>(
 				first.green() * interp_first + second.green() * interp_second + third.green() * interp_third),
-			static_cast<GLfloat>(
+			static_cast<float>(
 				first.blue() * interp_first + second.blue() * interp_second + third.blue() * interp_third),
-			static_cast<GLfloat>(
+			static_cast<float>(
 				first.alpha() * interp_first + second.alpha() * interp_second + third.alpha() * interp_third));
 }
 
@@ -387,10 +387,10 @@ GPlatesGui::Colour::modulate(
 		const Colour &second)
 {
 	return Colour(
-			static_cast<GLfloat>(first.red()   * second.red()),
-			static_cast<GLfloat>(first.green() * second.green()),
-			static_cast<GLfloat>(first.blue()  * second.blue()),
-			static_cast<GLfloat>(first.alpha() * second.alpha()));
+			static_cast<float>(first.red()   * second.red()),
+			static_cast<float>(first.green() * second.green()),
+			static_cast<float>(first.blue()  * second.blue()),
+			static_cast<float>(first.alpha() * second.alpha()));
 }
 
 
@@ -418,9 +418,9 @@ GPlatesGui::Colour::from_cmyk(
 	// algorithm from boost/gil/colour_convert.hpp (but I don't want to add 
 	// another dependency when we're not using anything else from GIL)
 	return Colour(
-			static_cast<GLfloat>(1.0 - (std::min)(1.0, c * (1.0 - k) + k)),
-			static_cast<GLfloat>(1.0 - (std::min)(1.0, m * (1.0 - k) + k)),
-			static_cast<GLfloat>(1.0 - (std::min)(1.0, y * (1.0 - k) + k)));
+			static_cast<float>(1.0 - (std::min)(1.0, c * (1.0 - k) + k)),
+			static_cast<float>(1.0 - (std::min)(1.0, m * (1.0 - k) + k)),
+			static_cast<float>(1.0 - (std::min)(1.0, y * (1.0 - k) + k)));
 }
 
 
@@ -493,13 +493,13 @@ namespace
 {
 	// The parentheses around min/max are to prevent the windows min/max macros
 	// from stuffing numeric_limits' min/max.
-	static const GLfloat FLOAT_TO_UINT8 = static_cast<GLfloat>((std::numeric_limits<boost::uint8_t>::max)());
+	static const float FLOAT_TO_UINT8 = static_cast<float>((std::numeric_limits<boost::uint8_t>::max)());
 	static const boost::uint8_t UINT8_MAX_VALUE = (std::numeric_limits<boost::uint8_t>::max)();
 
 	inline
 	boost::uint8_t
 	float_to_uint8(
-			GLfloat f)
+			float f)
 	{
 		int i = static_cast<int>(f * FLOAT_TO_UINT8);
 		if (i < 0)
@@ -534,7 +534,7 @@ GPlatesGui::rgba8_t
 GPlatesGui::Colour::to_rgba8(
 		const Colour &colour)
 {
-	const GLfloat *source_components = colour;
+	const float *source_components = colour;
 	rgba8_t result;
 	for (unsigned int i = 0; i != Colour::RGBA_SIZE; ++i)
 	{

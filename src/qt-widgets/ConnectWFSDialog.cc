@@ -22,18 +22,25 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <time.h>
+
+#include <QApplication>
+#include <QByteArray>
 #include <QDebug>
 #include <QDir>
-#include <QPushButton>
-#include <QMessageBox>
-#include <QString>
 #include <QErrorMessage>
-
-#include <QtGui>
-#include <QtNetwork>
+#include <QFile>
+#include <QFileInfo>
+#include <QIODevice>
+#include <QLabel>
 #include <QMessageBox>
-
-#include <time.h>
+#include <QNetworkProxy>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QObject>
+#include <QPushButton>
+#include <QString>
+#include <QVariant>
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"

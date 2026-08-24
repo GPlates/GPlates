@@ -659,7 +659,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_current_pole_arrow_layer()
 		d_current_pole_arrow_layer_ptr->add_rendered_geometry(pole_12_geometry_arrow);
 	}
 
-	if (d_hellinger_dialog_ptr->get_fit_type() == GPlatesQtWidgets::THREE_PLATE_FIT_TYPE)
+	if (d_hellinger_dialog_ptr->get_fit_type() == GPlatesAppLogic::THREE_PLATE_FIT_TYPE)
 	{
 		if (!d_mouse_is_over_pole_estimate || (d_active_pole_type != PLATES_1_3_POLE_TYPE))
 		{
@@ -706,7 +706,7 @@ void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_current_pole_and_angle
 									 d_end_point_of_reference_arc_12,
 									 d_end_point_of_relative_arc_12);
 
-	if (d_hellinger_dialog_ptr->get_fit_type() == GPlatesQtWidgets::THREE_PLATE_FIT_TYPE)
+	if (d_hellinger_dialog_ptr->get_fit_type() == GPlatesAppLogic::THREE_PLATE_FIT_TYPE)
 	{
 		update_pole_and_angle_geometries(d_current_pole_and_angle_layer_ptr,
 										 d_current_pole_13,

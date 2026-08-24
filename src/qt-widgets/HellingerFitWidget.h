@@ -26,15 +26,19 @@
 #ifndef GPLATES_QTWIDGETS_HELLINGERFITWIDGET_H
 #define GPLATES_QTWIDGETS_HELLINGERFITWIDGET_H
 
-#include "HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 #include "ui_HellingerFitWidgetUi.h"
 
+
+namespace GPlatesAppLogic
+{
+	class HellingerModel;
+}
 
 namespace GPlatesQtWidgets
 {
 
 	class HellingerDialog;
-	class HellingerModel;
 
 	class HellingerFitWidget:
 			public QWidget,
@@ -45,7 +49,7 @@ namespace GPlatesQtWidgets
 	public:
 		HellingerFitWidget(
 				HellingerDialog *hellinger_dialog,
-				HellingerModel *hellinger_model);
+				GPlatesAppLogic::HellingerModel *hellinger_model);
 
 
 		virtual
@@ -112,18 +116,18 @@ namespace GPlatesQtWidgets
 			return checkbox_show_estimate_13->isChecked();
 		}
 
-		HellingerPoleEstimate
+		GPlatesAppLogic::HellingerPoleEstimate
 		estimate_12() const;
 
 		void
 		set_estimate_12(
-				const HellingerPoleEstimate &estimate);
+				const GPlatesAppLogic::HellingerPoleEstimate &estimate);
 
 		void
 		set_estimate_13(
-				const HellingerPoleEstimate &estimate);
+				const GPlatesAppLogic::HellingerPoleEstimate &estimate);
 
-		HellingerPoleEstimate
+		GPlatesAppLogic::HellingerPoleEstimate
 		estimate_13() const;
 
 		void
@@ -222,7 +226,7 @@ namespace GPlatesQtWidgets
 				bool show);
 
 		HellingerDialog *d_hellinger_dialog_ptr;
-		HellingerModel *d_hellinger_model_ptr;
+		GPlatesAppLogic::HellingerModel *d_hellinger_model_ptr;
 
 		bool d_pole_has_been_calculated;
 

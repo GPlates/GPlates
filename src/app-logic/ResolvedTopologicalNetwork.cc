@@ -37,7 +37,6 @@
 
 #include "ResolvedTopologicalNetwork.h"
 
-#include "ApplicationState.h"
 #include "GeometryUtils.h"
 #include "ReconstructionGeometryVisitor.h"
 

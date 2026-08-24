@@ -39,7 +39,6 @@
 #include <QDebug>
 
 #include "AppLogicUtils.h"
-#include "Reconstruction.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalGeometrySubSegment.h"

@@ -323,14 +323,17 @@ if (GPLATES_BUILD_GPLATES)  # GPlates ...
 endif()
 
 # Install Linux man page (but only for the gplates target).
+#
+# Note: the man page lives in 'doc-cpp/' (this path once said 'doc/', which no longer existed,
+#       so the EXISTS guard silently skipped the install).
 if (GPLATES_BUILD_GPLATES)  # GPlates ...
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")  # Linux
-        if (EXISTS "${PROJECT_SOURCE_DIR}/doc/gplates.1.gz")
+        if (EXISTS "${PROJECT_SOURCE_DIR}/doc-cpp/gplates.1.gz")
             if (GPLATES_INSTALL_STANDALONE)
                 # For standalone we want to bundle everything together so it's relocatable.
-                install(FILES  "${PROJECT_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/man1)
+                install(FILES  "${PROJECT_SOURCE_DIR}/doc-cpp/gplates.1.gz" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/man1)
             else()
-                install(FILES  "${PROJECT_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION share/man/man1)
+                install(FILES  "${PROJECT_SOURCE_DIR}/doc-cpp/gplates.1.gz" DESTINATION share/man/man1)
             endif()
         endif()
     endif()

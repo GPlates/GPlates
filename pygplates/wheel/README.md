@@ -174,6 +174,14 @@ scikit-build-core (eg, `pip wheel ...`) outside of conda.
 
 ### `OpenGL_GL_PREFERENCE=LEGACY` (Linux)
 
+> **Still needed, though not for pyGPlates' own code.** The module no longer compiles or links
+> any OpenGL of its own — it is just the include closure of the pyGPlates API (see
+> `cmake/pygplates_source_closure.py`). But it still links Qt6Gui, for `QImage` and `QColor`,
+> and CMake's `Qt6::Gui` imported target propagates Qt's own OpenGL dependency onto everything
+> that links it — so the module has a direct GL dependency regardless, and this variable is
+> what decides which family it comes from. Removing it as a supposed no-op produced exactly
+> the `import pygplates` segmentation fault described at the end of this section.
+
 We set the CMake variable `OpenGL_GL_PREFERENCE` to `LEGACY` (instead of the default `GLVND`).
 This causes pyGPlates to prefer to use the `libGL` LEGACY dependency (instead of the default
 `libOpenGL` GLVND dependency). The `libGL` library is whitelisted by auditwheel (meaning it

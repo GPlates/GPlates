@@ -43,6 +43,11 @@ cmake --build <build-dir>
   **Developer PowerShell for VS 2022**. CI does the same via `shell: cmd /C call {0}`.
 - `GPLATES_USE_PRECOMPILED_HEADERS` must stay `FALSE` in CI — sccache cannot cache PCH
   translation units.
+- The environment files install **Qt6**. A Qt5 build needs a *second* environment, hand-edited
+  as the comment at the top of each `env.*.yml` describes (`qt-main<6` and `qwt<=6.2.0`;
+  Windows may optionally use `vs2019_win-64`). Agents: **do not create or modify conda
+  environments unprompted** — if the environment a task needs is missing, say so and ask.
+  Which environments exist, and what they are called, is the developer's choice.
 - `.clangd` is **generated** on every configure from the committed `.clangd.in`, pointing at the
   most recently configured in-source build tree. Edit `.clangd.in`, never `.clangd`. Generation
   is skipped for out-of-tree builds (`pip install .`, `conda build`) and for VS/Xcode generators.
@@ -84,6 +89,35 @@ cmake --build build-gplates --target gplates gplates-unit-test
 Use GoogleTest for all new C++ tests; do not mix frameworks. Conventions (headless,
 working-directory independent, `GPLATES_UNIT_TEST_DATA_DIR`, `QTemporaryDir`, and leaving
 `git status` clean) are in `doc-cpp/design/testing/README.md`.
+
+## The pyGPlates module boundary
+
+The pygplates module compiles only the **include closure of the pyGPlates API** — not the
+whole tree. The layering, the rules for new files (which directory kind defaults to
+GPlates-only, `.h`/`.cc` pairing for AUTOMOC, no `QMessageBox` in shared code) and the
+enforcement are described in `doc-cpp/design/architecture/README.md`. Two pyGPlates CTests
+enforce the boundary: `pygplates-source-closure-test` (the source list must equal the
+closure computed by `cmake/pygplates_source_closure.py`, which also drift-checks the
+committed dependency matrix) and `pygplates-linkage-test` (`cmake/check_linkage.py` - the
+built module must have no direct dependency on GPlates' GUI/rendering libraries). When
+either fails after adding a file or an `#include`, the failure message says which CMake list
+to fix — do that rather than weakening the tracer.
+
+CI coverage gap: each develop branch's workflow builds only its own product
+(`build-test-pygplates.yml` → pyGPlates, `build-test-gplates.yml` → GPlates), so CI will not
+catch a change to the shared sources or the CMake source lists breaking the *other* product.
+Build both **locally** before pushing such a change: pyGPlates and GPlates under Qt6, plus
+GPlates under Qt5 when the change could plausibly be Qt-version-sensitive (the Qt5-only
+`list(APPEND srcs …)` blocks, any `QT_VERSION` conditional, `qt-widgets`, or a Qt include
+whose header moved between Qt5 and Qt6). The Qt5 build needs a second conda environment (see
+*Build* above); if it is not set up, say what you could not verify rather than skipping it
+silently. The nastiest case: a change landing on `gplates` (the default branch, which the
+downstream fork tracks) that breaks pyGPlates surfaces only at the next sync merge into
+`pygplates`, where it looks like the merge's fault.
+
+The gap could be closed by adding the other product's configure+build to each workflow, at the
+cost of roughly doubling CI compute per push. That is a maintainer decision, recorded here so
+it can be made deliberately — not a change to make in passing (see *Working agreements*).
 
 ## Python API docstrings and the `.pyi` stub
 
@@ -180,6 +214,23 @@ The branching model is a gitflow variant, described in `README.md`.
 **Base pull requests on the develop branch you are working from — `pygplates` or `gplates` —
 never on a `release-*` branch.** CI enforces this: `build-test-pygplates.yml` only runs on
 `pygplates` and `build-test-gplates.yml` only on `gplates`.
+
+Pull requests are merged with a merge commit (`Merge pull request #N from …`), so a branch's
+commits become the permanent record. **Whether to tidy a branch before merging is a judgement
+about that branch, not a convention** — neither develop branch has a squash policy, and they do
+not differ in this any more than in anything else. Ask what a reader hitting the commit in
+`git log` or `git bisect` a year from now gets from it:
+
+- **Squash** commits that exist only because of iteration — "fix the CI", "try again", a typo
+  fixed three commits later, a build fixed in the next commit. They carry no information and
+  they make `bisect` land on broken trees. The cibuildwheel PRs each landed as one or two
+  commits for exactly this reason; the CI thrash behind them was worth nothing to anyone.
+- **Keep** commits that record a distinct decision — including a revert whose message says why
+  the change turned out to be unnecessary. That is history, not churn.
+
+When in doubt, keep. Rewriting a branch that has already been pushed is a decision for the
+author, not something to do in passing: force-pushing detaches any review comments, and other
+people may have fetched it.
 
 The GitHub remote is `https://github.com/GPlates/GPlates.git`, usually named `origin`. Some
 checkouts give it another name and have no `origin` at all, so **name the remote explicitly** in

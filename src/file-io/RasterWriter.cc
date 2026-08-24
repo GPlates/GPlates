@@ -42,8 +42,6 @@
 
 #include "global/GPlatesAssert.h"
 
-#include "opengl/OpenGLBadAllocException.h"
-#include "opengl/OpenGLException.h"
 
 
 using namespace GPlatesFileIO;

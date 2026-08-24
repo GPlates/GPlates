@@ -43,7 +43,7 @@
 #include "global/CompilerWarnings.h"
 
 #include "HellingerDialog.h"
-#include "HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 #include "HellingerThread.h"
 #include "QtWidgetUtils.h"
 
@@ -54,7 +54,7 @@ const QString TEMP_RES_FILENAME("temp_pick_res");
 
 GPlatesQtWidgets::HellingerThread::HellingerThread(
 		HellingerDialog *hellinger_dialog,
-		HellingerModel *hellinger_model):
+		GPlatesAppLogic::HellingerModel *hellinger_model):
 	QThread(0),
 	d_hellinger_dialog_ptr(hellinger_dialog),
 	d_hellinger_model_ptr(hellinger_model),
@@ -87,7 +87,7 @@ GPlatesQtWidgets::HellingerThread::calculate_two_way_fit()
 	boost::python::object ignored = boost::python::exec(d_python_code.c_str(), global, global);
 	boost::python::object pythonCode = global["calculate_pole_2_way"];
 
-	HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
+	GPlatesAppLogic::HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
 
 	boost::python::extract<std::string>(pythonCode(
 											temp_file.toStdString().c_str(),
@@ -121,8 +121,8 @@ GPlatesQtWidgets::HellingerThread::calculate_three_way_fit()
 	boost::python::object ignored = boost::python::exec(d_python_code.c_str(), global, global);
 	boost::python::object pythonCode = global["calculate_pole_3_way"];
 
-	HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
-	HellingerPoleEstimate estimate_13 = d_hellinger_model_ptr->get_initial_guess_13();
+	GPlatesAppLogic::HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
+	GPlatesAppLogic::HellingerPoleEstimate estimate_13 = d_hellinger_model_ptr->get_initial_guess_13();
 
 	boost::python::extract<std::string>(pythonCode(
 											pick_file.toStdString().c_str(),
@@ -155,7 +155,7 @@ GPlatesQtWidgets::HellingerThread::calculate_two_way_uncertainties()
 	boost::python::object ignored = boost::python::exec(d_python_code.c_str(), global, global);
 	boost::python::object pythonCode = global["calculate_uncertainty_2_way"];
 
-	HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
+	GPlatesAppLogic::HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
 
 	boost::python::extract<std::string>(pythonCode(
 											pick_file.toStdString().c_str(),
@@ -190,8 +190,8 @@ GPlatesQtWidgets::HellingerThread::calculate_three_way_uncertainties()
 	boost::python::object ignored = boost::python::exec(d_python_code.c_str(), global, global);
 	boost::python::object pythonCode = global["calculate_uncertainty_3_way"];
 
-	HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
-	HellingerPoleEstimate estimate_13 = d_hellinger_model_ptr->get_initial_guess_13();
+	GPlatesAppLogic::HellingerPoleEstimate estimate_12 = d_hellinger_model_ptr->get_initial_guess_12();
+	GPlatesAppLogic::HellingerPoleEstimate estimate_13 = d_hellinger_model_ptr->get_initial_guess_13();
 
 	boost::python::extract<std::string>(pythonCode(
 											pick_file.toStdString().c_str(),

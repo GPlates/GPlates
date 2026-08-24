@@ -123,6 +123,8 @@ namespace GPlatesFileIO
 			InvalidShapefileSpreadingAsymmetry,
 			InvalidShapefileGeometryImportTime,
 			UnableToMatchOgrGeometryWithFeature,
+			ErrorReadingOgrMappingFile,
+			ErrorWritingOgrMappingFile,
 			NoGeometriesFoundInMultiGeometry,
 			
 			// The following relate to raster files in general.
@@ -254,6 +256,8 @@ namespace GPlatesFileIO
 			NoRightPlateIdCreatedForFeature,
 			AttributeIgnored,
 			UnclassifiedOgrFeatureCreated,
+			NoMappingLoadedForFile,
+			MappingNotSavedForFile,
 			FeatureIgnored,
 
 			// The following relate to time-dependent raster file sets.

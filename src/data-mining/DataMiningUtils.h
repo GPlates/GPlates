@@ -35,7 +35,6 @@
 
 #include "OpaqueData.h"
 
-#include "app-logic/CoRegistrationLayerProxy.h"
 #include "app-logic/ReconstructContext.h"
 
 #include "file-io/File.h"

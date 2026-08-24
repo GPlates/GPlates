@@ -296,11 +296,19 @@ before-test = "sccache --show-stats"
 # See the notes in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
 "cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
 "build-dir" = "build/wheel"
-# Link the LEGACY 'libGL' rather than the GLVND 'libOpenGL': auditwheel whitelists 'libGL'
-# (leaves it to come from the end user's system) but vendors 'libOpenGL' along with its
-# 'libGLdispatch' dependency into the wheel - and since Qt uses 'libGL' (which loads the
-# *system* libGLdispatch), that produced two OpenGL dispatch tables in one process and a
-# segmentation fault at 'import pygplates'. See 'pygplates/wheel/README.md' for the history.
+# Link the legacy 'libGL' rather than the GLVND 'libOpenGL'/'libGLX'. Only 'libGL' is
+# whitelisted by auditwheel, so it is left for the end user's machine to provide; the GLVND
+# libraries are instead vendored into the wheel, where they crash 'import pygplates' (the
+# whole story is in 'pygplates/wheel/README.md', and the docker image builds Qt and GLEW with
+# the same care - see 'pygplates/wheel/manylinux_2_28.dockerfile').
+#
+# This survives pyGPlates no longer compiling or linking any OpenGL code of its own (the
+# module is just the include closure of the pyGPlates API - see
+# 'cmake/pygplates_source_closure.py'). The module still links Qt6Gui, for QImage and QColor,
+# and CMake's 'Qt6::Gui' imported target propagates Qt's own OpenGL dependency onto everything
+# that links it - so the module acquires a direct GL dependency it never asked for, and this
+# define is what decides which of the two families that is. Dropping it once looked safe and
+# was not: it produced a wheel that segfaulted on import.
 "cmake.define.OpenGL_GL_PREFERENCE" = "LEGACY"
 # Compile through sccache (installed in the images above). The cache only lives for the
 # duration of the cibuildwheel run, but the per-Python-version builds share most of their

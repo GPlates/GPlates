@@ -32,7 +32,6 @@
 #include "ReconstructedScalarCoverage.h"
 #include "ReconstructedSmallCircle.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
-#include "Reconstruction.h"
 #include "ReconstructionGeometryFinder.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalLine.h"

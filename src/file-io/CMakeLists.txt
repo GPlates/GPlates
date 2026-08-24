@@ -1,12 +1,9 @@
 #
 # List the non-generated source files (*.h, *.cc, *.ui, *.qrc).
 #
-# You can either explicitly add/remove source files here, or
-# run 'python cmake/add_sources.py' to automatically list them (here).
-#
-# Note that CMake discourages use of the 'file(GLOB)' CMake command to automatically collect source files.
-# One of the reasons is if source files are added or removed, CMake is not automatically re-run,
-# so the build is unaware of the change.
+# Add and remove source files here by hand, keeping the list in alphabetical order.
+# (CMake discourages 'file(GLOB)': if source files are added or removed, CMake is not
+# automatically re-run, so the build would be unaware of the change.)
 #
 set(srcs
     AgeModelReader.cc
@@ -228,8 +225,25 @@ set(srcs
 # Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
 # It has been deprecated since Qt 5.13.
 #
-# TODO: Find a replacement library.
+# TODO: Find a replacement library. Re-implementing these sources on one is a sizeable job, and whether
+#       the GeoSciML support is worth preserving at all has not been investigated - so for now they
+#       simply build against Qt5 and not against Qt6.
+#
+# Note: "GeoscimlProfile.cc" creates a QProgressDialog directly, so a Qt5 build of "file-io" links Qt
+#       Widgets even though nothing else in this directory does. That is left as is deliberately.
+#       pyGPlates is built against Qt6 - by the conda environments ("qt6-main" in "env.*.yml") and by the
+#       wheels ("QT_VERSION" in "pygplates/wheel/versions.sh") - so no pyGPlates we ship compiles this
+#       file at all, and the Qt Widgets dependency it would introduce cannot reach the module. Building
+#       pyGPlates against Qt5 is an undocumented path; the pyGPlates linkage test is what would catch it.
 if (QT_VERSION_MAJOR LESS 6)
+    # Note: a few of these headers ("ArbitraryXmlReader.h", "GeoscimlProfile.h", ...) are
+    #       #included by translation units every build compiles (with the uses guarded by
+    #       QT_VERSION), which is harmless - but they must only be *listed* here, in the
+    #       Qt5-only block: "GeoscimlProfile.h" is a Q_OBJECT header, so listing it in the
+    #       pygplates module's sources would AUTOMOC it there while its ".cc" is not compiled,
+    #       and the link fails. The source-closure tracer keeps this whole group out of the
+    #       module's closure for the same reason (see QT5_ONLY_FILES in
+    #       "cmake/pygplates_source_closure.py").
     list(APPEND srcs
         ArbitraryNodeProcessor.h
         ArbitraryXmlProfile.h
@@ -250,6 +264,83 @@ if (QT_VERSION_MAJOR LESS 6)
         GsmlPropertyHandlers.h)
 endif()
 
+
+# GPlates-only sources: excluded from the pygplates module, whose source list is the
+# include closure of the pyGPlates API (see "cmake/pygplates_source_closure.py"; the
+# pygplates-source-closure test fails if this list drifts from that closure).
+# Keep ".h"/".cc" pairs together: AUTOMOC mocs any Q_OBJECT header listed in the
+# module's sources, and a moc'ed header whose ".cc" is excluded fails at link time.
+set(gplates_only_srcs
+    AgeModelReader.cc
+    AgeModelReader.h
+    CitcomsFormatVelocityVectorFieldExport.cc
+    CitcomsFormatVelocityVectorFieldExport.h
+    CitcomsGMTFormatResolvedTopologicalBoundaryExport.cc
+    CitcomsGMTFormatResolvedTopologicalBoundaryExport.h
+    CitcomsResolvedTopologicalBoundaryExport.cc
+    CitcomsResolvedTopologicalBoundaryExport.h
+    CptReader.cc
+    CptReader.h
+    DeformationExport.cc
+    DeformationExport.h
+    ExportTemplateFilenameSequence.cc
+    ExportTemplateFilenameSequence.h
+    ExportTemplateFilenameSequenceFormats.cc
+    ExportTemplateFilenameSequenceFormats.h
+    ExportTemplateFilenameSequenceImpl.cc
+    ExportTemplateFilenameSequenceImpl.h
+    GMTFormatDeformationExport.cc
+    GMTFormatDeformationExport.h
+    GMTFormatMultiPointVectorFieldExport.cc
+    GMTFormatMultiPointVectorFieldExport.h
+    GMTFormatReconstructedScalarCoverageExport.cc
+    GMTFormatReconstructedScalarCoverageExport.h
+    GdalRasterWriter.cc
+    GdalRasterWriter.h
+    GpmlFormatDeformationExport.cc
+    GpmlFormatDeformationExport.h
+    GpmlFormatMultiPointVectorFieldExport.cc
+    GpmlFormatMultiPointVectorFieldExport.h
+    GpmlFormatReconstructedScalarCoverageExport.cc
+    GpmlFormatReconstructedScalarCoverageExport.h
+    HellingerReader.cc
+    HellingerReader.h
+    HellingerWriter.cc
+    HellingerWriter.h
+    LogToFileHandler.cc
+    LogToFileHandler.h
+    MultiPointVectorFieldExport.cc
+    MultiPointVectorFieldExport.h
+    RasterWriter.cc
+    RasterWriter.h
+    ReadErrorMessages.cc
+    ReadErrorMessages.h
+    ReadErrorUtils.cc
+    ReadErrorUtils.h
+    ReconstructedScalarCoverageExport.cc
+    ReconstructedScalarCoverageExport.h
+    RgbaRasterWriter.cc
+    RgbaRasterWriter.h
+    ScalarField3DFileFormat.cc
+    ScalarField3DFileFormat.h
+    ScalarField3DFileFormatReader.cc
+    ScalarField3DFileFormatReader.h
+    SymbolFileReader.cc
+    SymbolFileReader.h
+    TerraFormatVelocityVectorFieldExport.cc
+    TerraFormatVelocityVectorFieldExport.h
+    XmlOutputInterface.cc
+    XmlOutputInterface.h
+)
+# Guard against stale entries (eg, after a file rename).
+foreach(gplates_only_src ${gplates_only_srcs})
+    if (NOT gplates_only_src IN_LIST srcs)
+        message(FATAL_ERROR "'${gplates_only_src}' is not in srcs")
+    endif()
+endforeach()
+if (NOT TARGET gplates-lib)
+    list(REMOVE_ITEM srcs ${gplates_only_srcs})
+endif()
 
 # Add the source files to the gplates static library (or pygplates extension module).
 target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})

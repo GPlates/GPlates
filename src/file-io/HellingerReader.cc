@@ -31,7 +31,7 @@
 #include <Qt>
 #include <QtGlobal>
 
-#include "qt-widgets/HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 #include "utils/ComponentManager.h"
 
 #include "ErrorOpeningFileForReadingException.h"
@@ -43,11 +43,11 @@ namespace
 
 	bool
 	plate_index_represents_an_enabled_pick(
-			const GPlatesQtWidgets::HellingerPlateIndex &plate_index)
+			const GPlatesAppLogic::HellingerPlateIndex &plate_index)
 	{
-		return ((plate_index == GPlatesQtWidgets::PLATE_ONE_PICK_TYPE) ||
-				(plate_index == GPlatesQtWidgets::PLATE_TWO_PICK_TYPE) ||
-				(plate_index == GPlatesQtWidgets::PLATE_THREE_PICK_TYPE));
+		return ((plate_index == GPlatesAppLogic::PLATE_ONE_PICK_TYPE) ||
+				(plate_index == GPlatesAppLogic::PLATE_TWO_PICK_TYPE) ||
+				(plate_index == GPlatesAppLogic::PLATE_THREE_PICK_TYPE));
 	}
 
 	bool
@@ -139,27 +139,27 @@ namespace
 		return false;
 	}
 
-	std::set<GPlatesQtWidgets::HellingerPlateIndex>
+	std::set<GPlatesAppLogic::HellingerPlateIndex>
 	create_two_way_plate_index_set()
 	{
-		std::set<GPlatesQtWidgets::HellingerPlateIndex> indices;
-		indices.insert(GPlatesQtWidgets::PLATE_ONE_PICK_TYPE);
-		indices.insert(GPlatesQtWidgets::PLATE_TWO_PICK_TYPE);
-		indices.insert(GPlatesQtWidgets::DISABLED_PLATE_ONE_PICK_TYPE);
-		indices.insert(GPlatesQtWidgets::DISABLED_PLATE_TWO_PICK_TYPE);
+		std::set<GPlatesAppLogic::HellingerPlateIndex> indices;
+		indices.insert(GPlatesAppLogic::PLATE_ONE_PICK_TYPE);
+		indices.insert(GPlatesAppLogic::PLATE_TWO_PICK_TYPE);
+		indices.insert(GPlatesAppLogic::DISABLED_PLATE_ONE_PICK_TYPE);
+		indices.insert(GPlatesAppLogic::DISABLED_PLATE_TWO_PICK_TYPE);
 		return indices;
 	}
 
-	std::set<GPlatesQtWidgets::HellingerPlateIndex>
+	std::set<GPlatesAppLogic::HellingerPlateIndex>
 	create_three_way_plate_index_set()
 	{
-		std::set<GPlatesQtWidgets::HellingerPlateIndex> indices;
-		indices.insert(GPlatesQtWidgets::PLATE_ONE_PICK_TYPE);
-		indices.insert(GPlatesQtWidgets::PLATE_TWO_PICK_TYPE);
-		indices.insert(GPlatesQtWidgets::PLATE_THREE_PICK_TYPE);
-		indices.insert(GPlatesQtWidgets::DISABLED_PLATE_ONE_PICK_TYPE);
-		indices.insert(GPlatesQtWidgets::DISABLED_PLATE_TWO_PICK_TYPE);
-		indices.insert(GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE);
+		std::set<GPlatesAppLogic::HellingerPlateIndex> indices;
+		indices.insert(GPlatesAppLogic::PLATE_ONE_PICK_TYPE);
+		indices.insert(GPlatesAppLogic::PLATE_TWO_PICK_TYPE);
+		indices.insert(GPlatesAppLogic::PLATE_THREE_PICK_TYPE);
+		indices.insert(GPlatesAppLogic::DISABLED_PLATE_ONE_PICK_TYPE);
+		indices.insert(GPlatesAppLogic::DISABLED_PLATE_TWO_PICK_TYPE);
+		indices.insert(GPlatesAppLogic::DISABLED_PLATE_THREE_PICK_TYPE);
 		return indices;
 	}
 
@@ -171,7 +171,7 @@ namespace
 	bool
 	pick_fields_are_ok(
 			const QStringList &fields,
-			GPlatesQtWidgets::HellingerPick &pick,
+			GPlatesAppLogic::HellingerPick &pick,
 			int &segment)
 	{
 		/* here we should check that the fields are sensible,
@@ -185,14 +185,14 @@ namespace
 															*/
 		// Field 0: 1, 2, 3, 31, 32 or 33.
 
-		static const std::set<GPlatesQtWidgets::HellingerPlateIndex> valid_plate_indices =
+		static const std::set<GPlatesAppLogic::HellingerPlateIndex> valid_plate_indices =
 				GPlatesUtils::ComponentManager::instance().is_enabled(
 							GPlatesUtils::ComponentManager::Component::hellinger_three_plate()) ?
 					create_three_way_plate_index_set() : create_two_way_plate_index_set();
 		bool plate_index_ok = false;
 		bool ok;
-		GPlatesQtWidgets::HellingerPlateIndex plate_index =
-				static_cast<GPlatesQtWidgets::HellingerPlateIndex>(fields.at(0).toInt(&ok));
+		GPlatesAppLogic::HellingerPlateIndex plate_index =
+				static_cast<GPlatesAppLogic::HellingerPlateIndex>(fields.at(0).toInt(&ok));
 		if ((ok) && (valid_plate_indices.find(plate_index) != valid_plate_indices.end()))
 		{
 			plate_index_ok  = true;
@@ -232,7 +232,7 @@ namespace
 		if(plate_index_ok  && segment_ok && lat_ok && lon_ok && uncert_ok)
 		{
 			bool enabled = plate_index_represents_an_enabled_pick(plate_index);
-			pick = GPlatesQtWidgets::HellingerPick(static_cast<GPlatesQtWidgets::HellingerPlateIndex>(plate_index),
+			pick = GPlatesAppLogic::HellingerPick(static_cast<GPlatesAppLogic::HellingerPlateIndex>(plate_index),
 												   lat,lon,uncert,enabled);
 			return true;
 		}
@@ -269,7 +269,7 @@ namespace
 	void
 	parse_pick_line(
 			const QString &line,
-			GPlatesQtWidgets::hellinger_model_type &pick_data)
+			GPlatesAppLogic::hellinger_model_type &pick_data)
 	{
 		QStringList fields = line.split(" ",
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
@@ -279,11 +279,11 @@ namespace
 #endif
 		);
 
-		GPlatesQtWidgets::HellingerPick pick;
+		GPlatesAppLogic::HellingerPick pick;
 		int segment;
 		if ((fields.size() >= MIN_NUM_FIELDS) && (pick_fields_are_ok(fields,pick,segment)))
 		{
-			pick_data.insert(GPlatesQtWidgets::hellinger_model_pair_type(segment,pick));
+			pick_data.insert(GPlatesAppLogic::hellinger_model_pair_type(segment,pick));
 		}
 		else
 		{
@@ -294,7 +294,7 @@ namespace
 	void
 	parse_two_plate_com_line(
 			const QString &line,
-			GPlatesQtWidgets::HellingerComFileStructure &hellinger_com_file,
+			GPlatesAppLogic::HellingerComFileStructure &hellinger_com_file,
 			unsigned int &line_number)
 	{
 		bool line_ok = false;
@@ -388,7 +388,7 @@ namespace
 	void
 	read_file_and_guess(
 			QTextStream &stream,
-			GPlatesQtWidgets::HellingerComFileStructure &hellinger_com_file,
+			GPlatesAppLogic::HellingerComFileStructure &hellinger_com_file,
 			unsigned int &line_number)
 	{
 		QString line;
@@ -409,7 +409,7 @@ namespace
 		line = stream.readLine();
 		if ((line_ok = initial_guess_ok(line,lat,lon,rho)))
 		{
-			GPlatesQtWidgets::HellingerPoleEstimate estimate(lat,lon,rho);
+			GPlatesAppLogic::HellingerPoleEstimate estimate(lat,lon,rho);
 			hellinger_com_file.d_estimate_12 = estimate;
 		}
 		else
@@ -422,7 +422,7 @@ namespace
 	void
 	read_file_and_guesses(
 			QTextStream &stream,
-			GPlatesQtWidgets::HellingerComFileStructure &hellinger_com_file,
+			GPlatesAppLogic::HellingerComFileStructure &hellinger_com_file,
 			unsigned int &line_number)
 	{
 		QString line;
@@ -443,7 +443,7 @@ namespace
 		line = stream.readLine();
 		if ((line_ok = initial_guess_ok(line,lat,lon,rho)))
 		{
-			GPlatesQtWidgets::HellingerPoleEstimate estimate(lat,lon,rho);
+			GPlatesAppLogic::HellingerPoleEstimate estimate(lat,lon,rho);
 			hellinger_com_file.d_estimate_12 = estimate;
 		}
 		else
@@ -455,7 +455,7 @@ namespace
 		line = stream.readLine();
 		if ((line_ok = initial_guess_ok(line,lat,lon,rho)))
 		{
-			GPlatesQtWidgets::HellingerPoleEstimate estimate(lat,lon,rho);
+			GPlatesAppLogic::HellingerPoleEstimate estimate(lat,lon,rho);
 			hellinger_com_file.d_estimate_13 = estimate;
 		}
 		else
@@ -468,7 +468,7 @@ namespace
 	void
 	read_search_and_grid_options(
 			QTextStream &stream,
-			GPlatesQtWidgets::HellingerComFileStructure &hellinger_com_file,
+			GPlatesAppLogic::HellingerComFileStructure &hellinger_com_file,
 			unsigned int &line_number)
 	{
 
@@ -517,7 +517,7 @@ namespace
 	void
 	read_amoeba_iterations(
 			QTextStream &stream,
-			GPlatesQtWidgets::HellingerComFileStructure &hellinger_com_file,
+			GPlatesAppLogic::HellingerComFileStructure &hellinger_com_file,
 			unsigned int &line_number)
 	{
 		QString line;
@@ -550,7 +550,7 @@ namespace
 	void
 	read_confidence_and_kappa(
 			QTextStream &stream,
-			GPlatesQtWidgets::HellingerComFileStructure &hellinger_com_file,
+			GPlatesAppLogic::HellingerComFileStructure &hellinger_com_file,
 			unsigned int &line_number)
 	{
 		QString line = stream.readLine();
@@ -582,9 +582,9 @@ namespace
 
 	void
 	read_output_filenames(
-			const GPlatesQtWidgets::HellingerPlatePairType &pair_type,
+			const GPlatesAppLogic::HellingerPlatePairType &pair_type,
 			QTextStream &stream,
-			GPlatesQtWidgets::HellingerComFileStructure &hellinger_com_file,
+			GPlatesAppLogic::HellingerComFileStructure &hellinger_com_file,
 			unsigned int &line_number)
 	{
 
@@ -602,7 +602,7 @@ namespace
 	void
 	parse_two_plate_com_lines(
 			QTextStream &stream,
-			GPlatesQtWidgets::HellingerComFileStructure &hellinger_com_file,
+			GPlatesAppLogic::HellingerComFileStructure &hellinger_com_file,
 			unsigned int &line_number)
 
 	{
@@ -630,22 +630,22 @@ namespace
 		read_file_and_guess(stream,hellinger_com_file,line_number);
 		read_search_and_grid_options(stream,hellinger_com_file,line_number);
 		read_confidence_and_kappa(stream,hellinger_com_file,line_number);
-		read_output_filenames(GPlatesQtWidgets::PLATES_1_2_PAIR_TYPE,stream,hellinger_com_file,line_number);
+		read_output_filenames(GPlatesAppLogic::PLATES_1_2_PAIR_TYPE,stream,hellinger_com_file,line_number);
 	}
 
 
 	void
 	parse_three_plate_com_lines(
 			QTextStream &stream,
-			GPlatesQtWidgets::HellingerComFileStructure &hellinger_com_file,
+			GPlatesAppLogic::HellingerComFileStructure &hellinger_com_file,
 			unsigned int &line_number)
 	{
 		read_file_and_guesses(stream,hellinger_com_file,line_number);
 		read_amoeba_iterations(stream,hellinger_com_file,line_number);
 		read_confidence_and_kappa(stream,hellinger_com_file,line_number);
-		read_output_filenames(GPlatesQtWidgets::PLATES_1_2_PAIR_TYPE,stream,hellinger_com_file,line_number);
-		read_output_filenames(GPlatesQtWidgets::PLATES_1_3_PAIR_TYPE,stream,hellinger_com_file,line_number);
-		read_output_filenames(GPlatesQtWidgets::PLATES_2_3_PAIR_TYPE,stream,hellinger_com_file,line_number);
+		read_output_filenames(GPlatesAppLogic::PLATES_1_2_PAIR_TYPE,stream,hellinger_com_file,line_number);
+		read_output_filenames(GPlatesAppLogic::PLATES_1_3_PAIR_TYPE,stream,hellinger_com_file,line_number);
+		read_output_filenames(GPlatesAppLogic::PLATES_2_3_PAIR_TYPE,stream,hellinger_com_file,line_number);
 
 		qDebug() << "from com: no amoeba iterations: " << hellinger_com_file.d_number_amoeba_iterations;
 	}
@@ -702,7 +702,7 @@ namespace
 	 * @param line
 	 * @return
 	 */
-	GPlatesQtWidgets::HellingerFitType
+	GPlatesAppLogic::HellingerFitType
 	determine_com_file_type_from_third_line(
 			const QString &line)
 	{
@@ -715,13 +715,13 @@ namespace
 		);
 		if (list.size() == 1)
 		{
-			return GPlatesQtWidgets::TWO_PLATE_FIT_TYPE;
+			return GPlatesAppLogic::TWO_PLATE_FIT_TYPE;
 		}
 		else if (GPlatesUtils::ComponentManager::instance().is_enabled(
 					 GPlatesUtils::ComponentManager::Component::hellinger_three_plate()) &&
 				list.size() == 3)
 		{
-			return GPlatesQtWidgets::THREE_PLATE_FIT_TYPE;
+			return GPlatesAppLogic::THREE_PLATE_FIT_TYPE;
 		}
 		else{
 			throw GPlatesFileIO::ReadErrors::InvalidHellingerComFileFormat;
@@ -738,7 +738,7 @@ namespace
 	 * @param stream
 	 * @return
 	 */
-	GPlatesQtWidgets::HellingerFitType
+	GPlatesAppLogic::HellingerFitType
 	determine_fit_type(
 			QTextStream &stream)
 	{
@@ -765,7 +765,7 @@ namespace
 bool
 GPlatesFileIO::HellingerReader::read_pick_file(
 		const QString &filename,
-		GPlatesQtWidgets::HellingerModel& hellinger_model,
+		GPlatesAppLogic::HellingerModel& hellinger_model,
 		ReadErrorAccumulation &read_errors)
 {
 	QFile file(filename);
@@ -777,7 +777,7 @@ GPlatesFileIO::HellingerReader::read_pick_file(
 	unsigned int line_number = 0;
 	unsigned int valid_lines = 0;
 
-	GPlatesQtWidgets::hellinger_model_type pick_data;
+	GPlatesAppLogic::hellinger_model_type pick_data;
 
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 	{
@@ -822,11 +822,11 @@ GPlatesFileIO::HellingerReader::read_pick_file(
 		++line_number;
 	}
 
-	GPlatesQtWidgets::HellingerFitType fit_type = hellinger_model.get_fit_type();
+	GPlatesAppLogic::HellingerFitType fit_type = hellinger_model.get_fit_type();
 
 	if (number_of_segments)
 	{
-		if (fit_type == GPlatesQtWidgets::TWO_PLATE_FIT_TYPE)
+		if (fit_type == GPlatesAppLogic::TWO_PLATE_FIT_TYPE)
 		{
 			// The number of segments is usually specified in the first line of 3-way pick files, but not 2-way files.
 			// Warn the user, but continue with a two-way fit.
@@ -854,7 +854,7 @@ GPlatesFileIO::HellingerReader::read_pick_file(
 bool
 GPlatesFileIO::HellingerReader::read_com_file(
 		const QString &filename,
-		GPlatesQtWidgets::HellingerModel &hellinger_model,
+		GPlatesAppLogic::HellingerModel &hellinger_model,
 		ReadErrorAccumulation &read_errors)
 {
 
@@ -880,11 +880,11 @@ GPlatesFileIO::HellingerReader::read_com_file(
 
 	QTextStream stream(&file);
 
-	GPlatesQtWidgets::HellingerComFileStructure com_file_structure;
+	GPlatesAppLogic::HellingerComFileStructure com_file_structure;
 
 	try{
 
-		GPlatesQtWidgets::HellingerFitType type =
+		GPlatesAppLogic::HellingerFitType type =
 				determine_fit_type(stream);
 
 		qDebug() << "fit type: " << type;
@@ -893,10 +893,10 @@ GPlatesFileIO::HellingerReader::read_com_file(
 
 		switch(type)
 		{
-		case GPlatesQtWidgets::TWO_PLATE_FIT_TYPE:
+		case GPlatesAppLogic::TWO_PLATE_FIT_TYPE:
 			parse_two_plate_com_lines(stream,com_file_structure,line_number);
 			break;
-		case GPlatesQtWidgets::THREE_PLATE_FIT_TYPE:
+		case GPlatesAppLogic::THREE_PLATE_FIT_TYPE:
 			parse_three_plate_com_lines(stream,com_file_structure,line_number);
 			break;
 		}
@@ -923,8 +923,8 @@ GPlatesFileIO::HellingerReader::read_com_file(
 void
 GPlatesFileIO::HellingerReader::read_error_ellipse(
 		const QString &filename,
-		GPlatesQtWidgets::HellingerModel &hellinger_model,
-		const GPlatesQtWidgets::HellingerPlatePairType &type)
+		GPlatesAppLogic::HellingerModel &hellinger_model,
+		const GPlatesAppLogic::HellingerPlatePairType &type)
 {
 	QFile data_file(filename);
 
@@ -952,7 +952,7 @@ GPlatesFileIO::HellingerReader::read_error_ellipse(
 void
 GPlatesFileIO::HellingerReader::read_fit_results_from_temporary_fit_file(
 		const QString &filename,
-		GPlatesQtWidgets::HellingerModel &hellinger_model)
+		GPlatesAppLogic::HellingerModel &hellinger_model)
 {
 	int line_number = 0;
 	QFile file(filename);
@@ -990,7 +990,7 @@ GPlatesFileIO::HellingerReader::read_fit_results_from_temporary_fit_file(
 		}
 
 
-		GPlatesQtWidgets::HellingerFitStructure fit(lat,lon,angle);
+		GPlatesAppLogic::HellingerFitStructure fit(lat,lon,angle);
 		switch(line_number)
 		{
 		case 0:
