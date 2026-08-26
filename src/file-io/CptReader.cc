@@ -35,6 +35,7 @@
 
 #include "global/CompilerWarnings.h"
 
+#include "gui/ColourQt.h"
 #include "gui/GMTColourNames.h"
 
 // On some versions of g++ with some versions of Qt, it's not liking at() and
@@ -136,7 +137,7 @@ GPlatesFileIO::CptReaderInternals::make_hsv_colour(
 {
 	if (in_h_range(h) && in_sv_range(s) && in_sv_range(v))
 	{
-		return GPlatesGui::Colour::from_hsv(GPlatesGui::HSVColour(
+		return GPlatesGui::colour_from_hsv(GPlatesGui::HSVColour(
 				h / 360.0, s, v));
 	}
 	else

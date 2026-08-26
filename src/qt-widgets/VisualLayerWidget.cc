@@ -60,6 +60,7 @@
 #include "file-io/File.h"
 #include "file-io/FileInfo.h"
 
+#include "gui/ColourQt.h"
 #include "gui/Dialogs.h"
 #include "gui/VisualLayersListModel.h"
 #include "gui/VisualLayersProxy.h"
@@ -367,10 +368,10 @@ namespace
 	darken(
 			const GPlatesGui::Colour &colour)
 	{
-		GPlatesGui::HSVColour hsv = GPlatesGui::Colour::to_hsv(colour);
+		GPlatesGui::HSVColour hsv = GPlatesGui::hsv_from_colour(colour);
 		hsv.v = 0.25;
 		hsv.s *= 0.75;
-		return GPlatesGui::Colour::from_hsv(hsv);
+		return GPlatesGui::colour_from_hsv(hsv);
 	}
 }
 
@@ -425,17 +426,17 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 		GPlatesGui::Colour dark_layer_colour = is_active ? darken(layer_colour) : GPlatesGui::Colour(0.25f, 0.25f, 0.25f);
 
 		QPalette basic_info_palette;
-		basic_info_palette.setColor(QPalette::Text, dark_layer_colour);
+		basic_info_palette.setColor(QPalette::Text, GPlatesGui::qcolor_from_colour(dark_layer_colour));
 		d_name_label->setPalette(basic_info_palette);
 		d_type_label->setPalette(basic_info_palette);
 
 		QPalette left_widget_palette;
-		left_widget_palette.setColor(QPalette::Base, layer_colour);
+		left_widget_palette.setColor(QPalette::Base, GPlatesGui::qcolor_from_colour(layer_colour));
 		d_left_widget->setPalette(left_widget_palette);
 
 		QPalette section_header_palette;
-		section_header_palette.setColor(QPalette::Base, light_layer_colour);
-		section_header_palette.setColor(QPalette::Text, dark_layer_colour);
+		section_header_palette.setColor(QPalette::Base, GPlatesGui::qcolor_from_colour(light_layer_colour));
+		section_header_palette.setColor(QPalette::Text, GPlatesGui::qcolor_from_colour(dark_layer_colour));
 		input_channels_header_widget->setPalette(section_header_palette);
 		layer_options_header_widget->setPalette(section_header_palette);
 		advanced_options_header_widget->setPalette(section_header_palette);
@@ -946,7 +947,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputConnectionWidget::set_data(
 
 	// Set the background colour.
 	QPalette label_palette = d_input_connection_label->palette();
-	label_palette.setColor(QPalette::Base, background_colour);
+	label_palette.setColor(QPalette::Base, GPlatesGui::qcolor_from_colour(background_colour));
 	d_input_connection_label->setPalette(label_palette);
 }
 
@@ -1022,7 +1023,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::AddNewConnectionWidget::enterEvent
 	if (isEnabled())
 	{
 		QPalette this_palette = palette();
-		this_palette.setColor(QPalette::Base, d_highlight_colour);
+		this_palette.setColor(QPalette::Base, GPlatesGui::qcolor_from_colour(d_highlight_colour));
 		setPalette(this_palette);
 	}
 }
@@ -1110,11 +1111,11 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 		const GPlatesGui::Colour &light_layer_colour)
 {
 	// Compute the connection background colour from the light_layer_colour.
-	GPlatesGui::HSVColour grey = GPlatesGui::Colour::to_hsv(light_layer_colour);
+	GPlatesGui::HSVColour grey = GPlatesGui::hsv_from_colour(light_layer_colour);
 	grey.s = 0;
 	GPlatesGui::Colour background_colour = GPlatesGui::Colour::linearly_interpolate(
 			light_layer_colour,
-			GPlatesGui::Colour::from_hsv(grey),
+			GPlatesGui::colour_from_hsv(grey),
 			0.5);
 	d_add_new_connection_widget->set_highlight_colour(background_colour);
 

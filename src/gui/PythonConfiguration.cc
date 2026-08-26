@@ -30,6 +30,7 @@
 #include "DrawStyleManager.h"
 #include "Palette.h"
 #include "PythonConfiguration.h"
+#include "ColourQt.h"
 
 
 GPlatesGui::PythonCfgItem::~PythonCfgItem()
@@ -66,7 +67,7 @@ GPlatesGui::PythonCfgColor::set_value(const QVariant& val)
 	// Previous Python object could get destroyed.
 	GPlatesApi::PythonInterpreterLocker interpreter_locker;
 	
-	d_py_obj = bp::object(Colour(QColor(val.toString())));
+	d_py_obj = bp::object(colour_from_qcolor(QColor(val.toString())));
 }
 
 
