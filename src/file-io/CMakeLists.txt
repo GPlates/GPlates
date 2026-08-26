@@ -319,6 +319,8 @@ set(gplates_only_srcs
     ReadErrorUtils.h
     ReconstructedScalarCoverageExport.cc
     ReconstructedScalarCoverageExport.h
+    RgbaRasterReader.cc
+    RgbaRasterReader.h
     RgbaRasterWriter.cc
     RgbaRasterWriter.h
     ScalarField3DFileFormat.cc

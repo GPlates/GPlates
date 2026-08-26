@@ -19,13 +19,13 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | cli |  |  | 17 |  | 42 |  |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
 | data-mining |  |  | 17 |  |  | 81 | 2 | 3 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
 | feature-visitors |  |  | 15 |  |  |  | 19 | 1 | 2 | 3 | 49 | 93 |  |  | 155 |  |  |  | 8 |  |
-| file-io |  |  | 78 |  |  |  | 26 | 530 | 115 | 19 | 112 | 214 |  |  | 403 |  |  |  | 81 |  |
+| file-io |  |  | 78 |  |  |  | 26 | 529 | 115 | 19 | 112 | 214 |  |  | 403 |  |  |  | 81 |  |
 | global |  |  |  |  |  |  |  |  | 25 |  |  |  |  |  |  |  |  |  | 5 |  |
 | gui |  | 18 | 166 | 53 |  | 3 | 11 | 53 | 96 | 506 | 110 | 58 | 113 | 79 | 49 | 163 | 14 |  | 91 | 108 |
 | maths |  |  |  |  |  |  |  |  | 76 |  | 410 | 1 |  |  |  |  | 24 |  | 41 |  |
 | model |  |  | 7 |  |  |  |  | 2 | 30 |  |  | 199 |  |  | 35 |  | 23 |  | 46 |  |
 | opengl |  |  | 16 |  |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
-| presentation |  | 1 | 100 |  |  | 1 | 1 | 21 | 23 | 78 | 12 | 8 | 3 | 91 | 6 | 25 | 25 |  | 12 | 19 |
+| presentation |  | 1 | 100 |  |  | 1 | 1 | 23 | 23 | 78 | 12 | 8 | 3 | 91 | 6 | 25 | 25 |  | 12 | 19 |
 | property-values |  |  |  |  |  |  | 42 | 11 | 64 | 5 | 26 | 250 |  |  | 176 |  | 103 |  | 35 |  |
 | qt-widgets |  | 17 | 253 | 7 |  | 8 | 35 | 80 | 134 | 238 | 105 | 244 | 35 | 117 | 180 | 835 |  |  | 59 | 26 |
 | scribe |  |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
@@ -52,7 +52,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | cli | 0 / 20 |
 | data-mining | 0 / 42 |
 | feature-visitors | 16 / 34 |
-| file-io | 154 / 231 |
+| file-io | 152 / 231 |
 | global | 24 / 32 |
 | gui | 12 / 255 |
 | maths | 100 / 133 |
@@ -317,7 +317,7 @@ What the module takes from each partially-included directory:
 - `feature-visitors/TotalReconstructionSequencePlateIdFinder.cc`
 - `feature-visitors/TotalReconstructionSequencePlateIdFinder.h`
 
-## file-io (154 of 231)
+## file-io (152 of 231)
 
 - `file-io/CitcomsResolvedTopologicalBoundaryExportImpl.cc`
 - `file-io/CitcomsResolvedTopologicalBoundaryExportImpl.h`
@@ -458,8 +458,6 @@ What the module takes from each partially-included directory:
 - `file-io/ReconstructionGeometryExportImpl.h`
 - `file-io/ResolvedTopologicalGeometryExport.cc`
 - `file-io/ResolvedTopologicalGeometryExport.h`
-- `file-io/RgbaRasterReader.cc`
-- `file-io/RgbaRasterReader.h`
 - `file-io/RotationAttributesRegistry.cc`
 - `file-io/RotationAttributesRegistry.h`
 - `file-io/ShapefileXmlReader.cc`

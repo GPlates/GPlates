@@ -45,7 +45,6 @@
 
 #include "ErrorOpeningFileForReadingException.h"
 #include "GdalRasterReader.h"
-#include "RgbaRasterReader.h"
 #include "ReadErrorAccumulation.h"
 
 #include "global/GPlatesAssert.h"
@@ -54,6 +53,9 @@
 #include "property-values/ProxiedRasterResolver.h"
 
 #include "utils/OverloadResolution.h"
+
+
+GPlatesFileIO::RasterReader::rgba_reader_factory_type GPlatesFileIO::RasterReader::s_rgba_reader_factory;
 
 using namespace GPlatesFileIO;
 
@@ -411,7 +413,23 @@ GPlatesFileIO::RasterReader::RasterReader(
 	switch (handler)
 	{
 		case RGBA:
-			d_impl.reset(new RgbaRasterReader(filename, this, read_errors));
+			// The RGBA reader is injected by GPlates (see 'set_rgba_reader_factory'). Without it
+			// (ie, in the pygplates module) this reader stays without an implementation, which is
+			// inert rather than fatal - see the comment on 'set_rgba_reader_factory'.
+			if (s_rgba_reader_factory)
+			{
+				d_impl.reset(s_rgba_reader_factory(filename, this, read_errors));
+			}
+			else if (read_errors)
+			{
+				read_errors->d_failures_to_begin.push_back(
+						make_read_error_occurrence(
+							filename,
+							DataFormats::RasterImage,
+							0,
+							ReadErrors::UnrecognisedRasterFileType,
+							ReadErrors::FileNotLoaded));
+			}
 			break;
 		
 		case GDAL:
@@ -422,6 +440,14 @@ GPlatesFileIO::RasterReader::RasterReader(
 			// Shouldn't be able to get here.
 			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 	}
+}
+
+
+void
+GPlatesFileIO::RasterReader::set_rgba_reader_factory(
+		const rgba_reader_factory_type &rgba_reader_factory)
+{
+	s_rgba_reader_factory = rgba_reader_factory;
 }
 
 

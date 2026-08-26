@@ -34,6 +34,8 @@
 #include "app-logic/FeatureCollectionFileState.h"
 
 #include "file-io/OgrReader.h"
+#include "file-io/RasterReader.h"
+#include "file-io/RgbaRasterReader.h"
 
 #include "gui/AnimationController.h"
 #include "gui/CommandServer.h"
@@ -52,6 +54,19 @@
 #include "qt-widgets/ShapefilePropertyMapper.h"
 #include "qt-widgets/SpecifyAnchoredPlateIdDialog.h"
 #include "qt-widgets/TaskPanel.h"
+
+
+namespace
+{
+	GPlatesFileIO::RasterReaderImpl *
+	create_rgba_raster_reader(
+			const QString &filename,
+			GPlatesFileIO::RasterReader *raster_reader,
+			GPlatesFileIO::ReadErrorAccumulation *read_errors)
+	{
+		return new GPlatesFileIO::RgbaRasterReader(filename, raster_reader, read_errors);
+	}
+}
 
 
 GPlatesPresentation::Application::Application() :
@@ -78,6 +93,11 @@ GPlatesPresentation::Application::initialise()
 	boost::shared_ptr<GPlatesQtWidgets::ShapefilePropertyMapper> shapefile_property_mapper(
 			new GPlatesQtWidgets::ShapefilePropertyMapper(&d_main_window));
 	GPlatesFileIO::OgrReader::set_property_mapper(shapefile_property_mapper);
+
+	// Register the Qt-image-based reader for the RGBA raster formats (BMP, GIF, JPEG, PNG, SVG).
+	// It needs Qt Gui, which only GPlates links, so it is injected here rather than referenced
+	// from RasterReader (which is also compiled into the pygplates module).
+	GPlatesFileIO::RasterReader::set_rgba_reader_factory(&create_rgba_raster_reader);
 
 	// If the focus is changed programatically, from e.g. Clone Feature, ensure the Clicked
 	// Table still displays it.
