@@ -94,8 +94,14 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
 - **Error reporting in shared code** goes through return values / exceptions /
   `ReadErrorAccumulation` — never a `QMessageBox` or other widget (shared code cannot assume
   a GUI, or even Qt Widgets at link time). When shared code genuinely needs a GUI decision,
-  inject an interface the GPlates side implements: `file-io/PropertyMapper.h` (implemented by
-  `qt-widgets/ShapefilePropertyMapper`) is the pattern.
+  or a Qt Gui/Widgets facility, inject an interface the GPlates side implements and registers
+  from `presentation/Application::initialise()`. Three examples: `file-io/PropertyMapper.h`
+  (implemented by `qt-widgets/ShapefilePropertyMapper`, set with
+  `OgrReader::set_property_mapper`); `RasterReader::set_rgba_reader_factory` (the
+  `QImage`-based `file-io/RgbaRasterReader` for BMP/GIF/JPEG/PNG/SVG rasters — without it a
+  module reports such a raster as unreadable, which pyGPlates cannot observe); and
+  `GeoscimlProfile::set_progress_reporter_factory` (the `QProgressDialog` in
+  `qt-widgets/GeoscimlProgressDialog`, Qt5 only — without it the `.gsml` reader runs silently).
 
 ## Deferred / follow-up work (not in the build-graph-split PR)
 

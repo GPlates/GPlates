@@ -329,6 +329,9 @@ set(CMAKE_AUTORCC ON)
 #
 # Our minimum supported Ubuntu is Jammy 22.04 which uses Qt 5.15.
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+# The pygplates source-closure test ('pygplates/test/CMakeLists.txt') traces the Qt5-only
+# sources only when the module is built against Qt5.
+set(QT_VERSION_MAJOR ${QT_VERSION_MAJOR} PARENT_SCOPE)
 #
 # The pygplates module needs only Qt Core (plus Core5Compat under Qt6). In particular it must
 # not link Qt Gui: on Linux and macOS 'Qt6::Gui' propagates Qt's own OpenGL dependency, which

@@ -38,6 +38,9 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 The pygplates module compiles only the include closure of the API roots below
 (reaching `X.h` pulls in `X.cc`). Everything else is GPlates-only and excluded by
 `src/*/CMakeLists.txt`; the `pygplates-source-closure` test enforces the boundary.
+This is the Qt6 module, the one shipped; a Qt5 build additionally compiles the
+QtXmlPatterns-based GeoSciML sources in `file-io` (the `QT_VERSION_MAJOR LESS 6`
+block of its `CMakeLists.txt`).
 
 Roots: the exporter `.cc` of every `export_*()` call registered in
 `export_cpp_python_api()` outside the `GPLATES_PYTHON_EMBEDDING` guard, plus
