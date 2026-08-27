@@ -131,9 +131,19 @@ QT5_ONLY_FILES = frozenset([
     'file-io/GsmlPropertyHandlers.h',
 ])
 
-# Angle includes the closure must not contain: the Qt Widgets / OpenGL / Qwt surface that
-# "Step 7" removes from the module's link line.
-FORBIDDEN_ANGLE_INCLUDE_RE = re.compile(r'^(QtWidgets/|QOpenGL|qwt|GL/|glew)')
+# Angle includes the closure must not contain: the Qt Gui / Qt Widgets / OpenGL / Qwt surface
+# the module does not link (see the Qt find_package split in 'src/CMakeLists.txt' and the
+# pygplates-linkage test).
+#
+# Qt Gui is listed header by header rather than as a module prefix, because Qt's own class
+# headers ("<QColor>") carry no module name. The list is deliberately explicit: the module's
+# Qt surface is small (Core, and QXmlStreamReader/Writer), and a shared file reaching for one
+# of these should be a decision - hoist the Qt Gui code into a GPlates-only translation unit
+# (as 'gui/ColourQt.cc' and 'file-io/RgbaRasterReader.cc' were) rather than extend this list.
+FORBIDDEN_ANGLE_INCLUDE_RE = re.compile(
+    r'^(QtWidgets/|QtGui/|QOpenGL|qwt|GL/|glew'
+    r'|(QColor|QImage|QImageReader|QImageWriter|QPainter|QPixmap|QFont|QIcon|QBrush|QPen|QRgb'
+    r'|QPalette|QCursor|QClipboard)$)')
 
 # Strip /* */ and // comments, preserving line structure (so commented-out includes and
 # commented-out export_*() calls disappear before any other parsing).
