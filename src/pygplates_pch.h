@@ -149,7 +149,6 @@
 #include <QBuffer>
 #include <QByteArray>
 #include <QChar>
-#include <QColor>
 #include <QCoreApplication>
 #include <QDataStream>
 #include <QDateTime>
@@ -158,8 +157,6 @@
 #include <QFile>
 #include <QFileInfo>
 #include <qglobal.h>
-#include <QImage>
-#include <QImageReader>
 #include <QIODevice>
 #include <QList>
 #include <QLocale>
@@ -181,7 +178,6 @@
 #include <QTemporaryFile>
 #include <QTextStream>
 #include <QtGlobal>
-#include <QtNetwork/QHostInfo>
 #include <QTypeInfo>
 #include <QUuid>
 #include <QVariant>
