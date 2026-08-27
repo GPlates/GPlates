@@ -36,6 +36,9 @@
 #include "file-io/OgrReader.h"
 #include "file-io/RasterReader.h"
 #include "file-io/RgbaRasterReader.h"
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+#include "file-io/GeoscimlProfile.h"
+#endif
 
 #include "gui/AnimationController.h"
 #include "gui/CommandServer.h"
@@ -48,6 +51,9 @@
 
 #include "qt-widgets/CreateFeatureDialog.h"
 #include "qt-widgets/DigitisationWidget.h"
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+#include "qt-widgets/GeoscimlProgressDialog.h"
+#endif
 #include "qt-widgets/ManageFeatureCollectionsEditConfigurations.h"
 #include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/ShapefileAttributeViewerDialog.h"
@@ -66,6 +72,15 @@ namespace
 	{
 		return new GPlatesFileIO::RgbaRasterReader(filename, raster_reader, read_errors);
 	}
+
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+	boost::shared_ptr<GPlatesFileIO::GeoscimlProfile::ProgressReporter>
+	create_geosciml_progress_dialog()
+	{
+		return boost::shared_ptr<GPlatesFileIO::GeoscimlProfile::ProgressReporter>(
+				new GPlatesQtWidgets::GeoscimlProgressDialog());
+	}
+#endif
 }
 
 
@@ -98,6 +113,13 @@ GPlatesPresentation::Application::initialise()
 	// It needs Qt Gui, which only GPlates links, so it is injected here rather than referenced
 	// from RasterReader (which is also compiled into the pygplates module).
 	GPlatesFileIO::RasterReader::set_rgba_reader_factory(&create_rgba_raster_reader);
+
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+	// Register the progress dialog shown while translating GeoSciML features. It is a Qt Widgets
+	// dialog, which only GPlates links, so it is injected here rather than referenced from
+	// GeoscimlProfile (which a Qt5 pygplates module also compiles).
+	GPlatesFileIO::GeoscimlProfile::set_progress_reporter_factory(&create_geosciml_progress_dialog);
+#endif
 
 	// If the focus is changed programatically, from e.g. Clone Feature, ensure the Clicked
 	// Table still displays it.

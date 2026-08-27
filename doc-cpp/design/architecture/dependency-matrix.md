@@ -25,9 +25,9 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | maths |  |  |  |  |  |  |  |  | 76 |  | 410 | 1 |  |  |  |  | 24 |  | 41 |  |
 | model |  |  | 7 |  |  |  |  | 2 | 30 |  |  | 199 |  |  | 35 |  | 23 |  | 46 |  |
 | opengl |  |  | 16 |  |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
-| presentation |  | 1 | 100 |  |  | 1 | 1 | 23 | 23 | 78 | 12 | 8 | 3 | 91 | 6 | 25 | 25 |  | 12 | 19 |
+| presentation |  | 1 | 100 |  |  | 1 | 1 | 24 | 23 | 78 | 12 | 8 | 3 | 91 | 6 | 26 | 25 |  | 12 | 19 |
 | property-values |  |  |  |  |  |  | 42 | 11 | 64 | 5 | 26 | 250 |  |  | 176 |  | 103 |  | 35 |  |
-| qt-widgets |  | 17 | 253 | 7 |  | 8 | 35 | 80 | 134 | 238 | 105 | 244 | 35 | 117 | 180 | 835 |  |  | 59 | 26 |
+| qt-widgets |  | 17 | 253 | 7 |  | 8 | 35 | 81 | 134 | 238 | 105 | 244 | 35 | 117 | 180 | 836 |  |  | 59 | 26 |
 | scribe |  |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
 | unit-test |  |  | 2 |  |  | 2 | 1 | 5 | 1 | 5 | 4 | 6 |  |  | 2 |  | 16 | 2 | 6 |  |
 | utils |  | 1 |  |  |  |  |  | 2 | 35 |  | 14 | 7 |  |  | 58 |  | 3 |  | 53 |  |
@@ -60,7 +60,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | opengl | 0 / 158 |
 | presentation | 0 / 46 |
 | property-values | 127 / 128 |
-| qt-widgets | 0 / 437 |
+| qt-widgets | 0 / 439 |
 | scribe | 56 / 64 |
 | unit-test | 0 / 13 |
 | utils | 47 / 79 |

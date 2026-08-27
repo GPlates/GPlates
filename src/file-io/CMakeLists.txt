@@ -229,20 +229,19 @@ set(srcs
 #       the GeoSciML support is worth preserving at all has not been investigated - so for now they
 #       simply build against Qt5 and not against Qt6.
 #
-# Note: "GeoscimlProfile.cc" creates a QProgressDialog directly, so a Qt5 build of "file-io" links Qt
-#       Widgets even though nothing else in this directory does. That is left as is deliberately.
-#       pyGPlates is built against Qt6 - by the conda environments ("qt6-main" in "env.*.yml") and by the
-#       wheels ("QT_VERSION" in "pygplates/wheel/versions.sh") - so no pyGPlates we ship compiles this
-#       file at all, and the Qt Widgets dependency it would introduce cannot reach the module. Building
-#       pyGPlates against Qt5 is an undocumented path; the pyGPlates linkage test is what would catch it.
+# Note: This group needs only Qt Core, Xml and XmlPatterns, so a Qt5 build of the pygplates module
+#       compiles it too (the ".gsml" file format is registered by "FeatureCollectionFileFormatRegistry.cc",
+#       which every build compiles). Its progress dialog is Qt Widgets and therefore lives in
+#       "qt-widgets/GeoscimlProgressDialog.cc", injected by GPlates through
+#       GeoscimlProfile::set_progress_reporter_factory(). Shipped pyGPlates is Qt6-only - the conda
+#       environments ("qt6-main" in "env.*.yml") and the wheels ("QT_VERSION" in
+#       "pygplates/wheel/versions.sh") - so no pyGPlates we ship compiles these files at all.
 if (QT_VERSION_MAJOR LESS 6)
     # Note: a few of these headers ("ArbitraryXmlReader.h", "GeoscimlProfile.h", ...) are
     #       #included by translation units every build compiles (with the uses guarded by
     #       QT_VERSION), which is harmless - but they must only be *listed* here, in the
-    #       Qt5-only block: "GeoscimlProfile.h" is a Q_OBJECT header, so listing it in the
-    #       pygplates module's sources would AUTOMOC it there while its ".cc" is not compiled,
-    #       and the link fails. The source-closure tracer keeps this whole group out of the
-    #       module's closure for the same reason (see QT5_ONLY_FILES in
+    #       Qt5-only block, so that a Qt6 build does not see them as target sources. The
+    #       source-closure tracer treats the group the same way (see QT5_ONLY_FILES in
     #       "cmake/pygplates_source_closure.py").
     list(APPEND srcs
         ArbitraryNodeProcessor.h

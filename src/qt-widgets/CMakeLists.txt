@@ -624,7 +624,9 @@ if (QT_VERSION_MAJOR LESS 6)
     list(APPEND srcs
         ConnectWFSDialog.cc
         ConnectWFSDialog.h
-        ConnectWFSDialogUi.ui)
+        ConnectWFSDialogUi.ui
+        GeoscimlProgressDialog.cc
+        GeoscimlProgressDialog.h)
 endif()
 
 

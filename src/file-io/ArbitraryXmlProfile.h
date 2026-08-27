@@ -28,7 +28,6 @@
 #ifndef GPLATES_FILEIO_ARBITRARYXMLPROFILE_H
 #define GPLATES_FILEIO_ARBITRARYXMLPROFILE_H
 
-#include <QObject>
 #include <QString>
 
 #include "File.h"
