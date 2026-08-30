@@ -55,12 +55,32 @@
 #include "utils/OverloadResolution.h"
 
 
-GPlatesFileIO::RasterReader::rgba_reader_factory_type GPlatesFileIO::RasterReader::s_rgba_reader_factory;
+GPlatesFileIO::RasterReader::rgba_reader_factory_type
+GPlatesFileIO::RasterReader::s_rgba_reader_factory;
 
 using namespace GPlatesFileIO;
 
 namespace
 {
+	void
+	add_failure_to_begin(
+			ReadErrorAccumulation *read_errors,
+			const QString &filename,
+			ReadErrors::Description description)
+	{
+		if (read_errors)
+		{
+			read_errors->d_failures_to_begin.push_back(
+					make_read_error_occurrence(
+						filename,
+						DataFormats::RasterImage,
+						0,
+						description,
+						ReadErrors::FileNotLoaded));
+		}
+	}
+
+
 	/**
 	 * Returns true if the filename is of the required form (i.e. <root>-<time>.grd), and sets the 
 	 * value of time.
@@ -395,16 +415,7 @@ GPlatesFileIO::RasterReader::RasterReader(
 	// If a supported format was not found...
 	if (iter == supported_formats.end())
 	{
-		if (read_errors)
-		{
-			read_errors->d_failures_to_begin.push_back(
-					make_read_error_occurrence(
-						filename,
-						DataFormats::RasterImage,
-						0,
-						ReadErrors::UnrecognisedRasterFileType,
-						ReadErrors::FileNotLoaded));
-		}
+		add_failure_to_begin(read_errors, filename, ReadErrors::UnrecognisedRasterFileType);
 		return;
 	}
 
@@ -415,20 +426,16 @@ GPlatesFileIO::RasterReader::RasterReader(
 		case RGBA:
 			// The RGBA reader is injected by GPlates (see 'set_rgba_reader_factory'). Without it
 			// (ie, in the pygplates module) this reader stays without an implementation, which is
-			// inert rather than fatal - see the comment on 'set_rgba_reader_factory'.
+			// inert rather than fatal - see the comment on 'set_rgba_reader_factory'. The format
+			// is still a recognised one, so the error says the reader is missing rather than
+			// that the file type is unknown.
 			if (s_rgba_reader_factory)
 			{
 				d_impl.reset(s_rgba_reader_factory(filename, this, read_errors));
 			}
-			else if (read_errors)
+			else
 			{
-				read_errors->d_failures_to_begin.push_back(
-						make_read_error_occurrence(
-							filename,
-							DataFormats::RasterImage,
-							0,
-							ReadErrors::UnrecognisedRasterFileType,
-							ReadErrors::FileNotLoaded));
+				add_failure_to_begin(read_errors, filename, ReadErrors::RasterReaderNotAvailable);
 			}
 			break;
 		

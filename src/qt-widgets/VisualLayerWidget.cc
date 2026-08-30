@@ -426,7 +426,8 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 		GPlatesGui::Colour dark_layer_colour = is_active ? darken(layer_colour) : GPlatesGui::Colour(0.25f, 0.25f, 0.25f);
 
 		QPalette basic_info_palette;
-		basic_info_palette.setColor(QPalette::Text, GPlatesGui::qcolor_from_colour(dark_layer_colour));
+		basic_info_palette.setColor(
+				QPalette::Text, GPlatesGui::qcolor_from_colour(dark_layer_colour));
 		d_name_label->setPalette(basic_info_palette);
 		d_type_label->setPalette(basic_info_palette);
 
@@ -435,8 +436,10 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 		d_left_widget->setPalette(left_widget_palette);
 
 		QPalette section_header_palette;
-		section_header_palette.setColor(QPalette::Base, GPlatesGui::qcolor_from_colour(light_layer_colour));
-		section_header_palette.setColor(QPalette::Text, GPlatesGui::qcolor_from_colour(dark_layer_colour));
+		section_header_palette.setColor(
+				QPalette::Base, GPlatesGui::qcolor_from_colour(light_layer_colour));
+		section_header_palette.setColor(
+				QPalette::Text, GPlatesGui::qcolor_from_colour(dark_layer_colour));
 		input_channels_header_widget->setPalette(section_header_palette);
 		layer_options_header_widget->setPalette(section_header_palette);
 		advanced_options_header_widget->setPalette(section_header_palette);

@@ -3,7 +3,15 @@
 
 # Isolate binary files in case auto-detection algorithm fails.
 # These are extensions of binary files that exist in repository.
-*.{icns,ico,gz,dbf,shp,shx,png,tif} binary
+# (One pattern per extension - gitattributes has no brace expansion.)
+*.icns binary
+*.ico binary
+*.gz binary
+*.dbf binary
+*.shp binary
+*.shx binary
+*.png binary
+*.tif binary
 
 *.sh text eol=lf
 
