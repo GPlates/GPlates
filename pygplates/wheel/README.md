@@ -172,18 +172,28 @@ subsequently run to repair our wheel. Note that this variable is only used if
 `GPLATES_INSTALL_STANDALONE` is `TRUE`, which it is by default when building using
 scikit-build-core (eg, `pip wheel ...`) outside of conda.
 
-### `OpenGL_GL_PREFERENCE=LEGACY` (Linux)
+### `OpenGL_GL_PREFERENCE=LEGACY` (Linux) - history, and why the image still sets it
 
-> **Still needed, though not for pyGPlates' own code.** The module no longer compiles or links
-> any OpenGL of its own — it is just the include closure of the pyGPlates API (see
-> `cmake/pygplates_source_closure.py`). But it still links Qt6Gui, for `QImage` and `QColor`,
-> and CMake's `Qt6::Gui` imported target propagates Qt's own OpenGL dependency onto everything
-> that links it — so the module has a direct GL dependency regardless, and this variable is
-> what decides which family it comes from. Removing it as a supposed no-op produced exactly
-> the `import pygplates` segmentation fault described at the end of this section.
+> **No longer set for the module itself.** `pygplates.so` links only `Qt6Core` and
+> `Qt6Core5Compat` (its sources are the include closure of the pyGPlates API — see
+> `cmake/pygplates_source_closure.py` — and the last Gui uses, `gui/Colour`'s `QColor`
+> conversions and `file-io/RgbaRasterReader`'s `QImage`, moved to the GPlates side). Nothing on
+> its link line reaches OpenGL, so there is no GL family to choose and `pyproject.toml` no longer
+> sets this variable; `cmake/check_linkage.py` fails the build if any GL library reappears.
+> Dropping the module's `Qt6Gui` also dropped `Qt6Network`, `Qt6Xml`, `Qt6DBus`, fontconfig,
+> freetype, libpng and libxkbcommon from the vendored libraries.
+>
+> The variable did have to stay for one intermediate period: after the module stopped compiling
+> any OpenGL of its own but while it still linked `Qt6Gui`, whose CMake imported target
+> propagates Qt's own OpenGL dependency onto everything linking it. Removing it then, as a
+> supposed no-op, produced exactly the `import pygplates` segmentation fault described at the
+> end of this section. The rest of this section is kept because the docker image builds Qt and
+> GLEW with `OpenGL_GL_PREFERENCE=LEGACY` for the same reason (`manylinux_2_28.dockerfile`),
+> and that reasoning still stands for `libQt6Gui`/`libGLEW` until the image builds a Core-only
+> Qt.
 
 We set the CMake variable `OpenGL_GL_PREFERENCE` to `LEGACY` (instead of the default `GLVND`).
-This causes pyGPlates to prefer to use the `libGL` LEGACY dependency (instead of the default
+This caused pyGPlates to prefer to use the `libGL` LEGACY dependency (instead of the default
 `libOpenGL` GLVND dependency). The `libGL` library is whitelisted by auditwheel (meaning it
 will not be copied into the wheel repaired by auditwheel). This is presumably because it is
 available by default on all Linux distributions. Whereas `libOpenGL` is NOT whitelisted
