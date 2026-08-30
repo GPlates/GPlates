@@ -392,6 +392,52 @@ class FeatureCase(unittest.TestCase):
                 self.assertTrue(isinstance(cloned_pickled_property_value, pygplates.PropertyValue))
                 self.assertTrue(cloned_pickled_property_value == property.get_value())
 
+    def test_load_gpml_containing_raster(self):
+        # pygplates has no raster API, but a GPML can contain a 'gpml:Raster' feature whose 'gml:File'
+        # names a raster file, and loading such a GPML opens the raster (if the file exists) at parse time.
+        # That must pass through harmlessly whether or not the module can actually read the raster:
+        #  - the GeoTIFF is read by GDAL, which the module keeps;
+        #  - the PNG needs the Qt-image reader, which only GPlates registers (it is not in the module),
+        #    so the module records a read error and carries on.
+        # Each fixture's 'gml:fileName' is a bare filename that the reader resolves relative to the GPML,
+        # so the raster really is opened (unlike 'feature_with_properties_not_in_pygplates.gpml',
+        # whose raster file does not exist and hence is never opened).
+        import shutil
+        import tempfile
+
+        def _load_and_round_trip(tmp_dir, gpml_basename):
+            # A loaded collection keeps the raster file open (and reading a raster writes
+            # '*.gplates.cache' files beside it), so everything is done in a temporary directory
+            # and inside this function, which releases the collections when it returns so that the
+            # directory can be removed.
+            features = pygplates.FeatureCollection(os.path.join(tmp_dir, gpml_basename))
+            self.assertEqual(len(features), 1)
+            feature = features[0]
+            self.assertEqual(feature.get_feature_type(), pygplates.FeatureType.create_gpml('Raster'))
+            self.assertEqual(feature.get_name(), '2x2 {} raster (the file is in this directory, so the reader really runs)'.format(
+                    gpml_basename[len('raster_'):-len('.gpml')]))
+            self.assertEqual(
+                    sorted(str(property.get_name()) for property in feature),
+                    ['gml:name', 'gpml:bandNames', 'gpml:domainSet', 'gpml:rangeSet'])
+            # Round-trip through a file and compare the properties in memory, not the file bytes
+            # (the reader rewrites the relative raster path to an absolute one, which is machine-specific).
+            tmp_filename = os.path.join(tmp_dir, 'round_trip_' + gpml_basename)
+            features.write(tmp_filename)
+            round_tripped_features = pygplates.FeatureCollection(tmp_filename)
+            self.assertEqual(len(round_tripped_features), 1)
+            round_tripped_feature = round_tripped_features[0]
+            self.assertEqual(len(round_tripped_feature), len(feature))
+            for property in feature:
+                self.assertTrue(property.get_name() in [p.get_name() for p in round_tripped_feature])
+                # In particular the 'gml:File' in 'gpml:rangeSet' (raster filename, band types, mime type).
+                self.assertTrue(property.get_value() in [p.get_value() for p in round_tripped_feature])
+
+        for gpml_basename, raster_basename in (('raster_geotiff.gpml', 'raster_2x2.tif'), ('raster_png.gpml', 'raster_2x2.png')):
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                for basename in (gpml_basename, raster_basename):
+                    shutil.copyfile(os.path.join(FIXTURES, basename), os.path.join(tmp_dir, basename))
+                _load_and_round_trip(tmp_dir, gpml_basename)
+
     def test_feature_id(self):
         feature_id = self.feature.get_feature_id()
         self.assertTrue(isinstance(feature_id, pygplates.FeatureId))
