@@ -96,7 +96,10 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
   `ReadErrorAccumulation` — never a `QMessageBox` or other widget (shared code cannot assume
   a GUI, or even Qt Widgets at link time). When shared code genuinely needs a GUI decision,
   or a Qt Gui/Widgets facility, inject an interface the GPlates side implements and registers
-  from `presentation/Application::initialise()`. Three examples: `file-io/PropertyMapper.h`
+  from `presentation/FileIOInjections.cc` (`register_file_io_injections`, called by both the
+  GUI's `Application::initialise()` and the command-line path in `gplates_main.cc` — the CLI
+  never constructs an `Application`, so a registration made only there silently regresses
+  `gplates convert-file-format` and friends). Three examples: `file-io/PropertyMapper.h`
   (implemented by `qt-widgets/ShapefilePropertyMapper`, set with
   `OgrReader::set_property_mapper`); `RasterReader::set_rgba_reader_factory` (the
   `QImage`-based `file-io/RgbaRasterReader` for BMP/GIF/JPEG/PNG/SVG rasters — without it a

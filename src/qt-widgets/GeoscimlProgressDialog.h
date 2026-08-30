@@ -1,7 +1,7 @@
 /* $Id$ */
 
 /**
- * ile 
+ * @file 
  * $Revision$
  * $Date$
  * 
@@ -38,7 +38,8 @@ namespace GPlatesQtWidgets
 	 * The @a QProgressDialog shown while @a GPlatesFileIO::GeoscimlProfile translates features.
 	 *
 	 * Registered with @a GPlatesFileIO::GeoscimlProfile::set_progress_reporter_factory by
-	 * @a GPlatesPresentation::Application, since file-io cannot depend on Qt Widgets.
+	 * @a GPlatesPresentation::register_file_io_injections, since file-io cannot depend on
+	 * Qt Widgets.
 	 */
 	class GeoscimlProgressDialog :
 			public GPlatesFileIO::GeoscimlProfile::ProgressReporter

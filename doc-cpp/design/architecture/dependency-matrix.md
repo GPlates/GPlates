@@ -12,7 +12,7 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | feature-visitors | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| (src root) |  | 2 | 2 |  | 1 | 1 |  | 1 | 3 | 4 | 3 | 1 | 1 | 1 | 1 | 2 | 6 | 1 | 3 |  |
+| (src root) |  | 2 | 2 |  | 1 | 1 |  | 1 | 3 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
 | api |  | 275 | 124 |  |  | 8 | 4 | 35 | 156 | 14 | 86 | 75 | 2 | 3 | 112 | 5 | 29 |  | 47 |  |
 | app-logic |  |  | 918 |  |  | 7 | 14 | 20 | 159 |  | 249 | 241 | 12 |  | 263 |  | 25 |  | 123 |  |
 | canvas-tools |  |  | 12 | 42 |  |  | 2 |  | 3 | 37 | 27 | 12 |  | 7 | 2 | 38 |  |  | 8 | 68 |
@@ -25,7 +25,7 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | maths |  |  |  |  |  |  |  |  | 76 |  | 410 | 1 |  |  |  |  | 24 |  | 41 |  |
 | model |  |  | 7 |  |  |  |  | 2 | 30 |  |  | 199 |  |  | 35 |  | 23 |  | 46 |  |
 | opengl |  |  | 16 |  |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
-| presentation |  | 1 | 100 |  |  | 1 | 1 | 24 | 23 | 78 | 12 | 8 | 3 | 91 | 6 | 26 | 25 |  | 12 | 19 |
+| presentation |  | 1 | 100 |  |  | 1 | 1 | 24 | 23 | 78 | 12 | 8 | 3 | 93 | 6 | 26 | 25 |  | 12 | 19 |
 | property-values |  |  |  |  |  |  | 42 | 11 | 64 | 5 | 26 | 250 |  |  | 176 |  | 103 |  | 35 |  |
 | qt-widgets |  | 17 | 253 | 7 |  | 8 | 35 | 81 | 134 | 238 | 105 | 244 | 35 | 117 | 180 | 836 |  |  | 59 | 26 |
 | scribe |  |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
@@ -61,7 +61,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | maths | 100 / 133 |
 | model | 91 / 91 |
 | opengl | 0 / 158 |
-| presentation | 0 / 46 |
+| presentation | 0 / 48 |
 | property-values | 127 / 128 |
 | qt-widgets | 0 / 439 |
 | scribe | 56 / 64 |
