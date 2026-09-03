@@ -181,7 +181,8 @@ scikit-build-core (eg, `pip wheel ...`) outside of conda.
 > its link line reaches OpenGL, so there is no GL family to choose and `pyproject.toml` no longer
 > sets this variable; `cmake/check_linkage.py` fails the build if any GL library reappears.
 > Dropping the module's `Qt6Gui` also dropped `Qt6Network`, `Qt6Xml`, `Qt6DBus`, fontconfig,
-> freetype, libpng and libxkbcommon from the vendored libraries.
+> freetype, libpng, libxkbcommon, libbz2 and libuuid from the vendored libraries - ten of the
+> twenty-six, about 37 MB of the unpacked wheel.
 >
 > The variable did have to stay for one intermediate period: after the module stopped compiling
 > any OpenGL of its own but while it still linked `Qt6Gui`, whose CMake imported target
