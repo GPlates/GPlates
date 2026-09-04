@@ -665,7 +665,7 @@ GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_rock_max_thick(
 {
 	d_feature->add(
 			GPlatesModel::TopLevelPropertyInline::create(
-					PropertyName::create_gpml("rock_min_thick"),
+					PropertyName::create_gpml("rock_max_thick"),
 					XsDouble::create(get_element_text(xml_data).toDouble())));
 }
 
