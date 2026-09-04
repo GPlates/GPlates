@@ -25,11 +25,8 @@
  */
 #include <QBuffer>
 #include <QDebug>
+#include <QFile>
 #include <QString>
-#include <QDomDocument>
-#include <QXmlQuery>
-#include <QXmlResultItems>
-#include <QXmlSerializer>
 #include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 
@@ -37,8 +34,7 @@
 #include "GsmlFeatureHandlers.h"
 #include "GsmlPropertyHandlers.h"
 #include "GsmlNodeProcessorFactory.h"
-
-#include "utils/XQueryUtils.h"
+#include "GsmlXmlQuery.h"
 
 
 GPlatesFileIO::GeoscimlProfile::progress_reporter_factory_type
@@ -64,8 +60,6 @@ GPlatesFileIO::GeoscimlProfile::populate(
 	return;
 }
 
-using namespace GPlatesUtils;
-
 void
 GPlatesFileIO::GeoscimlProfile::populate(
 		QByteArray& xml_data,
@@ -82,11 +76,9 @@ GPlatesFileIO::GeoscimlProfile::populate(
 
 	try
 	{
-		// evaluate for features
-		std::vector<QByteArray> results = 
-			XQuery::evaluate_features(
-					xml_data,
-					"/wfs:FeatureCollection/gml:featureMember");
+		// Every feature member, wherever it is (a WFS response wraps them in a
+		// wfs:FeatureCollection, but the reader has never required that).
+		std::vector<QByteArray> results = GsmlXmlQuery::find_elements(xml_data, "//gml:featureMember");
 
 		int count = results.size();
 		int i = 1;
@@ -143,9 +135,7 @@ GPlatesFileIO::GeoscimlProfile::count_features(
 	std::vector<QByteArray> results;
 	try
 	{
-		results = XQuery::evaluate_features(
-					xml_data,
-					"/wfs:FeatureCollection/gml:featureMember");
+		results = GsmlXmlQuery::find_elements(xml_data, "//gml:featureMember");
 // qDebug() << "GPlatesFileIO::GeoscimlProfile::count_features: results=" << results.size();
 		return results.size();
 	}

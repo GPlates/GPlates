@@ -9,8 +9,8 @@
 # (see "cmake/pygplates_source_closure.py" and "doc-cpp/design/architecture/README.md"):
 # the closure test proves the module *compiles* no GUI/rendering code, this one proves the
 # built artifact *links* none of it - a GUI dependency can also arrive through a shared
-# source that is only compiled under one Qt version (the Qt5-only GeoSciML group in
-# "src/file-io" once created a QProgressDialog, which linked Qt Widgets into a Qt5 module).
+# source the closure test does compile (the GeoSciML group in "src/file-io" once created a
+# QProgressDialog, which linked Qt Widgets into the module).
 #
 # Usage: check_linkage.py <path-to-pygplates-module>
 #

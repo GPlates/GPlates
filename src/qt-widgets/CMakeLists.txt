@@ -92,6 +92,9 @@ set(srcs
     ConfigureVelocityLegendOverlayDialogUi.ui
     ConfigValueEditorWidget.cc
     ConfigValueEditorWidget.h
+    ConnectWFSDialog.cc
+    ConnectWFSDialog.h
+    ConnectWFSDialogUi.ui
     CoRegistrationLayerConfigurationDialog.cc
     CoRegistrationLayerConfigurationDialog.h
     CoRegistrationLayerConfigurationDialogUi.ui
@@ -281,6 +284,8 @@ set(srcs
     GenerateVelocityDomainTerraDialog.cc
     GenerateVelocityDomainTerraDialog.h
     GenerateVelocityDomainTerraDialogUi.ui
+    GeoscimlProgressDialog.cc
+    GeoscimlProgressDialog.h
     GlobeAndMapWidget.cc
     GlobeAndMapWidget.h
     GlobeCanvas.cc
@@ -615,19 +620,6 @@ set(srcs
     ZoomSliderWidget.cc
     ZoomSliderWidget.h
 )
-
-# Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-# It has been deprecated since Qt 5.13.
-#
-# TODO: Find a replacement library.
-if (QT_VERSION_MAJOR LESS 6)
-    list(APPEND srcs
-        ConnectWFSDialog.cc
-        ConnectWFSDialog.h
-        ConnectWFSDialogUi.ui
-        GeoscimlProgressDialog.cc
-        GeoscimlProgressDialog.h)
-endif()
 
 
 if (TARGET gplates-lib)

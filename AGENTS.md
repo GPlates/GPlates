@@ -107,13 +107,12 @@ CI coverage gap: each develop branch's workflow builds only its own product
 (`build-test-pygplates.yml` → pyGPlates, `build-test-gplates.yml` → GPlates), so CI will not
 catch a change to the shared sources or the CMake source lists breaking the *other* product.
 Build both **locally** before pushing such a change: pyGPlates and GPlates under Qt6, plus
-GPlates under Qt5 when the change could plausibly be Qt-version-sensitive (the Qt5-only
-`list(APPEND srcs …)` blocks, any `QT_VERSION` conditional, `qt-widgets`, or a Qt include
-whose header moved between Qt5 and Qt6). The Qt5 build needs a second conda environment (see
-*Build* above); if it is not set up, say what you could not verify rather than skipping it
-silently. The nastiest case: a change landing on `gplates` (the default branch, which the
-downstream fork tracks) that breaks pyGPlates surfaces only at the next sync merge into
-`pygplates`, where it looks like the merge's fault.
+GPlates under Qt5 when the change could plausibly be Qt-version-sensitive (any `QT_VERSION`
+conditional, `qt-widgets`, or a Qt include whose header moved between Qt5 and Qt6). The Qt5
+build needs a second conda environment (see *Build* above); if it is not set up, say what you
+could not verify rather than skipping it silently. The nastiest case: a change landing on
+`gplates` (the default branch, which the downstream fork tracks) that breaks pyGPlates surfaces
+only at the next sync merge into `pygplates`, where it looks like the merge's fault.
 
 The gap could be closed by adding the other product's configure+build to each workflow, at the
 cost of roughly doubling CI compute per push. That is a maintainer decision, recorded here so

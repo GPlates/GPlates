@@ -19,18 +19,18 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | cli |  |  | 17 |  | 42 |  |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
 | data-mining |  |  | 17 |  |  | 81 | 2 | 3 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
 | feature-visitors |  |  | 15 |  |  |  | 19 | 1 | 2 | 3 | 49 | 93 |  |  | 155 |  |  |  | 8 |  |
-| file-io |  |  | 78 |  |  |  | 26 | 529 | 115 | 19 | 112 | 214 |  |  | 403 |  |  |  | 81 |  |
+| file-io |  |  | 78 |  |  |  | 26 | 535 | 117 | 19 | 112 | 214 |  |  | 403 |  |  |  | 77 |  |
 | global |  |  |  |  |  |  |  |  | 25 |  |  |  |  |  |  |  |  |  | 5 |  |
 | gui |  | 18 | 166 | 53 |  | 3 | 11 | 53 | 96 | 506 | 110 | 58 | 113 | 79 | 49 | 163 | 14 |  | 91 | 108 |
 | maths |  |  |  |  |  |  |  |  | 76 |  | 410 | 1 |  |  |  |  | 24 |  | 41 |  |
-| model |  |  | 7 |  |  |  |  | 2 | 30 |  |  | 199 |  |  | 35 |  | 23 |  | 46 |  |
+| model |  |  | 7 |  |  |  |  | 2 | 30 |  |  | 199 |  |  | 35 |  | 23 |  | 45 |  |
 | opengl |  |  | 16 |  |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
 | presentation |  | 1 | 100 |  |  | 1 | 1 | 24 | 23 | 78 | 12 | 8 | 3 | 93 | 6 | 26 | 25 |  | 12 | 19 |
 | property-values |  |  |  |  |  |  | 42 | 11 | 64 | 5 | 26 | 250 |  |  | 176 |  | 103 |  | 35 |  |
 | qt-widgets |  | 17 | 253 | 7 |  | 8 | 35 | 81 | 134 | 238 | 105 | 244 | 35 | 117 | 180 | 836 |  |  | 59 | 26 |
 | scribe |  |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
 | unit-test |  |  | 2 |  |  | 2 | 1 | 5 | 1 | 5 | 4 | 6 |  |  | 2 |  | 16 | 2 | 6 |  |
-| utils |  | 1 |  |  |  |  |  | 2 | 35 |  | 14 | 7 |  |  | 58 |  | 3 |  | 53 |  |
+| utils |  | 1 |  |  |  |  |  | 1 | 35 |  | 14 | 7 |  |  | 58 |  | 3 |  | 52 |  |
 | view-operations |  |  | 39 | 6 |  |  | 7 | 5 | 27 | 62 | 92 | 25 |  | 6 | 9 | 1 | 3 |  | 13 | 232 |
 
 # The pyGPlates module subset
@@ -38,9 +38,6 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 The pygplates module compiles only the include closure of the API roots below
 (reaching `X.h` pulls in `X.cc`). Everything else is GPlates-only and excluded by
 `src/*/CMakeLists.txt`; the `pygplates-source-closure` test enforces the boundary.
-This is the Qt6 module, the one shipped; a Qt5 build additionally compiles the
-QtXmlPatterns-based GeoSciML sources in `file-io` (the `QT_VERSION_MAJOR LESS 6`
-block of its `CMakeLists.txt`).
 
 Roots: the exporter `.cc` of every `export_*()` call registered in
 `export_cpp_python_api()` outside the `GPLATES_PYTHON_EMBEDDING` guard, plus
@@ -55,7 +52,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | cli | 0 / 20 |
 | data-mining | 0 / 42 |
 | feature-visitors | 16 / 34 |
-| file-io | 152 / 231 |
+| file-io | 171 / 233 |
 | global | 24 / 32 |
 | gui | 12 / 255 |
 | maths | 100 / 133 |
@@ -66,7 +63,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | qt-widgets | 0 / 439 |
 | scribe | 56 / 64 |
 | unit-test | 0 / 13 |
-| utils | 47 / 79 |
+| utils | 45 / 77 |
 | view-operations | 0 / 82 |
 
 What the module takes from each partially-included directory:
@@ -320,8 +317,12 @@ What the module takes from each partially-included directory:
 - `feature-visitors/TotalReconstructionSequencePlateIdFinder.cc`
 - `feature-visitors/TotalReconstructionSequencePlateIdFinder.h`
 
-## file-io (152 of 231)
+## file-io (171 of 233)
 
+- `file-io/ArbitraryNodeProcessor.h`
+- `file-io/ArbitraryXmlProfile.h`
+- `file-io/ArbitraryXmlReader.cc`
+- `file-io/ArbitraryXmlReader.h`
 - `file-io/CitcomsResolvedTopologicalBoundaryExportImpl.cc`
 - `file-io/CitcomsResolvedTopologicalBoundaryExportImpl.h`
 - `file-io/ErrorOpeningFileForReadingException.cc`
@@ -367,6 +368,8 @@ What the module takes from each partially-included directory:
 - `file-io/GdalUtils.cc`
 - `file-io/GdalUtils.h`
 - `file-io/GeometryExporter.h`
+- `file-io/GeoscimlProfile.cc`
+- `file-io/GeoscimlProfile.h`
 - `file-io/GmapReader.cc`
 - `file-io/GmapReader.h`
 - `file-io/GpmlFeatureReaderFactory.cc`
@@ -392,6 +395,19 @@ What the module takes from each partially-included directory:
 - `file-io/GpmlStructuralTypeReaderUtils.h`
 - `file-io/GpmlUpgradeReaderUtils.cc`
 - `file-io/GpmlUpgradeReaderUtils.h`
+- `file-io/GsmlConst.h`
+- `file-io/GsmlFeatureHandlers.cc`
+- `file-io/GsmlFeatureHandlers.h`
+- `file-io/GsmlFeaturesDef.h`
+- `file-io/GsmlNodeProcessor.cc`
+- `file-io/GsmlNodeProcessor.h`
+- `file-io/GsmlNodeProcessorFactory.cc`
+- `file-io/GsmlNodeProcessorFactory.h`
+- `file-io/GsmlPropertyDef.h`
+- `file-io/GsmlPropertyHandlers.cc`
+- `file-io/GsmlPropertyHandlers.h`
+- `file-io/GsmlXmlQuery.cc`
+- `file-io/GsmlXmlQuery.h`
 - `file-io/GzipFile.cc`
 - `file-io/GzipFile.h`
 - `file-io/LineReader.cc`
@@ -809,7 +825,7 @@ What the module takes from each partially-included directory:
 - `scribe/TranscriptionScribeContext.cc`
 - `scribe/TranscriptionScribeContext.h`
 
-## utils (47 of 79)
+## utils (45 of 77)
 
 - `utils/Base2Utils.cc`
 - `utils/Base2Utils.h`
@@ -853,8 +869,6 @@ What the module takes from each partially-included directory:
 - `utils/UnicodeStringUtils.h`
 - `utils/UniqueId.cc`
 - `utils/UniqueId.h`
-- `utils/XQueryUtils.cc`
-- `utils/XQueryUtils.h`
 - `utils/XmlNamespaces.cc`
 - `utils/XmlNamespaces.h`
 - `utils/non_null_intrusive_ptr.h`

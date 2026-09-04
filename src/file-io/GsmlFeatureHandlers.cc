@@ -26,16 +26,16 @@
 #include <boost/foreach.hpp>
 #include <boost/bind/bind.hpp>
 #include <QBuffer>
+#include <QXmlStreamReader>
 
 #include "GsmlFeatureHandlers.h"
 #include "GsmlPropertyHandlers.h"
 #include "GsmlNodeProcessorFactory.h"
+#include "GsmlXmlQuery.h"
 
 #include "global/LogException.h"
-#include "utils/XQueryUtils.h"
 
 
-using namespace GPlatesUtils;
 using namespace GPlatesModel;
 
 void
@@ -104,10 +104,10 @@ GPlatesFileIO::GsmlFeatureHandler::handle_feature_member(
 	QXmlStreamReader reader(&buffer);
 
 	//gml:featureMember
-	XQuery::next_start_element(reader);
+	reader.readNextStartElement();
 
 	//will give: 'gsml:MappedFeature', 'gpml:RockUnit_siliciclastic', etc.
-	XQuery::next_start_element(reader);
+	reader.readNextStartElement();
 
 	QString feature_type = reader.name().toString();
 
@@ -122,19 +122,19 @@ qDebug() << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 
 	if ( feature_type.startsWith("UnclassifiedFeature") )
 	{
-		results = XQuery::evaluate_query(
+		results = GsmlXmlQuery::find_elements(
 				xml_data,
 				"//gsml:" + feature_type);
 	}
 	else if ( feature_type.startsWith("RockUnit_") )
 	{
-		results = XQuery::evaluate_query(
+		results = GsmlXmlQuery::find_elements(
 				xml_data,
 				"//gpml:" + feature_type);
 	}
 	else if ( feature_type.startsWith("FossilCollection_") )
 	{
-		results = XQuery::evaluate_query(
+		results = GsmlXmlQuery::find_elements(
 				xml_data,
 				"//gpml:" + feature_type);
 	}

@@ -13,14 +13,12 @@ add_test(
 # in a shared translation unit, silently re-fattening the module - and what keeps the
 # committed dependency matrix honest ("--check-doc" fails if it is stale, the way
 # pygplates-stub-test fails on a stale type stub). "pygplates_sources.txt" is written at
-# generate time by the pygplates target in 'src/CMakeLists.txt'. The Qt major version decides
-# whether the Qt5-only GeoSciML sources in 'src/file-io' are part of the closure.
+# generate time by the pygplates target in 'src/CMakeLists.txt'.
 add_test(
 	NAME pygplates-source-closure-test
 	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/pygplates_source_closure.py"
 		--check-sources "${PROJECT_BINARY_DIR}/pygplates_sources.txt"
 		--check-doc "${PROJECT_SOURCE_DIR}/doc-cpp/design/architecture/dependency-matrix.md"
-		--qt-version-major ${QT_VERSION_MAJOR}
 	# Match the other pygplates tests (see the note on 'pygplates-test' above).
 	CONFIGURATIONS Release MinSizeRel)
 
