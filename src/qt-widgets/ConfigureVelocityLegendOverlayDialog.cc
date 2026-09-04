@@ -31,6 +31,7 @@
 #include "VisualLayersComboBox.h"
 
 #include "app-logic/LayerTaskType.h"
+#include "gui/ColourQt.h"
 #include "gui/VelocityLegendOverlaySettings.h"
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayers.h"
@@ -255,7 +256,7 @@ GPlatesQtWidgets::ColourButton::set_colour(
 
 	// Create an icon to display the colour.
 	QPixmap pixmap(iconSize());
-	pixmap.fill(colour);
+	pixmap.fill(GPlatesGui::qcolor_from_colour(colour));
 	setIcon(QIcon(pixmap));
 
 	Q_EMIT colour_changed(*this);
@@ -267,10 +268,10 @@ GPlatesQtWidgets::ColourButton::handle_clicked()
 {
 	QColorDialog dialog;
 	dialog.setOption(QColorDialog::ShowAlphaChannel);
-	dialog.setCurrentColor(d_colour);
+	dialog.setCurrentColor(GPlatesGui::qcolor_from_colour(d_colour));
 	if (dialog.exec() == QDialog::Accepted)
 	{
-		set_colour(dialog.currentColor());
+		set_colour(GPlatesGui::colour_from_qcolor(dialog.currentColor()));
 	}
 }
 

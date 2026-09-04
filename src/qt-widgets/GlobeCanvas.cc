@@ -53,6 +53,7 @@
 #include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
+#include "gui/ColourQt.h"
 #include "gui/ColourScheme.h"
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/SimpleGlobeOrientation.h"
@@ -870,7 +871,7 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 
 	// Fill the image with the clear colour in case there's an exception during rendering
 	// of one of the tiles and the image is incomplete.
-	image.fill(QColor(image_clear_colour).rgba());
+	image.fill(GPlatesGui::qcolor_from_colour(image_clear_colour).rgba());
 
 	// Get the frame buffer dimensions (in device pixels).
 	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =

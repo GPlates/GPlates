@@ -243,36 +243,35 @@ This section covers issues you might encounter when installing or running pyGPla
 
 .. _pygplates_getting_started_troubleshooting_:
 
-libGL ImportError on Linux
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+glib ImportError on Linux
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you have installed pyGPlates :ref:`using pip<pygplates_getting_started_install_using_pip>` and
 you get the following error on a Linux distribution (when pyGPlates is imported)...
 
 ::
 
-  ImportError: libGL.so.1: cannot open shared object file: No such file or directory
+  ImportError: libglib-2.0.so.0: cannot open shared object file: No such file or directory
 
 ...then it's likely you are using a *minimal* Linux distribution.
 
 .. note:: This shouldn't happen when installing pyGPlates :ref:`using conda<pygplates_getting_started_install_using_conda>`.
 
-For example, you might have a Dockerfile that builds on a Ubuntu Docker base image by installing pyGPlates (using ``pip``).
-Or you might be installing pyGPlates (using ``pip``) in an environment like WSL (Windows Subsystem for Linux) where graphical libraries are not always pre-installed.
+For example, you might have a Dockerfile that builds on a Debian or Ubuntu Docker base image (such as ``python:3.x-slim``) by installing pyGPlates (using ``pip``).
+Or you might be installing pyGPlates (using ``pip``) in an environment like WSL (Windows Subsystem for Linux) where not all system libraries are pre-installed.
 
-The solution is to install the ``libGL.so.1`` library. For example, in a Ubuntu Dockerfile you could add the following...
+The solution is to install the GLib library. For example, in a Debian or Ubuntu Dockerfile you could add the following...
 
 ::
 
-  RUN apt-get install -y libgl1-mesa-glx libglib2.0-0
+  RUN apt-get install -y libglib2.0-0
 
-.. note:: PyGPlates uses GPlates (desktop) functionality.
-          And a by-product of this is that pyGPlates requires libGL (which is part of the OpenGL implementation used to display graphics in GPlates)
-          even though pyGPlates doesn't actually use it.
+.. note:: PyGPlates uses the Qt Core library (for its non-graphical functionality such as strings, files and XML), and on Linux Qt Core requires GLib
+          even though pyGPlates doesn't actually use it. PyGPlates does not use any of Qt's graphical libraries and so does not require a display or OpenGL.
           When you install pyGPlates with ``pip install pygplates`` it downloads and installs a wheel for your platform and Python version.
-          However, on Linux platforms, libGL was not copied into the pyGPlates wheel when it was built (like the other dependency libraries were).
-          This is because the ``auditwheel`` tool (used when building the wheel) whitelisted libGL (since it is expected to be available by default on all Linux distributions).
-          However ``libGL.so.1`` is not always included by default in some *minimal* Linux distributions (such as Ubuntu Docker base images)
+          However, on Linux platforms, GLib was not copied into the pyGPlates wheel when it was built (like the other dependency libraries were).
+          This is because the ``auditwheel`` tool (used when building the wheel) whitelisted GLib (since it is expected to be available by default on all Linux distributions).
+          However ``libglib-2.0.so.0`` is not always included by default in some *minimal* Linux distributions (such as the ``python:3.x-slim`` Docker base images)
           even though it is available in the usual Linux desktop distributions.
 
 

@@ -37,6 +37,7 @@
 #include <QDebug>
 
 #include "ColourScaleGenerator.h"
+#include "ColourQt.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -160,13 +161,13 @@ namespace
 					interpolator.get_value_at(y));
 			if (colour)
 			{
-				pen.setColor(QColor(*colour));
+				pen.setColor(GPlatesGui::qcolor_from_colour(*colour));
 				painter.setPen(pen);
 				painter.drawLine(0, y, pixmap_width, y);
 
 				float grey = (colour->red() + colour->green() + colour->blue()) / 3;
 				GPlatesGui::Colour disabled_colour(grey, grey, grey, colour->alpha());
-				pen.setColor(QColor(disabled_colour));
+				pen.setColor(GPlatesGui::qcolor_from_colour(disabled_colour));
 				disabled_painter.setPen(pen);
 				disabled_painter.drawLine(0, y, pixmap_width, y);
 			}

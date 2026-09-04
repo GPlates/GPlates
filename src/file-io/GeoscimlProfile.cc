@@ -26,7 +26,6 @@
 #include <QBuffer>
 #include <QDebug>
 #include <QString>
-#include <QProgressDialog>
 #include <QDomDocument>
 #include <QXmlQuery>
 #include <QXmlResultItems>
@@ -40,6 +39,10 @@
 #include "GsmlNodeProcessorFactory.h"
 
 #include "utils/XQueryUtils.h"
+
+
+GPlatesFileIO::GeoscimlProfile::progress_reporter_factory_type
+GPlatesFileIO::GeoscimlProfile::s_progress_reporter_factory;
 
 
 void
@@ -70,9 +73,12 @@ GPlatesFileIO::GeoscimlProfile::populate(
 {
 // qDebug() << "GPlatesFileIO::GeoscimlProfile::populate:";
 
-	// Set up progress dialog 
-	QProgressDialog *pd = new QProgressDialog("Translating features...", "Cancel", 0, 0);
-	QObject::connect( pd, SIGNAL( canceled() ), this, SLOT( cancel() ));
+	// Report progress (and allow cancellation) if GPlates has registered a reporter.
+	boost::shared_ptr<ProgressReporter> progress_reporter;
+	if (s_progress_reporter_factory)
+	{
+		progress_reporter = s_progress_reporter_factory();
+	}
 
 	try
 	{
@@ -86,10 +92,10 @@ GPlatesFileIO::GeoscimlProfile::populate(
 		int i = 1;
 // qDebug() << "GPlatesFileIO::GeoscimlProfile::populate: count =" << count;
 
-		// Set up progress dialog 
-		pd->setRange(0, count);
-		pd->setValue( 0 );
-		pd->show();
+		if (progress_reporter)
+		{
+			progress_reporter->set_count(count);
+		}
 
 		if( results.size() == 0)
 		{
@@ -98,23 +104,13 @@ GPlatesFileIO::GeoscimlProfile::populate(
 		}
 		else
 		{
-			d_cancel = false;
-
 			BOOST_FOREACH(QByteArray& array, results)
 			{
-				if ( d_cancel )
+				if (progress_reporter &&
+					!progress_reporter->update(i))
 				{
 					break; // out of the loop
 				}
-
-				pd->show();
-				QString label = "Translating feature ";
- 				label.append( QString::number( i ) );
- 				label.append( " of " );
- 				label.append( QString::number( count ) );
-
-				pd->setValue( i );
-				pd->setLabelText( label );
 
 				GsmlFeatureHandlerFactory::get_instance()->handle_feature_member(fch, array);
 
@@ -127,14 +123,15 @@ GPlatesFileIO::GeoscimlProfile::populate(
 		qWarning() << ex.what();
 	}
 
-	delete pd;
 	return;
 }
 
+
 void
-GPlatesFileIO::GeoscimlProfile::cancel()
+GPlatesFileIO::GeoscimlProfile::set_progress_reporter_factory(
+		const progress_reporter_factory_type &progress_reporter_factory)
 {
-	d_cancel = true;
+	s_progress_reporter_factory = progress_reporter_factory;
 }
 
 

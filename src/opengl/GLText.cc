@@ -39,6 +39,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "gui/ColourQt.h"
+
 
 namespace GPlatesOpenGL
 {
@@ -175,7 +177,7 @@ GPlatesOpenGL::GLText::render_text_3D(
 	}
 
 	// Set the font and colour.
-	qpainter->setPen(colour);
+	qpainter->setPen(GPlatesGui::qcolor_from_colour(colour));
 	qpainter->setFont(scale_font(font, scale));
 
 	// Get the Qt window coordinates at which to render text.

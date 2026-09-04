@@ -12,24 +12,24 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | feature-visitors | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| (src root) |  | 2 | 2 |  | 1 | 1 |  | 1 | 3 | 4 | 3 | 1 | 1 | 1 | 1 | 2 | 6 | 1 | 3 |  |
+| (src root) |  | 2 | 2 |  | 1 | 1 |  | 1 | 3 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
 | api |  | 275 | 124 |  |  | 8 | 4 | 35 | 156 | 14 | 86 | 75 | 2 | 3 | 112 | 5 | 29 |  | 47 |  |
 | app-logic |  |  | 918 |  |  | 7 | 14 | 20 | 159 |  | 249 | 241 | 12 |  | 263 |  | 25 |  | 123 |  |
 | canvas-tools |  |  | 12 | 42 |  |  | 2 |  | 3 | 37 | 27 | 12 |  | 7 | 2 | 38 |  |  | 8 | 68 |
 | cli |  |  | 17 |  | 42 |  |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
 | data-mining |  |  | 17 |  |  | 81 | 2 | 3 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
 | feature-visitors |  |  | 15 |  |  |  | 19 | 1 | 2 | 3 | 49 | 93 |  |  | 155 |  |  |  | 8 |  |
-| file-io |  |  | 78 |  |  |  | 26 | 530 | 115 | 18 | 112 | 214 |  |  | 403 |  |  |  | 81 |  |
+| file-io |  |  | 78 |  |  |  | 26 | 529 | 115 | 19 | 112 | 214 |  |  | 403 |  |  |  | 81 |  |
 | global |  |  |  |  |  |  |  |  | 25 |  |  |  |  |  |  |  |  |  | 5 |  |
-| gui |  | 18 | 166 | 53 |  | 3 | 11 | 53 | 96 | 497 | 110 | 58 | 113 | 79 | 49 | 163 | 14 |  | 91 | 108 |
+| gui |  | 18 | 166 | 53 |  | 3 | 11 | 53 | 96 | 506 | 110 | 58 | 113 | 79 | 49 | 163 | 14 |  | 91 | 108 |
 | maths |  |  |  |  |  |  |  |  | 76 |  | 410 | 1 |  |  |  |  | 24 |  | 41 |  |
 | model |  |  | 7 |  |  |  |  | 2 | 30 |  |  | 199 |  |  | 35 |  | 23 |  | 46 |  |
-| opengl |  |  | 16 |  |  |  |  | 10 | 189 | 31 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
-| presentation |  | 1 | 100 |  |  | 1 | 1 | 21 | 23 | 77 | 12 | 8 | 3 | 91 | 6 | 25 | 25 |  | 12 | 19 |
+| opengl |  |  | 16 |  |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
+| presentation |  | 1 | 100 |  |  | 1 | 1 | 24 | 23 | 78 | 12 | 8 | 3 | 93 | 6 | 26 | 25 |  | 12 | 19 |
 | property-values |  |  |  |  |  |  | 42 | 11 | 64 | 5 | 26 | 250 |  |  | 176 |  | 103 |  | 35 |  |
-| qt-widgets |  | 17 | 253 | 7 |  | 8 | 35 | 80 | 134 | 231 | 105 | 244 | 35 | 117 | 180 | 835 |  |  | 59 | 26 |
+| qt-widgets |  | 17 | 253 | 7 |  | 8 | 35 | 81 | 134 | 238 | 105 | 244 | 35 | 117 | 180 | 836 |  |  | 59 | 26 |
 | scribe |  |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
-| unit-test |  |  | 2 |  |  | 2 | 1 | 5 | 1 | 4 | 4 | 6 |  |  | 2 |  | 16 | 2 | 6 |  |
+| unit-test |  |  | 2 |  |  | 2 | 1 | 5 | 1 | 5 | 4 | 6 |  |  | 2 |  | 16 | 2 | 6 |  |
 | utils |  | 1 |  |  |  |  |  | 2 | 35 |  | 14 | 7 |  |  | 58 |  | 3 |  | 53 |  |
 | view-operations |  |  | 39 | 6 |  |  | 7 | 5 | 27 | 62 | 92 | 25 |  | 6 | 9 | 1 | 3 |  | 13 | 232 |
 
@@ -38,6 +38,9 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 The pygplates module compiles only the include closure of the API roots below
 (reaching `X.h` pulls in `X.cc`). Everything else is GPlates-only and excluded by
 `src/*/CMakeLists.txt`; the `pygplates-source-closure` test enforces the boundary.
+This is the Qt6 module, the one shipped; a Qt5 build additionally compiles the
+QtXmlPatterns-based GeoSciML sources in `file-io` (the `QT_VERSION_MAJOR LESS 6`
+block of its `CMakeLists.txt`).
 
 Roots: the exporter `.cc` of every `export_*()` call registered in
 `export_cpp_python_api()` outside the `GPLATES_PYTHON_EMBEDDING` guard, plus
@@ -52,15 +55,15 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | cli | 0 / 20 |
 | data-mining | 0 / 42 |
 | feature-visitors | 16 / 34 |
-| file-io | 154 / 231 |
+| file-io | 152 / 231 |
 | global | 24 / 32 |
-| gui | 12 / 253 |
+| gui | 12 / 255 |
 | maths | 100 / 133 |
 | model | 91 / 91 |
 | opengl | 0 / 158 |
-| presentation | 0 / 46 |
+| presentation | 0 / 48 |
 | property-values | 127 / 128 |
-| qt-widgets | 0 / 437 |
+| qt-widgets | 0 / 439 |
 | scribe | 56 / 64 |
 | unit-test | 0 / 13 |
 | utils | 47 / 79 |
@@ -317,7 +320,7 @@ What the module takes from each partially-included directory:
 - `feature-visitors/TotalReconstructionSequencePlateIdFinder.cc`
 - `feature-visitors/TotalReconstructionSequencePlateIdFinder.h`
 
-## file-io (154 of 231)
+## file-io (152 of 231)
 
 - `file-io/CitcomsResolvedTopologicalBoundaryExportImpl.cc`
 - `file-io/CitcomsResolvedTopologicalBoundaryExportImpl.h`
@@ -458,8 +461,6 @@ What the module takes from each partially-included directory:
 - `file-io/ReconstructionGeometryExportImpl.h`
 - `file-io/ResolvedTopologicalGeometryExport.cc`
 - `file-io/ResolvedTopologicalGeometryExport.h`
-- `file-io/RgbaRasterReader.cc`
-- `file-io/RgbaRasterReader.h`
 - `file-io/RotationAttributesRegistry.cc`
 - `file-io/RotationAttributesRegistry.h`
 - `file-io/ShapefileXmlReader.cc`
@@ -501,7 +502,7 @@ What the module takes from each partially-included directory:
 - `global/python.h`
 - `global/unicode.h`
 
-## gui (12 of 253)
+## gui (12 of 255)
 
 - `gui/Colour.cc`
 - `gui/Colour.h`

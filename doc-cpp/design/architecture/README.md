@@ -68,11 +68,12 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
   Qwt angle include, and on drift of the committed `dependency-matrix.md`.
 - **pygplates-linkage-test** inspects the built module's direct shared-library dependencies
   (`dumpbin` / `readelf` / `otool`), failing if one of GPlates' GUI/rendering libraries
-  (Qt Widgets, Qt Svg, the Qt OpenGL modules, Qwt, GLEW) appears. The platform's own OpenGL
-  is exempt: Qt's GUI library links it on Linux and macOS, and `Qt6::Gui` propagates that
-  onto everything linking it, so the module carries a GL dependency it never asked for and
-  cannot drop while it uses `QImage`/`QColor`. Which OpenGL family that is still matters to
-  the Linux wheels — see `OpenGL_GL_PREFERENCE` in `pygplates/wheel/README.md`.
+  (Qt Widgets, Qt Gui, Qt Svg, the Qt OpenGL modules, Qwt, GLEW) appears — or the platform's
+  own OpenGL (GLVND's `libOpenGL`/`libGLX`/`libGLdispatch`, the legacy `libGL`, the macOS
+  framework, `opengl32.dll`). There is no exemption: the module links only `Qt6::Core` and
+  `Qt6::Core5Compat`, and a GL library on its link line means a GUI library has crept back in
+  (`Qt6::Gui`'s imported target propagates Qt's own OpenGL dependency onto everything linking
+  it, which is how the Linux wheel once needed `libGL.so.1` just to be imported).
 
 ## Rules for new files
 
@@ -94,18 +95,20 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
 - **Error reporting in shared code** goes through return values / exceptions /
   `ReadErrorAccumulation` — never a `QMessageBox` or other widget (shared code cannot assume
   a GUI, or even Qt Widgets at link time). When shared code genuinely needs a GUI decision,
-  inject an interface the GPlates side implements: `file-io/PropertyMapper.h` (implemented by
-  `qt-widgets/ShapefilePropertyMapper`) is the pattern.
+  or a Qt Gui/Widgets facility, inject an interface the GPlates side implements and registers
+  from `presentation/FileIOInjections.cc` (`register_file_io_injections`, called by both the
+  GUI's `Application::initialise()` and the command-line path in `gplates_main.cc` — the CLI
+  never constructs an `Application`, so a registration made only there silently regresses
+  `gplates convert-file-format` and friends). Three examples: `file-io/PropertyMapper.h`
+  (implemented by `qt-widgets/ShapefilePropertyMapper`, set with
+  `OgrReader::set_property_mapper`); `RasterReader::set_rgba_reader_factory` (the
+  `QImage`-based `file-io/RgbaRasterReader` for BMP/GIF/JPEG/PNG/SVG rasters — without it a
+  module reports such a raster as unreadable, which pyGPlates cannot observe); and
+  `GeoscimlProfile::set_progress_reporter_factory` (the `QProgressDialog` in
+  `qt-widgets/GeoscimlProgressDialog`, Qt5 only — without it the `.gsml` reader runs silently).
 
 ## Deferred / follow-up work (not in the build-graph-split PR)
 
-- Drop `Qt6::Gui` from the module — the last GUI-flavoured library it links, and not a free
-  one: `Qt6::Gui` propagates Qt's own OpenGL dependency, so on Linux the module carries a
-  direct `libGL.so.1` it never asked for. In a bare `python:3.x-slim` container the wheel
-  therefore fails to import (`libGL.so.1`, and then `libglib-2.0.so.0` behind it) until ~40
-  apt packages are installed; nothing needs a display, it is purely a load-time link
-  requirement. Gui is reached through `gui/Colour`'s `QColor`/`QRgb` conversions and
-  `file-io/RgbaRasterReader`'s use of `QImage`.
 - Decouple `GmlFile` from its `ProxiedRasterCache` member (TODO at
   `property-values/GmlFile.h`): today loading a raster GPML opens the raster through GDAL at
   parse time. Worth doing on its own merits, but note that it does **not** shrink the module —

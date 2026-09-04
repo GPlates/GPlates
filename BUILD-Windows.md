@@ -15,6 +15,7 @@ library) from source on Windows, using [conda](https://docs.conda.io/) to instal
 4. [Build pyGPlates](#build-pygplates)
 5. [Developers](#developers)
    - [Choosing a terminal](#choosing-a-terminal)
+   - [Switching between conda environments](#switching-between-conda-environments)
    - [Using PowerShell](#using-powershell)
    - [Using the Visual Studio IDE](#using-the-visual-studio-ide)
 6. [Code intelligence (clangd)](#code-intelligence-clangd)
@@ -61,9 +62,10 @@ Keep this environment activated for all the build commands below. While it is ac
 auto-detects the conda environment and adds both `%CONDA_PREFIX%` and its `%CONDA_PREFIX%\Library`
 sub-directory to the dependency search path, so you do **not** need to pass `-DCMAKE_PREFIX_PATH`.
 
-> **Note:** In a plain Command Prompt / Anaconda Prompt, `conda deactivate` may not fully restore
-> `PATH` afterward (a known interaction with the `vs2022_win-64` compiler activation) — this doesn't
-> affect the build itself, but if you need a clean shell afterward, just close and reopen the terminal.
+> **Note:** In a Command Prompt (including the Anaconda Prompt), `conda deactivate` does not restore
+> `PATH` — the `vs2022_win-64` compiler activation leaves the environment's directories on it. This
+> doesn't affect building, but it matters if you switch to another environment in the same shell (a
+> Qt5 one, say): see [Switching between conda environments](#switching-between-conda-environments).
 
 ## Build GPlates
 
@@ -137,19 +139,46 @@ A `pygplates` package should then be importable in the environment (`python -m p
 The build commands on this page assume the **Anaconda Prompt** (Command Prompt) — the default below.
 Which terminal you use matters on Windows, because the MSVC compiler is activated differently in each:
 
-| Terminal | Ninja build (needs MSVC on `PATH`) | `devenv` available |
-|---|---|---|
-| Anaconda Prompt (cmd) — *the documented default* | ✅ conda `vs2022_win-64` sets up MSVC | ✅ |
-| Plain Command Prompt | ✅ conda `vs2022_win-64` sets up MSVC | ✅ |
-| Plain PowerShell / Anaconda PowerShell Prompt | ❌ conda can't propagate the MSVC env | ❌ |
-| Developer PowerShell for VS 2022 | ✅ VS sets up MSVC | ✅ |
-| Developer Command Prompt for VS 2022 | ✅ VS sets up MSVC | ✅ |
+| Terminal | Ninja build (needs MSVC on `PATH`) | `devenv` available | `conda deactivate` restores `PATH` |
+|---|---|---|---|
+| Anaconda Prompt (cmd) — *the documented default* | ✅ conda `vs2022_win-64` sets up MSVC | ✅ | ❌ |
+| Plain Command Prompt | ✅ conda `vs2022_win-64` sets up MSVC | ✅ | ❌ |
+| Plain PowerShell / Anaconda PowerShell Prompt | ❌ conda can't propagate the MSVC env | ❌ | ✅ |
+| Developer PowerShell for VS 2022 | ✅ VS sets up MSVC | ✅ | ✅ |
+| Developer Command Prompt for VS 2022 | ✅ VS sets up MSVC | ✅ | ❌ |
 
 In short: use the **Anaconda Prompt**, or — if you prefer PowerShell — **"Developer PowerShell for VS
 2022"** (see [Using PowerShell](#using-powershell)). A *plain* PowerShell can't configure a Ninja build
 at all. In every working terminal, activate the conda environment (`conda activate gplates`) so the
 dependency libraries are on `PATH`; outside the Anaconda Prompt this first needs conda hooked into the
 shell (`conda init cmd.exe` or `conda init powershell`).
+
+The last column only matters if you switch between conda environments in one shell — see
+[Switching between conda environments](#switching-between-conda-environments).
+
+### Switching between conda environments
+
+If you keep more than one environment — a Qt6 `gplates` and a Qt5 one, say — **open a fresh
+terminal for each**, rather than `conda deactivate` / `conda activate` in the same shell. In any
+Command Prompt the two environments' directories end up mixed on `PATH`, and the one activated
+*first* wins.
+
+The cause is the `vs2022_win-64` package. Its activation script
+(`etc\conda\activate.d\vs2022_compiler_vars.bat`) prepends `%CONDA_PREFIX%`,
+`%CONDA_PREFIX%\Library\bin` etc. to `PATH` after running `vcvarsall.bat`, and ships no deactivation
+script, so conda — which only undoes the `PATH` entries it added itself — leaves them behind on
+`conda deactivate`, and `conda activate <other>` then prepends the other environment's directories in
+front of the leftovers. Compiling is unaffected (CMake locates the dependencies through
+`CONDA_PREFIX`, which conda does update), but anything that *runs* from that shell resolves
+same-named DLLs through `PATH`: a Qt5 `gplates.exe` or `ctest` run with a Qt6 environment's
+`Library\bin` still ahead on `PATH` picks up that environment's `qwt.dll` (Qwt 6.3 instead of 6.2) and
+dies at startup with "The procedure entry point ??0QwtPointSeriesData@@ ... could not be located".
+The symptom looks like a broken build; it is a stale shell.
+
+PowerShell terminals are immune, because conda runs only `.ps1` activation scripts there and the
+package ships only the `.bat` — which is also why a plain PowerShell never sees the compiler. Even
+so, one terminal per environment is the simplest rule and is what these instructions assume. This is a
+Windows-only quirk of the `vs2022_win-64` activation script; macOS and Linux are not affected.
 
 ### Using PowerShell
 

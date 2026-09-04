@@ -34,6 +34,7 @@
 
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
+#include "ColourQt.h"
 #include "LayerPainter.h"
 #include "SceneLightingParameters.h"
 
@@ -1979,11 +1980,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_strain_marker_symb
 	const rgba8_t rgba8_contraction_colour = Colour::to_rgba8(
 			d_vector_geometries_override_colour
 					? d_vector_geometries_override_colour.get()
-					: Colour(QColor("#2166ac")));
+					: colour_from_qcolor(QColor("#2166ac")));
 	const rgba8_t rgba8_extension_colour = Colour::to_rgba8(
 			d_vector_geometries_override_colour
 					? d_vector_geometries_override_colour.get()
-					: Colour(QColor("#b2182b")));
+					: colour_from_qcolor(QColor("#b2182b")));
 
     // Define the square in the tangent plane at the North pole,
     // then rotate down to required latitude, and

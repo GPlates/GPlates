@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 #
 # Checks the built pygplates module's *direct* shared-library dependencies: the module must
-# not depend on any of GPlates' GUI/rendering libraries (Qt Widgets, Qt Svg, the Qt OpenGL
-# modules, Qwt, GLEW). Registered as the "pygplates-linkage-test" CTest.
+# not depend on any of GPlates' GUI/rendering libraries (Qt Gui, Qt Widgets, Qt Svg, the Qt
+# OpenGL modules, Qwt, GLEW) nor on OpenGL itself, on any platform. Registered as the
+# "pygplates-linkage-test" CTest.
 #
 # This is the binary-level complement of the source-level "pygplates-source-closure-test"
 # (see "cmake/pygplates_source_closure.py" and "doc-cpp/design/architecture/README.md"):
 # the closure test proves the module *compiles* no GUI/rendering code, this one proves the
-# built artifact *links* none of it - which is also what would catch the undocumented
-# Qt5-pyGPlates path compiling "file-io/GeoscimlProfile.cc" (whose QProgressDialog drags in
-# Qt Widgets).
+# built artifact *links* none of it - a GUI dependency can also arrive through a shared
+# source that is only compiled under one Qt version (the Qt5-only GeoSciML group in
+# "src/file-io" once created a QProgressDialog, which linked Qt Widgets into a Qt5 module).
 #
 # Usage: check_linkage.py <path-to-pygplates-module>
 #
@@ -21,28 +22,21 @@ import re
 import subprocess
 import sys
 
-# The platform's own OpenGL, which the module acquires whether it wants it or not: Qt's GUI
-# library links OpenGL on Linux and macOS, and the "Qt6::Gui" imported target propagates that
-# onto everything linking it. The module needs Qt6Gui (QImage and QColor carry raster data),
-# so this cannot be dropped without dropping Qt6Gui, and its presence says nothing about
-# whether the module compiles any rendering code - that is what the source-closure test
-# proves. Matched exactly, so it exempts only the platform libraries themselves: the Qt
-# OpenGL *modules* (libQt6OpenGL.so.6) and Windows' opengl32.dll stay forbidden below, since
-# neither is Qt6Gui-mediated and either would be a real finding.
-#
-# Which of the two Linux OpenGL families this ends up being still matters to the wheels, and
-# is why '[tool.cibuildwheel.linux.config-settings]' in 'pyproject.toml' sets
-# 'OpenGL_GL_PREFERENCE=LEGACY': GLVND's libOpenGL/libGLX are not whitelisted by auditwheel,
-# so they are vendored into the wheel and crash 'import pygplates'. The legacy libGL is
-# whitelisted and comes from the end user's machine.
-PLATFORM_GL = re.compile(r'^(libGL\.so\.\d+|libGLX\.so\.\d+|libOpenGL\.so\.\d+'
-                         r'|libGLdispatch\.so\.\d+|OpenGL)$')
-
 # Direct dependencies the module must not have. Case-insensitive, matched against the bare
 # library name (e.g. "Qt6Widgets.dll", "libQt6Widgets.so.6", "QtWidgets" for a macOS
-# framework). "opengl" also catches Qt6OpenGL/Qt6OpenGLWidgets and opengl32.dll; the platform
-# libraries above are checked first and exempted.
-FORBIDDEN = re.compile(r'qwt|glew|opengl|libGL\.|libGLU\.|qt\w*(widgets|svg)', re.I)
+# framework).
+#
+# Qt Gui is the important one. The module has no use for it (it holds no QColor/QImage/
+# QPainter code - the source-closure test proves that), and on Linux and macOS the "Qt6::Gui"
+# imported target propagates Qt's own OpenGL dependency onto everything linking it. That is
+# how the Linux wheel once came to need libGL.so.1 (and ~40 apt packages) just to be
+# imported. So this also forbids the platform OpenGL libraries themselves - GLVND's
+# libOpenGL/libGLX/libGLdispatch, the legacy libGL, macOS' OpenGL framework and Windows'
+# opengl32.dll - because any of them appearing here means some GUI library has crept back
+# into the link line. "opengl" catches Qt6OpenGL/Qt6OpenGLWidgets, libOpenGL.so, opengl32.dll
+# and the macOS framework alike.
+FORBIDDEN = re.compile(r'qwt|glew|opengl|libGL\.|libGLX\.|libGLU\.|libGLdispatch\.'
+                       r'|qt\w*(gui|widgets|svg)', re.I)
 
 
 def direct_dependencies(module_path):
@@ -81,9 +75,7 @@ def main():
         # ".../QtWidgets.framework/Versions/A/QtWidgets").
         name = dependency.replace('\\', '/').rsplit('/', 1)[-1]
         flag = ''
-        if PLATFORM_GL.match(name):
-            flag = '   (platform OpenGL, via Qt6Gui)'
-        elif FORBIDDEN.search(name):
+        if FORBIDDEN.search(name):
             forbidden.append(dependency)
             flag = '   <-- FORBIDDEN'
         print('    %s%s' % (dependency, flag))
