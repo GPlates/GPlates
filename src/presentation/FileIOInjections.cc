@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/bind/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QtGlobal>
 
@@ -49,10 +50,11 @@ namespace
 	}
 
 	boost::shared_ptr<GPlatesFileIO::GeoscimlProfile::ProgressReporter>
-	create_geosciml_progress_dialog()
+	create_geosciml_progress_dialog(
+			QWidget *dialog_parent)
 	{
 		return boost::shared_ptr<GPlatesFileIO::GeoscimlProfile::ProgressReporter>(
-				new GPlatesQtWidgets::GeoscimlProgressDialog());
+				new GPlatesQtWidgets::GeoscimlProgressDialog(dialog_parent));
 	}
 }
 
@@ -63,7 +65,8 @@ GPlatesPresentation::register_file_io_injections(
 {
 	GPlatesFileIO::RasterReader::set_rgba_reader_factory(&create_rgba_raster_reader);
 
-	GPlatesFileIO::GeoscimlProfile::set_progress_reporter_factory(&create_geosciml_progress_dialog);
+	GPlatesFileIO::GeoscimlProfile::set_progress_reporter_factory(
+			boost::bind(&create_geosciml_progress_dialog, dialog_parent));
 
 	if (dialog_parent)
 	{

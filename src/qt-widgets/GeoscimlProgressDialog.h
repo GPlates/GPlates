@@ -28,6 +28,7 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <QProgressDialog>
+#include <QWidget>
 
 #include "file-io/GeoscimlProfile.h"
 
@@ -40,13 +41,19 @@ namespace GPlatesQtWidgets
 	 * Registered with @a GPlatesFileIO::GeoscimlProfile::set_progress_reporter_factory by
 	 * @a GPlatesPresentation::register_file_io_injections, since file-io cannot depend on
 	 * Qt Widgets.
+	 *
+	 * The dialog is window-modal: @a GeoscimlProfile::populate never returns to the event
+	 * loop, and a modal QProgressDialog pumps events from @a QProgressDialog::setValue, which
+	 * is what lets it repaint and lets Cancel register at all.
 	 */
 	class GeoscimlProgressDialog :
 			public GPlatesFileIO::GeoscimlProfile::ProgressReporter
 	{
 	public:
 
-		GeoscimlProgressDialog();
+		explicit
+		GeoscimlProgressDialog(
+				QWidget *parent);
 
 		virtual
 		void
