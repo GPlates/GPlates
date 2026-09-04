@@ -12,6 +12,8 @@ set(srcs
     CsvExportTest.cc
     DataAssociationDataTableTest.cc
     GenerateVelocityDomainCitcomsTest.cc
+    GeoscimlReaderTest.cc
+    GsmlXmlQueryTest.cc
     MipmapperTest.cc
     RealTest.cc
     ScribeExportUnitTest.h

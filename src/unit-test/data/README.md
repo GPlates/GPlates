@@ -29,6 +29,7 @@ Nothing in this directory is installed or packaged. It exists only to be read by
 |---|---|
 | `cpt/cpt_unit_test.txt` | `CptPaletteTest.cc` |
 | `citcoms-velocity-domains/` | `GenerateVelocityDomainCitcomsTest.cc` |
+| `gsml/` | `GeoscimlReaderTest.cc` |
 
 **Everything else is not yet referenced by any test.** It arrived on 2026-08-11 from the old
 top-level `sample-data/` directory, which nothing in the build, the installer or the test suite
@@ -49,6 +50,10 @@ Anything still unreferenced at that point can simply be deleted.
 - **`deformation/`** — deformation network fixtures (`def_*.gpml`), crustal thickness and velocity
   scalar coverages, a velocity domain, and 21 `DEF_TEST_t*Ma.xy` files.
 - **`geojson/`** — a single GeoJSON file; the only one in the repository.
+- **`gsml/`** — two GeoSciML 2.0 files for the `.gsml` reader: a WFS response holding every member
+  type the reader translates (plus one it must skip) and the three geometry kinds, and a bare
+  feature with no `gml:featureMember` wrapper. Hand-written; the only `.gsml` files in the
+  repository.
 - **`gpml/`** — topological feature fixtures (`topology_test_*`), deformation source networks,
   co-registration seed/target pairs, symbology test features, and `error_missing_ref.gpml` (a
   deliberately broken file for error-path testing). `all_caps.gpml` is the largest file here at
