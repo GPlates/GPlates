@@ -28,6 +28,7 @@
 #ifndef GPLATES_FILEIO_GSMLFEATUREHANDLERS_H
 #define GPLATES_FILEIO_GSMLFEATUREHANDLERS_H
 
+#include <set>
 #include <QString>
 #include <QBuffer>
 
@@ -57,6 +58,10 @@ namespace GPlatesFileIO
 				const QString& feature_type_str,
 				FeatureCollectionHandle::weak_ref fc,
 				QBuffer& xml_data);
+
+	private:
+		//! The member types skipped so far, each warned about once.
+		std::set<QString> d_skipped_feature_types;
 	};
 
 	class GsmlFeatureHandlerFactory

@@ -26,6 +26,7 @@
 #include <boost/foreach.hpp>
 #include <boost/bind/bind.hpp>
 #include <QBuffer>
+#include <QDebug>
 #include <QXmlStreamReader>
 
 #include "GsmlFeatureHandlers.h"
@@ -138,12 +139,23 @@ qDebug() << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 				xml_data,
 				"//gpml:" + feature_type);
 	}
+	else
+	{
+		// Not a member type the reader translates (a gsml:MappedFeature, for one). Skip it -
+		// one such member must not lose the rest of the file - and say so once per type.
+		if (d_skipped_feature_types.insert(feature_type).second)
+		{
+			qWarning() << "GeoSciML: skipping" << feature_type
+					<< "feature members - not a type the reader translates.";
+		}
+		return;
+	}
 
 	if(results.size() != 1)
 	{
-		throw GPlatesGlobal::LogException(
-			GPLATES_EXCEPTION_SOURCE,	
-			"The number of feature is not 1. We are expecting one and only one feature here.");
+		qWarning() << "GeoSciML: skipping a feature member holding" << results.size()
+				<< feature_type << "elements instead of one.";
+		return;
 	}
 
 	QBuffer buf(&results[0]);
