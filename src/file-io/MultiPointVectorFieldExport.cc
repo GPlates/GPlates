@@ -267,21 +267,25 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_ter
 
 	// Convert the velocity domain file name template to a regular expression by replacing the
 	// placeholders with regular expressions that match the Terra integer parameters.
+	// The template is user-entered, so escape it first (and hence also search for the escaped
+	// placeholders) so that any regular expression metacharacters in it are matched literally.
 	const QString unsigned_integer_reg_exp_string("(\\d+)");
-	QString velocity_domain_file_name_reg_exp_string(velocity_domain_file_name_template);
+	QString velocity_domain_file_name_reg_exp_string =
+			QRegularExpression::escape(velocity_domain_file_name_template);
 	velocity_domain_file_name_reg_exp_string.replace(
-			velocity_domain_mt_place_holder,
+			QRegularExpression::escape(velocity_domain_mt_place_holder),
 			unsigned_integer_reg_exp_string);
 	velocity_domain_file_name_reg_exp_string.replace(
-			velocity_domain_nt_place_holder,
+			QRegularExpression::escape(velocity_domain_nt_place_holder),
 			unsigned_integer_reg_exp_string);
 	velocity_domain_file_name_reg_exp_string.replace(
-			velocity_domain_nd_place_holder,
+			QRegularExpression::escape(velocity_domain_nd_place_holder),
 			unsigned_integer_reg_exp_string);
 	velocity_domain_file_name_reg_exp_string.replace(
-			velocity_domain_processor_place_holder,
+			QRegularExpression::escape(velocity_domain_processor_place_holder),
 			unsigned_integer_reg_exp_string);
-	const QRegularExpression velocity_domain_file_name_reg_exp(velocity_domain_file_name_reg_exp_string);
+	const QRegularExpression velocity_domain_file_name_reg_exp(
+			velocity_domain_file_name_reg_exp_string);
 
 	// Determine the order of the template parameter placeholders.
 	const int index_of_mt = velocity_domain_file_name_template.indexOf(velocity_domain_mt_place_holder);
@@ -409,15 +413,19 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_cit
 
 	// Convert the velocity domain file name template to a regular expression by replacing the
 	// placeholders with regular expressions that match the CitcomS integer parameters.
+	// The template is user-entered, so escape it first (and hence also search for the escaped
+	// placeholders) so that any regular expression metacharacters in it are matched literally.
 	const QString unsigned_integer_reg_exp_string("(\\d+)");
-	QString velocity_domain_file_name_reg_exp_string(velocity_domain_file_name_template);
+	QString velocity_domain_file_name_reg_exp_string =
+			QRegularExpression::escape(velocity_domain_file_name_template);
 	velocity_domain_file_name_reg_exp_string.replace(
-			velocity_domain_density_place_holder,
+			QRegularExpression::escape(velocity_domain_density_place_holder),
 			unsigned_integer_reg_exp_string);
 	velocity_domain_file_name_reg_exp_string.replace(
-			velocity_domain_cap_number_place_holder,
+			QRegularExpression::escape(velocity_domain_cap_number_place_holder),
 			unsigned_integer_reg_exp_string);
-	const QRegularExpression velocity_domain_file_name_reg_exp(velocity_domain_file_name_reg_exp_string);
+	const QRegularExpression velocity_domain_file_name_reg_exp(
+			velocity_domain_file_name_reg_exp_string);
 
 	// Determine the order of the template parameter placeholders.
 	const int index_of_density = velocity_domain_file_name_template.indexOf(velocity_domain_density_place_holder);
