@@ -330,23 +330,22 @@ set(CMAKE_AUTORCC ON)
 # Our minimum supported Ubuntu is Jammy 22.04 which uses Qt 5.15.
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 #
-# The pygplates module needs only Qt Core (plus Core5Compat under Qt6). In particular it must
-# not link Qt Gui: on Linux and macOS 'Qt6::Gui' propagates Qt's own OpenGL dependency, which
-# is what used to make the Linux wheel require libGL. The Gui, Network, Svg, Widgets and OpenGL
-# modules serve code the module does not compile (see 'cmake/pygplates_source_closure.py' and
-# the pygplates-linkage test). All of the module's XML work, the GeoSciML reader included, is
-# QXmlStreamReader/Writer, which lives in Core under both Qt5 and Qt6.
+# The pygplates module needs only Qt Core. In particular it must not link Qt Gui: on Linux and
+# macOS 'Qt6::Gui' propagates Qt's own OpenGL dependency, which is what used to make the Linux
+# wheel require libGL. The Gui, Network, Svg, Widgets and OpenGL modules serve code the module
+# does not compile (see 'cmake/pygplates_source_closure.py' and the pygplates-linkage test).
+# All of the module's XML work, the GeoSciML reader included, is QXmlStreamReader/Writer, which
+# lives in Core under both Qt5 and Qt6.
 #
 if (QT_VERSION_MAJOR EQUAL 6)
-	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
-	# For example, QRegExp instead of QRegularExpression.
-	# Remove Core5Compat when no longer supporting Qt5.
+	# Note: We don't need Qt6::Core5Compat since we no longer use any Qt5-only APIs
+	# (the last was QRegExp, now QRegularExpression, which is in Qt Core under both Qt5 and Qt6).
 	#
-	# Also Qt6 moved the QOpenGL* classes from (Gui and Widgets modules in Qt5) into OpenGL (and new OpenGLWidgets) modules.
+	# Qt6 moved the QOpenGL* classes from (Gui and Widgets modules in Qt5) into OpenGL (and new OpenGLWidgets) modules.
 	if (GPLATES_BUILD_GPLATES)
-		find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
+		find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml OpenGL OpenGLWidgets)
 	else()
-		find_package(Qt6 REQUIRED COMPONENTS Core Core5Compat)
+		find_package(Qt6 REQUIRED COMPONENTS Core)
 	endif()
 else()
 	# In Qt5, the modern QOpenGL* classes are in the Gui and Widgets modules (not OpenGL and OpenGLWidgets modules).
@@ -1036,8 +1035,8 @@ endif()
 #
 # Qt dependency.
 #
-# The pygplates module links only Qt Core (plus Core5Compat under Qt6) - see the Qt
-# find_package split above for why. The pygplates-linkage test fails if Gui creeps back in.
+# The pygplates module links only Qt Core - see the Qt find_package split above for why.
+# The pygplates-linkage test fails if Gui creeps back in.
 target_link_libraries(${SOURCE_TARGET} PUBLIC Qt${QT_VERSION_MAJOR}::Core)
 if (GPLATES_BUILD_GPLATES)
 	target_link_libraries(${SOURCE_TARGET} PUBLIC
@@ -1048,10 +1047,6 @@ if (GPLATES_BUILD_GPLATES)
 			Qt${QT_VERSION_MAJOR}::Xml)
 endif()
 if (QT_VERSION_MAJOR EQUAL 6)
-	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
-	# For example, QRegExp instead of QRegularExpression.
-	# Remove this when no longer supporting Qt5.
-	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::Core5Compat)
 	if (GPLATES_BUILD_GPLATES)
 		# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
 		target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)

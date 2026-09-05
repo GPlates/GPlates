@@ -174,8 +174,8 @@ scikit-build-core (eg, `pip wheel ...`) outside of conda.
 
 ### `OpenGL_GL_PREFERENCE=LEGACY` (Linux) - history, and why the image still sets it
 
-> **No longer set for the module itself.** `pygplates.so` links only `Qt6Core` and
-> `Qt6Core5Compat` (its sources are the include closure of the pyGPlates API — see
+> **No longer set for the module itself.** `pygplates.so` links only `Qt6Core` (its sources
+> are the include closure of the pyGPlates API — see
 > `cmake/pygplates_source_closure.py` — and the last Gui uses, `gui/Colour`'s `QColor`
 > conversions and `file-io/RgbaRasterReader`'s `QImage`, moved to the GPlates side). Nothing on
 > its link line reaches OpenGL, so there is no GL family to choose and `pyproject.toml` no longer

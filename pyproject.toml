@@ -296,8 +296,8 @@ before-test = "sccache --show-stats"
 # See the notes in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
 "cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
 "build-dir" = "build/wheel"
-# No 'OpenGL_GL_PREFERENCE' here any more: the module links only Qt6Core and Qt6Core5Compat,
-# so nothing on its link line reaches OpenGL and there is no GL family to choose. It was
+# No 'OpenGL_GL_PREFERENCE' here any more: the module links only Qt6Core, so nothing on its
+# link line reaches OpenGL and there is no GL family to choose. It was
 # needed while the module linked Qt6Gui (whose imported target propagates Qt's OpenGL
 # dependency) - the history, and the two-libGLdispatch segfault the define prevented, is in
 # 'pygplates/wheel/README.md'. The docker image still sets it when building Qt and GLEW
