@@ -101,35 +101,6 @@ GUI_ALLOWLIST = frozenset([
     'gui/RasterColourPalette.cc',
 ])
 
-# The GeoSciML files only a Qt5 build lists as sources (the "QT_VERSION_MAJOR LESS 6" block
-# in "src/file-io/CMakeLists.txt" - they need QtXmlPatterns, which Qt6 removed). A few of
-# the headers *are* #included by TUs every build compiles (with the uses guarded by
-# QT_VERSION) - harmless, because a header need not be listed as a target source to be
-# includable. So the group is traced like any other file under Qt5, where the module does
-# compile it (the ".gsml" reader is on the API's file-format path), and skipped under Qt6,
-# where the headers are reachable but neither they nor their ".cc" are target sources
-# (pulling the headers in would pull the ".cc" in via the header->cc rule). Which applies
-# is the --qt-version-major option; the test passes the configured Qt version.
-QT5_ONLY_FILES = frozenset([
-    'file-io/ArbitraryNodeProcessor.h',
-    'file-io/ArbitraryXmlProfile.h',
-    'file-io/ArbitraryXmlReader.cc',
-    'file-io/ArbitraryXmlReader.h',
-    'file-io/GeoscimlProfile.cc',
-    'file-io/GeoscimlProfile.h',
-    'file-io/GsmlConst.h',
-    'file-io/GsmlFeatureHandlers.cc',
-    'file-io/GsmlFeatureHandlers.h',
-    'file-io/GsmlFeaturesDef.h',
-    'file-io/GsmlNodeProcessor.cc',
-    'file-io/GsmlNodeProcessor.h',
-    'file-io/GsmlNodeProcessorFactory.cc',
-    'file-io/GsmlNodeProcessorFactory.h',
-    'file-io/GsmlPropertyDef.h',
-    'file-io/GsmlPropertyHandlers.cc',
-    'file-io/GsmlPropertyHandlers.h',
-])
-
 # Angle includes the closure must not contain: the Qt Gui / Qt Widgets / OpenGL / Qwt surface
 # the module does not link (see the Qt find_package split in 'src/CMakeLists.txt' and the
 # pygplates-linkage test).
@@ -266,10 +237,8 @@ def discover_roots():
 
 
 class Closure(object):
-    def __init__(self, roots, skip=frozenset()):
+    def __init__(self, roots):
         self.roots = roots
-        # Files the module does not compile even when reached (see QT5_ONLY_FILES).
-        self.skip = skip
         # src-relative path -> the src-relative path that first reached it (None for roots).
         self.parent = {}
         self._resolve_cache = {}
@@ -297,7 +266,7 @@ class Closure(object):
             includer_dir = os.path.dirname(rel)
             for include in _QUOTED_INCLUDE_RE.findall(read_stripped(os.path.join(SRC_DIR, rel))):
                 resolved = self._resolve(include, includer_dir)
-                if resolved is None or resolved in self.parent or resolved in self.skip:
+                if resolved is None or resolved in self.parent:
                     continue
                 self.parent[resolved] = rel
                 queue.append(resolved)
@@ -307,7 +276,6 @@ class Closure(object):
                     for cc_suffix in SOURCE_SUFFIXES:
                         sibling = stem + cc_suffix
                         if sibling not in self.parent and \
-                                sibling not in self.skip and \
                                 os.path.isfile(os.path.join(SRC_DIR, sibling)):
                             self.parent[sibling] = resolved
                             queue.append(sibling)
@@ -455,9 +423,6 @@ def generate_doc(closure):
     lines.append('The pygplates module compiles only the include closure of the API roots below')
     lines.append('(reaching `X.h` pulls in `X.cc`). Everything else is GPlates-only and excluded by')
     lines.append('`src/*/CMakeLists.txt`; the `pygplates-source-closure` test enforces the boundary.')
-    lines.append('This is the Qt6 module, the one shipped; a Qt5 build additionally compiles the')
-    lines.append('QtXmlPatterns-based GeoSciML sources in `file-io` (the `QT_VERSION_MAJOR LESS 6`')
-    lines.append('block of its `CMakeLists.txt`).')
     lines.append('')
     lines.append('Roots: the exporter `.cc` of every `export_*()` call registered in')
     lines.append('`export_cpp_python_api()` outside the `GPLATES_PYTHON_EMBEDDING` guard, plus')
@@ -519,22 +484,16 @@ def main():
     parser.add_argument('--list-exclusions', action='store_true',
                         help='print, per directory, the built files NOT in the closure (the '
                              'gplates_only_srcs candidates)')
-    parser.add_argument('--qt-version-major', type=int, default=6, metavar='N',
-                        help='the Qt major version the module is built against (default: 6); '
-                             'the Qt5-only GeoSciML sources are traced only for 5')
     args = parser.parse_args()
 
     roots = discover_roots()
-    qt6_closure = Closure(roots, skip=QT5_ONLY_FILES)
-    closure = Closure(roots) if args.qt_version_major < 6 else qt6_closure
+    closure = Closure(roots)
 
     errors = check_forbidden(closure)
     if args.check_sources:
         errors.extend(check_sources(closure, args.check_sources))
     if args.check_doc or args.output_doc:
-        # The committed doc describes the module we ship, which is built against Qt6 - so it
-        # is generated from the Qt6 closure whichever Qt the checking build uses.
-        doc_lines = generate_doc(qt6_closure)
+        doc_lines = generate_doc(closure)
         if args.check_doc:
             errors.extend(check_doc(doc_lines, args.check_doc))
         if args.output_doc:

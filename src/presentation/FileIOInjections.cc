@@ -23,21 +23,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/bind/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QtGlobal>
 
 #include "FileIOInjections.h"
 
+#include "file-io/GeoscimlProfile.h"
 #include "file-io/OgrReader.h"
 #include "file-io/RasterReader.h"
 #include "file-io/RgbaRasterReader.h"
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-#include "file-io/GeoscimlProfile.h"
-#endif
 
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 #include "qt-widgets/GeoscimlProgressDialog.h"
-#endif
 #include "qt-widgets/ShapefilePropertyMapper.h"
 
 
@@ -52,14 +49,13 @@ namespace
 		return new GPlatesFileIO::RgbaRasterReader(filename, raster_reader, read_errors);
 	}
 
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 	boost::shared_ptr<GPlatesFileIO::GeoscimlProfile::ProgressReporter>
-	create_geosciml_progress_dialog()
+	create_geosciml_progress_dialog(
+			QWidget *dialog_parent)
 	{
 		return boost::shared_ptr<GPlatesFileIO::GeoscimlProfile::ProgressReporter>(
-				new GPlatesQtWidgets::GeoscimlProgressDialog());
+				new GPlatesQtWidgets::GeoscimlProgressDialog(dialog_parent));
 	}
-#endif
 }
 
 
@@ -69,9 +65,8 @@ GPlatesPresentation::register_file_io_injections(
 {
 	GPlatesFileIO::RasterReader::set_rgba_reader_factory(&create_rgba_raster_reader);
 
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-	GPlatesFileIO::GeoscimlProfile::set_progress_reporter_factory(&create_geosciml_progress_dialog);
-#endif
+	GPlatesFileIO::GeoscimlProfile::set_progress_reporter_factory(
+			boost::bind(&create_geosciml_progress_dialog, dialog_parent));
 
 	if (dialog_parent)
 	{

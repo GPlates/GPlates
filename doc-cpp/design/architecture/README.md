@@ -105,7 +105,7 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
   `QImage`-based `file-io/RgbaRasterReader` for BMP/GIF/JPEG/PNG/SVG rasters — without it a
   module reports such a raster as unreadable, which pyGPlates cannot observe); and
   `GeoscimlProfile::set_progress_reporter_factory` (the `QProgressDialog` in
-  `qt-widgets/GeoscimlProgressDialog`, Qt5 only — without it the `.gsml` reader runs silently).
+  `qt-widgets/GeoscimlProgressDialog` — without it the `.gsml` reader runs silently).
 
 ## Deferred / follow-up work (not in the build-graph-split PR)
 

@@ -26,10 +26,12 @@
 #include "GeoscimlProgressDialog.h"
 
 
-GPlatesQtWidgets::GeoscimlProgressDialog::GeoscimlProgressDialog() :
-	d_progress_dialog(new QProgressDialog("Translating features...", "Cancel", 0, 0)),
+GPlatesQtWidgets::GeoscimlProgressDialog::GeoscimlProgressDialog(
+		QWidget *parent) :
+	d_progress_dialog(new QProgressDialog("Translating features...", "Cancel", 0, 0, parent)),
 	d_count(0)
 {
+	d_progress_dialog->setWindowModality(Qt::WindowModal);
 }
 
 

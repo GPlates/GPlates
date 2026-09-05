@@ -8,6 +8,10 @@
 set(srcs
     AgeModelReader.cc
     AgeModelReader.h
+    ArbitraryNodeProcessor.h
+    ArbitraryXmlProfile.h
+    ArbitraryXmlReader.cc
+    ArbitraryXmlReader.h
     CitcomsFormatVelocityVectorFieldExport.cc
     CitcomsFormatVelocityVectorFieldExport.h
     CitcomsGMTFormatResolvedTopologicalBoundaryExport.cc
@@ -57,6 +61,8 @@ set(srcs
     GdalUtils.cc
     GdalUtils.h
     GeometryExporter.h
+    GeoscimlProfile.cc
+    GeoscimlProfile.h
     GmapReader.cc
     GmapReader.h
     GMTFormatDeformationExport.cc
@@ -108,6 +114,19 @@ set(srcs
     GpmlStructuralTypeReaderUtils.h
     GpmlUpgradeReaderUtils.cc
     GpmlUpgradeReaderUtils.h
+    GsmlConst.h
+    GsmlFeatureHandlers.cc
+    GsmlFeatureHandlers.h
+    GsmlFeaturesDef.h
+    GsmlNodeProcessor.cc
+    GsmlNodeProcessor.h
+    GsmlNodeProcessorFactory.cc
+    GsmlNodeProcessorFactory.h
+    GsmlPropertyDef.h
+    GsmlPropertyHandlers.cc
+    GsmlPropertyHandlers.h
+    GsmlXmlQuery.cc
+    GsmlXmlQuery.h
     GzipFile.cc
     GzipFile.h
     HellingerReader.cc
@@ -221,47 +240,6 @@ set(srcs
     XmlWriter.cc
     XmlWriter.h
 )
-
-# Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-# It has been deprecated since Qt 5.13.
-#
-# TODO: Find a replacement library. Re-implementing these sources on one is a sizeable job, and whether
-#       the GeoSciML support is worth preserving at all has not been investigated - so for now they
-#       simply build against Qt5 and not against Qt6.
-#
-# Note: This group needs only Qt Core, Xml and XmlPatterns, so a Qt5 build of the pygplates module
-#       compiles it too (the ".gsml" file format is registered by "FeatureCollectionFileFormatRegistry.cc",
-#       which every build compiles). Its progress dialog is Qt Widgets and therefore lives in
-#       "qt-widgets/GeoscimlProgressDialog.cc", injected by GPlates through
-#       GeoscimlProfile::set_progress_reporter_factory(). Shipped pyGPlates is Qt6-only - the conda
-#       environments ("qt6-main" in "env.*.yml") and the wheels ("QT_VERSION" in
-#       "pygplates/wheel/versions.sh") - so no pyGPlates we ship compiles these files at all.
-if (QT_VERSION_MAJOR LESS 6)
-    # Note: a few of these headers ("ArbitraryXmlReader.h", "GeoscimlProfile.h", ...) are
-    #       #included by translation units every build compiles (with the uses guarded by
-    #       QT_VERSION), which is harmless - but they must only be *listed* here, in the
-    #       Qt5-only block, so that a Qt6 build does not see them as target sources. The
-    #       source-closure tracer treats the group the same way (see QT5_ONLY_FILES in
-    #       "cmake/pygplates_source_closure.py").
-    list(APPEND srcs
-        ArbitraryNodeProcessor.h
-        ArbitraryXmlProfile.h
-        ArbitraryXmlReader.cc
-        ArbitraryXmlReader.h
-        GeoscimlProfile.cc
-        GeoscimlProfile.h
-        GsmlConst.h
-        GsmlFeatureHandlers.cc
-        GsmlFeatureHandlers.h
-        GsmlFeaturesDef.h
-        GsmlNodeProcessor.cc
-        GsmlNodeProcessor.h
-        GsmlNodeProcessorFactory.cc
-        GsmlNodeProcessorFactory.h
-        GsmlPropertyDef.h
-        GsmlPropertyHandlers.cc
-        GsmlPropertyHandlers.h)
-endif()
 
 
 # GPlates-only sources: excluded from the pygplates module, whose source list is the

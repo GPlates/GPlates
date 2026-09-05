@@ -329,17 +329,13 @@ set(CMAKE_AUTORCC ON)
 #
 # Our minimum supported Ubuntu is Jammy 22.04 which uses Qt 5.15.
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
-# The pygplates source-closure test ('pygplates/test/CMakeLists.txt') traces the Qt5-only
-# sources only when the module is built against Qt5.
-set(QT_VERSION_MAJOR ${QT_VERSION_MAJOR} PARENT_SCOPE)
 #
 # The pygplates module needs only Qt Core (plus Core5Compat under Qt6). In particular it must
 # not link Qt Gui: on Linux and macOS 'Qt6::Gui' propagates Qt's own OpenGL dependency, which
 # is what used to make the Linux wheel require libGL. The Gui, Network, Svg, Widgets and OpenGL
 # modules serve code the module does not compile (see 'cmake/pygplates_source_closure.py' and
-# the pygplates-linkage test). The module's XML work is QXmlStreamReader/Writer, which lives in
-# Core under Qt6 - but under Qt5 the module also compiles the QXmlQuery-based
-# 'utils/XQueryUtils.cc', so the Qt5 module still needs Xml and XmlPatterns.
+# the pygplates-linkage test). All of the module's XML work, the GeoSciML reader included, is
+# QXmlStreamReader/Writer, which lives in Core under both Qt5 and Qt6.
 #
 if (QT_VERSION_MAJOR EQUAL 6)
 	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
@@ -355,9 +351,9 @@ if (QT_VERSION_MAJOR EQUAL 6)
 else()
 	# In Qt5, the modern QOpenGL* classes are in the Gui and Widgets modules (not OpenGL and OpenGLWidgets modules).
 	if (GPLATES_BUILD_GPLATES)
-		find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
+		find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml)
 	else()
-		find_package(Qt5 5.15 REQUIRED COMPONENTS Core Xml XmlPatterns)
+		find_package(Qt5 5.15 REQUIRED COMPONENTS Core)
 	endif()
 endif()
 
@@ -1040,7 +1036,7 @@ endif()
 #
 # Qt dependency.
 #
-# The pygplates module links only Qt Core (and, under Qt5, Xml/XmlPatterns) - see the Qt
+# The pygplates module links only Qt Core (plus Core5Compat under Qt6) - see the Qt
 # find_package split above for why. The pygplates-linkage test fails if Gui creeps back in.
 target_link_libraries(${SOURCE_TARGET} PUBLIC Qt${QT_VERSION_MAJOR}::Core)
 if (GPLATES_BUILD_GPLATES)
@@ -1060,11 +1056,6 @@ if (QT_VERSION_MAJOR EQUAL 6)
 		# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
 		target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
 	endif()
-else()
-	if (NOT GPLATES_BUILD_GPLATES)
-		target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::Xml)
-	endif()
-	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::XmlPatterns)
 endif()
 # The directory where Qt AUTOIUC auto-generated files ('ui_*.h') get written is automatically added to the
 # INCLUDE_DIRECTORIES target property of the 'gplates-lib' and 'pygplates' targets, but not INTERFACE_INCLUDE_DIRECTORIES.

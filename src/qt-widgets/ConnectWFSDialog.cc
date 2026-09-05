@@ -65,6 +65,8 @@ GPlatesQtWidgets::ConnectWFSDialog::ConnectWFSDialog(
 			parent_, 
 			Qt::Window),
 	d_app_state(app_state),
+	d_reply(NULL),
+	d_xml_file(NULL),
 	d_request_id(0),
 	d_httpRequestAborted(false)
 {
@@ -85,6 +87,10 @@ GPlatesQtWidgets::ConnectWFSDialog::ConnectWFSDialog(
 
 	// set up progress dialog 
 	d_progress_dlg = new QProgressDialog(this);
+	// A QProgressDialog shows itself minimumDuration() after construction unless reset, which
+	// would pop up an empty one a few seconds after this dialog opens (whose Cancel would then
+	// abort a request that was never made). downloadFile() shows it when there is a request.
+	d_progress_dlg->reset();
 	QObject::connect( 
 		d_progress_dlg, 
 		SIGNAL(canceled()), 
@@ -315,7 +321,10 @@ void
 GPlatesQtWidgets::ConnectWFSDialog::cancelDownload()
 {
 	d_httpRequestAborted = true;
-	d_reply->abort();
+	if (d_reply)
+	{
+		d_reply->abort();
+	}
 	d_progress_dlg->hide();
 }   
 
@@ -334,6 +343,7 @@ GPlatesQtWidgets::ConnectWFSDialog::httpFinished()
              d_xml_file = 0;
 		}
 		d_reply->deleteLater();
+		d_reply = 0;
 
 		d_progress_dlg->hide();
 		return;

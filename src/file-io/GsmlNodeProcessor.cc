@@ -26,22 +26,18 @@
 #include <QByteArray>
 #include <QBuffer>
 #include <QDebug>
-#include <QXmlQuery>
-#include <QXmlSerializer>
 
 #include <boost/foreach.hpp>
 
 #include "GsmlNodeProcessor.h"
-#include "utils/XQueryUtils.h"
+#include "GsmlXmlQuery.h"
 
 void
 GPlatesFileIO::GsmlNodeProcessor::execute(
 		QBuffer& xml_data)
 {
-	std::vector<QByteArray> results = 
-		GPlatesUtils::XQuery::evaluate_query(
-				xml_data,
-				d_query_str);
+	std::vector<QByteArray> results =
+			GsmlXmlQuery::find_elements(xml_data.data(), d_query_str);
 
 	BOOST_FOREACH(QByteArray& data, results)
 	{

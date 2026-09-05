@@ -37,7 +37,7 @@ namespace GPlatesPresentation
 	 *
 	 *  - the Qt-image-based reader for the RGBA raster formats (BMP, GIF, JPEG, PNG, SVG),
 	 *    via @a GPlatesFileIO::RasterReader::set_rgba_reader_factory;
-	 *  - the progress dialog shown while translating GeoSciML features (Qt5 only),
+	 *  - the progress dialog shown while translating GeoSciML features,
 	 *    via @a GPlatesFileIO::GeoscimlProfile::set_progress_reporter_factory;
 	 *  - the shapefile attribute-mapping dialog, via @a GPlatesFileIO::OgrReader::set_property_mapper -
 	 *    only when @a dialog_parent is non-null. Without it @a OgrReader falls back to a default

@@ -27,15 +27,13 @@
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
-#include <QXmlQuery>
-#include <QXmlSerializer>
 #include <QXmlStreamReader>
-#include <QXmlResultItems>
 
 #include "ArbitraryXmlReader.h"
 #include "GsmlConst.h"
 #include "GsmlNodeProcessorFactory.h"
 #include "GsmlPropertyHandlers.h"
+#include "GsmlXmlQuery.h"
 #include "GpmlPropertyStructuralTypeReaderUtils.h"
 
 #include "global/GdalVersion.h"
@@ -54,8 +52,6 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
 
-#include "utils/XQueryUtils.h"
-
 
 using namespace GPlatesFileIO::GsmlConst;
 using namespace GPlatesPropertyValues;
@@ -69,7 +65,7 @@ namespace
 			QBuffer& xml_data)
 	{
 		QXmlStreamReader reader(&xml_data);
-		if(XQuery::next_start_element(reader))
+		if(reader.readNextStartElement())
 		{
 			return reader.readElementText();
 		}
@@ -131,10 +127,10 @@ namespace
 	get_srs_name(
 			QByteArray& array_buf)
 	{
-		std::vector<QVariant> results = 
-			GPlatesUtils::XQuery::evaluate_attribute(array_buf,"srsName");
+		const QStringList results =
+				GPlatesFileIO::GsmlXmlQuery::find_attribute_values(array_buf, "srsName");
 
-		std::size_t s = results.size();
+		const int s = results.size();
 		if( s >= 1)
 		{
 			if(s > 1)
@@ -142,7 +138,7 @@ namespace
 				qWarning() << "More than one srsName attributes have been found.";
 				qWarning() << "Only the first one will be returned.";
 			}
-			return results[0].toString();
+			return results[0];
 		}
 		return QString();
 	}
@@ -166,10 +162,13 @@ namespace
 			const QByteArray& buf)
 	{
 		QXmlStreamReader reader(buf);
+		// The buffer is the bare start tag, whose prefix is undeclared: with namespace
+		// processing on, the reader stops on that error before delivering the element.
+		reader.setNamespaceProcessing(false);
 		QXmlStreamAttributes attrs;
-		while(XQuery::next_start_element(reader))
+		while(reader.readNextStartElement())
 		{
-			if(reader.name() == "posList")
+			if(reader.name() == QStringLiteral("posList"))
 			{
 				attrs = reader.attributes();
 				break;
@@ -312,7 +311,7 @@ namespace
 			QBuffer& buf)
 	{
 		QXmlStreamReader reader(&buf);
-		XQuery::next_start_element(reader);
+		reader.readNextStartElement();
 
 		boost::shared_ptr<XmlElementNode::AliasToNamespaceMap> alias_map(
 			new XmlElementNode::AliasToNamespaceMap());
@@ -361,10 +360,7 @@ qDebug() << "GPlatesFileIO::GsmlPropertyHandlers::process_geometries() buf_array
 qDebug() << "======================================================================";
 #endif
 
-	std::vector<QByteArray> results = 
-		XQuery::evaluate_query(
-				buf_array,
-				query_str);
+	std::vector<QByteArray> results = GsmlXmlQuery::find_elements(buf_array, query_str);
 	
 // qDebug() << "GPlatesFileIO::GsmlPropertyHandlers::process_geometries() results.size() = " << results.size();
 
@@ -379,7 +375,7 @@ qDebug() << "===================================================================
 
 		if(query_str.indexOf("Point") != -1)
 		{
-			XQuery::wrap_xml_data(array,"gpml:position");
+			array = GsmlXmlQuery::wrap_element(array, "gpml:position");
 
 			convert_to_epsg_4326(array);
 			normalize_geometry_coord(array);
@@ -401,7 +397,7 @@ qDebug() << "===================================================================
 		else if(query_str.indexOf("LineString") != -1)
 		{
 			// need to reorder the xml nesting 
-			XQuery::wrap_xml_data(array,"gml:baseCurve");
+			array = GsmlXmlQuery::wrap_element(array, "gml:baseCurve");
 
 			convert_to_epsg_4326(array);
 			normalize_geometry_coord(array);
@@ -431,9 +427,9 @@ qDebug() << "===================================================================
 		{
 			// need to reorder the xml nesting to match gpml
 			array.replace("Polygon", "LinearRing");
-			XQuery::wrap_xml_data(array,"gml:exterior");
-			XQuery::wrap_xml_data(array,"gml:Polygon");
-			XQuery::wrap_xml_data(array,"gpml:ConstantValue");
+			array = GsmlXmlQuery::wrap_element(array, "gml:exterior");
+			array = GsmlXmlQuery::wrap_element(array, "gml:Polygon");
+			array = GsmlXmlQuery::wrap_element(array, "gpml:ConstantValue");
 
 			convert_to_epsg_4326(array);
 			normalize_geometry_coord(array);
@@ -533,18 +529,9 @@ void
 GPlatesFileIO::GsmlPropertyHandlers::handle_occurrence_property(
 		QBuffer& xml_data)
 {
-#if 0
-	std::vector<QByteArray> results = 
-		XQuery::evaluate(
-				xml_data,
-				"/gsml:occurrence/gsml:MappedFeature/gsml:shape",
-				boost::bind(&XQuery::is_empty, boost::placeholders::_1));
-#endif
-
-	std::vector<QByteArray> results = 
-		XQuery::evaluate_query(
-				xml_data,
-				"/gsml:occurrence/gsml:MappedFeature/gsml:shape");
+	std::vector<QByteArray> results = GsmlXmlQuery::find_elements(
+			xml_data.data(),
+			"/gsml:occurrence/gsml:MappedFeature/gsml:shape");
 
 	BOOST_FOREACH(QByteArray& array, results)
 	{
@@ -595,11 +582,11 @@ GPlatesFileIO::GsmlPropertyHandlers::handle_gml_valid_time(
 	{
 		if( reader.tokenString() == "StartElement")
 		{
-			if(reader.name() == "begin") { get_begin = true; }
-			else if( reader.name() == "end") { get_begin = false; }
+			if(reader.name() == QStringLiteral("begin")) { get_begin = true; }
+			else if( reader.name() == QStringLiteral("end")) { get_begin = false; }
 		}
 
-		if (reader.name() == "timePosition")
+		if (reader.name() == QStringLiteral("timePosition"))
 		{
 			reader.readNext();
 			if( get_begin )
@@ -681,7 +668,7 @@ GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_rock_max_thick(
 {
 	d_feature->add(
 			GPlatesModel::TopLevelPropertyInline::create(
-					PropertyName::create_gpml("rock_min_thick"),
+					PropertyName::create_gpml("rock_max_thick"),
 					XsDouble::create(get_element_text(xml_data).toDouble())));
 }
 

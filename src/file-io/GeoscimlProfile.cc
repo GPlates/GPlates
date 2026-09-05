@@ -25,11 +25,8 @@
  */
 #include <QBuffer>
 #include <QDebug>
+#include <QFile>
 #include <QString>
-#include <QDomDocument>
-#include <QXmlQuery>
-#include <QXmlResultItems>
-#include <QXmlSerializer>
 #include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 
@@ -37,8 +34,7 @@
 #include "GsmlFeatureHandlers.h"
 #include "GsmlPropertyHandlers.h"
 #include "GsmlNodeProcessorFactory.h"
-
-#include "utils/XQueryUtils.h"
+#include "GsmlXmlQuery.h"
 
 
 GPlatesFileIO::GeoscimlProfile::progress_reporter_factory_type
@@ -64,8 +60,6 @@ GPlatesFileIO::GeoscimlProfile::populate(
 	return;
 }
 
-using namespace GPlatesUtils;
-
 void
 GPlatesFileIO::GeoscimlProfile::populate(
 		QByteArray& xml_data,
@@ -80,47 +74,58 @@ GPlatesFileIO::GeoscimlProfile::populate(
 		progress_reporter = s_progress_reporter_factory();
 	}
 
-	try
-	{
-		// evaluate for features
-		std::vector<QByteArray> results = 
-			XQuery::evaluate_features(
-					xml_data,
-					"/wfs:FeatureCollection/gml:featureMember");
+	// Every feature member, wherever it is (a WFS response wraps them in a
+	// wfs:FeatureCollection, but the reader has never required that).
+	std::vector<QByteArray> results = GsmlXmlQuery::find_elements(xml_data, "//gml:featureMember");
 
-		int count = results.size();
-		int i = 1;
+	int count = results.size();
+	int i = 1;
 // qDebug() << "GPlatesFileIO::GeoscimlProfile::populate: count =" << count;
 
-		if (progress_reporter)
+	if (progress_reporter)
+	{
+		progress_reporter->set_count(count);
+	}
+
+	// One handler for the whole file, so that it warns about each skipped member type once.
+	boost::shared_ptr<GsmlFeatureHandler> feature_handler =
+			GsmlFeatureHandlerFactory::get_instance();
+
+	if( results.size() == 0)
+	{
+		//This case covers GeoSciML data which has not been wrapped in wfs:FeatureCollection.
+		try
 		{
-			progress_reporter->set_count(count);
+			feature_handler->handle_feature_member(fch, xml_data);
 		}
-
-		if( results.size() == 0)
+		catch(const std::exception &ex)
 		{
-			//This case covers GeoSciML data which has not been wrapped in wfs:FeatureCollection.
-			GsmlFeatureHandlerFactory::get_instance()->handle_feature_member(fch, xml_data);
-		}
-		else
-		{
-			BOOST_FOREACH(QByteArray& array, results)
-			{
-				if (progress_reporter &&
-					!progress_reporter->update(i))
-				{
-					break; // out of the loop
-				}
-
-				GsmlFeatureHandlerFactory::get_instance()->handle_feature_member(fch, array);
-
-				++i;
-			}
+			qWarning() << "GeoSciML: could not translate the feature:" << ex.what();
 		}
 	}
-	catch(const std::exception& ex)
+	else
 	{
-		qWarning() << ex.what();
+		BOOST_FOREACH(QByteArray &array, results)
+		{
+			if (progress_reporter &&
+				!progress_reporter->update(i))
+			{
+				break; // out of the loop
+			}
+
+			// A member that cannot be translated is skipped, not the rest of the file.
+			try
+			{
+				feature_handler->handle_feature_member(fch, array);
+			}
+			catch(const std::exception &ex)
+			{
+				qWarning() << "GeoSciML: could not translate feature member" << i << "of" << count
+						<< ":" << ex.what();
+			}
+
+			++i;
+		}
 	}
 
 	return;
@@ -143,9 +148,7 @@ GPlatesFileIO::GeoscimlProfile::count_features(
 	std::vector<QByteArray> results;
 	try
 	{
-		results = XQuery::evaluate_features(
-					xml_data,
-					"/wfs:FeatureCollection/gml:featureMember");
+		results = GsmlXmlQuery::find_elements(xml_data, "//gml:featureMember");
 // qDebug() << "GPlatesFileIO::GeoscimlProfile::count_features: results=" << results.size();
 		return results.size();
 	}
