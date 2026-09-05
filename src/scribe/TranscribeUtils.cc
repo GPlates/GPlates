@@ -66,31 +66,34 @@ namespace GPlatesScribe
 
 			// Both regular expressions are anchored at the start of the file path, so the length
 			// of the whole match is the length of the matched prefix.
-			const QRegularExpressionMatch drive_letter_match = WINDOWS_DRIVE_LETTER_REGEXP.match(file_path);
-			const QRegularExpressionMatch share_name_match = WINDOWS_SHARE_NAME_REGEXP.match(file_path);
-
-			if (drive_letter_match.hasMatch())
+			QRegularExpressionMatch match = WINDOWS_DRIVE_LETTER_REGEXP.match(file_path);
+			if (match.hasMatch())
 			{
 				// Split "C:/dir/file.txt" into "C:" and "dir/file.txt" for example.
 
-				const QString drive_letter = file_path.left(drive_letter_match.capturedLength(0) - 1);
+				const QString drive_letter = file_path.left(match.capturedLength(0) - 1);
 
 				// Make the drive letters are uppercase so they compare properly later on.
 				// They should already be uppercase if QFileInfo::absoluteFilePath() was used to create them.
 				// But we make sure anyway.
 				dir_path.append(drive_letter.toUpper());
 
-				file_path = file_path.mid(drive_letter_match.capturedLength(0));
+				file_path = file_path.mid(match.capturedLength(0));
 			}
-			else if (share_name_match.hasMatch())
+			else
 			{
-				// Split "//sharename/dir/file.txt" into "//sharename" and "dir/file.txt" for example.
+				match = WINDOWS_SHARE_NAME_REGEXP.match(file_path);
+				if (match.hasMatch())
+				{
+					// Split "//sharename/dir/file.txt" into "//sharename" and "dir/file.txt"
+					// for example.
 
-				const QString share_name = file_path.left(share_name_match.capturedLength(0) - 1);
+					const QString share_name = file_path.left(match.capturedLength(0) - 1);
 
-				dir_path.append(share_name);
+					dir_path.append(share_name);
 
-				file_path = file_path.mid(share_name_match.capturedLength(0));
+					file_path = file_path.mid(match.capturedLength(0));
+				}
 			}
 
 			dir_path = dir_path + file_path.split('/');
@@ -385,19 +388,21 @@ GPlatesScribe::TranscribeUtils::convert_file_path(
 
 	// Both regular expressions are anchored at the start of the file path, so the length of the
 	// whole match is the length of the matched prefix.
-	const QRegularExpressionMatch drive_letter_match = WINDOWS_DRIVE_LETTER_REGEXP.match(file_path);
-	const QRegularExpressionMatch share_name_match = WINDOWS_SHARE_NAME_REGEXP.match(file_path);
 
 	// Remove Windows drive letter if necessary.
-	if (drive_letter_match.hasMatch())
+	QRegularExpressionMatch match = WINDOWS_DRIVE_LETTER_REGEXP.match(file_path);
+	if (match.hasMatch())
 	{
 		// Change "C:/dir/file.txt" into "/dir/file.txt" for example.
-		return '/' + file_path.mid(drive_letter_match.capturedLength(0));
+		return '/' + file_path.mid(match.capturedLength(0));
 	}
-	else if (share_name_match.hasMatch())
+
+	// Remove Windows share name if necessary.
+	match = WINDOWS_SHARE_NAME_REGEXP.match(file_path);
+	if (match.hasMatch())
 	{
 		// Change "//sharename/dir/file.txt" into "/dir/file.txt" for example.
-		return '/' + file_path.mid(share_name_match.capturedLength(0));
+		return '/' + file_path.mid(match.capturedLength(0));
 	}
 
 #endif
