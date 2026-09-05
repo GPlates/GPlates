@@ -169,20 +169,22 @@ TEST_F(GeoscimlReaderTest, translates_every_supported_member_and_skips_the_rest)
 {
 	const feature_seq_type features = read("wfs_features.gsml");
 
-	// Six members, of which the gsml:MappedFeature is not translated - and the members
+	// Seven members, of which the gsml:MappedFeature is not translated - and the members
 	// after it still are.
-	ASSERT_EQ(5u, features.size());
+	ASSERT_EQ(6u, features.size());
 	EXPECT_EQ(gpml_type("UnclassifiedFeature"), features[0]->feature_type());
 	EXPECT_EQ(gpml_type("UnclassifiedFeature"), features[1]->feature_type());
 	EXPECT_EQ(gpml_type("UnclassifiedFeature"), features[2]->feature_type());
 	EXPECT_EQ(gpml_type("RockUnit_siliciclastic"), features[3]->feature_type());
 	EXPECT_EQ(gpml_type("FossilCollection_large"), features[4]->feature_type());
+	EXPECT_EQ(gpml_type("UnclassifiedFeature"), features[5]->feature_type());
 
 	EXPECT_EQ("Line feature", name(features[0]));
 	EXPECT_EQ("Point feature", name(features[1]));
 	EXPECT_EQ("Polygon feature", name(features[2]));
 	EXPECT_EQ("Rock unit", name(features[3]));
 	EXPECT_EQ("Fossil collection", name(features[4]));
+	EXPECT_EQ("Three-dimensional line", name(features[5]));
 }
 
 
@@ -253,7 +255,7 @@ TEST_F(GeoscimlReaderTest, polygon_and_repeated_properties)
 TEST_F(GeoscimlReaderTest, macrostrat_properties)
 {
 	const feature_seq_type features = read("wfs_features.gsml");
-	ASSERT_EQ(5u, features.size());
+	ASSERT_LE(5u, features.size());
 	const GPlatesModel::FeatureHandle::weak_ref &rock_unit = features[3];
 	const GPlatesModel::FeatureHandle::weak_ref &fossils = features[4];
 
@@ -268,6 +270,23 @@ TEST_F(GeoscimlReaderTest, macrostrat_properties)
 					only_geometry(fossils).get());
 	ASSERT_TRUE(point);
 	expect_lat_lon(-33, 151, point->position());
+}
+
+
+TEST_F(GeoscimlReaderTest, three_dimensional_pos_list_in_another_srs)
+{
+	const feature_seq_type features = read("wfs_features.gsml");
+	ASSERT_EQ(6u, features.size());
+
+	// srsDimension="3" is read off the bare gml:posList start tag, so the coordinates are
+	// consumed in triples and the height dropped. (The SRS itself is not transformed - that
+	// code has been disabled since GDAL 3 - so the values pass through, and are swapped.)
+	const GPlatesMaths::PolylineOnSphere *polyline =
+			dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(only_geometry(features[5]).get());
+	ASSERT_TRUE(polyline);
+	ASSERT_EQ(3u, polyline->number_of_vertices());
+	expect_lat_lon(20, 10, *polyline->vertex_begin());
+	expect_lat_lon(30, 20, *--polyline->vertex_end());
 }
 
 

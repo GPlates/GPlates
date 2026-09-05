@@ -162,6 +162,9 @@ namespace
 			const QByteArray& buf)
 	{
 		QXmlStreamReader reader(buf);
+		// The buffer is the bare start tag, whose prefix is undeclared: with namespace
+		// processing on, the reader stops on that error before delivering the element.
+		reader.setNamespaceProcessing(false);
 		QXmlStreamAttributes attrs;
 		while(reader.readNextStartElement())
 		{

@@ -5,6 +5,8 @@
   without losing the members after it), and the three geometry kinds it handles. Coordinates
   in gml:posList are longitude latitude, which the reader swaps; a gml:pos is read as the
   GPML order, latitude longitude. The reader expects a gml:posList directly under gml:Polygon.
+  The last member is a three-dimensional line in another SRS, which the reader reads in
+  triples (it drops the height, and does not transform the SRS).
   Used by GeoscimlReaderTest.cc.
 -->
 <wfs:FeatureCollection
@@ -93,5 +95,15 @@
       </gsml:shape>
       <gpml:fossil_diversity>7</gpml:fossil_diversity>
     </gpml:FossilCollection_large>
+  </gml:featureMember>
+  <gml:featureMember>
+    <gsml:UnclassifiedFeature gml:id="line3d">
+      <gml:name>Three-dimensional line</gml:name>
+      <gsml:shape>
+        <gml:LineString srsName="EPSG:4979">
+          <gml:posList srsDimension="3">10 20 100 15 25 200 20 30 300</gml:posList>
+        </gml:LineString>
+      </gsml:shape>
+    </gsml:UnclassifiedFeature>
   </gml:featureMember>
 </wfs:FeatureCollection>
