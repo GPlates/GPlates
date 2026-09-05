@@ -46,7 +46,10 @@ using GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat;
 
 namespace
 {
-	//! Returns the length of the matched format specifier, or -1 if @a filename_template doesn't match.
+	/**
+	 * Returns the length of the matched format specifier, or -1 if @a filename_template
+	 * doesn't match.
+	 */
 	int
 	match_length(
 			const QString &filename_template)

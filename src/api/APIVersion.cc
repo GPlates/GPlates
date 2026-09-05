@@ -176,9 +176,12 @@ GPlatesApi::Version::extract_release_suffix(
 	// Note the trailing "\z" (end of string) rather than "$" (which would also match just before
 	// a trailing newline).
 	const QRegularExpression release_suffix_regex(
-			"^(?:(a|b|rc)(0|[1-9][0-9]*))?(?:\\.post(0|[1-9][0-9]*))?(?:\\.dev(0|[1-9][0-9]*))?\\z");
+			"^(?:(a|b|rc)(0|[1-9][0-9]*))?"
+			"(?:\\.post(0|[1-9][0-9]*))?"
+			"(?:\\.dev(0|[1-9][0-9]*))?\\z");
 
-	const QRegularExpressionMatch release_suffix_match = release_suffix_regex.match(release_suffix_string);
+	const QRegularExpressionMatch release_suffix_match =
+			release_suffix_regex.match(release_suffix_string);
 
 	if (!release_suffix_match.hasMatch())
 	{
