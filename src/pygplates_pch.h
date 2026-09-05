@@ -166,7 +166,7 @@
 #include <QProcess>
 #include <QQueue>
 #include <QRect>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QSet>
 #include <QStack>
 #include <QString>
