@@ -80,7 +80,8 @@ GPlatesGui::PythonManager::PythonManager() :
 	d_show_python_init_fail_dlg = user_pref.get_value("python/show_python_init_fail_dialog").toBool();
 	d_python_home = user_pref.get_value("python/python_home").toString();
 
-	static const QRegularExpression rx("^\\d.\\d"); // Match d.d
+	// Match the leading "major.minor" (eg, "3.12" from "3.12.4 (main, ...)").
+	static const QRegularExpression rx("^\\d+\\.\\d+");
 	d_python_version = rx.match(QString(Py_GetVersion())).captured();
 	//qDebug() << "Python Version: " << d_python_version;
 }
