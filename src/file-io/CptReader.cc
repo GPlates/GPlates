@@ -682,21 +682,13 @@ void
 GPlatesFileIO::CptParser::process_comment(
 		const QString& line)
 {
-	//remove all spaces
-	QString str = line.toUpper();
-	int i = 0;
-	while( i<str.length() )
-	{
-		if(str.at(i).isSpace())
-			str = str.remove(i,1);
-		else
-			i++;
-	}
-
-	static const QRegularExpression hsv_regex("COLOR_MODEL\\s*=\\s*\\+?HSV");
+	// Match case-insensitively since GMT writes "# COLOR_MODEL = hsv" in lower case.
+	static const QRegularExpression hsv_regex(
+			"COLOR_MODEL\\s*=\\s*\\+?HSV",
+			QRegularExpression::CaseInsensitiveOption);
 	if(hsv_regex.match(line).hasMatch())
 	{
-			d_default_model = HSV;
+		d_default_model = HSV;
 	}
 }
 
