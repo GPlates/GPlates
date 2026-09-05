@@ -264,11 +264,13 @@ GPlatesFileIO::PlatesRotationFileProxy::init(
 
 
 GPlatesFileIO::RotationFileReaderV2::RotationFileReaderV2() :
-	d_commnet_line_rx(COMMENT_LINE_REGEXP),
-	d_pole_rx(ROTATION_POLE_REGEXP),
-	d_attr_rx(ATTRIBUTE_LINE_REGEXP),
+	// Rotation files are user data, so match "\s" and "\d" against Unicode whitespace and digits
+	// (as QRegExp did) rather than the ASCII-only default of QRegularExpression.
+	d_commnet_line_rx(COMMENT_LINE_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
+	d_pole_rx(ROTATION_POLE_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
+	d_attr_rx(ATTRIBUTE_LINE_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
 	d_multi_line_attr_rx(MULTI_LINE_ATTR_REGEXP),
-	d_mprs_header_rx(MPRS_HEADER_REGEXP),
+	d_mprs_header_rx(MPRS_HEADER_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
 	d_last_moving_pid(0),
 	d_processing_mprs(false)
 {
@@ -555,8 +557,7 @@ bool
 GPlatesFileIO::RotationFileReaderV2::is_valid_rotation_pole_line(
 		const QString& str)
 {
-	static const QRegularExpression rx(ROTATION_POLE_REGEXP);
-	return rx.match(str).hasMatch();
+	return d_pole_rx.match(str).hasMatch();
 }
 
 bool
@@ -569,9 +570,7 @@ GPlatesFileIO::RotationFileReaderV2::parse_rotation_pole_line(
 	if(line.startsWith(COMMENT_LEADING_CHARACTER))
 		data.disabled = true;
 
-	static const QRegularExpression rx(ROTATION_POLE_REGEXP);
-
-	const QRegularExpressionMatch match = rx.match(str);
+	const QRegularExpressionMatch match = d_pole_rx.match(str);
 	if(!match.hasMatch())
 		return false;
 
