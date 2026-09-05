@@ -25,7 +25,7 @@
  */
 
 #include <QLocale>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QTextStream>
 
 #include "MultiPointVectorFieldExport.h"
@@ -281,7 +281,7 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_ter
 	velocity_domain_file_name_reg_exp_string.replace(
 			velocity_domain_processor_place_holder,
 			unsigned_integer_reg_exp_string);
-	const QRegExp velocity_domain_file_name_reg_exp(velocity_domain_file_name_reg_exp_string);
+	const QRegularExpression velocity_domain_file_name_reg_exp(velocity_domain_file_name_reg_exp_string);
 
 	// Determine the order of the template parameter placeholders.
 	const int index_of_mt = velocity_domain_file_name_template.indexOf(velocity_domain_mt_place_holder);
@@ -316,12 +316,14 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_ter
 		const QString velocity_domain_filename = qfile_info.completeBaseName();
 
 		// See if the current velocity domain filename matches the template.
-		if (velocity_domain_file_name_reg_exp.indexIn(velocity_domain_filename) < 0)
+		const QRegularExpressionMatch velocity_domain_file_name_match =
+				velocity_domain_file_name_reg_exp.match(velocity_domain_filename);
+		if (!velocity_domain_file_name_match.hasMatch())
 		{
 			continue;
 		}
 
-		const QStringList template_parameters = velocity_domain_file_name_reg_exp.capturedTexts();
+		const QStringList template_parameters = velocity_domain_file_name_match.capturedTexts();
 
 		// All template parameters must have matched to get here.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -415,7 +417,7 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_cit
 	velocity_domain_file_name_reg_exp_string.replace(
 			velocity_domain_cap_number_place_holder,
 			unsigned_integer_reg_exp_string);
-	const QRegExp velocity_domain_file_name_reg_exp(velocity_domain_file_name_reg_exp_string);
+	const QRegularExpression velocity_domain_file_name_reg_exp(velocity_domain_file_name_reg_exp_string);
 
 	// Determine the order of the template parameter placeholders.
 	const int index_of_density = velocity_domain_file_name_template.indexOf(velocity_domain_density_place_holder);
@@ -442,12 +444,14 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_cit
 		const QString velocity_domain_filename = qfile_info.completeBaseName();
 
 		// See if the current velocity domain filename matches the template.
-		if (velocity_domain_file_name_reg_exp.indexIn(velocity_domain_filename) < 0)
+		const QRegularExpressionMatch velocity_domain_file_name_match =
+				velocity_domain_file_name_reg_exp.match(velocity_domain_filename);
+		if (!velocity_domain_file_name_match.hasMatch())
 		{
 			continue;
 		}
 
-		const QStringList template_parameters = velocity_domain_file_name_reg_exp.capturedTexts();
+		const QStringList template_parameters = velocity_domain_file_name_match.capturedTexts();
 
 		// All template parameters must have matched to get here.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(

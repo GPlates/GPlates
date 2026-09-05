@@ -28,7 +28,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QDebug>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include <QTextStream>
@@ -118,21 +118,27 @@ GPlatesApi::Version::Version(
 	bool valid_version = true;
 
 	// Version string should match "N.N[.N][<release_suffix>]".
-	const QRegExp version_regex("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:\\.(0|[1-9][0-9]*))?(.+)?$");
+	//
+	// Note the trailing "\z" (end of string) rather than "$" (which would also match just before
+	// a trailing newline, and so would accept "1.2\n" as a valid version string).
+	const QRegularExpression version_regex(
+			"^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:\\.(0|[1-9][0-9]*))?(.+)?\\z");
 
-	if (version_regex.indexIn(version_string) == -1)
+	const QRegularExpressionMatch version_match = version_regex.match(version_string);
+
+	if (!version_match.hasMatch())
 	{
 		valid_version = false;
 	}
 	else
 	{
 		// Extract from regex.
-		d_major = version_regex.cap(1).toUInt();
-		d_minor = version_regex.cap(2).toUInt();
+		d_major = version_match.captured(1).toUInt();
+		d_minor = version_match.captured(2).toUInt();
 
 		// Extract optional patch (defaults to 0).
 		d_patch = 0;
-		const QString patch_match = version_regex.cap(3);
+		const QString patch_match = version_match.captured(3);
 		if (!patch_match.isEmpty())
 		{
 			// Convert patch string to integer.
@@ -140,7 +146,7 @@ GPlatesApi::Version::Version(
 		}
 
 		// Extract optional release suffix (defaults to none).
-		const QString release_suffix_match = version_regex.cap(4);
+		const QString release_suffix_match = version_match.captured(4);
 		if (!release_suffix_match.isEmpty())
 		{
 			if (!extract_release_suffix(release_suffix_match))
@@ -166,17 +172,22 @@ GPlatesApi::Version::extract_release_suffix(
 		QString release_suffix_string)
 {
 	// Release suffix should match "[{a|b|rc}N][.postN][.devN]".
-	const QRegExp release_suffix_regex(
-			"^(?:(a|b|rc)(0|[1-9][0-9]*))?(?:\\.post(0|[1-9][0-9]*))?(?:\\.dev(0|[1-9][0-9]*))?$");
+	//
+	// Note the trailing "\z" (end of string) rather than "$" (which would also match just before
+	// a trailing newline).
+	const QRegularExpression release_suffix_regex(
+			"^(?:(a|b|rc)(0|[1-9][0-9]*))?(?:\\.post(0|[1-9][0-9]*))?(?:\\.dev(0|[1-9][0-9]*))?\\z");
 
-	if (release_suffix_regex.indexIn(release_suffix_string) == -1)
+	const QRegularExpressionMatch release_suffix_match = release_suffix_regex.match(release_suffix_string);
+
+	if (!release_suffix_match.hasMatch())
 	{
 		// Regular expression didn't match so the release suffix string is not valid.
 		return false;
 	}
 
 	// Extract from pre-release suffix (if any) from regex.
-	const QString pre_release_suffix_type_string = release_suffix_regex.cap(1);
+	const QString pre_release_suffix_type_string = release_suffix_match.captured(1);
 	if (!pre_release_suffix_type_string.isEmpty())
 	{
 		// Convert type string to type enum.
@@ -200,13 +211,13 @@ GPlatesApi::Version::extract_release_suffix(
 			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 		}
 
-		const unsigned int pre_release_suffix_number = release_suffix_regex.cap(2).toUInt();
+		const unsigned int pre_release_suffix_number = release_suffix_match.captured(2).toUInt();
 
 		d_pre_release_suffix = PreReleaseSuffix{ pre_release_suffix_type, pre_release_suffix_number };
 	}
 
 	// Extract from post-release suffix (if any) from regex.
-	const QString post_release_suffix_number_string = release_suffix_regex.cap(3);
+	const QString post_release_suffix_number_string = release_suffix_match.captured(3);
 	if (!post_release_suffix_number_string.isEmpty())
 	{
 		const unsigned int post_release_suffix_number = post_release_suffix_number_string.toUInt();
@@ -215,7 +226,7 @@ GPlatesApi::Version::extract_release_suffix(
 	}
 
 	// Extract from development-release suffix (if any) from regex.
-	const QString development_release_suffix_number_string = release_suffix_regex.cap(4);
+	const QString development_release_suffix_number_string = release_suffix_match.captured(4);
 	if (!development_release_suffix_number_string.isEmpty())
 	{
 		const unsigned int development_release_suffix_number = development_release_suffix_number_string.toUInt();

@@ -25,7 +25,7 @@
 
 #include <boost/optional.hpp>
 #include <QDir>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include <QtGlobal>
@@ -42,12 +42,12 @@ namespace GPlatesScribe
 		/**
 		 * Regular expression for a Windows drive letter (eg, "C:/").
 		 */
-		const QRegExp WINDOWS_DRIVE_LETTER_REGEXP("^[a-zA-Z]\\:/");
+		const QRegularExpression WINDOWS_DRIVE_LETTER_REGEXP("^[a-zA-Z]\\:/");
 
 		/**
 		 * Regular expression for a Windows share name (eg, "//sharename/").
 		 */
-		const QRegExp WINDOWS_SHARE_NAME_REGEXP("^//[^/]+/");
+		const QRegularExpression WINDOWS_SHARE_NAME_REGEXP("^//[^/]+/");
 
 
 		/**
@@ -64,28 +64,33 @@ namespace GPlatesScribe
 		{
 			QStringList dir_path;
 
-			if (WINDOWS_DRIVE_LETTER_REGEXP.indexIn(file_path) >= 0)
+			// Both regular expressions are anchored at the start of the file path, so the length
+			// of the whole match is the length of the matched prefix.
+			const QRegularExpressionMatch drive_letter_match = WINDOWS_DRIVE_LETTER_REGEXP.match(file_path);
+			const QRegularExpressionMatch share_name_match = WINDOWS_SHARE_NAME_REGEXP.match(file_path);
+
+			if (drive_letter_match.hasMatch())
 			{
 				// Split "C:/dir/file.txt" into "C:" and "dir/file.txt" for example.
 
-				const QString drive_letter = file_path.left(WINDOWS_DRIVE_LETTER_REGEXP.matchedLength() - 1);
+				const QString drive_letter = file_path.left(drive_letter_match.capturedLength(0) - 1);
 
 				// Make the drive letters are uppercase so they compare properly later on.
 				// They should already be uppercase if QFileInfo::absoluteFilePath() was used to create them.
 				// But we make sure anyway.
 				dir_path.append(drive_letter.toUpper());
 
-				file_path = file_path.mid(WINDOWS_DRIVE_LETTER_REGEXP.matchedLength());
+				file_path = file_path.mid(drive_letter_match.capturedLength(0));
 			}
-			else if (WINDOWS_SHARE_NAME_REGEXP.indexIn(file_path) >= 0)
+			else if (share_name_match.hasMatch())
 			{
 				// Split "//sharename/dir/file.txt" into "//sharename" and "dir/file.txt" for example.
 
-				const QString share_name = file_path.left(WINDOWS_SHARE_NAME_REGEXP.matchedLength() - 1);
+				const QString share_name = file_path.left(share_name_match.capturedLength(0) - 1);
 
 				dir_path.append(share_name);
 
-				file_path = file_path.mid(WINDOWS_SHARE_NAME_REGEXP.matchedLength());
+				file_path = file_path.mid(share_name_match.capturedLength(0));
 			}
 
 			dir_path = dir_path + file_path.split('/');
@@ -370,7 +375,7 @@ GPlatesScribe::TranscribeUtils::convert_file_path(
 	// Add a Windows drive letter to absolute paths if necessary.
 	if (file_path.startsWith('/') &&
 		// But exclude sharenames ('//sharename/') since they are compatible with Windows...
-		WINDOWS_SHARE_NAME_REGEXP.indexIn(file_path) < 0)
+		!WINDOWS_SHARE_NAME_REGEXP.match(file_path).hasMatch())
 	{
 		// Change "/dir/file.txt" into "C:/dir/file.txt" for example.
 		return QDir::rootPath() + file_path.mid(1);
@@ -378,16 +383,21 @@ GPlatesScribe::TranscribeUtils::convert_file_path(
 
 #else // Mac or Linux...
 
+	// Both regular expressions are anchored at the start of the file path, so the length of the
+	// whole match is the length of the matched prefix.
+	const QRegularExpressionMatch drive_letter_match = WINDOWS_DRIVE_LETTER_REGEXP.match(file_path);
+	const QRegularExpressionMatch share_name_match = WINDOWS_SHARE_NAME_REGEXP.match(file_path);
+
 	// Remove Windows drive letter if necessary.
-	if (WINDOWS_DRIVE_LETTER_REGEXP.indexIn(file_path) >= 0)
+	if (drive_letter_match.hasMatch())
 	{
 		// Change "C:/dir/file.txt" into "/dir/file.txt" for example.
-		return '/' + file_path.mid(WINDOWS_DRIVE_LETTER_REGEXP.matchedLength());
+		return '/' + file_path.mid(drive_letter_match.capturedLength(0));
 	}
-	else if (WINDOWS_SHARE_NAME_REGEXP.indexIn(file_path) >= 0)
+	else if (share_name_match.hasMatch())
 	{
 		// Change "//sharename/dir/file.txt" into "/dir/file.txt" for example.
-		return '/' + file_path.mid(WINDOWS_SHARE_NAME_REGEXP.matchedLength());
+		return '/' + file_path.mid(share_name_match.capturedLength(0));
 	}
 
 #endif

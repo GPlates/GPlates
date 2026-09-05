@@ -30,6 +30,7 @@
 #include <QFileInfo>
 #include <QProcess>
 #include <QMap>
+#include <QRegularExpression>
 #include <iostream>
 #include <string>
 
@@ -79,9 +80,8 @@ GPlatesGui::PythonManager::PythonManager() :
 	d_show_python_init_fail_dlg = user_pref.get_value("python/show_python_init_fail_dialog").toBool();
 	d_python_home = user_pref.get_value("python/python_home").toString();
 
-	QRegExp rx("^\\d.\\d"); // Match d.d
-	rx.indexIn(QString(Py_GetVersion()));
-	d_python_version = rx.cap();
+	static const QRegularExpression rx("^\\d.\\d"); // Match d.d
+	d_python_version = rx.match(QString(Py_GetVersion())).captured();
 	//qDebug() << "Python Version: " << d_python_version;
 }
 
