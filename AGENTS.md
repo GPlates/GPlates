@@ -168,7 +168,9 @@ new code is expected to match it. Measured over `src/`:
   functions *and* for `if` / `for` / `while` bodies (~92%). Do not use K&R style.
 - **Wrap at 100 columns.** (Much of the existing tree wraps nearer 80; 100 is the current target,
   and ~97% of existing lines already fit it. Don't rewrap old code to suit it.)
-- **Pointer and reference tokens bind to the name**: `Type *name`, never `Type* name`.
+- **Pointer and reference tokens bind to the name**: `Type *name` and `Type &name`, never
+  `Type* name` or `Type& name`. This one wins over the file-matching rule below: a few older
+  files bind them to the type, and new code in them still binds to the name.
 - **Data members are prefixed `d_`** — `d_feature_ref`, `d_is_active`.
 - **Function and method signatures always break across lines**, however short they are. The return
   type goes on its own line, the name and `(` on the next, and **every** parameter on its own line
