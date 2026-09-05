@@ -71,8 +71,7 @@ fi
 # the Linux image needs, and they're the same binaries the Qt online installer provides).
 #
 # 'qtbase' provides Core, Gui, Network, Widgets, Xml, OpenGL and OpenGLWidgets; 'qtsvg'
-# provides Svg; the 'qt5compat' module provides Core5Compat (QRegExp etc). Qwt below needs
-# Svg/OpenGL too.
+# provides Svg. Qwt below needs Svg/OpenGL too.
 #
 # The official binaries are universal (arm64 + x86_64), so each framework library is thinned
 # to the build architecture - halving what delocate later vendors into the wheels.
@@ -85,7 +84,7 @@ if [ ! -f "${PYGPLATES_DEPS}/stamps/qt-${QT_VERSION}" ]; then
     ./aqt-venv/bin/pip -q install 'aqtinstall<4'
     # '--archives qtbase qtsvg' limits the download to the parts of the base package we need
     # (skipping qtdeclarative, qttools etc, which are most of it).
-    ./aqt-venv/bin/aqt install-qt mac desktop ${QT_VERSION} clang_64 -m qt5compat --archives qtbase qtsvg --outputdir "${PYGPLATES_DEPS}/qt"
+    ./aqt-venv/bin/aqt install-qt mac desktop ${QT_VERSION} clang_64 --archives qtbase qtsvg --outputdir "${PYGPLATES_DEPS}/qt"
     ln -sfn "${QT_DIR}" "${PYGPLATES_DEPS}/qt/current"
     # Thin the universal framework libraries to the build architecture.
     for framework in "${QT_DIR}"/lib/Qt*.framework; do
@@ -256,7 +255,6 @@ fi
 "${QT_DIR}/bin/qmake" -query QT_VERSION
 test -d "${QT_DIR}/lib/QtSvg.framework"
 test -d "${QT_DIR}/lib/QtNetwork.framework"
-test -d "${QT_DIR}/lib/QtCore5Compat.framework"
 test -L "${PYGPLATES_DEPS}/qt/current"
 ls "${PYGPLATES_DEPS}/lib/libqwt.${QWT_VERSION}.dylib"
 ls "${PYGPLATES_DEPS}/lib/libboost_program_options.dylib" "${PYGPLATES_DEPS}/lib/libboost_thread.dylib"

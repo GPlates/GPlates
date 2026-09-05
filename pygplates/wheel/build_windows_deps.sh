@@ -119,7 +119,7 @@ fi
 # installer provides, and the same ones the macOS deps script uses).
 #
 # 'qtbase' provides Core, Gui, Network, Widgets, Xml, OpenGL and OpenGLWidgets; 'qtsvg' provides
-# Svg; the 'qt5compat' module provides Core5Compat (QRegExp etc). Qwt below needs Svg/OpenGL too.
+# Svg. Qwt below needs Svg/OpenGL too.
 #
 # Installed to a version-less directory (unlike macOS, which points a 'qt/current' symlink at the
 # versioned one - Git for Windows has no usable symlinks), so the Qt version stays here in
@@ -132,7 +132,7 @@ if [ ! -f "${PYGPLATES_DEPS}/stamps/qt-${QT_VERSION}" ]; then
     # '--archives qtbase qtsvg' limits the download to the parts of the base package we need
     # (skipping qtdeclarative, qttools etc, which are most of it).
     ./aqt-venv/Scripts/aqt install-qt windows desktop ${QT_VERSION} win64_msvc2019_64 \
-        -m qt5compat --archives qtbase qtsvg --outputdir qt-download
+        --archives qtbase qtsvg --outputdir qt-download
     mv "qt-download/${QT_VERSION}/msvc2019_64" "${QT_DIR}"
     rm -rf qt-download
 
@@ -366,8 +366,7 @@ require_vcpkg_version() {
 # installed.
 "${QT_DIR}/bin/qmake" -query QT_VERSION
 ls "${QT_DIR}/bin/Qt6Core.dll" "${QT_DIR}/bin/Qt6Gui.dll" "${QT_DIR}/bin/Qt6Widgets.dll" \
-    "${QT_DIR}/bin/Qt6Network.dll" "${QT_DIR}/bin/Qt6Svg.dll" "${QT_DIR}/bin/Qt6OpenGL.dll" \
-    "${QT_DIR}/bin/Qt6Core5Compat.dll"
+    "${QT_DIR}/bin/Qt6Network.dll" "${QT_DIR}/bin/Qt6Svg.dll" "${QT_DIR}/bin/Qt6OpenGL.dll"
 ls "${PYGPLATES_DEPS}/lib/qwt.lib"
 ls "${PYGPLATES_DEPS}/lib/boost_program_options.lib" "${PYGPLATES_DEPS}/lib/boost_thread.lib"
 require_file "${VCPKG_PREFIX}/include/GL/glew.h" "GLEW"

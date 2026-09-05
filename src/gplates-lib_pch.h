@@ -310,7 +310,6 @@
 #include <QRadioButton>
 #include <QRect>
 #include <QRectF>
-#include <QRegExp>
 #include <QRegularExpression>
 #include <QResizeEvent>
 #include <QScopedPointer>

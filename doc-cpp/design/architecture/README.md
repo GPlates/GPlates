@@ -70,8 +70,8 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
   (`dumpbin` / `readelf` / `otool`), failing if one of GPlates' GUI/rendering libraries
   (Qt Widgets, Qt Gui, Qt Svg, the Qt OpenGL modules, Qwt, GLEW) appears — or the platform's
   own OpenGL (GLVND's `libOpenGL`/`libGLX`/`libGLdispatch`, the legacy `libGL`, the macOS
-  framework, `opengl32.dll`). There is no exemption: the module links only `Qt6::Core` and
-  `Qt6::Core5Compat`, and a GL library on its link line means a GUI library has crept back in
+  framework, `opengl32.dll`). There is no exemption: the module links only `Qt6::Core`, and a
+  GL library on its link line means a GUI library has crept back in
   (`Qt6::Gui`'s imported target propagates Qt's own OpenGL dependency onto everything linking
   it, which is how the Linux wheel once needed `libGL.so.1` just to be imported).
 

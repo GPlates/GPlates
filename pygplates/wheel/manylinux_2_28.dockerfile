@@ -135,8 +135,8 @@ RUN . /tmp/versions.sh && \
     ldconfig && \
     rm -rf /tmp/build
 
-# Qt (qtbase, qtsvg and qt5compat - pyGPlates needs Core, Gui, Widgets, Xml, OpenGL,
-# OpenGLWidgets and Svg, plus Core5Compat for QRegExp etc, and Qwt below needs Svg/OpenGL).
+# Qt (qtbase and qtsvg - pyGPlates needs Core, Gui, Widgets, Xml, OpenGL, OpenGLWidgets and
+# Svg, and Qwt below needs Svg/OpenGL).
 #
 # FEATURE_xcb=ON is asserted explicitly so that configure *fails* if the xcb dependencies are
 # incomplete (rather than silently building a Qt that cannot connect to an X display).
@@ -171,21 +171,6 @@ RUN . /tmp/versions.sh && \
 WORKDIR /tmp/build
 RUN . /tmp/versions.sh && \
     curl -sSL https://download.qt.io/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/qtsvg-everywhere-src-${QT_VERSION}.tar.xz | tar xJ --strip-components=1 && \
-    mkdir build && cd build && \
-    cmake -G Ninja \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_INSTALL_PREFIX=/usr/local \
-        -DCMAKE_PREFIX_PATH=/usr/local \
-        -DQT_BUILD_EXAMPLES=OFF \
-        -DQT_BUILD_TESTS=OFF \
-        .. && \
-    ninja && \
-    ninja install && \
-    ldconfig && \
-    rm -rf /tmp/build
-WORKDIR /tmp/build
-RUN . /tmp/versions.sh && \
-    curl -sSL https://download.qt.io/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/qt5compat-everywhere-src-${QT_VERSION}.tar.xz | tar xJ --strip-components=1 && \
     mkdir build && cd build && \
     cmake -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -293,7 +278,6 @@ WORKDIR /
 RUN . /tmp/versions.sh && \
     ldconfig && \
     qmake -query QT_VERSION && \
-    test -f /usr/local/lib/libQt6Core5Compat.so -o -f /usr/local/lib64/libQt6Core5Compat.so && \
     test -f /usr/local/lib/libQt6Svg.so -o -f /usr/local/lib64/libQt6Svg.so && \
     ls /usr/local/lib/libqwt.so && \
     for python_version in ${PYTHON_VERSIONS}; do \

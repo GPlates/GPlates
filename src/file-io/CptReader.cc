@@ -29,7 +29,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QRegExp>
+#include <QRegularExpression>
 
 #include "CptReader.h"
 
@@ -682,21 +682,13 @@ void
 GPlatesFileIO::CptParser::process_comment(
 		const QString& line)
 {
-	//remove all spaces
-	QString str = line.toUpper();
-	int i = 0;
-	while( i<str.length() )
+	// Match case-insensitively since GMT writes "# COLOR_MODEL = hsv" in lower case.
+	static const QRegularExpression hsv_regex(
+			"COLOR_MODEL\\s*=\\s*\\+?HSV",
+			QRegularExpression::CaseInsensitiveOption);
+	if(hsv_regex.match(line).hasMatch())
 	{
-		if(str.at(i).isSpace())
-			str = str.remove(i,1);
-		else
-			i++;
-	}
-
-	static const QRegExp hsv_regex("COLOR_MODEL\\s*=\\s*\\+?HSV");			
-	if(-1 != hsv_regex.indexIn(line))
-	{
-			d_default_model = HSV;
+		d_default_model = HSV;
 	}
 }
 
@@ -704,8 +696,8 @@ GPlatesFileIO::CptParser::ColourData
 GPlatesFileIO::CptParser::parse_gmt_fill(
 		const QString& token)
 {
-	QRegExp rx("p\\d+/");
-	if(rx.indexIn(token) != -1)
+	static const QRegularExpression rx("p\\d+/");
+	if(rx.match(token).hasMatch())
 	{
 		//We don't support "fill pattern" yet. 
 		//It looks something like "p200/16". 
@@ -717,7 +709,7 @@ GPlatesFileIO::CptParser::parse_gmt_fill(
 	ColourData data;
 
 	//TODO: this function needs to be rewritten.
-	//try QRegExp
+	//try QRegularExpression
 	if (token.contains('/'))
 	{
 		// R/G/B triplet.
