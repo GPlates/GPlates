@@ -108,6 +108,11 @@ GPlatesApi::ConsoleReader::readline()
 	}
 	catch (const error_already_set &)
 	{
+		// Clear the error indicator, otherwise we return a valid object with a Python
+		// exception still set, which CPython later reports as "returned a result with
+		// an error set" at some unrelated call site.
+		PyErr_Clear();
+
 		// This should be a fail-safe conversion.
 		return str(result.toStdString());
 	}
