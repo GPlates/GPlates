@@ -33,6 +33,13 @@ add_test(
 # Note: on Windows the dependency lister is dumpbin, so (like the build itself) this test
 # must run from an MSVC-enabled environment; the script fails loudly rather than silently
 # passing if the lister is unavailable.
+#
+# The wheel builds run this script a second time, over the module inside the repaired wheel
+# ("check_linkage.py --installed" in 'test-command', root 'pyproject.toml'), because the wheel
+# is a different artifact from the build tree this test sees. A check added in either place is
+# worth considering for the other - and the wheels also run
+# 'pygplates/wheel/check_wheel_contents.py', which has no CTest counterpart because there is no
+# wheel to check at CTest time.
 add_test(
 	NAME pygplates-linkage-test
 	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/check_linkage.py" "$<TARGET_FILE:pygplates>"

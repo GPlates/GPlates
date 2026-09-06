@@ -235,11 +235,22 @@ build-verbosity = 1
 #
 # 'check_wheel_contents.py' runs after the suite because it checks the wheel rather than the code:
 # the test suite passes against a wheel whose PROJ and GDAL data never made it in (which is how
-# the Windows wheels came to ship without them), so the packaging needs a check of its own.
-test-sources = ["pygplates/test", "pygplates/wheel/check_wheel_contents.py"]
+# the Windows wheels came to ship without them), so the packaging needs a check of its own. It
+# also lists the libraries the repair step vendored, which is the record of what the wheel ships.
+#
+# 'check_linkage.py' is the CTest of the same name, run here as well because the two check
+# different artifacts: the CTest sees the module in the build tree, this sees the module inside
+# the repaired wheel, whose dependency names the repair step has rewritten. The August 2026
+# segfault at 'import pygplates' was in a wheel whose build-tree module was fine.
+test-sources = [
+    "pygplates/test",
+    "pygplates/wheel/check_wheel_contents.py",
+    "cmake/check_linkage.py",
+]
 test-command = [
     "python -X faulthandler pygplates/test/test.py",
     "python pygplates/wheel/check_wheel_contents.py",
+    "python cmake/check_linkage.py --installed",
 ]
 
 [tool.cibuildwheel.config-settings]
