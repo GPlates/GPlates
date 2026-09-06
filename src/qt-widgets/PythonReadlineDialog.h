@@ -46,7 +46,12 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = NULL);
 
 		/**
-		 * Opens this dialog as modal and returns the string that the user enters.
+		 * Opens this dialog as modal and returns the string that the user enters,
+		 * terminated by a newline.
+		 *
+		 * Returns an empty string (with no newline) if the user cancelled. Python
+		 * interprets that as end-of-file on stdin, which is what lets the user out
+		 * of code that keeps reading lines.
 		 */
 		QString
 		get_line(
