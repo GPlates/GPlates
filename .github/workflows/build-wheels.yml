@@ -322,6 +322,66 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.2.0
 
+      - name: Check the Linux wheel imports with no system packages installed
+        # The manylinux wheel is meant to need nothing from the user's system beyond glibc and
+        # the C++ runtime, and every other job here runs somewhere that has far more than that -
+        # so this is the only check of that claim. It regressed once already: while the module
+        # linked Qt6Gui the wheel needed libGL and some forty apt packages, and until the Qt in
+        # the dependency image was built with FEATURE_glib=OFF it still needed libglib-2.0.
+        #
+        # 'python:3.13-slim' is Debian with a Python and nothing else; installing anything into
+        # it would defeat the point, so the container runs no 'apt-get'. x86_64 only: the same
+        # dockerfile builds both images, and importing the aarch64 wheel here would mean QEMU.
+        #
+        # NOTE: this checks the *dependency image* as much as the wheel, and a pull request
+        #       cannot change which image it uses (see the failure message below). A PR that
+        #       edits the dockerfile is expected to fail here until its new image is built.
+        if: matrix.id == 'linux-x86_64'
+        run: |
+          # '|| true' because the job's shell is 'bash -eo pipefail': with no match, 'ls'
+          # exits 2, pipefail makes that the pipeline's status, and the step would die there -
+          # before the message below, which is the whole reason the check is here.
+          wheel=$(ls wheelhouse/pygplates-*-cp313-*manylinux*_x86_64.whl 2> /dev/null | head -1 || true)
+          if [ -z "${wheel}" ]; then
+              # Every run builds cp313 (full runs build all six versions, pull request runs
+              # build cp312 and cp313), so there is no case where skipping is right.
+              echo "No cp313 manylinux x86_64 wheel in wheelhouse/ to check." >&2
+              exit 1
+          fi
+          # The container script arrives on stdin and the wheel's name in the environment, so
+          # that nothing in either has to survive a round of shell quoting.
+          status=0
+          docker run --rm -i -e WHEEL="$(basename "${wheel}")" \
+              -v "$PWD/wheelhouse:/wheelhouse:ro" python:3.13-slim sh -s <<'CONTAINER' || status=$?
+          set -e
+          pip install --no-cache-dir --root-user-action=ignore -q "/wheelhouse/${WHEEL}"
+          if python -c 'import pygplates; print(pygplates.__version__)'; then
+              exit 0
+          fi
+          # The traceback names only the first missing library. List every one, over the
+          # module and everything the wheel repair step vendored beside it.
+          echo "--- shared libraries this wheel needs that a bare image does not provide:"
+          site=$(python -c 'import site; print(site.getsitepackages()[0])')
+          for object in "${site}"/pygplates/pygplates.so "${site}"/pygplates.libs/*; do
+              ldd "${object}" 2> /dev/null | grep 'not found' | sed "s|^|  $(basename "${object}"): |"
+          done
+          exit 1
+          CONTAINER
+          if [ "${status}" -ne 0 ]; then
+              # Worth saying, because it is the likeliest reason to be reading this: the wheel
+              # above was built inside the ':latest' dependency image, which is built from the
+              # *merged* dockerfile. A pull request that changes 'manylinux_2_28.dockerfile' is
+              # therefore testing the old image and cannot pass this step until its own image
+              # exists - build one and re-run against it with the two-command recipe under
+              # "Proving a dockerfile change before it is merged" in 'pygplates/wheel/README.md'.
+              echo "::error::The wheel does not import on a bare python image - see the unmet libraries above."
+              echo "If this pull request changes the dependency image, that is expected until"
+              echo "the new image is built: the wheel above was built inside ':latest', which"
+              echo "comes from the *merged* dockerfile. See 'Proving a dockerfile change"
+              echo "before it is merged' in 'pygplates/wheel/README.md'."
+              exit 1
+          fi
+
       - name: Report crashes
         # If a test command crashed outright (rather than failing an assertion), the exit code
         # is all cibuildwheel reports - the native stack trace is in the crash report macOS
