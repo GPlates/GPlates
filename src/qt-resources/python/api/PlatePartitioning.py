@@ -16,39 +16,12 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-#
-# Python 2 and 3 compatibility.
-#
-# Iterating over a dict.
-try:
-    dict.iteritems
-except AttributeError:
-    # Python 3
-    def itervalues(d):
-        return iter(d.values())
-    def iteritems(d):
-        return iter(d.items())
-    def listvalues(d):
-        return list(d.values())
-    def listitems(d):
-        return list(d.items())
-else:
-    # Python 2
-    def itervalues(d):
-        return d.itervalues()
-    def iteritems(d):
-        return d.iteritems()
-    def listvalues(d):
-        return d.values()
-    def listitems(d):
-        return d.items()
-
 
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
 def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grouped_by_property_name):
     features = [feature_without_geometry.clone()]
     
-    for geometry_property_name, geometries_with_property_name in iteritems(geometries_grouped_by_property_name):
+    for geometry_property_name, geometries_with_property_name in geometries_grouped_by_property_name.items():
             
         # If we fail to set geometry(s) it could be that there are multiple geometries and
         # that multiple geometries are not allowed for the property name (according to information model).
@@ -128,15 +101,14 @@ def plate_partitioner_partition_features(
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
         (defaults to just the reconstruction plate ID)
-    :type properties_to_copy: a sequence of any combination of PropertyName and \
-        the PartitionProperty enumeration values (see table below)
+    :type properties_to_copy: sequence of any combination of PropertyName and PartitionProperty enumeration values
     
     :param partition_method: how the features are to be partitioned by the partitioning plates (defaults to *PartitionMethod.split_into_plates*)
-    :type partition_method: a PartitionMethod enumeration value (see table below)
+    :type partition_method: PartitionMethod
     
     :param partition_return: how to return the partitioned and unpartitioned features and whether to include the partitioning plates \
         (defaults to *PartitionReturn.combined_partitioned_and_unpartitioned*)
-    :type partition_return: a PartitionReturn enumeration value (see table below)
+    :type partition_return: PartitionReturn
     
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
         (see table below) \
@@ -166,40 +138,7 @@ def plate_partitioner_partition_features(
     
     *partition_method* specifies how the features are to be partitioned by the partitioning plates.
     
-    *partition_method* supports the following enumeration values:
-    
-    +----------------------------------------------------+-------------------------------------------------------------------------------------+
-    | Value                                              | Description                                                                         |
-    +====================================================+=====================================================================================+
-    | *PartitionMethod.split_into_plates*                | Split each feature into partitioning plates and into unpartitioned parts that       |
-    |                                                    | are outside all partitioning plates (if plates don't have global coverage).         |
-    |                                                    |                                                                                     |
-    |                                                    | For example, if a feature overlaps two plates then it will get cloned twice.        |
-    |                                                    | Each clone will have its geometry set to the part of the original feature geometry  |
-    |                                                    | contained within the respective partitioning plate. Any part (or parts) of the      |
-    |                                                    | original feature geometry outside all the plates will result in a third cloned      |
-    |                                                    | feature containing the unpartitioned geometry(s).                                   |
-    |                                                    |                                                                                     |
-    |                                                    | The two partitioned cloned features will have properties copied from the            |
-    |                                                    | respective partitioned plate feature (as determined by *properties_to_copy*).       |
-    |                                                    | The unpartitioned cloned feature will not have any properties copied to it.         |
-    +----------------------------------------------------+-------------------------------------------------------------------------------------+
-    | *PartitionMethod.most_overlapping_plate*           | Don't split each feature into partitioning plates, instead use the partitioning     | 
-    |                                                    | plate that most overlaps the feature's geometry.                                    |
-    |                                                    |                                                                                     |
-    |                                                    | For example, if a feature overlaps two plates then it will still only get cloned    |
-    |                                                    | once (and its geometry unmodified). Only the most overlapping partitioning plate    |
-    |                                                    | (if any) is selected. The overlap is measured based on the length of the polyline   |
-    |                                                    | or polygon geometry contained within each partitioning plate (or number of points   |
-    |                                                    | if geometry is a multipoint or point).                                              |
-    |                                                    |                                                                                     |
-    |                                                    | The cloned feature will have properties copied from the most overlapping            |
-    |                                                    | partitioned plate feature (as determined by *properties_to_copy*) if it overlaps    |
-    |                                                    | any, otherwise it will not have any properties copied to it.                        |
-    |                                                    |                                                                                     |
-    |                                                    | Note that if a feature contains multiple geometries then they are treated as one    |
-    |                                                    | composite geometry in the overlap calculation.                                      |
-    +----------------------------------------------------+-------------------------------------------------------------------------------------+
+    See :class:`PartitionMethod` for a description of each value.
     
     .. note:: VirtualGeomagneticPole features (of :class:`type<FeatureType>` ``FeatureType.gpml_virtual_geomagnetic_pole``) ignore *partition_method*
        since these features are always partitioned using the average sample site position (``PropertyName.gpml_average_sample_site_position``).
@@ -215,33 +154,7 @@ def plate_partitioner_partition_features(
     
     *properties_to_copy* specifies the properties to copy from the partitioning features to the features that are being partitioned.
     
-    *properties_to_copy* supports a sequence of any of the following arguments:
-    
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | Type                                               | Description                                                                      |
-    +====================================================+==================================================================================+
-    | *PartitionProperty.reconstruction_plate_id*        | The reconstruction plate ID. This is an alternative to specifying the property   |
-    |                                                    | name ``PropertyName.gpml_reconstruction_plate_id``.                              |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *PartitionProperty.valid_time_period*              | The valid time period. This is an alternative to specifying the property name    |
-    |                                                    | ``PropertyName.gml_valid_time``.                                                 |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *PartitionProperty.valid_time_begin*               | Only the *begin* time of the valid time period of the partitioning feature is    |
-    |                                                    | copied (the *end* time remains unchanged). If the *begin* time is later than     |
-    |                                                    | (has a smaller value than) the *end* time then it is set to the *end* time.      |
-    |                                                    |                                                                                  |
-    |                                                    | Note that there is no equivalent way to specify this using a *PropertyName*.     |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *PartitionProperty.valid_time_end*                 | Only the *end* time of the valid time period of the partitioning feature is      |
-    |                                                    | copied (the *begin* time remains unchanged). If the *end* time is earlier than   |
-    |                                                    | (has a larger value) the *begin* time then it is set to the *begin* time.        |
-    |                                                    |                                                                                  |
-    |                                                    | Note that there is no equivalent way to specify this using a *PropertyName*.     |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | :class:`PropertyName`                              | Any property name. If the partitioning feature has one or more properties        |
-    |                                                    | with this name then they will be copied/cloned to the feature being partitioned  |
-    |                                                    | provided its :class:`feature type<FeatureType>` supports the property name.      |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it).
     
     .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
     
@@ -302,24 +215,7 @@ def plate_partitioner_partition_features(
     
     *partition_return* specifies how the features are to be partitioned by the partitioning plates. This applies regardless of the value of *partition_method*.
     
-    *partition_return* supports the following enumeration values:
-    
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-    | Value                                                    | Return Type                                              | Description                                                                        |
-    +==========================================================+==========================================================+====================================================================================+
-    | *PartitionReturn.combined_partitioned_and_unpartitioned* | ``list`` of :class:`Feature`                             | Return a single combined ``list`` of partitioned and unpartitioned features.       |
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-    | *PartitionReturn.separate_partitioned_and_unpartitioned* | 2-tuple (                                                | Return a 2-tuple whose first element is a ``list`` of partitioned  features and    |
-    |                                                          | ``list`` of partitioned :class:`features<Feature>`,      | whose second element is a ``list`` of unpartitioned  features.                     |
-    |                                                          | ``list`` of unpartitioned :class:`features<Feature>`)    |                                                                                    |
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-    | *PartitionReturn.partitioned_groups_and_unpartitioned*   | 2-tuple (                                                | Return a 2-tuple whose first element is a ``list`` of partitioned groups and       |
-    |                                                          | ``list`` of 2-tuple (                                    | whose second element is a ``list`` of unpartitioned features.                      |
-    |                                                          | :class:`partitioning plate<ReconstructionGeometry>`,     |                                                                                    |
-    |                                                          | ``list`` of partitioned :class:`features<Feature>`),     | Each partitioned group associates a partitioning plate with its partitioned        |
-    |                                                          | ``list`` of unpartitioned :class:`features<Feature>`)    | features and consists of a 2-tuple whose first element is the partitioning plate   |
-    |                                                          |                                                          | and whose second element is a ``list`` of features partitioned by that plate.      |
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
+    See :class:`PartitionReturn` for the return value that each value selects.
     
     To reset the reconstruction plate ID (to zero) for all unpartitioned features (features that did not intersect any partitioning plates):
     ::
@@ -423,7 +319,7 @@ def plate_partitioner_partition_features(
                     unpartitioned_geometries_with_property_name = unpartitioned_geometries.setdefault(geometry_property_name, [])
                     unpartitioned_geometries_with_property_name.extend(partitioned_outside_geometries)
             
-            for partitioning_plate, geometries_inside_partition in iteritems(partitioned_geometries):
+            for partitioning_plate, geometries_inside_partition in partitioned_geometries.items():
                 features_inside_partition = _plate_partitioning_set_geometries(feature_without_geometry, geometries_inside_partition)
                 
                 # Copy the requested properties over from the partitioning feature.
@@ -505,7 +401,7 @@ def plate_partitioner_partition_features(
     elif partition_return == PartitionReturn.separate_partitioned_and_unpartitioned:
         return (partitioned_features, unpartitioned_features)
     else: # partition_return == PartitionReturn.partitioned_groups_and_unpartitioned
-        return (listitems(partitioned_feature_groups), unpartitioned_features)
+        return (list(partitioned_feature_groups.items()), unpartitioned_features)
 
 
 # Add the module function as a class method.
@@ -546,23 +442,22 @@ def partition_into_plates(
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
         (defaults to just the reconstruction plate ID)
-    :type properties_to_copy: a sequence of any combination of PropertyName and \
-        the PartitionProperty enumeration values (see table below)
+    :type properties_to_copy: sequence of any combination of PropertyName and PartitionProperty enumeration values
     
     :param reconstruction_time: the specific geological time to reconstruct/resolve the \
         *partitioning_features* to (defaults to zero)
     :type reconstruction_time: float or GeoTimeInstant
     
     :param partition_method: how the features are to be partitioned by the partitioning plates (defaults to *PartitionMethod.split_into_plates*)
-    :type partition_method: a PartitionMethod enumeration value (see table below)
+    :type partition_method: PartitionMethod
     
     :param partition_return: how to return the partitioned and unpartitioned features and whether to include the partitioning plates \
         (defaults to *PartitionReturn.combined_partitioned_and_unpartitioned*)
-    :type partition_return: a PartitionReturn enumeration value (see table below)
+    :type partition_return: PartitionReturn
     
     :param sort_partitioning_plates: optional sort order of partitioning plates \
         (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
-    :type sort_partitioning_plates: a SortPartitioningPlates enumeration value (see table below), or None
+    :type sort_partitioning_plates: SortPartitioningPlates, or None
     
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
         (see table below) \
@@ -603,40 +498,7 @@ def partition_into_plates(
     
     *partition_method* specifies how the features are to be partitioned by the partitioning plates.
     
-    *partition_method* supports the following enumeration values:
-    
-    +----------------------------------------------------+-------------------------------------------------------------------------------------+
-    | Value                                              | Description                                                                         |
-    +====================================================+=====================================================================================+
-    | *PartitionMethod.split_into_plates*                | Split each feature into partitioning plates and into unpartitioned parts that       |
-    |                                                    | are outside all partitioning plates (if plates don't have global coverage).         |
-    |                                                    |                                                                                     |
-    |                                                    | For example, if a feature overlaps two plates then it will get cloned twice.        |
-    |                                                    | Each clone will have its geometry set to the part of the original feature geometry  |
-    |                                                    | contained within the respective partitioning plate. Any part (or parts) of the      |
-    |                                                    | original feature geometry outside all the plates will result in a third cloned      |
-    |                                                    | feature containing the unpartitioned geometry(s).                                   |
-    |                                                    |                                                                                     |
-    |                                                    | The two partitioned cloned features will have properties copied from the            |
-    |                                                    | respective partitioned plate feature (as determined by *properties_to_copy*).       |
-    |                                                    | The unpartitioned cloned feature will not have any properties copied to it.         |
-    +----------------------------------------------------+-------------------------------------------------------------------------------------+
-    | *PartitionMethod.most_overlapping_plate*           | Don't split each feature into partitioning plates, instead use the partitioning     | 
-    |                                                    | plate that most overlaps the feature's geometry.                                    |
-    |                                                    |                                                                                     |
-    |                                                    | For example, if a feature overlaps two plates then it will still only get cloned    |
-    |                                                    | once (and its geometry unmodified). Only the most overlapping partitioning plate    |
-    |                                                    | (if any) is selected. The overlap is measured based on the length of the polyline   |
-    |                                                    | or polygon geometry contained within each partitioning plate (or number of points   |
-    |                                                    | if geometry is a multipoint or point).                                              |
-    |                                                    |                                                                                     |
-    |                                                    | The cloned feature will have properties copied from the most overlapping            |
-    |                                                    | partitioned plate feature (as determined by *properties_to_copy*) if it overlaps    |
-    |                                                    | any, otherwise it will not have any properties copied to it.                        |
-    |                                                    |                                                                                     |
-    |                                                    | Note that if a feature contains multiple geometries then they are treated as one    |
-    |                                                    | composite geometry in the overlap calculation.                                      |
-    +----------------------------------------------------+-------------------------------------------------------------------------------------+
+    See :class:`PartitionMethod` for a description of each value.
     
     .. note:: VirtualGeomagneticPole features (of :class:`type<FeatureType>` ``FeatureType.gpml_virtual_geomagnetic_pole``) ignore *partition_method*
        since these features are always partitioned using the average sample site position (``PropertyName.gpml_average_sample_site_position``).
@@ -653,33 +515,7 @@ def partition_into_plates(
     
     *properties_to_copy* specifies the properties to copy from the partitioning features to the features that are being partitioned.
     
-    *properties_to_copy* supports a sequence of any of the following arguments:
-    
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | Type                                               | Description                                                                      |
-    +====================================================+==================================================================================+
-    | *PartitionProperty.reconstruction_plate_id*        | The reconstruction plate ID. This is an alternative to specifying the property   |
-    |                                                    | name ``PropertyName.gpml_reconstruction_plate_id``.                              |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *PartitionProperty.valid_time_period*              | The valid time period. This is an alternative to specifying the property name    |
-    |                                                    | ``PropertyName.gml_valid_time``.                                                 |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *PartitionProperty.valid_time_begin*               | Only the *begin* time of the valid time period of the partitioning feature is    |
-    |                                                    | copied (the *end* time remains unchanged). If the *begin* time is later than     |
-    |                                                    | (has a smaller value than) the *end* time then it is set to the *end* time.      |
-    |                                                    |                                                                                  |
-    |                                                    | Note that there is no equivalent way to specify this using a *PropertyName*.     |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *PartitionProperty.valid_time_end*                 | Only the *end* time of the valid time period of the partitioning feature is      |
-    |                                                    | copied (the *begin* time remains unchanged). If the *end* time is earlier than   |
-    |                                                    | (has a larger value) the *begin* time then it is set to the *begin* time.        |
-    |                                                    |                                                                                  |
-    |                                                    | Note that there is no equivalent way to specify this using a *PropertyName*.     |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | :class:`PropertyName`                              | Any property name. If the partitioning feature has one or more properties        |
-    |                                                    | with this name then they will be copied/cloned to the feature being partitioned  |
-    |                                                    | provided its :class:`feature type<FeatureType>` supports the property name.      |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it).
     
     .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
     
@@ -743,24 +579,7 @@ def partition_into_plates(
     
     *partition_return* specifies how the features are to be partitioned by the partitioning plates. This applies regardless of the value of *partition_method*.
     
-    *partition_return* supports the following enumeration values:
-    
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-    | Value                                                    | Return Type                                              | Description                                                                        |
-    +==========================================================+==========================================================+====================================================================================+
-    | *PartitionReturn.combined_partitioned_and_unpartitioned* | ``list`` of :class:`Feature`                             | Return a single combined ``list`` of partitioned and unpartitioned features.       |
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-    | *PartitionReturn.separate_partitioned_and_unpartitioned* | 2-tuple (                                                | Return a 2-tuple whose first element is a ``list`` of partitioned  features and    |
-    |                                                          | ``list`` of partitioned :class:`features<Feature>`,      | whose second element is a ``list`` of unpartitioned  features.                     |
-    |                                                          | ``list`` of unpartitioned :class:`features<Feature>`)    |                                                                                    |
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-    | *PartitionReturn.partitioned_groups_and_unpartitioned*   | 2-tuple (                                                | Return a 2-tuple whose first element is a ``list`` of partitioned groups and       |
-    |                                                          | ``list`` of 2-tuple (                                    | whose second element is a ``list`` of unpartitioned features.                      |
-    |                                                          | :class:`partitioning plate<ReconstructionGeometry>`,     |                                                                                    |
-    |                                                          | ``list`` of partitioned :class:`features<Feature>`),     | Each partitioned group associates a partitioning plate with its partitioned        |
-    |                                                          | ``list`` of unpartitioned :class:`features<Feature>`)    | features and consists of a 2-tuple whose first element is the partitioning plate   |
-    |                                                          |                                                          | and whose second element is a ``list`` of features partitioned by that plate.      |
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
+    See :class:`PartitionReturn` for the return value that each value selects.
     
     To reset the reconstruction plate ID (to zero) for all unpartitioned features (features that did not intersect any partitioning plates):
     ::
@@ -778,25 +597,8 @@ def partition_into_plates(
     they are deemed to be incorrect. By resetting them to zero we ensure the unpartitioned features remain stationary
     and do not reconstruct incorrectly over geological time. Any partitioned features will get a new plate ID.
     
-    *sort_partitioning_plates* determines the sorting criteria used to order the partitioning plates:
-    
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-    |  Value                                                   | Description                                                                          |
-    +==========================================================+======================================================================================+
-    | SortPartitioningPlates.by_partition_type                 | Group in order of resolved topological networks then resolved topological boundaries |
-    |                                                          | then reconstructed static polygons, but with no sorting within each group            |
-    |                                                          | (ordering within each group is unchanged).                                           |
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-    | SortPartitioningPlates.by_partition_type_then_plate_id   | Same as *by_partition_type*, but also sort by plate ID (from highest to lowest)      |
-    |                                                          | within each partition type group.                                                    |
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-    | SortPartitioningPlates.by_partition_type_then_plate_area | Same as *by_partition_type*, but also sort by plate area (from highest to lowest)    |
-    |                                                          | within each partition type group.                                                    |
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-    | SortPartitioningPlates.by_plate_id                       | Sort by plate ID (from highest to lowest), but no grouping by partition type.        |
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-    | SortPartitioningPlates.by_plate_area                     | Sort by plate area (from highest to lowest), but no grouping by partition type.      |
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
+    *sort_partitioning_plates* determines the order in which the partitioning plates are searched.
+    See :class:`SortPartitioningPlates` for the sorting criteria of each value (and why the order matters when plates overlap).
     
     .. note:: If you don't want to sort the partitioning plates (for example, if you have already sorted them)
       then you'll need to explicitly specify ``None`` for the *sort_partitioning_plates* parameter
@@ -805,9 +607,6 @@ def partition_into_plates(
       This is because not specifying anything defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*
       (since this always gives deterministic partitioning results).
     
-    If the partitioning plates overlap each other then their final ordering determines the partitioning results.
-    Resolved topologies do not tend to overlap, but reconstructed static polygons do overlap
-    (for non-zero reconstruction times) and hence the sorting order becomes relevant.
     
     Partitioning of points is more efficient if you sort by plate *area* because an arbitrary
     point is likely to be found sooner when testing against larger partitioning polygons first

@@ -983,8 +983,8 @@ export_point_on_sphere()
 				"  :param point: (x,y,z) point, or (latitude,longitude) point (in degrees)\n"
 				"  :type point: PointOnSphere or LatLonPoint or "
 				"tuple (float,float,float) or tuple (float,float)\n"
-				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
-				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
+				"  :raises InvalidLatLonError: if *latitude* or *longitude* is invalid\n"
+				"  :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude\n"
 				"\n"
 				"  The following example shows a few different ways to use this method:\n"
 				"  ::\n"
@@ -1010,7 +1010,7 @@ export_point_on_sphere()
 				"  :type latitude: float\n"
 				"  :param longitude: the longitude (in degrees)\n"
 				"  :type longitude: float\n"
-				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+				"  :raises InvalidLatLonError: if *latitude* or *longitude* is invalid\n"
 				"\n"
 				"  .. note:: *latitude* must satisfy :meth:`LatLonPoint.is_valid_latitude` and "
 				"*longitude* must satisfy :meth:`LatLonPoint.is_valid_longitude`, otherwise "
@@ -1038,9 +1038,9 @@ export_point_on_sphere()
 				"  :param normalise: whether to normalise (to unit-length magnitude) the "
 				"vector (x,y,z) - defaults to ``False``\n"
 				"  :type normalise: bool\n"
-				"  :raises: ViolatedUnitVectorInvariantError if *normalise* is ``False`` and "
+				"  :raises ViolatedUnitVectorInvariantError: if *normalise* is ``False`` and "
 				"the resulting vector does not have unit magnitude\n"
-				"  :raises: UnableToNormaliseZeroVectorError if *normalise* is ``True`` and "
+				"  :raises UnableToNormaliseZeroVectorError: if *normalise* is ``True`` and "
 				"the resulting vector is (0,0,0) (ie, has zero magnitude)\n"
 				"\n"
 				"  **NOTE:** If the length of the 3D vector (x,y,z) is not 1.0 then you should set "
@@ -1371,9 +1371,9 @@ export_multi_point_on_sphere()
 				"  :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
 				"  :type points: any sequence of PointOnSphere or LatLonPoint or "
 				"tuple (float,float,float) or tuple (float,float)\n"
-				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
-				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
-				"  :raises: InsufficientPointsForMultiPointConstructionError if point sequence is empty\n"
+				"  :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid\n"
+				"  :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude\n"
+				"  :raises InsufficientPointsForMultiPointConstructionError: if point sequence is empty\n"
 				"\n"
 				"  .. note:: The sequence must contain at least one point, otherwise "
 				"*InsufficientPointsForMultiPointConstructionError* will be raised.\n"
@@ -2118,13 +2118,39 @@ void
 export_polyline_on_sphere()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesMaths::FlattenLongitudeOverlaps::Value>("FlattenLongitudeOverlaps")
+	bp::enum_<GPlatesMaths::FlattenLongitudeOverlaps::Value>(
+			"FlattenLongitudeOverlaps",
+			"Whether, and how, to remove longitude overlaps between the two polylines interpolated by :meth:`PolylineOnSphere.rotation_interpolate`.\n"
+			"\n"
+			"  Longitudes are measured in the reference frame in which the rotation pole is the North pole. Where a point in *from_polyline* and the point at the same latitude in *to_polyline* overlap in longitude, one is copied over the other:\n"
+			"\n"
+			"  ================================= ==============\n"
+			"  Value                             Description\n"
+			"  ================================= ==============\n"
+			"  FlattenLongitudeOverlaps.no       Do not flatten overlaps (the default).\n"
+			"  FlattenLongitudeOverlaps.use_from Copy the *from_polyline* points over the overlapping *to_polyline* points.\n"
+			"  FlattenLongitudeOverlaps.use_to   Copy the *to_polyline* points over the overlapping *from_polyline* points.\n"
+			"  ================================= ==============\n"
+			"\n"
+			"  .. seealso:: :meth:`PolylineOnSphere.rotation_interpolate` for a diagram of longitude flattening.\n")
 			.value("no", GPlatesMaths::FlattenLongitudeOverlaps::NO)
 			.value("use_from", GPlatesMaths::FlattenLongitudeOverlaps::USE_FROM)
 			.value("use_to", GPlatesMaths::FlattenLongitudeOverlaps::USE_TO);
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::PolylineConversion::Value>("PolylineConversion")
+	bp::enum_<GPlatesApi::PolylineConversion::Value>(
+			"PolylineConversion",
+			"What to do with a geometry that is not a :class:`PolylineOnSphere` when a polyline is required.\n"
+			"\n"
+			"  Accepted by :meth:`PolylineOnSphere.join` and :meth:`PolylineOnSphere.rotation_interpolate`.\n"
+			"\n"
+			"  ======================================== ==============\n"
+			"  Value                                    Description\n"
+			"  ======================================== ==============\n"
+			"  PolylineConversion.convert_to_polyline   Convert the geometry to a polyline from its points (as if by ``pygplates.PolylineOnSphere(geometry)``).\n"
+			"  PolylineConversion.ignore_non_polyline   Silently ignore the geometry (the default). For :meth:`PolylineOnSphere.rotation_interpolate` this means returning ``None``.\n"
+			"  PolylineConversion.raise_if_non_polyline Raise :class:`GeometryTypeError`.\n"
+			"  ======================================== ==============\n")
 			.value("convert_to_polyline", GPlatesApi::PolylineConversion::CONVERT_TO_POLYLINE)
 			.value("ignore_non_polyline", GPlatesApi::PolylineConversion::IGNORE_NON_POLYLINE)
 			.value("raise_if_non_polyline", GPlatesApi::PolylineConversion::RAISE_IF_NON_POLYLINE);
@@ -2270,9 +2296,9 @@ export_polyline_on_sphere()
 				"  :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
 				"  :type points: any sequence of PointOnSphere or LatLonPoint or "
 				"tuple (float,float,float) or tuple (float,float)\n"
-				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
-				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
-				"  :raises: InvalidPointsForPolylineConstructionError if sequence has less than two points "
+				"  :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid\n"
+				"  :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude\n"
+				"  :raises InvalidPointsForPolylineConstructionError: if sequence has less than two points "
 				"or if any two points (adjacent in the *points* sequence) are antipodal to each other "
 				"(on opposite sides of the globe)\n"
 				"\n"
@@ -2348,7 +2374,7 @@ export_polyline_on_sphere()
 				"point is duplicated since a PolylineOnSphere requires at least two points - "
 				"default is ``True``.\n"
 				"  :type allow_one_point: bool\n"
-				"  :raises: InvalidPointsForPolylineConstructionError if *geometry* is a "
+				"  :raises InvalidPointsForPolylineConstructionError: if *geometry* is a "
 				":class:`PointOnSphere` (and *allow_one_point* is ``False``), or a "
 				":class:`MultiPointOnSphere` with one point (and *allow_one_point* is ``False``), or "
 				"if any two consecutive points in a :class:`MultiPointOnSphere` are antipodal to each "
@@ -2434,19 +2460,17 @@ export_polyline_on_sphere()
 				"  :type maximum_distance_threshold_radians: float - default is no threshold detection\n"
 				"  :param flatten_longitude_overlaps: whether or not to ensure *from_polyline* and *to_polyline* "
 				"do not overlap in longitude (in North pole reference frame of *rotation_pole*) and how to "
-				"correct the overlap\n"
-				"  :type flatten_longitude_overlaps: FlattenLongitudeOverlaps.no, FlattenLongitudeOverlaps.use_from "
-				"or FlattenLongitudeOverlaps.use_to - defaults to FlattenLongitudeOverlaps.no\n"
+				"correct the overlap (defaults to *FlattenLongitudeOverlaps.no*)\n"
+				"  :type flatten_longitude_overlaps: FlattenLongitudeOverlaps\n"
 				"  :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore "
 				"*from_polyline* and *to_polyline* if they are not :class:`PolylineOnSphere` (ignoring equates "
 				"to returning ``None``) - defaults to *PolylineConversion.ignore_non_polyline*\n"
-				"  :type polyline_conversion: PolylineConversion.convert_to_polyline, "
-				"PolylineConversion.ignore_non_polyline or PolylineConversion.raise_if_non_polyline\n"
+				"  :type polyline_conversion: PolylineConversion\n"
 				"  :returns: list of interpolated polylines - or ``None`` if polylines do not have overlapping "
 				"latitude ranges or if maximum distance threshold exceeded or if either polyline is not a "
 				":class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.ignore_non_polyline*)\n"
 				"  :rtype: list of PolylineOnSphere or None\n"
-				"  :raises: GeometryTypeError if *from_polyline* or *to_polyline* are not of type "
+				"  :raises GeometryTypeError: if *from_polyline* or *to_polyline* are not of type "
 				":class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)\n"
 				"\n"
 				"  If *interpolate* is a single number then it is the distance interval spacing, in radians, "
@@ -2704,7 +2728,7 @@ export_polyline_on_sphere()
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: PolylineOnSphere\n"
-				"  :raises: ValueError if *tessellate_radians* is negative or zero\n"
+				"  :raises ValueError: if *tessellate_radians* is negative or zero\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polyline) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"
@@ -2744,7 +2768,7 @@ export_polyline_on_sphere()
 				"a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, "
 				"and where the point is located *on* that segment in the range [0,1])\n"
 				"  :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[tuple[int, float]]]\n"
-				"  :raises: ValueError if *point_spacing_radians* is negative or zero\n"
+				"  :raises ValueError: if *point_spacing_radians* is negative or zero\n"
 				"\n"
 				"  .. note:: The distance (along the polyline) between the last uniform point and the last vertex "
 				"of the polyline can be less than *point_spacing_radians* (since the length of the polyline "
@@ -3867,9 +3891,9 @@ export_polygon_on_sphere()
 				"(x,y,z) points, or (latitude,longitude) points (in degrees).\n"
 				"  :type interior_rings: Any sequence of rings (where ring is any sequence of PointOnSphere "
 				"or LatLonPoint or tuple (float,float,float) or tuple (float,float)), or None.\n"
-				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
-				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
-				"  :raises: InvalidPointsForPolygonConstructionError if any ring has less than three points "
+				"  :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid\n"
+				"  :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude\n"
+				"  :raises InvalidPointsForPolygonConstructionError: if any ring has less than three points "
 				"or if any two points (adjacent in a ring) are antipodal to each other (on opposite sides of the globe)\n"
 				"\n"
 				"  .. note:: Each ring must contain at least three points in order for the polygon to be valid, "
@@ -3967,7 +3991,7 @@ export_polygon_on_sphere()
 				"points is duplicated since a PolygonOnSphere requires at least three points - "
 				"default is ``True``.\n"
 				"  :type allow_one_or_two_points: bool\n"
-				"  :raises: InvalidPointsForPolygonConstructionError if *geometry* is a "
+				"  :raises InvalidPointsForPolygonConstructionError: if *geometry* is a "
 				":class:`PointOnSphere`, or a :class:`MultiPointOnSphere` with one or two points "
 				"(and *allow_one_or_two_points* is ``False``), or if any two consecutive points in a "
 				":class:`MultiPointOnSphere` are antipodal to each other (on opposite sides of the globe)\n"
@@ -4431,7 +4455,7 @@ export_polygon_on_sphere()
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: PolygonOnSphere\n"
-				"  :raises: ValueError if *tessellate_radians* is negative or zero\n"
+				"  :raises ValueError: if *tessellate_radians* is negative or zero\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polygon) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"
@@ -4471,7 +4495,7 @@ export_polygon_on_sphere()
 				"a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, "
 				"and where the point is located *on* that segment in the range [0,1])\n"
 				"  :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[tuple[int, float]]]\n"
-				"  :raises: ValueError if *point_spacing_radians* is negative or zero\n"
+				"  :raises ValueError: if *point_spacing_radians* is negative or zero\n"
 				"\n"
 				"  .. note:: | The distance (along a polygon ring) between the last uniform point of a ring and the last vertex "
 				"of the ring (also its first vertex) can be less than *point_spacing_radians* (since the length of the ring "
@@ -4532,7 +4556,18 @@ export_polygon_on_sphere()
 	//       However pickle was then unable to find it because the type was still recorded as 'pygplates.Orientation'
 	//       instead of 'pygplates.PolygonOnSphere.Orientation'. So now we define it at the module level, so pickle
 	//       can find it, and explicitly add a 'Orientation' attribute to 'PolygonOnSphere' for pygplates users.
-	bp::enum_<GPlatesMaths::PolygonOrientation::Orientation>("PolygonOnSphereOrientation")
+	bp::enum_<GPlatesMaths::PolygonOrientation::Orientation>(
+			"PolygonOnSphereOrientation",
+			"The orientation of a polygon ring, as viewed from above the globe.\n"
+			"\n"
+			"  Returned by :meth:`PolygonOnSphere.get_orientation` and accepted wherever a polygon orientation can be forced (for example :meth:`ReconstructSnapshot.export_reconstructed_geometries`). Also available as ``PolygonOnSphere.Orientation``.\n"
+			"\n"
+			"  ============================================ ==============\n"
+			"  Value                                        Description\n"
+			"  ============================================ ==============\n"
+			"  PolygonOnSphereOrientation.clockwise         The ring winds clockwise.\n"
+			"  PolygonOnSphereOrientation.counter_clockwise The ring winds counter-clockwise.\n"
+			"  ============================================ ==============\n")
 			.value("clockwise", GPlatesMaths::PolygonOrientation::CLOCKWISE)
 			.value("counter_clockwise", GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE);
 	// Nest enumeration within python class PolygonOnSphere (as 'PolygonOnSphere.Orientation').
@@ -4547,7 +4582,19 @@ export_polygon_on_sphere()
 	//       However pickle was then unable to find it because the type was still recorded as 'pygplates.PartitionResult'
 	//       instead of 'pygplates.PolygonOnSphere.PartitionResult'. So now we define it at the module level, so pickle
 	//       can find it, and explicitly add a 'PartitionResult' attribute to 'PolygonOnSphere' for pygplates users.
-	bp::enum_<GPlatesMaths::PolygonPartitioner::Result>("PolygonOnSpherePartitionResult")
+	bp::enum_<GPlatesMaths::PolygonPartitioner::Result>(
+			"PolygonOnSpherePartitionResult",
+			"The result of :meth:`partitioning <PolygonOnSphere.partition>` a geometry with a polygon.\n"
+			"\n"
+			"  Also available as ``PolygonOnSphere.PartitionResult``.\n"
+			"\n"
+			"  =========================================== ==============\n"
+			"  Value                                       Description\n"
+			"  =========================================== ==============\n"
+			"  PolygonOnSpherePartitionResult.inside       The geometry is entirely inside the polygon.\n"
+			"  PolygonOnSpherePartitionResult.outside      The geometry is entirely outside the polygon.\n"
+			"  PolygonOnSpherePartitionResult.intersecting The geometry crosses the polygon boundary, so parts of it are inside and parts are outside.\n"
+			"  =========================================== ==============\n")
 			.value("inside", GPlatesMaths::PolygonPartitioner::GEOMETRY_INSIDE)
 			.value("outside", GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
 			.value("intersecting", GPlatesMaths::PolygonPartitioner::GEOMETRY_INTERSECTING);

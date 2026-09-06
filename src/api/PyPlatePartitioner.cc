@@ -397,7 +397,18 @@ void
 export_plate_partitioner()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::PartitionMethod::Value>("PartitionMethod")
+	bp::enum_<GPlatesApi::PartitionMethod::Value>(
+			"PartitionMethod",
+			"How a feature is partitioned when it overlaps one or more partitioning plates.\n"
+			"\n"
+			"  Accepted by :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates`.\n"
+			"\n"
+			"  ====================================== ==============\n"
+			"  Value                                  Description\n"
+			"  ====================================== ==============\n"
+			"  PartitionMethod.split_into_plates      Split each feature into the partitioning plates, and into unpartitioned parts that are outside all partitioning plates (if the plates do not have global coverage). For example, a feature that overlaps two plates is cloned twice, each clone getting the part of the original geometry inside its plate, and any part outside all plates becomes a third clone containing the unpartitioned geometry. The partitioned clones have properties copied from their partitioning plate features (as determined by *properties_to_copy*); the unpartitioned clone has none copied.\n"
+			"  PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the length of polyline or polygon geometry inside each plate (or the number of points for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.\n"
+			"  ====================================== ==============\n")
 			.value("split_into_plates", GPlatesApi::PartitionMethod::SPLIT_INTO_PLATES)
 			.value("most_overlapping_plate", GPlatesApi::PartitionMethod::MOST_OVERLAPPING_PLATE);
 
@@ -406,7 +417,20 @@ export_plate_partitioner()
 
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::PartitionProperty::Value>("PartitionProperty")
+	bp::enum_<GPlatesApi::PartitionProperty::Value>(
+			"PartitionProperty",
+			"A property to copy from a partitioning plate's feature to each feature partitioned by it.\n"
+			"\n"
+			"  Used in the *properties_to_copy* argument of :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates`, where each entry is one of these values or a :class:`PropertyName`.\n"
+			"\n"
+			"  ========================================= ==============\n"
+			"  Value                                     Description\n"
+			"  ========================================= ==============\n"
+			"  PartitionProperty.reconstruction_plate_id The reconstruction plate ID. This is an alternative to specifying the property name ``PropertyName.gpml_reconstruction_plate_id``.\n"
+			"  PartitionProperty.valid_time_period       The valid time period. This is an alternative to specifying the property name ``PropertyName.gml_valid_time``.\n"
+			"  PartitionProperty.valid_time_begin        Only the *begin* time of the partitioning feature's valid time period is copied (the *end* time is unchanged). If the *begin* time is later than (has a smaller value than) the *end* time then it is set to the *end* time. There is no equivalent way to specify this using a :class:`PropertyName`.\n"
+			"  PartitionProperty.valid_time_end          Only the *end* time of the partitioning feature's valid time period is copied (the *begin* time is unchanged). If the *end* time is earlier than (has a larger value than) the *begin* time then it is set to the *begin* time. There is no equivalent way to specify this using a :class:`PropertyName`.\n"
+			"  ========================================= ==============\n")
 			.value("reconstruction_plate_id", GPlatesApi::PartitionProperty::RECONSTRUCTION_PLATE_ID)
 			.value("valid_time_period", GPlatesApi::PartitionProperty::VALID_TIME_PERIOD)
 			.value("valid_time_begin", GPlatesApi::PartitionProperty::VALID_TIME_BEGIN)
@@ -417,7 +441,17 @@ export_plate_partitioner()
 
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::PartitionReturn::Value>("PartitionReturn")
+	bp::enum_<GPlatesApi::PartitionReturn::Value>(
+			"PartitionReturn",
+			"How :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` return the partitioned and unpartitioned features.\n"
+			"\n"
+			"  ====================================================== ==============\n"
+			"  Value                                                  Return value\n"
+			"  ====================================================== ==============\n"
+			"  PartitionReturn.combined_partitioned_and_unpartitioned A single ``list`` of :class:`Feature` containing both the partitioned and the unpartitioned features.\n"
+			"  PartitionReturn.separate_partitioned_and_unpartitioned A 2-tuple whose first element is a ``list`` of the partitioned :class:`features <Feature>` and whose second element is a ``list`` of the unpartitioned features.\n"
+			"  PartitionReturn.partitioned_groups_and_unpartitioned   A 2-tuple whose first element is a ``list`` of partitioned groups and whose second element is a ``list`` of the unpartitioned features. Each partitioned group is a 2-tuple of a :class:`partitioning plate <ReconstructionGeometry>` and a ``list`` of the features partitioned by that plate.\n"
+			"  ====================================================== ==============\n")
 			.value("combined_partitioned_and_unpartitioned", GPlatesApi::PartitionReturn::COMBINED_PARTITIONED_AND_UNPARTITIONED)
 			.value("separate_partitioned_and_unpartitioned", GPlatesApi::PartitionReturn::SEPARATE_PARTITIONED_AND_UNPARTITIONED)
 			.value("partitioned_groups_and_unpartitioned", GPlatesApi::PartitionReturn::PARTITIONED_GROUPS_AND_UNPARTITIONED);
@@ -427,7 +461,25 @@ export_plate_partitioner()
 
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::SortPartitioningPlates::Value>("SortPartitioningPlates")
+	bp::enum_<GPlatesApi::SortPartitioningPlates::Value>(
+			"SortPartitioningPlates",
+			"The order in which partitioning plates are searched when partitioning.\n"
+			"\n"
+			"  Accepted by :meth:`PlatePartitioner.__init__` and :func:`partition_into_plates`. The order matters when partitioning plates overlap each other, because the first plate found to contain a geometry (or part of it) wins. Resolved topologies do not tend to overlap, but reconstructed static polygons do (at reconstruction times other than present day), so their order affects the result.\n"
+			"\n"
+			"  ======================================================== ==============\n"
+			"  Value                                                    Description\n"
+			"  ======================================================== ==============\n"
+			"  SortPartitioningPlates.by_partition_type                 Group in order of resolved topological networks, then resolved topological boundaries, then reconstructed static polygons, with no sorting within each group (the ordering within each group is unchanged).\n"
+			"  SortPartitioningPlates.by_partition_type_then_plate_id   Same as *by_partition_type*, but also sort by plate ID (from highest to lowest) within each group. This is the default because it always gives deterministic results.\n"
+			"  SortPartitioningPlates.by_partition_type_then_plate_area Same as *by_partition_type*, but also sort by plate area (from highest to lowest) within each group.\n"
+			"  SortPartitioningPlates.by_plate_id                       Sort by plate ID (from highest to lowest), with no grouping by partition type.\n"
+			"  SortPartitioningPlates.by_plate_area                     Sort by plate area (from highest to lowest), with no grouping by partition type.\n"
+			"  ======================================================== ==============\n"
+			"\n"
+			"  .. note:: To leave the partitioning plates in their original order, explicitly pass ``None`` (omitting the argument selects the default).\n"
+			"\n"
+			"  Partitioning *points* is faster when plates are sorted by area, because a point is more likely to be found in a large plate first, letting the remaining plates be skipped. Since resolved topologies do not tend to overlap, sorting them by area (rather than by plate ID) still gives deterministic results, so *by_partition_type_then_plate_area* is a good choice when partitioning many points into topological plates and networks.\n")
 			.value("by_partition_type", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE)
 			.value("by_partition_type_then_plate_id", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)
 			.value("by_partition_type_then_plate_area", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_AREA)
@@ -462,26 +514,7 @@ export_plate_partitioner()
 				"__init__(...)\n"
 				"A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...\n"
 				"\n"
-				"  This table maps the values of the *sort_partitioning_plates* parameter to the "
-				"sorting criteria used for the partitioning plates:\n"
-				"\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
-				"  |  Value                                                   | Description                                                                          |\n"
-				"  +==========================================================+======================================================================================+\n"
-				"  | SortPartitioningPlates.by_partition_type                 | Group in order of resolved topological networks then resolved topological boundaries |\n"
-				"  |                                                          | then reconstructed static polygons, but with no sorting within each group            |\n"
-				"  |                                                          | (ordering within each group is unchanged).                                           |\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
-				"  | SortPartitioningPlates.by_partition_type_then_plate_id   | Same as *by_partition_type*, but also sort by plate ID (from highest to lowest)      |\n"
-				"  |                                                          | within each partition type group.                                                    |\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
-				"  | SortPartitioningPlates.by_partition_type_then_plate_area | Same as *by_partition_type*, but also sort by plate area (from highest to lowest)    |\n"
-				"  |                                                          | within each partition type group.                                                    |\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
-				"  | SortPartitioningPlates.by_plate_id                       | Sort by plate ID (from highest to lowest), but no grouping by partition type.        |\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
-				"  | SortPartitioningPlates.by_plate_area                     | Sort by plate area (from highest to lowest), but no grouping by partition type.      |\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
+				"  The *sort_partitioning_plates* parameter determines the order in which the partitioning plates are searched. See :class:`SortPartitioningPlates` for the sorting criteria of each value, and why the order matters when plates overlap.\n"
 				"\n"
 				"  .. note:: If you don't want to sort the partitioning plates (for example, if you have already sorted them) "
 				"then you'll need to explicitly specify ``None`` for the *sort_partitioning_plates* parameter "
@@ -489,17 +522,8 @@ export_plate_partitioner()
 				"This is because not specifying anything defaults to *SortPartitioningPlates.by_partition_type_then_plate_id* "
 				"(since this always gives deterministic partitioning results).\n"
 				"\n"
-				"  If the partitioning plates overlap each other then their final ordering  determines the partitioning results. "
-				"Resolved topologies do not tend to overlap, but reconstructed static polygons do overlap "
-				"(for non-zero reconstruction times) and hence the sorting order becomes relevant.\n"
-				"\n"
-				"  Partitioning of points is more efficient if you sort by plate *area* because an arbitrary "
-				"point is likely to be found sooner when testing against larger partitioning polygons first "
-				"(and hence more remaining partitioning polygons can be skipped). Since resolved topologies don't tend "
-				"to overlap you don't need to sort them by plate *ID* to get deterministic partitioning results. "
-				"So we are free to sort by plate *area* (well, plate area is also deterministic but not as deterministic "
-				"as sorting by plate *ID* since modifications to the plate geometries change their areas but not their plate IDs). "
-				"Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:\n"
+				"  When partitioning many *points* into topological plates and networks, sorting by plate *area* is faster "
+				"(and still deterministic since resolved topologies do not tend to overlap):\n"
 				"  ::\n"
 				"\n"
 				"    plate_partitioner = pygplates.PlatePartitioner(..., "
@@ -525,8 +549,8 @@ export_plate_partitioner()
 				"or Feature, or sequence of Feature, or sequence of any combination of those four types\n"
 				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
 				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
-				"  :type sort_partitioning_plates: One of the values in the SortPartitioningPlates table above, or None\n"
-				"  :raises: DifferentTimesInPartitioningPlatesError if all partitioning plates do not have the same "
+				"  :type sort_partitioning_plates: SortPartitioningPlates, or None\n"
+				"  :raises DifferentTimesInPartitioningPlatesError: if all partitioning plates do not have the same "
 				":meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`\n"
 				"\n"
 				"  The *partitioning_plates* sequence can be generated by "
@@ -582,8 +606,8 @@ export_plate_partitioner()
 				"  :type reconstruction_time: float or GeoTimeInstant\n"
 				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
 				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
-				"  :type sort_partitioning_plates: One of the values in the SortPartitioningPlates table above, or None\n"
-				"  :raises: ValueError if *reconstruction_time* is "
+				"  :type sort_partitioning_plates: SortPartitioningPlates, or None\n"
+				"  :raises ValueError: if *reconstruction_time* is "
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 				"\n"

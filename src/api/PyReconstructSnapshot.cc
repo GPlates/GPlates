@@ -1044,14 +1044,39 @@ void
 export_reconstruct_snapshot()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::ReconstructType::Value>("ReconstructType")
+	bp::enum_<GPlatesApi::ReconstructType::Value>(
+			"ReconstructType",
+			"The type of reconstructed geometry that a feature produces when it is reconstructed.\n"
+			"\n"
+			"  Used to select which features are reconstructed, returned or exported (for example by :meth:`ReconstructSnapshot.get_reconstructed_geometries`, :meth:`ReconstructSnapshot.export_reconstructed_geometries` and :func:`reconstruct`). Where a method accepts more than one type at once, combine values with the bitwise-or operator (eg, ``pygplates.ReconstructType.feature_geometry | pygplates.ReconstructType.motion_path``).\n"
+			"\n"
+			"  ================================ ==============\n"
+			"  Value                            Description\n"
+			"  ================================ ==============\n"
+			"  ReconstructType.feature_geometry Regular (non-topological) features, which reconstruct to :class:`ReconstructedFeatureGeometry` objects.\n"
+			"  ReconstructType.motion_path      Motion path features, which reconstruct to :class:`ReconstructedMotionPath` objects.\n"
+			"  ReconstructType.flowline         Flowline features, which reconstruct to :class:`ReconstructedFlowline` objects.\n"
+			"  ================================ ==============\n")
 			.value("feature_geometry", GPlatesApi::ReconstructType::FEATURE_GEOMETRY)
 			.value("motion_path", GPlatesApi::ReconstructType::MOTION_PATH)
 			.value("flowline", GPlatesApi::ReconstructType::FLOWLINE);
 
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::SortReconstructedStaticPolygons::Value>("SortReconstructedStaticPolygons")
+	bp::enum_<GPlatesApi::SortReconstructedStaticPolygons::Value>(
+			"SortReconstructedStaticPolygons",
+			"The order in which reconstructed static polygons are searched for the polygon containing a point.\n"
+			"\n"
+			"  Accepted by :meth:`ReconstructSnapshot.get_point_locations` and :meth:`ReconstructSnapshot.get_point_velocities`. Reconstructed static polygons can overlap each other at reconstruction times in the past, so a point can be inside more than one polygon; the first polygon found in this order is the one returned.\n"
+			"\n"
+			"  ============================================= ==============\n"
+			"  Value                                         Description\n"
+			"  ============================================= ==============\n"
+			"  SortReconstructedStaticPolygons.by_plate_id   Search by plate ID, from highest to lowest (the default, so that the result does not depend on the order of the reconstructable features).\n"
+			"  SortReconstructedStaticPolygons.by_plate_area Search by plate area, from largest to smallest.\n"
+			"  ============================================= ==============\n"
+			"\n"
+			"  .. note:: Explicitly pass ``None`` to search in the original order of the reconstructable features instead.\n")
 			.value("by_plate_id", GPlatesApi::SortReconstructedStaticPolygons::BY_PLATE_ID)
 			.value("by_plate_area", GPlatesApi::SortReconstructedStaticPolygons::BY_PLATE_AREA);
 
@@ -1122,14 +1147,13 @@ export_reconstruct_snapshot()
 				"\n"
 				"  :param reconstruct_types: specifies which types of features to reconstruct - defaults "
 				"to reconstructing only regular features (not motion paths or flowlines)\n"
-				"  :type reconstruct_types: a bitwise combination of any of pygplates.ReconstructType.feature_geometry, "
-				"pygplates.ReconstructType.motion_path or pygplates.ReconstructType.flowline\n"
+				"  :type reconstruct_types: a bitwise combination of ReconstructType enumeration values\n"
 				"  :returns: a list of tuples, where each tuple contains a :class:`Feature` and a ``list`` of reconstructed geometries "
 				"(each reconstructed geometry is a :class:`reconstructed feature geometry <ReconstructedFeatureGeometry>`, "
 				":class:`reconstructed motion path <ReconstructedMotionPath>` or :class:`reconstructed flowline <ReconstructedFlowline>` - "
 				"depending on the optional argument *reconstruct_types*)\n"
 				"  :rtype: list[tuple[Feature, list[ReconstructedFeatureGeometry | ReconstructedMotionPath | ReconstructedFlowline]]]\n"
-				"  :raises: ValueError if *reconstruct_types* (if specified) contains a flag that "
+				"  :raises ValueError: if *reconstruct_types* (if specified) contains a flag that "
 				"is not one of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or "
 				"``pygplates.ReconstructType.flowline``\n"
 				"\n"
@@ -1160,8 +1184,7 @@ export_reconstruct_snapshot()
 				"\n"
 				"  :param reconstruct_types: specifies which types of features to reconstruct - defaults "
 				"to reconstructing only regular features (not motion paths or flowlines)\n"
-				"  :type reconstruct_types: a bitwise combination of any of pygplates.ReconstructType.feature_geometry, "
-				"pygplates.ReconstructType.motion_path or pygplates.ReconstructType.flowline\n"
+				"  :type reconstruct_types: a bitwise combination of ReconstructType enumeration values\n"
 				"  :param same_order_as_reconstructable_features: whether the returned reconstructed geometries are sorted in "
 				"the order of the reconstructable features (including order across reconstructable files, if there were any) - "
 				"defaults to ``False``\n"
@@ -1171,7 +1194,7 @@ export_reconstruct_snapshot()
 				"(depending on the optional argument *reconstruct_types*) - by default :class:`reconstructed motion paths <ReconstructedMotionPath>` "
 				"and :class:`reconstructed flowlines <ReconstructedFlowline>` are excluded\n"
 				"  :rtype: list[ReconstructedFeatureGeometry | ReconstructedMotionPath | ReconstructedFlowline]\n"
-				"  :raises: ValueError if *reconstruct_types* (if specified) contains a flag that "
+				"  :raises ValueError: if *reconstruct_types* (if specified) contains a flag that "
 				"is not one of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or "
 				"``pygplates.ReconstructType.flowline``\n"
 				"\n"
@@ -1195,8 +1218,7 @@ export_reconstruct_snapshot()
 				"  :type export_filename: str, or os.PathLike\n"
 				"  :param reconstruct_type: specifies which type of features to export - defaults "
 				"to exporting only regular features (not motion paths or flowlines)\n"
-				"  :type reconstruct_type: pygplates.ReconstructType.feature_geometry, "
-				"pygplates.ReconstructType.motion_path or pygplates.ReconstructType.flowline\n"
+				"  :type reconstruct_type: ReconstructType\n"
 				"  :param wrap_to_dateline: Whether to wrap/clip reconstructed geometries to the dateline "
 				"(currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.\n"
 				"  :type wrap_to_dateline: bool\n"
@@ -1206,7 +1228,7 @@ export_reconstruct_snapshot()
 				"Only applies to reconstructed feature geometries (excludes *motion paths* and *flowlines*) that are polygons. "
 				"Note that ESRI Shapefiles always use *clockwise* orientation (and so ignore this parameter).\n"
 				"  :type force_polygon_orientation: int\n"
-				"  :raises: ValueError if *reconstruct_type* (if specified) is not **one** of ``pygplates.ReconstructType.feature_geometry``, "
+				"  :raises ValueError: if *reconstruct_type* (if specified) is not **one** of ``pygplates.ReconstructType.feature_geometry``, "
 				"``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``\n"
 				"\n"
 				"  .. note:: *reconstruct_type* must be a **single** reconstruct type.  This is different than "
@@ -1236,8 +1258,7 @@ export_reconstruct_snapshot()
 				"  :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param sort_reconstructed_static_polygons: optional sort order of reconstructed static polygons "
 				"(defaults to ``pygplates.SortReconstructedStaticPolygons.by_plate_id``)\n"
-				"  :type sort_reconstructed_static_polygons: pygplates.SortReconstructedStaticPolygons.by_plate_id or "
-				"pygplates.SortReconstructedStaticPolygons.by_plate_area or None\n"
+				"  :type sort_reconstructed_static_polygons: SortReconstructedStaticPolygons, or None\n"
 				"  :returns: the reconstructed static polygon containing each point (``None`` for each point *outside* all "
 				"reconstructed static polygons)\n"
 				"  :rtype: list[ReconstructedFeatureGeometry | None]\n"
@@ -1295,17 +1316,15 @@ export_reconstruct_snapshot()
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, "
-				"VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :param sort_reconstructed_static_polygons: optional sort order of reconstructed static polygons "
 				"(defaults to ``pygplates.SortReconstructedStaticPolygons.by_plate_id``)\n"
-				"  :type sort_reconstructed_static_polygons: pygplates.SortReconstructedStaticPolygons.by_plate_id or "
-				"pygplates.SortReconstructedStaticPolygons.by_plate_area or None\n"
+				"  :type sort_reconstructed_static_polygons: SortReconstructedStaticPolygons, or None\n"
 				"  :param return_point_locations: whether to also return the reconstructed static polygon that contains each point - defaults to ``False``\n"
 				"  :type return_point_locations: bool\n"
 				"  :returns: the velocity of each point (``None`` for each point *outside* all reconstructed static polygons), and "

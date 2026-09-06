@@ -746,7 +746,19 @@ void
 export_feature_collection()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::FeatureReturn::Value>("FeatureReturn")
+	bp::enum_<GPlatesApi::FeatureReturn::Value>(
+			"FeatureReturn",
+			"How many matching features a query on a feature collection returns.\n"
+			"\n"
+			"  Accepted by :meth:`FeatureCollection.get`.\n"
+			"\n"
+			"  ========================= ==============\n"
+			"  Value                     Description\n"
+			"  ========================= ==============\n"
+			"  FeatureReturn.exactly_one Return the single match only if *exactly one* feature matches the query, otherwise return ``None``.\n"
+			"  FeatureReturn.first       Return the first match, or ``None`` if nothing matches. Note that a feature collection is an *unordered* collection of features, so this is only meaningful when the order does not matter.\n"
+			"  FeatureReturn.all         Return a ``list`` of all matches (empty if nothing matches).\n"
+			"  ========================= ==============\n")
 			.value("exactly_one", GPlatesApi::FeatureReturn::EXACTLY_ONE)
 			.value("first", GPlatesApi::FeatureReturn::FIRST)
 			.value("all", GPlatesApi::FeatureReturn::ALL);
@@ -838,8 +850,8 @@ export_feature_collection()
 				"  :param features: an optional filename, or sequence of features, or a single feature\n"
 				"  :type features: str, or os.PathLike, or a sequence (eg, list or tuple) of Feature, "
 				"or a single Feature\n"
-				"  :raises: OpenFileForReadingError if file is not readable (if filename specified)\n"
-				"  :raises: FileFormatNotSupportedError if file format (identified by the filename "
+				"  :raises OpenFileForReadingError: if file is not readable (if filename specified)\n"
+				"  :raises FileFormatNotSupportedError: if file format (identified by the filename "
 				"extension) does not support reading (when filename specified)\n"
 				"\n"
 				"  To create a new feature collection from a file: \n"
@@ -895,8 +907,8 @@ export_feature_collection()
 				"  :param filename: the name of the file (or files) to read\n"
 				"  :type filename: str, or os.PathLike, or sequence of str/os.PathLike\n"
 				"  :rtype: FeatureCollection, list of FeatureCollection\n"
-				"  :raises: OpenFileForReadingError if any file is not readable\n"
-				"  :raises: FileFormatNotSupportedError if any file format (identified by a filename "
+				"  :raises OpenFileForReadingError: if any file is not readable\n"
+				"  :raises FileFormatNotSupportedError: if any file format (identified by a filename "
 				"extension) does not support reading\n"
 				"\n"
 				"  ::\n"
@@ -926,8 +938,8 @@ export_feature_collection()
 				"\n"
 				"  :param filename: the name of the file to write\n"
 				"  :type filename: str, or os.PathLike\n"
-				"  :raises: OpenFileForWritingError if the file is not writable\n"
-				"  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
+				"  :raises OpenFileForWritingError: if the file is not writable\n"
+				"  :raises FileFormatNotSupportedError: if the file format (identified by the filename "
 				"extension) does not support writing\n"
 				"\n"
 				"  ::\n"
@@ -982,7 +994,7 @@ export_feature_collection()
 				"  :type feature_query: FeatureType, or FeatureId, or Feature, "
 				"or callable (accepting single Feature argument), or a sequence (eg, list or tuple) "
 				"of any combination of them\n"
-				"  :raises: ValueError if any specified :class:`Feature` is not currently a feature in this collection\n"
+				"  :raises ValueError: if any specified :class:`Feature` is not currently a feature in this collection\n"
 				"\n"
 				"  All features matching any :class:`FeatureType`, :class:`FeatureId` or predicate callable "
 				"(if any specified) will be removed. Any specified :class:`FeatureType`, :class:`FeatureId` "
@@ -1035,7 +1047,7 @@ export_feature_collection()
 				"(accepting single Feature argument)\n"
 				"  :param feature_return: whether to return exactly one feature, the first feature or "
 				"all matching features\n"
-				"  :type feature_return: FeatureReturn.exactly_one, FeatureReturn.first or FeatureReturn.all\n"
+				"  :type feature_return: FeatureReturn\n"
 				"  :rtype: Feature, or list of Feature, or None\n"
 				"\n"
 				"  The following table maps *feature_return* values to return values:\n"

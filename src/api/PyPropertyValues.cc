@@ -396,8 +396,8 @@ export_enumeration()
 				"  :type content: str\n"
 				"  :param verify_information_model: whether to check the information model for valid "
 				"enumeration *type* and *content*\n"
-				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and either *type* is not a recognised enumeration type or *content* is not a valid value "
 				"for *type*\n"
 				"\n"
@@ -437,8 +437,8 @@ export_enumeration()
 				"  :type content: str\n"
 				"  :param verify_information_model: whether to check the information model for valid "
 				"enumeration *value*\n"
-				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *content* is not a valid value for this enumeration :meth:`type<get_type>`\n"
 				"\n"
 				"  ::\n"
@@ -867,7 +867,7 @@ export_gml_data_block()
 				"  :param scalar_type_to_values_mapping: maps each scalar type to a sequence of scalar values\n"
 				"  :type scalar_type_to_values_mapping: dict mapping each ScalarType to a sequence "
 				"of float, or a sequence of (ScalarType, sequence of float) tuples\n"
-				"  :raises: ValueError if *scalar_type_to_values_mapping* is empty, or if each "
+				"  :raises ValueError: if *scalar_type_to_values_mapping* is empty, or if each "
 				":class:`scalar type<ScalarType>` is not mapped to the same number of scalar values.\n"
 				"\n"
 				"  To create ``gpml:VelocityColat`` and ``gpml:VelocityLon`` scalar values:\n"
@@ -927,7 +927,7 @@ export_gml_data_block()
 				"  :type scalar_type: ScalarType\n"
 				"  :param scalar_values: the scalar values associated with *scalar_type*\n"
 				"  :type scalar_values: sequence (eg, list or tuple) of float\n"
-				"  :raises: ValueError if the length of *scalar_values* does not match the length of "
+				"  :raises ValueError: if the length of *scalar_values* does not match the length of "
 				"existing scalar values for other :class:`scalar types<ScalarType>`.\n"
 				"\n"
 				"  To set (or replace) the scalar values associated with ``gpml:VelocityColat``:\n"
@@ -1530,7 +1530,7 @@ export_gml_time_period()
 				"  :type begin_time: float or GeoTimeInstant\n"
 				"  :param end_time: the end time (time of disappearance)\n"
 				"  :type end_time: float or GeoTimeInstant\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n"
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1559,7 +1559,7 @@ export_gml_time_period()
 				"\n"
 				"  :param time_position: the begin time position (time of appearance)\n"
 				"  :type time_position: float or GeoTimeInstant\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time\n")
 		.def("get_end_time",
 				&GPlatesApi::gml_time_period_get_end_time,
 				"get_end_time()\n"
@@ -1578,7 +1578,7 @@ export_gml_time_period()
 				"\n"
 				"  :param time_position: the end time position (time of disappearance)\n"
 				"  :type time_position: float or GeoTimeInstant\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time\n")
 		.def("contains",
 				&GPlatesApi::gml_time_period_contains,
 				(bp::arg("time_position")),
@@ -1712,7 +1712,7 @@ export_gpml_array()
 			"\n"
 			"  :param elements: A sequence of :class:`PropertyValue` elements.\n"
 			"  :type elements: Any sequence such as a list or a tuple\n"
-			"  :raises: RuntimeError if sequence is empty\n"
+			"  :raises RuntimeError: if sequence is empty\n"
 			"\n"
 			"  Note that all elements should have the same type (such as :class:`GmlTimePeriod`).\n"
 			"\n"
@@ -2293,7 +2293,7 @@ export_gpml_irregular_sampling()
 				"  :param interpolation_function: identifies function used to interpolate\n"
 				"  :type interpolation_function: an instance derived from GpmlInterpolationFunction\n"
 #endif
-				"  :raises: RuntimeError if time sample sequence is empty\n"
+				"  :raises RuntimeError: if time sample sequence is empty\n"
 				"\n"
 				"  .. note:: The sequence of time samples must **not** be empty (for technical implementation reasons), "
 				"otherwise a *RuntimeError* exception will be thrown.\n"
@@ -3432,7 +3432,7 @@ export_gpml_piecewise_aggregation()
 				"\n"
 				"  :param time_windows: A sequence of :class:`GpmlTimeWindow` elements.\n"
 				"  :type time_windows: Any sequence such as a list or a tuple\n"
-				"  :raises: RuntimeError if time window sequence is empty\n"
+				"  :raises RuntimeError: if time window sequence is empty\n"
 				"\n"
 				"  .. note:: The sequence of time windows must **not** be empty (for technical implementation reasons), "
 				"otherwise a *RuntimeError* exception will be thrown.\n"
@@ -3662,8 +3662,8 @@ export_gpml_polarity_chron_id()
 				"reversals have been discovered within that chron, a second letter is appended, and so on\n"
 				"  :type minor_region: str\n"
 				"  :param verify_information_model: whether to check the information model for valid *era*\n"
-				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *era* is not a recognised era value\n"
 				"\n"
 				"  ::\n"
@@ -3694,8 +3694,8 @@ export_gpml_polarity_chron_id()
 				"  :param era: the era of the chron ('Cenozoic' or 'Mesozoic')\n"
 				"  :type era: str\n"
 				"  :param verify_information_model: whether to check the information model for valid *era*\n"
-				"  :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *era* is not a recognised era string value\n")
 		.def("get_major_region",
 				&GPlatesPropertyValues::GpmlPolarityChronId::get_major_region,
@@ -4198,7 +4198,7 @@ export_gpml_time_window()
 				"  :type begin_time: float or GeoTimeInstant\n"
 				"  :param end_time: the end time of the time window\n"
 				"  :type end_time: float or GeoTimeInstant\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n"
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -4259,7 +4259,7 @@ export_gpml_time_window()
 				"\n"
 				"  :param time: the begin time of this time window\n"
 				"  :type time: float or GeoTimeInstant\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time\n")
 		.def("get_end_time",
 				&GPlatesApi::gpml_time_window_get_end_time,
 				"get_end_time()\n"
@@ -4278,7 +4278,7 @@ export_gpml_time_window()
 				"\n"
 				"  :param time: the end time of this time window\n"
 				"  :type time: float or GeoTimeInstant\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
@@ -4609,7 +4609,7 @@ export_gpml_topological_section()
 			"  :type topological_geometry_type: GpmlTopologicalLine or GpmlTopologicalPolygon or "
 			"GpmlTopologicalNetwork, or None\n"
 			"  :rtype: GpmlTopologicalSection (GpmlTopologicalLineSection or GpmlTopologicalPoint), or None\n"
-			"  :raises: ValueError if *topological_geometry_type* is specified but is not one of the accepted types "
+			"  :raises ValueError: if *topological_geometry_type* is specified but is not one of the accepted types "
 			"(:class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`)\n"
 			"\n"
 			"  If *geometry_property_name* is not specified then the default geometry property name is determined from the feature's :class:`type<FeatureType>` - "

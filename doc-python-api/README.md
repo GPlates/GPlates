@@ -148,6 +148,35 @@ Example:
 :rtype: list[PlateBoundaryStatistic], or dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]
 ```
 
+## What goes in a docstring and what goes in the Primer
+
+A docstring documents one member: what it does, its parameters, return value and exceptions, and
+a short example. Anything a reader needs *before* they can use the member - a derivation, an
+algorithm, a sign or ordering convention, or a workflow that spans several classes - belongs in
+the Primer (`pygplates_primer.rst`), and the docstring points at it:
+
+```
+  .. seealso:: :ref:`pygplates_primer_equivalent_stage_rotation` in the *Primer* documentation.
+```
+
+`PyReconstructionTree.cc`, `PyResolveTopologyParameters.cc` and `PyTopologicalModel.cc` follow
+this pattern. The reason is duplication: a convention explained inside one method's docstring
+gets pasted into the next method that needs it, and the copies then drift. Conversely, a
+docstring should not merely say "see the Primer" - it must still state the member's contract.
+
+Enumerations (`bp::enum_`) take their docstring from the constructor's second argument; the
+docstring is the only place their values are described (a table of `Value` / `Description`), so
+a parameter that accepts an enumeration says which values it accepts in its `:type:` field and
+leaves the meaning of each value to the enumeration's page. Exceptions take their docstring from
+`export_exception()` in `PyExceptions.cc`. Both are listed in the *Enumerations* and *Exceptions*
+sections of `pygplates_reference.rst`; the enumerations use the custom autosummary template
+`_templates/autosummary/enum.rst`, because the default class template would list every method
+that a Boost.Python enum inherits from `int`.
+
+Pure-Python API files (`src/qt-resources/python/api/*.py`) are exec'd into the `pygplates`
+module namespace, so every module-level name they define becomes a public attribute of
+`pygplates`. Alias imports with a leading underscore (`import itertools as _itertools`).
+
 ## Math markup
 
 The narrative pages (the primer and the sample-code walkthroughs) use `:math:` roles and `.. math::`

@@ -139,7 +139,7 @@ export_lat_lon_point()
 							"  :type latitude: float\n"
 							"  :param longitude: the longitude (in degrees)\n"
 							"  :type longitude: float\n"
-							"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+							"  :raises InvalidLatLonError: if *latitude* or *longitude* is invalid\n"
 							"\n"
 							"  ::\n"
 							"\n"

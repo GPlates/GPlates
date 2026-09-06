@@ -65,6 +65,13 @@ if (SPHINX_FOUND)
 		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${STATIC_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${STATIC_FILE} COPYONLY)
 	ENDFOREACH()
 
+	# Copy the '_templates' directory containing custom autosummary templates (see 'templates_path' in conf.py.in).
+	FILE(GLOB TEMPLATE_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/_templates/autosummary/*.rst")
+	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/_templates/autosummary")
+	FOREACH(TEMPLATE_FILE ${TEMPLATE_FILES})
+		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEMPLATE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${TEMPLATE_FILE} COPYONLY)
+	ENDFOREACH()
+
 	# Configure the Sphinx configuration file using @VAR@ CMake variable substitutions.
 	configure_file(conf.py.in "${CMAKE_CURRENT_BINARY_DIR}/conf.py.intermediate" @ONLY)
 

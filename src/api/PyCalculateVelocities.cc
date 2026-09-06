@@ -106,12 +106,39 @@ void
 export_calculate_velocities()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesAppLogic::VelocityUnits::Value>("VelocityUnits")
+	bp::enum_<GPlatesAppLogic::VelocityUnits::Value>(
+			"VelocityUnits",
+			"The units of a velocity.\n"
+			"\n"
+			"  Accepted by every function and method that calculates velocities (for example :func:`calculate_velocities`, :meth:`TopologicalSnapshot.get_point_velocities` and :meth:`ReconstructedGeometryTimeSpan.get_velocities`).\n"
+			"\n"
+			"  ======================== ==============\n"
+			"  Value                    Description\n"
+			"  ======================== ==============\n"
+			"  VelocityUnits.kms_per_my Kilometres per million years (the default).\n"
+			"  VelocityUnits.cms_per_yr Centimetres per year.\n"
+			"  ======================== ==============\n"
+			"\n"
+			"  .. note:: 1 centimetre per year is 10 kilometres per million years.\n")
 			.value("kms_per_my", GPlatesAppLogic::VelocityUnits::KMS_PER_MY)
 			.value("cms_per_yr", GPlatesAppLogic::VelocityUnits::CMS_PER_YR);
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesAppLogic::VelocityDeltaTime::Type>("VelocityDeltaTimeType")
+	bp::enum_<GPlatesAppLogic::VelocityDeltaTime::Type>(
+			"VelocityDeltaTimeType",
+			"How the time interval used to calculate a velocity is positioned relative to the reconstruction time.\n"
+			"\n"
+			"  A velocity at reconstruction time :math:`t` is calculated from the stage rotation over a small time interval :math:`\\delta t` (the *velocity_delta_time* argument, which defaults to 1 Myr). This enumeration selects where that interval lies relative to :math:`t`:\n"
+			"\n"
+			"  =============================================== ==============\n"
+			"  Value                                           Description\n"
+			"  =============================================== ==============\n"
+			"  VelocityDeltaTimeType.t_plus_delta_t_to_t       From :math:`t + \\delta t` to :math:`t` - the interval ends at the reconstruction time (the default).\n"
+			"  VelocityDeltaTimeType.t_to_t_minus_delta_t      From :math:`t` to :math:`t - \\delta t` - the interval starts at the reconstruction time.\n"
+			"  VelocityDeltaTimeType.t_plus_minus_half_delta_t From :math:`t + \\delta t / 2` to :math:`t - \\delta t / 2` - the interval is centred on the reconstruction time.\n"
+			"  =============================================== ==============\n"
+			"\n"
+			"  .. note:: Geological time increases into the past, so :math:`t + \\delta t` is *older* than :math:`t`.\n")
 			.value("t_plus_delta_t_to_t", GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T)
 			.value("t_to_t_minus_delta_t", GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T)
 			.value("t_plus_minus_half_delta_t", GPlatesAppLogic::VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T);
@@ -138,7 +165,7 @@ export_calculate_velocities()
 			"  :type time_interval_in_my: float\n"
 			"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 			"*centimetres per year* (defaults to *kilometres per million years*)\n"
-			"  :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr\n"
+			"  :type velocity_units: VelocityUnits\n"
 			"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* "
 			"(defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 			"  :type earth_radius_in_kms: float\n"
