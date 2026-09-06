@@ -42,6 +42,11 @@ on:
       - cmake/**
       - CMakeLists.txt
   workflow_dispatch:
+    inputs:
+      linux-image-tag:
+        description: "Tag of the GHCR dependency image the Linux wheels build inside"
+        type: string
+        default: latest
 
 # What the build jobs need: the repository, and the GHCR packages the Linux builds pull their
 # dependency image from. Both are spelled out because naming any permission drops every one not
@@ -294,6 +299,25 @@ jobs:
           for ((i = ${#added[@]} - 1; i >= 0; i--)); do
               cygpath --windows "${added[i]}" >> "$GITHUB_PATH"
           done
+
+      - name: Build the Linux wheels against a specific dependency image
+        # A dockerfile change can only be proved by building wheels inside the image it
+        # produces, and that image does not become ':latest' until the change is merged. So a
+        # manual run can name any tag the image workflow pushed - see the recipe in the header
+        # of '.github/workflows/build-wheel-images.yml'.
+        #
+        # cibuildwheel reads the image from the environment in preference to 'pyproject.toml',
+        # so the file stays the authoritative default for every other run.
+        if: runner.os == 'Linux' && inputs.linux-image-tag != '' && inputs.linux-image-tag != 'latest'
+        # The tag reaches the script through the environment rather than by '${{ }}'
+        # interpolation into its text, so that a tag containing whitespace or shell syntax is
+        # data rather than script.
+        env:
+          IMAGE_TAG: ${{ inputs.linux-image-tag }}
+        run: |
+          image=ghcr.io/gplates/pygplates-manylinux_2_28
+          echo "CIBW_MANYLINUX_X86_64_IMAGE=${image}_x86_64:${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "CIBW_MANYLINUX_AARCH64_IMAGE=${image}_aarch64:${IMAGE_TAG}" >> "$GITHUB_ENV"
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.2.0
