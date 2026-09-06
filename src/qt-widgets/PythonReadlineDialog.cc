@@ -32,7 +32,10 @@
 
 GPlatesQtWidgets::PythonReadlineDialog::PythonReadlineDialog(
 		QWidget *parent_) :
-	QDialog(parent_, Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint)
+	// Note the window close button: closing the window is a valid response
+	// (it means end-of-file).
+	QDialog(parent_, Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint |
+			Qt::WindowCloseButtonHint)
 {
 	setupUi(this);
 
@@ -55,14 +58,22 @@ GPlatesQtWidgets::PythonReadlineDialog::get_line(
 		move(d_pos);
 	}
 
-	QString line;
-	if (exec() == QDialog::Accepted)
-	{
-		line = input_lineedit->text();
-	}
+	const bool accepted = (exec() == QDialog::Accepted);
 
 	d_pos = pos();
 
-	return line + "\n";
+	if (!accepted)
+	{
+		// The user cancelled (Cancel button, Escape key or window close button).
+		//
+		// Return an empty string - not even a newline - because that is how Python
+		// signals end-of-file on stdin (the equivalent of typing Ctrl-D in a
+		// terminal). Without it there is no way out of Python code that keeps
+		// reading lines, such as the interactive 'help()' utility, and this dialog
+		// just reappears indefinitely.
+		return QString();
+	}
+
+	return input_lineedit->text() + "\n";
 }
 

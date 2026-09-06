@@ -40,7 +40,7 @@
    <item>
     <widget class="QDialogButtonBox" name="main_buttonbox">
      <property name="standardButtons">
-      <set>QDialogButtonBox::Ok</set>
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
     </widget>
    </item>
@@ -68,6 +68,22 @@
    <signal>accepted()</signal>
    <receiver>PythonReadlineDialog</receiver>
    <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>233</x>
+     <y>78</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>233</x>
+     <y>83</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>main_buttonbox</sender>
+   <signal>rejected()</signal>
+   <receiver>PythonReadlineDialog</receiver>
+   <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>233</x>
