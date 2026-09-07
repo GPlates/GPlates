@@ -235,11 +235,22 @@ build-verbosity = 1
 #
 # 'check_wheel_contents.py' runs after the suite because it checks the wheel rather than the code:
 # the test suite passes against a wheel whose PROJ and GDAL data never made it in (which is how
-# the Windows wheels came to ship without them), so the packaging needs a check of its own.
-test-sources = ["pygplates/test", "pygplates/wheel/check_wheel_contents.py"]
+# the Windows wheels came to ship without them), so the packaging needs a check of its own. It
+# also lists the libraries the repair step vendored, which is the record of what the wheel ships.
+#
+# 'check_linkage.py' is the CTest of the same name, run here as well because the two check
+# different artifacts: the CTest sees the module in the build tree, this sees the module inside
+# the repaired wheel, whose dependency names the repair step has rewritten. The August 2026
+# segfault at 'import pygplates' was in a wheel whose build-tree module was fine.
+test-sources = [
+    "pygplates/test",
+    "pygplates/wheel/check_wheel_contents.py",
+    "cmake/check_linkage.py",
+]
 test-command = [
     "python -X faulthandler pygplates/test/test.py",
     "python pygplates/wheel/check_wheel_contents.py",
+    "python cmake/check_linkage.py --installed",
 ]
 
 [tool.cibuildwheel.config-settings]
@@ -297,12 +308,11 @@ before-test = "sccache --show-stats"
 "cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
 "build-dir" = "build/wheel"
 # No 'OpenGL_GL_PREFERENCE' here any more: the module links only Qt6Core, so nothing on its
-# link line reaches OpenGL and there is no GL family to choose. It was
-# needed while the module linked Qt6Gui (whose imported target propagates Qt's OpenGL
-# dependency) - the history, and the two-libGLdispatch segfault the define prevented, is in
-# 'pygplates/wheel/README.md'. The docker image still sets it when building Qt and GLEW
-# ('pygplates/wheel/manylinux_2_28.dockerfile'); 'cmake/check_linkage.py' fails the build if
-# any GL library reappears on the module.
+# link line reaches OpenGL and there is no GL family to choose. It was needed while the module
+# linked Qt6Gui (whose imported target propagates Qt's OpenGL dependency) - the history, and
+# the two-libGLdispatch segfault the define prevented, is in 'pygplates/wheel/README.md'.
+# Nothing in the Linux image builds against OpenGL any more either; 'cmake/check_linkage.py'
+# and 'pygplates/wheel/check_wheel_contents.py' fail the build if any GL library reappears.
 # Compile through sccache (installed in the images above). The cache only lives for the
 # duration of the cibuildwheel run, but the per-Python-version builds share most of their
 # object files, so the second and later Python versions build many times faster.

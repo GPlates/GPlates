@@ -7,11 +7,21 @@
 # the wheel builds themselves just pull the images (see '.github/workflows/build-wheels.yml'
 # and '[tool.cibuildwheel.linux]' in 'pyproject.toml').
 #
-# Each architecture builds natively on its own runner (no QEMU emulation - a Qt source build
-# under emulation would take many times longer than the native ~2 hours).
+# Each architecture builds natively on its own runner (no QEMU emulation - these are source
+# builds of Boost, Qt, PROJ and GDAL, and emulating them would take many times longer).
 #
 # Images are tagged ':latest' (what wheel builds pull) and ':<commit-sha>' (so any previous
 # image remains pullable, eg, to rebuild an old release or bisect a dependency problem).
+#
+# To prove a dockerfile change from its branch, before it is merged - which is the only way to
+# find out whether wheels actually build inside the new image - build the image without moving
+# ':latest' off the merged one, then build wheels against the tag it produced:
+#
+#   gh workflow run build-wheel-images.yml --ref <branch> -f push-latest=false
+#   gh workflow run build-wheels.yml --ref <branch> -f linux-image-tag=<the run's commit sha>
+#
+# Nothing about that needs a temporary edit to either workflow, so nothing has to be remembered
+# and reverted before merging.
 #
 # NOTE: After the very first push, the two GHCR packages must be manually marked *public*
 #       (GitHub organization -> Packages -> package settings -> Change visibility) so that
@@ -26,8 +36,14 @@ on:
       - pygplates/wheel/versions.sh
       - .github/workflows/build-wheel-images.yml
   workflow_dispatch:
+    inputs:
+      push-latest:
+        description: "Move the ':latest' tag to this image (the wheel builds' default image)"
+        type: boolean
+        default: true
 
-# Superseded runs are cancelled rather than left to finish (an image build takes ~2 hours).
+# Superseded runs are cancelled rather than left to finish (an image build takes tens of
+# minutes).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -36,9 +52,12 @@ jobs:
   build-image:
     name: ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
-    # A Qt source build on a 4-core runner dominates this (~1-2 hours); the rest of the
-    # dependencies add another hour or so.
-    timeout-minutes: 300
+    # Building Boost.Python once per supported Python version dominates this; the rest of the
+    # dependencies are minutes each. (Qt used to dominate instead, by a wide margin - building
+    # Qt Core alone rather than Gui/Widgets/OpenGL took the whole image build from tens of
+    # minutes to a fraction of that.) The limit is several times the expected duration, so
+    # hitting it means something is broken rather than merely slow.
+    timeout-minutes: 120
 
     permissions:
       # To push to GHCR. 'contents: read' restated because specifying any permission
@@ -58,6 +77,12 @@ jobs:
 
     env:
       IMAGE: ghcr.io/gplates/pygplates-manylinux_2_28_${{ matrix.arch }}
+      # Whether this run moves ':latest' - the tag wheel builds pull by default. Every run
+      # except a manual one that says otherwise does; the header says what that is for.
+      # (Written the long way round because on a 'push' the input is the empty string, and
+      # GitHub's '==' would compare that equal to false - skipping ':latest' on exactly the
+      # runs that must move it.)
+      PUSH_LATEST: ${{ github.event_name != 'workflow_dispatch' || inputs.push-latest }}
 
     steps:
       - name: Check out repository
@@ -81,14 +106,23 @@ jobs:
       - name: Build image
         # '--pull' so a stale locally cached manylinux base (with old /opt/python interpreters)
         # is never used - the Boost.Python builds need the base image to be current.
+        #
+        # ':<commit sha>' always; ':latest' only when this run is meant to move it.
         run: >
           docker build
           --pull
           --build-arg ARCH=${{ matrix.arch }}
-          -t ${{ env.IMAGE }}:latest
           -t ${{ env.IMAGE }}:${{ github.sha }}
+          ${{ env.PUSH_LATEST == 'true' && format('-t {0}:latest', env.IMAGE) || '' }}
           -f pygplates/wheel/manylinux_2_28.dockerfile
           pygplates/wheel
 
       - name: Push image
-        run: docker push --all-tags ${{ env.IMAGE }}
+        # The tags are pushed by name rather than with '--all-tags': that pushes every tag the
+        # local daemon holds for the repository, which would put ':latest' back whenever the
+        # step above deliberately did not apply it.
+        run: |
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+          if [ '${{ env.PUSH_LATEST }}' = 'true' ]; then
+            docker push ${{ env.IMAGE }}:latest
+          fi

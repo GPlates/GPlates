@@ -8,17 +8,17 @@
     "and MPFR are the reason vcpkg is here at all: they have no MSVC build system (vcpkg builds",
     "them through msys2 and installs MSVC-linkable import libraries), and CGAL needs both. PROJ",
     "and GDAL come along because they are a deep stack (SQLite, TIFF, GeoTIFF, JSON-C) that",
-    "vcpkg already knows how to build on Windows. Qt, Qwt, Boost and CGAL are NOT here: they are",
+    "vcpkg already knows how to build on Windows. Qt, Boost and CGAL are NOT here: they are",
     "built by 'build_windows_deps.sh' from the version pins in 'versions.sh', so they stay in",
     "step with the Linux and macOS wheels (and vcpkg's Qt is a multi-hour source build).",
     "",
     "'builtin-baseline' is a commit of https://github.com/microsoft/vcpkg - a vcpkg release tag,",
     "which is what pins these libraries' versions. 'build_windows_deps.sh' reads it from here to",
     "check out the matching vcpkg, and stamps the installed tree with it, so bumping it below",
-    "rebuilds them. For the libraries the other platforms also ship - GLEW, PROJ and GDAL - the",
+    "rebuilds them. For the libraries the other platforms also ship - PROJ and GDAL - the",
     "pins in 'versions.sh' are kept equal to what this baseline supplies, so every platform's",
     "wheels carry the same versions of the libraries a user can feel; bump the baseline and",
-    "those three pins together, as one act ('build_windows_deps.sh' fails if they drift apart)."
+    "those two pins together, as one act ('build_windows_deps.sh' fails if they drift apart)."
   ],
 
   "name": "pygplates-wheel-dependencies",
@@ -26,7 +26,6 @@
   "builtin-baseline": "9e593bb18ea69cc5095e012465dcd675a822ed0d",
 
   "dependencies": [
-    "glew",
     "gmp",
     "mpfr",
     "zlib",
