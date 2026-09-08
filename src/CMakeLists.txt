@@ -81,26 +81,41 @@ endif()
 # provides Python${_PYTHON_MAJOR_VER}_EXECUTABLE, which we use below (except under conda, which tells us
 # which interpreter to use).
 #
-# Note: The 'Development' and 'Interpreter' components are searched in *separate* find_package() calls.
-#       CMake policy CMP0190 (CMake 4.1) makes it a hard error to request 'Interpreter' (or 'Compiler') together
-#       with any 'Development' component while cross-compiling, unless CMAKE_CROSSCOMPILING_EMULATOR is set
-#       (an interpreter for the target platform generally cannot be run on the build platform):
+# Note: Both components are requested in a *single* find_package() call, because that is what makes
+#       find_package() look up the development artifacts *from the interpreter*, and so keeps the two
+#       consistent. From 'Support.cmake' in CMake's FindPython module: "if python interpreter is found, use
+#       it to look-up for artifacts to ensure consistency between interpreter and development environments".
+#       Ask for them in two calls instead and each search stands alone (every call also resets all the
+#       Python${_PYTHON_MAJOR_VER}_<component>_FOUND flags first), so on a machine with more than one Python
+#       - and especially with a '-DPython${_PYTHON_MAJOR_VER}_EXECUTABLE=...' pointing at one of them, which
+#       the error message further below tells users to pass - you can silently end up with one Python's
+#       headers and library and another Python's version and interpreter. Together in one call that same
+#       mismatch is instead a hard "Could NOT find Python${_PYTHON_MAJOR_VER} (missing: Development.Module)".
+#
+#       Cross-compiling is the one exception, and there the call *must* be split: CMake policy CMP0190
+#       (CMake 4.1) makes requesting 'Interpreter' (or 'Compiler') together with any 'Development' component
+#       a hard error while cross-compiling, unless CMAKE_CROSSCOMPILING_EMULATOR is set:
 #         https://github.com/Kitware/CMake/blob/bda0b36155a63134811c8ec754fba4fa85dfcd65/Modules/FindPython/Support.cmake#L1601
 #       And conda-forge's cross builds ('linux-aarch64', 'linux-ppc64le' and 'osx-arm64') are exactly that
-#       situation: the compiler activation passes '-DCMAKE_SYSTEM_NAME' (so CMAKE_CROSSCOMPILING is TRUE) and sets
-#       no emulator anywhere, while the policy range in the top-level 'cmake_minimum_required(VERSION 3.22...4.4)'
-#       opts us into CMP0190. So a single combined call fails to *configure* there. pyGPlates 1.0.0 escaped this
-#       only because its policy range stopped at 3.31, before CMP0190 existed.
+#       situation: the compiler activation passes '-DCMAKE_SYSTEM_NAME' (so CMAKE_CROSSCOMPILING is TRUE) and
+#       sets no emulator anywhere, while the policy range in the top-level
+#       'cmake_minimum_required(VERSION 3.22...4.4)' opts us into CMP0190. So a combined call fails to
+#       *configure* there. pyGPlates 1.0.0 escaped this only because its policy range stopped at 3.31, before
+#       CMP0190 existed.
 #
-#       The policy only inspects the components of a single find_package() call, so splitting the call satisfies
-#       it. We search 'Development' first because that is the component describing the *target*: when
-#       cross-compiling its artifacts come from the conda 'host' prefix, whereas the interpreter found by the
-#       second call comes from the 'build' prefix (and is not the interpreter we end up running anyway - see
-#       GPLATES_PYTHON_EXECUTABLE below).
+#       Splitting the call gives up nothing on that path, because find_package() declines to use the
+#       interpreter for the artifact lookup in precisely that situation anyway (an interpreter built for the
+#       build platform cannot describe the target). We ask for 'Interpreter' first and 'Development' second
+#       so that it is the *target* artifacts that determine Python${_PYTHON_MAJOR_VER}_VERSION.
 #
-#       NumPy is deliberately not requested as a component here - see the NumPy section further below for why.
-find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME})
-find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter)
+#       NumPy is deliberately not requested as a component in either form - see the NumPy section further
+#       below for why.
+if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
+	find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter)
+	find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME})
+else()
+	find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME})
+endif()
 
 # Get the Python major/minor versions.
 set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MAJOR})
@@ -125,9 +140,8 @@ if (GPLATES_CONDA_BUILD)
 	#       "Cross builds run the host interpreter"). Dropping that build dependency from the recipe would
 	#       break the execute_process() calls below.
 	#
-	# Note: CMake policy CMP0190 (CMake 4.1) makes it a hard error to search for the 'Interpreter' component together with
-	#       a 'Development' component while cross-compiling, which is why the find_package() calls above are split in
-	#       two. See the comment there.
+	# Note: Cross-compiling is also why the find_package() call above is split in two when CMAKE_CROSSCOMPILING is set
+	#       (CMake policy CMP0190). See the comment there.
 	#
 	# When not cross-compiling there's only a 'host' prefix (conda only installs Python into the 'host' prefix, not also the 'build' prefix).
 	# In this situation the PYTHON environment variable should be the same as that found with 'find_package(Python2/3)'.
