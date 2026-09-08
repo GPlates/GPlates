@@ -77,9 +77,30 @@ else()  # CMake < 3.18
 	set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development)
 endif()
 
-# Note that we don't really need to specify the 'Interpreter' component but we do in case it makes 'Development' more robust.
-# We also specify the optional component NumPy to get access to the numpy C-API header include directories.
-find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME} OPTIONAL_COMPONENTS NumPy)
+# The 'Development' component provides the Python headers and library, and the 'Interpreter' component
+# provides Python${_PYTHON_MAJOR_VER}_EXECUTABLE, which we use below (except under conda, which tells us
+# which interpreter to use).
+#
+# Note: The 'Development' and 'Interpreter' components are searched in *separate* find_package() calls.
+#       CMake policy CMP0190 (CMake 4.1) makes it a hard error to request 'Interpreter' (or 'Compiler') together
+#       with any 'Development' component while cross-compiling, unless CMAKE_CROSSCOMPILING_EMULATOR is set
+#       (an interpreter for the target platform generally cannot be run on the build platform):
+#         https://github.com/Kitware/CMake/blob/bda0b36155a63134811c8ec754fba4fa85dfcd65/Modules/FindPython/Support.cmake#L1601
+#       And conda-forge's cross builds ('linux-aarch64', 'linux-ppc64le' and 'osx-arm64') are exactly that
+#       situation: the compiler activation passes '-DCMAKE_SYSTEM_NAME' (so CMAKE_CROSSCOMPILING is TRUE) and sets
+#       no emulator anywhere, while the policy range in the top-level 'cmake_minimum_required(VERSION 3.22...4.4)'
+#       opts us into CMP0190. So a single combined call fails to *configure* there. pyGPlates 1.0.0 escaped this
+#       only because its policy range stopped at 3.31, before CMP0190 existed.
+#
+#       The policy only inspects the components of a single find_package() call, so splitting the call satisfies
+#       it. We search 'Development' first because that is the component describing the *target*: when
+#       cross-compiling its artifacts come from the conda 'host' prefix, whereas the interpreter found by the
+#       second call comes from the 'build' prefix (and is not the interpreter we end up running anyway - see
+#       GPLATES_PYTHON_EXECUTABLE below).
+#
+#       NumPy is deliberately not requested as a component here - see the NumPy section further below for why.
+find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME})
+find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter)
 
 # Get the Python major/minor versions.
 set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MAJOR})
@@ -104,24 +125,9 @@ if (GPLATES_CONDA_BUILD)
 	#       "Cross builds run the host interpreter"). Dropping that build dependency from the recipe would
 	#       break the execute_process() calls below.
 	#
-	# UPDATE: CMake policy CMP0190 (CMake 4.1) makes this a hard error when cross-compiling, and it is not
-	#         hypothetical - it will break the next conda-forge release unless the find_package() call above
-	#         is changed. FindPython refuses to search for 'Interpreter' together with any 'Development'
-	#         component while CMAKE_CROSSCOMPILING is true, unless CMAKE_CROSSCOMPILING_EMULATOR is set:
-	#           https://github.com/Kitware/CMake/blob/bda0b36155a63134811c8ec754fba4fa85dfcd65/Modules/FindPython/Support.cmake#L1601
-	#         All three conditions hold on conda-forge's cross builds ('linux-aarch64', 'linux-ppc64le' and
-	#         'osx-arm64'): the policy range in the top-level 'cmake_minimum_required(VERSION 3.22...4.4)'
-	#         opts us into CMP0190, conda-forge's compiler activation passes '-DCMAKE_SYSTEM_NAME' and
-	#         '-DCMAKE_SYSTEM_PROCESSOR' (so CMAKE_CROSSCOMPILING is TRUE) and sets no emulator anywhere, and
-	#         conda-forge now ships CMake 4.4. Reproduced with CMake 4.3.4 by configuring this same call with
-	#         '-DCMAKE_SYSTEM_NAME=Linux'. pyGPlates 1.0.0 escaped it only because its policy range stopped at
-	#         3.31, before CMP0190 existed.
-	#
-	#         The fix is to split the call above into two - one for 'Development.Module' and one for
-	#         'Interpreter' - since the policy only inspects the components of a single find_package() call.
-	#         Verified to configure cleanly under the same faked cross-compile, with Python3_EXECUTABLE still
-	#         set. Not done here: it is a change to shared sources that needs both products built (see
-	#         AGENTS.md), so it belongs with the NumPy change below rather than in the conda recipe update.
+	# Note: CMake policy CMP0190 (CMake 4.1) makes it a hard error to search for the 'Interpreter' component together with
+	#       a 'Development' component while cross-compiling, which is why the find_package() calls above are split in
+	#       two. See the comment there.
 	#
 	# When not cross-compiling there's only a 'host' prefix (conda only installs Python into the 'host' prefix, not also the 'build' prefix).
 	# In this situation the PYTHON environment variable should be the same as that found with 'find_package(Python2/3)'.
@@ -205,30 +211,61 @@ if (GPLATES_BUILD_GPLATES)
 	endif()
 endif()
 
-# Find the Python NumPy include directories (and store in GPLATES_PYTHON_NUMPY_INCLUDE_DIRS if found).
-if (GPLATES_CONDA_BUILD)
-	# Get the 'host' prefix Python to import numpy and then print out the numpy include directory.
-	execute_process(COMMAND "${GPLATES_PYTHON_EXECUTABLE}" "-c" "from __future__ import print_function; import numpy as np; print(np.get_include());"
-		RESULT_VARIABLE _NUMPY_RESULT
-		OUTPUT_VARIABLE _NUMPY_OUTPUT
-		ERROR_QUIET
-		OUTPUT_STRIP_TRAILING_WHITESPACE)
-	if (NOT _NUMPY_RESULT)  # success
-		file(TO_CMAKE_PATH ${_NUMPY_OUTPUT} GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)  # Convert '\' to '/' in paths.
-	endif()
-else()
-	# We called find_package(Python2) or find_package(Python3) with optional NumPy component.
-	if (Python${GPLATES_PYTHON_VERSION_MAJOR}_NumPy_FOUND)
-		set(GPLATES_PYTHON_NUMPY_INCLUDE_DIRS ${Python${GPLATES_PYTHON_VERSION_MAJOR}_NumPy_INCLUDE_DIRS})
+# Find the Python NumPy C-API include directories (and store in GPLATES_PYTHON_NUMPY_INCLUDE_DIRS if found).
+#
+# Note: We ask the Python interpreter for its NumPy include directory rather than using the 'NumPy' component of
+#       find_package(Python2/3), for two reasons:
+#       - GPLATES_PYTHON_EXECUTABLE is the interpreter we are actually building against (under conda that is the
+#         'host' prefix Python, whereas the component would report the 'build' prefix when cross-compiling), and
+#       - requesting the 'NumPy' component implicitly adds 'Interpreter' to that find_package() call, and on
+#         CMake 4.1 'Development.Module' along with it, which re-triggers CMP0190 when cross-compiling no matter
+#         how the calls above are split. CMake >= 4.2 drops that second implication (policy CMP0201), but there
+#         is no reason to depend on the CMake version here when the interpreter can just be asked directly.
+execute_process(COMMAND "${GPLATES_PYTHON_EXECUTABLE}" "-c" "from __future__ import print_function; import numpy as np; print(np.get_include());"
+	RESULT_VARIABLE _NUMPY_RESULT
+	OUTPUT_VARIABLE _NUMPY_OUTPUT
+	ERROR_VARIABLE _NUMPY_ERROR
+	OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE)
+if (NOT _NUMPY_RESULT)  # success
+	file(TO_CMAKE_PATH ${_NUMPY_OUTPUT} GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)  # Convert '\' to '/' in paths.
+
+	# Make sure the NumPy C-API header is actually in there.
+	#
+	# Note: 'Config_h.cmake' only defines GPLATES_HAVE_NUMPY_C_API when it finds this header, so an include
+	#       directory without it leaves us just as badly off as not finding NumPy at all.
+	if (NOT EXISTS "${GPLATES_PYTHON_NUMPY_INCLUDE_DIRS}/numpy/arrayobject.h")
+		set(_NUMPY_ERROR "There is no 'numpy/arrayobject.h' in '${GPLATES_PYTHON_NUMPY_INCLUDE_DIRS}'.")
+		unset(GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)
 	endif()
 endif()
-# If NumPy was not found then numpy hasn't been installed into Python.
+
+# NumPy is required when building pyGPlates, but only recommended when building GPlates.
+#
+# Without the NumPy C-API everything still builds, but silently loses the ability to accept NumPy int/float
+# scalars as arguments to Python functions (see GPLATES_HAVE_NUMPY_C_API in the source). For pyGPlates that is a
+# broken package rather than a reduced one: 'pyproject.toml' declares numpy as an unconditional *runtime*
+# dependency, so every pyGPlates user has NumPy and can hand us its scalars. And the failure is invisible until
+# one of them does, which is far too late - hence a fatal error here.
+#
+# GPlates merely embeds Python, where NumPy is genuinely optional, so there it stays a warning (which also keeps
+# a from-source build working in a minimal Python installation).
 if (NOT GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)
-	# Warn that numpy was not found.
-	message(WARNING [[
-	Unable to 'import numpy':
-		You will not be able to pass NumPy int/float scalars as arguments to pyGPlates functions.
-		To enable this functionality please install NumPy and then re-run CMake (to enable use of NumPy C-API).]])
+	set(_NUMPY_FAILURE
+		"Unable to get the NumPy C-API include directory from the Python interpreter:\n"
+		"    ${GPLATES_PYTHON_EXECUTABLE}\n"
+		"${_NUMPY_ERROR}\n")
+	if (GPLATES_BUILD_GPLATES)
+		message(WARNING ${_NUMPY_FAILURE}
+			"You will not be able to pass NumPy int/float scalars as arguments to Python functions. "
+			"To enable this functionality please install NumPy into the above Python installation and then "
+			"re-run CMake (to enable use of the NumPy C-API).")
+	else()
+		message(FATAL_ERROR ${_NUMPY_FAILURE}
+			"NumPy is required when building pyGPlates: it is an unconditional runtime dependency of the "
+			"pyGPlates package (see 'dependencies' in 'pyproject.toml') and its C-API is what lets pyGPlates "
+			"accept NumPy int/float scalars as arguments. Please install NumPy into the above Python "
+			"installation and then re-run CMake.")
+	endif()
 endif()
 
 # Set the Python executable in the parent scope (parent directory).
