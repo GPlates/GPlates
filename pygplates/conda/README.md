@@ -160,7 +160,8 @@ These are the reasons behind the non-obvious parts of the recipe, each learned f
 Half the platforms conda-forge publishes are cross builds, and on those the build still has to
 *run* "the host Python": `build.sh` invokes `$PYTHON -m pip install`, and `src/CMakeLists.txt` asks
 that same interpreter for the standard library location, for `sys.prefix`, and for the NumPy include
-directory. Failure of the first two is a `FATAL_ERROR`.
+directory. Each of the three is a `FATAL_ERROR` if it fails - the NumPy one only when building
+pyGPlates, which is all this recipe ever does.
 
 It has to be the host interpreter rather than the one `find_package(Python3)` turns up, because the
 paths taken from it decide where the module is installed. Picking up the build environment's Python
@@ -181,6 +182,19 @@ the same version as the host's because one variant pins both.
 Emulation does appear, but in the test phase rather than the build: that activation script skips
 itself when `CONDA_BUILD_STATE` is `TEST`, which is where conda-forge's `native_and_emulated`
 setting takes over.
+
+One CMake detail belongs here rather than in `src/CMakeLists.txt` alone, because these three
+platforms are the only place it applies: on them, and only on them, the `Interpreter` and
+`Development` components of Python are searched in two *separate* `find_package()` calls. Policy
+CMP0190 (CMake 4.1) makes asking for both in one call a hard error whenever `CMAKE_CROSSCOMPILING`
+is true and `CMAKE_CROSSCOMPILING_EMULATOR` is not set - which is exactly what conda-forge's
+compiler activation arranges - so a combined call fails to *configure* on every cross build.
+pyGPlates 1.0.0 shipped only because its `cmake_minimum_required` range stopped at 3.31, before the
+policy existed. Every other platform keeps the combined call, because that is what makes CMake look
+the headers and library up *from* the interpreter and so keeps the two consistent - a guarantee a
+cross build cannot have anyway. CMP0190 is also why NumPy is asked for by running the interpreter
+rather than as a `find_package()` component: on CMake 4.1 that component implies both of the others,
+and the error comes straight back.
 
 ### Qt Core only - no Qt Gui, GLEW, Qwt, OpenGL or X11
 
@@ -214,9 +228,17 @@ releases.
 
 ### NumPy 2 in `host`, and `numpy` in `run`
 
-pyGPlates uses NumPy only for scalar support, and `src/CMakeLists.txt` treats it as optional: if
-`numpy.get_include()` fails, configure prints a warning and builds a module without it. So `numpy`
-must stay in `host`: without it the build does not fail, it quietly ships a smaller API.
+pyGPlates uses NumPy only for scalar support, but `src/CMakeLists.txt` requires it: if
+`numpy.get_include()` fails, or the directory it names holds no `numpy/arrayobject.h`, configure
+stops with a `FATAL_ERROR`. It used to warn and carry on, which was the worse outcome by far - the
+module built, imported and passed its tests, and only rejected a `numpy.float64` argument later, in
+someone else's script.
+
+`numpy` therefore stays in `host`: it is the copy a native build compiles against, and the one whose
+run export pins the runtime bound. Be clear about how far the new error reaches, though - on the
+cross builds the probe is answered by the *build* prefix's numpy (see [Cross builds run the host
+interpreter](#cross-builds-run-the-host-interpreter)), so dropping `numpy` from `host` would still
+configure and build there. On those three platforms `host` is about the pin, not the probe.
 
 The version matters as much as the presence: see `numpy: 2` above. Building against NumPy 2 gives a
 `>=1.2x,<3` run export, so no `pin_compatible` is needed - but `numpy` is still named explicitly in
