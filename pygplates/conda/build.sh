@@ -11,7 +11,10 @@ fi
 #
 # Pip uses the scikit-build-core build backend to compile/install pyGPlates using CMake (see pyproject.toml).
 #
-# CMake auto-detects the active conda environment (it prepends $CONDA_PREFIX to CMAKE_PREFIX_PATH and, on
-# macOS, sets CMAKE_FIND_FRAMEWORK=LAST so conda libraries are preferred over system frameworks), so no
-# '-C cmake.define.CMAKE_PREFIX_PATH'/'CMAKE_FIND_FRAMEWORK' flags are needed here.
+# No CMAKE_PREFIX_PATH / Boost_ROOT / CMAKE_FIND_FRAMEWORK defines are needed here. 'conda build' sets
+# CONDA_BUILD=1, and the root CMakeLists.txt then detects the conda 'host' environment from PREFIX
+# (rather than CONDA_PREFIX, which points at the build environment): it prepends $PREFIX to
+# CMAKE_PREFIX_PATH, points Boost_ROOT there, and on macOS sets CMAKE_FIND_FRAMEWORK=LAST so conda
+# libraries are preferred over system frameworks. ConfigDefault.cmake also forces
+# GPLATES_INSTALL_STANDALONE off for conda builds, so nothing gets bundled into the package.
 CMAKE_BUILD_PARALLEL_LEVEL=$CPU_COUNT $PYTHON -m pip install -vv "$SRC_DIR"
