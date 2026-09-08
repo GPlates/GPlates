@@ -97,10 +97,31 @@ if (GPLATES_CONDA_BUILD)
 	#   "Empty package; python present in build and host deps.  You probably picked up the build environment's python  executable.
 	#    You need to alter your recipe to  use the PYTHON env var in your recipe to run that executable."
 	#
-	# UPDATE: CMake policy CMP0190 (CMake 4.1) may require setting CMAKE_CROSSCOMPILING_EMULATOR since we specified the 'Development'
-	#         component together with the 'Interpreter' component. See:
+	# Note: On a cross-compile the conda recipe's 'cross-python_<target_platform>' build dependency replaces
+	#       $PREFIX/bin/python with a build-architecture shim (a 'crossenv' wrapper pointed at the host's
+	#       '_sysconfigdata_*.py'), so running PYTHON here is a native process that reports the *host* prefix's
+	#       paths - which is how this works without emulation. See 'pygplates/conda/README.md' (section
+	#       "Cross builds run the host interpreter"). Dropping that build dependency from the recipe would
+	#       break the execute_process() calls below.
+	#
+	# UPDATE: CMake policy CMP0190 (CMake 4.1) makes this a hard error when cross-compiling, and it is not
+	#         hypothetical - it will break the next conda-forge release unless the find_package() call above
+	#         is changed. FindPython refuses to search for 'Interpreter' together with any 'Development'
+	#         component while CMAKE_CROSSCOMPILING is true, unless CMAKE_CROSSCOMPILING_EMULATOR is set:
 	#           https://github.com/Kitware/CMake/blob/bda0b36155a63134811c8ec754fba4fa85dfcd65/Modules/FindPython/Support.cmake#L1601
-	#         If we get an error building on conda then can try separate 'find_package()' calls for the 'Interpreter' and 'Development' components.
+	#         All three conditions hold on conda-forge's cross builds ('linux-aarch64', 'linux-ppc64le' and
+	#         'osx-arm64'): the policy range in the top-level 'cmake_minimum_required(VERSION 3.22...4.4)'
+	#         opts us into CMP0190, conda-forge's compiler activation passes '-DCMAKE_SYSTEM_NAME' and
+	#         '-DCMAKE_SYSTEM_PROCESSOR' (so CMAKE_CROSSCOMPILING is TRUE) and sets no emulator anywhere, and
+	#         conda-forge now ships CMake 4.4. Reproduced with CMake 4.3.4 by configuring this same call with
+	#         '-DCMAKE_SYSTEM_NAME=Linux'. pyGPlates 1.0.0 escaped it only because its policy range stopped at
+	#         3.31, before CMP0190 existed.
+	#
+	#         The fix is to split the call above into two - one for 'Development.Module' and one for
+	#         'Interpreter' - since the policy only inspects the components of a single find_package() call.
+	#         Verified to configure cleanly under the same faked cross-compile, with Python3_EXECUTABLE still
+	#         set. Not done here: it is a change to shared sources that needs both products built (see
+	#         AGENTS.md), so it belongs with the NumPy change below rather than in the conda recipe update.
 	#
 	# When not cross-compiling there's only a 'host' prefix (conda only installs Python into the 'host' prefix, not also the 'build' prefix).
 	# In this situation the PYTHON environment variable should be the same as that found with 'find_package(Python2/3)'.

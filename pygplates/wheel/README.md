@@ -380,6 +380,9 @@ The flow, end to end:
    before upload - goes to PyPI, each file with a [PEP 740](https://peps.python.org/pep-0740/)
    attestation.
 
+The conda-forge package is updated afterwards, by hand and from the sdist this run published -
+see `pygplates/conda/README.md`.
+
 Recovery paths, should something fail:
 
 - **A build failed**: "Re-run failed jobs" - only the failed platform runs again (from its

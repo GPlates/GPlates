@@ -1,21 +1,34 @@
-# Associate Python and NumPy versions to avoid dependency conflicts with "conda build".
-# Using same versions as conda-forge.
+# LOCAL BUILDS ONLY - never copy this file to the conda-forge feedstock, which re-renders these
+# values from conda-forge-pinning (the values here track it as of September 2026; refresh them when
+# they move).
 #
-# This is only needed for local conda builds. Conda-forge takes care of this (re-rendering feedstock).
-# So the following should not be committed to the conda-forge feedstock.
-#
-# Note: You'll still get a warning like "Falling back to default numpy value of 1.16" but it can be ignored due to:
-#       https://github.com/conda/conda-build/issues/3170
+#  - python: the interpreters to build (conda-forge's python_min is 3.11). Pass '--python 3.13' to
+#    'conda build' to build just one of them.
+#  - numpy: conda-build's built-in default is 1.26 for Python >= 3.12; pyproject's 'numpy>=2.0'
+#    build requirement is not enforced under conda-build (which runs pip without build isolation),
+#    and a module built against 1.x refuses to import under NumPy 2 - so this MUST say 2.
+#  - c_stdlib / c_stdlib_version: let meta.yaml carry '{{ stdlib("c") }}' exactly as the feedstock
+#    does; without them conda-build renders a dependency on a nonexistent 'c_win-64'.
+#  - c_compiler / cxx_compiler: Windows only. conda-build defaults to vs2017 there - its default
+#    table does have a vs2022 entry, but the lookup clamps every Python >= 3.5 to the 3.5 row, so
+#    that entry is unreachable. conda-forge builds with vs2022. On Linux and macOS its defaults
+#    (gcc/gxx, clang/clangxx) already match conda-forge, so they are left alone: a key whose values
+#    are all excluded by selectors is dropped, and conda-build's own default then applies.
 python:
-- 3.8
-- 3.9
-- 3.10
-- 3.11
+  - 3.11
+  - 3.12
+  - 3.13
+  - 3.14
 numpy:
-- 1.22
-- 1.22
-- 1.22
-- 1.23
-zip_keys:
-- python
-- numpy
+  - 2
+c_stdlib:
+  - sysroot                    # [linux]
+  - macosx_deployment_target   # [osx]
+  - vs                         # [win]
+c_stdlib_version:              # [unix]
+  - 2.17                       # [linux]
+  - 11.0                       # [osx]
+c_compiler:
+  - vs2022                     # [win]
+cxx_compiler:
+  - vs2022                     # [win]
