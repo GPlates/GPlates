@@ -143,3 +143,33 @@ The branching model used in this repository is based on [gitflow](https://nvie.c
   - `hotfix/pygplates-<pygplates_version>` for preparing a pyGPlates _bug fix_ release
   > __Note:__ These short-lived branches are merged into `release-gplates` or `release-pygplates`
   > (__main__ branch containing __all__ GPlates or pyGPlates releases) and also merged into `gplates` or `pygplates` (__develop__ branch).
+
+##### Versioning
+
+Versions follow from the branching model above rather than being written out by hand:
+
+- `cmake/modules/VersionRelease.cmake` names the release each line is heading towards
+  (`GPLATES_RELEASE_VERSION`, `PYGPLATES_RELEASE_VERSION`). This is the only part anyone edits,
+  and it changes twice per release: once when a __release__ branch names the candidate being
+  prepared, and once afterwards to name the next release.
+- `cmake/modules/VersionFromGit.cmake` adds a development number - the number of first-parent
+  commits since the nearest release tag, which is how many times the branch tip has advanced.
+  So a GPlates development build is `2.6.0-47` and a pyGPlates one is `1.1.0.dev46`, while a
+  build standing on a release tag is exactly the release version.
+
+To see what a checkout resolves to, without configuring a build:
+
+```
+cmake -P cmake/modules/VersionFromGit.cmake gplates
+cmake -P cmake/modules/VersionFromGit.cmake pygplates
+```
+
+> __Note:__ Counting needs the whole history, so a shallow clone is refused rather than allowed
+> to produce a smaller number that still looks plausible. Building from a source archive with no
+> repository at all needs the version supplied, either as `-DGPLATES_SEMANTIC_VERSION=<version>`
+> (or `-DPYGPLATES_PEP440_VERSION=<version>`) or as an environment variable of the same name.
+
+> __Note for forks:__ commits on a fork advance its own first-parent line, so a fork will
+> otherwise mint the same development numbers as upstream for different code. Tagging the fork
+> branch - say `GPlates-2.6.0-2000` - makes that tag the nearest one, and the fork counts on from
+> there.

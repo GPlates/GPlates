@@ -13,8 +13,31 @@ Either product can be built from either develop branch. Default to the product m
 checked-out branch — `pygplates` branch to `build-pygplates/`, `gplates` branch to
 `build-gplates/` — but building the other product from the same worktree is normal and fine.
 
-Versions live in `cmake/modules/Version.cmake`: `GPLATES_SEMANTIC_VERSION` and
-`PYGPLATES_PEP440_VERSION`.
+Versions are **derived, not written**. `cmake/modules/VersionRelease.cmake` holds the release
+each line is heading towards (`GPLATES_RELEASE_VERSION`, `PYGPLATES_RELEASE_VERSION`), and
+`cmake/modules/VersionFromGit.cmake` adds a development number counted from the first-parent
+distance to the nearest release tag — giving `GPLATES_SEMANTIC_VERSION` (eg, `2.6.0-47`) and
+`PYGPLATES_PEP440_VERSION` (eg, `1.1.0.dev46`) in `cmake/modules/Version.cmake`. Do not add a
+literal version back: a hand-incremented development number has to anticipate the order in
+which branches *merge*, which is why the old one repeatedly collided and drifted.
+
+To see what a checkout resolves to, without configuring a build:
+
+```
+cmake -P cmake/modules/VersionFromGit.cmake pygplates
+cmake -P cmake/modules/VersionFromGit.cmake gplates
+```
+
+Counting needs the full history, so a shallow clone is refused rather than allowed to produce
+a plausible but wrong number. A build with no repository at all (a source archive, or a wheel
+built inside the Linux container) takes the versions from `-D` defines, environment variables
+of the same names, or the generated `cmake/modules/VersionRecorded.cmake` that ships in the
+sdist; `VersionFromGit.cmake` documents the whole resolution order.
+
+**Both versions are always resolved, whichever product is being built** — `src/global/Version.cc`
+is compiled into pyGPlates as well, and the GPlates version string reaches user data (exported
+shapefiles carry it). So supplying only `PYGPLATES_PEP440_VERSION` to a git-less pyGPlates build
+is not enough.
 
 ## Build
 
@@ -240,8 +263,12 @@ push and fetch commands rather than assuming. There is an active downstream fork
 
 ## Releases (pyGPlates wheels)
 
-Set `PYGPLATES_PEP440_VERSION` in `cmake/modules/Version.cmake`, commit, then tag **exactly**
-`PyGPlates-<version>`; the workflow fails in its first minute on a mismatch or a `.dev` version.
+Set `PYGPLATES_RELEASE_VERSION` in `cmake/modules/VersionRelease.cmake` to the release version,
+commit, then tag **exactly** `PyGPlates-<version>`; the workflow fails in its first minute on a
+mismatch or a `.dev` version. Standing on the tag, the derived version *is* the release target
+(no development number), which is what makes the two agree. Afterwards set the target to the
+next release, or the following commit resolves to a version sorting below the one just
+released — a hard error rather than a bad package.
 Publishing uses PyPI Trusted Publishing (OIDC, no tokens) and pauses for manual approval on the
 `pypi` deployment environment. **Renaming `.github/workflows/build-wheels.yml` silently breaks
 publishing** — the trusted-publisher registration binds to the filename. Adding a Python version

@@ -25,11 +25,14 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
 
 ## Steps
 
-1. **Bump the version.** Set `PYGPLATES_PEP440_VERSION` in `cmake/modules/Version.cmake` to the
-   target version and commit. A `.dev` version cannot be released — the run rejects it.
+1. **Set the release target.** Set `PYGPLATES_RELEASE_VERSION` in
+   `cmake/modules/VersionRelease.cmake` to the target version and commit. Development versions
+   are counted from git and cannot be released — the run rejects a `.dev` version. Check what
+   the commit resolves to with `cmake -P cmake/modules/VersionFromGit.cmake pygplates`.
 2. **Tag exactly `PyGPlates-<version>`.** The tag's version string must match
-   `PYGPLATES_PEP440_VERSION` character for character; the run fails in its first minute if they
-   disagree. Push the tag to the GitHub remote. Ask which remote if there is more than one.
+   `PYGPLATES_RELEASE_VERSION` character for character; the run fails in its first minute if they
+   disagree, and so does any local build standing on the tag. Push the tag to the GitHub remote.
+   Ask which remote if there is more than one.
 3. **Wait for the build.** `build-wheels.yml` builds the sdist and the full matrix — roughly
    2.5 hours warm, 4.5 cold — then uploads the sdist plus one platform's wheels to TestPyPI as a
    rehearsal.

@@ -1040,7 +1040,12 @@ if (GPLATES_BUILD_GPLATES)
 
 				MACOSX_BUNDLE_INFO_STRING "${PROJECT_DESCRIPTION}"
 				MACOSX_BUNDLE_ICON_FILE gplates_desktop_icon.icns
-				MACOSX_BUNDLE_GUI_IDENTIFIER "GPlates ${GPLATES_VERSION_PRERELEASE_USER}-${CMAKE_SYSTEM}"
+				# A constant reverse-DNS bundle identifier - it identifies the *application*, not
+				# the build, and macOS keys LaunchServices registration and app associations on it.
+				# A version-bearing one would make every development build a distinct application.
+				# This is also the domain and name QSettings already derives its preferences file
+				# from (see 'GPlatesQApplication.cc'), so the two now agree.
+				MACOSX_BUNDLE_GUI_IDENTIFIER "org.gplates.GPlates"
 				MACOSX_BUNDLE_LONG_VERSION_STRING "GPlates ${GPLATES_VERSION_PRERELEASE_USER}"
 				MACOSX_BUNDLE_BUNDLE_NAME "GPlates"
 				MACOSX_BUNDLE_SHORT_VERSION_STRING "${GPLATES_VERSION}"

@@ -1,19 +1,24 @@
 {% set name = "pygplates" %}
 
-# LOCAL form (this repository): the version is read from cmake/modules/Version.cmake - the same
-# PYGPLATES_PEP440_VERSION that scikit-build-core reads (see pyproject.toml) - and the source is a
-# clone of this checkout (committed files only, like the sdist). The conda-forge FEEDSTOCK form
-# replaces this block and the 'source:' block below - both halves have to be swapped together, and
-# README.md has the steps.
-{% set version = load_file_regex(
-    load_file="../../cmake/modules/Version.cmake",
-    regex_pattern="set\\(\\s*PYGPLATES_PEP440_VERSION\\s+(?P<value>\\S+)\\s*\\)",
-    from_recipe_dir=True).group("value") %}
+# LOCAL form (this repository): the version comes from the PYGPLATES_PEP440_VERSION environment
+# variable, and the source is a clone of this checkout (committed files only, like the sdist).
+# Export it before building:
 #
-# FEEDSTOCK form, half one: delete the four lines above and uncomment the line below, dropping its
-# leading '# '. It has to stay ABOVE 'package:'. Jinja runs '{% set %}' statements in document
-# order, so a version set after its use renders as blank and the recipe goes to conda-forge with no
-# version at all - while the 'url:' below still interpolates correctly, which hides the mistake.
+#     export PYGPLATES_PEP440_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
+#
+# That is the same resolver the build itself uses ('cmake/modules/VersionFromGit.cmake'), but
+# the recipe cannot run it: conda-build renders this file with Jinja, which has no way to run a
+# command. It is 'environ[...]' rather than 'environ.get(...)' so an unset variable fails here,
+# rather than rendering the package as version "None".
+#
+# The conda-forge FEEDSTOCK form replaces this block and the 'source:' block below - both halves
+# have to be swapped together, and README.md has the steps.
+{% set version = environ["PYGPLATES_PEP440_VERSION"] %}
+#
+# FEEDSTOCK form, half one: delete the '{% set version %}' line above and uncomment the line below,
+# dropping its leading '# '. It has to stay ABOVE 'package:'. Jinja runs '{% set %}' statements in
+# document order, so a version set after its use renders as blank and the recipe goes to conda-forge
+# with no version at all - while the 'url:' below still interpolates correctly, which hides that.
 #
 # {% set version = "1.1.0" %}
 

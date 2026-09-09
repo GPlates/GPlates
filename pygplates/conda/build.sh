@@ -7,6 +7,14 @@ if [[ "$target_platform" == "linux-ppc64le" ]]; then
   export CXXFLAGS="$(echo ${CXXFLAGS} | sed 's/-fno-plt//g') -fplt"
 fi
 
+# Pin the version to the recipe version, rather than letting CMake count it from git.
+#
+# 'conda build' works from a copy of the source, and the conda-forge feedstock builds from a PyPI
+# sdist with no repository at all, so what git would say here is not necessarily what the package
+# is called. Exporting PKG_VERSION makes the module's version equal the recipe version by
+# construction - see 'cmake/modules/VersionFromGit.cmake' for the resolution order.
+export PYGPLATES_PEP440_VERSION="$PKG_VERSION"
+
 # Build and install pyGPlates.
 #
 # Pip uses the scikit-build-core build backend to compile/install pyGPlates using CMake (see pyproject.toml).

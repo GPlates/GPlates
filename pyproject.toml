@@ -101,6 +101,29 @@ Discussions = "https://discourse.gplates.org/"
 # requires floor, which only constrains what may be *installed*.
 minimum-version = "build-system.requires"
 
+# Required to use a version provider that scikit-build-core does not ship itself - here
+# 'gplates_version' in the 'cmake' directory (see [tool.scikit-build.metadata.version] below).
+# Without it the build fails outright with "experimental must be enabled currently to use
+# plugins not provided by scikit-build-core".
+#
+# It gates only the plugin mechanism, not the plugin: everything the provider does is in this
+# repository, so the exposure is that scikit-build-core may change the plugin protocol (the two
+# functions at the bottom of 'cmake/gplates_version.py') in a future version. The cap in
+# [build-system] is what stops such a change arriving on its own; 'minimum-version' above pins
+# the behaviour of everything else.
+experimental = true
+
+# Ship the resolved versions in the sdist. 'cmake/gplates_version.py' writes this file while
+# resolving the version for the metadata below; it is generated and gitignored, so it has to
+# be named here or it would be left out of the sdist.
+#
+# It is what lets an unpacked sdist configure at all. A pyGPlates build needs the *GPlates*
+# version too ('src/global/Version.cc' is compiled into the module, and its version string
+# reaches user data - exported shapefiles carry it), and PKG-INFO records only the pyGPlates
+# one. Without this the sdist on PyPI, and the conda-forge feedstock that builds from it,
+# fail at configure time with no way to supply the missing version.
+sdist.include = ["cmake/modules/VersionRecorded.cmake"]
+
 # Where CMake builds. Left at scikit-build-core's default, a fresh temporary directory each time,
 # so that a 'pip install .' from this source tree - the install route BUILD-Linux.md,
 # BUILD-macOS.md and BUILD-Windows.md all document - can never reuse a build tree left behind by
@@ -192,12 +215,24 @@ GPLATES_BUILD_GPLATES = "FALSE"
 
 
 #
-# Extract version from 'PYGPLATES_PEP440_VERSION' variable in 'cmake/modules/Version.cmake'.
+# The version, resolved by the same CMake code the build itself uses.
+#
+# 'cmake/gplates_version.py' runs 'cmake -P cmake/modules/VersionFromGit.cmake pygplates',
+# which combines the hand-edited release target in
+# 'cmake/modules/VersionRelease.cmake' with a development number counted from this
+# repository's git tags. Nothing here parses a version out of a file any more: going
+# through the same CMake code as the build keeps the wheel metadata and the module it
+# contains from ever disagreeing about the version.
+#
+# 'provider-path' puts the 'cmake' directory on sys.path so 'provider' can be imported from
+# it. Building where git cannot answer - inside the Linux wheel containers, from an unpacked
+# sdist, or under conda-build - is covered by the fallbacks documented in
+# 'VersionFromGit.cmake'; 'environment-pass' below is what carries the answer into the
+# containers.
 #
 [tool.scikit-build.metadata.version]
-provider = "scikit_build_core.metadata.regex"
-input = "cmake/modules/Version.cmake"
-regex = 'set\(\s*PYGPLATES_PEP440_VERSION\s*(?P<value>\S+)\s*\)'
+provider = "gplates_version"
+provider-path = "cmake"
 
 #
 # Cibuildwheel.
@@ -280,6 +315,25 @@ test-command = [
 "build-dir" = "build/wheel"
 
 [tool.cibuildwheel.linux]
+
+# Carry the resolved version into the container.
+#
+# The Linux wheels are the one build that cannot work the version out for itself:
+# cibuildwheel *copies* the project into the container, the images do not install git, and
+# the CI checkout is shallow in any case. So it is resolved once outside (the workflow's
+# sdist job) and passed in, where both the metadata provider and CMake read it - a
+# 'cmake.define' would reach only CMake, letting the wheel filename and the module's
+# __version__ drift apart.
+#
+# Building Linux wheels locally therefore needs it exported first:
+#     export PYGPLATES_PEP440_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
+#     export GPLATES_SEMANTIC_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake gplates)
+# (see pygplates/wheel/README.md).
+#
+# Both, not just the pyGPlates one: a pyGPlates build resolves the GPlates version as well
+# ('src/global/Version.cc' is compiled into the module), so passing only one still leaves the
+# configure with a version it cannot derive.
+environment-pass = ["PYGPLATES_PEP440_VERSION", "GPLATES_SEMANTIC_VERSION"]
 # Custom manylinux_2_28 images with the pyGPlates dependencies pre-installed - built and
 # pushed to GHCR by '.github/workflows/build-wheel-images.yml' from
 # 'pygplates/wheel/manylinux_2_28.dockerfile' (which can also build them locally).

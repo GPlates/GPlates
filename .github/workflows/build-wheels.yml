@@ -25,7 +25,10 @@ name: pygplates wheels
 
 on:
   push:
-    tags: [ "PyGPlates-*" ]
+    # The negation keeps an anchor tag - a development version tagged to move the counter,
+    # see 'cmake/modules/VersionFromGit.cmake' - from starting a full release run. The
+    # sdist job rejects one anyway, but not before the matrix has been queued.
+    tags: [ "PyGPlates-*", "!PyGPlates-*.dev*" ]
   pull_request:
     branches: [ "pygplates" ]
     paths:
@@ -69,24 +72,54 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
+    # The versions, resolved once for the whole run - see the step below.
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      gplates-version: ${{ steps.version.outputs.gplates-version }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          # Whole history and all tags: the version is counted from the distance to the
+          # nearest release tag (see 'cmake/modules/VersionFromGit.cmake'), and a shallow
+          # clone is refused rather than allowed to produce a smaller, plausible-looking
+          # number.
+          fetch-depth: 0
+
+      - name: Resolve the versions
+        # Resolved once here and passed to every wheel job below (see the matrix job's
+        # 'env'), so that one run cannot produce wheels that disagree about their own
+        # version. It is also the only place in the run that can resolve them at all: the
+        # wheel jobs check out shallow, and the Linux ones build inside a container with no
+        # git.
+        #
+        # Both products: building pyGPlates configures the GPlates version too, because
+        # 'src/global/Version.cc' is compiled into the module and its version string reaches
+        # user data (exported shapefiles carry it).
+        id: version
+        run: |
+          version=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
+          gplates_version=$(cmake -P cmake/modules/VersionFromGit.cmake gplates)
+          [ -n "${version}" ] && [ -n "${gplates_version}" ]
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "gplates-version=${gplates_version}" >> "${GITHUB_OUTPUT}"
+          echo "pyGPlates version: ${version} (GPlates version: ${gplates_version})"
 
       - name: Check the tag matches the version
-        # A release tag must be 'PyGPlates-' plus the version in 'cmake/modules/Version.cmake'
-        # (extracted with the same pattern as pyproject.toml's version provider). Anything else
-        # means the tag was pushed without bumping the version - far better caught here, in the
-        # run's first minute, than noticed in what the publish jobs upload five hours later.
+        # A release tag must be 'PyGPlates-' plus the resolved version. A mismatch means the
+        # release target in 'cmake/modules/VersionRelease.cmake' was not set for this release
+        # - far better caught here, in the run's first minute, than noticed in what the
+        # publish jobs upload five hours later. (The resolver rejects most such tags itself,
+        # but this also catches a tag naming a different version of the same commit.)
         # Development versions are rejected outright: pip never installs them by default, and
         # publishing one would permanently reserve its filenames on PyPI for nothing.
         if: github.ref_type == 'tag'
         run: |
-          version=$(sed -n 's/^set(\s*PYGPLATES_PEP440_VERSION\s\+\(\S\+\)\s*).*/\1/p' cmake/modules/Version.cmake)
-          [ -n "${version}" ] # fail here if the Version.cmake line was reformatted
+          version='${{ steps.version.outputs.version }}'
           if [ "${GITHUB_REF_NAME}" != "PyGPlates-${version}" ]; then
               echo "Tag '${GITHUB_REF_NAME}' does not match 'PyGPlates-${version}'" \
-                   "(from cmake/modules/Version.cmake)." >&2
+                   "(resolved from cmake/modules/VersionRelease.cmake and the repository tags)." >&2
               exit 1
           fi
           case ${version} in *.dev*)
@@ -140,6 +173,19 @@ jobs:
     # ('before-all' then no-ops on the prefix's stamps) - that guarantees the dependencies
     # survive any mid-wheels death without relying on the post-timeout grace window.
     timeout-minutes: 330
+
+    # The versions resolved by the sdist job, for both the metadata provider and CMake.
+    #
+    # This checkout is shallow and the Linux builds happen inside a container without git,
+    # so nothing here can count them for itself. Passing them also guarantees every wheel in
+    # a run carries the same version. ('environment-pass' in pyproject.toml is what forwards
+    # them into the Linux containers.)
+    #
+    # The GPlates version is needed even though this builds pyGPlates - see the resolve step
+    # in the sdist job.
+    env:
+      PYGPLATES_PEP440_VERSION: ${{ needs.build-sdist.outputs.version }}
+      GPLATES_SEMANTIC_VERSION: ${{ needs.build-sdist.outputs.gplates-version }}
 
     defaults:
       run:

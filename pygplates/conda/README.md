@@ -36,10 +36,24 @@ Two things to know before the first run:
   conda-build sees committed files only, exactly the file set the sdist ships to the feedstock.
   Uncommitted work is silently not built. (`path: ../../`, the obvious alternative, copies the
   *entire* working tree including every in-source `build*/` directory - tens of gigabytes.)
-- **The version comes from `cmake/modules/Version.cmake`**, read out of `PYGPLATES_PEP440_VERSION`
-  by a `load_file_regex` at the top of `meta.yaml` - the same variable scikit-build-core reads. A
-  development version therefore builds as, say, `pygplates-1.1.0.dev10`, which is what you want
-  locally and is replaced by a literal version for the feedstock.
+- **Export the version before building.** `meta.yaml` reads `PYGPLATES_PEP440_VERSION` from the
+  environment, and fails the render if it is unset (rather than building a package called
+  version "None"). conda-build renders the recipe with Jinja, which cannot run the resolver
+  itself, so:
+
+  ```
+  export PYGPLATES_PEP440_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
+  ```
+
+  Only this one: it names the *package*, and conda-build clones this repository (tags and
+  all) so the build resolves both product versions from git for itself. The feedstock form
+  has no repository, and reads both from the `cmake/modules/VersionRecorded.cmake` that
+  `cmake/gplates_version.py` writes into the sdist.
+
+  `build.sh`/`bld.bat` then re-export conda-build's own `PKG_VERSION` into the build, so the
+  module's version equals the recipe version by construction. That is also what makes the
+  feedstock form work untouched: it builds from a PyPI sdist with no repository, and the
+  literal version in the feedstock recipe becomes the module's version with no git involved.
 
 The package lands in `<conda-root>/conda-bld/<subdir>/pygplates-<version>-<build string>.conda`,
 and conda-build prints the path. To try it:

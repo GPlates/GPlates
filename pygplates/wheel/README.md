@@ -39,6 +39,20 @@ On Linux, cibuildwheel runs the build inside Docker (so Docker must be installed
 dependency image described below - it pulls the image from GHCR automatically, or uses your
 locally built copy if you have one (see the next section).
 
+For a Linux build, export the versions first. cibuildwheel *copies* the project into the
+container, and the images do not install git, so nothing in there can count a version for
+itself (`environment-pass` in `pyproject.toml` forwards these two in):
+
+```
+export PYGPLATES_PEP440_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
+export GPLATES_SEMANTIC_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake gplates)
+```
+
+Both, even though this builds pyGPlates: `src/global/Version.cc` is compiled into the module
+and carries the GPlates version too (exported shapefiles record it). macOS and Windows builds
+run in the checkout itself, so they resolve both from git without this - unless the checkout
+is shallow, which is refused rather than counted wrongly.
+
 On macOS, the first run builds the dependency libraries into `~/pygplates-wheel-deps` (about
 an hour - later runs reuse them; see the macOS section below). Xcode command line tools,
 `python3` and `cmake` must be installed.
@@ -363,10 +377,14 @@ OIDC tokens GitHub mints for this specific workflow file.
 
 The flow, end to end:
 
-1. Set the release version in `cmake/modules/Version.cmake` (`PYGPLATES_PEP440_VERSION`) and
-   commit. For a first pass at a release, use an `rc` version (eg, `1.1.0rc1`): pip ignores
+1. Set the release version in `cmake/modules/VersionRelease.cmake` (`PYGPLATES_RELEASE_VERSION`)
+   and commit. Development versions are counted from git, so this is the only version anyone
+   writes; on the release tag itself the counted part vanishes and the version is exactly what
+   was set here. For a first pass at a release, use an `rc` version (eg, `1.1.0rc1`): pip ignores
    release candidates by default, so it exercises this whole pipeline - the tag check, the
-   rehearsal, the approval gate, a real PyPI upload - with low stakes.
+   rehearsal, the approval gate, a real PyPI upload - with low stakes. A second candidate just
+   means setting the target to `1.1.0rc2`; commits on the release branch then count up from the
+   `rc1` tag as `1.1.0rc2.devN`.
 2. Tag that commit `PyGPlates-<version>` (exactly the version string - the run fails in its
    first minute if the two disagree, or if the version is a `.dev` one) and push the tag.
 3. The run builds the sdist and every wheel (about 2.5 hours warm, 4.5 cold), then uploads the
