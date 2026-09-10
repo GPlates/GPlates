@@ -29,7 +29,7 @@
 // This needs to go before the <QString> due to compile problems on the Mac.
 #include "global/python.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 #include <QDebug>
 #include <QString>
 #include <QThread>

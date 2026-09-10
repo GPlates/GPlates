@@ -39,6 +39,20 @@ On Linux, cibuildwheel runs the build inside Docker (so Docker must be installed
 dependency image described below - it pulls the image from GHCR automatically, or uses your
 locally built copy if you have one (see the next section).
 
+For a Linux build, export the versions first. cibuildwheel *copies* the project into the
+container, and the images do not install git, so nothing in there can count a version for
+itself (`environment-pass` in `pyproject.toml` forwards these two in):
+
+```
+export PYGPLATES_PEP440_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
+export GPLATES_SEMANTIC_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake gplates)
+```
+
+Both, even though this builds pyGPlates: `src/global/Version.cc` is compiled into the module
+and carries the GPlates version too (exported shapefiles record it). macOS and Windows builds
+run in the checkout itself, so they resolve both from git without this - unless the checkout
+is shallow, which is refused rather than counted wrongly.
+
 On macOS, the first run builds the dependency libraries into `~/pygplates-wheel-deps` (about
 an hour - later runs reuse them; see the macOS section below). Xcode command line tools,
 `python3` and `cmake` must be installed.
@@ -57,6 +71,14 @@ non-EOL mainstream distribution. `manylinux_2_28.dockerfile` extends the officia
 `quay.io/pypa/manylinux_2_28` image with the pyGPlates dependency libraries. Qt is built from
 source in the image because EL8 has no Qt6 packages; Boost.Python is built once per supported
 Python version against the interpreters the base image provides in `/opt/python`.
+
+Only Qt **Core** is built, and it is configured with `FEATURE_gui`, `FEATURE_glib`,
+`FEATURE_dbus` and `FEATURE_icu` off. The module links `Qt6Core` and nothing else
+(`cmake/check_linkage.py` fails the build if that changes), so a Gui Qt meant building - and
+installing two dozen X11 development packages for - libraries no wheel ever loads. Turning GLib
+off is what removes the wheel's last system dependency: it now imports on a bare
+`python:3.x-slim` container with no packages installed at all, which
+`.github/workflows/build-wheels.yml` proves on every run.
 
 There is one image per architecture, both built by `.github/workflows/build-wheel-images.yml`:
 
@@ -91,6 +113,29 @@ local `cibuildwheel` run uses your local image rather than pulling from GHCR.
 > GitHub organization -> Packages -> package settings -> Change visibility.
 > (The CI wheel builds log in with `GITHUB_TOKEN`, so they work either way.)
 
+### Proving a dockerfile change before it is merged
+
+A dockerfile change is only really proved by building wheels inside the image it produces - and
+that image does not become `latest` until the change is merged. Two `workflow_dispatch` inputs
+close that gap without any temporary edit to either workflow:
+
+```
+gh workflow run build-wheel-images.yml --ref <branch> -f push-latest=false
+gh workflow run build-wheels.yml --ref <branch> -f linux-image-tag=<that run's commit SHA>
+```
+
+Until that second run exists, a pull request that changes the dockerfile is expected to fail
+the wheel workflow's "Check the Linux wheel imports with no system packages installed" step: the
+automatic run builds inside `latest`, which is the image built from the *merged* dockerfile, so
+that step is testing the old image. It says as much when it fails.
+
+The first command builds both architectures and pushes only the `:<SHA>` tag, leaving `latest`
+on the merged image that everything else pulls. The second builds the full wheel matrix against
+the image that tag names (cibuildwheel reads the image from the environment in preference to
+`pyproject.toml`, so the file stays the authoritative default for every other run). Build the
+image locally first, though - see above - because a CI round costs tens of minutes and a local
+one is the only place a dockerfile should ever be iterated on.
+
 ## The macOS dependency libraries
 
 macOS wheels are thin (single-architecture) `macosx_11_0_arm64` and `macosx_11_0_x86_64`
@@ -100,8 +145,9 @@ installs the dependency libraries into a single prefix, `~/pygplates-wheel-deps`
 
 - Qt comes as the official binaries (downloaded with [aqtinstall](https://github.com/miurahr/aqtinstall)),
   with each framework library thinned from universal to the build architecture - halving what
-  delocate later vendors into the wheels.
-- Qwt, GLEW, Boost, PROJ, GDAL, GMP, MPFR and CGAL are built from source (macOS has no
+  delocate later vendors into the wheels. Only the `qtbase` archive is downloaded; it is the
+  smallest aqt offers, and of the modules in it only QtCore is ever linked or vendored.
+- Boost, PROJ, GDAL, GMP, MPFR and CGAL are built from source (macOS has no
   system package manager, and Homebrew binaries must not leak into the wheels - see below).
   The versions come from `versions.sh`, shared with the Linux image - so the platforms
   cannot drift apart.
@@ -129,7 +175,7 @@ path limit):
   that the official MSVC packages carry - most of their size - are deleted afterwards. The debug
   libraries themselves stay, unused: Qt's CMake package declares a Debug configuration for every
   imported target and CMake checks that each file it names is there.
-- GLEW, zlib, PROJ, GDAL, GMP and MPFR come from [vcpkg](https://vcpkg.io) (see `vcpkg.json`).
+- zlib, PROJ, GDAL, GMP and MPFR come from [vcpkg](https://vcpkg.io) (see `vcpkg.json`).
   PROJ's and GDAL's run-time data - the coordinate reference system database and GDAL's driver
   data, which the build copies into the wheel - are named explicitly in `pyproject.toml`, since
   vcpkg installs a port's tools apart from its libraries and `projinfo`, which the build asks
@@ -137,22 +183,21 @@ path limit):
   GMP and MPFR are the reason vcpkg is here at all: they have no MSVC build system. PROJ and GDAL
   come along with them because they are a deep stack that vcpkg already knows how to build on
   Windows. These versions are pinned by the vcpkg baseline commit in `vcpkg.json` rather than by
-  `versions.sh` - but the `versions.sh` pins for GLEW, PROJ and GDAL are kept equal to what the
+  `versions.sh` - but the `versions.sh` pins for PROJ and GDAL are kept equal to what the
   baseline supplies, so every platform's wheels ship the same versions of the libraries a user
-  can feel (CRS handling, datum grids, driver behaviour). Bump the baseline and those three pins
+  can feel (CRS handling, datum grids, driver behaviour). Bump the baseline and those two pins
   together, as one act, with vcpkg setting the cadence; `build_windows_deps.sh` compares what
   vcpkg installed against `versions.sh` and fails if they have drifted apart.
-- Qwt, Boost and CGAL are built from source against the `versions.sh` pins, as on the other
-  platforms. Qwt is built as a *static* library, because a Qwt DLL would require everything that
-  includes its headers to be compiled with `-DQWT_DLL`.
+- Boost and CGAL are built from source against the `versions.sh` pins, as on the other
+  platforms.
 - Boost.Python is per-Python-version, so - as on macOS - cibuildwheel runs
   `build_boost_python.sh` (its `before-build` hook) with each build's Python on PATH, reusing the
   Boost source tree left in the prefix.
 
-Neither Boost's `b2` nor Qwt's `qmake`/`nmake` is a CMake build, so neither can locate Visual
-Studio for itself. Both scripts therefore source `msvc_env.sh`, which runs `vcvarsall.bat` in a
-cmd shell and imports the environment it produces. That is what lets them run under cibuildwheel,
-whose hooks run in a plain cmd shell, instead of requiring an "x64 Native Tools Command Prompt".
+Boost's `b2` is not a CMake build, so it cannot locate Visual Studio for itself. The script
+therefore sources `msvc_env.sh`, which runs `vcvarsall.bat` in a cmd shell and imports the
+environment it produces. That is what lets it run under cibuildwheel, whose hooks run in a plain
+cmd shell, instead of requiring an "x64 Native Tools Command Prompt".
 
 In CI the prefix is cached exactly as on macOS. The CI job does not run from a developer command
 prompt either - it imports the same environment with `msvc_env.sh` before running cibuildwheel,
@@ -172,57 +217,35 @@ subsequently run to repair our wheel. Note that this variable is only used if
 `GPLATES_INSTALL_STANDALONE` is `TRUE`, which it is by default when building using
 scikit-build-core (eg, `pip wheel ...`) outside of conda.
 
-### `OpenGL_GL_PREFERENCE=LEGACY` (Linux)
+### `OpenGL_GL_PREFERENCE=LEGACY` (Linux) - retired
 
-We set the CMake variable `OpenGL_GL_PREFERENCE` to `LEGACY` (instead of the default `GLVND`).
-This causes pyGPlates to prefer to use the `libGL` LEGACY dependency (instead of the default
-`libOpenGL` GLVND dependency). The `libGL` library is whitelisted by auditwheel (meaning it
-will not be copied into the wheel repaired by auditwheel). This is presumably because it is
-available by default on all Linux distributions. Whereas `libOpenGL` is NOT whitelisted
-(presumably because it is NOT available by default on all Linux distros) and hence would need
-to be copied into the wheel (if it was used). However copying into the wheel is problematic if
-`libOpenGL` itself needs to come from the end machine (eg, if it's NOT hardware-independent -
-see <https://github.com/pypa/auditwheel/issues/241>). Alternatively, if `libOpenGL` actually
-is hardware-independent and we copy it into the wheel then the end machine might still need to
-have the `libglvnd` package installed (which is not the case for all Linux distros by
-default - see <https://github.com/linuxdeploy/linuxdeploy/issues/152#issuecomment-830975582>).
-So we prefer to link to `libGL` instead (which should be available by default on all Linux
-distros).
+Neither the wheels nor the dependency image builds against OpenGL any more, so this variable is
+set nowhere. It is recorded here because what it prevented was expensive to diagnose and cheap
+to reintroduce.
 
-Besides pyGPlates, Qt is the other library that uses `libGL`. And they made an effort to not
-use `libOpenGL` for the same reasons (ie, it's not installed by default on all Linux distros).
-See <https://bugreports.qt.io/browse/QTBUG-89754>.
+The problem was two copies of `libGLdispatch` in one process, which segfaulted `import
+pygplates` (a null jump in `__glDispatchInit`, reproduced under gdb). It arose whenever
+something on the link line reached GLVND's `libOpenGL`: auditwheel vendored that into the wheel
+along with its `libGLdispatch`, while Qt reached the *system* `libGLdispatch` through the
+whitelisted `libGL` - and GLVND dispatches every OpenGL call through one table, so two tables is
+one too many. Setting `OpenGL_GL_PREFERENCE=LEGACY` made CMake's `FindOpenGL` choose the
+whitelisted `libGL` instead, and the same reasoning kept EL8's `glew-devel` package (which links
+GLVND) and Qt's `FEATURE_egl` (which drags in `libGLdispatch`) out of the image.
 
-Previously we linked to `libOpenGL` (because we didn't set `OpenGL_GL_PREFERENCE` to `LEGACY`)
-and so it was copied into the wheel (because it's not whitelisted by auditwheel). It, in turn,
-links to `libGLdispatch` and so that was also copied into the wheel. That caused a
-segmentation fault during `import pygplates` because there were two copies of `libGLdispatch`
-being referenced. One was copied into the wheel (due to being a dependency of `libOpenGL` that
-was referenced by pyGPlates). The other was referenced by `libGL` (via Qt) and hence was not
-copied into the wheel (since `libGL` is whitelisted). The segmentation fault was most likely
-because, according to <https://github.com/NVIDIA/libglvnd>:
+None of that applies now: the module links only `Qt6Core`, and the image builds neither GLEW,
+Qwt, QtSvg nor Qt Gui. What remains is the guard, in three places, because the failure is
+silent until a user's `import` crashes:
 
-> "since all OpenGL functions are dispatched through the same table in libGLdispatch,
-> it doesn't matter which library is used to find the entrypoint"
+- `cmake/check_linkage.py` - the module's *direct* dependencies, run as the
+  `pygplates-linkage-test` CTest and again over the module inside each repaired wheel
+  (`--installed`, from the wheel `test-command`).
+- `pygplates/wheel/check_wheel_contents.py` - every library the repair step vendored, which is
+  where a GL library arriving through a dependency's dependency would show up.
+- The dependency image's final layer - the `NEEDED` list of `libQt6Core`, and the absence of
+  `libQt6Gui`, `libqwt` and `libGLEW`.
 
-...where by "it doesn't matter which library is used to find the entrypoint" they mean
-`libOpenGL` and `libGL` (not `libGLdispatch`). So having Qt reference
-`/usr/lib64/libGLdispatch.so.0` (via `libGL`) and pyGPlates reference the `libGLdispatch`
-copied into the wheel (via `libOpenGL`) would result in *two* dispatch tables (instead of one
-central table). And this is likely what caused the segmentation fault.
-
-The same two-dispatch-tables segfault can be reintroduced through *any* dependency that links
-the GLVND libraries, not just pyGPlates itself. It resurfaced twice while moving the image to
-manylinux_2_28 (reproduced with gdb - the crash is a null jump in `__glDispatchInit`):
-
-- EL8's `glew-devel` package links `libGLX`/`libOpenGL`/`libGLdispatch` (the CentOS 7 package
-  linked plain `libGL`) - so the image builds GLEW from source against `libGL` instead.
-- Qt 6 links `libEGL` (which also drags in `libGLdispatch`) when EGL headers are present at
-  configure time - so the image configures Qt with `FEATURE_egl=OFF` (desktop OpenGL on X11
-  goes through GLX and does not need EGL).
-
-The image's final sanity-check layer fails the build if `libQt6Gui` or `libGLEW` links any
-GLVND library, so a dependency change that reintroduces one is caught at image-build time.
+The full account is in the git history: PRs #49, #59, #60 and #63, and the commit that removed
+this section.
 
 ### `CMAKE_INSTALL_RPATH` (macOS)
 
@@ -233,9 +256,9 @@ the pyGPlates build system doesn't set an install rpath of its own) - leaving de
 to resolve any `@rpath/...` dependency. So `pyproject.toml` passes `CMAKE_INSTALL_RPATH`
 (pointing at the deps prefix's `lib` and Qt `lib` directories) to the pyGPlates build, and
 `build_macos_deps.sh` does the equivalent for the dependencies' own dependencies (PROJ's rpath
-in GDAL, Qt's in Qwt). The rpaths only need to be valid on the *build* machine: delocate
-follows them to find the libraries, copies the libraries into the wheel, and rewrites every
-reference to `@loader_path/...`.
+in GDAL, and Boost's in the Boost libraries). The rpaths only need to be valid on the *build*
+machine: delocate follows them to find the libraries, copies the libraries into the wheel, and
+rewrites every reference to `@loader_path/...`.
 
 ### No Homebrew, no libpython (macOS)
 
@@ -255,8 +278,18 @@ Python runtime anyway.
 
 ### Checking the wheel, not just the code
 
-`test-command` runs the pyGPlates test suite and then `check_wheel_contents.py`, which confirms the
-wheel carries PROJ's coordinate reference system database and GDAL's driver data.
+`test-command` runs the pyGPlates test suite, then `check_wheel_contents.py`, then
+`cmake/check_linkage.py --installed`. The last two check the wheel rather than the code, and they
+are in the wheel test command rather than in CTest because at CTest time there is no wheel: the
+repair step (auditwheel/delocate/delvewheel) rewrites what the module depends on and vendors a
+set of libraries around it, and none of that exists in the build tree.
+
+`check_wheel_contents.py` confirms the wheel carries PROJ's coordinate reference system database
+and GDAL's driver data, and lists every library the repair step vendored, with its size - which
+is both the record of what a wheel actually ships and the check that no GUI, rendering or system
+library got in. `check_linkage.py --installed` is the CTest of the same name, re-run over the
+module inside the wheel. The Linux job also imports the wheel in a bare `python:3.x-slim`
+container, which is the only place the "needs no system packages" claim is actually tested.
 
 The suite cannot stand in for that check, because it passes either way. `cmake/modules/Install.cmake`
 locates both data directories while configuring, and used to report failure as a CMake warning and
@@ -344,12 +377,20 @@ OIDC tokens GitHub mints for this specific workflow file.
 
 The flow, end to end:
 
-1. Set the release version in `cmake/modules/Version.cmake` (`PYGPLATES_PEP440_VERSION`) and
-   commit. For a first pass at a release, use an `rc` version (eg, `1.1.0rc1`): pip ignores
+1. Set the release version in `cmake/modules/VersionRelease.cmake` (`PYGPLATES_RELEASE_VERSION`),
+   and commit. Development versions are counted from git, so this is the only version anyone
+   writes; on the release tag itself the counted part vanishes and the version is exactly what
+   was set here. For a first pass at a release, use an `rc` version (eg, `1.1.0rc1`): pip ignores
    release candidates by default, so it exercises this whole pipeline - the tag check, the
-   rehearsal, the approval gate, a real PyPI upload - with low stakes.
+   rehearsal, the approval gate, a real PyPI upload - with low stakes. A second candidate just
+   means setting the target to `1.1.0rc2`; commits on the release branch then count up from the
+   `rc1` tag as `1.1.0rc2.devN`.
 2. Tag that commit `PyGPlates-<version>` (exactly the version string - the run fails in its
-   first minute if the two disagree, or if the version is a `.dev` one) and push the tag.
+   first minute if the two disagree, or if the version is a `.dev` one) and push the tag. A
+   release is tagged on `release-pygplates`, on the merge commit that brings
+   `release/pygplates-<version>` into it; release tags belong on the main release branches and
+   nowhere else. A release *candidate* is tagged on the `release/pygplates-<version>` branch
+   itself, not being a release. The root `README.md` has the branching model.
 3. The run builds the sdist and every wheel (about 2.5 hours warm, 4.5 cold), then uploads the
    sdist plus one platform's wheels to [TestPyPI](https://test.pypi.org/p/pygplates) - a
    rehearsal that catches anything the index itself would reject (metadata, most of all)
@@ -360,6 +401,9 @@ The flow, end to end:
 5. On approval the whole matrix - one sdist, one wheel per Python version per platform, counted
    before upload - goes to PyPI, each file with a [PEP 740](https://peps.python.org/pep-0740/)
    attestation.
+
+The conda-forge package is updated afterwards, by hand and from the sdist this run published -
+see `pygplates/conda/README.md`.
 
 Recovery paths, should something fail:
 

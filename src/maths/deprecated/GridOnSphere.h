@@ -63,9 +63,6 @@ namespace GPlatesMaths
 	 *
 	 * The <strong>origin</strong> of the grid is defined to be the
 	 * anterior intersection of the SC and the GC.
-	 *
-	 * @image html fig_grid.png
-	 * @image latex fig_grid.eps
 	 */
 	class GridOnSphere
 	{

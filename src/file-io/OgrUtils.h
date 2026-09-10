@@ -45,6 +45,8 @@
 
 namespace GPlatesFileIO
 {
+	struct ReadErrorAccumulation;
+
 	namespace OgrUtils
 	{
 		/**
@@ -196,11 +198,17 @@ namespace GPlatesFileIO
 
 		/**
 		* Writes the data in the QMap<QString,QString> to an xml file.
+		*
+		* A failure to write is reported to @a read_errors when one is supplied. It is optional
+		* because the OGR feature-collection *writer* also saves the mapping, and the write path
+		* has no error accumulator; there the failure is logged instead. Either way it is not
+		* fatal - only the mapping sidecar is lost, so the user is asked to remap next time.
 		*/
 		void
 		save_attribute_map_as_xml_file(
 				const QString &filename,
-				const QMap<QString,QString> &model_to_attribute_map);
+				const QMap<QString,QString> &model_to_attribute_map,
+				ReadErrorAccumulation *read_errors = NULL);
 
 		void
 		create_default_kvd_from_collection(

@@ -114,32 +114,78 @@ To compile the latest __development snapshot__:
 
 ##### Development branching model
 
-The branching model used in this repository is based on [gitflow](https://nvie.com/posts/a-successful-git-branching-model/), with:
-- __main__ branches named:
+The branching model used in this repository is based on [gitflow](https://nvie.com/posts/a-successful-git-branching-model/).
+Four __main__ branches are permanent - two tracking releases and two tracking development - and
+every other branch is a short-lived __support__ branch, created from a main branch and deleted
+once it has been merged back.
+
+- __main release__ branches named:
   - `release-gplates` to track the history of __GPlates__ releases
   - `release-pygplates` to track the history of __pyGPlates__ releases
-  > __Note:__ To see the list of all public releases on the command-line, type:  
+  > __Note:__ Release tags (eg, `GPlates-2.6.0`, `PyGPlates-1.1.0`) belong __only__ on these
+  > two branches, on the merge commit of the `release/...` or `hotfix/...` branch that prepared
+  > the release - never on that temporary branch itself, and never on a __main develop__ branch.
+  > A release _candidate_ is not a release, so its tag stays where the candidate was prepared:
+  > `PyGPlates-1.0.0rc1` is tagged on the `release/pygplates-1.0.0` branch.
+  >
+  > To see the list of all public releases on the command-line, type:  
   > `git log --first-parent release-gplates release-pygplates`
-- __develop__ branches named:
+- __main develop__ branches named:
   - `gplates` for development of __GPlates__
   - `pygplates` for development of __pyGPlates__
-  - `gplates-3.0-dev` for development of __GPlates 3.0__
-    - this long-lived branch differs significantly from the `gplates` branch
-    - it includes the replacement of OpenGL with Vulkan (in progress), among other features
-    - it will eventually be merged back into `gplates` and turned into the GPlates 3.0 release
   > __Note:__ The _default_ branch is `gplates`
   > (synonymous with the typical 'main' or 'master' branch in other repositories).
 - __feature__ branches named:
   - `feature/<name>` for developing a new feature
-  > __Note:__ These short-lived branches are merged back into their parent __develop__ branch
-  > (`gplates`, `pygplates`, or even `gplates-3.0-dev`).
+  > __Note:__ These short-lived branches are merged back into their parent __main develop__
+  > branch (`gplates` or `pygplates`).
+- __fix__ branches named:
+  - `fix/<name>` for fixing a bug, typically one reported as a GitHub issue
+  > __Note:__ Not part of gitflow, but used here. A __fix__ branch is a __feature__ branch in
+  > every respect but intent - branched from a __main develop__ branch, merged back into it,
+  > and shipped whenever the next release happens. It is __not__ a __hotfix__ branch, which
+  > exists to repair a version that has already been released.
 - __release__ branches named:
   - `release/gplates-<gplates_version>` for preparing a GPlates release
   - `release/pygplates-<pygplates_version>` for preparing a pyGPlates release
-  > __Note:__ These short-lived branches are merged into `release-gplates` or `release-pygplates`
-  > (__main__ branch containing __all__ GPlates or pyGPlates releases) and also merged into `gplates` or `pygplates` (__develop__ branch).
+  > __Note:__ These short-lived branches are created from a __main develop__ branch, and are
+  > merged into `release-gplates` or `release-pygplates` (the __main release__ branch containing
+  > __all__ GPlates or pyGPlates releases), where the release is tagged. Any commits made while
+  > preparing the release are also merged back into `gplates` or `pygplates`.
 - __hotfix__ branches named:
   - `hotfix/gplates-<gplates_version>` for preparing a GPlates _bug fix_ release
   - `hotfix/pygplates-<pygplates_version>` for preparing a pyGPlates _bug fix_ release
-  > __Note:__ These short-lived branches are merged into `release-gplates` or `release-pygplates`
-  > (__main__ branch containing __all__ GPlates or pyGPlates releases) and also merged into `gplates` or `pygplates` (__develop__ branch).
+  > __Note:__ These short-lived branches are created from a __main release__ branch - that is
+  > what distinguishes them from __fix__ branches - and are merged back into `release-gplates`
+  > or `release-pygplates`, where the bug fix release is tagged, and also into `gplates` or
+  > `pygplates`.
+
+##### Versioning
+
+Versions follow from the branching model above rather than being written out by hand:
+
+- `cmake/modules/VersionRelease.cmake` names the release each line is heading towards
+  (`GPLATES_RELEASE_VERSION`, `PYGPLATES_RELEASE_VERSION`). This is the only part anyone edits,
+  and it changes twice per release: once when a __release__ branch names the candidate being
+  prepared, and once afterwards to name the next release.
+- `cmake/modules/VersionFromGit.cmake` adds a development number - the number of first-parent
+  commits since the nearest release tag, which is how many times the branch tip has advanced.
+  So a GPlates development build is `2.6.0-47` and a pyGPlates one is `1.1.0.dev46`, while a
+  build standing on a release tag is exactly the release version.
+
+To see what a checkout resolves to, without configuring a build:
+
+```
+cmake -P cmake/modules/VersionFromGit.cmake gplates
+cmake -P cmake/modules/VersionFromGit.cmake pygplates
+```
+
+> __Note:__ Counting needs the whole history, so a shallow clone is refused rather than allowed
+> to produce a smaller number that still looks plausible. Building from a source archive with no
+> repository at all needs the version supplied, either as `-DGPLATES_SEMANTIC_VERSION=<version>`
+> (or `-DPYGPLATES_PEP440_VERSION=<version>`) or as an environment variable of the same name.
+
+> __Note for forks:__ commits on a fork advance its own first-parent line, so a fork will
+> otherwise mint the same development numbers as upstream for different code. Tagging the fork
+> branch - say `GPlates-2.6.0-2000` - makes that tag the nearest one, and the fork counts on from
+> there.

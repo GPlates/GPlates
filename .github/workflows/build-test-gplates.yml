@@ -103,6 +103,12 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          # Whole history and all tags: the version is counted from the distance to the
+          # nearest release tag (see 'cmake/modules/VersionFromGit.cmake'), and a shallow
+          # clone is refused rather than allowed to produce a smaller, plausible-looking
+          # number.
+          fetch-depth: 0
 
       - name: Restore compiler cache
         # 'restore-keys' is what makes this useful: the primary key includes the commit SHA and so

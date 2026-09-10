@@ -32,8 +32,6 @@
 #include <iosfwd>
 #include <boost/cstdint.hpp>
 #include <boost/operators.hpp>
-#include <opengl/OpenGL.h>
-#include <QColor>
 #include <QDataStream>
 #include <QDebug>
 #include <QTextStream>
@@ -49,44 +47,6 @@
 
 namespace GPlatesGui
 {
-	struct HSVColour
-	{
-		/** Hue */
-		double h;
-		/** Saturation */
-		double s;
-		/** Value */
-		double v;
-		/** Alpha */
-		double a;
-
-		HSVColour(
-				double h_,
-				double s_,
-				double v_,
-				double a_ = 1.0) :
-			h(h_),
-			s(s_),
-			v(v_),
-			a(a_)
-		{  }
-
-		/**
-		 * Linearly interpolate between two colours.
-		 * @param first The first colour to mix
-		 * @param second The second colour to mix
-		 * @param position A value between 0.0 and 1.0 (inclusive), which can be
-		 * interpreted as where the returned colour lies in the range between the
-		 * first colour and the second colour.
-		 */
-		static
-		HSVColour
-		linearly_interpolate(
-				const HSVColour &first,
-				const HSVColour &second,
-				const double &position);
-	};
-
 	struct CMYKColour
 	{
 		/** Cyan */
@@ -398,17 +358,10 @@ namespace GPlatesGui
 		 */
 		explicit
 		Colour(
-				const GLfloat &red = 0.0,
-				const GLfloat &green = 0.0,
-				const GLfloat &blue = 0.0,
-				const GLfloat &alpha = 1.0);
-
-		/**
-		 * Construct a Colour from its QColor equivalent.
-		 * Note: this is not an explicit constructor by design.
-		 */
-		Colour(
-				const QColor &qcolor);
+				const float &red = 0.0,
+				const float &green = 0.0,
+				const float &blue = 0.0,
+				const float &alpha = 1.0);
 
 		Colour(
 				const Colour &colour)
@@ -416,32 +369,27 @@ namespace GPlatesGui
 			std::copy(colour.d_rgba, colour.d_rgba + RGBA_SIZE, d_rgba);
 		}
 
-		/**
-		 * Converts the Colour to a QColor.
-		 */
-		operator QColor() const;
-
 		// Accessor methods
 
-		GLfloat
+		float
 		red() const
 		{
 			return d_rgba[RED_INDEX];
 		}
 
-		GLfloat
+		float
 		green() const
 		{
 			return d_rgba[GREEN_INDEX];
 		}
 
-		GLfloat
+		float
 		blue() const
 		{
 			return d_rgba[BLUE_INDEX];
 		}
 
-		GLfloat
+		float
 		alpha() const
 		{
 			return d_rgba[ALPHA_INDEX];
@@ -449,25 +397,25 @@ namespace GPlatesGui
 
 		// Accessor methods which allow modification
 
-		GLfloat &
+		float &
 		red()
 		{
 			return d_rgba[RED_INDEX];
 		}
 
-		GLfloat &
+		float &
 		green()
 		{
 			return d_rgba[GREEN_INDEX];
 		}
 
-		GLfloat &
+		float &
 		blue()
 		{
 			return d_rgba[BLUE_INDEX];
 		}
 
-		GLfloat &
+		float &
 		alpha()
 		{
 			return d_rgba[ALPHA_INDEX];
@@ -478,12 +426,12 @@ namespace GPlatesGui
 		 * OpenGL colour commands.
 		 */
 
-		operator GLfloat*()
+		operator float*()
 		{
 			return &d_rgba[0];
 		}
 
-		operator const GLfloat*() const
+		operator const float*() const
 		{
 			return &d_rgba[0];
 		}
@@ -557,25 +505,6 @@ namespace GPlatesGui
 				const Colour &colour);
 
 		/**
-		 * Converts a HSV colour to a Colour (which is RGBA). The hue,
-		 * saturation, value and alpha components of the colour must be in the range
-		 * 0.0-1.0 inclusive.
-		 */
-		static
-		Colour
-		from_hsv(
-				const HSVColour &hsv);
-
-		/**
-		 * Converts a Colour (which is RGBA) to HSV.
-		 * @returns HSV colour, where the component values are between 0.0-1.0 inclusive.
-		 */
-		static
-		HSVColour
-		to_hsv(
-				const Colour &colour);
-
-		/**
 		 * Converts an RGBA colour with 8-bit integer components to a Colour (which
 		 * uses floating-point values internally).
 		 */
@@ -593,22 +522,6 @@ namespace GPlatesGui
 		to_rgba8(
 				const Colour &colour);
 
-		/**
-		 * Converts a QRgb to a Colour, preserving the alpha component.
-		 */
-		static
-		Colour
-		from_qrgb(
-				const QRgb &rgba);
-
-		/**
-		 * Converts a Colour to a QRgb, preserving the alpha component.
-		 */
-		static
-		QRgb
-		to_qrgb(
-				const Colour &colour);
-
 	private:
 
 		/**
@@ -619,7 +532,7 @@ namespace GPlatesGui
 		 * faster than passing (and hence copying each
 		 * individual component.
 		 */
-		GLfloat d_rgba[RGBA_SIZE];
+		float d_rgba[RGBA_SIZE];
 
 
 		/**

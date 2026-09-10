@@ -19,6 +19,16 @@ option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)."
 
 
 #
+# How the two versions below are resolved: a hand-edited release target
+# ('VersionRelease.cmake') plus a development number counted from this repository's git
+# tags ('VersionFromGit.cmake'). Neither version is written out by hand any more - the
+# development number has to reflect the order in which branches *merge*, which is not
+# knowable while editing a file.
+#
+include("${CMAKE_CURRENT_LIST_DIR}/VersionFromGit.cmake")
+
+
+#
 # The GPlates version.
 #
 # This is a *restricted* form of Semantic Versioning.
@@ -31,6 +41,10 @@ option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)."
 #       - 'alpha' followed by '.' followed by a number for alpha pre-releases (eg, alpha.1, alpha.2, etc),
 #       - 'beta' followed by '.' followed by a number for beta pre-releases (eg, beta.1, beta.2, etc),
 #       - 'rc' followed by '.' followed by a number for pre-release candidates (eg, rc.1, rc.2, etc).
+#       An alpha/beta/rc pre-release may itself carry a development number as a further
+#       '.'-separated number (eg, alpha.1.2, rc.1.8). That is what a release branch produces:
+#       the release target names the candidate being prepared (eg, '2.6.0-rc.1') and commits
+#       on the branch count up from the tag of the previous one.
 #
 # For example (in order of precedence):
 #
@@ -41,12 +55,16 @@ option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)."
 #   2.5.1
 #   2.6.0-1
 #   2.6.0-2
-#   2.6.0-rc1
-#   2.6.0-rc2
+#   2.6.0-rc.1
+#   2.6.0-rc.1.8
+#   2.6.0-rc.2
 #   2.6.0
 #   2.6.1
 #
-set(GPLATES_SEMANTIC_VERSION 2.6.0-8)
+# Resolved from the GPlates release target plus the development number counted from git.
+# Override it with -DGPLATES_SEMANTIC_VERSION=<version>, or an environment variable of the
+# same name, when building from a source archive that has no git repository.
+gplates_resolve_version(gplates GPLATES_SEMANTIC_VERSION)
 
 
 #
@@ -77,7 +95,11 @@ set(GPLATES_SEMANTIC_VERSION 2.6.0-8)
 #   1.0.0
 #   1.0.1
 #
-set(PYGPLATES_PEP440_VERSION 1.1.0.dev10)
+# Resolved from the pyGPlates release target plus the development number counted from git.
+# Override it with -DPYGPLATES_PEP440_VERSION=<version>, or an environment variable of the
+# same name - which is how the version reaches a wheel built inside a container without git,
+# and how conda-build pins it to the recipe version.
+gplates_resolve_version(pygplates PYGPLATES_PEP440_VERSION)
 
 
 ##################
@@ -106,6 +128,14 @@ set(PYGPLATES_PEP440_VERSION 1.1.0.dev10)
 # GPLATES_VERSION_PRERELEASE_USER           - Human-readable version that inserts 'dev' for development pre-releases.
 #                                             Useful for any string the user might see.
 #                                             Does not maintain correct version precedence (eg, 'dev1' > 'alpha.1' whereas '1' < 'alpha.1').
+#
+# GPLATES_VERSION_INSTALL_SLOT              - Major.Minor ('2.6'), or Major.Minor-dev ('2.6-dev') for any pre-release.
+#                                             For things that name an installed *location* rather than a file: the
+#                                             Windows install directory and uninstall registry key, and the macOS
+#                                             drag-and-drop folder. Since the development number now changes with
+#                                             every commit, keying those on the full version would leave a separate
+#                                             program directory and uninstall entry behind for every build installed.
+#                                             Package *filenames* keep the full version - they must stay unique.
 #
 
 #
@@ -141,8 +171,11 @@ set(PYGPLATES_PEP440_VERSION 1.1.0.dev10)
 #
 
 # Extract version information from GPLATES_SEMANTIC_VERSION.
-if (NOT GPLATES_SEMANTIC_VERSION MATCHES [[^([0-9]+)\.([0-9]+)\.([0-9]+)([-]([0-9]+|alpha\.[0-9]+|beta\.[0-9]+|rc\.[0-9]+))?$]])
-	message(FATAL_ERROR "${GPLATES_SEMANTIC_VERSION} should be X.Y.Z or a pre-release X.Y.Z-N, X.Y.Z-alpha.N, X.Y.Z-beta.N or X.Y.Z-rc.N")
+# NOTE: An alpha/beta/rc pre-release may carry a trailing development number (eg, "2.6.0-rc.1.8"),
+#       which is what a release branch produces. The regex has 8 capture groups, under the 9 that
+#       CMake's regex engine (cmsys) can compile - see the same note in the pyGPlates regex below.
+if (NOT GPLATES_SEMANTIC_VERSION MATCHES [[^([0-9]+)\.([0-9]+)\.([0-9]+)([-]([0-9]+|alpha\.[0-9]+(\.[0-9]+)?|beta\.[0-9]+(\.[0-9]+)?|rc\.[0-9]+(\.[0-9]+)?))?$]])
+	message(FATAL_ERROR "${GPLATES_SEMANTIC_VERSION} should be X.Y.Z or a pre-release X.Y.Z-N, X.Y.Z-alpha.N[.M], X.Y.Z-beta.N[.M] or X.Y.Z-rc.N[.M]")
 endif()
 set(GPLATES_VERSION_MAJOR ${CMAKE_MATCH_1})
 set(GPLATES_VERSION_MINOR ${CMAKE_MATCH_2})
@@ -151,7 +184,11 @@ set(GPLATES_VERSION_PATCH ${CMAKE_MATCH_3})
 # (matches the version generated by 'project()' which does not support pre-release suffixes).
 set(GPLATES_VERSION ${GPLATES_VERSION_MAJOR}.${GPLATES_VERSION_MINOR}.${GPLATES_VERSION_PATCH})
 # If a pre-release suffix was specified.
-if (CMAKE_MATCH_COUNT EQUAL 5)
+# (Testing the group itself, not CMAKE_MATCH_COUNT: the optional groups of the
+#  "alpha|beta|rc" alternatives above come after it and move the count around.
+#  The expansion is quoted because a non-participating group leaves CMAKE_MATCH_5
+#  *undefined*, and STREQUAL compares an undefined name as a literal string.)
+if (NOT "${CMAKE_MATCH_5}" STREQUAL "")
 	set(GPLATES_VERSION_PRERELEASE_SUFFIX ${CMAKE_MATCH_5})
 	set(GPLATES_VERSION_PRERELEASE ${GPLATES_VERSION}-${GPLATES_VERSION_PRERELEASE_SUFFIX})
 	# A human-readable pre-release version (unset/empty if not a pre-release).
@@ -170,6 +207,18 @@ else()
 	set(GPLATES_VERSION_PRERELEASE_SUFFIX_USER "")
 	set(GPLATES_VERSION_PRERELEASE ${GPLATES_VERSION})
 	set(GPLATES_VERSION_PRERELEASE_USER ${GPLATES_VERSION})
+endif()
+
+# The installed-location slot (see the description above).
+#
+# Every pre-release of a version shares the one slot, so installing a newer development build
+# replaces the previous one instead of accumulating beside it. Different releases still get
+# their own slot, so 2.5 and 2.6 can be installed side by side as they always could. Patch
+# releases share a slot deliberately: 2.6.1 is meant to replace 2.6.0.
+if (GPLATES_VERSION_PRERELEASE_SUFFIX STREQUAL "")
+	set(GPLATES_VERSION_INSTALL_SLOT ${GPLATES_VERSION_MAJOR}.${GPLATES_VERSION_MINOR})
+else()
+	set(GPLATES_VERSION_INSTALL_SLOT ${GPLATES_VERSION_MAJOR}.${GPLATES_VERSION_MINOR}-dev)
 endif()
 
 

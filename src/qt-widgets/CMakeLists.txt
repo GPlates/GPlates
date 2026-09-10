@@ -1,12 +1,9 @@
 #
 # List the non-generated source files (*.h, *.cc, *.ui, *.qrc).
 #
-# You can either explicitly add/remove source files here, or
-# run 'python cmake/add_sources.py' to automatically list them (here).
-#
-# Note that CMake discourages use of the 'file(GLOB)' CMake command to automatically collect source files.
-# One of the reasons is if source files are added or removed, CMake is not automatically re-run,
-# so the build is unaware of the change.
+# Add and remove source files here by hand, keeping the list in alphabetical order.
+# (CMake discourages 'file(GLOB)': if source files are added or removed, CMake is not
+# automatically re-run, so the build would be unaware of the change.)
 #
 set(srcs
     AboutDialog.cc
@@ -95,6 +92,9 @@ set(srcs
     ConfigureVelocityLegendOverlayDialogUi.ui
     ConfigValueEditorWidget.cc
     ConfigValueEditorWidget.h
+    ConnectWFSDialog.cc
+    ConnectWFSDialog.h
+    ConnectWFSDialogUi.ui
     CoRegistrationLayerConfigurationDialog.cc
     CoRegistrationLayerConfigurationDialog.h
     CoRegistrationLayerConfigurationDialogUi.ui
@@ -284,6 +284,8 @@ set(srcs
     GenerateVelocityDomainTerraDialog.cc
     GenerateVelocityDomainTerraDialog.h
     GenerateVelocityDomainTerraDialogUi.ui
+    GeoscimlProgressDialog.cc
+    GeoscimlProgressDialog.h
     GlobeAndMapWidget.cc
     GlobeAndMapWidget.h
     GlobeCanvas.cc
@@ -311,8 +313,6 @@ set(srcs
     HellingerFitWidget.cc
     HellingerFitWidget.h
     HellingerFitWidgetUi.ui
-    HellingerModel.cc
-    HellingerModel.h
     HellingerNewSegmentWarning.cc
     HellingerNewSegmentWarning.h
     HellingerNewSegmentWarningUi.ui
@@ -621,17 +621,10 @@ set(srcs
     ZoomSliderWidget.h
 )
 
-# Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-# It has been deprecated since Qt 5.13.
-#
-# TODO: Find a replacement library.
-if (QT_VERSION_MAJOR LESS 6)
-    list(APPEND srcs
-        ConnectWFSDialog.cc
-        ConnectWFSDialog.h
-        ConnectWFSDialogUi.ui)
+
+if (TARGET gplates-lib)
+    # Add the source files to the gplates static library.
+    # (The pygplates module compiles nothing from this directory - see
+    # "cmake/pygplates_source_closure.py".)
+    target_sources_util(gplates-lib PRIVATE ${srcs})
 endif()
-
-
-# Add the source files to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})

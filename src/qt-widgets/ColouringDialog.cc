@@ -52,6 +52,7 @@
 #include "file-io/File.h"
 
 #include "gui/Colour.h"
+#include "gui/ColourQt.h"
 #include "gui/ColourSchemeContainer.h"
 #include "gui/ColourSchemeInfo.h"
 #include "gui/CptColourPalette.h"
@@ -248,7 +249,8 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 
 	// Create the blank icon.
 	QPixmap blank_pixmap(ICON_SIZE, ICON_SIZE);
-	blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
+	blank_pixmap.fill(GPlatesGui::qcolor_from_colour(
+			*GPlatesGui::HTMLColourNames::instance().get_colour("slategray")));
 	d_blank_icon = QIcon(blank_pixmap);
 
 	// Set up our GlobeAndMapWidget that we use for rendering.
@@ -695,7 +697,7 @@ GPlatesQtWidgets::ColouringDialog::add_single_colour()
 	{
 		d_last_single_colour = selected_colour;
 		GPlatesGui::ColourSchemeContainer::id_type id = d_colour_scheme_container.add_single_colour_scheme(
-				selected_colour,
+				GPlatesGui::colour_from_qcolor(selected_colour),
 				selected_colour.name(),
 				false /* not built-in */);
 
@@ -863,13 +865,14 @@ GPlatesQtWidgets::ColouringDialog::edit_current_colour_scheme()
 
 		boost::optional<GPlatesGui::Colour> original_colour = colour_scheme_ptr->get_colour();
 		QColor selected_colour = QColorDialog::getColor(
-				original_colour ? *original_colour : GPlatesGui::Colour::get_white(),
+				GPlatesGui::qcolor_from_colour(
+						original_colour ? *original_colour : GPlatesGui::Colour::get_white()),
 				this);
 		if (selected_colour.isValid())
 		{
 			d_colour_scheme_container.edit_single_colour_scheme(
 					id,
-					selected_colour,
+					GPlatesGui::colour_from_qcolor(selected_colour),
 					selected_colour.name());
 
 			// colour_scheme_info should now be modified.

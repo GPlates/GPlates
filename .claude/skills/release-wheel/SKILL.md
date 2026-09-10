@@ -17,19 +17,29 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
 
 ## Before starting
 
-- Confirm the working tree is clean and on the `pygplates` branch, up to date with the GitHub
-  remote. Name that remote explicitly rather than assuming `origin` — not every checkout has one.
+- Confirm the working tree is clean and up to date with the GitHub remote. Name that remote
+  explicitly rather than assuming `origin` — not every checkout has one.
+- Know which branch the release is being cut on. A release is prepared on a
+  `release/pygplates-<version>` branch taken from `pygplates`, merged into `release-pygplates`,
+  and tagged **there** — release tags belong on the main release branches, and nowhere else
+  (the root `README.md` has the branching model). A release *candidate* is tagged on the
+  `release/pygplates-<version>` branch itself, since it is not a release.
 - If this is a first pass at a release, suggest an `rc` version (e.g. `1.1.0rc1`). pip ignores
   release candidates by default, so it exercises the whole pipeline — tag check, TestPyPI
   rehearsal, approval gate, real PyPI upload — at low stakes.
 
 ## Steps
 
-1. **Bump the version.** Set `PYGPLATES_PEP440_VERSION` in `cmake/modules/Version.cmake` to the
-   target version and commit. A `.dev` version cannot be released — the run rejects it.
-2. **Tag exactly `PyGPlates-<version>`.** The tag's version string must match
-   `PYGPLATES_PEP440_VERSION` character for character; the run fails in its first minute if they
-   disagree. Push the tag to the GitHub remote. Ask which remote if there is more than one.
+1. **Set the release target.** Set `PYGPLATES_RELEASE_VERSION` in
+   `cmake/modules/VersionRelease.cmake` to the target version, and commit. Development versions
+   are counted from git and cannot be released — the run rejects a `.dev` version. Check what
+   the commit resolves to with `cmake -P cmake/modules/VersionFromGit.cmake pygplates`.
+2. **Tag exactly `PyGPlates-<version>`, on the release commit.** For a release that is the
+   merge commit on `release-pygplates`; for a release candidate it is the commit on the
+   `release/pygplates-<version>` branch. The tag's version string must match
+   `PYGPLATES_RELEASE_VERSION` character for character; the run fails in its first minute if they
+   disagree, and so does any local build standing on the tag. Push the tag to the GitHub remote.
+   Ask which remote if there is more than one.
 3. **Wait for the build.** `build-wheels.yml` builds the sdist and the full matrix — roughly
    2.5 hours warm, 4.5 cold — then uploads the sdist plus one platform's wheels to TestPyPI as a
    rehearsal.

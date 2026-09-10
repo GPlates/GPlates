@@ -291,26 +291,16 @@ option(GPLATES_PROFILE_CODE "Enable GPlates custom CPU profiling functionality."
 # Pre-compiled headers are turned off by default.
 #
 # Developers may want to turn this on using the cmake command-line or cmake GUI.
+# It is worth doing: a full pyGPlates build measured ~286s with pre-compiled headers off and
+# ~157s with them on (1.8x) on a 16-core machine with MSVC 14.44, Ninja and 'Release'.
+#
+# Note: Our CI builds must keep this off - they use a compiler cache (sccache), which cannot
+#       cache pre-compiled header translation units.
 if (COMMAND target_precompile_headers)
 	option(GPLATES_USE_PRECOMPILED_HEADERS "Use pre-compiled headers to speed up build times." false)
 endif()
 
 if (MSVC)
-	# When using Visual Studio this shows included headers (used by 'list_external_includes.py').
-	# This disables pre-compiled headers (regardless of value of 'GPLATES_USE_PRECOMPILED_HEADERS').
-	set(GPLATES_MSVC_SHOW_INCLUDES false)
-	# Disable pre-compiled headers if showing include headers.
-	# The only reason to show include headers is to use 'list_external_includes.py' script to generates pch header.
-	if (GPLATES_MSVC_SHOW_INCLUDES)
-		# Note: This sets the non-cache variable ('option' above sets the cache variable of same name).
-		#       The non-cache variable will get precedence when subsequently accessed.
-		#       It's also important to set this *after* 'option' since, prior to CMake 3.21, whenever a cache variable is added
-		#       (eg, on the first run if not yet present in "CMakeCache.txt") the normal variable is removed.
-		if (DEFINED GPLATES_USE_PRECOMPILED_HEADERS)
-			set(GPLATES_USE_PRECOMPILED_HEADERS false)
-		endif()
-	endif()
-
 	# If Visual Studio then enable parallel builds WITHIN a project.
 	#
 	# Note: To ALSO enable parallel project builds set
@@ -323,11 +313,6 @@ if (MSVC)
 	# Allow user to specify the number of parallel build processes (defaults to zero which indicates uses all available CPUs).
 	set(GPLATES_MSVC_PARALLEL_BUILD_PROCESSES 0 CACHE STRING "Number of parallel build processes (if GPLATES_MSVC_PARALLEL_BUILD enabled). Set to zero for max.")
 endif()
-
-
-# Specify which source directories (relative to the 'doc/' directory) should be scanned by doxygen.
-set(GPLATES_DOXYGEN_INPUT
-    "../src/feature-visitors ../src/file-io ../src/model ../src/property-values ../src/utils")
 
 
 # The location of the GPlates executable is placed here when it is built (but not installed).

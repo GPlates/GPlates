@@ -1,12 +1,12 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * File specific comments.
  *
  * Most recent change:
  *   $Date$
- * 
+ *
  * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -28,42 +28,56 @@
 #ifndef GPLATES_FILEIO_GSMLCONST_H
 #define GPLATES_FILEIO_GSMLCONST_H
 
+#include <boost/optional.hpp>
 #include <QString>
 
 namespace GPlatesFileIO
 {
+	/**
+	 * The XML namespaces of the GeoSciML 2.0 documents (and their WFS envelopes) the reader
+	 * accepts, keyed by the prefixes the reader's own path expressions use for them.
+	 */
 	namespace GsmlConst
 	{
-		//define GeoSciML namespace 
-		const QString xsi_ns = 
-			"declare namespace xsi=\"http://www.w3.org/2001/XMLSchema-instance\";";
-		const QString gml_ns = 
-			"declare namespace gml=\"http://www.opengis.net/gml\";";
-		const QString wfs_ns = 
-			"declare namespace wfs=\"http://www.opengis.net/wfs\";";
-		const QString gsml_ns = 
-			"declare namespace gsml=\"urn:cgi:xmlns:CGI:GeoSciML:2.0\";";
-		const QString sa_ns = 
-			"declare namespace sa=\"http://www.opengis.net/sampling/1.0\";";
-		const QString om_ns = 
-			"declare namespace om=\"http://www.opengis.net/om/1.0\";";
-		const QString cgu_ns = 
-			"declare namespace cgu=\"urn:cgi:xmlns:CGI:Utilities:1.0\";";
-		const QString xlink_ns = 
-			"declare namespace xlink=\"http://www.w3.org/1999/xlink\";";
-		const QString gpml_ns = 
-			"declare namespace gpml=\"http://www.gplates.org/gplates\";";
-
-
+		/**
+		 * Returns the namespace URI that @a prefix stands for in the reader's path expressions
+		 * (see "GsmlPropertyDef.h") and element wrappers, or none if it is not one of them.
+		 *
+		 * These are the reader's prefixes, not a document's: @a GsmlXmlQuery matches on the
+		 * URI, so a document may bind whatever prefixes it likes.
+		 */
 		inline
-		const QString 
-		all_namespaces()
+		boost::optional<QString>
+		namespace_uri(
+				const QString &prefix)
 		{
-			return xsi_ns + gml_ns + wfs_ns + gsml_ns + sa_ns + om_ns + cgu_ns + xlink_ns + gpml_ns;
+			static const struct
+			{
+				const char *prefix;
+				const char *uri;
+			} NAMESPACES[] =
+			{
+				{ "xsi", "http://www.w3.org/2001/XMLSchema-instance" },
+				{ "gml", "http://www.opengis.net/gml" },
+				{ "wfs", "http://www.opengis.net/wfs" },
+				{ "gsml", "urn:cgi:xmlns:CGI:GeoSciML:2.0" },
+				{ "sa", "http://www.opengis.net/sampling/1.0" },
+				{ "om", "http://www.opengis.net/om/1.0" },
+				{ "cgu", "urn:cgi:xmlns:CGI:Utilities:1.0" },
+				{ "xlink", "http://www.w3.org/1999/xlink" },
+				{ "gpml", "http://www.gplates.org/gplates" }
+			};
+
+			for (const auto &ns : NAMESPACES)
+			{
+				if (prefix == ns.prefix)
+				{
+					return QString(ns.uri);
+				}
+			}
+
+			return boost::none;
 		}
-
-		const QString declare_idx = "declare variable $idx external;";
-
 	}
 }
 

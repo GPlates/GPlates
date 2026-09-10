@@ -31,7 +31,6 @@
 #include <boost/optional.hpp>
 #include <QtGlobal>
 #include <QDebug>
-#include <QMessageBox>
 #include <QString>
 #include <QStringList>
 #include <QVariant>
@@ -45,6 +44,8 @@
 #include "OgrReader.h"
 #include "OgrUtils.h"
 #include "PropertyMapper.h"
+#include "ReadErrorAccumulation.h"
+#include "ReadErrorOccurrence.h"
 #include "ShapefileXmlReader.h"
 
 #include "feature-visitors/PropertyValueFinder.h" 
@@ -838,11 +839,15 @@ namespace
 	/**
 	 * Fills the QMap<QString,QString> @a model_to_attribute_map from the given xml file
 	 * @a filename.
+	 *
+	 * A parse failure is reported through @a read_errors. The caller then falls back to
+	 * asking the user for the mapping, so this is a warning rather than a failure to load.
 	 */
 	bool
 	fill_attribute_map_from_xml_file(
 		QString filename,
-		QMap<QString,QString> &model_to_attribute_map)
+		QMap<QString,QString> &model_to_attribute_map,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		QFileInfo file_info(filename);
 		if (!file_info.exists()){
@@ -852,12 +857,24 @@ namespace
 		GPlatesFileIO::ShapefileXmlReader xml_reader;
 
 		if (!xml_reader.read_file(filename,&model_to_attribute_map)) {
-			QMessageBox::warning(0, QObject::tr("ShapefileXmlReader"),
-				QObject::tr("Parse error in file %1 at line %2, column %3:\n%4")
+			// ReadErrorOccurrence carries no free text, so the parser's own message and the
+			// column go to the log; the read errors dialog gets the structured entry.
+			qWarning() << QObject::tr("Parse error in file %1 at line %2, column %3: %4")
 				.arg(filename)
 				.arg(xml_reader.lineNumber())
 				.arg(xml_reader.columnNumber())
-				.arg(xml_reader.errorString()));
+				.arg(xml_reader.errorString());
+
+			read_errors.d_warnings.push_back(
+				GPlatesFileIO::ReadErrorOccurrence(
+					boost::shared_ptr<GPlatesFileIO::DataSource>(
+						new GPlatesFileIO::LocalFileDataSource(
+							filename,
+							GPlatesFileIO::DataFormats::Ogr)),
+					boost::shared_ptr<GPlatesFileIO::LocationInDataSource>(
+						new GPlatesFileIO::LineNumber(xml_reader.lineNumber())),
+					GPlatesFileIO::ReadErrors::ErrorReadingOgrMappingFile,
+					GPlatesFileIO::ReadErrors::NoMappingLoadedForFile));
 			return false;
 		}
 		
@@ -1757,7 +1774,10 @@ GPlatesFileIO::OgrReader::read_file(
 
 	reader.d_model_to_attribute_map.clear();
 
-	if (!fill_attribute_map_from_xml_file(shapefile_xml_filename,reader.d_model_to_attribute_map))
+	if (!fill_attribute_map_from_xml_file(
+			shapefile_xml_filename,
+			reader.d_model_to_attribute_map,
+			read_errors))
 	{
 		// Set the last argument to false, because this is an initial mapping, not a re-mapping. 
 		if (!fill_attribute_map_from_dialog(
@@ -1770,7 +1790,10 @@ GPlatesFileIO::OgrReader::read_file(
 			// The user has cancelled the mapper-dialog routine, so cancel the whole ogr loading procedure.
 			throw FileLoadAbortedException(GPLATES_EXCEPTION_SOURCE, "File load aborted.",filename);
 		}
-		OgrUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,reader.d_model_to_attribute_map);
+		OgrUtils::save_attribute_map_as_xml_file(
+			shapefile_xml_filename,
+			reader.d_model_to_attribute_map,
+			&read_errors);
 	}
 
 	// Store the model-to-attribute map so we can access it if the feature collection gets written back out.
@@ -2456,7 +2479,8 @@ GPlatesFileIO::OgrReader::remap_shapefile_attributes(
 	// Save the model-to-attribute map to the mapping xml file.
 	OgrUtils::save_attribute_map_as_xml_file(
 			OgrUtils::make_ogr_xml_filename(file_info.get_qfileinfo()),
-			model_to_attribute_map);
+			model_to_attribute_map,
+			&read_errors);
 
 	remap_feature_collection(file, model_to_attribute_map, read_errors);
 }

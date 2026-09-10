@@ -25,8 +25,9 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#include <QDebug>
+#include <QObject>
 #include <QtGlobal>
-#include <QMessageBox>
 #include <QVariant>
 
 #include "boost/foreach.hpp"
@@ -43,6 +44,8 @@
 #include "property-values/XsInteger.h"
 #include "property-values/XsDouble.h"
 #include "OgrUtils.h"
+#include "ReadErrorAccumulation.h"
+#include "ReadErrorOccurrence.h"
 #include "ShapefileXmlWriter.h"
 
 namespace
@@ -107,15 +110,31 @@ GPlatesFileIO::OgrUtils::make_ogr_xml_filename(
 void
 GPlatesFileIO::OgrUtils::save_attribute_map_as_xml_file(
 		const QString &filename,
-		const QMap<QString,QString> &model_to_attribute_map)
+		const QMap<QString,QString> &model_to_attribute_map,
+		ReadErrorAccumulation *read_errors)
 {
 	GPlatesFileIO::ShapefileXmlWriter writer;
-	if (!writer.write_file(filename,model_to_attribute_map))
+	if (writer.write_file(filename, model_to_attribute_map))
 	{
-		QMessageBox::warning(0,QObject::tr("ShapefileXmlWriter"),
-			QObject::tr("Cannot write to file %1.")
-			.arg(filename));
-	};
+		return;
+	}
+
+	if (read_errors)
+	{
+		read_errors->d_warnings.push_back(
+			ReadErrorOccurrence(
+				boost::shared_ptr<DataSource>(
+					new LocalFileDataSource(filename, DataFormats::Ogr)),
+				// The failure is not tied to a line - LineNumber is the only location type.
+				boost::shared_ptr<LocationInDataSource>(new LineNumber(0)),
+				ReadErrors::ErrorWritingOgrMappingFile,
+				ReadErrors::MappingNotSavedForFile));
+	}
+	else
+	{
+		// The write path has no error accumulator to report through.
+		qWarning() << QObject::tr("Cannot write attribute mapping file %1.").arg(filename);
+	}
 }
 
 const GPlatesFileIO::OgrUtils::feature_map_type &

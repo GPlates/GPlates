@@ -49,15 +49,9 @@ __pycache__/
 !/cmake/modules/*.cmake
 # ...except for CMake generated...
 /cmake/modules/PackageGeneratorOverrides.cmake
-
-#
-# /doc/
-#
-/doc/doxygen.conf
-/doc/html
-/doc/*.tmp
-/doc/*.eps
-/doc/*.png
+# ...and the version a source archive can carry in place of a git repository
+# (see 'VersionFromGit.cmake'); it is written per-archive, never committed.
+/cmake/modules/VersionRecorded.cmake
 
 #
 # /src/

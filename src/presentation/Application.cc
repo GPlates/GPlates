@@ -33,8 +33,6 @@
 
 #include "app-logic/FeatureCollectionFileState.h"
 
-#include "file-io/OgrReader.h"
-
 #include "gui/AnimationController.h"
 #include "gui/CommandServer.h"
 #include "gui/Dialogs.h"
@@ -42,6 +40,7 @@
 
 #include "model/FeatureCollectionHandle.h"
 
+#include "presentation/FileIOInjections.h"
 #include "presentation/SessionManagement.h"
 
 #include "qt-widgets/CreateFeatureDialog.h"
@@ -49,7 +48,6 @@
 #include "qt-widgets/ManageFeatureCollectionsEditConfigurations.h"
 #include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/ShapefileAttributeViewerDialog.h"
-#include "qt-widgets/ShapefilePropertyMapper.h"
 #include "qt-widgets/SpecifyAnchoredPlateIdDialog.h"
 #include "qt-widgets/TaskPanel.h"
 
@@ -71,13 +69,9 @@ GPlatesPresentation::Application::initialise()
 			d_main_window.dialogs().manage_feature_collections_dialog(),
 			d_application_state.get_model_interface());
 
-	// Initialise the Shapefile property mapper before we start reading.
-	// FIXME: Not sure where this should go since it involves qt widgets (logical place is
-	// in FeatureCollectionFileIO but that is application state and shouldn't know about
-	// qt widgets).
-	boost::shared_ptr<GPlatesQtWidgets::ShapefilePropertyMapper> shapefile_property_mapper(
-			new GPlatesQtWidgets::ShapefilePropertyMapper(&d_main_window));
-	GPlatesFileIO::OgrReader::set_property_mapper(shapefile_property_mapper);
+	// Register the Qt Gui / Qt Widgets implementations that file-io obtains by injection
+	// (before any file is read). The main window parents the shapefile mapping dialogs.
+	register_file_io_injections(&d_main_window);
 
 	// If the focus is changed programatically, from e.g. Clone Feature, ensure the Clicked
 	// Table still displays it.

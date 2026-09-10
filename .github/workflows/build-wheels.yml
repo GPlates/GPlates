@@ -25,7 +25,10 @@ name: pygplates wheels
 
 on:
   push:
-    tags: [ "PyGPlates-*" ]
+    # The negation keeps an anchor tag - a development version tagged to move the counter,
+    # see 'cmake/modules/VersionFromGit.cmake' - from starting a full release run. The
+    # sdist job rejects one anyway, but not before the matrix has been queued.
+    tags: [ "PyGPlates-*", "!PyGPlates-*.dev*" ]
   pull_request:
     branches: [ "pygplates" ]
     paths:
@@ -42,6 +45,11 @@ on:
       - cmake/**
       - CMakeLists.txt
   workflow_dispatch:
+    inputs:
+      linux-image-tag:
+        description: "Tag of the GHCR dependency image the Linux wheels build inside"
+        type: string
+        default: latest
 
 # What the build jobs need: the repository, and the GHCR packages the Linux builds pull their
 # dependency image from. Both are spelled out because naming any permission drops every one not
@@ -64,28 +72,61 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
+    # The versions, resolved once for the whole run - see the step below. Both are named for
+    # their product: this workflow builds pyGPlates wheels, so a bare 'version' would read as
+    # the pyGPlates one only to someone who already knew that.
+    outputs:
+      pygplates-version: ${{ steps.versions.outputs.pygplates-version }}
+      gplates-version: ${{ steps.versions.outputs.gplates-version }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          # Whole history and all tags: the version is counted from the distance to the
+          # nearest release tag (see 'cmake/modules/VersionFromGit.cmake'), and a shallow
+          # clone is refused rather than allowed to produce a smaller, plausible-looking
+          # number.
+          fetch-depth: 0
+
+      - name: Resolve the versions
+        # Resolved once here and passed to every wheel job below (see the matrix job's
+        # 'env'), so that one run cannot produce wheels that disagree about their own
+        # version. It is also the only place in the run that can resolve them at all: the
+        # wheel jobs check out shallow, and the Linux ones build inside a container with no
+        # git.
+        #
+        # Both products: building pyGPlates configures the GPlates version too, because
+        # 'src/global/Version.cc' is compiled into the module and its version string reaches
+        # user data (exported shapefiles carry it).
+        id: versions
+        run: |
+          pygplates_version=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
+          gplates_version=$(cmake -P cmake/modules/VersionFromGit.cmake gplates)
+          [ -n "${pygplates_version}" ] && [ -n "${gplates_version}" ]
+          echo "pygplates-version=${pygplates_version}" >> "${GITHUB_OUTPUT}"
+          echo "gplates-version=${gplates_version}" >> "${GITHUB_OUTPUT}"
+          echo "pyGPlates version: ${pygplates_version}"
+          echo "GPlates version: ${gplates_version}"
 
       - name: Check the tag matches the version
-        # A release tag must be 'PyGPlates-' plus the version in 'cmake/modules/Version.cmake'
-        # (extracted with the same pattern as pyproject.toml's version provider). Anything else
-        # means the tag was pushed without bumping the version - far better caught here, in the
-        # run's first minute, than noticed in what the publish jobs upload five hours later.
+        # A release tag must be 'PyGPlates-' plus the resolved version. A mismatch means the
+        # release target in 'cmake/modules/VersionRelease.cmake' was not set for this release
+        # - far better caught here, in the run's first minute, than noticed in what the
+        # publish jobs upload five hours later. (The resolver rejects most such tags itself,
+        # but this also catches a tag naming a different version of the same commit.)
         # Development versions are rejected outright: pip never installs them by default, and
         # publishing one would permanently reserve its filenames on PyPI for nothing.
         if: github.ref_type == 'tag'
         run: |
-          version=$(sed -n 's/^set(\s*PYGPLATES_PEP440_VERSION\s\+\(\S\+\)\s*).*/\1/p' cmake/modules/Version.cmake)
-          [ -n "${version}" ] # fail here if the Version.cmake line was reformatted
-          if [ "${GITHUB_REF_NAME}" != "PyGPlates-${version}" ]; then
-              echo "Tag '${GITHUB_REF_NAME}' does not match 'PyGPlates-${version}'" \
-                   "(from cmake/modules/Version.cmake)." >&2
+          pygplates_version='${{ steps.versions.outputs.pygplates-version }}'
+          if [ "${GITHUB_REF_NAME}" != "PyGPlates-${pygplates_version}" ]; then
+              echo "Tag '${GITHUB_REF_NAME}' does not match 'PyGPlates-${pygplates_version}'" \
+                   "(resolved from cmake/modules/VersionRelease.cmake and the repository tags)." >&2
               exit 1
           fi
-          case ${version} in *.dev*)
-              echo "'${version}' is a development version - not something to tag and release." >&2
+          case ${pygplates_version} in *.dev*)
+              echo "'${pygplates_version}' is a development version - not something to tag and release." >&2
               exit 1
           esac
 
@@ -135,6 +176,19 @@ jobs:
     # ('before-all' then no-ops on the prefix's stamps) - that guarantees the dependencies
     # survive any mid-wheels death without relying on the post-timeout grace window.
     timeout-minutes: 330
+
+    # The versions resolved by the sdist job, for both the metadata provider and CMake.
+    #
+    # This checkout is shallow and the Linux builds happen inside a container without git,
+    # so nothing here can count them for itself. Passing them also guarantees every wheel in
+    # a run carries the same version. ('environment-pass' in pyproject.toml is what forwards
+    # them into the Linux containers.)
+    #
+    # The GPlates version is needed even though this builds pyGPlates - see the resolve step
+    # in the sdist job.
+    env:
+      PYGPLATES_PEP440_VERSION: ${{ needs.build-sdist.outputs.pygplates-version }}
+      GPLATES_SEMANTIC_VERSION: ${{ needs.build-sdist.outputs.gplates-version }}
 
     defaults:
       run:
@@ -295,8 +349,87 @@ jobs:
               cygpath --windows "${added[i]}" >> "$GITHUB_PATH"
           done
 
+      - name: Build the Linux wheels against a specific dependency image
+        # A dockerfile change can only be proved by building wheels inside the image it
+        # produces, and that image does not become ':latest' until the change is merged. So a
+        # manual run can name any tag the image workflow pushed - see the recipe in the header
+        # of '.github/workflows/build-wheel-images.yml'.
+        #
+        # cibuildwheel reads the image from the environment in preference to 'pyproject.toml',
+        # so the file stays the authoritative default for every other run.
+        if: runner.os == 'Linux' && inputs.linux-image-tag != '' && inputs.linux-image-tag != 'latest'
+        # The tag reaches the script through the environment rather than by '${{ }}'
+        # interpolation into its text, so that a tag containing whitespace or shell syntax is
+        # data rather than script.
+        env:
+          IMAGE_TAG: ${{ inputs.linux-image-tag }}
+        run: |
+          image=ghcr.io/gplates/pygplates-manylinux_2_28
+          echo "CIBW_MANYLINUX_X86_64_IMAGE=${image}_x86_64:${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "CIBW_MANYLINUX_AARCH64_IMAGE=${image}_aarch64:${IMAGE_TAG}" >> "$GITHUB_ENV"
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.2.0
+
+      - name: Check the Linux wheel imports with no system packages installed
+        # The manylinux wheel is meant to need nothing from the user's system beyond glibc and
+        # the C++ runtime, and every other job here runs somewhere that has far more than that -
+        # so this is the only check of that claim. It regressed once already: while the module
+        # linked Qt6Gui the wheel needed libGL and some forty apt packages, and until the Qt in
+        # the dependency image was built with FEATURE_glib=OFF it still needed libglib-2.0.
+        #
+        # 'python:3.13-slim' is Debian with a Python and nothing else; installing anything into
+        # it would defeat the point, so the container runs no 'apt-get'. x86_64 only: the same
+        # dockerfile builds both images, and importing the aarch64 wheel here would mean QEMU.
+        #
+        # NOTE: this checks the *dependency image* as much as the wheel, and a pull request
+        #       cannot change which image it uses (see the failure message below). A PR that
+        #       edits the dockerfile is expected to fail here until its new image is built.
+        if: matrix.id == 'linux-x86_64'
+        run: |
+          # '|| true' because the job's shell is 'bash -eo pipefail': with no match, 'ls'
+          # exits 2, pipefail makes that the pipeline's status, and the step would die there -
+          # before the message below, which is the whole reason the check is here.
+          wheel=$(ls wheelhouse/pygplates-*-cp313-*manylinux*_x86_64.whl 2> /dev/null | head -1 || true)
+          if [ -z "${wheel}" ]; then
+              # Every run builds cp313 (full runs build all six versions, pull request runs
+              # build cp312 and cp313), so there is no case where skipping is right.
+              echo "No cp313 manylinux x86_64 wheel in wheelhouse/ to check." >&2
+              exit 1
+          fi
+          # The container script arrives on stdin and the wheel's name in the environment, so
+          # that nothing in either has to survive a round of shell quoting.
+          status=0
+          docker run --rm -i -e WHEEL="$(basename "${wheel}")" \
+              -v "$PWD/wheelhouse:/wheelhouse:ro" python:3.13-slim sh -s <<'CONTAINER' || status=$?
+          set -e
+          pip install --no-cache-dir --root-user-action=ignore -q "/wheelhouse/${WHEEL}"
+          if python -c 'import pygplates; print(pygplates.__version__)'; then
+              exit 0
+          fi
+          # The traceback names only the first missing library. List every one, over the
+          # module and everything the wheel repair step vendored beside it.
+          echo "--- shared libraries this wheel needs that a bare image does not provide:"
+          site=$(python -c 'import site; print(site.getsitepackages()[0])')
+          for object in "${site}"/pygplates/pygplates.so "${site}"/pygplates.libs/*; do
+              ldd "${object}" 2> /dev/null | grep 'not found' | sed "s|^|  $(basename "${object}"): |"
+          done
+          exit 1
+          CONTAINER
+          if [ "${status}" -ne 0 ]; then
+              # Worth saying, because it is the likeliest reason to be reading this: the wheel
+              # above was built inside the ':latest' dependency image, which is built from the
+              # *merged* dockerfile. A pull request that changes 'manylinux_2_28.dockerfile' is
+              # therefore testing the old image and cannot pass this step until its own image
+              # exists - build one and re-run against it with the two-command recipe under
+              # "Proving a dockerfile change before it is merged" in 'pygplates/wheel/README.md'.
+              echo "::error::The wheel does not import on a bare python image - see the unmet libraries above."
+              echo "If this pull request changes the dependency image, that is expected until"
+              echo "the new image is built: the wheel above was built inside ':latest', which"
+              echo "comes from the *merged* dockerfile. See 'Proving a dockerfile change"
+              echo "before it is merged' in 'pygplates/wheel/README.md'."
+              exit 1
+          fi
 
       - name: Report crashes
         # If a test command crashed outright (rather than failing an assertion), the exit code

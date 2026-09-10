@@ -28,7 +28,7 @@
 
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <QRegExp>
+#include <QRegularExpression>
 
 #include "maths/Real.h"
 
@@ -79,10 +79,15 @@ namespace GPlatesUtils
 			const QString& name)
 	{
 		boost::optional<QString> shape_name = boost::none;
-		QRegExp rx("^\\s*(gpml:shapefileAttributes)\\s*:\\s*\\b(\\w+)\\b\\s*"); // gpml:shapefileAttributes
-		if(rx.indexIn(name) != -1)
+		// Attribute names come from user data, so match "\w" and "\b" against Unicode letters
+		// (as QRegExp did) rather than the ASCII-only default of QRegularExpression.
+		static const QRegularExpression rx(
+				"^\\s*(gpml:shapefileAttributes)\\s*:\\s*\\b(\\w+)\\b\\s*", // gpml:shapefileAttributes
+				QRegularExpression::UseUnicodePropertiesOption);
+		const QRegularExpressionMatch rx_match = rx.match(name);
+		if(rx_match.hasMatch())
 		{
-			shape_name = rx.cap(2);
+			shape_name = rx_match.captured(2);
 		//	qDebug() << "Shapefile attribute name: " << *shape_name;
 		}
 		return shape_name;

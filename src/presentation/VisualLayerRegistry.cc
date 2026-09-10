@@ -43,6 +43,7 @@
 #include "app-logic/LayerTaskType.h"
 #include "app-logic/ReconstructGraph.h"
 
+#include "gui/ColourQt.h"
 #include "gui/HTMLColourNames.h"
 
 #include "qt-widgets/CoRegistrationOptionsWidget.h"
@@ -67,7 +68,7 @@ namespace
 			const GPlatesGui::Colour &colour)
 	{
 		QPixmap result(width, height);
-		result.fill(colour);
+		result.fill(GPlatesGui::qcolor_from_colour(colour));
 		return result;
 	}
 

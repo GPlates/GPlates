@@ -29,12 +29,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QRegExp>
+#include <QRegularExpression>
 
 #include "CptReader.h"
 
 #include "global/CompilerWarnings.h"
 
+#include "gui/ColourQt.h"
 #include "gui/GMTColourNames.h"
 
 // On some versions of g++ with some versions of Qt, it's not liking at() and
@@ -101,9 +102,9 @@ GPlatesFileIO::CptReaderInternals::make_rgb_colour(
 	if (in_rgb_range(r) && in_rgb_range(g) && in_rgb_range(b))
 	{
 		return GPlatesGui::Colour(
-				static_cast<GLfloat>(r / 255.0),
-				static_cast<GLfloat>(g / 255.0),
-				static_cast<GLfloat>(b / 255.0));
+				static_cast<float>(r / 255.0),
+				static_cast<float>(g / 255.0),
+				static_cast<float>(b / 255.0));
 	}
 	else
 	{
@@ -136,7 +137,7 @@ GPlatesFileIO::CptReaderInternals::make_hsv_colour(
 {
 	if (in_h_range(h) && in_sv_range(s) && in_sv_range(v))
 	{
-		return GPlatesGui::Colour::from_hsv(GPlatesGui::HSVColour(
+		return GPlatesGui::colour_from_hsv(GPlatesGui::HSVColour(
 				h / 360.0, s, v));
 	}
 	else
@@ -191,7 +192,7 @@ GPlatesFileIO::CptReaderInternals::make_grey_colour(
 {
 	if (in_grey_range(value))
 	{
-		GLfloat f = static_cast<GLfloat>(value / 255.0);
+		float f = static_cast<float>(value / 255.0);
 		return GPlatesGui::Colour(f, f, f);
 	}
 	else
@@ -681,21 +682,13 @@ void
 GPlatesFileIO::CptParser::process_comment(
 		const QString& line)
 {
-	//remove all spaces
-	QString str = line.toUpper();
-	int i = 0;
-	while( i<str.length() )
+	// Match case-insensitively since GMT writes "# COLOR_MODEL = hsv" in lower case.
+	static const QRegularExpression hsv_regex(
+			"COLOR_MODEL\\s*=\\s*\\+?HSV",
+			QRegularExpression::CaseInsensitiveOption);
+	if(hsv_regex.match(line).hasMatch())
 	{
-		if(str.at(i).isSpace())
-			str = str.remove(i,1);
-		else
-			i++;
-	}
-
-	static const QRegExp hsv_regex("COLOR_MODEL\\s*=\\s*\\+?HSV");			
-	if(-1 != hsv_regex.indexIn(line))
-	{
-			d_default_model = HSV;
+		d_default_model = HSV;
 	}
 }
 
@@ -703,8 +696,8 @@ GPlatesFileIO::CptParser::ColourData
 GPlatesFileIO::CptParser::parse_gmt_fill(
 		const QString& token)
 {
-	QRegExp rx("p\\d+/");
-	if(rx.indexIn(token) != -1)
+	static const QRegularExpression rx("p\\d+/");
+	if(rx.match(token).hasMatch())
 	{
 		//We don't support "fill pattern" yet. 
 		//It looks something like "p200/16". 
@@ -716,7 +709,7 @@ GPlatesFileIO::CptParser::parse_gmt_fill(
 	ColourData data;
 
 	//TODO: this function needs to be rewritten.
-	//try QRegExp
+	//try QRegularExpression
 	if (token.contains('/'))
 	{
 		// R/G/B triplet.

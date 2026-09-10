@@ -40,8 +40,6 @@
 #include "GpgimTemplateStructuralType.h"
 #include "Model.h"
 
-#include "app-logic/FeatureCollectionFileState.h"
-
 #include "global/LogException.h"
 
 #include "property-values/GmlLineString.h"

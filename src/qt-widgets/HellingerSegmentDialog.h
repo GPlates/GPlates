@@ -33,7 +33,7 @@
 
 #include "ui_HellingerSegmentDialogUi.h"
 #include "HellingerDialog.h"
-#include "HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 
 namespace GPlatesQtWidgets
 {
@@ -113,7 +113,7 @@ namespace GPlatesQtWidgets
 
 		HellingerSegmentDialog(
 				HellingerDialog *hellinger_dialog,
-				HellingerModel *hellinger_model,
+				GPlatesAppLogic::HellingerModel *hellinger_model,
 				bool create_new_segment = false);
 
 		void
@@ -123,7 +123,7 @@ namespace GPlatesQtWidgets
 		void
 		initialise();
 
-		boost::optional<GPlatesQtWidgets::HellingerPick>
+		boost::optional<GPlatesAppLogic::HellingerPick>
 		current_pick() const;
 
 		void
@@ -191,11 +191,11 @@ namespace GPlatesQtWidgets
 		set_initial_row_values(const int &row);
 
 		void
-		set_row_values(const int &row, const GPlatesQtWidgets::HellingerPick &pick);
+		set_row_values(const int &row, const GPlatesAppLogic::HellingerPick &pick);
 
 		HellingerDialog *d_hellinger_dialog_ptr;
 		QStandardItemModel *d_table_model;
-		HellingerModel *d_hellinger_model_ptr;
+		GPlatesAppLogic::HellingerModel *d_hellinger_model_ptr;
 		HellingerNewSegmentWarning *d_hellinger_new_segment_warning;
 
 		SpinBoxDelegate *d_spin_box_delegate;
@@ -204,7 +204,7 @@ namespace GPlatesQtWidgets
 
 		boost::optional<int> d_original_segment_number;
 
-		boost::optional<HellingerPick> d_current_pick;
+		boost::optional<GPlatesAppLogic::HellingerPick> d_current_pick;
 
 		unsigned int d_current_row;
 

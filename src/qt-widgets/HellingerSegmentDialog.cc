@@ -30,7 +30,7 @@
 
 #include "utils/ComponentManager.h"
 #include "HellingerDialog.h"
-#include "HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 #include "HellingerSegmentDialog.h"
 #include "HellingerNewSegmentWarning.h"
 #include "QtWidgetUtils.h"
@@ -55,21 +55,21 @@ namespace
 	 */
 	QString
 	translate_segment_type(
-			GPlatesQtWidgets::HellingerPlateIndex type)
+			GPlatesAppLogic::HellingerPlateIndex type)
 	{
 		switch(type)
 		{
-		case GPlatesQtWidgets::PLATE_ONE_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_ONE_PICK_TYPE:
-			return QString::number(GPlatesQtWidgets::PLATE_ONE_PICK_TYPE);
+		case GPlatesAppLogic::PLATE_ONE_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_ONE_PICK_TYPE:
+			return QString::number(GPlatesAppLogic::PLATE_ONE_PICK_TYPE);
 			break;
-		case GPlatesQtWidgets::PLATE_TWO_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_TWO_PICK_TYPE:
-			return QString::number(GPlatesQtWidgets::PLATE_TWO_PICK_TYPE);
+		case GPlatesAppLogic::PLATE_TWO_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_TWO_PICK_TYPE:
+			return QString::number(GPlatesAppLogic::PLATE_TWO_PICK_TYPE);
 			break;
-		case GPlatesQtWidgets::PLATE_THREE_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE:
-			return QString::number(GPlatesQtWidgets::PLATE_THREE_PICK_TYPE);
+		case GPlatesAppLogic::PLATE_THREE_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_THREE_PICK_TYPE:
+			return QString::number(GPlatesAppLogic::PLATE_THREE_PICK_TYPE);
 			break;
 		default:
 			return QString();
@@ -91,7 +91,7 @@ namespace
 
 GPlatesQtWidgets::HellingerSegmentDialog::HellingerSegmentDialog(
 		HellingerDialog *hellinger_dialog,
-		HellingerModel *hellinger_model,
+		GPlatesAppLogic::HellingerModel *hellinger_model,
 		bool create_new_segment):
 	QDialog(hellinger_dialog,
 			Qt::CustomizeWindowHint |
@@ -199,7 +199,7 @@ GPlatesQtWidgets::HellingerSegmentDialog::initialise()
 	d_original_segment_number.reset(1);
 }
 
-boost::optional<GPlatesQtWidgets::HellingerPick>
+boost::optional<GPlatesAppLogic::HellingerPick>
 GPlatesQtWidgets::HellingerSegmentDialog::current_pick() const
 {
 	return d_current_pick;
@@ -209,12 +209,12 @@ void
 GPlatesQtWidgets::HellingerSegmentDialog::update_pick_coords(
 		const GPlatesMaths::LatLonPoint &llp)
 {
-	HellingerPick pick;
+	GPlatesAppLogic::HellingerPick pick;
 
 	// Some default values while testing.
 	pick.d_is_enabled = true;
 	pick.d_uncertainty = 5.;
-	pick.d_segment_type = GPlatesQtWidgets::PLATE_ONE_PICK_TYPE;
+	pick.d_segment_type = GPlatesAppLogic::PLATE_ONE_PICK_TYPE;
 
 
 	pick.d_lat = llp.latitude();
@@ -251,10 +251,10 @@ GPlatesQtWidgets::HellingerSegmentDialog::fill_widgets()
 		d_table_model->removeRows(0,d_table_model->rowCount());
 
 
-		hellinger_model_const_range_type range =
+		GPlatesAppLogic::hellinger_model_const_range_type range =
 				d_hellinger_model_ptr->get_segment_as_range(*d_original_segment_number);
 
-		hellinger_model_type::const_iterator iter = range.first,
+		GPlatesAppLogic::hellinger_model_type::const_iterator iter = range.first,
 				iter_end = range.second;
 		for (; iter != iter_end ; ++iter)
 		{
@@ -300,7 +300,7 @@ GPlatesQtWidgets::HellingerSegmentDialog::add_segment_to_model()
 		index = d_table_model->index(row,COLUMN_PLATE_INDEX);
 		variant = table_new_segment->model()->data(index);
 		// The spinboxes should already ensure valid data types/values for each column.
-		HellingerPlateIndex type = static_cast<HellingerPlateIndex>(variant.toInt());
+		GPlatesAppLogic::HellingerPlateIndex type = static_cast<GPlatesAppLogic::HellingerPlateIndex>(variant.toInt());
 
 		// Latitude
 		index = d_table_model->index(row,COLUMN_LAT);
@@ -321,7 +321,7 @@ GPlatesQtWidgets::HellingerSegmentDialog::add_segment_to_model()
 		index = d_table_model->index(row,COLUMN_ENABLED);
 		bool enabled = table_new_segment->model()->data(index).toBool();
 
-		GPlatesQtWidgets::HellingerPick pick(type,lat,lon,uncertainty,enabled);
+		GPlatesAppLogic::HellingerPick pick(type,lat,lon,uncertainty,enabled);
 		d_hellinger_model_ptr->add_pick(pick,segment);
 	}
 	d_hellinger_dialog_ptr->update_after_new_or_edited_segment(segment);
@@ -364,18 +364,18 @@ GPlatesQtWidgets::HellingerSegmentDialog::handle_remove_line()
 void
 GPlatesQtWidgets::HellingerSegmentDialog::change_pick_type_of_whole_table()
 {
-	HellingerPlateIndex index;
+	GPlatesAppLogic::HellingerPlateIndex index;
 	if (radio_plate_index_1->isChecked())
 	{
-		index = GPlatesQtWidgets::PLATE_ONE_PICK_TYPE;
+		index = GPlatesAppLogic::PLATE_ONE_PICK_TYPE;
 	}
 	else if (radio_plate_index_2->isChecked())
 	{
-		index = GPlatesQtWidgets::PLATE_TWO_PICK_TYPE;
+		index = GPlatesAppLogic::PLATE_TWO_PICK_TYPE;
 	}
 	else if (radio_plate_index_3->isChecked())
 	{
-		index = GPlatesQtWidgets::PLATE_THREE_PICK_TYPE;
+		index = GPlatesAppLogic::PLATE_THREE_PICK_TYPE;
 	}
 	else
 	{
@@ -598,7 +598,7 @@ GPlatesQtWidgets::HellingerSegmentDialog::set_initial_row_values(
 void
 GPlatesQtWidgets::HellingerSegmentDialog::set_row_values(
 		const int &row,
-		const GPlatesQtWidgets::HellingerPick &pick)
+		const GPlatesAppLogic::HellingerPick &pick)
 {
 	QModelIndex index = d_table_model->index(row,COLUMN_PLATE_INDEX);
 	d_table_model->setData(index,translate_segment_type(pick.d_segment_type));

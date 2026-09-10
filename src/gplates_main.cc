@@ -67,6 +67,7 @@
 #include "opengl/GLContext.h"
 
 #include "presentation/Application.h"
+#include "presentation/FileIOInjections.h"
 
 #include "qt-widgets/PythonInitFailedDialog.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -519,6 +520,11 @@ namespace
 		// NOTE: This enables the console (command-line) version of GPlates to pop up error message
 		// dialogs such as QMessageBox (which happens in some file I/O code, but really shouldn't).
 		GPlatesGui::GPlatesQApplication qapplication(argc, argv);
+
+		// The command-line interface never constructs a 'GPlatesPresentation::Application', so
+		// it registers the file-io injections itself (no dialog parent: the shapefile mapper
+		// stays unregistered and OgrReader falls back to a default attribute mapping).
+		GPlatesPresentation::register_file_io_injections(NULL);
 
 		// Get the command-line arguments from QCoreApplication, now that there is one, rather
 		// than from CommandLineParser::get_command_line_arguments().

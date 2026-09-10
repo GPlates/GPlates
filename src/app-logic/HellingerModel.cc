@@ -38,10 +38,10 @@ namespace{
 
 	int
 	unique_keys(
-			const GPlatesQtWidgets::hellinger_model_type &model)
+			const GPlatesAppLogic::hellinger_model_type &model)
 	{
 		std::set<int> set;
-		BOOST_FOREACH(GPlatesQtWidgets::hellinger_model_pair_type pair,model)
+		BOOST_FOREACH(GPlatesAppLogic::hellinger_model_pair_type pair,model)
 		{
 			set.insert(pair.first);
 		}
@@ -58,33 +58,33 @@ namespace{
 	 * @param model_data
 	 * @return
 	 */
-	GPlatesQtWidgets::HellingerFitType
+	GPlatesAppLogic::HellingerFitType
 	determine_fit_type_from_model(
-			const GPlatesQtWidgets::hellinger_model_type &model_data)
+			const GPlatesAppLogic::hellinger_model_type &model_data)
 	{
 		// TODO: consider making a similar std::set part of the HellingerModel and updating
 		// it after each pick addition.
-		std::set<GPlatesQtWidgets::HellingerPlateIndex> set;
-		BOOST_FOREACH(GPlatesQtWidgets::hellinger_model_pair_type pair, model_data)
+		std::set<GPlatesAppLogic::HellingerPlateIndex> set;
+		BOOST_FOREACH(GPlatesAppLogic::hellinger_model_pair_type pair, model_data)
 		{
 			set.insert(pair.second.d_segment_type);
 		}
-		if ((set.find(GPlatesQtWidgets::PLATE_THREE_PICK_TYPE) != set.end() ||
-			 (set.find(GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE) != set.end())))
+		if ((set.find(GPlatesAppLogic::PLATE_THREE_PICK_TYPE) != set.end() ||
+			 (set.find(GPlatesAppLogic::DISABLED_PLATE_THREE_PICK_TYPE) != set.end())))
 		{
-			return GPlatesQtWidgets::THREE_PLATE_FIT_TYPE;
+			return GPlatesAppLogic::THREE_PLATE_FIT_TYPE;
 		}
-		return GPlatesQtWidgets::TWO_PLATE_FIT_TYPE;
+		return GPlatesAppLogic::TWO_PLATE_FIT_TYPE;
 	}
 }
 
-GPlatesQtWidgets::HellingerModel::HellingerModel():
-	d_fit_type(GPlatesQtWidgets::TWO_PLATE_FIT_TYPE)
+GPlatesAppLogic::HellingerModel::HellingerModel():
+	d_fit_type(GPlatesAppLogic::TWO_PLATE_FIT_TYPE)
 {
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_pick_state(
+GPlatesAppLogic::HellingerModel::set_pick_state(
 		const unsigned int &segment,
 		const unsigned int &row,
 		bool enabled)
@@ -103,7 +103,7 @@ GPlatesQtWidgets::HellingerModel::set_pick_state(
 }
 
 bool
-GPlatesQtWidgets::HellingerModel::pick_is_enabled(
+GPlatesAppLogic::HellingerModel::pick_is_enabled(
 		const unsigned int &segment, const unsigned int &row) const
 {
 	hellinger_model_const_range_type pair =
@@ -122,14 +122,14 @@ GPlatesQtWidgets::HellingerModel::pick_is_enabled(
 }
 
 int
-GPlatesQtWidgets::HellingerModel::num_rows_in_segment(
+GPlatesAppLogic::HellingerModel::num_rows_in_segment(
 		const unsigned int &segment) const
 {
 	return d_model_data.count(segment);
 }
 
 void
-GPlatesQtWidgets::HellingerModel::remove_pick(
+GPlatesAppLogic::HellingerModel::remove_pick(
 		unsigned const int &segment, unsigned const int &row)
 {
 	hellinger_model_range_type pair =
@@ -148,87 +148,87 @@ GPlatesQtWidgets::HellingerModel::remove_pick(
 }
 
 void
-GPlatesQtWidgets::HellingerModel::remove_segment(
+GPlatesAppLogic::HellingerModel::remove_segment(
 		const unsigned int &segment)
 {
 	d_model_data.erase(segment);
 }
 
-GPlatesQtWidgets::hellinger_model_type::const_iterator
-GPlatesQtWidgets::HellingerModel::add_pick(
+GPlatesAppLogic::hellinger_model_type::const_iterator
+GPlatesAppLogic::HellingerModel::add_pick(
 		const HellingerPick &pick,
 		const unsigned int &segment_number)
 {
 	return d_model_data.insert(hellinger_model_pair_type(segment_number,pick));
 }
 
-GPlatesQtWidgets::HellingerPoleEstimate
-GPlatesQtWidgets::HellingerModel::get_initial_guess_12() const
+GPlatesAppLogic::HellingerPoleEstimate
+GPlatesAppLogic::HellingerModel::get_initial_guess_12() const
 {
 	return d_active_com_file_struct.d_estimate_12;
 }
 
-GPlatesQtWidgets::HellingerPoleEstimate
-GPlatesQtWidgets::HellingerModel::get_initial_guess_13() const
+GPlatesAppLogic::HellingerPoleEstimate
+GPlatesAppLogic::HellingerModel::get_initial_guess_13() const
 {
 	return d_active_com_file_struct.d_estimate_13;
 }
 
-void GPlatesQtWidgets::HellingerModel::set_initial_guess_12(
-		const GPlatesQtWidgets::HellingerPoleEstimate &estimate)
+void GPlatesAppLogic::HellingerModel::set_initial_guess_12(
+		const GPlatesAppLogic::HellingerPoleEstimate &estimate)
 {
 	d_active_com_file_struct.d_estimate_12 = estimate;
 }
 
-void GPlatesQtWidgets::HellingerModel::set_initial_guess_13(
-		const GPlatesQtWidgets::HellingerPoleEstimate &estimate)
+void GPlatesAppLogic::HellingerModel::set_initial_guess_13(
+		const GPlatesAppLogic::HellingerPoleEstimate &estimate)
 {
 	d_active_com_file_struct.d_estimate_13 = estimate;
 }
 
 
 void
-GPlatesQtWidgets::HellingerModel::set_fit_12(
-		const GPlatesQtWidgets::HellingerFitStructure &fit_12)
+GPlatesAppLogic::HellingerModel::set_fit_12(
+		const GPlatesAppLogic::HellingerFitStructure &fit_12)
 {
 	d_last_fit_12_result.reset(fit_12);
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_fit_13(
-		const GPlatesQtWidgets::HellingerFitStructure &fit_13)
+GPlatesAppLogic::HellingerModel::set_fit_13(
+		const GPlatesAppLogic::HellingerFitStructure &fit_13)
 {
 	d_last_fit_13_result.reset(fit_13);
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_fit_23(
-		const GPlatesQtWidgets::HellingerFitStructure &fit_23)
+GPlatesAppLogic::HellingerModel::set_fit_23(
+		const GPlatesAppLogic::HellingerFitStructure &fit_23)
 {
 	d_last_fit_23_result.reset(fit_23);
 }
 
 
-boost::optional<GPlatesQtWidgets::HellingerFitStructure>
-GPlatesQtWidgets::HellingerModel::get_fit_12()
+boost::optional<GPlatesAppLogic::HellingerFitStructure>
+GPlatesAppLogic::HellingerModel::get_fit_12()
 {
 	return d_last_fit_12_result;
 }
 
-boost::optional<GPlatesQtWidgets::HellingerFitStructure>
-GPlatesQtWidgets::HellingerModel::get_fit_13()
+boost::optional<GPlatesAppLogic::HellingerFitStructure>
+GPlatesAppLogic::HellingerModel::get_fit_13()
 {
 	return d_last_fit_13_result;
 }
 
-boost::optional<GPlatesQtWidgets::HellingerFitStructure>
-GPlatesQtWidgets::HellingerModel::get_fit_23()
+boost::optional<GPlatesAppLogic::HellingerFitStructure>
+GPlatesAppLogic::HellingerModel::get_fit_23()
 {
 	return d_last_fit_23_result;
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_initial_guess_12(
+GPlatesAppLogic::HellingerModel::set_initial_guess_12(
 		const double &lat,
 		const double &lon,
 		const double &rho)
@@ -239,7 +239,7 @@ GPlatesQtWidgets::HellingerModel::set_initial_guess_12(
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_initial_guess_13(
+GPlatesAppLogic::HellingerModel::set_initial_guess_13(
 		const double &lat,
 		const double &lon,
 		const double &rho)
@@ -250,28 +250,28 @@ GPlatesQtWidgets::HellingerModel::set_initial_guess_13(
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_search_radius(
+GPlatesAppLogic::HellingerModel::set_search_radius(
 		const double &radius)
 {
 	d_active_com_file_struct.d_search_radius_degrees = radius;
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_input_pick_filename(
+GPlatesAppLogic::HellingerModel::set_input_pick_filename(
 		const QString &input_filename)
 {
 	d_active_com_file_struct.d_pick_file = input_filename;
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_fit_type(
-		const GPlatesQtWidgets::HellingerFitType &type)
+GPlatesAppLogic::HellingerModel::set_fit_type(
+		const GPlatesAppLogic::HellingerFitType &type)
 {
 	d_fit_type = type;
 }
 
-const GPlatesQtWidgets::HellingerFitType &
-GPlatesQtWidgets::HellingerModel::get_fit_type(
+const GPlatesAppLogic::HellingerFitType &
+GPlatesAppLogic::HellingerModel::get_fit_type(
 		bool update)
 {
 	if (update){
@@ -280,15 +280,15 @@ GPlatesQtWidgets::HellingerModel::get_fit_type(
 	return d_fit_type;
 }
 
-boost::optional<GPlatesQtWidgets::HellingerComFileStructure>
-GPlatesQtWidgets::HellingerModel::get_com_file() const
+boost::optional<GPlatesAppLogic::HellingerComFileStructure>
+GPlatesAppLogic::HellingerModel::get_com_file() const
 {
 	return d_active_com_file_struct;
 }
 
 std::vector<GPlatesMaths::LatLonPoint> &
-GPlatesQtWidgets::HellingerModel::error_ellipse_points(
-		const GPlatesQtWidgets::HellingerPlatePairType &type)
+GPlatesAppLogic::HellingerModel::error_ellipse_points(
+		const GPlatesAppLogic::HellingerPlatePairType &type)
 {
 	switch(type)
 	{
@@ -307,8 +307,8 @@ GPlatesQtWidgets::HellingerModel::error_ellipse_points(
 }
 
 void
-GPlatesQtWidgets::HellingerModel::clear_error_ellipse(
-		const GPlatesQtWidgets::HellingerPlatePairType &type)
+GPlatesAppLogic::HellingerModel::clear_error_ellipse(
+		const GPlatesAppLogic::HellingerPlatePairType &type)
 {
 	switch(type)
 	{
@@ -325,7 +325,7 @@ GPlatesQtWidgets::HellingerModel::clear_error_ellipse(
 }
 
 void
-GPlatesQtWidgets::HellingerModel::clear_error_ellipses()
+GPlatesAppLogic::HellingerModel::clear_error_ellipses()
 {
 	d_error_ellipse_12_points.clear();
 	d_error_ellipse_13_points.clear();
@@ -333,13 +333,13 @@ GPlatesQtWidgets::HellingerModel::clear_error_ellipses()
 }
 
 QString
-GPlatesQtWidgets::HellingerModel::error_ellipse_filename() const
+GPlatesAppLogic::HellingerModel::error_ellipse_filename() const
 {
 	return QString(d_output_file_root + "_ellipse"+DEFAULT_OUTPUT_FILE_EXTENSION);
 }
 
 QString
-GPlatesQtWidgets::HellingerModel::error_ellipse_filename(
+GPlatesAppLogic::HellingerModel::error_ellipse_filename(
 		const HellingerPlatePairType &type) const
 {
 	switch(type)
@@ -358,7 +358,7 @@ GPlatesQtWidgets::HellingerModel::error_ellipse_filename(
 }
 
 bool
-GPlatesQtWidgets::HellingerModel::picks_are_valid() const
+GPlatesAppLogic::HellingerModel::picks_are_valid() const
 {
 	//TODO: apply more stringent conditions here, e.g.
 	// min no. of segments, picks-per-segment etc...
@@ -366,33 +366,33 @@ GPlatesQtWidgets::HellingerModel::picks_are_valid() const
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_output_file_root(
+GPlatesAppLogic::HellingerModel::set_output_file_root(
 		const QString &root)
 {
 	d_output_file_root = root;
 }
 
 QString
-GPlatesQtWidgets::HellingerModel::output_file_root() const
+GPlatesAppLogic::HellingerModel::output_file_root() const
 {
 	return d_output_file_root;
 }
 
 void
-GPlatesQtWidgets::HellingerModel::reset_model()
+GPlatesAppLogic::HellingerModel::reset_model()
 {
 	d_model_data.clear();
 	clear_fit_results();
 	clear_uncertainty_results();
 }
 
-void GPlatesQtWidgets::HellingerModel::clear_all_picks()
+void GPlatesAppLogic::HellingerModel::clear_all_picks()
 {
 	d_model_data.clear();
 }
 
 void
-GPlatesQtWidgets::HellingerModel::clear_fit_results()
+GPlatesAppLogic::HellingerModel::clear_fit_results()
 {
 	d_last_fit_12_result.reset();
 	d_last_fit_13_result.reset();
@@ -400,13 +400,13 @@ GPlatesQtWidgets::HellingerModel::clear_fit_results()
 }
 
 void
-GPlatesQtWidgets::HellingerModel::clear_uncertainty_results()
+GPlatesAppLogic::HellingerModel::clear_uncertainty_results()
 {
 	clear_error_ellipses();
 }
 
 void
-GPlatesQtWidgets::HellingerModel::clear_com_file_struct()
+GPlatesAppLogic::HellingerModel::clear_com_file_struct()
 {
 	d_active_com_file_struct.d_pick_file = "";
 
@@ -428,13 +428,13 @@ GPlatesQtWidgets::HellingerModel::clear_com_file_struct()
 }
 
 void
-GPlatesQtWidgets::HellingerModel::renumber_segments()
+GPlatesAppLogic::HellingerModel::renumber_segments()
 {
 	hellinger_model_type result;
 
 	int last_segment_number = 0;
 	int new_segment_number = 0;
-	BOOST_FOREACH(GPlatesQtWidgets::hellinger_model_pair_type pair, d_model_data)
+	BOOST_FOREACH(GPlatesAppLogic::hellinger_model_pair_type pair, d_model_data)
 	{
 		if (pair.first != last_segment_number)
 		{
@@ -448,12 +448,12 @@ GPlatesQtWidgets::HellingerModel::renumber_segments()
 }
 
 int
-GPlatesQtWidgets::HellingerModel::number_of_segments() const
+GPlatesAppLogic::HellingerModel::number_of_segments() const
 {
 	return	unique_keys(d_model_data);
 }
 
-bool GPlatesQtWidgets::HellingerModel::segments_are_ordered() const
+bool GPlatesAppLogic::HellingerModel::segments_are_ordered() const
 {
 
 	for (int i = 1; i <= unique_keys(d_model_data) ; ++i)
@@ -467,7 +467,7 @@ bool GPlatesQtWidgets::HellingerModel::segments_are_ordered() const
 }
 
 void
-GPlatesQtWidgets::HellingerModel::make_space_for_new_segment(int segment)
+GPlatesAppLogic::HellingerModel::make_space_for_new_segment(int segment)
 {
 	hellinger_model_type result;
 	hellinger_model_range_type range = d_model_data.equal_range(segment-1);
@@ -491,8 +491,8 @@ GPlatesQtWidgets::HellingerModel::make_space_for_new_segment(int segment)
 }
 
 
-GPlatesQtWidgets::hellinger_model_type::const_iterator
-GPlatesQtWidgets::HellingerModel::get_pick(
+GPlatesAppLogic::hellinger_model_type::const_iterator
+GPlatesAppLogic::HellingerModel::get_pick(
 		const unsigned int &segment,
 		const unsigned int &row) const
 {
@@ -510,8 +510,8 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 	return d_model_data.end();
 }
 
-GPlatesQtWidgets::hellinger_segment_type
-GPlatesQtWidgets::HellingerModel::get_segment(
+GPlatesAppLogic::hellinger_segment_type
+GPlatesAppLogic::HellingerModel::get_segment(
 		const unsigned int &segment_num) const
 {
 	hellinger_model_type::const_iterator
@@ -525,33 +525,33 @@ GPlatesQtWidgets::HellingerModel::get_segment(
 	return segment;
 }
 
-GPlatesQtWidgets::hellinger_model_const_range_type
-GPlatesQtWidgets::HellingerModel::get_segment_as_range(const unsigned int &segment) const
+GPlatesAppLogic::hellinger_model_const_range_type
+GPlatesAppLogic::HellingerModel::get_segment_as_range(const unsigned int &segment) const
 {
 	return d_model_data.equal_range(segment);
 }
 
-GPlatesQtWidgets::hellinger_model_type::const_iterator
-GPlatesQtWidgets::HellingerModel::begin() const
+GPlatesAppLogic::hellinger_model_type::const_iterator
+GPlatesAppLogic::HellingerModel::begin() const
 {
 	return d_model_data.begin();
 }
 
-GPlatesQtWidgets::hellinger_model_type::const_iterator
-GPlatesQtWidgets::HellingerModel::end() const
+GPlatesAppLogic::hellinger_model_type::const_iterator
+GPlatesAppLogic::HellingerModel::end() const
 {
 	return d_model_data.end();
 }
 
 
 bool
-GPlatesQtWidgets::HellingerModel::segment_number_exists(int segment_num) const
+GPlatesAppLogic::HellingerModel::segment_number_exists(int segment_num) const
 {
 	return d_model_data.count(segment_num) > 0;
 }
 
-GPlatesQtWidgets::hellinger_model_type::const_iterator
-GPlatesQtWidgets::HellingerModel::segment_begin(
+GPlatesAppLogic::hellinger_model_type::const_iterator
+GPlatesAppLogic::HellingerModel::segment_begin(
 		const int &segment) const
 {
 	if (d_model_data.count(segment) > 0)
@@ -564,8 +564,8 @@ GPlatesQtWidgets::HellingerModel::segment_begin(
 	}
 }
 
-GPlatesQtWidgets::hellinger_model_type::const_iterator
-GPlatesQtWidgets::HellingerModel::segment_end(
+GPlatesAppLogic::hellinger_model_type::const_iterator
+GPlatesAppLogic::HellingerModel::segment_end(
 		const int &segment) const
 {
 	if (d_model_data.count(segment) > 0)

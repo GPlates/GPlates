@@ -62,7 +62,7 @@ sudo apt-get install \
     libgl1-mesa-dev libglu1-mesa-dev libglew-dev \
     python3-dev python3-numpy python3-pip \
     libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev \
-    libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libqwt-qt5-dev \
+    libqt5opengl5-dev libqt5svg5-dev libqwt-qt5-dev \
     libgdal-dev libcgal-dev libproj-dev zlib1g-dev
 ```
 

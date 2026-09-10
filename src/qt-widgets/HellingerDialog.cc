@@ -213,34 +213,34 @@ namespace{
 		return type != GPlatesQtWidgets::SELECT_OPERATION;
 	}
 
-	std::pair<GPlatesQtWidgets::HellingerPlateIndex,GPlatesQtWidgets::HellingerPlateIndex>
+	std::pair<GPlatesAppLogic::HellingerPlateIndex,GPlatesAppLogic::HellingerPlateIndex>
 	get_moving_plate_indices(
-			const GPlatesQtWidgets::HellingerPlateIndex &fixed_index)
+			const GPlatesAppLogic::HellingerPlateIndex &fixed_index)
 	{
 		switch(fixed_index)
 		{
-		case GPlatesQtWidgets::PLATE_ONE_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_ONE_PICK_TYPE:
-			return std::make_pair(GPlatesQtWidgets::PLATE_TWO_PICK_TYPE,GPlatesQtWidgets::PLATE_THREE_PICK_TYPE);
+		case GPlatesAppLogic::PLATE_ONE_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_ONE_PICK_TYPE:
+			return std::make_pair(GPlatesAppLogic::PLATE_TWO_PICK_TYPE,GPlatesAppLogic::PLATE_THREE_PICK_TYPE);
 			break;
-		case GPlatesQtWidgets::PLATE_TWO_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_TWO_PICK_TYPE:
-			return std::make_pair(GPlatesQtWidgets::PLATE_ONE_PICK_TYPE,GPlatesQtWidgets::PLATE_THREE_PICK_TYPE);
+		case GPlatesAppLogic::PLATE_TWO_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_TWO_PICK_TYPE:
+			return std::make_pair(GPlatesAppLogic::PLATE_ONE_PICK_TYPE,GPlatesAppLogic::PLATE_THREE_PICK_TYPE);
 			break;
-		case GPlatesQtWidgets::PLATE_THREE_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE:
-			return std::make_pair(GPlatesQtWidgets::PLATE_ONE_PICK_TYPE,GPlatesQtWidgets::PLATE_TWO_PICK_TYPE);
+		case GPlatesAppLogic::PLATE_THREE_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_THREE_PICK_TYPE:
+			return std::make_pair(GPlatesAppLogic::PLATE_ONE_PICK_TYPE,GPlatesAppLogic::PLATE_TWO_PICK_TYPE);
 			break;
 		default:
-			return std::make_pair(GPlatesQtWidgets::PLATE_TWO_PICK_TYPE,GPlatesQtWidgets::PLATE_THREE_PICK_TYPE);
+			return std::make_pair(GPlatesAppLogic::PLATE_TWO_PICK_TYPE,GPlatesAppLogic::PLATE_THREE_PICK_TYPE);
 		}
 	}
 
 	void
 	correct_directions_of_rotations(
-			boost::optional<GPlatesQtWidgets::HellingerFitStructure> &fit_a,
-			boost::optional<GPlatesQtWidgets::HellingerFitStructure> &fit_b,
-			const GPlatesQtWidgets::HellingerPlateIndex &fixed_plate_index)
+			boost::optional<GPlatesAppLogic::HellingerFitStructure> &fit_a,
+			boost::optional<GPlatesAppLogic::HellingerFitStructure> &fit_b,
+			const GPlatesAppLogic::HellingerPlateIndex &fixed_plate_index)
 	{
 		// If the fixed plate is 1: the two fitted rotation poles represent
 		// plate 1 to 2, and plate 1 to 3 respectively. We need to reverse the angle in each
@@ -253,7 +253,7 @@ namespace{
 		// so we don't need to do anything.
 		switch(fixed_plate_index)
 		{
-		case GPlatesQtWidgets::PLATE_ONE_PICK_TYPE:
+		case GPlatesAppLogic::PLATE_ONE_PICK_TYPE:
 			if (fit_a)
 			{
 				fit_a.get().d_angle = - fit_a.get().d_angle;
@@ -263,7 +263,7 @@ namespace{
 				fit_b.get().d_angle = - fit_b.get().d_angle;
 			}
 			break;
-		case GPlatesQtWidgets::PLATE_TWO_PICK_TYPE:
+		case GPlatesAppLogic::PLATE_TWO_PICK_TYPE:
 			if (fit_b)
 			{
 				fit_b.get().d_angle = - fit_b.get().d_angle;
@@ -276,7 +276,7 @@ namespace{
 
 	boost::optional<GPlatesMaths::FiniteRotation>
 	get_rotation(
-			const boost::optional<GPlatesQtWidgets::HellingerFitStructure> &fit,
+			const boost::optional<GPlatesAppLogic::HellingerFitStructure> &fit,
 			double fraction)
 	{
 		if (!fit)
@@ -293,7 +293,7 @@ namespace{
 
 	const GPlatesGui::Symbol &
 	get_pick_symbol(
-			const GPlatesQtWidgets::HellingerPlateIndex &index,
+			const GPlatesAppLogic::HellingerPlateIndex &index,
 			bool use_enlarged_symbol_size = false)
 	{
 		static const GPlatesGui::Symbol default_plate_one_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, DEFAULT_SYMBOL_SIZE, true);
@@ -305,16 +305,16 @@ namespace{
 
 		switch(index)
 		{
-		case GPlatesQtWidgets::PLATE_ONE_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_ONE_PICK_TYPE:
+		case GPlatesAppLogic::PLATE_ONE_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_ONE_PICK_TYPE:
 			return use_enlarged_symbol_size ? enlarged_plate_one_symbol : default_plate_one_symbol;
 			break;
-		case GPlatesQtWidgets::PLATE_TWO_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_TWO_PICK_TYPE:
+		case GPlatesAppLogic::PLATE_TWO_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_TWO_PICK_TYPE:
 			return use_enlarged_symbol_size ? enlarged_plate_two_symbol : default_plate_two_symbol;
 			break;
-		case GPlatesQtWidgets::PLATE_THREE_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE:
+		case GPlatesAppLogic::PLATE_THREE_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_THREE_PICK_TYPE:
 			return use_enlarged_symbol_size ? enlarged_plate_three_symbol : default_plate_three_symbol;
 			break;
 		default:
@@ -324,7 +324,7 @@ namespace{
 
 	void
 	add_pick_geometry_to_layer(
-			const GPlatesQtWidgets::HellingerPick &pick,
+			const GPlatesAppLogic::HellingerPick &pick,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type &layer,
 			const GPlatesGui::Colour &colour,
 			bool use_enlarged_symbol_size = false)
@@ -351,11 +351,11 @@ namespace{
 
 	void
 	add_segment_geometries_to_layer(
-			const GPlatesQtWidgets::hellinger_model_const_range_type &segment,
+			const GPlatesAppLogic::hellinger_model_const_range_type &segment,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type &layer,
 			const GPlatesGui::Colour &colour)
 	{
-		GPlatesQtWidgets::hellinger_model_type::const_iterator it = segment.first;
+		GPlatesAppLogic::hellinger_model_type::const_iterator it = segment.first;
 		for (; it != segment.second; ++it)
 		{
 			add_pick_geometry_to_layer(
@@ -656,14 +656,14 @@ GPlatesQtWidgets::HellingerDialog::initialise_widgets()
 
 	radio_button_fixed_1->setChecked(true);
 
-	button_group_fixed_plate->setId(radio_button_fixed_1,PLATE_ONE_PICK_TYPE);
-	button_group_fixed_plate->setId(radio_button_fixed_2,PLATE_TWO_PICK_TYPE);
-	button_group_fixed_plate->setId(radio_button_fixed_3,PLATE_THREE_PICK_TYPE);
+	button_group_fixed_plate->setId(radio_button_fixed_1,GPlatesAppLogic::PLATE_ONE_PICK_TYPE);
+	button_group_fixed_plate->setId(radio_button_fixed_2,GPlatesAppLogic::PLATE_TWO_PICK_TYPE);
+	button_group_fixed_plate->setId(radio_button_fixed_3,GPlatesAppLogic::PLATE_THREE_PICK_TYPE);
 }
 
 void
 GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
-		const HellingerPick &pick)
+		const GPlatesAppLogic::HellingerPick &pick)
 {
 	GPlatesGui::Colour colour = pick.d_is_enabled ? GPlatesGui::Colour::get_white() : GPlatesGui::Colour::get_grey();
 	add_pick_geometry_to_layer(pick,d_selection_layer_ptr,colour);
@@ -673,9 +673,9 @@ void
 GPlatesQtWidgets::HellingerDialog::highlight_selected_segment(
 		const int &segment_number)
 {
-	hellinger_segment_type segment = d_hellinger_model.get_segment(segment_number);
+	GPlatesAppLogic::hellinger_segment_type segment = d_hellinger_model.get_segment(segment_number);
 
-	BOOST_FOREACH(HellingerPick pick, segment)
+	BOOST_FOREACH(GPlatesAppLogic::HellingerPick pick, segment)
 	{
 		highlight_selected_pick(pick);
 	}
@@ -888,8 +888,8 @@ GPlatesQtWidgets::HellingerDialog::update_pole_estimates(
 	d_pole_estimate_12_angle = angle_12;
 	d_pole_estimate_13_angle = angle_13;
 
-	HellingerPoleEstimate estimate_12(llp_12.latitude(),llp_12.longitude(),angle_12);
-	HellingerPoleEstimate estimate_13(llp_13.latitude(),llp_13.longitude(),angle_13);
+	GPlatesAppLogic::HellingerPoleEstimate estimate_12(llp_12.latitude(),llp_12.longitude(),angle_12);
+	GPlatesAppLogic::HellingerPoleEstimate estimate_13(llp_13.latitude(),llp_13.longitude(),angle_13);
 
 	enable_pole_estimate_signals(false);
 
@@ -915,7 +915,7 @@ GPlatesQtWidgets::HellingerDialog::set_state_for_pole_adjustment_tool(
 	}
 }
 
-const GPlatesQtWidgets::HellingerFitType &
+const GPlatesAppLogic::HellingerFitType &
 GPlatesQtWidgets::HellingerDialog::get_fit_type()
 {
 	return d_hellinger_model.get_fit_type();
@@ -927,10 +927,10 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_uncertainties()
 {
 	switch(d_hellinger_model.get_fit_type())
 	{
-	case TWO_PLATE_FIT_TYPE:
+	case GPlatesAppLogic::TWO_PLATE_FIT_TYPE:
 		d_thread_type = TWO_WAY_UNCERTAINTY_THREAD_TYPE;
 		break;
-	case THREE_PLATE_FIT_TYPE:
+	case GPlatesAppLogic::THREE_PLATE_FIT_TYPE:
 		d_thread_type = THREE_WAY_UNCERTAINTY_THREAD_TYPE;
 		break;
 	default:
@@ -1087,10 +1087,10 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 
 	switch(d_hellinger_model.get_fit_type())
 	{
-	case TWO_PLATE_FIT_TYPE:
+	case GPlatesAppLogic::TWO_PLATE_FIT_TYPE:
 		d_thread_type = TWO_WAY_POLE_THREAD_TYPE;
 		break;
-	case THREE_PLATE_FIT_TYPE:
+	case GPlatesAppLogic::THREE_PLATE_FIT_TYPE:
 		d_thread_type = THREE_WAY_POLE_THREAD_TYPE;
 		break;
 	}
@@ -1126,17 +1126,17 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 		}
 		else if (d_thread_type == THREE_WAY_UNCERTAINTY_THREAD_TYPE)
 		{
-			QString filename= d_output_file_path + QDir::separator() + d_hellinger_model.error_ellipse_filename(PLATES_1_2_PAIR_TYPE);
+			QString filename= d_output_file_path + QDir::separator() + d_hellinger_model.error_ellipse_filename(GPlatesAppLogic::PLATES_1_2_PAIR_TYPE);
 			GPlatesFileIO::HellingerReader::read_error_ellipse(
-						filename,d_hellinger_model,PLATES_1_2_PAIR_TYPE);
+						filename,d_hellinger_model,GPlatesAppLogic::PLATES_1_2_PAIR_TYPE);
 
-			filename= d_output_file_path + QDir::separator() + d_hellinger_model.error_ellipse_filename(PLATES_1_3_PAIR_TYPE);
+			filename= d_output_file_path + QDir::separator() + d_hellinger_model.error_ellipse_filename(GPlatesAppLogic::PLATES_1_3_PAIR_TYPE);
 			GPlatesFileIO::HellingerReader::read_error_ellipse(
-						filename,d_hellinger_model,PLATES_1_3_PAIR_TYPE);
+						filename,d_hellinger_model,GPlatesAppLogic::PLATES_1_3_PAIR_TYPE);
 
-			filename= d_output_file_path + QDir::separator() + d_hellinger_model.error_ellipse_filename(PLATES_2_3_PAIR_TYPE);
+			filename= d_output_file_path + QDir::separator() + d_hellinger_model.error_ellipse_filename(GPlatesAppLogic::PLATES_2_3_PAIR_TYPE);
 			GPlatesFileIO::HellingerReader::read_error_ellipse(
-						filename,d_hellinger_model,PLATES_2_3_PAIR_TYPE);
+						filename,d_hellinger_model,GPlatesAppLogic::PLATES_2_3_PAIR_TYPE);
 
 			update_results_on_canvas();
 		}
@@ -1157,7 +1157,7 @@ GPlatesQtWidgets::HellingerDialog::update_widgets_from_model()
 
 
 	bool three_plate_fit = d_three_way_fitting_is_enabled &&
-							d_hellinger_model.get_fit_type(true) == THREE_PLATE_FIT_TYPE;
+							d_hellinger_model.get_fit_type(true) == GPlatesAppLogic::THREE_PLATE_FIT_TYPE;
 
 	radio_button_fixed_3->setEnabled(three_plate_fit);
 
@@ -1195,25 +1195,25 @@ GPlatesQtWidgets::HellingerDialog::draw_pole_result(
 void
 GPlatesQtWidgets::HellingerDialog::update_results_on_canvas()
 {
-	boost::optional<GPlatesQtWidgets::HellingerFitStructure> fit_12 = d_hellinger_model.get_fit_12();
-	boost::optional<GPlatesQtWidgets::HellingerFitStructure> fit_13 = d_hellinger_model.get_fit_13();
-	boost::optional<GPlatesQtWidgets::HellingerFitStructure> fit_23 = d_hellinger_model.get_fit_23();
+	boost::optional<GPlatesAppLogic::HellingerFitStructure> fit_12 = d_hellinger_model.get_fit_12();
+	boost::optional<GPlatesAppLogic::HellingerFitStructure> fit_13 = d_hellinger_model.get_fit_13();
+	boost::optional<GPlatesAppLogic::HellingerFitStructure> fit_23 = d_hellinger_model.get_fit_23();
 	d_result_layer_ptr->clear_rendered_geometries();
 	if (fit_12 && d_fit_widget->show_result_12_checked())
 	{
 		draw_pole_result(fit_12.get().d_lat, fit_12.get().d_lon,
 						 d_configuration.d_best_fit_pole_colour);
-		draw_error_ellipse(PLATES_1_2_PAIR_TYPE);
+		draw_error_ellipse(GPlatesAppLogic::PLATES_1_2_PAIR_TYPE);
 	}
 	if (fit_13 && d_fit_widget->show_result_13_checked())
 	{
 		draw_pole_result(fit_13.get().d_lat, fit_13.get().d_lon,d_configuration.d_best_fit_pole_colour);
-		draw_error_ellipse(PLATES_1_3_PAIR_TYPE);
+		draw_error_ellipse(GPlatesAppLogic::PLATES_1_3_PAIR_TYPE);
 	}
 	if (fit_23 && d_fit_widget->show_result_23_checked())
 	{
 		draw_pole_result(fit_23.get().d_lat, fit_23.get().d_lon,d_configuration.d_best_fit_pole_colour);
-		draw_error_ellipse(PLATES_2_3_PAIR_TYPE);
+		draw_error_ellipse(GPlatesAppLogic::PLATES_2_3_PAIR_TYPE);
 	}
 
 }
@@ -1221,10 +1221,10 @@ GPlatesQtWidgets::HellingerDialog::update_results_on_canvas()
 void
 GPlatesQtWidgets::HellingerDialog::update_estimates_on_canvas()
 {
-	bool three_plate_fit = d_hellinger_model.get_fit_type() == THREE_PLATE_FIT_TYPE;
+	bool three_plate_fit = d_hellinger_model.get_fit_type() == GPlatesAppLogic::THREE_PLATE_FIT_TYPE;
 
-	HellingerPoleEstimate estimate_12 = d_fit_widget->estimate_12();
-	HellingerPoleEstimate estimate_13 = d_fit_widget->estimate_13();
+	GPlatesAppLogic::HellingerPoleEstimate estimate_12 = d_fit_widget->estimate_12();
+	GPlatesAppLogic::HellingerPoleEstimate estimate_13 = d_fit_widget->estimate_13();
 
 	d_pole_estimate_layer_ptr->clear_rendered_geometries();
 
@@ -1241,7 +1241,7 @@ GPlatesQtWidgets::HellingerDialog::update_estimates_on_canvas()
 
 void
 GPlatesQtWidgets::HellingerDialog::draw_error_ellipse(
-		const HellingerPlatePairType &type)
+		const GPlatesAppLogic::HellingerPlatePairType &type)
 {
 	const std::vector<GPlatesMaths::LatLonPoint> &data_points = d_hellinger_model.error_ellipse_points(type);
 	std::vector<GPlatesMaths::PointOnSphere> ellipse_points;
@@ -1342,7 +1342,7 @@ void GPlatesQtWidgets::HellingerDialog::set_feature_highlight(
 
 void
 GPlatesQtWidgets::HellingerDialog::update_after_new_or_edited_pick(
-		const hellinger_model_type::const_iterator &it,
+		const GPlatesAppLogic::hellinger_model_type::const_iterator &it,
 		const int segment_number)
 {
 	d_pick_widget->update_after_new_or_edited_pick(it,segment_number);
@@ -1397,7 +1397,7 @@ const double &GPlatesQtWidgets::HellingerDialog::get_pole_estimate_13_angle()
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
 {
-	boost::optional<hellinger_model_type::const_iterator> selected_pick
+	boost::optional<GPlatesAppLogic::hellinger_model_type::const_iterator> selected_pick
 			= d_pick_widget->selected_pick();
 	boost::optional<unsigned int> selected_segment
 			= d_pick_widget->selected_segment();
@@ -1413,9 +1413,9 @@ void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
 
 void
 GPlatesQtWidgets::HellingerDialog::draw_picks_of_plate_index(
-		const HellingerPlateIndex &plate_index)
+		const GPlatesAppLogic::HellingerPlateIndex &plate_index)
 {
-	hellinger_model_type::const_iterator it = d_hellinger_model.begin();
+	GPlatesAppLogic::hellinger_model_type::const_iterator it = d_hellinger_model.begin();
 
 	int num_segment = 0;
 	int num_colour = 0;
@@ -1458,7 +1458,7 @@ void GPlatesQtWidgets::HellingerDialog::draw_picks()
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 	d_pick_layer_ptr->clear_rendered_geometries();
 
-	hellinger_model_type::const_iterator it = d_hellinger_model.begin();
+	GPlatesAppLogic::hellinger_model_type::const_iterator it = d_hellinger_model.begin();
 	int num_segment = 0;
 	int num_colour = 0;
 	d_geometry_to_model_map.clear();
@@ -1483,7 +1483,7 @@ void GPlatesQtWidgets::HellingerDialog::draw_picks()
 }
 
 void GPlatesQtWidgets::HellingerDialog::draw_pole_estimate(
-		const HellingerPoleEstimate &estimate,
+		const GPlatesAppLogic::HellingerPoleEstimate &estimate,
 		const HellingerConfigurationWidget::HellingerColour &colour)
 {
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
@@ -1584,31 +1584,31 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 
 	clear_pick_geometries();
 
-	HellingerPlateIndex fixed = static_cast<HellingerPlateIndex>(button_group_fixed_plate->checkedId());
+	GPlatesAppLogic::HellingerPlateIndex fixed = static_cast<GPlatesAppLogic::HellingerPlateIndex>(button_group_fixed_plate->checkedId());
 
 	// moving_a and moving_b are the indices of the two moving plate types.
-	HellingerPlateIndex moving_a = get_moving_plate_indices(static_cast<HellingerPlateIndex>(button_group_fixed_plate->checkedId())).first;
-	HellingerPlateIndex moving_b = get_moving_plate_indices(static_cast<HellingerPlateIndex>(button_group_fixed_plate->checkedId())).second;
+	GPlatesAppLogic::HellingerPlateIndex moving_a = get_moving_plate_indices(static_cast<GPlatesAppLogic::HellingerPlateIndex>(button_group_fixed_plate->checkedId())).first;
+	GPlatesAppLogic::HellingerPlateIndex moving_b = get_moving_plate_indices(static_cast<GPlatesAppLogic::HellingerPlateIndex>(button_group_fixed_plate->checkedId())).second;
 
 	// Draw the fixed plate picks.
 	draw_picks_of_plate_index(fixed);
 
 	// fit_a and fit_b are the best-fit rotation poles for the two moving plates w.r.t the fixed plate.
-	boost::optional<GPlatesQtWidgets::HellingerFitStructure> fit_a;
-	boost::optional<GPlatesQtWidgets::HellingerFitStructure> fit_b;
+	boost::optional<GPlatesAppLogic::HellingerFitStructure> fit_a;
+	boost::optional<GPlatesAppLogic::HellingerFitStructure> fit_b;
 
 
 	switch(fixed)
 	{
-	case PLATE_ONE_PICK_TYPE:
+	case GPlatesAppLogic::PLATE_ONE_PICK_TYPE:
 		fit_a = d_hellinger_model.get_fit_12();
 		fit_b = d_hellinger_model.get_fit_13();
 		break;
-	case PLATE_TWO_PICK_TYPE:
+	case GPlatesAppLogic::PLATE_TWO_PICK_TYPE:
 		fit_a = d_hellinger_model.get_fit_12();
 		fit_b = d_hellinger_model.get_fit_23();
 		break;
-	case PLATE_THREE_PICK_TYPE:
+	case GPlatesAppLogic::PLATE_THREE_PICK_TYPE:
 		fit_a = d_hellinger_model.get_fit_13();
 		fit_b = d_hellinger_model.get_fit_23();
 		break;
@@ -1627,7 +1627,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 
 	if (recon_time > 0 )
 	{
-		hellinger_model_type::const_iterator it = d_hellinger_model.begin();
+		GPlatesAppLogic::hellinger_model_type::const_iterator it = d_hellinger_model.begin();
 
 		int num_segment = 0;
 		int num_colour = 0;
@@ -1940,8 +1940,8 @@ void GPlatesQtWidgets::HellingerDialog::set_hovered_pick(
 		return;
 	}
 
-	hellinger_model_type::const_iterator it = d_geometry_to_model_map[index];
-	const HellingerPick &pick = it->second;
+	GPlatesAppLogic::hellinger_model_type::const_iterator it = d_geometry_to_model_map[index];
+	const GPlatesAppLogic::HellingerPick &pick = it->second;
 
 	d_hover_layer_ptr->clear_rendered_geometries();
 

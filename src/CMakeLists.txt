@@ -9,21 +9,21 @@
 # Find dependencies #
 #####################
 
-###############
-# Find OpenGL #
+###########################################
+# Find OpenGL and GLEW (GPlates only)     #
 #
-# Note: CMake 3.8 introduced import targets for OpenGL.
-#       So since our min CMake requirement exceeds this we don't need to add imported targets ourself.
+# The pygplates module compiles none of the rendering code (its source list is the include
+# closure of the pyGPlates API - see 'cmake/pygplates_source_closure.py'), so it needs
+# neither OpenGL nor GLEW.
+#
+# Note: CMake 3.8 introduced import targets for OpenGL (and CMake 3.1 for GLEW).
+#       So since our min CMake requirement exceeds these we don't need to add imported targets ourself.
 # Note: For CMake >= 3.11 on Linux systems when the *legacy* OpenGL libraries are not found, the default (for OpenGL_GL_PREFERENCE)
 #       is to utilize GLVND - in this case using the OpenGL::GL target will instead use the GLVND targets OpenGL::OpenGL and OpenGL::GLX.
-find_package(OpenGL REQUIRED)
-
-#############
-# Find GLEW #
-#
-# Note: CMake 3.1 introduced import targets for GLEW.
-#       So since our min CMake requirement exceeds this we don't need to add imported targets ourself.
-find_package(GLEW REQUIRED)
+if (GPLATES_BUILD_GPLATES)
+	find_package(OpenGL REQUIRED)
+	find_package(GLEW REQUIRED)
+endif()
 
 #############
 # Find ZLIB #
@@ -77,9 +77,45 @@ else()  # CMake < 3.18
 	set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development)
 endif()
 
-# Note that we don't really need to specify the 'Interpreter' component but we do in case it makes 'Development' more robust.
-# We also specify the optional component NumPy to get access to the numpy C-API header include directories.
-find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME} OPTIONAL_COMPONENTS NumPy)
+# The 'Development' component provides the Python headers and library, and the 'Interpreter' component
+# provides Python${_PYTHON_MAJOR_VER}_EXECUTABLE, which we use below (except under conda, which tells us
+# which interpreter to use).
+#
+# Note: Both components are requested in a *single* find_package() call, because that is what makes
+#       find_package() look up the development artifacts *from the interpreter*, and so keeps the two
+#       consistent. From 'Support.cmake' in CMake's FindPython module: "if python interpreter is found, use
+#       it to look-up for artifacts to ensure consistency between interpreter and development environments".
+#       Ask for them in two calls instead and each search stands alone (every call also resets all the
+#       Python${_PYTHON_MAJOR_VER}_<component>_FOUND flags first), so on a machine with more than one Python
+#       - and especially with a '-DPython${_PYTHON_MAJOR_VER}_EXECUTABLE=...' pointing at one of them, which
+#       the error message further below tells users to pass - you can silently end up with one Python's
+#       headers and library and another Python's version and interpreter. Together in one call that same
+#       mismatch is instead a hard "Could NOT find Python${_PYTHON_MAJOR_VER} (missing: Development.Module)".
+#
+#       Cross-compiling is the one exception, and there the call *must* be split: CMake policy CMP0190
+#       (CMake 4.1) makes requesting 'Interpreter' (or 'Compiler') together with any 'Development' component
+#       a hard error while cross-compiling, unless CMAKE_CROSSCOMPILING_EMULATOR is set:
+#         https://github.com/Kitware/CMake/blob/bda0b36155a63134811c8ec754fba4fa85dfcd65/Modules/FindPython/Support.cmake#L1601
+#       And conda-forge's cross builds ('linux-aarch64', 'linux-ppc64le' and 'osx-arm64') are exactly that
+#       situation: the compiler activation passes '-DCMAKE_SYSTEM_NAME' (so CMAKE_CROSSCOMPILING is TRUE) and
+#       sets no emulator anywhere, while the policy range in the top-level
+#       'cmake_minimum_required(VERSION 3.22...4.4)' opts us into CMP0190. So a combined call fails to
+#       *configure* there. pyGPlates 1.0.0 escaped this only because its policy range stopped at 3.31, before
+#       CMP0190 existed.
+#
+#       Splitting the call gives up nothing on that path, because find_package() declines to use the
+#       interpreter for the artifact lookup in precisely that situation anyway (an interpreter built for the
+#       build platform cannot describe the target). We ask for 'Interpreter' first and 'Development' second
+#       so that it is the *target* artifacts that determine Python${_PYTHON_MAJOR_VER}_VERSION.
+#
+#       NumPy is deliberately not requested as a component in either form - see the NumPy section further
+#       below for why.
+if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
+	find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter)
+	find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME})
+else()
+	find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME})
+endif()
 
 # Get the Python major/minor versions.
 set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MAJOR})
@@ -97,10 +133,15 @@ if (GPLATES_CONDA_BUILD)
 	#   "Empty package; python present in build and host deps.  You probably picked up the build environment's python  executable.
 	#    You need to alter your recipe to  use the PYTHON env var in your recipe to run that executable."
 	#
-	# UPDATE: CMake policy CMP0190 (CMake 4.1) may require setting CMAKE_CROSSCOMPILING_EMULATOR since we specified the 'Development'
-	#         component together with the 'Interpreter' component. See:
-	#           https://github.com/Kitware/CMake/blob/bda0b36155a63134811c8ec754fba4fa85dfcd65/Modules/FindPython/Support.cmake#L1601
-	#         If we get an error building on conda then can try separate 'find_package()' calls for the 'Interpreter' and 'Development' components.
+	# Note: On a cross-compile the conda recipe's 'cross-python_<target_platform>' build dependency replaces
+	#       $PREFIX/bin/python with a build-architecture shim (a 'crossenv' wrapper pointed at the host's
+	#       '_sysconfigdata_*.py'), so running PYTHON here is a native process that reports the *host* prefix's
+	#       paths - which is how this works without emulation. See 'pygplates/conda/README.md' (section
+	#       "Cross builds run the host interpreter"). Dropping that build dependency from the recipe would
+	#       break the execute_process() calls below.
+	#
+	# Note: Cross-compiling is also why the find_package() call above is split in two when CMAKE_CROSSCOMPILING is set
+	#       (CMake policy CMP0190). See the comment there.
 	#
 	# When not cross-compiling there's only a 'host' prefix (conda only installs Python into the 'host' prefix, not also the 'build' prefix).
 	# In this situation the PYTHON environment variable should be the same as that found with 'find_package(Python2/3)'.
@@ -184,30 +225,61 @@ if (GPLATES_BUILD_GPLATES)
 	endif()
 endif()
 
-# Find the Python NumPy include directories (and store in GPLATES_PYTHON_NUMPY_INCLUDE_DIRS if found).
-if (GPLATES_CONDA_BUILD)
-	# Get the 'host' prefix Python to import numpy and then print out the numpy include directory.
-	execute_process(COMMAND "${GPLATES_PYTHON_EXECUTABLE}" "-c" "from __future__ import print_function; import numpy as np; print(np.get_include());"
-		RESULT_VARIABLE _NUMPY_RESULT
-		OUTPUT_VARIABLE _NUMPY_OUTPUT
-		ERROR_QUIET
-		OUTPUT_STRIP_TRAILING_WHITESPACE)
-	if (NOT _NUMPY_RESULT)  # success
-		file(TO_CMAKE_PATH ${_NUMPY_OUTPUT} GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)  # Convert '\' to '/' in paths.
-	endif()
-else()
-	# We called find_package(Python2) or find_package(Python3) with optional NumPy component.
-	if (Python${GPLATES_PYTHON_VERSION_MAJOR}_NumPy_FOUND)
-		set(GPLATES_PYTHON_NUMPY_INCLUDE_DIRS ${Python${GPLATES_PYTHON_VERSION_MAJOR}_NumPy_INCLUDE_DIRS})
+# Find the Python NumPy C-API include directories (and store in GPLATES_PYTHON_NUMPY_INCLUDE_DIRS if found).
+#
+# Note: We ask the Python interpreter for its NumPy include directory rather than using the 'NumPy' component of
+#       find_package(Python2/3), for two reasons:
+#       - GPLATES_PYTHON_EXECUTABLE is the interpreter we are actually building against (under conda that is the
+#         'host' prefix Python, whereas the component would report the 'build' prefix when cross-compiling), and
+#       - requesting the 'NumPy' component implicitly adds 'Interpreter' to that find_package() call, and on
+#         CMake 4.1 'Development.Module' along with it, which re-triggers CMP0190 when cross-compiling no matter
+#         how the calls above are split. CMake >= 4.2 drops that second implication (policy CMP0201), but there
+#         is no reason to depend on the CMake version here when the interpreter can just be asked directly.
+execute_process(COMMAND "${GPLATES_PYTHON_EXECUTABLE}" "-c" "from __future__ import print_function; import numpy as np; print(np.get_include());"
+	RESULT_VARIABLE _NUMPY_RESULT
+	OUTPUT_VARIABLE _NUMPY_OUTPUT
+	ERROR_VARIABLE _NUMPY_ERROR
+	OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE)
+if (NOT _NUMPY_RESULT)  # success
+	file(TO_CMAKE_PATH ${_NUMPY_OUTPUT} GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)  # Convert '\' to '/' in paths.
+
+	# Make sure the NumPy C-API header is actually in there.
+	#
+	# Note: 'Config_h.cmake' only defines GPLATES_HAVE_NUMPY_C_API when it finds this header, so an include
+	#       directory without it leaves us just as badly off as not finding NumPy at all.
+	if (NOT EXISTS "${GPLATES_PYTHON_NUMPY_INCLUDE_DIRS}/numpy/arrayobject.h")
+		set(_NUMPY_ERROR "There is no 'numpy/arrayobject.h' in '${GPLATES_PYTHON_NUMPY_INCLUDE_DIRS}'.")
+		unset(GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)
 	endif()
 endif()
-# If NumPy was not found then numpy hasn't been installed into Python.
+
+# NumPy is required when building pyGPlates, but only recommended when building GPlates.
+#
+# Without the NumPy C-API everything still builds, but silently loses the ability to accept NumPy int/float
+# scalars as arguments to Python functions (see GPLATES_HAVE_NUMPY_C_API in the source). For pyGPlates that is a
+# broken package rather than a reduced one: 'pyproject.toml' declares numpy as an unconditional *runtime*
+# dependency, so every pyGPlates user has NumPy and can hand us its scalars. And the failure is invisible until
+# one of them does, which is far too late - hence a fatal error here.
+#
+# GPlates merely embeds Python, where NumPy is genuinely optional, so there it stays a warning (which also keeps
+# a from-source build working in a minimal Python installation).
 if (NOT GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)
-	# Warn that numpy was not found.
-	message(WARNING [[
-	Unable to 'import numpy':
-		You will not be able to pass NumPy int/float scalars as arguments to pyGPlates functions.
-		To enable this functionality please install NumPy and then re-run CMake (to enable use of NumPy C-API).]])
+	set(_NUMPY_FAILURE
+		"Unable to get the NumPy C-API include directory from the Python interpreter:\n"
+		"    ${GPLATES_PYTHON_EXECUTABLE}\n"
+		"${_NUMPY_ERROR}\n")
+	if (GPLATES_BUILD_GPLATES)
+		message(WARNING ${_NUMPY_FAILURE}
+			"You will not be able to pass NumPy int/float scalars as arguments to Python functions. "
+			"To enable this functionality please install NumPy into the above Python installation and then "
+			"re-run CMake (to enable use of the NumPy C-API).")
+	else()
+		message(FATAL_ERROR ${_NUMPY_FAILURE}
+			"NumPy is required when building pyGPlates: it is an unconditional runtime dependency of the "
+			"pyGPlates package (see 'dependencies' in 'pyproject.toml') and its C-API is what lets pyGPlates "
+			"accept NumPy int/float scalars as arguments. Please install NumPy into the above Python "
+			"installation and then re-run CMake.")
+	endif()
 endif()
 
 # Set the Python executable in the parent scope (parent directory).
@@ -329,25 +401,42 @@ set(CMAKE_AUTORCC ON)
 #
 # Our minimum supported Ubuntu is Jammy 22.04 which uses Qt 5.15.
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+#
+# The pygplates module needs only Qt Core. In particular it must not link Qt Gui: on Linux and
+# macOS 'Qt6::Gui' propagates Qt's own OpenGL dependency, which is what used to make the Linux
+# wheel require libGL. The Gui, Network, Svg, Widgets and OpenGL modules serve code the module
+# does not compile (see 'cmake/pygplates_source_closure.py' and the pygplates-linkage test).
+# All of the module's XML work, the GeoSciML reader included, is QXmlStreamReader/Writer, which
+# lives in Core under both Qt5 and Qt6.
+#
 if (QT_VERSION_MAJOR EQUAL 6)
-	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
-	# For example, QRegExp instead of QRegularExpression.
-	# Remove Core5Compat when no longer supporting Qt5.
+	# Note: We don't need Qt6::Core5Compat since we no longer use any Qt5-only APIs
+	# (the last was QRegExp, now QRegularExpression, which is in Qt Core under both Qt5 and Qt6).
 	#
-	# Also Qt6 moved the QOpenGL* classes from (Gui and Widgets modules in Qt5) into OpenGL (and new OpenGLWidgets) modules.
-	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
+	# Qt6 moved the QOpenGL* classes from (Gui and Widgets modules in Qt5) into OpenGL (and new OpenGLWidgets) modules.
+	if (GPLATES_BUILD_GPLATES)
+		find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml OpenGL OpenGLWidgets)
+	else()
+		find_package(Qt6 REQUIRED COMPONENTS Core)
+	endif()
 else()
 	# In Qt5, the modern QOpenGL* classes are in the Gui and Widgets modules (not OpenGL and OpenGLWidgets modules).
-	find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
+	if (GPLATES_BUILD_GPLATES)
+		find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml)
+	else()
+		find_package(Qt5 5.15 REQUIRED COMPONENTS Core)
+	endif()
 endif()
 
 ############
-# Find Qwt #
+# Find Qwt (GPlates only) #
 #
 # Note that we find this *after* finding Qt since we use the Qt include directory to help find Qwt.
 # And we use our own "FindQwt.cmake" module, which also defines the Qwt::Qwt imported target.
 #
-find_package(Qwt REQUIRED)
+if (GPLATES_BUILD_GPLATES)
+	find_package(Qwt REQUIRED)
+endif()
 
 #############
 # Find GDAL #
@@ -419,12 +508,6 @@ if (GPLATES_BUILD_GPLATES)
 	#
 	add_executable(gplates gplates_main.cc ScribeExportGPlates.cc)
 	target_link_libraries(gplates PRIVATE gplates-lib)
-
-	#
-	# Add 'gplates-no-gui' executable target (linked to gplates-lib).
-	#
-	add_executable(gplates-no-gui EXCLUDE_FROM_ALL gplates_demo_no_gui_main.cc ScribeExportGPlatesDemoNoGui.cc)
-	target_link_libraries(gplates-no-gui PRIVATE gplates-lib)
 
 	#
 	# Add 'gplates-unit-test' executable (linked to gplates-lib).
@@ -537,6 +620,14 @@ else()  # pygplates ...
 		${PROJECT_BINARY_DIR}/src/global/Version.cc
 		${PROJECT_BINARY_DIR}/src/global/License.cc
 		${PROJECT_BINARY_DIR}/src/global/config.h)
+
+	#
+	# Write the module's full source list at generate time, for the pygplates-source-closure test
+	# (which diffs it against the include closure of the pyGPlates API - the module must compile
+	# exactly that closure; see 'cmake/pygplates_source_closure.py').
+	#
+	file(GENERATE OUTPUT "${PROJECT_BINARY_DIR}/pygplates_sources.txt"
+		CONTENT "$<JOIN:$<TARGET_PROPERTY:pygplates,SOURCES>,\n>")
 
 endif()
 
@@ -742,11 +833,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 			target_compile_options(${SOURCE_TARGET} PUBLIC /MP)
 		endif()
 	endif()
-	# If we've been asked to output a list of header files included by source files.
-	if (GPLATES_MSVC_SHOW_INCLUDES)
-		target_compile_options(${SOURCE_TARGET} PUBLIC /showIncludes)
-	endif()
-	
 	# Some C++ object files (like "PyPropertyValues.obj") contain a lot of sections (enough to require increasing the limit).
 	target_compile_options(${SOURCE_TARGET} PUBLIC /bigobj)
 	
@@ -954,7 +1040,12 @@ if (GPLATES_BUILD_GPLATES)
 
 				MACOSX_BUNDLE_INFO_STRING "${PROJECT_DESCRIPTION}"
 				MACOSX_BUNDLE_ICON_FILE gplates_desktop_icon.icns
-				MACOSX_BUNDLE_GUI_IDENTIFIER "GPlates ${GPLATES_VERSION_PRERELEASE_USER}-${CMAKE_SYSTEM}"
+				# A constant reverse-DNS bundle identifier - it identifies the *application*, not
+				# the build, and macOS keys LaunchServices registration and app associations on it.
+				# A version-bearing one would make every development build a distinct application.
+				# This is also the domain and name QSettings already derives its preferences file
+				# from (see 'GPlatesQApplication.cc'), so the two now agree.
+				MACOSX_BUNDLE_GUI_IDENTIFIER "org.gplates.GPlates"
 				MACOSX_BUNDLE_LONG_VERSION_STRING "GPlates ${GPLATES_VERSION_PRERELEASE_USER}"
 				MACOSX_BUNDLE_BUNDLE_NAME "GPlates"
 				MACOSX_BUNDLE_SHORT_VERSION_STRING "${GPLATES_VERSION}"
@@ -983,18 +1074,20 @@ endif()
 ########################
 
 #
-# OpenGL (and GLEW) dependency.
+# OpenGL (and GLEW) dependency (GPlates only - the pygplates module does no rendering).
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC OpenGL::GL OpenGL::GLU GLEW::GLEW)
-# Define GL_SILENCE_DEPRECATION to avoid a bunch of OpenGL deprecation warnings.
-# Currently happens when compiling on macOS mojave (10.14).
-# We will eventually replace OpenGL with Vulkan, but not for a while since
-# Apple are unlikely to 'remove' OpenGL in their drivers anytime soon.
-#
-# Set as usage requirements (INTERFACE) on the OpenGL imported library target.
-#
-# Note: CMake 3.11 is required for the 'target_*()' commands to set INTERFACE_ properties on imported targets.
-target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
+if (GPLATES_BUILD_GPLATES)
+	target_link_libraries(${SOURCE_TARGET} PUBLIC OpenGL::GL OpenGL::GLU GLEW::GLEW)
+	# Define GL_SILENCE_DEPRECATION to avoid a bunch of OpenGL deprecation warnings.
+	# Currently happens when compiling on macOS mojave (10.14).
+	# We will eventually replace OpenGL with Vulkan, but not for a while since
+	# Apple are unlikely to 'remove' OpenGL in their drivers anytime soon.
+	#
+	# Set as usage requirements (INTERFACE) on the OpenGL imported library target.
+	#
+	# Note: CMake 3.11 is required for the 'target_*()' commands to set INTERFACE_ properties on imported targets.
+	target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
+endif()
 
 #
 # ZLIB dependency.
@@ -1019,22 +1112,22 @@ endif()
 #
 # Qt dependency.
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC
-		Qt${QT_VERSION_MAJOR}::Core
-		Qt${QT_VERSION_MAJOR}::Gui
-		Qt${QT_VERSION_MAJOR}::Network
-		Qt${QT_VERSION_MAJOR}::Svg
-		Qt${QT_VERSION_MAJOR}::Widgets
-		Qt${QT_VERSION_MAJOR}::Xml)
+# The pygplates module links only Qt Core - see the Qt find_package split above for why.
+# The pygplates-linkage test fails if Gui creeps back in.
+target_link_libraries(${SOURCE_TARGET} PUBLIC Qt${QT_VERSION_MAJOR}::Core)
+if (GPLATES_BUILD_GPLATES)
+	target_link_libraries(${SOURCE_TARGET} PUBLIC
+			Qt${QT_VERSION_MAJOR}::Gui
+			Qt${QT_VERSION_MAJOR}::Network
+			Qt${QT_VERSION_MAJOR}::Svg
+			Qt${QT_VERSION_MAJOR}::Widgets
+			Qt${QT_VERSION_MAJOR}::Xml)
+endif()
 if (QT_VERSION_MAJOR EQUAL 6)
-	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
-	# For example, QRegExp instead of QRegularExpression.
-	# Remove this when no longer supporting Qt5.
-	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::Core5Compat)
-	# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
-	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
-else()
-	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::XmlPatterns)
+	if (GPLATES_BUILD_GPLATES)
+		# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
+		target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
+	endif()
 endif()
 # The directory where Qt AUTOIUC auto-generated files ('ui_*.h') get written is automatically added to the
 # INCLUDE_DIRECTORIES target property of the 'gplates-lib' and 'pygplates' targets, but not INTERFACE_INCLUDE_DIRECTORIES.
@@ -1061,16 +1154,18 @@ target_include_directories(${SOURCE_TARGET} PUBLIC
 target_compile_definitions(Qt${QT_VERSION_MAJOR}::Core INTERFACE QT_NO_KEYWORDS)
 
 #
-# Qwt dependency.
+# Qwt dependency (GPlates only - Qwt serves the GUI widgets the module does not compile).
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC Qwt::Qwt)
-# Define Qwt version keywords.
-#
-# Set as usage requirements (INTERFACE) on the Qwt imported library target.
-target_compile_definitions(Qwt::Qwt INTERFACE
-	QWT_MAJOR_VERSION=${QWT_MAJOR_VERSION}
-	QWT_MINOR_VERSION=${QWT_MINOR_VERSION}
-	QWT_PATCH_VERSION=${QWT_PATCH_VERSION})
+if (GPLATES_BUILD_GPLATES)
+	target_link_libraries(${SOURCE_TARGET} PUBLIC Qwt::Qwt)
+	# Define Qwt version keywords.
+	#
+	# Set as usage requirements (INTERFACE) on the Qwt imported library target.
+	target_compile_definitions(Qwt::Qwt INTERFACE
+		QWT_MAJOR_VERSION=${QWT_MAJOR_VERSION}
+		QWT_MINOR_VERSION=${QWT_MINOR_VERSION}
+		QWT_PATCH_VERSION=${QWT_PATCH_VERSION})
+endif()
 
 #
 # CGAL dependency.
