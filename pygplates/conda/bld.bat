@@ -27,6 +27,14 @@ set CMAKE_GENERATOR_PLATFORM=
 set CMAKE_GENERATOR_TOOLSET=
 set "CMAKE_GENERATOR=NMake Makefiles"
 
+:: Pin the version to the recipe version, rather than letting CMake count it from git.
+::
+:: "conda build" works from a copy of the source, and the conda-forge feedstock builds from a PyPI
+:: sdist with no repository at all, so what git would say here is not necessarily what the package
+:: is called. Setting PKG_VERSION makes the module's version equal the recipe version by
+:: construction - see "cmake/modules/VersionFromGit.cmake" for the resolution order.
+set "PYGPLATES_PEP440_VERSION=%PKG_VERSION%"
+
 :: Build and install pyGPlates.
 ::
 :: Pip uses the scikit-build-core build backend to compile/install pyGPlates using CMake (see pyproject.toml).
