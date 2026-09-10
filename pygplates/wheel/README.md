@@ -377,7 +377,7 @@ OIDC tokens GitHub mints for this specific workflow file.
 
 The flow, end to end:
 
-1. Set the release version in `cmake/modules/VersionRelease.cmake` (`PYGPLATES_RELEASE_VERSION`)
+1. Set the release version in `cmake/modules/VersionRelease.cmake` (`PYGPLATES_RELEASE_VERSION`),
    and commit. Development versions are counted from git, so this is the only version anyone
    writes; on the release tag itself the counted part vanishes and the version is exactly what
    was set here. For a first pass at a release, use an `rc` version (eg, `1.1.0rc1`): pip ignores
@@ -386,7 +386,11 @@ The flow, end to end:
    means setting the target to `1.1.0rc2`; commits on the release branch then count up from the
    `rc1` tag as `1.1.0rc2.devN`.
 2. Tag that commit `PyGPlates-<version>` (exactly the version string - the run fails in its
-   first minute if the two disagree, or if the version is a `.dev` one) and push the tag.
+   first minute if the two disagree, or if the version is a `.dev` one) and push the tag. A
+   release is tagged on `release-pygplates`, on the merge commit that brings
+   `release/pygplates-<version>` into it; release tags belong on the main release branches and
+   nowhere else. A release *candidate* is tagged on the `release/pygplates-<version>` branch
+   itself, not being a release. The root `README.md` has the branching model.
 3. The run builds the sdist and every wheel (about 2.5 hours warm, 4.5 cold), then uploads the
    sdist plus one platform's wheels to [TestPyPI](https://test.pypi.org/p/pygplates) - a
    rehearsal that catches anything the index itself would reject (metadata, most of all)

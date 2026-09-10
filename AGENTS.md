@@ -226,17 +226,23 @@ Where this guidance and a specific file disagree, match the file you are editing
 
 ## Branches and pull requests
 
-The branching model is a gitflow variant, described in `README.md`.
+The branching model is a gitflow variant, described in `README.md`. Four **main** branches are
+permanent; everything else is a short-lived **support** branch merged back into one of them.
 
-- **develop** branches: `gplates` (the repository's default branch) and `pygplates`. These are
-  kept closely in sync — GPlates-related work is done on `gplates` and pyGPlates-related work on
-  `pygplates`, but they are otherwise near-identical.
-- **main** branches: `release-gplates` and `release-pygplates` track release history.
-- Short-lived branches: `feature/<name>`, `release/{gplates,pygplates}-<version>`,
-  `hotfix/{gplates,pygplates}-<version>`.
+- **main develop** branches: `gplates` (the repository's default branch) and `pygplates`. These
+  are kept closely in sync — GPlates-related work is done on `gplates` and pyGPlates-related
+  work on `pygplates`, but they are otherwise near-identical.
+- **main release** branches: `release-gplates` and `release-pygplates` track release history.
+  **Release tags live only here** — on the merge commit of the `release/…` or `hotfix/…` branch
+  that prepared the release, never on that temporary branch and never on a develop branch. (A
+  release *candidate* is tagged on the `release/…` branch preparing it, not being a release.)
+- **support** branches: `feature/<name>`, `fix/<name>` (a fix rather than a feature, but
+  otherwise identical — branched from and merged back into a main develop branch),
+  `release/{gplates,pygplates}-<version>` (cut from a main develop branch), and
+  `hotfix/{gplates,pygplates}-<version>` (cut from a main release branch).
 
-**Base pull requests on the develop branch you are working from — `pygplates` or `gplates` —
-never on a `release-*` branch.** CI enforces this: `build-test-pygplates.yml` only runs on
+**Base pull requests on the main develop branch you are working from — `pygplates` or `gplates`
+— never on a `release-*` branch.** CI enforces this: `build-test-pygplates.yml` only runs on
 `pygplates` and `build-test-gplates.yml` only on `gplates`.
 
 Pull requests are merged with a merge commit (`Merge pull request #N from …`), so a branch's
@@ -264,11 +270,12 @@ push and fetch commands rather than assuming. There is an active downstream fork
 ## Releases (pyGPlates wheels)
 
 Set `PYGPLATES_RELEASE_VERSION` in `cmake/modules/VersionRelease.cmake` to the release version,
-commit, then tag **exactly** `PyGPlates-<version>`; the workflow fails in its first minute on a
-mismatch or a `.dev` version. Standing on the tag, the derived version *is* the release target
-(no development number), which is what makes the two agree. Afterwards set the target to the
-next release, or the following commit resolves to a version sorting below the one just
-released — a hard error rather than a bad package.
+commit, then tag **exactly** `PyGPlates-<version>` on `release-pygplates` (release tags belong on
+the main release branches — see *Branches and pull requests*); the workflow fails in its first
+minute on a mismatch or a `.dev` version. Standing on the tag, the derived version *is* the
+release target (no development number), which is what makes the two agree. Afterwards set the
+target to the next release, or the following commit resolves to a version sorting below the one
+just released — a hard error rather than a bad package.
 Publishing uses PyPI Trusted Publishing (OIDC, no tokens) and pauses for manual approval on the
 `pypi` deployment environment. **Renaming `.github/workflows/build-wheels.yml` silently breaks
 publishing** — the trusted-publisher registration binds to the filename. Adding a Python version

@@ -16,9 +16,16 @@
 #    development version would be '1.1.0.dev1', which sorts *below* the 1.1.0 just released
 #    (the resolver refuses to produce that, rather than letting it reach a package).
 #
-#    Note: The pyGPlates version should typically be updated when the API changes (eg, a new
-#          function or class) so users can then test for new functionality (even for internal
-#          releases). That decision is made here, by choosing the next target.
+#    Note: What that next target should be is a decision about the next *release*, not about
+#          any one commit. A release that adds API (a new function or class) should be a new
+#          minor version ('1.2.0') rather than a patch ('1.1.1'), because that is what lets a
+#          user - or an internal build - test for the new functionality. Individual commits
+#          need nothing: adding a function to a develop branch simply advances the development
+#          number under whatever target is already set.
+#
+#          So set the next minor version straight after a release, and reduce it to a patch
+#          version only if that release turns out to contain no new API. Waiting until the API
+#          actually changes only risks nobody remembering to do it.
 #
 # 2. On a release branch ('release/pygplates-<version>' etc), to name the candidate being
 #    prepared - eg, set the target to '1.1.0rc1' on cutting the branch, to '1.1.0rc2' if a

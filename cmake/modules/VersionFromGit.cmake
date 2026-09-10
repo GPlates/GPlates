@@ -506,7 +506,7 @@ endfunction()
 #
 # Standalone use: 'cmake -P cmake/modules/VersionFromGit.cmake <gplates|pygplates>' prints the
 # resolved version on standard output, which is how the build workflows and the scikit-build-core
-# metadata plugin ('cmake/gplates_version.py') get it without configuring a build.
+# metadata plugin ('cmake/version.py') get it without configuring a build.
 #
 if (CMAKE_SCRIPT_MODE_FILE AND CMAKE_CURRENT_LIST_FILE STREQUAL CMAKE_SCRIPT_MODE_FILE)
 	if (NOT DEFINED CMAKE_ARGV3)

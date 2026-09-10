@@ -48,7 +48,7 @@ Two things to know before the first run:
   Only this one: it names the *package*, and conda-build clones this repository (tags and
   all) so the build resolves both product versions from git for itself. The feedstock form
   has no repository, and reads both from the `cmake/modules/VersionRecorded.cmake` that
-  `cmake/gplates_version.py` writes into the sdist.
+  `cmake/version.py` writes into the sdist.
 
   `build.sh`/`bld.bat` then re-export conda-build's own `PKG_VERSION` into the build, so the
   module's version equals the recipe version by construction. That is also what makes the

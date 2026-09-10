@@ -72,10 +72,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
-    # The versions, resolved once for the whole run - see the step below.
+    # The versions, resolved once for the whole run - see the step below. Both are named for
+    # their product: this workflow builds pyGPlates wheels, so a bare 'version' would read as
+    # the pyGPlates one only to someone who already knew that.
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      gplates-version: ${{ steps.version.outputs.gplates-version }}
+      pygplates-version: ${{ steps.versions.outputs.pygplates-version }}
+      gplates-version: ${{ steps.versions.outputs.gplates-version }}
 
     steps:
       - name: Check out repository
@@ -97,14 +99,15 @@ jobs:
         # Both products: building pyGPlates configures the GPlates version too, because
         # 'src/global/Version.cc' is compiled into the module and its version string reaches
         # user data (exported shapefiles carry it).
-        id: version
+        id: versions
         run: |
-          version=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
+          pygplates_version=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
           gplates_version=$(cmake -P cmake/modules/VersionFromGit.cmake gplates)
-          [ -n "${version}" ] && [ -n "${gplates_version}" ]
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          [ -n "${pygplates_version}" ] && [ -n "${gplates_version}" ]
+          echo "pygplates-version=${pygplates_version}" >> "${GITHUB_OUTPUT}"
           echo "gplates-version=${gplates_version}" >> "${GITHUB_OUTPUT}"
-          echo "pyGPlates version: ${version} (GPlates version: ${gplates_version})"
+          echo "pyGPlates version: ${pygplates_version}"
+          echo "GPlates version: ${gplates_version}"
 
       - name: Check the tag matches the version
         # A release tag must be 'PyGPlates-' plus the resolved version. A mismatch means the
@@ -116,14 +119,14 @@ jobs:
         # publishing one would permanently reserve its filenames on PyPI for nothing.
         if: github.ref_type == 'tag'
         run: |
-          version='${{ steps.version.outputs.version }}'
-          if [ "${GITHUB_REF_NAME}" != "PyGPlates-${version}" ]; then
-              echo "Tag '${GITHUB_REF_NAME}' does not match 'PyGPlates-${version}'" \
+          pygplates_version='${{ steps.versions.outputs.pygplates-version }}'
+          if [ "${GITHUB_REF_NAME}" != "PyGPlates-${pygplates_version}" ]; then
+              echo "Tag '${GITHUB_REF_NAME}' does not match 'PyGPlates-${pygplates_version}'" \
                    "(resolved from cmake/modules/VersionRelease.cmake and the repository tags)." >&2
               exit 1
           fi
-          case ${version} in *.dev*)
-              echo "'${version}' is a development version - not something to tag and release." >&2
+          case ${pygplates_version} in *.dev*)
+              echo "'${pygplates_version}' is a development version - not something to tag and release." >&2
               exit 1
           esac
 
@@ -184,7 +187,7 @@ jobs:
     # The GPlates version is needed even though this builds pyGPlates - see the resolve step
     # in the sdist job.
     env:
-      PYGPLATES_PEP440_VERSION: ${{ needs.build-sdist.outputs.version }}
+      PYGPLATES_PEP440_VERSION: ${{ needs.build-sdist.outputs.pygplates-version }}
       GPLATES_SEMANTIC_VERSION: ${{ needs.build-sdist.outputs.gplates-version }}
 
     defaults:

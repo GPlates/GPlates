@@ -102,18 +102,18 @@ Discussions = "https://discourse.gplates.org/"
 minimum-version = "build-system.requires"
 
 # Required to use a version provider that scikit-build-core does not ship itself - here
-# 'gplates_version' in the 'cmake' directory (see [tool.scikit-build.metadata.version] below).
+# 'version' in the 'cmake' directory (see [tool.scikit-build.metadata.version] below).
 # Without it the build fails outright with "experimental must be enabled currently to use
 # plugins not provided by scikit-build-core".
 #
 # It gates only the plugin mechanism, not the plugin: everything the provider does is in this
 # repository, so the exposure is that scikit-build-core may change the plugin protocol (the two
-# functions at the bottom of 'cmake/gplates_version.py') in a future version. The cap in
+# functions at the bottom of 'cmake/version.py') in a future version. The cap in
 # [build-system] is what stops such a change arriving on its own; 'minimum-version' above pins
 # the behaviour of everything else.
 experimental = true
 
-# Ship the resolved versions in the sdist. 'cmake/gplates_version.py' writes this file while
+# Ship the resolved versions in the sdist. 'cmake/version.py' writes this file while
 # resolving the version for the metadata below; it is generated and gitignored, so it has to
 # be named here or it would be left out of the sdist.
 #
@@ -217,7 +217,7 @@ GPLATES_BUILD_GPLATES = "FALSE"
 #
 # The version, resolved by the same CMake code the build itself uses.
 #
-# 'cmake/gplates_version.py' runs 'cmake -P cmake/modules/VersionFromGit.cmake pygplates',
+# 'cmake/version.py' runs 'cmake -P cmake/modules/VersionFromGit.cmake pygplates',
 # which combines the hand-edited release target in
 # 'cmake/modules/VersionRelease.cmake' with a development number counted from this
 # repository's git tags. Nothing here parses a version out of a file any more: going
@@ -225,13 +225,15 @@ GPLATES_BUILD_GPLATES = "FALSE"
 # contains from ever disagreeing about the version.
 #
 # 'provider-path' puts the 'cmake' directory on sys.path so 'provider' can be imported from
-# it. Building where git cannot answer - inside the Linux wheel containers, from an unpacked
-# sdist, or under conda-build - is covered by the fallbacks documented in
-# 'VersionFromGit.cmake'; 'environment-pass' below is what carries the answer into the
-# containers.
+# it - and only while the metadata is resolved, which is what makes a module name as plain as
+# 'version' safe here.
+#
+# Building where git cannot answer - inside the Linux wheel containers, from an unpacked sdist,
+# or under conda-build - is covered by the fallbacks documented in 'VersionFromGit.cmake';
+# 'environment-pass' below is what carries the answer into the containers.
 #
 [tool.scikit-build.metadata.version]
-provider = "gplates_version"
+provider = "version"
 provider-path = "cmake"
 
 #
