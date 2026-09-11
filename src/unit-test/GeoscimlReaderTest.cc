@@ -330,6 +330,30 @@ TEST_F(GeoscimlReaderTest, malformed_point_is_not_read_as_the_origin)
 }
 
 
+TEST_F(GeoscimlReaderTest, point_by_coordinates_and_the_malformed_case)
+{
+	// gml:coordinates is the other spelling of a gml:Point's position, and it read the same
+	// way: coordinates that are not two numbers used to become (0, 0) rather than an error.
+	const feature_seq_type features = read("point_coordinates.gsml");
+	ASSERT_EQ(2u, features.size());
+
+	// Read as GPML's latitude longitude, like a gml:pos.
+	EXPECT_EQ("Point by coordinates", name(features[0]));
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
+			only_geometry(features[0]);
+	const GPlatesMaths::PointGeometryOnSphere *point =
+			dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(geometry.get());
+	ASSERT_TRUE(point);
+	expect_lat_lon(45, -30, point->position());
+
+	// The member with one coordinate where two were needed is abandoned part-built, carrying
+	// no geometry.
+	GPlatesFeatureVisitors::GeometryFinder finder;
+	finder.visit_feature(features[1]);
+	EXPECT_EQ(0, std::distance(finder.found_geometries_begin(), finder.found_geometries_end()));
+}
+
+
 TEST_F(GeoscimlReaderTest, feature_without_a_feature_member_wrapper)
 {
 	const feature_seq_type features = read("unwrapped_feature.gsml");
