@@ -1,6 +1,11 @@
 #
 # Generate a "doc-python-api" target that uses Sphinx to generate HTML from the docstrings in the 'pygplates' python module.
 #
+# The build itself is done by 'build_docs.py' in this directory. That script is also what runs against a
+# released wheel, where there is no build tree at all, so keeping a single implementation means the two
+# paths cannot drift apart. See its docstring for the details that are easy to get wrong - in particular
+# why the documentation needs a *flat* "import pygplates" rather than the package import.
+#
 
 # Sphinx must run in the *same* Python interpreter that pygplates was built for, because the
 # 'autodoc'/'autosummary' extensions import the pygplates module in-process (that is how they
@@ -27,65 +32,28 @@ else()
 endif()
 
 if (SPHINX_FOUND)
-	# configured documentation tools and intermediate build results
-	set(BINARY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/_build")
-
-	# Sphinx cache with pickled ReST documents
-	set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
-
-	# Sphinx directory containing custom static files (such as style sheets).
-	# This gets used in 'conf.py.in'.
-	set(SPHINX_STATIC_DIR "${CMAKE_CURRENT_BINARY_DIR}/_static")
-
-	# HTML output directory
-	set(SPHINX_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
-	
-	# Copy the ".rst" files from our source directory to our binary/output directory.
-	# This is because the sphinx 'autosummary' command (when used with ':toctree:') will generate a
-	# bunch of stub ".rst" files and we don't want them in our source code.
-	FILE(GLOB RST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/*.rst" "${CMAKE_CURRENT_SOURCE_DIR}/sample-code/*.rst")
-	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sample-code") # Ensure 'sample-code' sub-directory exists in binary build directory.
-	FOREACH(RST_FILE ${RST_FILES})
-		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${RST_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${RST_FILE} @ONLY)
-	ENDFOREACH()
-	
-	# Copy the image (".png") files from our source directory to our binary/output directory.
-	# This is because we're making that the Sphinx source directory (since ".rst" files are also copied there as mentioned above).
-	FILE(GLOB IMAGE_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/images/*.png")
-	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/images") # Ensure 'images' sub-directory exists in binary build directory.
-	FOREACH(IMAGE_FILE ${IMAGE_FILES})
-		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${IMAGE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${IMAGE_FILE} COPYONLY)
-	ENDFOREACH()
-	
-	# Copy the '_static' directory containing custom static files (such as style sheets) to our binary/output directory.
-	# This is because we're making that the Sphinx source directory (since ".rst" files are also copied there as mentioned above).
-	FILE(GLOB STATIC_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/_static/*")
-	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/_static") # Ensure '_static' sub-directory exists in binary build directory.
-	FOREACH(STATIC_FILE ${STATIC_FILES})
-		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${STATIC_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${STATIC_FILE} COPYONLY)
-	ENDFOREACH()
-
-	# Configure the Sphinx configuration file using @VAR@ CMake variable substitutions.
-	configure_file(conf.py.in "${CMAKE_CURRENT_BINARY_DIR}/conf.py.intermediate" @ONLY)
-
-	# Convert the "$<TARGET_FILE_DIR:pygplates>" generator expression (in the 'configure_file' output file) to the directory
-	# containing pygplates target. Also the final Sphinx configuration file must be called 'conf.py', however file(GENERATE ...)
-	# creates a separate file for each build configuration (eg, Debug/Release/etc), since the above generator expression is
-	# build-specific, and so we place each generated file in a build-specific directory (using $<CONFIG>) - which we specify
-	# to sphinx-build with the '-c "${BINARY_BUILD_DIR}/$<CONFIG>"' option.
-	# Note that this is all done at 'generate' time (not during 'configure').
-	file(GENERATE
-		OUTPUT "${BINARY_BUILD_DIR}/$<CONFIG>/conf.py"
-		INPUT "${CMAKE_CURRENT_BINARY_DIR}/conf.py.intermediate")
-
-	# Note that the source directory for sphinx is our current binary/output directory (we've copied our source ".rst" files there).
+	# 'build_docs.py' copies the ".rst" sources, images and '_static' into its scratch directory and
+	# generates 'conf.py' there, so the stub ".rst" files that the sphinx 'autosummary' command (when used
+	# with ':toctree:') generates never land in our source directory. Making the scratch directory our
+	# binary directory keeps the output where it has always been: '<build-dir>/doc-python-api/html'.
+	#
+	# Note that the copying now happens at build time rather than at configure time, so editing a ".rst"
+	# file no longer requires CMake to re-configure before the change shows up.
+	#
+	# '--module-dir' is the *parent* of the built 'pygplates' package directory, which is the same value
+	# 'generate_stub.py' takes ("$<TARGET_FILE_DIR:pygplates>" is the package directory itself, because the
+	# pygplates library is built into a 'pygplates/' sub-directory of the build output directory - see the
+	# pygplates target in 'src/CMakeLists.txt'). The generator expression is evaluated per-configuration at
+	# build time, so multi-config generators (Visual Studio/Xcode) need no special handling here.
+	#
+	# Note that this always builds from scratch - 'build_docs.py' deletes the doctree and generated-stub
+	# caches first, because an incremental Sphinx build silently drops *every* entry from
+	# 'searchindex.js'. When iterating on a single page, run 'build_docs.py --incremental' directly.
 	add_custom_target(doc-python-api
-		COMMAND "${GPLATES_PYTHON_EXECUTABLE}" -m sphinx
-			-q -b html -W -j auto
-			-c "${BINARY_BUILD_DIR}/$<CONFIG>"
-			-d "${SPHINX_CACHE_DIR}"
-			"${CMAKE_CURRENT_BINARY_DIR}"
-			"${SPHINX_HTML_DIR}"
+		COMMAND "${GPLATES_PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/build_docs.py"
+			--module-dir "$<TARGET_FILE_DIR:pygplates>/.."
+			--scratch-dir "${CMAKE_CURRENT_BINARY_DIR}"
+			--output "${CMAKE_CURRENT_BINARY_DIR}/html"
 		COMMENT "Building HTML documentation with Sphinx")
 	# Make sure the 'pygplates' target is built before we build the 'doc-python-api' target (Sphinx generates documentation).
 	add_dependencies(doc-python-api pygplates)
