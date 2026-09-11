@@ -109,14 +109,22 @@ permanent branch per __release series__.
 
 To compile the latest __development snapshot__ of either product, use `gplates`.
 
-To compile a __public release__, check out its tag - or, for the newest release in a series that
-is still maintained, the series branch, whose tip is always the latest release in that line. To
-list the releases on the command-line, type:
+To compile a __public release__, check out its tag - or, for the newest release in a series that is
+still maintained, the series branch, whose tip is always the latest release in that line. The
+releases are listed on the [Releases page](https://github.com/GPlates/GPlates/releases), and on the
+command-line by:
 
 ```
-git tag --list 'GPlates-*'   --sort=version:refname
-git tag --list 'PyGPlates-*' --sort=version:refname
+git -c versionsort.suffix=a -c versionsort.suffix=b -c versionsort.suffix=rc tag --list 'GPlates-*' --sort=version:refname
 ```
+
+(`PyGPlates-*` for pyGPlates. The `versionsort.suffix` settings are what sort a release candidate
+_before_ its release instead of after it.)
+
+> __Note:__ Not every tag in that list is a release. __A tag carrying a development number is
+> not one__: `GPlates-2.6.0-47` and `PyGPlates-1.1.0.dev20` are _anchor_ tags, which exist to move
+> the version counter (see __Versioning__ below), and a few very old tags are neither. A release
+> tag is `GPlates-<version>` or `PyGPlates-<version>` with no development number on it.
 
 > __Note:__ A release series branch is created when the first release in that series is prepared,
 > so there is not one for every past release. The tags are the complete record.
@@ -190,3 +198,26 @@ cmake -P cmake/modules/VersionFromGit.cmake pygplates
 > otherwise mint the same development numbers as upstream for different code. Tagging the fork
 > branch - say `GPlates-2.6.0-2000` - makes that tag the nearest one, and the fork counts on from
 > there.
+
+To go the other way, from a version string back to the commit it was built from: the development
+number counts first-parent commits on from the nearest tag, so subtract that tag's own development
+number and count that far along the branch.
+
+```
+# pyGPlates 1.1.0.dev48, counting from PyGPlates-1.0.0 (development number 0)
+git rev-list --first-parent --reverse PyGPlates-1.0.0..gplates | sed -n '48p'
+
+# GPlates 2.6.0-56, counting from the anchor GPlates-2.6.0-47 (development number 47)
+git rev-list --first-parent --reverse GPlates-2.6.0-47..gplates | sed -n '9p'
+```
+
+> __Note:__ Count along the branch the build came from - the development branch, or a release
+> series branch. A development number is unique along one first-parent line but not across lines,
+> so the same version string can name different commits on different branches, and a version minted
+> before the two development branches were unified cannot be found this way at all.
+>
+> So __tag any development build that goes to someone__, and the commit is findable by name
+> instead. It costs nothing: a tag whose development number matches the count already in force
+> leaves every version before and after it exactly as it was, deleting it again restores the same
+> numbers, and `build-wheels.yml` ignores `PyGPlates-*.dev*` tags so one cannot start a release
+> run.
