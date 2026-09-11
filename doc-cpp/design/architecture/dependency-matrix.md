@@ -13,7 +13,7 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | feature-visitors | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | (src root) |  | 2 | 2 |  | 1 | 1 |  | 1 | 3 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
-| api |  | 275 | 124 |  |  | 8 | 4 | 35 | 156 | 14 | 86 | 75 | 2 | 3 | 112 | 5 | 29 |  | 47 |  |
+| api |  | 275 | 124 |  |  | 8 | 4 | 35 | 156 | 14 | 86 | 75 | 2 | 3 | 112 | 5 | 29 |  | 46 |  |
 | app-logic |  |  | 918 |  |  | 7 | 14 | 20 | 159 |  | 249 | 241 | 12 |  | 263 |  | 25 |  | 123 |  |
 | canvas-tools |  |  | 12 | 42 |  |  | 2 |  | 3 | 37 | 27 | 12 |  | 7 | 2 | 38 |  |  | 8 | 68 |
 | cli |  |  | 17 |  | 42 |  |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |

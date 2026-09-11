@@ -30,7 +30,6 @@
 #include "PythonInterpreterUnlocker.h"
 
 #include "api/PythonUtils.h"
-#include "utils/StringUtils.h"
 
 GPlatesApi::ConsoleReader::ConsoleReader(
 		AbstractConsole *console) :
@@ -89,16 +88,31 @@ GPlatesApi::ConsoleReader::readline()
 	result = d_console->read_line();
 
 	// Echo the input out to the console.
-	d_console->append_text(result);
+	//
+	// Note that an empty result means end-of-file (the user cancelled). There is
+	// nothing to echo, but we still terminate the prompt line Python has written.
+	d_console->append_text(result.isEmpty() ? QString("\n") : result);
 	interpreter_unlocker.restore_thread();
 
 	try
 	{
-		object unicode(GPlatesUtils::make_wstring_from_qstring(result));
-		return unicode.attr("encode")("utf-8", "replace"); // FIXME: hard coded codec
+		// Use the registered QString conversion (see PyStrings.cc), which returns a
+		// Python 'str' in both Python 2 (encoded as UTF-8) and Python 3 (Unicode).
+		//
+		// Note that Python 3 must not be given 'bytes' here, because that silently
+		// breaks callers that compare the line against 'str' literals. In particular
+		// the interactive 'help()' utility could then never be exited, since pydoc's
+		// test for "q"/"quit" never matched, and this left its modal readline dialog
+		// reappearing indefinitely.
+		return object(result);
 	}
 	catch (const error_already_set &)
 	{
+		// Clear the error indicator, otherwise we return a valid object with a Python
+		// exception still set, which CPython later reports as "returned a result with
+		// an error set" at some unrelated call site.
+		PyErr_Clear();
+
 		// This should be a fail-safe conversion.
 		return str(result.toStdString());
 	}

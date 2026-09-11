@@ -47,8 +47,7 @@ GPlatesFileIO::GeoscimlProfile::populate(
 {
 	QString filename = file_ref.get_file_info().get_display_name(true);
 	QFile source(filename);
-	source.open(QFile::ReadOnly | QFile::Text);
-	if(!source.isOpen())
+	if(!source.open(QFile::ReadOnly | QFile::Text))
 	{
 		qWarning() << QString("Cannot open xml file: %1.").arg(filename);
 		return;
