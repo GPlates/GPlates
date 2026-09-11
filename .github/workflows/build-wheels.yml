@@ -30,7 +30,7 @@ on:
     # sdist job rejects one anyway, but not before the matrix has been queued.
     tags: [ "PyGPlates-*", "!PyGPlates-*.dev*" ]
   pull_request:
-    branches: [ "pygplates" ]
+    branches: [ "gplates" ]
     paths:
       - pygplates/wheel/**
       - pyproject.toml
