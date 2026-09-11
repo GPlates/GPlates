@@ -224,8 +224,8 @@ Where this guidance and a specific file disagree, match the file you are editing
 
 ## Branches and pull requests
 
-This is **not** gitflow — it is the trunk-plus-release-series model, described in `README.md` and
-argued for in `doc-cpp/design/versioning/README.md`.
+This is **no longer** gitflow — it is the trunk-plus-release-series model, described in `README.md`
+and argued for in `doc-cpp/design/versioning/README.md`.
 
 - **`gplates`** is the single development branch and the repository's default. Both products are
   developed on it; there is no per-product branch. (It will be renamed `main` in a later change.)
