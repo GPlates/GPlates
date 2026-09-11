@@ -305,6 +305,31 @@ TEST_F(GeoscimlReaderTest, three_dimensional_pos_list_in_another_srs)
 }
 
 
+TEST_F(GeoscimlReaderTest, malformed_point_is_not_read_as_the_origin)
+{
+	// A gml:pos that does not begin with two numbers used to be extracted as (0, 0) - a point
+	// in the Gulf of Guinea, indistinguishable from a real one. It is now a read error, which
+	// the GeoSciML reader reports by skipping the member it came from.
+	const feature_seq_type features = read("malformed_point.gsml");
+
+	// The member is abandoned part-built rather than removed, so it still counts - but it
+	// carries no geometry, which is the point.
+	ASSERT_EQ(2u, features.size());
+	GPlatesFeatureVisitors::GeometryFinder finder;
+	finder.visit_feature(features[0]);
+	EXPECT_EQ(0, std::distance(finder.found_geometries_begin(), finder.found_geometries_end()));
+
+	// The member after it still reads.
+	EXPECT_EQ("Good point", name(features[1]));
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
+			only_geometry(features[1]);
+	const GPlatesMaths::PointGeometryOnSphere *point =
+			dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(geometry.get());
+	ASSERT_TRUE(point);
+	expect_lat_lon(-33, 151, point->position());
+}
+
+
 TEST_F(GeoscimlReaderTest, feature_without_a_feature_member_wrapper)
 {
 	const feature_seq_type features = read("unwrapped_feature.gsml");
