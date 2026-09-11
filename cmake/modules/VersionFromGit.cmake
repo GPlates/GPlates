@@ -25,13 +25,14 @@
 # does not require that every commit be a merge; both forms advance the tip exactly once.
 #
 # WHY 'rev-list --count' AND NOT 'git describe': 'git describe --first-parent' requires the tag
-# to sit *on* the first-parent line and fails outright here ("No tags can describe"). Under the
-# gitflow variant this repository uses, release tags live on the product main branches
-# ('release-gplates', 'release-pygplates'), on the merge commit of a temporary
-# 'release/<product>-<version>' branch, and those main branches are not merged back into the
-# develop branches. 'rev-list --count --first-parent <tag>..HEAD' needs no such ancestry - it
-# counts the first-parent commits of HEAD that are not reachable from the tag - so the existing
-# tags work unchanged.
+# to sit *on* the first-parent line and fails outright here ("No tags can describe"). Release tags
+# live on the release series branches ('release/<product>-<major>.<minor>'), never on the develop
+# branch, so no release tag is ever on the develop branch's first-parent line - and it stays off
+# it even when the series branch is merged back, since such a merge takes the series branch as its
+# *second* parent. 'rev-list --count --first-parent <tag>..HEAD' needs no such ancestry - it counts
+# the first-parent commits of HEAD that are not reachable from the tag - so the tags work
+# unchanged. Counting from a tag on a series branch gives the number of commits since that series
+# was cut, which is the more meaningful quantity anyway.
 #
 # ANCHOR TAGS: because the *nearest* tag wins, a tag placed on a branch takes over the numbering
 # from that point. That is how a downstream fork keeps its own development numbers without

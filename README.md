@@ -104,61 +104,62 @@ Public releases and development snapshots can be compiled from the __primary bra
 
 ##### Primary branches
 
-To compile the latest official __public release__:
-- For GPlates, use the `release-gplates` branch.
-- For PyGPlates, use the `release-pygplates` branch.
+There is one permanent __development__ branch, `gplates` (_the default branch_), plus one
+permanent branch per __release series__.
 
-To compile the latest __development snapshot__:
-- For GPlates, use the `gplates` branch (_the default branch_).
-- For PyGPlates, use the `pygplates` branch.
+To compile the latest __development snapshot__ of either product, use `gplates`.
 
-##### Development branching model
+To compile a __public release__, check out its tag - or, for the newest release in a series that
+is still maintained, the series branch, whose tip is always the latest release in that line. To
+list the releases on the command-line, type:
 
-The branching model used in this repository is based on [gitflow](https://nvie.com/posts/a-successful-git-branching-model/).
-Four __main__ branches are permanent - two tracking releases and two tracking development - and
-every other branch is a short-lived __support__ branch, created from a main branch and deleted
-once it has been merged back.
+```
+git tag --list 'GPlates-*'   --sort=version:refname
+git tag --list 'PyGPlates-*' --sort=version:refname
+```
 
-- __main release__ branches named:
-  - `release-gplates` to track the history of __GPlates__ releases
-  - `release-pygplates` to track the history of __pyGPlates__ releases
-  > __Note:__ Release tags (eg, `GPlates-2.6.0`, `PyGPlates-1.1.0`) belong __only__ on these
-  > two branches, on the merge commit of the `release/...` or `hotfix/...` branch that prepared
-  > the release - never on that temporary branch itself, and never on a __main develop__ branch.
-  > A release _candidate_ is not a release, so its tag stays where the candidate was prepared:
-  > `PyGPlates-1.0.0rc1` is tagged on the `release/pygplates-1.0.0` branch.
+> __Note:__ A release series branch is created when the first release in that series is prepared,
+> so there is not one for every past release. The tags are the complete record.
+
+##### Branching model
+
+This is __not__ [gitflow](https://nvie.com/posts/a-successful-git-branching-model/). There is a
+single permanent development branch and one permanent branch per release series - the model that
+QGIS, GDAL, CGAL, LLVM and CPython use. Every other branch is short-lived: created from one of the
+permanent branches and deleted once it has been merged back.
+
+- the __development__ branch named:
+  - `gplates`
+  > __Note:__ The _default_ branch, and the only branch where development happens. Both products
+  > are built from it - which one is selected by the `GPLATES_BUILD_GPLATES` CMake option - so
+  > there is no separate branch per product.
+- __release series__ branches named:
+  - `release/gplates-<major>.<minor>` (eg, `release/gplates-2.6`)
+  - `release/pygplates-<major>.<minor>` (eg, `release/pygplates-1.1`)
+  > __Note:__ These are permanent, and are created from the __development__ branch when the first
+  > release in the series is prepared. Every release in that line is tagged here - the candidates,
+  > the release itself, and each later patch release, which is simply a further commit on the same
+  > branch. So `release/pygplates-1.1` carries `PyGPlates-1.1.0rc1`, `PyGPlates-1.1.0`,
+  > `PyGPlates-1.1.1` and so on, and its tip is always the newest 1.1.x. Any commits made while
+  > preparing a release are also merged back into the __development__ branch.
   >
-  > To see the list of all public releases on the command-line, type:  
-  > `git log --first-parent release-gplates release-pygplates`
-- __main develop__ branches named:
-  - `gplates` for development of __GPlates__
-  - `pygplates` for development of __pyGPlates__
-  > __Note:__ The _default_ branch is `gplates`
-  > (synonymous with the typical 'main' or 'master' branch in other repositories).
+  > __Release tags belong only on these branches__, never on the __development__ branch.
 - __feature__ branches named:
   - `feature/<name>` for developing a new feature
-  > __Note:__ These short-lived branches are merged back into their parent __main develop__
-  > branch (`gplates` or `pygplates`).
 - __fix__ branches named:
   - `fix/<name>` for fixing a bug, typically one reported as a GitHub issue
-  > __Note:__ Not part of gitflow, but used here. A __fix__ branch is a __feature__ branch in
-  > every respect but intent - branched from a __main develop__ branch, merged back into it,
-  > and shipped whenever the next release happens. It is __not__ a __hotfix__ branch, which
-  > exists to repair a version that has already been released.
-- __release__ branches named:
-  - `release/gplates-<gplates_version>` for preparing a GPlates release
-  - `release/pygplates-<pygplates_version>` for preparing a pyGPlates release
-  > __Note:__ These short-lived branches are created from a __main develop__ branch, and are
-  > merged into `release-gplates` or `release-pygplates` (the __main release__ branch containing
-  > __all__ GPlates or pyGPlates releases), where the release is tagged. Any commits made while
-  > preparing the release are also merged back into `gplates` or `pygplates`.
-- __hotfix__ branches named:
-  - `hotfix/gplates-<gplates_version>` for preparing a GPlates _bug fix_ release
-  - `hotfix/pygplates-<pygplates_version>` for preparing a pyGPlates _bug fix_ release
-  > __Note:__ These short-lived branches are created from a __main release__ branch - that is
-  > what distinguishes them from __fix__ branches - and are merged back into `release-gplates`
-  > or `release-pygplates`, where the bug fix release is tagged, and also into `gplates` or
-  > `pygplates`.
+  > __Note:__ A __fix__ branch is a __feature__ branch in every respect but intent. Both are
+  > created from the __development__ branch and merged back into it, and ship whenever the next
+  > release happens.
+- __patch__ branches, created from a __release series__ branch, for a fix that has to reach a
+  version that has already been released.
+  > __Note:__ These are merged back into the series branch, where the patch release is tagged,
+  > and also into the __development__ branch when the fix applies there too.
+
+> __Note:__ There is no permanent 'production' branch and no `hotfix` branch: a patch release is a
+> commit on the release series branch. Why the repository is arranged this way, and what was
+> considered instead, is written up in
+> [doc-cpp/design/versioning/README.md](doc-cpp/design/versioning/README.md).
 
 ##### Versioning
 

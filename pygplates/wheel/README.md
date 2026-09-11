@@ -387,10 +387,9 @@ The flow, end to end:
    `rc1` tag as `1.1.0rc2.devN`.
 2. Tag that commit `PyGPlates-<version>` (exactly the version string - the run fails in its
    first minute if the two disagree, or if the version is a `.dev` one) and push the tag. A
-   release is tagged on `release-pygplates`, on the merge commit that brings
-   `release/pygplates-<version>` into it; release tags belong on the main release branches and
-   nowhere else. A release *candidate* is tagged on the `release/pygplates-<version>` branch
-   itself, not being a release. The root `README.md` has the branching model.
+   release is tagged on the release series branch `release/pygplates-<major>.<minor>`, and so is
+   every release candidate before it and every patch release after it - release tags belong on
+   the series branches and nowhere else. The root `README.md` has the branching model.
 3. The run builds the sdist and every wheel (about 2.5 hours warm, 4.5 cold), then uploads the
    sdist plus one platform's wheels to [TestPyPI](https://test.pypi.org/p/pygplates) - a
    rehearsal that catches anything the index itself would reject (metadata, most of all)

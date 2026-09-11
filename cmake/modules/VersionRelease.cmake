@@ -27,7 +27,7 @@
 #          version only if that release turns out to contain no new API. Waiting until the API
 #          actually changes only risks nobody remembering to do it.
 #
-# 2. On a release branch ('release/pygplates-<version>' etc), to name the candidate being
+# 2. On a release series branch ('release/pygplates-<major>.<minor>' etc), to name the release being
 #    prepared - eg, set the target to '1.1.0rc1' on cutting the branch, to '1.1.0rc2' if a
 #    second candidate is needed, and to '1.1.0' for the release itself. Development commits on
 #    the release branch then carry '1.1.0rc1.dev3' and so on.

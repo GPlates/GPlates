@@ -189,21 +189,27 @@ On **Windows**:
 Install from source code
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The first step is to obtain the source code for the current pyGPlates release by checking out the
-``release-pygplates`` branch of the `GPlates GitHub repository <https://github.com/GPlates/GPlates>`_.
-Or you can check out the pyGPlates *development* branch ``pygplates`` (if you want the latest *unofficial* updates).
+The first step is to obtain the source code for the current pyGPlates release by checking out its
+release tag in the `GPlates GitHub repository <https://github.com/GPlates/GPlates>`_.
+Or you can check out the development branch ``gplates`` (if you want the latest *unofficial* updates).
 
 .. note:: You'll first need to `install git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
   (if you don't already have it).
 
-In a terminal or command window, type the following to download the GPlates repository and switch to the ``release-pygplates`` branch
-(replacing ``<parent-of-source-code-dir>`` with the directory you want to download the repository into):
+In a terminal or command window, type the following to download the GPlates repository and switch to the
+latest pyGPlates release (replacing ``<parent-of-source-code-dir>`` with the directory you want to download
+the repository into):
 ::
 
   cd <parent-of-source-code-dir>
   git clone https://github.com/GPlates/GPlates.git
   cd GPlates
-  git switch release-pygplates
+  git tag --list 'PyGPlates-*' --sort=version:refname
+  git switch --detach <the last tag listed>
+
+.. note:: Each release series also has a branch of its own, such as ``release/pygplates-1.1``, whose tip is
+  always the most recent release in that series. So ``git switch release/pygplates-1.1`` gets you the latest
+  1.1.x, rather than a specific version.
 
 Then follow the instructions in ``BUILD-Linux.md`` (on Linux), ``BUILD-macOS.md`` (on macOS) or ``BUILD-Windows.md`` (on Windows) to install
 the dependency libraries required by pyGPlates (and to install the compilation tools).
