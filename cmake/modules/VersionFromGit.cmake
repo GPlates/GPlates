@@ -165,6 +165,238 @@ function(gplates_join_version product base dev out_var)
 endfunction()
 
 
+#
+# Split a base version - one with no development number - into a numeric head and a comparable
+# pre-release rank, so that two bases can be ordered.
+#
+# The rank orders the suffixes each product allows, later being greater:
+#
+#   GPlates      2.6.0-alpha.N  <  2.6.0-beta.N  <  2.6.0-rc.N  <  2.6.0
+#   pyGPlates    1.1.0aN        <  1.1.0bN       <  1.1.0rcN    <  1.1.0  <  1.1.0.postN
+#
+# Neither ordering is invented here: both are what Semantic Versioning and PEP 440 respectively
+# already require, and 'Version.cmake' relies on them.
+#
+# Sets <ok_var> FALSE if the base does not parse. That is not an error in itself - an unparseable
+# tag is skipped everywhere else too - it only means the base cannot be compared.
+#
+function(_gplates_version_base_rank product base ok_var head_var rank_var n_var post_var)
+	set(${ok_var} FALSE PARENT_SCOPE)
+	set(${head_var} "" PARENT_SCOPE)
+	set(${rank_var} 0 PARENT_SCOPE)
+	set(${n_var} 0 PARENT_SCOPE)
+	set(${post_var} 0 PARENT_SCOPE)
+
+	set(_n 0)
+	set(_post 0)
+
+	if (product STREQUAL "gplates")
+		if (base MATCHES [[^([0-9]+\.[0-9]+\.[0-9]+)-(alpha|beta|rc)\.([0-9]+)$]])
+			set(_head "${CMAKE_MATCH_1}")
+			set(_kind "${CMAKE_MATCH_2}")
+			set(_n "${CMAKE_MATCH_3}")
+		elseif (base MATCHES [[^([0-9]+\.[0-9]+\.[0-9]+)$]])
+			set(_head "${CMAKE_MATCH_1}")
+			set(_kind "")
+		else()
+			return()
+		endif()
+	elseif (product STREQUAL "pygplates")
+		if (NOT base MATCHES [[^([0-9]+\.[0-9]+\.[0-9]+)((a|b|rc)([0-9]+))?(\.post([0-9]+))?$]])
+			return()
+		endif()
+		set(_head "${CMAKE_MATCH_1}")
+		set(_kind "${CMAKE_MATCH_3}")
+		if (NOT _kind STREQUAL "")
+			set(_n "${CMAKE_MATCH_4}")
+		endif()
+		if (NOT "${CMAKE_MATCH_6}" STREQUAL "")
+			set(_post "${CMAKE_MATCH_6}")
+		endif()
+	else()
+		message(FATAL_ERROR "Unknown product '${product}' - expected 'gplates' or 'pygplates'.")
+	endif()
+
+	# 4 is "no pre-release suffix", so a plain release outranks every candidate of it. A
+	# post-release sorts above that again, and is ranked by <post_var>; only pyGPlates can
+	# express one.
+	if (_kind STREQUAL "alpha" OR _kind STREQUAL "a")
+		set(_rank 1)
+	elseif (_kind STREQUAL "beta" OR _kind STREQUAL "b")
+		set(_rank 2)
+	elseif (_kind STREQUAL "rc")
+		set(_rank 3)
+	else()
+		set(_rank 4)
+	endif()
+
+	set(${ok_var} TRUE PARENT_SCOPE)
+	set(${head_var} "${_head}" PARENT_SCOPE)
+	set(${rank_var} ${_rank} PARENT_SCOPE)
+	set(${n_var} ${_n} PARENT_SCOPE)
+	set(${post_var} ${_post} PARENT_SCOPE)
+endfunction()
+
+
+#
+# Order two base versions of the same product: sets <out_var> to -1, 0 or 1 as 'a' sorts below,
+# equal to, or above 'b' - or to the empty string if either of them does not parse.
+#
+# CMake's own VERSION_LESS cannot do this alone: it compares dotted numbers and ignores the rest,
+# so it reads '1.1.0rc1' and '1.1.0' as equal - the one comparison that matters most here.
+#
+function(gplates_compare_versions product a b out_var)
+	_gplates_version_base_rank(${product} "${a}" _ok_a _head_a _rank_a _n_a _post_a)
+	_gplates_version_base_rank(${product} "${b}" _ok_b _head_b _rank_b _n_b _post_b)
+	if (NOT _ok_a OR NOT _ok_b)
+		set(${out_var} "" PARENT_SCOPE)
+		return()
+	endif()
+
+	if (_head_a VERSION_GREATER _head_b)
+		set(${out_var} 1 PARENT_SCOPE)
+		return()
+	elseif (_head_a VERSION_LESS _head_b)
+		set(${out_var} -1 PARENT_SCOPE)
+		return()
+	endif()
+
+	# Equal heads: the pre-release rank decides, then its number, then the post-release number.
+	set(_a_parts "${_rank_a}" "${_n_a}" "${_post_a}")
+	set(_b_parts "${_rank_b}" "${_n_b}" "${_post_b}")
+	foreach (_i RANGE 2)
+		list(GET _a_parts ${_i} _x)
+		list(GET _b_parts ${_i} _y)
+		if (_x GREATER _y)
+			set(${out_var} 1 PARENT_SCOPE)
+			return()
+		elseif (_x LESS _y)
+			set(${out_var} -1 PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+
+	set(${out_var} 0 PARENT_SCOPE)
+endfunction()
+
+
+#
+# Check the hand-edited release target against the nearest release, setting <error_var> to a
+# message to abort with, or to the empty string if the target is acceptable.
+#
+# 'reference' is the base version of the nearest tag that is a *release* rather than an anchor,
+# and 'reference_tag' names it. Anchor tags are deliberately excluded: an anchor says nothing
+# about what has been released, and a fork standing on 'GPlates-2.6.0-2000' with the target
+# '2.6.0' is the normal configuration, not an error.
+#
+# CHECK 1 (correctness): the target must sort strictly above the reference. Without it, a target
+# left behind - or set backwards by a typo - silently mints versions sorting below a release that
+# is already published: '1.1.0.dev3' after '1.1.0', or '0.9.0.dev49' after '1.0.0'. Equality is
+# the common case and gets its own message.
+#
+# CHECK 2 (policy): the target must not skip a version. Check 1 accepts '1.2.0' after a released
+# '1.0.0', which is what an accidentally skipped '1.1' looks like. The GPlates release line has no
+# skips - the one apparent gap, 0.9.5 to 0.9.7.1, is a release whose tag went missing, and the big
+# early pyGPlates jumps are from an era that used the SVN revision as the minor version - so this
+# matches the project's actual practice. It is policy rather than correctness, and a future
+# maintainer wanting a deliberate jump can loosen it without breaking anything.
+#
+# A candidate is treated more strictly than a release: only the same numeric head may follow one,
+# so '1.1.0rc1' can be followed by '1.1.0rc2' or '1.1.0' but not by '1.1.1'. There is no such
+# thing as skipping past a release that never happened.
+#
+# Honest limit: neither check catches a typo landing one step *forwards*. '1.10' normalises to
+# '1.10.0', which is a legitimate next minor from '1.9.0'.
+#
+function(gplates_check_release_target product target reference reference_tag distance error_var)
+	set(${error_var} "" PARENT_SCOPE)
+
+	# 'Version.cmake' is what validates the target's grammar; an unparseable one is its error to
+	# report, and there is nothing to compare here.
+	gplates_split_version(${product} "${target}" _ok _target_base _target_dev)
+	if (NOT _ok)
+		return()
+	endif()
+
+	gplates_compare_versions(${product} "${_target_base}" "${reference}" _cmp)
+	if (_cmp STREQUAL "")
+		return()
+	endif()
+
+	set(_where "'cmake/modules/VersionRelease.cmake'")
+
+	if (_cmp EQUAL 0)
+		string(CONCAT _msg
+				"The ${product} release target is '${target}', but '${reference_tag}' has already "
+				"been released ${distance} commit(s) back. Every commit from here would carry a "
+				"development version of something already published, sorting below it. Set the "
+				"next target in ${_where}."
+		)
+		set(${error_var} "${_msg}" PARENT_SCOPE)
+		return()
+	endif()
+
+	if (_cmp LESS 0)
+		string(CONCAT _msg
+				"The ${product} release target is '${target}', which sorts below '${reference}' - "
+				"released ${distance} commit(s) back as '${reference_tag}'. Every version derived "
+				"from here would sort below a release that is already published. Set the target in "
+				"${_where} to a version above '${reference}'."
+		)
+		set(${error_var} "${_msg}" PARENT_SCOPE)
+		return()
+	endif()
+
+	# Check 2. The heads are what the no-skip rule is about; the suffixes were settled by check 1.
+	_gplates_version_base_rank(${product} "${_target_base}" _ok_t _target_head _target_rank _t_n _t_post)
+	_gplates_version_base_rank(${product} "${reference}" _ok_r _ref_head _ref_rank _r_n _r_post)
+	if (NOT _ok_t OR NOT _ok_r)
+		return()
+	endif()
+
+	if (_target_head VERSION_EQUAL _ref_head)
+		return()
+	endif()
+
+	if (_ref_rank LESS 4)
+		string(CONCAT _msg
+				"The ${product} release target is '${target}', but the release line it follows has "
+				"not been finished: '${reference_tag}' is a candidate for '${_ref_head}', "
+				"${distance} commit(s) back. Set the target in ${_where} to another candidate for "
+				"'${_ref_head}', or to '${_ref_head}' itself."
+		)
+		set(${error_var} "${_msg}" PARENT_SCOPE)
+		return()
+	endif()
+
+	if (NOT _ref_head MATCHES [[^([0-9]+)\.([0-9]+)\.([0-9]+)$]])
+		return()
+	endif()
+	set(_major "${CMAKE_MATCH_1}")
+	set(_minor "${CMAKE_MATCH_2}")
+	set(_patch "${CMAKE_MATCH_3}")
+	math(EXPR _next_major "${_major} + 1")
+	math(EXPR _next_minor "${_minor} + 1")
+	math(EXPR _next_patch "${_patch} + 1")
+	set(_allowed
+			"${_major}.${_minor}.${_next_patch}"
+			"${_major}.${_next_minor}.0"
+			"${_next_major}.0.0")
+
+	if (NOT _target_head IN_LIST _allowed)
+		string(REPLACE ";" "', '" _allowed_text "${_allowed}")
+		string(CONCAT _msg
+				"The ${product} release target is '${target}', which skips past '${reference}' - "
+				"released ${distance} commit(s) back as '${reference_tag}'. The next release after "
+				"it is '${_allowed_text}', optionally as a candidate of one of those. Set the "
+				"target in ${_where} - or, if the jump is deliberate, loosen this check in "
+				"'gplates_check_release_target' (it is policy, not correctness)."
+		)
+		set(${error_var} "${_msg}" PARENT_SCOPE)
+	endif()
+endfunction()
+
+
 # Run git in the source tree, returning its exit code and stripped standard output.
 function(_gplates_version_git result_var output_var)
 	execute_process(
@@ -279,10 +511,15 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 	set(_best_distance -1)
 	set(_best_offset 0)
 	set(_best_tag "")
-	# Set only if one of the *nearest* tags is a plain release of the version being worked
-	# towards - tracked apart from the tag that supplies the number, because a tied anchor tag
-	# can supply the number while a release tag is what makes the situation an error.
-	set(_released_target_tag "")
+	# The nearest tag that is a *release* rather than an anchor, tracked apart from the tag that
+	# supplies the development number: an anchor tag can be nearer, and supply the number, while
+	# it is a release the target has to be checked against. Among releases tied at the same
+	# distance the highest base wins - seen from the develop branch 'GPlates-2.6.0' and
+	# 'GPlates-2.6.1' tie, both being off its first-parent line, and comparing against the older
+	# one would make a legitimate '2.6.2' look like a skipped release.
+	set(_ref_base "")
+	set(_ref_tag "")
+	set(_ref_distance 0)
 	set(_at_tag_base "")
 	set(_at_tag_name "")
 	set(_at_tag_dev 0)
@@ -327,10 +564,22 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 			continue()
 		endif()
 
-		# Is this a plain release of exactly the version being worked towards?
-		set(_is_released_target FALSE)
-		if (_dev EQUAL 0 AND _base STREQUAL target AND _base MATCHES [[^[0-9]+\.[0-9]+\.[0-9]+$]])
-			set(_is_released_target TRUE)
+		# Track the nearest release, which the release-target checks below compare against.
+		if (_dev EQUAL 0)
+			set(_is_nearer FALSE)
+			if (_ref_base STREQUAL "" OR _distance LESS _ref_distance)
+				set(_is_nearer TRUE)
+			elseif (_distance EQUAL _ref_distance)
+				gplates_compare_versions(${product} "${_base}" "${_ref_base}" _ref_cmp)
+				if (NOT _ref_cmp STREQUAL "" AND _ref_cmp GREATER 0)
+					set(_is_nearer TRUE)
+				endif()
+			endif()
+			if (_is_nearer)
+				set(_ref_base "${_base}")
+				set(_ref_tag "${_tag}")
+				set(_ref_distance ${_distance})
+			endif()
 		endif()
 
 		# Nearest wins; among equally near tags the largest development number wins, so the
@@ -339,17 +588,10 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 			set(_best_distance ${_distance})
 			set(_best_offset ${_dev})
 			set(_best_tag "${_tag}")
-			set(_released_target_tag "")
-			if (_is_released_target)
-				set(_released_target_tag "${_tag}")
-			endif()
 		elseif (_distance EQUAL _best_distance)
 			if (_dev GREATER _best_offset)
 				set(_best_offset ${_dev})
 				set(_best_tag "${_tag}")
-			endif()
-			if (_is_released_target)
-				set(_released_target_tag "${_tag}")
 			endif()
 		endif()
 	endforeach()
@@ -362,6 +604,24 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 	endif()
 	if (_best_distance LESS 0)
 		return()
+	endif()
+
+	# Check the hand-edited release target against the nearest release.
+	#
+	# Skipped when HEAD is standing on a release tag: there the target must *equal* that tag's
+	# base, which the block below enforces, and check 1 rejects exactly that equality. An anchor
+	# tag at HEAD is not skipped - the reference excludes anchors, so there is still a real
+	# release behind it to check against, and a fork's target has to clear it like anyone else's.
+	set(_at_release_tag FALSE)
+	if (NOT _at_tag_base STREQUAL "" AND _at_tag_dev EQUAL 0)
+		set(_at_release_tag TRUE)
+	endif()
+	if (NOT _at_release_tag AND NOT _ref_base STREQUAL "")
+		gplates_check_release_target(${product} "${target}" "${_ref_base}" "${_ref_tag}"
+				${_ref_distance} _target_error)
+		if (NOT _target_error STREQUAL "")
+			message(FATAL_ERROR "${_target_error}")
+		endif()
 	endif()
 
 	# Standing on a tag.
@@ -383,15 +643,6 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 		endif()
 		set(${out_var} "${target}" PARENT_SCOPE)
 		return()
-	endif()
-
-	# Heading towards a version that has already been released - the derived version would sort
-	# *below* the release it follows (eg, '1.1.0' released, then '1.1.0.dev3').
-	if (NOT _released_target_tag STREQUAL "")
-		message(FATAL_ERROR
-				"The ${product} release target is '${target}', but '${_released_target_tag}' has "
-				"already been released ${_best_distance} commit(s) back. Set the next target in "
-				"'cmake/modules/VersionRelease.cmake'.")
 	endif()
 
 	math(EXPR _dev_number "${_best_offset} + ${_best_distance}")

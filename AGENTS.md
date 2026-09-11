@@ -272,7 +272,10 @@ commit, then tag **exactly** `PyGPlates-<version>` on the release series branch
 minute on a mismatch or a `.dev` version. Standing on the tag, the derived version *is* the
 release target (no development number), which is what makes the two agree. Afterwards set the
 target to the next release, or the following commit resolves to a version sorting below the one
-just released — a hard error rather than a bad package.
+just released — a hard error rather than a bad package. The resolver also refuses a target that
+sorts below the nearest release or skips a version, so the next target has to be the next patch,
+minor or major (or a candidate of one); `cmake -P cmake/modules/VersionFromGitTest.cmake` runs
+those rules as tests.
 Publishing uses PyPI Trusted Publishing (OIDC, no tokens) and pauses for manual approval on the
 `pypi` deployment environment. **Renaming `.github/workflows/build-wheels.yml` silently breaks
 publishing** — the trusted-publisher registration binds to the filename. Adding a Python version

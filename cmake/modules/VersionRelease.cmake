@@ -39,6 +39,12 @@
 # A target must NOT carry a development suffix ('2.6.0-8', '1.1.0.dev10') - that part is what
 # gets counted. The resolver rejects one that does.
 #
+# The resolver also checks the target against the nearest release, and aborts the configure if it
+# does not sort above it or if it skips a version - so a target left behind, set backwards, or
+# mistyped one release too far ahead is a loud failure rather than a package nobody can install
+# over. 'gplates_check_release_target' in 'VersionFromGit.cmake' has the rules and the reasoning;
+# 'VersionFromGitTest.cmake' has them as tests.
+#
 
 # The GPlates release target - a restricted Semantic Version 'X.Y.Z' or 'X.Y.Z-{alpha|beta|rc}.N'.
 set(GPLATES_RELEASE_VERSION 2.6.0)
