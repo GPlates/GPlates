@@ -1247,7 +1247,6 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_lon_lat_pos(
 	// NOTE: We are assuming GPML is using (lat,lon) ordering.
 	// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
 	const double lat = pos_2d.first;
-	// FIXME: Check is.status() here!
 	const double lon = pos_2d.second;
 
 	if ( ! (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
@@ -1278,6 +1277,16 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_pos_2d(
 
 	is >> x;
 	is >> y;
+
+	// A failed extraction leaves its target untouched, so without this check a gml:pos that
+	// is not two numbers becomes the point (0, 0) - a plausible wrong answer rather than an
+	// error.
+	if (is.status() != QTextStream::Ok)
+	{
+		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+				elem, GPlatesFileIO::ReadErrors::InvalidDouble,
+				EXCEPTION_SOURCE);
+	}
 
 	return std::make_pair(x, y);
 }
@@ -1312,7 +1321,6 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_lon_lat_coordinates(
 	// NOTE: We are assuming GPML is using (lat,lon) ordering.
 	// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
 	const double lat = coordinates_2d.first;
-	// FIXME: Check is.status() here!
 	const double lon = coordinates_2d.second;
 
 	if ( ! (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
@@ -1336,23 +1344,32 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_coordinates_2d(
 
 	// XXX: Currently assuming srsDimension is 2!!
 
-	QStringList tokens = str.split(",");
+	const QStringList tokens = str.split(",");
+
+	// Falling through with the coordinates untouched, as this used to, turns a gml:coordinates
+	// that is not two numbers into the point (0, 0) - a plausible wrong answer rather than an
+	// error. (This is the gml:pos check in 'create_pos_2d()', for the other spelling.)
+	if (tokens.count() != 2)
+	{
+		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+				elem, GPlatesFileIO::ReadErrors::InvalidDouble,
+				EXCEPTION_SOURCE);
+	}
 
 	double x = 0.0;
 	double y = 0.0;
 
-	if (tokens.count() == 2)
+	try
 	{
-		try
-		{
-			GPlatesUtils::Parse<double> parse;
-			x = parse(tokens.at(0));
-			y = parse(tokens.at(1));
-		}
-		catch (...)
-		{
-			// Do nothing, fall through.
-		}
+		GPlatesUtils::Parse<double> parse;
+		x = parse(tokens.at(0));
+		y = parse(tokens.at(1));
+	}
+	catch (const GPlatesUtils::ParseError &)
+	{
+		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+				elem, GPlatesFileIO::ReadErrors::InvalidDouble,
+				EXCEPTION_SOURCE);
 	}
 
 	return std::make_pair(x, y);

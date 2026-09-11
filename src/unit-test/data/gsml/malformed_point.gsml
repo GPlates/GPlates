@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A gml:pos that is not two numbers, followed by a member that reads cleanly. The bad
+  coordinates used to be extracted as the point (0, 0); they are now a read error, and the
+  member carrying them is skipped without costing the file the members after it.
+  Used by GeoscimlReaderTest.cc.
+-->
+<wfs:FeatureCollection
+    xmlns:wfs="http://www.opengis.net/wfs"
+    xmlns:gml="http://www.opengis.net/gml"
+    xmlns:gsml="urn:cgi:xmlns:CGI:GeoSciML:2.0">
+  <gml:featureMember>
+    <gsml:UnclassifiedFeature gml:id="malformed-point">
+      <gml:name>Malformed point</gml:name>
+      <gsml:shape>
+        <gml:Point srsName="EPSG:4326">
+          <gml:pos>somewhere in particular</gml:pos>
+        </gml:Point>
+      </gsml:shape>
+    </gsml:UnclassifiedFeature>
+  </gml:featureMember>
+  <gml:featureMember>
+    <gsml:UnclassifiedFeature gml:id="good-point">
+      <gml:name>Good point</gml:name>
+      <gsml:shape>
+        <gml:Point srsName="EPSG:4326">
+          <gml:pos>-33 151</gml:pos>
+        </gml:Point>
+      </gsml:shape>
+    </gsml:UnclassifiedFeature>
+  </gml:featureMember>
+</wfs:FeatureCollection>
