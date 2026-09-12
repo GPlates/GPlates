@@ -541,8 +541,26 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 	endif()
 
 	_gplates_version_git(_result _tags tag --list "${tag_prefix}*")
-	if (NOT _result EQUAL 0 OR _tags STREQUAL "")
+	if (NOT _result EQUAL 0)
 		return()
+	endif()
+	if (_tags STREQUAL "")
+		# A working repository with none of the tags is almost always a fork: GitHub copies no
+		# tags into a fork, and fetching a single branch brings only the tags on it, while release
+		# tags live on the release series branches. Falling through to the file fallbacks would
+		# end in a message blaming the missing repository, which is the wrong diagnosis.
+		message(FATAL_ERROR
+				"Cannot derive the ${product} version: this repository has no '${tag_prefix}*' tags "
+				"to count from. A fork made on GitHub carries none of the upstream tags, and a fetch "
+				"of a single branch brings only the tags on it. Fetch them from the upstream "
+				"repository:\n"
+				"    git fetch --tags <upstream>\n"
+				"or just the release tags:\n"
+				"    git fetch <upstream> 'refs/tags/GPlates-*:refs/tags/GPlates-*' "
+				"'refs/tags/PyGPlates-*:refs/tags/PyGPlates-*'\n"
+				"and push them to the fork ('git push <fork> --tags') so that its clones and its CI "
+				"have them too. Or set the version explicitly (see the message at the end of "
+				"VersionFromGit.cmake).")
 	endif()
 	string(REGEX REPLACE "\r?\n" ";" _tags "${_tags}")
 

@@ -238,6 +238,10 @@ and argued for in `doc-cpp/design/versioning/README.md`.
   `hotfix/` concept and no permanent 'production' branch.
 - **short-lived** branches: `feature/<name>` and `fix/<name>` off `gplates` (a fix rather than a
   feature, but otherwise identical), and patch branches off a release series branch.
+- **fixes move between `gplates` and a series branch by `git cherry-pick -x`**, in either
+  direction — never by merging a series branch into `gplates`. Such a merge conflicts on
+  `VersionRelease.cmake` every time (each side has moved its release target), and when it does
+  not conflict it silently hands `gplates` the series branch's target.
 
 **Base pull requests on `gplates`, never on a release series branch.** CI enforces this: both
 `build-test-gplates.yml` and `build-test-pygplates.yml` run only on `gplates`. Building **both**

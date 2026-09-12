@@ -34,8 +34,16 @@ The rules that follow from it:
   candidates, the release, and each later patch release are successive commits on the one
   branch, so its tip is always the newest X.Y.z.
 - **There is no permanent 'production' branch and no `hotfix/` concept.** A patch is a commit on
-  the series branch, tagged there; a patch that also applies to the development branch is merged
-  there too.
+  the series branch, tagged there.
+- **Fixes move between the lines by cherry-pick, never by merging a series branch into the
+  development branch.** A fix wanted on both lines normally lands on the development branch
+  first and is cherry-picked (`git cherry-pick -x`) to the series, which is what GDAL's and
+  QGIS's backport bots do; one made on the series first is cherry-picked forward the same way.
+  Only the target-bump commits touch `VersionRelease.cmake`, and those are never cherry-picked,
+  so nothing conflicts. A *merge* would: both sides have changed that file since the branch
+  point (the series to `1.1.0rc1`, `1.1.0`, `1.1.1`; the development branch to `1.2.0`), so it
+  conflicts every time — and the one time it would not, because the development branch's copy
+  had not changed yet, is the fast-forward that hands it the series' target (section 8.1).
 - **A series branch is cut when the first release in the series is prepared**, not before. A
   branch cut ahead of need is an empty branch. As of 2026-09-12 none has been cut yet; the first
   will be `release/pygplates-1.1`.
@@ -473,6 +481,27 @@ default branch `gplates`, 2026-09-11) is to do that rather than to change the re
 editing `GPLATES_RELEASE_VERSION` to `2.7.0` while upstream is on `2.6` produces two different
 projects both publishing something called GPlates 2.7.0, and the no-skip guard now refuses the
 larger jumps anyway.
+
+**A fork has no tags to begin with.** GitHub copies none into a fork — checked on 2026-09-12: the
+three active forks hold one tag between them, and it is the fork's own — and a fetch of one
+branch brings only the tags on it, while release tags live on the series branches. With no
+`GPlates-*` or `PyGPlates-*` tags the resolver has nothing to count from, and it stops there,
+saying so and naming the remedy, rather than falling through to the fallbacks for a tree with
+no repository and blaming the wrong thing:
+
+```
+git fetch --tags <upstream>
+git fetch <upstream> 'refs/tags/GPlates-*:refs/tags/GPlates-*' 'refs/tags/PyGPlates-*:refs/tags/PyGPlates-*'   # or just the release tags
+git push <fork> --tags
+```
+
+The push is what gives the fork's own clones and its CI the tags. It wants repeating after each
+upstream series cut: otherwise, once upstream's target moves past a release the fork has never
+seen, the no-skip guard fires — and its message says to fetch tags first. A plain `git clone`
+is unaffected, since it fetches every tag whichever branch it asks for (verified: a clone of the
+development branch alone carried all 258 tags and resolved both versions). Everything on the
+public remote is a `GPlates-*` or `PyGPlates-*` tag, and the resolver ignores any other prefix,
+so fetching all tags is safe.
 
 ## 10. Recipes
 
