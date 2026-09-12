@@ -11,10 +11,12 @@
 #
 # There are exactly two times to edit this file:
 #
-# 1. When a release changes what the *next* release will be called. Immediately after tagging
-#    'PyGPlates-1.1.0', for instance, the pyGPlates target becomes '1.2.0' - otherwise the next
-#    development version would be '1.1.0.dev1', which sorts *below* the 1.1.0 just released
-#    (the resolver refuses to produce that, rather than letting it reach a package).
+# 1. On the development branch, the moment a release series branch cut from it gets its first
+#    tag - a candidate ('PyGPlates-1.1.0rc1') or the release itself. The pyGPlates target then
+#    becomes '1.2.0'. The 1.1.0 line now lives on the series branch, and the development
+#    branch's count restarts from the branch point, so left on '1.1.0' it would re-issue
+#    versions it has already used - and, once 1.1.0 is released, ones sorting *below* it. The
+#    resolver refuses both, rather than letting either reach a package.
 #
 #    Note: What that next target should be is a decision about the next *release*, not about
 #          any one commit. A release that adds API (a new function or class) should be a new

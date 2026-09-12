@@ -286,10 +286,29 @@ Four checks abort the configure rather than let a bad version reach a package:
    | reference | allowed targets | rejected |
    |---|---|---|
    | `1.0.0` (a release) | `1.0.1`, `1.1.0`, `2.0.0`, and candidates of those (`1.0.1rc1`, …) | `1.0.2`, `1.2.0`, `3.0.0`, `1.0.0rc2` |
-   | `1.0.0rc1` (a candidate) | `1.0.0rc2`, `1.0.0` | `1.0.1`, `1.1.0` |
+   | `1.0.0rc1` (a candidate on this line) | `1.0.0rc2`, `1.0.0` | `1.0.1`, `1.1.0` |
+   | `1.0.0rc1` (a candidate on another branch) | `1.0.1`, `1.1.0`, `2.0.0`, and candidates of those | `1.0.0`, `1.0.0rc2`, `1.0.2`, `1.2.0` |
 
-   The reference's own head is permitted only so that a candidate can be followed by another
-   candidate or by the release; after a final release, same-head targets are rejected by check 3.
+   A candidate binds only the line it is on. Whether the reference tag is on HEAD's first-parent
+   line is decided by walking back `HEAD~n`, with `n` the reference's distance: `~` follows first
+   parents, so that commit is the tag's own if the tag is on the line, and otherwise the commit
+   the series branch was cut from. On the line — the series branch, or a patch branch off it —
+   only the candidate's own head may follow, as another candidate or as the release. Off the
+   line — the development branch once the series branch cut from it has its first candidate, or
+   a feature branch cut before then — the candidate's head counts as released, and *staying* on
+   it is refused: the `1.1.0` line has moved to the series branch, which is minting
+   `1.1.0rc1.devN`, and the development branch's count has restarted from the branch point
+   (section 8.2), so left on `1.1.0` it would re-issue `1.1.0.dev1`, `dev2`, … for new commits.
+   After a final release, same-head targets are rejected by check 3 wherever the tag is.
+
+   The first cut of this rule made no on-line/off-line distinction, and a review before the
+   branch merged found what that meant: the first candidate on *any* series branch became the
+   development branch's reference (every series tag ties at the branch point, and the highest
+   base wins), so every configure there aborted until the release was final — and, because both
+   versions are always resolved, a GPlates candidate stopped every pyGPlates build too. The only
+   accepted target in that window was the candidate's own head, which is the one that re-issues
+   numbers. Hence the distinction, and the extra rows in the scenario table below.
+
    **This one is policy, not correctness**, and the error message says so, because it can be
    loosened without breaking anything. The evidence supports it: the GPlates release line has no
    skips (the apparent `0.9.5` → `0.9.7.1` gap is a released 0.9.6 whose tag went missing, and the
@@ -313,13 +332,19 @@ tag supplies the count, and is computed separately:
 
 **The honest limit of checks 3 and 4:** they catch a target set backwards or skipping, not a typo
 that lands one step forwards. `1.10` normalises to `1.10.0` and, from a `1.9.0` reference, is a
-legitimate next minor.
+legitimate next minor. And they judge a commit by the tags that exist *now*: a development
+commit made after a series branch was cut but before the target was bumped configured fine when
+it was made, and fails ("already released", or "being released on another branch") when
+`git bisect` revisits it after the tags exist. Bumping the target in the same sitting as the cut
+keeps that window empty; a bisect that lands in it anyway can pass the version as a `-D` define.
 
 The pure parts of the resolver — splitting, joining, ordering and the target checks — are tested
 by `cmake/modules/VersionFromGitTest.cmake`, registered with CTest as `version-resolver-test` in
-both build trees, and runnable directly with `cmake -P`. The tests include the repository's
-actual targets against its actual nearest releases, so a mistake in `VersionRelease.cmake` fails
-one test rather than every configure.
+both build trees, and runnable directly with `cmake -P`. It ends by running the whole resolver
+once against the repository it is in, so the git path gets exercised and a mistake in
+`VersionRelease.cmake` fails a test as well as the configure. (An earlier version wrote the
+expected nearest releases down as literals, `2.5.0` and `1.0.0`, which would have gone red at the
+first release after it was written; the resolver finds them itself.)
 
 ### 7.3 Worked scenarios
 
@@ -330,6 +355,9 @@ pyGPlates unless stated; `T` is the target in `VersionRelease.cmake`.
 | development branch, 46 first-parent commits past the last release | `1.1.0` | `PyGPlates-1.0.0`, dev 0, distance 46 | `1.1.0.dev46` |
 | series branch cut, preparing the first candidate | `1.1.0rc1` | `PyGPlates-1.0.0`, distance 48 | `1.1.0rc1.dev48` |
 | standing on the tag `PyGPlates-1.1.0rc1` | `1.1.0rc1` | at HEAD, dev 0, base = T | `1.1.0rc1` |
+| development branch, 2 commits after the series branch was cut, target not moved | `1.1.0` | `PyGPlates-1.1.0rc1`, distance 2, off the line | **fatal** — `1.1.0` is being released on another branch; set T to `1.2.0` |
+| same, target moved on | `1.2.0` | `PyGPlates-1.1.0rc1`, distance 2 | `1.2.0.dev2` |
+| a feature branch cut before the series branch, not yet merged with the development branch | `1.1.0` | `PyGPlates-1.1.0rc1`, off the line | **fatal** — merge the development branch in |
 | two commits later, a second candidate decided | `1.1.0rc2` | `PyGPlates-1.1.0rc1`, distance 2 | `1.1.0rc2.dev2` |
 | standing on the release tag `PyGPlates-1.1.0` | `1.1.0` | at HEAD, dev 0, base = T | `1.1.0` |
 | … but the target was never moved off `1.0.0` | `1.0.0` | at HEAD, base ≠ T | **fatal** — set T to `1.1.0` |
@@ -376,13 +404,18 @@ branch and cannot contribute. The tie is harmless — both carry development num
 emitted version is identical — and the guards choose their reference release separately from the
 count (section 7.2).
 
-### 8.2 When a release is tagged, N on the development branch drops
+### 8.2 When a series branch gets its first tag, N on the development branch drops
 
-Because of 8.1, the moment `PyGPlates-1.1.0` is tagged the development branch starts counting from
-a much later branch point, and N falls from, say, 120 to 3. That is safe only because the release
-target must be bumped at the same moment — and guard 2 makes it compulsory, since leaving the
-target on the version just released is exactly what it refuses. So the base rises as the counter
-falls, and the emitted version still moves forward: `2.6.0-120` → `2.7.0-3`.
+Because of 8.1, the moment the first tag lands on a series branch — `PyGPlates-1.1.0rc1`, or
+`PyGPlates-1.1.0` if there was no candidate — the development branch starts counting from a much
+later branch point, and N falls from, say, 120 to 3. That is safe only because the release target
+must be bumped at the same moment, and the guards make it compulsory in both cases: after a
+release, leaving the target on the version just released is exactly what guard 2 refuses; after
+a candidate, the off-the-line rule in guard 4 refuses the candidate's head for the same reason.
+So the base rises as the counter falls, and the emitted version still moves forward:
+`2.6.0-120` → `2.7.0-3`. (Before that rule was line-aware, the candidate case was the opposite:
+the bump was *forbidden*, and the development branch re-issued `1.1.0.dev1`, `dev2`, … for new
+commits until the release was final — section 7.2.)
 
 ### 8.3 The number is monotonic along one first-parent line, not across lines
 

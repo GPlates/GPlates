@@ -301,14 +301,30 @@ endfunction()
 # matches the project's actual practice. It is policy rather than correctness, and a future
 # maintainer wanting a deliberate jump can loosen it without breaking anything.
 #
-# A candidate is treated more strictly than a release: only the same numeric head may follow one,
-# so '1.1.0rc1' can be followed by '1.1.0rc2' or '1.1.0' but not by '1.1.1'. There is no such
-# thing as skipping past a release that never happened.
+# A candidate binds the line it is on, and only that line. 'on_line' says whether the reference
+# tag sits on HEAD's first-parent line:
+#
+#   - On the line (a release series branch, or a patch branch off one): only the same numeric
+#     head may follow a candidate, so '1.1.0rc1' can be followed by '1.1.0rc2' or '1.1.0' but
+#     not by '1.1.1'. There is no such thing as skipping past a release that never happened.
+#   - Off the line (the development branch, once the series branch cut from it has its first
+#     candidate; or a feature branch cut before then): the candidate's head counts as released
+#     for the no-skip rule, and *staying* on that head is refused. The 1.1.0 line has moved to
+#     the series branch, which is minting '1.1.0rc1.devN' there, and this line's nearest tag is
+#     now that candidate at the branch point - so its own count has restarted, and left on
+#     '1.1.0' it would re-issue numbers it has already used. The target has to move on to
+#     '1.2.0' (or '1.1.1', or '2.0.0') at that moment: the same bump that check 1 forces after
+#     a final release, brought forward to the first candidate.
+#
+# Without that distinction, the first candidate on any series branch stopped every configure on
+# the development branch until the release was final - and, since both products' versions are
+# always resolved, a GPlates candidate stopped every pyGPlates build.
 #
 # Honest limit: neither check catches a typo landing one step *forwards*. '1.10' normalises to
 # '1.10.0', which is a legitimate next minor from '1.9.0'.
 #
-function(gplates_check_release_target product target reference reference_tag distance error_var)
+function(gplates_check_release_target product target reference reference_tag distance on_line
+		error_var)
 	set(${error_var} "" PARENT_SCOPE)
 
 	# 'Version.cmake' is what validates the target's grammar; an unparseable one is its error to
@@ -354,18 +370,37 @@ function(gplates_check_release_target product target reference reference_tag dis
 		return()
 	endif()
 
-	if (_target_head VERSION_EQUAL _ref_head)
-		return()
-	endif()
-
 	if (_ref_rank LESS 4)
-		string(CONCAT _msg
-				"The ${product} release target is '${target}', but the release line it follows has "
-				"not been finished: '${reference_tag}' is a candidate for '${_ref_head}', "
-				"${distance} commit(s) back. Set the target in ${_where} to another candidate for "
-				"'${_ref_head}', or to '${_ref_head}' itself."
-		)
-		set(${error_var} "${_msg}" PARENT_SCOPE)
+		# The reference is a candidate.
+		if (on_line)
+			if (_target_head VERSION_EQUAL _ref_head)
+				return()
+			endif()
+			string(CONCAT _msg
+					"The ${product} release target is '${target}', but the release line it follows has "
+					"not been finished: '${reference_tag}' is a candidate for '${_ref_head}', "
+					"${distance} commit(s) back. Set the target in ${_where} to another candidate for "
+					"'${_ref_head}', or to '${_ref_head}' itself."
+			)
+			set(${error_var} "${_msg}" PARENT_SCOPE)
+			return()
+		endif()
+		if (_target_head VERSION_EQUAL _ref_head)
+			string(CONCAT _msg
+					"The ${product} release target is '${target}', but '${_ref_head}' is being released "
+					"on another branch: '${reference_tag}' is a candidate for it, on a release series "
+					"branch cut from this line ${distance} commit(s) back. This line's development "
+					"number now counts from that branch point, so a target of '${_ref_head}' would "
+					"re-issue versions it has already used. Set the target in ${_where} to the release "
+					"after '${_ref_head}' - or, on a branch cut before the series branch was, merge the "
+					"development branch in, where the target has already moved on."
+			)
+			set(${error_var} "${_msg}" PARENT_SCOPE)
+			return()
+		endif()
+		# Any other head: the candidate's head counts as released, and the no-skip rule applies.
+	elseif (_target_head VERSION_EQUAL _ref_head)
+		# A post-release republishes the same version, so it keeps the head it follows.
 		return()
 	endif()
 
@@ -386,11 +421,14 @@ function(gplates_check_release_target product target reference reference_tag dis
 	if (NOT _target_head IN_LIST _allowed)
 		string(REPLACE ";" "', '" _allowed_text "${_allowed}")
 		string(CONCAT _msg
-				"The ${product} release target is '${target}', which skips past '${reference}' - "
-				"released ${distance} commit(s) back as '${reference_tag}'. The next release after "
-				"it is '${_allowed_text}', optionally as a candidate of one of those. Set the "
-				"target in ${_where} - or, if the jump is deliberate, loosen this check in "
-				"'gplates_check_release_target' (it is policy, not correctness)."
+				"The ${product} release target is '${target}', which skips past '${reference}' "
+				"('${reference_tag}', ${distance} commit(s) back). The next release after it is "
+				"'${_allowed_text}', optionally as a candidate of one of those. If this checkout "
+				"may be missing tags - a fork, or a clone that fetched one branch, since release "
+				"tags live on the release series branches - run 'git fetch --tags <upstream>' "
+				"first. Otherwise set the target in ${_where} - or, if the jump is deliberate, "
+				"loosen this check in 'gplates_check_release_target' (it is policy, not "
+				"correctness)."
 		)
 		set(${error_var} "${_msg}" PARENT_SCOPE)
 	endif()
@@ -519,6 +557,7 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 	# one would make a legitimate '2.6.2' look like a skipped release.
 	set(_ref_base "")
 	set(_ref_tag "")
+	set(_ref_commit "")
 	set(_ref_distance 0)
 	set(_at_tag_base "")
 	set(_at_tag_name "")
@@ -578,6 +617,7 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 			if (_is_nearer)
 				set(_ref_base "${_base}")
 				set(_ref_tag "${_tag}")
+				set(_ref_commit "${_tag_commit}")
 				set(_ref_distance ${_distance})
 			endif()
 		endif()
@@ -617,8 +657,17 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 		set(_at_release_tag TRUE)
 	endif()
 	if (NOT _at_release_tag AND NOT _ref_base STREQUAL "")
+		# Whether the reference is on HEAD's first-parent line, which decides how a candidate is
+		# treated. 'HEAD~n' follows first parents, so the commit that many steps back is the
+		# reference's own commit if it is on the line, and otherwise the commit where the two
+		# histories part - the one the release series branch was cut from.
+		set(_ref_on_line FALSE)
+		_gplates_version_git(_result _line_commit rev-parse --verify "HEAD~${_ref_distance}")
+		if (_result EQUAL 0 AND _line_commit STREQUAL _ref_commit)
+			set(_ref_on_line TRUE)
+		endif()
 		gplates_check_release_target(${product} "${target}" "${_ref_base}" "${_ref_tag}"
-				${_ref_distance} _target_error)
+				${_ref_distance} ${_ref_on_line} _target_error)
 		if (NOT _target_error STREQUAL "")
 			message(FATAL_ERROR "${_target_error}")
 		endif()

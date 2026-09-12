@@ -12,8 +12,9 @@
 # This covers only the parts of 'VersionFromGit.cmake' that are pure functions of their
 # arguments - splitting and joining a version, ordering two of them, and checking the
 # hand-edited release target against the nearest release. The parts that consult git are not
-# covered here: they would need a synthetic repository per case, and what they compute is a
-# commit count rather than a decision.
+# covered case by case: they would need a synthetic repository per case, and what they compute
+# is a commit count rather than a decision. The whole resolver is run once, at the end, against
+# the repository this file is in.
 #
 # That split is deliberate rather than a shortcut. The decisions this file tests are the ones
 # that abort a configure, and each is a rule somebody has to be able to change with confidence
@@ -94,26 +95,51 @@ function(expect_incomparable product a b)
 endfunction()
 
 # The release target is acceptable against this reference release.
-function(expect_target_ok product target reference)
-	gplates_check_release_target(${product} "${target}" "${reference}" "tag-${reference}" 3 _error)
-	if (NOT _error STREQUAL "")
-		_fail("${product} target '${target}' after release '${reference}': expected it to be "
-				"accepted, but got:\n  ${_error}")
+# 'on_line' is whether the reference tag is on HEAD's first-parent line (a release series
+# branch) or off it (the development branch, seen from which every series tag is off the line).
+# An empty 'expected_phrase' means the target is expected to be accepted; otherwise it is
+# expected to be rejected, with a message mentioning the phrase, so that the right one of the
+# refusals is doing the rejecting.
+function(_expect_target product target reference on_line expected_phrase)
+	gplates_check_release_target(${product} "${target}" "${reference}" "tag-${reference}" 3
+			${on_line} _error)
+	if (on_line)
+		set(_seen "after release '${reference}'")
+	else()
+		set(_seen "with '${reference}' released on another branch")
+	endif()
+	if (expected_phrase STREQUAL "")
+		if (NOT _error STREQUAL "")
+			_fail("${product} target '${target}' ${_seen}: expected it to be accepted, but got:"
+					"\n  ${_error}")
+		endif()
+	elseif (_error STREQUAL "")
+		_fail("${product} target '${target}' ${_seen}: expected it to be rejected, but it was "
+				"accepted.")
+	elseif (NOT _error MATCHES "${expected_phrase}")
+		_fail("${product} target '${target}' ${_seen}: rejected, but for the wrong reason - "
+				"expected a message matching '${expected_phrase}', got:\n  ${_error}")
 	endif()
 	set(_failures ${_failures} PARENT_SCOPE)
 endfunction()
 
-# The release target is rejected, and the message mentions 'expected_phrase' so that the right
-# one of the three refusals is doing the rejecting.
+function(expect_target_ok product target reference)
+	_expect_target(${product} "${target}" "${reference}" TRUE "")
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
 function(expect_target_rejected product target reference expected_phrase)
-	gplates_check_release_target(${product} "${target}" "${reference}" "tag-${reference}" 3 _error)
-	if (_error STREQUAL "")
-		_fail("${product} target '${target}' after release '${reference}': expected it to be "
-				"rejected, but it was accepted.")
-	elseif (NOT _error MATCHES "${expected_phrase}")
-		_fail("${product} target '${target}' after release '${reference}': rejected, but for the "
-				"wrong reason - expected a message matching '${expected_phrase}', got:\n  ${_error}")
-	endif()
+	_expect_target(${product} "${target}" "${reference}" TRUE "${expected_phrase}")
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+function(expect_target_ok_off_line product target reference)
+	_expect_target(${product} "${target}" "${reference}" FALSE "")
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+function(expect_target_rejected_off_line product target reference expected_phrase)
+	_expect_target(${product} "${target}" "${reference}" FALSE "${expected_phrase}")
 	set(_failures ${_failures} PARENT_SCOPE)
 endfunction()
 
@@ -193,14 +219,40 @@ expect_target_rejected(pygplates "1.0.2" "1.0.0" "skips past")
 expect_target_rejected(pygplates "1.2.0" "1.0.0" "skips past")
 expect_target_rejected(pygplates "3.0.0" "1.0.0" "skips past")
 
-# After a candidate, only the same release line may follow: another candidate, or the release
-# it was a candidate for. This is the step that must not fire during a real release.
+# After a candidate on this line - the release series branch - only the same release line may
+# follow: another candidate, or the release it was a candidate for. This is the step that must
+# not fire during a real release.
 expect_target_ok(pygplates "1.1.0rc2" "1.1.0rc1")
 expect_target_ok(pygplates "1.1.0" "1.1.0rc1")
 expect_target_rejected(pygplates "1.1.0rc1" "1.1.0rc1" "already been released")
 expect_target_rejected(pygplates "1.1.0a1" "1.1.0rc1" "sorts below")
 expect_target_rejected(pygplates "1.1.1" "1.1.0rc1" "not been finished")
 expect_target_rejected(pygplates "1.2.0" "1.1.0rc1" "not been finished")
+
+# A candidate on another branch - what the development branch sees once the series branch cut
+# from it has its first candidate - binds nothing about its own line. Its head counts as
+# released for the no-skip rule, and staying on that head is refused, because the numbers are
+# being minted over there and this line's count has restarted. The first cut of the candidate
+# rule made no such distinction, and would have stopped every configure on the development
+# branch until the release was final.
+expect_target_ok_off_line(pygplates "1.1.1" "1.1.0rc1")
+expect_target_ok_off_line(pygplates "1.2.0" "1.1.0rc1")
+expect_target_ok_off_line(pygplates "2.0.0" "1.1.0rc1")
+expect_target_ok_off_line(pygplates "1.2.0rc1" "1.1.0rc1")
+expect_target_rejected_off_line(pygplates "1.1.0" "1.1.0rc1" "another branch")
+expect_target_rejected_off_line(pygplates "1.1.0rc2" "1.1.0rc1" "another branch")
+expect_target_rejected_off_line(pygplates "1.1.0rc1" "1.1.0rc1" "already been released")
+expect_target_rejected_off_line(pygplates "1.0.0" "1.1.0rc1" "sorts below")
+expect_target_rejected_off_line(pygplates "1.3.0" "1.1.0rc1" "skips past")
+# A patch candidate on a maintenance series, seen from the development branch, which has long
+# since moved on to the next minor.
+expect_target_ok_off_line(pygplates "1.2.0" "1.1.1rc1")
+expect_target_ok_off_line(gplates "2.7.0" "2.6.1-rc.1")
+# A final release on another branch is treated exactly as one on this line.
+expect_target_ok_off_line(pygplates "1.2.0" "1.1.0")
+expect_target_ok_off_line(pygplates "1.1.1" "1.1.0")
+expect_target_rejected_off_line(pygplates "1.1.0" "1.1.0" "already been released")
+expect_target_rejected_off_line(pygplates "1.3.0" "1.1.0" "skips past")
 
 expect_target_ok(gplates "2.6.0" "2.5.0")
 expect_target_ok(gplates "2.5.1" "2.5.0")
@@ -213,15 +265,22 @@ expect_target_ok(gplates "2.6.0-rc.2" "2.6.0-rc.1")
 expect_target_ok(gplates "2.6.0" "2.6.0-rc.1")
 expect_target_rejected(gplates "2.6.1" "2.6.0-rc.1" "not been finished")
 
-# The state this repository is actually in, so that a mistake here fails the test rather than
-# every configure. Both targets come from 'VersionRelease.cmake'; the nearest releases are
-# 'GPlates-2.5' and 'PyGPlates-1.0.0', which normalise to these.
-expect_target_ok(gplates "${GPLATES_RELEASE_VERSION}" "2.5.0")
-expect_target_ok(pygplates "${PYGPLATES_RELEASE_VERSION}" "1.0.0")
-
 # The hole this check was added to close: verified by hand before it existed, a target of
 # '0.9.0' with 'PyGPlates-1.0.0' long released resolved to '0.9.0.dev49' and exited 0.
 expect_target_rejected(pygplates "0.9.0" "1.0.0" "sorts below")
+
+#
+# The whole resolver, once, against the repository this file is in: the targets in
+# 'VersionRelease.cmake' checked against the real tags, and the git path exercised end to end.
+# A failure aborts with the resolver's own message. (An earlier version of this test wrote the
+# expected nearest releases down as literals, which would have gone red at the first release
+# after it was written; the resolver finds them itself.) In a tree with no usable repository
+# the resolver falls back to the recorded version, so this still passes.
+#
+gplates_resolve_version(gplates _resolved)
+message(STATUS "gplates resolves to ${_resolved}")
+gplates_resolve_version(pygplates _resolved)
+message(STATUS "pygplates resolves to ${_resolved}")
 
 
 if (_failures GREATER 0)
