@@ -335,8 +335,11 @@ that lands one step forwards. `1.10` normalises to `1.10.0` and, from a `1.9.0` 
 legitimate next minor. And they judge a commit by the tags that exist *now*: a development
 commit made after a series branch was cut but before the target was bumped configured fine when
 it was made, and fails ("already released", or "being released on another branch") when
-`git bisect` revisits it after the tags exist. Bumping the target in the same sitting as the cut
-keeps that window empty; a bisect that lands in it anyway can pass the version as a `-D` define.
+`git bisect` revisits it after the tags exist. Making the bump the *first* commit after the cut
+keeps that window empty — the cut commit itself is an ancestor of the series tag, so the tag is
+skipped there and that commit still counts from the older release — and it is only non-empty if
+something else lands on the development branch in between. A bisect that lands in it anyway can
+pass the version as a `-D` define.
 
 The pure parts of the resolver — splitting, joining, ordering and the target checks — are tested
 by `cmake/modules/VersionFromGitTest.cmake`, registered with CTest as `version-resolver-test` in
