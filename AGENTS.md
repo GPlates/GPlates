@@ -274,9 +274,12 @@ push and fetch commands rather than assuming. There is an active downstream fork
 
 Set `PYGPLATES_RELEASE_VERSION` in `cmake/modules/VersionRelease.cmake` to the release version,
 commit, then tag **exactly** `PyGPlates-<version>` on the release series branch
-`release/pygplates-<X.Y>` (release tags belong only there — see *Branches and pull requests*); the workflow fails in its first
-minute on a mismatch or a `.dev` version. Standing on the tag, the derived version *is* the
-release target (no development number), which is what makes the two agree. Afterwards move the
+`release/pygplates-<X.Y>` (release tags belong only there — see *Branches and pull requests*).
+Pushing the tag starts the run, which fails in its first minute on a mismatch or a `.dev`
+version. A development version is built only by a manual dispatch — from a `PyGPlates-*.dev*`
+tag, by preference, so that the build stays findable — and a dispatch can never publish.
+Standing on the release tag, the derived version *is* the release target (no development
+number), which is what makes the two agree. Afterwards move the
 targets on, on both branches: the series branch to the next patch after a release (nothing after
 a candidate — the next commit there prepares the next candidate or the release, and nothing else
 is accepted until the release is final), and `gplates` to the next minor when the series gets its
