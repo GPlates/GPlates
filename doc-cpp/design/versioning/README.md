@@ -550,9 +550,21 @@ It costs nothing, verified on a synthetic six-commit repository: before tagging,
 `1.1.0.dev5` and A3 to `1.1.0.dev3`; after tagging A3 as `PyGPlates-1.1.0.dev3`, A3, A4 and A5
 still resolved to dev3, dev4 and dev5. A tag whose development number equals the count already in
 force is a numerical no-op, deleting it again restores the same numbers, and `build-wheels.yml`
-excludes `PyGPlates-*.dev*` from its publish trigger, so such a tag cannot start a release run.
-The distinction worth keeping is between a tag that merely *records* a build, which is freely
+excludes `PyGPlates-*.dev*` from its publish trigger, so such a tag cannot start a release run
+(a manual dispatch builds a development version, but cannot publish it — see below). The
+distinction worth keeping is between a tag that merely *records* a build, which is freely
 deletable, and an anchor that *re-bases* the count, which is not while it is load-bearing.
+
+**Wheels for a development version** come from a manual dispatch of `build-wheels.yml`, and the
+tag just described is the handle for it: tag the commit with the version it resolves to, push
+the tag, and *Run workflow* on the Actions page with that tag under *Use workflow from*. The menu
+takes a branch or a tag, never a commit hash, which is one more reason to tag the build (a branch
+works too, for a build nobody will need to find again). Pushing the tag starts nothing, since the
+push trigger excludes `.dev` tags, and the sdist job's tag check, which rejects a development
+version, applies only to a pushed tag — it guards publishing, and a dispatch cannot publish. A
+dispatch is a full run, every Python version on every platform, and the wheels and the sdist are
+downloaded from the run's artifacts. It can never reach PyPI: the publish jobs run only for a
+pushed `PyGPlates-*` tag, so the `pypi` environment's approval is never even asked for.
 
 ## 11. How the two development branches were unified
 

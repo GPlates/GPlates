@@ -10,7 +10,10 @@
 # Full runs (every Python version) happen on release tags and manual dispatch. A pull request
 # that touches the wheel machinery instead builds two Python versions per platform - enough to
 # prove the machinery works, and to show the compiler cache carrying from the first version to
-# the second, without spending six builds' worth of runner time.
+# the second, without spending six builds' worth of runner time. Wheels of a development
+# version, for someone to try before a release, come from a manual dispatch - from a
+# 'PyGPlates-*.dev*' tag on the commit, by preference, so that the build stays findable by its
+# version - and are downloaded from the run's artifacts; only a pushed release tag publishes.
 #
 # The sdist is built here too: it's what PyPI users without a matching wheel fall back to,
 # and it's what the conda-forge feedstock pulls.
@@ -117,7 +120,10 @@ jobs:
         # but this also catches a tag naming a different version of the same commit.)
         # Development versions are rejected outright: pip never installs them by default, and
         # publishing one would permanently reserve its filenames on PyPI for nothing.
-        if: github.ref_type == 'tag'
+        # Only a *pushed* tag, because only a pushed tag can publish: a manual dispatch may be
+        # started from a tag as well - a development tag, to build that commit's wheels for
+        # someone to try - and nothing it builds goes further than the run's artifacts.
+        if: github.event_name == 'push' && github.ref_type == 'tag'
         run: |
           pygplates_version='${{ steps.versions.outputs.pygplates-version }}'
           if [ "${GITHUB_REF_NAME}" != "PyGPlates-${pygplates_version}" ]; then

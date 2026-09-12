@@ -367,6 +367,26 @@ NumPy wheels is not usable anyway). To add or remove a version:
    (macOS and Windows need no equivalent step: `build_boost_python.sh` builds Boost.Python for
    whatever Python version each wheel build brings.)
 
+## Wheels for a development version
+
+A development build handed to someone - a wheel to try a fix before the release - is built by
+the same workflow, dispatched by hand, and never published. Tag the commit with the version it
+resolves to (`cmake -P cmake/modules/VersionFromGit.cmake pygplates` prints it), push the tag,
+then dispatch the workflow from that tag - *Run workflow* on the Actions page with the tag under
+*Use workflow from*, or:
+
+```
+gh workflow run build-wheels.yml --ref PyGPlates-1.2.0.dev12
+```
+
+The tag is what makes the commit findable later from the version string alone
+(`doc-cpp/design/versioning/README.md`, section 10), and it is also the handle the dispatch
+needs: the ref menu takes a branch or a tag, never a commit hash. Pushing the tag starts nothing,
+since the push trigger excludes `.dev` tags. The dispatch is a full run - every Python version on
+every platform - and the wheels and the sdist are downloaded from the run's artifacts. Nothing
+reaches PyPI: the publish jobs run only for a *pushed* release tag, and the sdist job's tag check,
+which rejects development versions, applies only to a pushed tag for the same reason.
+
 ## Publishing a release
 
 Releasing to [PyPI](https://pypi.org/p/pygplates) is part of `build-wheels.yml`: pushing a
