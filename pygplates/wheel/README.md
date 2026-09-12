@@ -94,7 +94,7 @@ problem).
 
 The images only need rebuilding when a dependency changes (ie, when the dockerfile or the
 version pins in `versions.sh` change). In CI that happens automatically: the workflow triggers
-on any push to the `pygplates` branch that touches either file (and can also be dispatched
+on any push to the `gplates` branch that touches either file (and can also be dispatched
 manually).
 
 To build the image locally instead (eg, to test a dockerfile change before pushing):

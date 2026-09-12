@@ -27,12 +27,15 @@
 # WHY 'rev-list --count' AND NOT 'git describe': 'git describe --first-parent' requires the tag
 # to sit *on* the first-parent line and fails outright here ("No tags can describe"). Release tags
 # live on the release series branches ('release/<product>-<major>.<minor>'), never on the develop
-# branch, so no release tag is ever on the develop branch's first-parent line - and it stays off
-# it even when the series branch is merged back, since such a merge takes the series branch as its
-# *second* parent. 'rev-list --count --first-parent <tag>..HEAD' needs no such ancestry - it counts
-# the first-parent commits of HEAD that are not reachable from the tag - so the tags work
-# unchanged. Counting from a tag on a series branch gives the number of commits since that series
-# was cut, which is the more meaningful quantity anyway.
+# branch, so no release tag is ever on the develop branch's first-parent line. (Series branches
+# are not merged back: a fix wanted on both lines goes to the develop branch and is cherry-picked
+# to the series, and a merge would carry the series branch's release target with it. Were one
+# ever merged, it would have to be with '--no-ff' - a fast-forward puts the tags on the line and
+# hands the develop branch the series' target, with no guard firing.)
+# 'rev-list --count --first-parent <tag>..HEAD' needs no such ancestry - it counts the
+# first-parent commits of HEAD that are not reachable from the tag - so the tags work unchanged.
+# Counting from a tag on a series branch gives the number of commits since that series was cut,
+# which is the more meaningful quantity anyway.
 #
 # ANCHOR TAGS: because the *nearest* tag wins, a tag placed on a branch takes over the numbering
 # from that point. That is how a downstream fork keeps its own development numbers without
@@ -44,8 +47,11 @@
 # runs back through the 2013 'python-api' branch, and no ancestor of any GPlates release tag
 # newer than that sits on it - so without the anchor the count runs from 2013 and gives
 # 2.6.0-1206 instead of 2.6.0-47. Deleting the tag would silently restore the larger number.
-# It stops being load-bearing at the next release, when release/gplates-2.6.0 is cut from the
-# develop tip and the branch point lands back on the first-parent line.
+# Once 'release/gplates-2.6' is cut and 'GPlates-2.6.0' tagged on it, the tip counts from that
+# tag instead - but every commit between the anchor and the branch point still counts from the
+# anchor (a release tag scores 0 there and is skipped, see below), and those are the commits
+# 'git bisect' walks. So the anchor stays load-bearing for its stretch of history: never delete
+# it.
 #
 
 if (CMAKE_SCRIPT_MODE_FILE)

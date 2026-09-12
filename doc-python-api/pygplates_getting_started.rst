@@ -204,8 +204,10 @@ the repository into):
   cd <parent-of-source-code-dir>
   git clone https://github.com/GPlates/GPlates.git
   cd GPlates
-  git tag --list 'PyGPlates-*' --sort=version:refname
-  git switch --detach <the last tag listed>
+  git switch --detach <release-tag>
+
+where ``<release-tag>`` is the tag of the latest release, such as ``PyGPlates-1.0.0`` - the
+`releases page <https://github.com/GPlates/GPlates/releases>`_ lists them.
 
 .. note:: Each release series also has a branch of its own, such as ``release/pygplates-1.1``, whose tip is
   always the most recent release in that series. So ``git switch release/pygplates-1.1`` gets you the latest

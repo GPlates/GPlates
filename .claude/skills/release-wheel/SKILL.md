@@ -47,6 +47,17 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
    deployment (repository page → the run → "Review deployments"). This is the moment to eyeball
    the TestPyPI project page. Approval waits expire after 30 days.
 5. **Publish.** On approval the whole matrix uploads to PyPI with PEP 740 attestations.
+6. **Move the targets on.** A tag changes what the next version on each branch is called, and
+   the resolver refuses to configure until `VersionRelease.cmake` says so:
+   - on the series branch, after the *release*, set the target to the next patch (`1.1.1` after
+     `1.1.0`) so later fixes there configure. After a candidate, nothing: the next commit on the
+     branch prepares the next candidate or the release, and nothing else is accepted there until
+     the release is final.
+   - on `gplates`, if this was the *first* tag in the series (the first candidate, or the
+     release when there was none), set the target to the next minor (`1.2.0`). The development
+     branch's count restarts at that moment, so left on `1.1.0` it would re-issue versions it
+     has already used. Later tags in the series need nothing on `gplates`.
+   Commit each on its own branch. The rules are in `doc-cpp/design/versioning/README.md` (7.2).
 
 ## Recovery
 

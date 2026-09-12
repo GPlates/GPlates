@@ -92,16 +92,18 @@ in Debug instead of throwing, which kills every test that exercises an error pat
 products enforce that differently, and the difference decides how you fix an empty run:
 
 - **pyGPlates** tests are registered `CONFIGURATIONS Release MinSizeRel`. Omitting `-C Release`
-  matches nothing and CTest still **exits 0**, so the run looks like a pass.
+  matches none of them and CTest still **exits 0**, so the run looks like a pass.
 - **GPlates** tests are registered by `gtest_discover_tests()`, which cannot attach
   `CONFIGURATIONS`, so they are instead skipped at *configure* time by
   `if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")` (`src/CMakeLists.txt`). A Debug build tree contains
-  no registered tests at all and **no `-C` value will reveal any** — reconfigure as Release. On a
+  no GPlates tests at all and **no `-C` value will reveal any** — reconfigure as Release. On a
   single-config Release tree a bare `ctest` does work; `-C Release` matters for the multi-config
   generators (Visual Studio, Xcode).
 
-So: zero tests from `build-pygplates` usually means a missing `-C Release`; zero tests from
-`build-gplates` usually means the tree was configured Debug.
+So: only `version-resolver-test` from `build-pygplates` usually means a missing `-C Release`, and
+only it from `build-gplates` usually means the tree was configured Debug. That one test carries
+no configuration restriction, deliberately — it runs a CMake script and builds nothing — so it
+runs, and passes, in exactly those mis-run cases. One passing test is not a green suite.
 
 The GPlates unit-test binary is `EXCLUDE_FROM_ALL`, so build it explicitly:
 
@@ -270,12 +272,14 @@ Set `PYGPLATES_RELEASE_VERSION` in `cmake/modules/VersionRelease.cmake` to the r
 commit, then tag **exactly** `PyGPlates-<version>` on the release series branch
 `release/pygplates-<X.Y>` (release tags belong only there — see *Branches and pull requests*); the workflow fails in its first
 minute on a mismatch or a `.dev` version. Standing on the tag, the derived version *is* the
-release target (no development number), which is what makes the two agree. Afterwards set the
-target to the next release, or the following commit resolves to a version sorting below the one
-just released — a hard error rather than a bad package. The resolver also refuses a target that
-sorts below the nearest release or skips a version, so the next target has to be the next patch,
-minor or major (or a candidate of one); `cmake -P cmake/modules/VersionFromGitTest.cmake` runs
-those rules as tests.
+release target (no development number), which is what makes the two agree. Afterwards move the
+targets on, on both branches: the series branch to the next patch after a release (nothing after
+a candidate — the next commit there prepares the next candidate or the release, and nothing else
+is accepted until the release is final), and `gplates` to the next minor when the series gets its
+*first* tag. Left behind, the following commit resolves to a version sorting below the one just
+released, or re-issues numbers the development branch has already used — a hard error rather
+than a bad package. The resolver also refuses a target that sorts below the nearest release or
+skips a version; `cmake -P cmake/modules/VersionFromGitTest.cmake` runs those rules as tests.
 Publishing uses PyPI Trusted Publishing (OIDC, no tokens) and pauses for manual approval on the
 `pypi` deployment environment. **Renaming `.github/workflows/build-wheels.yml` silently breaks
 publishing** — the trusted-publisher registration binds to the filename. Adding a Python version

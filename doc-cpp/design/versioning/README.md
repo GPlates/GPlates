@@ -377,8 +377,12 @@ Each is surprising the first time a developer meets it.
 ### 8.1 On the development branch, the count runs from the branch point, not from the tag
 
 A release tag sits on a series branch, so it is never on the development branch's first-parent
-line — whether or not the series branch is merged back, since such a merge takes the series branch
-as its *second* parent. That sounds like a problem and is not: the count from such a tag equals
+line. (Series branches are not merged back — a fix wanted on both lines lands on the development
+branch and is cherry-picked to the series, which is what GDAL's and QGIS's backport bots do — and
+a merge would carry the series branch's release target with it. Were one ever merged, it would
+have to be with `--no-ff`: a fast-forward puts the tags on the line and hands the development
+branch the series' target, with no guard firing.) That sounds like a problem and is not: the
+count from such a tag equals
 the count from the commit the series branch was **cut from**. Everything reachable from the tag,
 including the branch point and all history before it, is excluded, and the series branch's own
 commits were never on the development line to begin with.
@@ -451,9 +455,11 @@ reference release.
 **Upstream depends on one right now.** The `gplates` branch's first-parent line runs back through
 the 2013 `python-api` branch, and no ancestor of any GPlates release tag newer than that sits on
 it, so without `GPlates-2.6.0-47` the count runs from 2013 and gives `2.6.0-1206`. Deleting the
-tag would silently restore the larger number. It stops being load-bearing when
-`release/gplates-2.6` is cut and `GPlates-2.6.0` tagged there, because that tag is then the
-nearest.
+tag would silently restore the larger number. Once `release/gplates-2.6` is cut and
+`GPlates-2.6.0` tagged there, the tip counts from that tag instead — but every commit between the
+anchor and the branch point still counts from the anchor (a tag HEAD is an ancestor of scores 0
+and is skipped, so the anchor is the nearest tag again), and those are exactly the commits
+`git bisect` walks. So the anchor stays load-bearing for its stretch of history: never delete it.
 
 **A fork keeps its own numbers with one.** Commits on a fork advance its own first-parent line,
 so by default a fork mints the same development version strings as upstream for different code.
@@ -536,7 +542,7 @@ second parent**, and pushed to `gplates` as a fast-forward:
 
 ```
 git checkout pygplates && git merge --no-ff gplates
-git push public HEAD:gplates
+git push <remote> HEAD:gplates
 ```
 
 Three details mattered:
