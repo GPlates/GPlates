@@ -119,8 +119,7 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
   classification path.
 - Physically move the `app-logic` layers machinery into its own directory, and the ~17
   embedded-interpreter files out of `src/api/` (they serve `gui/PythonManager`, not the API).
-  Directory moves multiply merge risk across the two develop branches, the `vulkan` branch
-  and the downstream fork, so this waits for a dedicated both-develop-branches commit at a
-  quiet merge point.
+  Directory moves multiply merge risk across the `vulkan` branch and the downstream fork, so
+  this waits for a dedicated commit at a quiet merge point.
 - Dissolve `src/feature-visitors/` and delete the dead `deprecated/` subtrees (separate PR,
   already planned).

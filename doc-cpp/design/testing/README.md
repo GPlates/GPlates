@@ -13,12 +13,12 @@ What exists (as of the GoogleTest migration, 2026):
   registered individually with CTest via `gtest_discover_tests()`, so `ctest` runs them in
   parallel, `ctest -R <pattern>` targets them, and `ctest --rerun-failed` works at test-case
   granularity. CI runs them on Linux/macOS/Windows via
-  `.github/workflows/build-test-gplates.yml` (the `gplates` branch).
+  `.github/workflows/build-test-gplates.yml`.
 - **pyGPlates tests** — Python `unittest` suite in `pygplates/test/`, registered with CTest as
   `pygplates-test` (plus `pygplates-stub-test` for the `.pyi` stub) in pyGPlates build configs
-  (`GPLATES_BUILD_GPLATES=FALSE`). CI runs them via `.github/workflows/build-test-pygplates.yml`
-  (the `pygplates` branch). These cover the pyGPlates API surface (app-logic, maths, model) and
-  are documented separately.
+  (`GPLATES_BUILD_GPLATES=FALSE`). CI runs them via `.github/workflows/build-test-pygplates.yml`.
+  These cover the pyGPlates API surface (app-logic, maths, model) and are documented
+  separately.
 
 The two suites are complementary, not redundant: the pyGPlates suite exercises the
 reconstruction/model machinery through the public Python API; the C++ suite exercises what the
@@ -117,9 +117,11 @@ take everything.
 
 ## CI notes
 
-- The two workflows are branch-scoped: `build-test-gplates.yml` on `gplates`,
-  `build-test-pygplates.yml` on `pygplates`. The branches are normally at the same HEAD, so the
-  per-branch split covers both products without doubling CI cost.
+- Both workflows run on every push to `gplates` and on every pull request based on it, so each
+  push builds and tests both products. Until the two develop branches were unified (2026-09)
+  each workflow ran only on its own branch and built only its own product, and a change to the
+  shared sources could break the other product undetected until the next sync merge — see
+  `doc-cpp/design/versioning/README.md`.
 - sccache cache keys are namespaced per product (`sccache-gplates-*` and `sccache-pygplates-*`):
   `gplates` is the repository's *default* branch, so its caches are visible to every ref, and the
   two build configurations share no cache entries (every common translation unit differs in

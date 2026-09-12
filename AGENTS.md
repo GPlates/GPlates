@@ -9,9 +9,9 @@ same sources, selected by the CMake option `GPLATES_BUILD_GPLATES`. It is declar
 `cmake/modules/Version.cmake` (not `ConfigDefault.cmake`) and **defaults to `TRUE`**, so a
 pyGPlates build that omits `-DGPLATES_BUILD_GPLATES=FALSE` silently builds GPlates instead.
 
-Either product can be built from either develop branch. Default to the product matching the
-checked-out branch — `pygplates` branch to `build-pygplates/`, `gplates` branch to
-`build-gplates/` — but building the other product from the same worktree is normal and fine.
+There is one development branch, `gplates`, and both products are developed on it. Building
+either one from the same worktree is normal; keep them in separate build trees
+(`build-pygplates/`, `build-gplates/`) so neither reconfigure invalidates the other.
 
 Versions are **derived, not written**. `cmake/modules/VersionRelease.cmake` holds the release
 each line is heading towards (`GPLATES_RELEASE_VERSION`, `PYGPLATES_RELEASE_VERSION`), and
@@ -92,16 +92,18 @@ in Debug instead of throwing, which kills every test that exercises an error pat
 products enforce that differently, and the difference decides how you fix an empty run:
 
 - **pyGPlates** tests are registered `CONFIGURATIONS Release MinSizeRel`. Omitting `-C Release`
-  matches nothing and CTest still **exits 0**, so the run looks like a pass.
+  matches none of them and CTest still **exits 0**, so the run looks like a pass.
 - **GPlates** tests are registered by `gtest_discover_tests()`, which cannot attach
   `CONFIGURATIONS`, so they are instead skipped at *configure* time by
   `if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")` (`src/CMakeLists.txt`). A Debug build tree contains
-  no registered tests at all and **no `-C` value will reveal any** — reconfigure as Release. On a
+  no GPlates tests at all and **no `-C` value will reveal any** — reconfigure as Release. On a
   single-config Release tree a bare `ctest` does work; `-C Release` matters for the multi-config
   generators (Visual Studio, Xcode).
 
-So: zero tests from `build-pygplates` usually means a missing `-C Release`; zero tests from
-`build-gplates` usually means the tree was configured Debug.
+So: only `version-resolver-test` from `build-pygplates` usually means a missing `-C Release`, and
+only it from `build-gplates` usually means the tree was configured Debug. That one test carries
+no configuration restriction, deliberately — it runs a CMake script and builds nothing — so it
+runs, and passes, in exactly those mis-run cases. One passing test is not a green suite.
 
 The GPlates unit-test binary is `EXCLUDE_FROM_ALL`, so build it explicitly:
 
@@ -126,20 +128,18 @@ built module must have no direct dependency on GPlates' GUI/rendering libraries)
 either fails after adding a file or an `#include`, the failure message says which CMake list
 to fix — do that rather than weakening the tracer.
 
-CI coverage gap: each develop branch's workflow builds only its own product
-(`build-test-pygplates.yml` → pyGPlates, `build-test-gplates.yml` → GPlates), so CI will not
-catch a change to the shared sources or the CMake source lists breaking the *other* product.
-Build both **locally** before pushing such a change: pyGPlates and GPlates under Qt6, plus
-GPlates under Qt5 when the change could plausibly be Qt-version-sensitive (any `QT_VERSION`
-conditional, `qt-widgets`, or a Qt include whose header moved between Qt5 and Qt6). The Qt5
-build needs a second conda environment (see *Build* above); if it is not set up, say what you
-could not verify rather than skipping it silently. The nastiest case: a change landing on
-`gplates` (the default branch, which the downstream fork tracks) that breaks pyGPlates surfaces
-only at the next sync merge into `pygplates`, where it looks like the merge's fault.
+**CI builds both products on every push**, which is what makes the boundary enforceable: the
+two CTests above are pyGPlates tests, so only a pyGPlates build can run them. Until the develop
+branches were unified each workflow ran on its own branch and built only its own product, and a
+change to the shared sources or the CMake source lists could break the other product undetected
+— discovered at the next sync merge, where it looked like the merge's fault. Both defects PR #70
+fixed had been hiding in exactly that gap.
 
-The gap could be closed by adding the other product's configure+build to each workflow, at the
-cost of roughly doubling CI compute per push. That is a maintainer decision, recorded here so
-it can be made deliberately — not a change to make in passing (see *Working agreements*).
+What CI still does **not** cover is Qt5. Build GPlates under Qt5 locally before pushing a change
+that could plausibly be Qt-version-sensitive (any `QT_VERSION` conditional, `qt-widgets`, or a Qt
+include whose header moved between Qt5 and Qt6). That needs a second conda environment (see
+*Build* above); if it is not set up, say what you could not verify rather than skipping it
+silently.
 
 ## Python API docstrings and the `.pyi` stub
 
@@ -226,29 +226,32 @@ Where this guidance and a specific file disagree, match the file you are editing
 
 ## Branches and pull requests
 
-The branching model is a gitflow variant, described in `README.md`. Four **main** branches are
-permanent; everything else is a short-lived **support** branch merged back into one of them.
+This is **no longer** gitflow — it is the trunk-plus-release-series model, described in `README.md`
+and argued for in `doc-cpp/design/versioning/README.md`.
 
-- **main develop** branches: `gplates` (the repository's default branch) and `pygplates`. These
-  are kept closely in sync — GPlates-related work is done on `gplates` and pyGPlates-related
-  work on `pygplates`, but they are otherwise near-identical.
-- **main release** branches: `release-gplates` and `release-pygplates` track release history.
-  **Release tags live only here** — on the merge commit of the `release/…` or `hotfix/…` branch
-  that prepared the release, never on that temporary branch and never on a develop branch. (A
-  release *candidate* is tagged on the `release/…` branch preparing it, not being a release.)
-- **support** branches: `feature/<name>`, `fix/<name>` (a fix rather than a feature, but
-  otherwise identical — branched from and merged back into a main develop branch),
-  `release/{gplates,pygplates}-<version>` (cut from a main develop branch), and
-  `hotfix/{gplates,pygplates}-<version>` (cut from a main release branch).
+- **`gplates`** is the single development branch and the repository's default. Both products are
+  developed on it; there is no per-product branch. (It will be renamed `main` in a later change.)
+- **release series** branches — `release/gplates-<X.Y>`, `release/pygplates-<X.Y>` — are
+  permanent, cut from `gplates` when the first release in the series is prepared. **Release tags
+  live only here**, never on `gplates`: candidates, the release, and each later patch release are
+  successive commits on the one branch, so the tip is always the newest X.Y.z. There is no
+  `hotfix/` concept and no permanent 'production' branch.
+- **short-lived** branches: `feature/<name>` and `fix/<name>` off `gplates` (a fix rather than a
+  feature, but otherwise identical), and patch branches off a release series branch.
+- **fixes move between `gplates` and a series branch by `git cherry-pick -x`**, in either
+  direction — never by merging a series branch into `gplates`. Such a merge conflicts on
+  `VersionRelease.cmake` every time (each side has moved its release target), and when it does
+  not conflict it silently hands `gplates` the series branch's target.
 
-**Base pull requests on the main develop branch you are working from — `pygplates` or `gplates`
-— never on a `release-*` branch.** CI enforces this: `build-test-pygplates.yml` only runs on
-`pygplates` and `build-test-gplates.yml` only on `gplates`.
+**Base pull requests on `gplates`, never on a release series branch.** CI enforces this: both
+`build-test-gplates.yml` and `build-test-pygplates.yml` run only on `gplates`. Building **both**
+products on every push is deliberate — it is what closes the coverage gap that two develop
+branches used to leave open (see *The pyGPlates module boundary*).
 
 Pull requests are merged with a merge commit (`Merge pull request #N from …`), so a branch's
 commits become the permanent record. **Whether to tidy a branch before merging is a judgement
-about that branch, not a convention** — neither develop branch has a squash policy, and they do
-not differ in this any more than in anything else. Ask what a reader hitting the commit in
+about that branch, not a convention** — there is no squash policy. Ask what a reader hitting the
+commit in
 `git log` or `git bisect` a year from now gets from it:
 
 - **Squash** commits that exist only because of iteration — "fix the CI", "try again", a typo
@@ -270,12 +273,17 @@ push and fetch commands rather than assuming. There is an active downstream fork
 ## Releases (pyGPlates wheels)
 
 Set `PYGPLATES_RELEASE_VERSION` in `cmake/modules/VersionRelease.cmake` to the release version,
-commit, then tag **exactly** `PyGPlates-<version>` on `release-pygplates` (release tags belong on
-the main release branches — see *Branches and pull requests*); the workflow fails in its first
+commit, then tag **exactly** `PyGPlates-<version>` on the release series branch
+`release/pygplates-<X.Y>` (release tags belong only there — see *Branches and pull requests*); the workflow fails in its first
 minute on a mismatch or a `.dev` version. Standing on the tag, the derived version *is* the
-release target (no development number), which is what makes the two agree. Afterwards set the
-target to the next release, or the following commit resolves to a version sorting below the one
-just released — a hard error rather than a bad package.
+release target (no development number), which is what makes the two agree. Afterwards move the
+targets on, on both branches: the series branch to the next patch after a release (nothing after
+a candidate — the next commit there prepares the next candidate or the release, and nothing else
+is accepted until the release is final), and `gplates` to the next minor when the series gets its
+*first* tag. Left behind, the following commit resolves to a version sorting below the one just
+released, or re-issues numbers the development branch has already used — a hard error rather
+than a bad package. The resolver also refuses a target that sorts below the nearest release or
+skips a version; `cmake -P cmake/modules/VersionFromGitTest.cmake` runs those rules as tests.
 Publishing uses PyPI Trusted Publishing (OIDC, no tokens) and pauses for manual approval on the
 `pypi` deployment environment. **Renaming `.github/workflows/build-wheels.yml` silently breaks
 publishing** — the trusted-publisher registration binds to the filename. Adding a Python version

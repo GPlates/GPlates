@@ -19,11 +19,11 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
 
 - Confirm the working tree is clean and up to date with the GitHub remote. Name that remote
   explicitly rather than assuming `origin` — not every checkout has one.
-- Know which branch the release is being cut on. A release is prepared on a
-  `release/pygplates-<version>` branch taken from `pygplates`, merged into `release-pygplates`,
-  and tagged **there** — release tags belong on the main release branches, and nowhere else
-  (the root `README.md` has the branching model). A release *candidate* is tagged on the
-  `release/pygplates-<version>` branch itself, since it is not a release.
+- Know which branch the release is being cut on. A release is prepared on the permanent release
+  series branch `release/pygplates-<major>.<minor>`, cut from `gplates` when the first release in
+  that series is prepared, and tagged **there** — release tags belong on the series branches and
+  nowhere else (the root `README.md` has the branching model). Candidates and later patch
+  releases are tagged on the same branch, each a further commit on it.
 - If this is a first pass at a release, suggest an `rc` version (e.g. `1.1.0rc1`). pip ignores
   release candidates by default, so it exercises the whole pipeline — tag check, TestPyPI
   rehearsal, approval gate, real PyPI upload — at low stakes.
@@ -34,9 +34,9 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
    `cmake/modules/VersionRelease.cmake` to the target version, and commit. Development versions
    are counted from git and cannot be released — the run rejects a `.dev` version. Check what
    the commit resolves to with `cmake -P cmake/modules/VersionFromGit.cmake pygplates`.
-2. **Tag exactly `PyGPlates-<version>`, on the release commit.** For a release that is the
-   merge commit on `release-pygplates`; for a release candidate it is the commit on the
-   `release/pygplates-<version>` branch. The tag's version string must match
+2. **Tag exactly `PyGPlates-<version>`, on the release commit.** That is the commit on the
+   `release/pygplates-<major>.<minor>` branch that sets the target, whether it is a candidate, the
+   release itself or a later patch. The tag's version string must match
    `PYGPLATES_RELEASE_VERSION` character for character; the run fails in its first minute if they
    disagree, and so does any local build standing on the tag. Push the tag to the GitHub remote.
    Ask which remote if there is more than one.
@@ -47,6 +47,17 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
    deployment (repository page → the run → "Review deployments"). This is the moment to eyeball
    the TestPyPI project page. Approval waits expire after 30 days.
 5. **Publish.** On approval the whole matrix uploads to PyPI with PEP 740 attestations.
+6. **Move the targets on.** A tag changes what the next version on each branch is called, and
+   the resolver refuses to configure until `VersionRelease.cmake` says so:
+   - on the series branch, after the *release*, set the target to the next patch (`1.1.1` after
+     `1.1.0`) so later fixes there configure. After a candidate, nothing: the next commit on the
+     branch prepares the next candidate or the release, and nothing else is accepted there until
+     the release is final.
+   - on `gplates`, if this was the *first* tag in the series (the first candidate, or the
+     release when there was none), set the target to the next minor (`1.2.0`). The development
+     branch's count restarts at that moment, so left on `1.1.0` it would re-issue versions it
+     has already used. Later tags in the series need nothing on `gplates`.
+   Commit each on its own branch. The rules are in `doc-cpp/design/versioning/README.md` (7.2).
 
 ## Recovery
 
