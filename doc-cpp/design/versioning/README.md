@@ -233,9 +233,15 @@ section is the reasoning. There are two inputs: a hand-edited **release target**
 4. Skip any tag at distance 0 that is not *at* HEAD. Those are tags HEAD is an ancestor of — they
    name a later commit — and without this a `git bisect` step or a `HEAD~10` build scored 0, won
    the minimum, and aborted the configure.
-5. The nearest tag wins; among equally near tags the largest development number wins, so the
-   count cannot go backwards.
-6. **N = that tag's development number + its distance**, and the version is `join(target, N)`.
+5. An anchor tag counts only if it is on HEAD's first-parent line. Step 3 gives an off-line tag
+   a distance too — the count from the branch point, which is what a series branch's release tag
+   needs (section 8.1) — but a number recorded on another line means nothing on this one: a
+   fork's anchor, fetched by tag auto-follow along with its branch, or a development tag on a
+   feature branch since merged, would otherwise take over the development branch's count.
+6. The nearest tag wins. At the same distance a release beats an anchor, since a release resets
+   the count and a development tag left beside it on the same commit must not carry the old count
+   past it; among anchors the largest number wins, so the count cannot go backwards.
+7. **N = that tag's development number + its distance**, and the version is `join(target, N)`.
 
 The base always comes from the *target*, never from the tag. A tag contributes a number and a
 position in history; tags' bases are read only by the guards. An anchor tag's base is checked
@@ -491,18 +497,27 @@ read as current, and need not.
 
 **Where it goes.** On the first-parent line of the commits it is to govern, since that is the
 line the count follows: the development branch for upstream's re-anchoring, a fork's own branch
-for the fork's. A series branch counts from its own release tags and never needs one. A fork
-that syncs by merging keeps its anchor on its line; a rebase rewrites the commits and leaves the
-tag on the old ones, so a fork that rebases re-anchors afterwards.
+for the fork's. The resolver enforces it — an anchor off HEAD's first-parent line is ignored
+(section 7.1, step 5) — because a number recorded on one line means nothing on another, and
+without that rule a fork's anchor would take over an upstream checkout's count the moment a
+maintainer fetched the fork (git's tag auto-follow brings the tag with the branch), as would a
+development tag on a feature branch once merged. A series branch counts from its own release tags
+and never needs one. A fork that syncs by merging keeps its anchor on its line; a rebase rewrites
+the commits and leaves the tag on the old ones, off the line, so a fork that rebases re-anchors
+afterwards.
 
-**Upstream depends on one right now.** The `gplates` branch's first-parent line runs back through
-the 2013 `python-api` branch, and no ancestor of any GPlates release tag newer than that sits on
-it, so without `GPlates-2.6.0-47` the count runs from 2013 and gives `2.6.0-1206`. Deleting the
-tag would silently restore the larger number. Once `release/gplates-2.6` is cut and
-`GPlates-2.6.0` tagged there, the tip counts from that tag instead — but every commit between the
-anchor and the branch point still counts from the anchor (a tag HEAD is an ancestor of scores 0
-and is skipped, so the anchor is the nearest tag again), and those are exactly the commits
-`git bisect` walks. So the anchor stays load-bearing for its stretch of history: never delete it.
+**Upstream depends on two right now.** `GPlates-2.6.0-47` is on the old `gplates` line, which
+runs back through the 2013 `python-api` branch with no newer GPlates release tag on it, so without
+the anchor the count ran from 2013 and gave `2.6.0-1206`. `GPlates-2.6.0-56` is on the merge that
+unified the development branches (section 11): that merge was made on the old `pygplates` line,
+which is the line `gplates` follows now, so the older anchor is off it and, under step 5, does not
+count for it — the merge's own number, re-anchored where the line is, which left every number as
+it was. Each is load-bearing for its stretch: the older for the old `gplates` commits a
+`git bisect` walks (the old tip, two commits past it, resolves to `2.6.0-49`), the newer for
+everything since. Once `release/gplates-2.6` is cut and `GPlates-2.6.0` tagged there, the tip
+counts from that tag instead — but every commit between the anchors and the branch point still
+counts from the anchors (a tag HEAD is an ancestor of scores 0 and is skipped, so the anchor is
+the nearest tag again), and those are exactly the commits `git bisect` walks. Never delete either.
 
 **A fork keeps its own numbers with one.** Commits on a fork advance its own first-parent line,
 so by default a fork mints the same development version strings as upstream for different code.
@@ -520,7 +535,9 @@ three active forks hold one tag between them, and it is the fork's own — and a
 branch brings only the tags on it, while release tags live on the series branches. With no
 `GPlates-*` or `PyGPlates-*` tags the resolver has nothing to count from, and it stops there,
 saying so and naming the remedy, rather than falling through to the fallbacks for a tree with
-no repository and blaming the wrong thing:
+no repository and blaming the wrong thing (unless the tree carries the sdist's `PKG-INFO` or a
+`VersionRecorded.cmake`, as an sdist imported into a packaging repository does — that is not a
+fork, and those files supply its version):
 
 ```
 git fetch --tags <upstream>
@@ -532,9 +549,9 @@ The push is what gives the fork's own clones and its CI the tags. It wants repea
 upstream series cut: otherwise, once upstream's target moves past a release the fork has never
 seen, the no-skip guard fires — and its message says to fetch tags first. A plain `git clone`
 is unaffected, since it fetches every tag whichever branch it asks for (verified: a clone of the
-development branch alone carried all 258 tags and resolved both versions). Everything on the
-public remote is a `GPlates-*` or `PyGPlates-*` tag, and the resolver ignores any other prefix,
-so fetching all tags is safe.
+development branch alone carried all 258 tags and resolved both versions). Everything in the
+upstream repository is a `GPlates-*` or `PyGPlates-*` tag, and the resolver ignores any other
+prefix, so fetching all tags is safe.
 
 ## 10. Recipes
 
@@ -554,8 +571,9 @@ git -c versionsort.suffix=a -c versionsort.suffix=b -c versionsort.suffix=rc tag
 
 (`PyGPlates-*` for pyGPlates.) The `versionsort.suffix` settings are what sort `PyGPlates-1.0.0rc1`
 *before* `PyGPlates-1.0.0` rather than after it. Not every tag listed is a release: **a tag
-carrying a development number is an anchor, never a release** — `GPlates-2.6.0-47` sorts last in
-that list, precisely where the newest release would be expected — and a few very old tags are
+carrying a development number is an anchor, never a release** — the anchors `GPlates-2.6.0-47`
+and `GPlates-2.6.0-56` sort last in that list, precisely where the newest release would be
+expected — and a few very old tags are
 releases in a form the resolver does not parse, and ignores: `GPlates-1.5+hellinger-testing` was
 a real release, oddly named, given to a subset of users to test. A release tag is
 `GPlates-<version>` or `PyGPlates-<version>` with no development number.
@@ -568,11 +586,13 @@ the branch:
 # pyGPlates 1.1.0.dev48, counting from PyGPlates-1.0.0 (development number 0)
 git rev-list --first-parent --reverse PyGPlates-1.0.0..gplates | sed -n '48p'
 
-# GPlates 2.6.0-56, counting from the anchor GPlates-2.6.0-47 (development number 47): 56 - 47 = 9
-git rev-list --first-parent --reverse GPlates-2.6.0-47..gplates | sed -n '9p'
+# GPlates 2.6.0-58, counting from the anchor GPlates-2.6.0-56 (development number 56): 58 - 56 = 2
+git rev-list --first-parent --reverse GPlates-2.6.0-56..gplates | sed -n '2p'
 ```
 
-Both return `1b699ffe8`, the unification merge. Count along the branch the build came from — the
+The first returns `1b699ffe8`, the unification merge, which is also the commit the GPlates anchor
+names, so `2.6.0-56` is the tag itself and the second returns the commit two after it. Count
+along the branch the build came from — the
 development branch, or a release series branch — because of section 8.3: the same string can name
 different commits on different lines. Concretely, `1.1.0.dev42` was the `gplates` tip at
 `79fa87d8d` on 2026-09-11, and counting 42 along today's `gplates` lands on `255dceb25`, because
@@ -583,7 +603,9 @@ the unification cannot be found by counting at all.
 It costs nothing, verified on a synthetic six-commit repository: before tagging, A5 resolved to
 `1.1.0.dev5` and A3 to `1.1.0.dev3`; after tagging A3 as `PyGPlates-1.1.0.dev3`, A3, A4 and A5
 still resolved to dev3, dev4 and dev5. A tag whose development number equals the count already in
-force is a numerical no-op, deleting it again restores the same numbers, and `build-wheels.yml`
+force is a numerical no-op — even if that commit is later tagged as a release, since a release
+beats an anchor at the same distance (section 7.1) — deleting it again restores the same numbers,
+and `build-wheels.yml`
 excludes `PyGPlates-*.dev*` from its publish trigger, so such a tag cannot start a release run
 (a manual dispatch builds a development version, but cannot publish it — see below). The
 distinction worth keeping is between a tag that merely *records* a build, which is freely
@@ -642,10 +664,15 @@ Three details mattered:
 
 The counters were computed from the first-parent distances before the merge rather than guessed
 (`PyGPlates-1.0.0..pygplates` was 47 and `GPlates-2.6.0-47..pygplates` was 8, so the merge sits
-at 48 and 9) and verified afterwards: `1.1.0.dev48` and `2.6.0-56`. No anchor tags were needed.
-The fallback, had the ordering proved awkward, was to keep `gplates`'s line and re-anchor both
-counters forward with two anchor tags on the merge commit; it was the fallback rather than the
-plan because choosing the numbers by hand is the class of error the scheme removed.
+at 48 and 9) and verified afterwards: `1.1.0.dev48` and `2.6.0-56`. No anchor tags were needed
+then. The fallback, had the ordering proved awkward, was to keep `gplates`'s line and re-anchor
+both counters forward with two anchor tags on the merge commit; it was the fallback rather than
+the plan because choosing the numbers by hand is the class of error the scheme removed. One anchor
+was added to the merge commit afterwards all the same, `GPlates-2.6.0-56`, when anchors were
+restricted to the first-parent line (section 7.1, step 5): the older anchor sits on the old
+`gplates` line, which is not the line `gplates` follows, and the merge's own number, placed where
+the line is, kept every number the same. Its number was not chosen by hand: it is what the merge
+resolved to.
 
 Then the one open pull request based on `pygplates` was retargeted to `gplates` (deleting the
 base branch of an open PR closes it), and `pygplates` was deleted from both remotes.

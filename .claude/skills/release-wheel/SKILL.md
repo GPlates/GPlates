@@ -46,7 +46,10 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
 4. **Review, then approve.** The run sits at *waiting* until a maintainer approves the `pypi`
    deployment (repository page → the run → "Review deployments"). This is the moment to eyeball
    the TestPyPI project page. Approval waits expire after 30 days.
-5. **Publish.** On approval the whole matrix uploads to PyPI with PEP 740 attestations.
+5. **Publish.** On approval the whole matrix uploads to PyPI with PEP 740 attestations. Then
+   create the GitHub Release for the tag (`gh release create PyGPlates-<version>`, with
+   `--prerelease` for a candidate): the releases page is where the getting-started docs send
+   people to find the latest release tag, and nothing creates the entry for them.
 6. **Move the targets on.** A tag changes what the next version on each branch is called, and
    the resolver refuses to configure until `VersionRelease.cmake` says so:
    - on the series branch, after the *release*, set the target to the next patch (`1.1.1` after

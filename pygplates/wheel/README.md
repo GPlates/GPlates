@@ -424,6 +424,9 @@ The flow, end to end:
 5. On approval the whole matrix - one sdist, one wheel per Python version per platform, counted
    before upload - goes to PyPI, each file with a [PEP 740](https://peps.python.org/pep-0740/)
    attestation.
+6. Create the GitHub Release for the tag (`gh release create PyGPlates-<version>`, with
+   `--prerelease` for a candidate). The releases page is where the getting-started docs send
+   people to find the latest release tag, and nothing creates the entry for them.
 
 The conda-forge package is updated afterwards, by hand and from the sdist this run published -
 see `pygplates/conda/README.md`.

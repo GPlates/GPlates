@@ -207,7 +207,12 @@ the repository into):
   git switch --detach <release-tag>
 
 where ``<release-tag>`` is the tag of the latest release, such as ``PyGPlates-1.0.0`` - the
-`releases page <https://github.com/GPlates/GPlates/releases>`_ lists them.
+`releases page <https://github.com/GPlates/GPlates/releases>`_ lists them, or list them from the
+clone, newest last (the ``versionsort`` settings put a release candidate, or a development build,
+before the release it precedes):
+::
+
+  git -c versionsort.suffix=a -c versionsort.suffix=b -c versionsort.suffix=rc -c versionsort.suffix=.dev tag --list 'PyGPlates-*' --sort=version:refname
 
 .. note:: Each release series also has a branch of its own, such as ``release/pygplates-1.1``, whose tip is
   always the most recent release in that series. So ``git switch release/pygplates-1.1`` gets you the latest

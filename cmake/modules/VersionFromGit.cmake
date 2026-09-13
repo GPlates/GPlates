@@ -45,17 +45,21 @@
 # the base the commit resolves to: an anchor is a development tag whose number has been raised,
 # so its base is the release target in force at its commit, and the resolver checks that it is
 # (gplates_check_anchor_tag). 'GPlates-2.6.0-2000' then reads as "the 2.6.0 line, 2000 commits
-# in", rather than as a label somebody chose.
+# in", rather than as a label somebody chose. An anchor counts only on the first-parent line it
+# was placed on: a fork's anchor, or a development tag on a merged feature branch, is ignored
+# from the development branch (the loop below says why).
 #
-# GPlates depends on one right now: 'GPlates-2.6.0-47'. The gplates branch's first-parent line
-# runs back through the 2013 'python-api' branch, and no ancestor of any GPlates release tag
-# newer than that sits on it - so without the anchor the count runs from 2013 and gives
-# 2.6.0-1206 instead of 2.6.0-47. Deleting the tag would silently restore the larger number.
-# Once 'release/gplates-2.6' is cut and 'GPlates-2.6.0' tagged on it, the tip counts from that
-# tag instead - but every commit between the anchor and the branch point still counts from the
-# anchor (a release tag scores 0 there and is skipped, see below), and those are the commits
-# 'git bisect' walks. So the anchor stays load-bearing for its stretch of history: never delete
-# it.
+# GPlates depends on two right now. 'GPlates-2.6.0-47' is on the old gplates line, which runs
+# back through the 2013 'python-api' branch with no newer GPlates release tag on it - so without
+# the anchor the count ran from 2013 and gave 2.6.0-1206 instead of 2.6.0-47. 'GPlates-2.6.0-56'
+# is on the merge that unified the development branches: that merge was made on the old
+# pygplates line, which is the line gplates follows now, so the older anchor is off it and does
+# not count for it - the merge's own number, re-anchored where the line is. Each is load-bearing
+# for its stretch: the older for the old gplates commits a 'git bisect' walks, the newer for
+# everything since. Once 'release/gplates-2.6' is cut and 'GPlates-2.6.0' tagged on it, the tip
+# counts from that tag instead - but every commit between the anchors and the branch point still
+# counts from the anchors (a release tag scores 0 there and is skipped, see below). Never delete
+# either.
 #
 
 if (CMAKE_SCRIPT_MODE_FILE)
@@ -465,10 +469,16 @@ endfunction()
 function(gplates_check_anchor_tag product tag_prefix anchor_version release_file error_var)
 	set(${error_var} "" PARENT_SCOPE)
 
+	# At a line start, so that a copy of the line left in a comment above the real one is not
+	# read instead (a leading newline is prepended because CMake's regex engine has no multiline
+	# '^'), and in any case, since CMake's commands are case-insensitive.
 	string(TOUPPER "${product}" _product_upper)
 	set(_ws "[ \t]*")
+	set(_name "${_product_upper}_RELEASE_VERSION")
+	set(_value "\"?([^\" \t\r\n)]+)\"?")
 	set(_target_set
-			"set${_ws}\\(${_ws}${_product_upper}_RELEASE_VERSION[ \t]+\"?([^\" \t\r\n)]+)\"?${_ws}\\)")
+			"[\r\n]${_ws}[sS][eE][tT]${_ws}\\(${_ws}${_name}[ \t]+${_value}${_ws}\\)")
+	string(PREPEND release_file "\n")
 	if (NOT release_file MATCHES "${_target_set}")
 		return()
 	endif()
@@ -493,9 +503,11 @@ function(gplates_check_anchor_tag product tag_prefix anchor_version release_file
 			"'${tag_prefix}${anchor_version}' is an anchor tag naming the base '${_anchor_base}', "
 			"but the ${product} release target at the commit it stands on is '${_target_base}'. "
 			"An anchor is a development tag whose number has been raised, so its base is the "
-			"version that commit resolves to - it reads as a version, not as a label. Retag that "
-			"commit '${tag_prefix}${_retag_version}' (the number stays, so nothing else changes), "
-			"or delete the tag if it was not meant as an anchor."
+			"version that commit resolves to - it reads as a version, not as a label. Delete the "
+			"tag ('git tag -d ${tag_prefix}${anchor_version}', and 'git push <remote> "
+			":refs/tags/${tag_prefix}${anchor_version}' wherever it was pushed) and tag the commit "
+			"'${tag_prefix}${_retag_version}' instead: the number stays, so nothing else changes. "
+			"Or just delete it, if it was not meant as an anchor."
 	)
 	set(${error_var} "${_msg}" PARENT_SCOPE)
 endfunction()
@@ -520,9 +532,10 @@ endfunction()
 # counts from the anchor, not only one standing on it, is what catches an older commit tagged
 # wrongly: the next build after it fails, naming the tag the commit should carry.
 #
-function(_gplates_version_check_anchor product tag_prefix anchor_tag anchor_commit)
+function(_gplates_version_check_anchor product tag_prefix anchor_tag)
+	# 'git show' peels an annotated tag to its commit itself.
 	_gplates_version_git(_result _release_file
-			show "${anchor_commit}:cmake/modules/VersionRelease.cmake")
+			show "${anchor_tag}:cmake/modules/VersionRelease.cmake")
 	if (NOT _result EQUAL 0)
 		# The commit predates the release file, so there is no target there to check against.
 		return()
@@ -627,10 +640,17 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 		return()
 	endif()
 	if (_tags STREQUAL "")
-		# A working repository with none of the tags is almost always a fork: GitHub copies no
-		# tags into a fork, and fetching a single branch brings only the tags on it, while release
-		# tags live on the release series branches. Falling through to the file fallbacks would
-		# end in a message blaming the missing repository, which is the wrong diagnosis.
+		# A source tree that carries the sdist's PKG-INFO, or a recorded version, is an archive
+		# somebody has put under git - an sdist imported into a packaging repository, say - and
+		# those files answer for it (see gplates_resolve_version). Otherwise a working repository
+		# with none of the tags is almost always a fork: GitHub copies no tags into a fork, and
+		# fetching a single branch brings only the tags on it, while release tags live on the
+		# release series branches. Falling through to the file fallbacks would then end in a
+		# message blaming the missing repository, which is the wrong diagnosis.
+		if (EXISTS "${GPLATES_VERSION_SOURCE_DIR}/PKG-INFO"
+				OR EXISTS "${GPLATES_VERSION_SOURCE_DIR}/cmake/modules/VersionRecorded.cmake")
+			return()
+		endif()
 		message(FATAL_ERROR
 				"Cannot derive the ${product} version: this repository has no '${tag_prefix}*' tags "
 				"to count from. A fork made on GitHub carries none of the upstream tags, and a fetch "
@@ -655,7 +675,6 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 	set(_best_distance -1)
 	set(_best_offset 0)
 	set(_best_tag "")
-	set(_best_commit "")
 	# The nearest tag that is a *release* rather than an anchor, tracked apart from the tag that
 	# supplies the development number: an anchor tag can be nearer, and supply the number, while
 	# it is a release the target has to be checked against. Among releases tied at the same
@@ -710,6 +729,20 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 			continue()
 		endif()
 
+		# An anchor counts only if it is on HEAD's first-parent line. The distance above gives an
+		# off-line tag a count too - from the branch point, which is what a series branch's
+		# release tag needs - but a number recorded on another line means nothing on this one:
+		# a fork's anchor, fetched by tag auto-follow when its branch is, or a development tag
+		# on a feature branch since merged, would otherwise take over this line's count. 'HEAD~n'
+		# follows first parents, so the commit that many steps back is the tag's own if it is on
+		# the line.
+		if (NOT _dev EQUAL 0 AND NOT _tag_commit STREQUAL _head_commit)
+			_gplates_version_git(_result _line_commit rev-parse --verify "HEAD~${_distance}")
+			if (NOT _result EQUAL 0 OR NOT _line_commit STREQUAL _tag_commit)
+				continue()
+			endif()
+		endif()
+
 		# Track the nearest release, which the release-target checks below compare against.
 		if (_dev EQUAL 0)
 			set(_is_nearer FALSE)
@@ -729,19 +762,22 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 			endif()
 		endif()
 
-		# Nearest wins; among equally near tags the largest development number wins, so the
-		# count never goes backwards.
+		# Nearest wins. At the same distance a release beats an anchor - a release resets the
+		# count by design, and a development tag left beside it on the commit must not carry the
+		# old count past it - and among anchors the largest number wins, so the count never goes
+		# backwards.
+		set(_wins FALSE)
 		if (_best_distance LESS 0 OR _distance LESS _best_distance)
+			set(_wins TRUE)
+		elseif (_distance EQUAL _best_distance AND NOT _best_offset EQUAL 0)
+			if (_dev EQUAL 0 OR _dev GREATER _best_offset)
+				set(_wins TRUE)
+			endif()
+		endif()
+		if (_wins)
 			set(_best_distance ${_distance})
 			set(_best_offset ${_dev})
 			set(_best_tag "${_tag}")
-			set(_best_commit "${_tag_commit}")
-		elseif (_distance EQUAL _best_distance)
-			if (_dev GREATER _best_offset)
-				set(_best_offset ${_dev})
-				set(_best_tag "${_tag}")
-				set(_best_commit "${_tag_commit}")
-			endif()
 		endif()
 	endforeach()
 
@@ -755,15 +791,11 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 		return()
 	endif()
 
-	# The anchor the count runs from, if it is one - the tag at HEAD when standing on an anchor,
-	# else the nearest tag when that carries a development number - is checked against the
-	# release target at its own commit: an anchor's base is the version its commit resolves to.
-	if (NOT _at_tag_base STREQUAL "" AND NOT _at_tag_dev EQUAL 0)
-		_gplates_version_check_anchor(${product} "${tag_prefix}" "${_at_tag_name}"
-				"${_head_commit}")
-	elseif (_at_tag_base STREQUAL "" AND NOT _best_offset EQUAL 0)
-		_gplates_version_check_anchor(${product} "${tag_prefix}" "${_best_tag}"
-				"${_best_commit}")
+	# The tag the count runs from, if it is an anchor (a tag at HEAD is always the nearest), is
+	# checked against the release target at its own commit: an anchor's base is the version its
+	# commit resolves to.
+	if (NOT _best_offset EQUAL 0)
+		_gplates_version_check_anchor(${product} "${tag_prefix}" "${_best_tag}")
 	endif()
 
 	# Check the hand-edited release target against the nearest release.

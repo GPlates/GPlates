@@ -29,10 +29,12 @@ include("${CMAKE_CURRENT_LIST_DIR}/VersionFromGit.cmake")
 
 set(_failures 0)
 
-function(_fail message)
+# The message may be given in pieces, as the assertions below do to stay within the line width.
+function(_fail)
 	math(EXPR _n "${_failures} + 1")
 	set(_failures ${_n} PARENT_SCOPE)
-	message(SEND_ERROR "${message}")
+	string(JOIN "" _message ${ARGV})
+	message(SEND_ERROR "${_message}")
 endfunction()
 
 # The version splits into the expected base and development number.
@@ -320,6 +322,15 @@ expect_anchor_ok(pygplates "PyGPlates-" "1.1.0rc1.dev8"
 expect_anchor_ok(gplates "GPlates-" "2.6.0-rc.1.8" "set(GPLATES_RELEASE_VERSION 2.6.0-rc.1)")
 expect_anchor_rejected(gplates "GPlates-" "2.6.0-8" "set(GPLATES_RELEASE_VERSION 2.6.0-rc.1)"
 		"GPlates-2.6.0-rc.1.8")
+# The target is read at a line start, whatever the case of 'set': a copy of the old line left in
+# a comment above the new one must not be read instead.
+expect_anchor_ok(pygplates "PyGPlates-" "1.2.0.dev5"
+		"# set(PYGPLATES_RELEASE_VERSION 1.1.0)\nset(PYGPLATES_RELEASE_VERSION 1.2.0)\n")
+expect_anchor_rejected(pygplates "PyGPlates-" "1.1.0.dev5"
+		"# set(PYGPLATES_RELEASE_VERSION 1.1.0)\nset(PYGPLATES_RELEASE_VERSION 1.2.0)\n"
+		"PyGPlates-1.2.0.dev5")
+expect_anchor_rejected(pygplates "PyGPlates-" "1.2.0.dev5"
+		"  SET( PYGPLATES_RELEASE_VERSION  1.1.0 )\n" "PyGPlates-1.1.0.dev5")
 # A release tag is not an anchor, and a commit from before the release file set this product's
 # target cannot be checked: both pass.
 expect_anchor_ok(gplates "GPlates-" "2.5.0" "${_release_file}")
