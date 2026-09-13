@@ -11,10 +11,12 @@
 #
 # There are exactly two times to edit this file:
 #
-# 1. When a release changes what the *next* release will be called. Immediately after tagging
-#    'PyGPlates-1.1.0', for instance, the pyGPlates target becomes '1.2.0' - otherwise the next
-#    development version would be '1.1.0.dev1', which sorts *below* the 1.1.0 just released
-#    (the resolver refuses to produce that, rather than letting it reach a package).
+# 1. On the development branch, the moment a release series branch cut from it gets its first
+#    tag - a candidate ('PyGPlates-1.1.0rc1') or the release itself. The pyGPlates target then
+#    becomes '1.2.0'. The 1.1.0 line now lives on the series branch, and the development
+#    branch's count restarts from the branch point, so left on '1.1.0' it would re-issue
+#    versions it has already used - and, once 1.1.0 is released, ones sorting *below* it. The
+#    resolver refuses both, rather than letting either reach a package.
 #
 #    Note: What that next target should be is a decision about the next *release*, not about
 #          any one commit. A release that adds API (a new function or class) should be a new
@@ -27,7 +29,7 @@
 #          version only if that release turns out to contain no new API. Waiting until the API
 #          actually changes only risks nobody remembering to do it.
 #
-# 2. On a release branch ('release/pygplates-<version>' etc), to name the candidate being
+# 2. On a release series branch ('release/pygplates-<major>.<minor>' etc), to name the release being
 #    prepared - eg, set the target to '1.1.0rc1' on cutting the branch, to '1.1.0rc2' if a
 #    second candidate is needed, and to '1.1.0' for the release itself. Development commits on
 #    the release branch then carry '1.1.0rc1.dev3' and so on.
@@ -38,6 +40,12 @@
 #
 # A target must NOT carry a development suffix ('2.6.0-8', '1.1.0.dev10') - that part is what
 # gets counted. The resolver rejects one that does.
+#
+# The resolver also checks the target against the nearest release, and aborts the configure if it
+# does not sort above it or if it skips a version - so a target left behind, set backwards, or
+# mistyped one release too far ahead is a loud failure rather than a package nobody can install
+# over. 'gplates_check_release_target' in 'VersionFromGit.cmake' has the rules and the reasoning;
+# 'VersionFromGitTest.cmake' has them as tests.
 #
 
 # The GPlates release target - a restricted Semantic Version 'X.Y.Z' or 'X.Y.Z-{alpha|beta|rc}.N'.

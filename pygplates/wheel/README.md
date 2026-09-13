@@ -94,7 +94,7 @@ problem).
 
 The images only need rebuilding when a dependency changes (ie, when the dockerfile or the
 version pins in `versions.sh` change). In CI that happens automatically: the workflow triggers
-on any push to the `pygplates` branch that touches either file (and can also be dispatched
+on any push to the `gplates` branch that touches either file (and can also be dispatched
 manually).
 
 To build the image locally instead (eg, to test a dockerfile change before pushing):
@@ -367,6 +367,30 @@ NumPy wheels is not usable anyway). To add or remove a version:
    (macOS and Windows need no equivalent step: `build_boost_python.sh` builds Boost.Python for
    whatever Python version each wheel build brings.)
 
+## Wheels for a development version
+
+A development build handed to someone - a wheel to try a fix before the release - is built by
+the same workflow, dispatched by hand, and never published. Tag the commit with the version it
+resolves to (`cmake -P cmake/modules/VersionFromGit.cmake pygplates` prints it), push the tag,
+then dispatch the workflow from that tag - *Run workflow* on the Actions page with the tag under
+*Use workflow from*, or:
+
+```
+gh workflow run build-wheels.yml --ref PyGPlates-1.2.0.dev12
+```
+
+The tag is what makes the commit findable later from the version string alone
+(`doc-cpp/design/versioning/README.md`, section 10), and it is also the handle the dispatch
+needs: the ref menu takes a branch or a tag, never a commit hash. Pushing the tag starts nothing,
+since the push trigger excludes `.dev` tags. The dispatch is a full run - every Python version on
+every platform - and the wheels and the sdist are downloaded from the run's artifacts. (Its
+*two-python-versions* input limits it to two versions per platform, as a pull request run is:
+that is for a build that only tests the machinery, such as a new dependency image, not for wheels
+to hand to someone.) Nothing reaches PyPI: the publish jobs run only for a *pushed* release tag,
+and the sdist job's tag check, which rejects development versions, applies only to a pushed tag
+for the same reason. A dispatch from a *release* tag is safe too: runs are grouped per event as
+well as per ref, so it cannot cancel that tag's release run waiting at the approval gate.
+
 ## Publishing a release
 
 Releasing to [PyPI](https://pypi.org/p/pygplates) is part of `build-wheels.yml`: pushing a
@@ -387,10 +411,9 @@ The flow, end to end:
    `rc1` tag as `1.1.0rc2.devN`.
 2. Tag that commit `PyGPlates-<version>` (exactly the version string - the run fails in its
    first minute if the two disagree, or if the version is a `.dev` one) and push the tag. A
-   release is tagged on `release-pygplates`, on the merge commit that brings
-   `release/pygplates-<version>` into it; release tags belong on the main release branches and
-   nowhere else. A release *candidate* is tagged on the `release/pygplates-<version>` branch
-   itself, not being a release. The root `README.md` has the branching model.
+   release is tagged on the release series branch `release/pygplates-<major>.<minor>`, and so is
+   every release candidate before it and every patch release after it - release tags belong on
+   the series branches and nowhere else. The root `README.md` has the branching model.
 3. The run builds the sdist and every wheel (about 2.5 hours warm, 4.5 cold), then uploads the
    sdist plus one platform's wheels to [TestPyPI](https://test.pypi.org/p/pygplates) - a
    rehearsal that catches anything the index itself would reject (metadata, most of all)
@@ -401,6 +424,9 @@ The flow, end to end:
 5. On approval the whole matrix - one sdist, one wheel per Python version per platform, counted
    before upload - goes to PyPI, each file with a [PEP 740](https://peps.python.org/pep-0740/)
    attestation.
+6. Create the GitHub Release for the tag (`gh release create PyGPlates-<version>`, with
+   `--prerelease` for a candidate). The releases page is where the getting-started docs send
+   people to find the latest release tag, and nothing creates the entry for them.
 
 The conda-forge package is updated afterwards, by hand and from the sdist this run published -
 see `pygplates/conda/README.md`.

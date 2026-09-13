@@ -6,6 +6,10 @@
 > - `MERGE-FINDINGS-3-build-layout.md` — build system, tree layout, packaging, src/api
 > - `MERGE-EXECUTION-DETAILS.md` — empirical `git merge-tree` conflict list, hunk-level resolutions, risk register
 
+> **2026-09-12:** the branches *were* unified in the end, though not by this plan and not for this
+> plan's reasons - see `doc-cpp/design/versioning/README.md`. The 2026-07-07 note below is kept as
+> the record of what was decided at the time; it no longer describes the repository.
+
 > **2026-07-07 landing-strategy update (supersedes the "land on `gplates`" plan below):**
 > `gplates` and `pygplates` stay **separate** long-lived develop branches — they are not being
 > unified into one. The goal of this work is instead to reconcile the model/build divergence so

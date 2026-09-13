@@ -16,7 +16,7 @@ name: pygplates build and test
 
 on:
   push:
-    branches: [ "pygplates" ]
+    branches: [ "gplates" ]
     paths-ignore:
       # Documentation and repository metadata cannot affect the build or the tests.
       # Note '.gitattributes' is deliberately NOT listed: it controls line endings, and
@@ -28,7 +28,7 @@ on:
       - 'CREDITS'
       - 'CHANGELOG'
   pull_request:
-    branches: [ "pygplates" ]
+    branches: [ "gplates" ]
     paths-ignore:
       # Documentation and repository metadata cannot affect the build or the tests.
       # Note '.gitattributes' is deliberately NOT listed: it controls line endings, and
@@ -113,7 +113,7 @@ jobs:
         # 'restore-keys' is what makes this useful: the primary key includes the commit SHA and so
         # never hits, and the prefix fallback restores the most recent cache for this platform.
         # A pull request can read caches written on its base branch, so PRs start warm from the
-        # last push to 'pygplates'.
+        # last push to 'gplates'.
         #
         # The keys are namespaced 'sccache-pygplates-*', and the GPlates workflow's
         # 'sccache-gplates-*': the two builds share no cache entries at all (every shared
@@ -177,7 +177,7 @@ jobs:
         # branch and every other pull request cannot see it. Later runs of that same pull request can,
         # but they gain little, because the base-branch cache already covers everything the pull
         # request did not change - a re-run only recompiles the PR's own modified files either way.
-        # Pushes to 'pygplates' warm the cache; pull requests restore from it.
+        # Pushes to 'gplates' warm the cache; pull requests restore from it.
         # 'always()' rather than 'success()', so that a failed build still saves the objects it
         # did compile - and so does one that hits 'timeout-minutes', which the runner delivers as
         # a cancellation. The restore-outcome guard is what a bare 'always()' would be missing:
