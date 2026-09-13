@@ -596,9 +596,12 @@ takes a branch or a tag, never a commit hash, which is one more reason to tag th
 works too, for a build nobody will need to find again). Pushing the tag starts nothing, since the
 push trigger excludes `.dev` tags, and the sdist job's tag check, which rejects a development
 version, applies only to a pushed tag — it guards publishing, and a dispatch cannot publish. A
-dispatch is a full run, every Python version on every platform, and the wheels and the sdist are
-downloaded from the run's artifacts. It can never reach PyPI: the publish jobs run only for a
-pushed `PyGPlates-*` tag, so the `pypi` environment's approval is never even asked for.
+dispatch is a full run, every Python version on every platform (an input limits it to two, for a
+build that only tests the machinery), and the wheels and the sdist are downloaded from the run's
+artifacts. It can never reach PyPI: the publish jobs run only for a pushed `PyGPlates-*` tag, so
+the `pypi` environment's approval is never even asked for. Nor can a dispatch from a release tag
+cancel that tag's release run: the workflow's concurrency groups are per event as well as per
+ref.
 
 ## 11. How the two development branches were unified
 

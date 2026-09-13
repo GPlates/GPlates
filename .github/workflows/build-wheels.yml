@@ -10,7 +10,8 @@
 # Full runs (every Python version) happen on release tags and manual dispatch. A pull request
 # that touches the wheel machinery instead builds two Python versions per platform - enough to
 # prove the machinery works, and to show the compiler cache carrying from the first version to
-# the second, without spending six builds' worth of runner time. Wheels of a development
+# the second, without spending six builds' worth of runner time - and a dispatch can ask for
+# the same, for a build that only tests something. Wheels of a development
 # version, for someone to try before a release, come from a manual dispatch - from a
 # 'PyGPlates-*.dev*' tag on the commit, by preference, so that the build stays findable by its
 # version - and are downloaded from the run's artifacts; only a pushed release tag publishes.
@@ -53,6 +54,10 @@ on:
         description: "Tag of the GHCR dependency image the Linux wheels build inside"
         type: string
         default: latest
+      two-python-versions:
+        description: "Build two Python versions per platform, as a pull request run does - for testing the machinery, not for wheels to hand to someone"
+        type: boolean
+        default: false
 
 # What the build jobs need: the repository, and the GHCR packages the Linux builds pull their
 # dependency image from. Both are spelled out because naming any permission drops every one not
@@ -63,10 +68,11 @@ permissions:
   packages: read
 
 # Superseded runs are cancelled rather than left to finish (a full wheel matrix takes hours).
-# The group is per-ref, so a release run - which can sit in 'waiting' for days at the approval
-# gate below - can only be superseded by re-pushing its own tag, never by other work.
+# The group is per-event and per-ref, so a release run - which can sit in 'waiting' for days at
+# the approval gate below - can only be superseded by re-pushing its own tag: never by other
+# work, and not by a manual dispatch from that tag either, which builds but cannot publish.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -301,15 +307,17 @@ jobs:
           deps=${{ matrix.deps-path }}
           echo "complete=$([ -f "${deps}/stamps/complete" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
-      - name: Limit pull request runs to two Python versions
-        # A smoke test of the wheel machinery, not a release build. Setting CIBW_BUILD here
-        # overrides the 'build' list in pyproject.toml for this run only.
+      - name: Limit the run to two Python versions
+        # A smoke test of the wheel machinery, not a release build: every pull request run, and
+        # a manual dispatch that asks for it (to try a new dependency image, say - not to build
+        # wheels for someone, who wants every version). Setting CIBW_BUILD here overrides the
+        # 'build' list in pyproject.toml for this run only.
         #
         # Two versions rather than one because everything a full run relies on to stay inside
         # its time limit happens on the *second*: the first compiles pyGPlates from scratch and
         # the rest are meant to come mostly from the compiler cache. One version never exercises
         # that, so the 'before-test' cache report in pyproject.toml would have nothing to show.
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.two-python-versions)
         run: echo "CIBW_BUILD=cp312-* cp313-*" >> "$GITHUB_ENV"
 
       - name: Enable crash reporting
@@ -398,8 +406,9 @@ jobs:
           # before the message below, which is the whole reason the check is here.
           wheel=$(ls wheelhouse/pygplates-*-cp313-*manylinux*_x86_64.whl 2> /dev/null | head -1 || true)
           if [ -z "${wheel}" ]; then
-              # Every run builds cp313 (full runs build all six versions, pull request runs
-              # build cp312 and cp313), so there is no case where skipping is right.
+              # Every run builds cp313 (full runs build all six versions; pull request runs,
+              # and a dispatch limited to two versions, build cp312 and cp313), so there is no
+              # case where skipping is right.
               echo "No cp313 manylinux x86_64 wheel in wheelhouse/ to check." >&2
               exit 1
           fi

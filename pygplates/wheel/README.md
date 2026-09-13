@@ -383,9 +383,13 @@ The tag is what makes the commit findable later from the version string alone
 (`doc-cpp/design/versioning/README.md`, section 10), and it is also the handle the dispatch
 needs: the ref menu takes a branch or a tag, never a commit hash. Pushing the tag starts nothing,
 since the push trigger excludes `.dev` tags. The dispatch is a full run - every Python version on
-every platform - and the wheels and the sdist are downloaded from the run's artifacts. Nothing
-reaches PyPI: the publish jobs run only for a *pushed* release tag, and the sdist job's tag check,
-which rejects development versions, applies only to a pushed tag for the same reason.
+every platform - and the wheels and the sdist are downloaded from the run's artifacts. (Its
+*two-python-versions* input limits it to two versions per platform, as a pull request run is:
+that is for a build that only tests the machinery, such as a new dependency image, not for wheels
+to hand to someone.) Nothing reaches PyPI: the publish jobs run only for a *pushed* release tag,
+and the sdist job's tag check, which rejects development versions, applies only to a pushed tag
+for the same reason. A dispatch from a *release* tag is safe too: runs are grouped per event as
+well as per ref, so it cannot cancel that tag's release run waiting at the approval gate.
 
 ## Publishing a release
 
