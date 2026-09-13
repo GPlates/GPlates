@@ -148,6 +148,45 @@ Example:
 :rtype: list[PlateBoundaryStatistic], or dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]
 ```
 
+## Sample code
+
+Every page under `sample-code/` gets its code from a script beside it, `sample-code/<page>.py` (one
+per "Sample code" block, so a page with several sub-examples has `<page>_<slug>.py` files). The
+page includes the script through the `sample-code` directive defined in `conf.py.in`: the whole
+file for the listing, and named fragments for the "Details" walkthrough:
+
+```
+.. sample-code:: pygplates_plate_rotation_hierarchy.py
+
+.. sample-code:: pygplates_plate_rotation_hierarchy.py
+   :fragment: load-rotations
+```
+
+Fragments are delimited in the script by comment markers, which the directive strips from every
+listing (and it dedents a fragment shown on its own):
+
+```
+# [fragment: load-rotations]
+rotation_model = pygplates.RotationModel('rotations.rot')
+# [end: load-rotations]
+```
+
+Fragments may nest, since the ends are named. A fragment the script does not contain is a Sphinx
+warning, which `-W` turns into a failed build - so renaming a marker cannot leave a page silently
+showing nothing. Never paste code into a page's `::` block: the code exists once, in the script.
+
+The scripts are tested. `pygplates-sample-code-test` (`pygplates/test/sample_code_test.py`) runs
+each one in a temporary directory seeded with `pygplates/test/fixtures/`, where the data files the
+samples name (`rotations.rot`, `coastlines.gpml`, `static_polygons.gpml`, ...) are small stand-ins:
+a few dozen real features cut from the GPlates sample data by
+`pygplates/test/fixtures/generate_sample_fixtures.py`, or synthetic geometry. The test asserts that a
+script runs; a page's "Output" block stays as captured from real geodata, so it need not match what
+the fixtures produce. When a new sample names a data file the fixtures lack, add it there (and to
+the generator if it is cut from real data) rather than special-casing the test. A script whose page
+reproduces its own input in full (`create_topological_features` shows its `features.gpml`) keeps
+that file under `fixtures/sample-code/<script>/`, which the test copies over the shared fixtures for
+that script only.
+
 ## Math markup
 
 The narrative pages (the primer and the sample-code walkthroughs) use `:math:` roles and `.. math::`

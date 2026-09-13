@@ -24,33 +24,7 @@ In this example we query a `coastline <http://www.gplates.org/docs/gpgim/#gpml:C
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Load the global coastline features.
-    coastline_features = pygplates.FeatureCollection('coastlines.gpml')
-    
-    # Iterate over the coastline features.
-    for feature in coastline_features:
-        
-        # Print the feature type (Coastline) and the name of the coastline.
-        print '%s: %s' % (feature.get_feature_type().get_name(), feature.get_name())
-        
-        # Print the description of the coastline.
-        print '  description: %s' % feature.get_description()
-        
-        # Print the plate ID of the coastline.
-        print '  plate ID: %d' % feature.get_reconstruction_plate_id()
-        
-        # Print the length of the coastline geometry(s).
-        # There could be more than one geometry per feature.
-        for geometry in feature.get_geometries():
-            print '  length: %f Kms' % (geometry.get_arc_length() * pygplates.Earth.mean_radius_in_kms)
-        
-        # Print the valid time period of the coastline.
-        print '  valid time period: %f -> %f' % feature.get_valid_time()
+.. sample-code:: pygplates_query_common_feature_types_coastline.py
 
 Details
 """""""
@@ -66,14 +40,8 @@ Details
   instead of :meth:`pygplates.Feature.get_geometry` - the latter will fail if there's not exactly one geometry.
   So we print out the length of each coastline geometry in a coastline feature.
 
-::
-
-    print '%s: %s' % (feature.get_feature_type().get_name(), feature.get_name())
-    print '  description: %s' % feature.get_description()
-    print '  plate ID: %d' % feature.get_reconstruction_plate_id()
-    for geometry in feature.get_geometries():
-        print '  length: %f Kms' % (geometry.get_arc_length() * pygplates.Earth.mean_radius_in_kms)
-    print '  valid time period: %f -> %f' % feature.get_valid_time()
+.. sample-code:: pygplates_query_common_feature_types_coastline.py
+   :fragment: print-properties
 
 .. note:: Each geometry :meth:`length<pygplates.PolylineOnSphere.get_arc_length>` is converted from
    radians to ``Kms`` by multiplying with the ``pygplates.Earth.mean_radius_in_kms`` attribute in
@@ -133,36 +101,7 @@ Query an *isochron* feature
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Load the global isochron features.
-    isochron_features = pygplates.FeatureCollection('isochrons.gpml')
-    
-    # Iterate over the isochron features.
-    for feature in isochron_features:
-        
-        # Print the feature type (Isochron) and the name of the isochron.
-        print '%s: %s' % (feature.get_feature_type().get_name(), feature.get_name())
-        
-        # Print the description of the isochron.
-        print '  description: %s' % feature.get_description()
-        
-        # Print the plate ID of the isochron.
-        print '  plate ID: %d' % feature.get_reconstruction_plate_id()
-        
-        # Print the conjugate plate ID of the isochron.
-        print '  conjugate plate ID: %d' % feature.get_conjugate_plate_id()
-        
-        # Print the length of the isochron geometry(s).
-        # There could be more than one geometry per feature.
-        for geometry in feature.get_geometries():
-            print '  length: %f Kms' % (geometry.get_arc_length() * pygplates.Earth.mean_radius_in_kms)
-        
-        # Print the valid time period of the isochron.
-        print '  valid time period: %f -> %f' % feature.get_valid_time()
+.. sample-code:: pygplates_query_common_feature_types_isochron.py
 
 Details
 """""""
@@ -179,15 +118,8 @@ Details
   instead of :meth:`pygplates.Feature.get_geometry` - the latter will fail if there's not exactly one geometry.
   So we print out the length of each isochron geometry in a isochron feature.
 
-::
-
-    print '%s: %s' % (feature.get_feature_type().get_name(), feature.get_name())
-    print '  description: %s' % feature.get_description()
-    print '  plate ID: %d' % feature.get_reconstruction_plate_id()
-    print '  conjugate plate ID: %d' % feature.get_conjugate_plate_id()
-    for geometry in feature.get_geometries():
-        print '  length: %f Kms' % (geometry.get_arc_length() * pygplates.Earth.mean_radius_in_kms)
-    print '  valid time period: %f -> %f' % feature.get_valid_time()
+.. sample-code:: pygplates_query_common_feature_types_isochron.py
+   :fragment: print-properties
 
 .. note:: Each geometry :meth:`length<pygplates.PolylineOnSphere.get_arc_length>` is converted from
    radians to ``Kms`` by multiplying with the ``pygplates.Earth.mean_radius_in_kms`` attribute in
@@ -247,49 +179,7 @@ In this example we query a `mid-ocean ridge <http://www.gplates.org/docs/gpgim/#
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Load the global mid-ocean ridge features.
-    ridge_features = pygplates.FeatureCollection('ridges.gpml')
-    
-    # Iterate over the mid-ocean ridge features.
-    for feature in ridge_features:
-        
-        # Print the feature type (MidOceanRidge) and the name of the mid-ocean ridge.
-        print '%s: %s' % (feature.get_feature_type().get_name(), feature.get_name())
-        
-        # Print the description of the mid-ocean ridge.
-        print '  description: %s' % feature.get_description()
-        
-        # A mid-ocean ridge can either reconstruct by plate ID or by half stage rotation.
-        # The former uses the reconstruction plate ID.
-        # The latter uses the left/right plate IDs.
-        if feature.get_reconstruction_method() == 'ByPlateId':
-            # Print the plate ID of the mid-ocean ridge.
-            print '  plate ID: %d' % feature.get_reconstruction_plate_id()
-            
-            # Print the conjugate plate ID of the mid-ocean ridge (if it has one - use None to test this).
-            conjugate_plate_id = feature.get_conjugate_plate_id(None)
-            if conjugate_plate_id is not None:
-                print '  conjugate plate ID: %d' % conjugate_plate_id
-        
-        else:
-            # Print the left plate ID of the mid-ocean ridge.
-            print '  left plate ID: %d' % feature.get_left_plate()
-            
-            # Print the right plate ID of the mid-ocean ridge.
-            print '  right plate ID: %d' % feature.get_right_plate()
-        
-        # Print the length of the mid-ocean ridge geometry(s).
-        # There could be more than one geometry per feature.
-        for geometry in feature.get_geometries():
-            print '  length: %f Kms' % (geometry.get_arc_length() * pygplates.Earth.mean_radius_in_kms)
-        
-        # Print the valid time period of the mid-ocean ridge.
-        print '  valid time period: %f -> %f' % feature.get_valid_time()
+.. sample-code:: pygplates_query_common_feature_types_mid_ocean_ridge.py
 
 Output
 """"""
@@ -325,45 +215,7 @@ In this example we query a `subduction zone <http://www.gplates.org/docs/gpgim/#
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Load the subduction zone features.
-    subduction_zone_features = pygplates.FeatureCollection('subduction_zones.gpml')
-    
-    # Iterate over the subduction zone features.
-    for feature in subduction_zone_features:
-        
-        # Print the feature type (SubductionZone) and the name of the feature.
-        print '%s: %s' % (feature.get_feature_type().get_name(), feature.get_name())
-        
-        # Print the description of the feature.
-        print '  description: %s' % feature.get_description()
-        
-        # Print the plate ID of the feature.
-        print '  plate ID: %d' % feature.get_reconstruction_plate_id()
-        
-        # Print the conjugate plate ID of the feature (if it has one - use None to test this).
-        conjugate_plate_id = feature.get_conjugate_plate_id(None)
-        if conjugate_plate_id is not None:
-            print '  conjugate plate ID: %d' % conjugate_plate_id
-        
-        # Print the subduction polarity of the feature.
-        # Default to 'Unknown' if there is no polarity property.
-        polarity = feature.get_enumeration(
-            pygplates.PropertyName.gpml_subduction_polarity,
-            'Unknown')
-        print '  polarity: %s' % polarity
-        
-        # Print the length of the feature geometry(s).
-        # There could be more than one geometry per feature.
-        for geometry in feature.get_geometries():
-            print '  length: %f Kms' % (geometry.get_arc_length() * pygplates.Earth.mean_radius_in_kms)
-        
-        # Print the valid time period of the feature.
-        print '  valid time period: %f -> %f' % feature.get_valid_time()
+.. sample-code:: pygplates_query_common_feature_types_subduction_zone.py
 
 Output
 """"""
@@ -420,57 +272,7 @@ In this example we query a `virtual geomagnetic pole <http://www.gplates.org/doc
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Load the virtual geomagnetic pole features.
-    vgp_features = pygplates.FeatureCollection('vvirtual_geomagnetic_poles.gpml')
-    
-    # Iterate over the virtual geomagnetic pole features.
-    for feature in vgp_features:
-        
-        # Print the feature type (VirtualGeomagneticPole) and the name of the feature.
-        print '%s: %s' % (feature.get_feature_type().get_name(), feature.get_name())
-        
-        # Print the description of the feature.
-        print '  description: %s' % feature.get_description()
-        
-        # Print the plate ID of the feature.
-        print '  plate ID: %d' % feature.get_reconstruction_plate_id()
-        
-        # Print the average inclination of the feature (if there is one - use None to test this).
-        average_inclination = feature.get_double(pygplates.PropertyName.gpml_average_inclination, None)
-        if average_inclination is not None:
-            print '  average inclination: %f' % average_inclination
-        
-        # Print the average declination of the feature (if there is one - use None to test this).
-        average_declination = feature.get_double(pygplates.PropertyName.gpml_average_declination, None)
-        if average_declinationn is not None:
-            print '  average declinationn: %f' % average_declination
-        
-        # Print the pole position uncertainty (if there is one - use None to test this)
-        pole_position_uncertainty = feature.get_double(pygplates.PropertyName.gpml_pole_a95, None)
-        if pole_position_uncertainty is not None:
-            print '  pole position uncertainty: %f' % pole_position_uncertainty
-        
-        # Print the average age (if there is one - use None to test this)
-        average_age = feature.get_double(pygplates.PropertyName.gpml_average_age, None)
-        if average_age is not None:
-            print '  average age: %f' % average_age
-        
-        # Print the VGP pole position.
-        # The default geometry is the pole position so we don't have to specify a property name.
-        pole_lat, pole_lon = feature.get_geometry().to_lat_lon()
-        print '  pole lat: %f, pole lon: %f' % (pole_lat, pole_lon)
-        
-        # Print the average sample site position.
-        # We need to specify a property name otherwise we'll get the VGP pole position.
-        average_sample_site_lat, average_sample_site_lon = feature.get_geometry(
-            pygplates.PropertyName.gpml_average_sample_site_position).to_lat_lon()
-        print '  average sample site lat: %f, average sample site lon: %f' % (
-            average_sample_site_lat, average_sample_site_lon)
+.. sample-code:: pygplates_query_common_feature_types_virtual_geomagnetic_pole.py
 
 Output
 """"""
@@ -478,28 +280,28 @@ Output
 ::
 
     VirtualGeomagneticPole: RM:-10 -  10Ma N= 3 (Dp col.) Lat Range: 50.4 to  48 (Dm col.)
-      description: 
+      description:
       plate ID: 302
       average inclination: 186.770000
-      average declinationn: -65.480000
+      average declination: -65.480000
       pole position uncertainty: 8.550000
       average age: 0.000000
       pole lat: 85.130000, pole lon: 118.180000
       average sample site lat: 49.540000, average sample site lon: 7.690000
     VirtualGeomagneticPole: RM: 0 -  20Ma N= 4 (Dp col.) Lat Range: 50.4 to  45 (Dm col.)
-      description: 
+      description:
       plate ID: 302
       average inclination: 187.010000
-      average declinationn: -65.390000
+      average declination: -65.390000
       pole position uncertainty: 5.770000
       average age: 10.000000
       pole lat: 85.220000, pole lon: 105.110000
       average sample site lat: 48.410000, average sample site lon: 6.760000
     VirtualGeomagneticPole: RM: 10 -  30Ma N= 2 (Dp col.) Lat Range: 50.8 to  45 (Dm col.)
-      description: 
+      description:
       plate ID: 302
       average inclination: 190.960000
-      average declinationn: -63.540000
+      average declination: -63.540000
       pole position uncertainty: 23.100000
       average age: 20.000000
       pole lat: 81.970000, pole lon: 112.190000
@@ -520,38 +322,7 @@ In this example we query a `motion path <http://www.gplates.org/docs/gpgim/#gpml
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Load the motion path features.
-    motion_path_features = pygplates.FeatureCollection('motion_paths.gpml')
-    
-    # Iterate over the motion path features.
-    for feature in motion_path_features:
-        
-        # Print the feature type (MotionPath) and the name of the motion path.
-        print '%s: %s' % (feature.get_feature_type().get_name(), feature.get_name())
-        
-        # Print the description of the motion path.
-        print '  description: %s' % feature.get_description()
-        
-        # Print the plate ID of the motion path.
-        print '  plate ID: %d' % feature.get_reconstruction_plate_id()
-        
-        # Print the relative plate ID of the motion path.
-        print '  relative plate ID: %d' % feature.get_relative_plate()
-        
-        # Print the times of the motion path.
-        print '  times: ', feature.get_times()
-        
-        # Print the seed points of the motion path.
-        for seed_point in feature.get_geometry().get_points():
-            print '  seed point lat: %f, seed point lon: %f' % seed_point.to_lat_lon()
-        
-        # Print the valid time period of the motion path.
-        print '  valid time period: %f -> %f' % feature.get_valid_time()
+.. sample-code:: pygplates_query_common_feature_types_motion_path.py
 
 Output
 """"""
@@ -580,38 +351,7 @@ In this example we query a `flowline <http://www.gplates.org/docs/gpgim/#gpml:Fl
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Load the flowline features.
-    flowline_features = pygplates.FeatureCollection('flowlines.gpml')
-    
-    # Iterate over the flowline features.
-    for feature in flowline_features:
-        
-        # Print the feature type (Flowline) and the name of the flowline.
-        print '%s: %s' % (feature.get_feature_type().get_name(), feature.get_name())
-        
-        # Print the description of the flowline.
-        print '  description: %s' % feature.get_description()
-        
-        # Print the left plate ID of the flowline.
-        print '  left plate ID: %d' % feature.get_left_plate()
-        
-        # Print the right plate ID of the flowline.
-        print '  right plate ID: %d' % feature.get_right_plate()
-        
-        # Print the times of the flowline.
-        print '  times: ', feature.get_times()
-        
-        # Print the seed points of the flowline.
-        for seed_point in feature.get_geometry().get_points():
-            print '  seed point lat: %f, seed point lon: %f' % seed_point.to_lat_lon()
-        
-        # Print the valid time period of the flowline.
-        print '  valid time period: %f -> %f' % feature.get_valid_time()
+.. sample-code:: pygplates_query_common_feature_types_flowline.py
 
 Output
 """"""
@@ -642,59 +382,7 @@ In this example we query a `total reconstruction sequence <http://www.gplates.or
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Load the rotation features.
-    rotation_features = pygplates.FeatureCollection('rotations.rot')
-
-    # Iterate over the rotation features.
-    for feature in rotation_features:
-        
-        fixed_plate_id, moving_plate_id, total_reconstruction_pole = feature.get_total_reconstruction_pole()
-        
-        # Ignore moving plate IDs equal to 999 since these are commented lines in the PLATES4 rotation format.
-        if moving_plate_id == 999:
-            continue
-        
-        # Print the feature type (TotalReconstructionSequence) and the name of the rotation feature.
-        print '%s: %s' % (feature.get_feature_type().get_name(), feature.get_name())
-        
-        # Print the description of the rotation feature.
-        print '  description: %s' % feature.get_description()
-        
-        # Print the moving plate ID of the rotation feature.
-        print '  moving plate ID: %d' % moving_plate_id
-        
-        # Print the fixed plate ID of the rotation feature.
-        print '  fixed plate ID: %d' % fixed_plate_id
-        
-        # Print the time period of the rotation feature.
-        # This is the times of the first and last enabled rotation time samples.
-        enabled_time_samples = total_reconstruction_pole.get_enabled_time_samples()
-        if enabled_time_samples:
-            print '  enabled time period: %f -> %f' % (
-                enabled_time_samples[0].get_time(), enabled_time_samples[-1].get_time())
-        
-        # Print the rotation pole information from the enabled rotation time samples.
-        print '  time samples:'
-        for time_sample in enabled_time_samples:
-            
-            # Get the finite rotation from the GpmlFiniteRotation property value instead the GpmlTimeSample.
-            finite_rotation = time_sample.get_value().get_finite_rotation()
-            
-            # Extract the pole and angle (in degrees) from the finite rotation.
-            pole_lat, pole_lon, pole_angle = finite_rotation.get_lat_lon_euler_pole_and_angle_degrees()
-            
-            # The time and optional description come from the GpmlTimeSample.
-            time = time_sample.get_time()
-            description = time_sample.get_description()
-            
-            # Print the pole data as it would appear in a PLATES4 rotation file
-            # (except without the moving and fixed plate IDs).
-            print '    %f  %f  %f  %f  %s' % (time, pole_lat, pole_lon, pole_angle, description)
+.. sample-code:: pygplates_query_common_feature_types_total_reconstruction_sequence.py
 
 Output
 """"""

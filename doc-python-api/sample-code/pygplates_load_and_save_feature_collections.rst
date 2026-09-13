@@ -23,25 +23,7 @@ In this example we make a new GPML file containing only the coastlines that have
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Load the global coastline features.
-    input_feature_collection = pygplates.FeatureCollection('coastlines.gpml')
-
-    # Start with an empty list of coastline features on plate 801.
-    features_in_plate_801 = []
-
-    # Iterate over all coastline features and add those on plate 801 to 'features_in_plate_801'.
-    for feature in input_feature_collection:
-        if feature.get_reconstruction_plate_id() == 801:
-            features_in_plate_801.append(feature)
-
-    # Write the coastline features for plate 801 to a new file.
-    output_feature_collection = pygplates.FeatureCollection(features_in_plate_801)
-    output_feature_collection.write('coastlines_801.gpml')
+.. sample-code:: pygplates_load_and_save_feature_collections_subset.py
 
 Details
 """""""
@@ -52,9 +34,8 @@ The general idea is to use :class:`pygplates.FeatureCollection` to both load and
 First we load a file containing GPlates coastline features into
 a :class:`pygplates.FeatureCollection` from a file called ``'coastlines.gpml'``.
 
-::
-
-    features = pygplates.FeatureCollection('coastlines.gpml')
+.. sample-code:: pygplates_load_and_save_feature_collections_subset.py
+   :fragment: load-coastlines
 
 Alternatively we could have used the :meth:`pygplates.FeatureCollection.read` function as follows:
 ::
@@ -69,34 +50,28 @@ Alternatively we could have used the :meth:`pygplates.FeatureCollection.read` fu
   since we can easily create a :class:`pygplates.FeatureCollection` from the Python ``list`` when
   we need to save to a file.
 
-::
-
-    features_in_plate_801 = []
+.. sample-code:: pygplates_load_and_save_feature_collections_subset.py
+   :fragment: empty-list
 
 | Iterate over all the coastline features and only add those with plate ID 801 to the new list.
 | Note that a :class:`pygplates.FeatureCollection` behaves like any sequence (eg, a Python ``list``)
   and so we can iterate over it like we would any sequence using the syntax ``for item in sequence:``.
 
-::
-
-    for feature in features:
-        if feature.get_reconstruction_plate_id() == 801:
-            features_in_plate_801.append(feature)
+.. sample-code:: pygplates_load_and_save_feature_collections_subset.py
+   :fragment: select-features
 
 | As mentioned above, when we want to save features to a file we need to create a :class:`pygplates.FeatureCollection`
   (it accepts any Python sequence containing :class:`features<pygplates.Feature>`). In our case
   the Python sequence is our ``features_in_plate_801`` list.
 
-::
-
-    output_feature_collection = pygplates.FeatureCollection(features_in_plate_801)
+.. sample-code:: pygplates_load_and_save_feature_collections_subset.py
+   :fragment: output-feature-collection
 
 | Now we can write the output feature collection to a new file.
 | Here we're saving the coastline features for plate 801 to a file called ``'coastlines_801.gpml'``.
 
-::
-
-    output_feature_collection.write('coastlines_801.gpml')
+.. sample-code:: pygplates_load_and_save_feature_collections_subset.py
+   :fragment: write-output
 
 Create a file containing features from multiple files
 +++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -106,25 +81,7 @@ In this example we make a new GPML file containing ridges from one file and isoc
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # The list of files to merge.
-    filenames = ['ridges.gpml', 'isochrons.gpml']
-
-    # The list of features from all input files.
-    merged_features = []
-    
-    # Iterate over the input files and add their features to the merged list.
-    for filename in filenames:
-        features = pygplates.FeatureCollection(filename)
-        merged_features.extend(features)
-    
-    # Write the merged features to a file.
-    merged_feature_collection = pygplates.FeatureCollection(merged_features)
-    merged_feature_collection.write('ridges_and_isochrons.gpml')
+.. sample-code:: pygplates_load_and_save_feature_collections_merge.py
 
 Details
 """""""
@@ -139,15 +96,10 @@ The general idea is to use :class:`pygplates.FeatureCollection` to both load and
   will iterate over our :class:`pygplates.FeatureCollection` sequence to retrieve
   :class:`features<pygplates.Feature>` and extend the ``merged_features`` list.
 
-::
-
-    merged_features = []
-    for filename in filenames:
-        features = pygplates.FeatureCollection(filename)
-        merged_features.extend(features)
+.. sample-code:: pygplates_load_and_save_feature_collections_merge.py
+   :fragment: merge-features
 
 Write the merged feature collection to a new file using :class:`pygplates.FeatureCollection`.
-::
 
-    merged_feature_collection = pygplates.FeatureCollection(merged_features)
-    merged_feature_collection.write('ridges_and_isochrons.gpml')
+.. sample-code:: pygplates_load_and_save_feature_collections_merge.py
+   :fragment: write-merged

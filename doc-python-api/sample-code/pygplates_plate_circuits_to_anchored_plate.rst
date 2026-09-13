@@ -19,63 +19,16 @@ The output of this example is similar to the output of the ``Total Reconstructio
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-    
-    
-    # Load one or more rotation files into a rotation model.
-    rotation_model = pygplates.RotationModel('rotations.rot')
-    
-    # The reconstruction time (Ma) of the plate hierarchy we're interested in.
-    reconstruction_time = 60
-    
-    # Get the reconstruction tree.
-    reconstruction_tree = rotation_model.get_reconstruction_tree(reconstruction_time)
-    
-    # Get all the edges of the reconstruction tree.
-    all_edges = reconstruction_tree.get_edges()
-    
-    # Iterate over all the edges.
-    for edge in all_edges:
-        
-        print 'Plate ID: %d:' % edge.get_moving_plate_id()
-        
-        # Traverse the plate circuit from the current plate to the anchored plate.
-        edge_in_circuit = edge
-        while edge_in_circuit:
-            
-            relative_total_rotation = edge_in_circuit.get_relative_total_rotation()
-            relative_pole_latitude, relative_pole_longitude, relative_angle_degrees = (
-                relative_total_rotation.get_lat_lon_euler_pole_and_angle_degrees())
-            
-            equivalent_total_rotation = edge_in_circuit.get_equivalent_total_rotation()
-            equivalent_pole_latitude, equivalent_pole_longitude, equivalent_angle_degrees = (
-                equivalent_total_rotation.get_lat_lon_euler_pole_and_angle_degrees())
-            
-            print '  Plate ID: %d, Fixed Plate ID: %d:' % (
-                edge_in_circuit.get_moving_plate_id(), edge_in_circuit.get_fixed_plate_id())
-            
-            print '    Rotation rel. fixed (parent) plate: lat: %f, lon: %f:, angle:%f' % (
-                relative_pole_latitude, relative_pole_longitude, relative_angle_degrees)
-            
-            print '    Equivalent rotation rel. anchored plate: lat: %f, lon: %f:, angle:%f' % (
-                equivalent_pole_latitude, equivalent_pole_longitude, equivalent_angle_degrees)
-            
-            # Blank line.
-            print
-            
-            # Follow the plate circuit one step closer to the anchored plate.
-            edge_in_circuit = edge_in_circuit.get_parent_edge()
+.. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
 
 
 Details
 """""""
 
 The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
-::
 
-    rotation_model = pygplates.RotationModel('rotations.rot')
+.. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
+   :fragment: load-rotations
 
 | The :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
   is encapsulated in a :class:`reconstruction tree<pygplates.ReconstructionTree>` which we obtain
@@ -84,9 +37,8 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 | The hierarchy can change from one reconstruction time to the next depending on how the rotations
   are arranged in the rotation file(s).
 
-::
-
-    reconstruction_tree = rotation_model.get_reconstruction_tree(reconstruction_time)
+.. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
+   :fragment: reconstruction-tree
 
 | An edge in a :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
   represents the rotation of a moving plate relative to a fixed plate. These edges are arranged in
@@ -102,9 +54,9 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
         ...
 
 Print the (moving) plate ID corresponding to the current edge before we print its plate circuit to the anchored plate.
-::
 
-    print 'Plate ID: %d:' % edge.get_moving_plate_id()
+.. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
+   :fragment: print-plate-id
 
 Iterate over the edges in the plate circuit path between the current ``edge`` and the anchored plate.
 ::
@@ -123,38 +75,21 @@ Iterate over the edges in the plate circuit path between the current ``edge`` an
 | The pole and angle of each rotation is obtained using
   :meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees`.
 
-::
-
-    relative_total_rotation = edge_in_circuit.get_relative_total_rotation()
-    relative_pole_latitude, relative_pole_longitude, relative_angle_degrees = (
-        relative_total_rotation.get_lat_lon_euler_pole_and_angle_degrees())
-    
-    equivalent_total_rotation = edge_in_circuit.get_equivalent_total_rotation()
-    equivalent_pole_latitude, equivalent_pole_longitude, equivalent_angle_degrees = (
-        equivalent_total_rotation.get_lat_lon_euler_pole_and_angle_degrees())
+.. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
+   :fragment: relative-and-equivalent-rotations
 
 Print the relative and equivalent total rotations of the moving plate of the current edge in the plate circuit path.
-::
 
-    print '  Plate ID: %d, Fixed Plate ID: %d:' % (
-        edge_in_circuit.get_moving_plate_id(), edge_in_circuit.get_fixed_plate_id())
-    
-    print '    Rotation rel. fixed (parent) plate: lat: %f, lon: %f:, angle:%f' % (
-        relative_pole_latitude, relative_pole_longitude, relative_angle_degrees)
-    
-    print '    Equivalent rotation rel. anchored plate: lat: %f, lon: %f:, angle:%f' % (
-        equivalent_pole_latitude, equivalent_pole_longitude, equivalent_angle_degrees)
-    
-    print
+.. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
+   :fragment: print-rotations
 
 | Follow the plate circuit one step closer to the anchored plate using
   :meth:`pygplates.ReconstructionTreeEdge.get_parent_edge`.
 | The ``while`` loop stops when an edge has no parent edge. This means we've reached an anchored plate edge
   (an edge whose fixed plate is the anchored plate).
 
-::
-
-    edge_in_circuit = edge_in_circuit.get_parent_edge()
+.. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
+   :fragment: parent-edge
 
 Output
 """"""
