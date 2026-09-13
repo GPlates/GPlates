@@ -480,20 +480,27 @@ A tag with a **non-zero** development number is an *anchor*: it supplies its num
 position, and nothing else. It is not a release, and the guards ignore it when choosing a
 reference release.
 
-**Its base is the version its commit resolves to** — the release target in force there — so an
-anchor is nothing more than a development tag (section 10) whose number has been raised, and it
-reads the same way: `GPlates-2.6.0-2000` is the 2.6.0 line, 2000 commits in. The resolver checks
-it (`gplates_check_anchor_tag`): whenever the count runs from an anchor, at HEAD or further back,
-the anchor's base is compared with the target in `VersionRelease.cmake` at the anchor's own
-commit, and a mismatch aborts the configure naming the tag the commit should carry instead (same
-number, so nothing else changes). Because the check reaches every build that counts from the
-anchor, an older commit tagged wrongly is caught by the next build after it, not only by one
-standing on it. A commit from before that file existed cannot be checked and passes; upstream's
-own anchor is one. The base goes stale, harmlessly, once the target moves on: a fork counting
-from `GPlates-2.6.0-2000` after upstream has moved to `2.7.0` resolves to `2.7.0-2xxx`, since
-upstream's release tags are never nearer than the fork's own anchor, and the tag still says what
-its commit resolved to. The fork may re-anchor as `GPlates-2.7.0-3000` if it wants the base to
-read as current, and need not.
+**Its base is the version its commit resolves to** — the release target in force there — so
+`GPlates-2.6.0-2000` reads the way any development version does: the 2.6.0 line, 2000 commits
+in. The resolver checks it (`gplates_check_anchor_tag`): whenever the count runs from an anchor,
+at HEAD or further back, the anchor's base is compared with the target in `VersionRelease.cmake`
+at the anchor's own commit, and a mismatch aborts the configure naming the tag the commit should
+carry instead (same number, so nothing else changes). Because the check reaches every build that
+counts from the anchor, an older commit tagged wrongly is caught by the next build after it, not
+only by one standing on it. A commit from before that file existed cannot be checked and passes;
+upstream's own `GPlates-2.6.0-47` is one. The base goes stale, harmlessly, once the target moves
+on — the tag still says what its commit resolved to — and a stale base does not reset the count
+(*An upstream bump does not reset a fork's count*, below).
+
+**The resolver does not distinguish an anchor from a development tag.** Section 10 says to tag a
+development build that is handed to someone with the version it resolves to; that tag and an
+anchor are one mechanism. Every tag carrying a development number is treated the same way: it
+supplies its number, its base is checked as above, and it counts only on its own first-parent
+line. The difference is one of intent. A tag that records a build carries the number already in
+force at its commit and changes nothing (section 10 measures it); an anchor carries a larger one,
+and the commits after it count on from there. Nothing checks the number, and nothing can — there
+is no rule on what number a tag may carry, only on its base — so the two cannot be told apart,
+and need not be. `GPlates-2.6.0-56` is both at once: the merge's own number, placed as an anchor.
 
 **Where it goes.** On the first-parent line of the commits it is to govern, since that is the
 line the count follows: the development branch for upstream's re-anchoring, a fork's own branch
@@ -529,6 +536,38 @@ resolver refuses any other. The advice given to the 17 forks (all with default b
 editing `GPLATES_RELEASE_VERSION` to `2.7.0` while upstream is on `2.6` produces two different
 projects both publishing something called GPlates 2.7.0, and the no-skip guard now refuses the
 larger jumps anyway.
+
+**An upstream bump does not reset a fork's count.** Only the base changes. Upstream's count
+restarts at each series cut because the series branch's release tag, at the branch point, becomes
+the nearest tag on the development branch (section 8.2). On the fork's first-parent line that
+release tag scores the distance from the fork point, which lies behind the fork's own anchor, so
+the anchor stays nearest and the number counts on from it; the base, as always, comes from the
+target, which the merge brought in. Measured on a synthetic repository — a fork cut from upstream
+and anchored `GPlates-2.6.0-2000` on its first commit, three fork commits, then upstream cuts
+`release/gplates-2.6`, tags `GPlates-2.6.0` there and moves `gplates` to `2.7.0`, and the fork
+merges `gplates` in and commits once more:
+
+| | resolves to |
+|---|---|
+| upstream, first commit after the cut | `2.7.0-1` |
+| fork, third commit, before the merge | `2.6.0-2002` |
+| fork, the merge commit | `2.7.0-2003` |
+| fork, the commit after the merge | `2.7.0-2004` |
+| the same, after re-anchoring the merge commit as `GPlates-2.7.0-2000` | `2.7.0-2001` |
+
+So a fork's number keeps rising across upstream's releases unless the fork places a new anchor,
+and either is fine for ordering, since the base sorts first. A new anchor goes on the merge commit
+that brings the bump in, or any later commit on the fork's line: the target there is already
+`2.7.0`, so the base check passes. The number can be anything from 1 up — the base has changed,
+so nothing requires it to exceed the old anchor's — and `2000` again is the natural choice, since
+the offset exists to keep the fork's strings clear of upstream's, which restart from 1 at each
+cut (measured: `GPlates-2.7.0-1` there gives `2.7.0-2` at the next commit). It cannot be `0`: a
+development number of 0 is what makes a tag a release tag, so `GPlates-2.7.0-0` says 2.7.0 was
+released at that commit, and the guards then refuse every commit after it as a development
+version of something already published. The fork's earlier commits still count from the old
+anchor. A fork that has not fetched `GPlates-2.6.0` cannot build the merge at all: a target of
+`2.7.0` skips past the newest release it knows of, and the message says to fetch tags first
+(next paragraph).
 
 **A fork has no tags to begin with.** GitHub copies none into a fork — checked on 2026-09-12: the
 three active forks hold one tag between them, and it is the fork's own — and a fetch of one
@@ -609,7 +648,9 @@ and `build-wheels.yml`
 excludes `PyGPlates-*.dev*` from its publish trigger, so such a tag cannot start a release run
 (a manual dispatch builds a development version, but cannot publish it — see below). The
 distinction worth keeping is between a tag that merely *records* a build, which is freely
-deletable, and an anchor that *re-bases* the count, which is not while it is load-bearing.
+deletable, and an anchor that *re-bases* the count, which is not while it is load-bearing. It is
+a distinction of intent: the resolver treats every tag carrying a development number alike
+(section 9).
 
 **Wheels for a development version** come from a manual dispatch of `build-wheels.yml`, and the
 tag just described is the handle for it: tag the commit with the version it resolves to, push

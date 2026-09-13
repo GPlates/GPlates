@@ -42,12 +42,16 @@
 # colliding with upstream's (tag its branch 'GPlates-2.6.0-2000', and its own commits count on
 # from 2000), and how upstream can re-anchor a counter that has grown unwieldy. Give an anchor
 # tag a non-zero development number, so it stays distinguishable from the release itself, and
-# the base the commit resolves to: an anchor is a development tag whose number has been raised,
-# so its base is the release target in force at its commit, and the resolver checks that it is
-# (gplates_check_anchor_tag). 'GPlates-2.6.0-2000' then reads as "the 2.6.0 line, 2000 commits
-# in", rather than as a label somebody chose. An anchor counts only on the first-parent line it
-# was placed on: a fork's anchor, or a development tag on a merged feature branch, is ignored
-# from the development branch (the loop below says why).
+# the base the commit resolves to - the release target in force at its commit - so that
+# 'GPlates-2.6.0-2000' reads as "the 2.6.0 line, 2000 commits in", rather than as a label
+# somebody chose. The resolver draws no line between an anchor and a development tag that merely
+# records a build's version (the design document, section 10): every tag carrying a development
+# number is treated the same way. It supplies its number, its base must be the target at its
+# commit (gplates_check_anchor_tag), and it counts only on the first-parent line it was placed
+# on - a fork's anchor, or a development tag on a merged feature branch, is ignored from the
+# development branch (the loop below says why). The number itself is never checked: no rule
+# constrains it, so a tag whose number equals the count already in force changes nothing, and an
+# anchor is one whose number is larger.
 #
 # GPlates depends on two right now. 'GPlates-2.6.0-47' is on the old gplates line, which runs
 # back through the 2013 'python-api' branch with no newer GPlates release tag on it - so without
@@ -455,11 +459,13 @@ endfunction()
 # Check an anchor tag against the release target at the commit it stands on, setting <error_var>
 # to a message to abort with, or to the empty string if the anchor is acceptable.
 #
-# An anchor is a development tag whose number has been raised, and its base is the version the
-# commit it names resolves to - the release target in force there. That is what lets
-# 'GPlates-2.6.0-2000' be read as "the 2.6.0 line, 2000 commits in" rather than as a label
-# somebody chose. The resolver takes only the number from an anchor, so a wrong base would never
-# show in a resolved version; this is the one place it is looked at.
+# Every tag carrying a development number comes through here: the resolver does not know, or
+# need to know, whether the number merely records the count in force at the commit or raises it.
+# Either way the base is the version the commit it names resolves to - the release target in
+# force there - which is what lets 'GPlates-2.6.0-2000' be read as "the 2.6.0 line, 2000 commits
+# in" rather than as a label somebody chose. The resolver takes only the number from the tag, so
+# a wrong base would never show in a resolved version; this is the one place it is looked at.
+# The number is not checked, and cannot be: nothing constrains what number a tag may carry.
 #
 # 'anchor_version' is the tag with 'tag_prefix' removed, and 'release_file' is the content of
 # 'cmake/modules/VersionRelease.cmake' at the anchor's commit. A commit from before that file
@@ -502,8 +508,8 @@ function(gplates_check_anchor_tag product tag_prefix anchor_version release_file
 	string(CONCAT _msg
 			"'${tag_prefix}${anchor_version}' is an anchor tag naming the base '${_anchor_base}', "
 			"but the ${product} release target at the commit it stands on is '${_target_base}'. "
-			"An anchor is a development tag whose number has been raised, so its base is the "
-			"version that commit resolves to - it reads as a version, not as a label. Delete the "
+			"A tag carrying a development number is read as a version of the commit it names, "
+			"not as a label, so its base is the release target in force there. Delete the "
 			"tag ('git tag -d ${tag_prefix}${anchor_version}', and 'git push <remote> "
 			":refs/tags/${tag_prefix}${anchor_version}' wherever it was pushed) and tag the commit "
 			"'${tag_prefix}${_retag_version}' instead: the number stays, so nothing else changes. "
