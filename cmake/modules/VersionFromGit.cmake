@@ -41,7 +41,11 @@
 # from that point. That is how a downstream fork keeps its own development numbers without
 # colliding with upstream's (tag its branch 'GPlates-2.6.0-2000', and its own commits count on
 # from 2000), and how upstream can re-anchor a counter that has grown unwieldy. Give an anchor
-# tag a non-zero development number, so it stays distinguishable from the release itself.
+# tag a non-zero development number, so it stays distinguishable from the release itself, and
+# the base the commit resolves to: an anchor is a development tag whose number has been raised,
+# so its base is the release target in force at its commit, and the resolver checks that it is
+# (gplates_check_anchor_tag). 'GPlates-2.6.0-2000' then reads as "the 2.6.0 line, 2000 commits
+# in", rather than as a label somebody chose.
 #
 # GPlates depends on one right now: 'GPlates-2.6.0-47'. The gplates branch's first-parent line
 # runs back through the 2013 'python-api' branch, and no ancestor of any GPlates release tag
@@ -302,9 +306,11 @@ endfunction()
 #
 # CHECK 2 (policy): the target must not skip a version. Check 1 accepts '1.2.0' after a released
 # '1.0.0', which is what an accidentally skipped '1.1' looks like. The GPlates release line has no
-# skips - the one apparent gap, 0.9.5 to 0.9.7.1, is a release whose tag went missing, and the big
-# early pyGPlates jumps are from an era that used the SVN revision as the minor version - so this
-# matches the project's actual practice. It is policy rather than correctness, and a future
+# skips - the one apparent gap, 0.9.5 to 0.9.7.1, is a release whose tag went missing; the 0.9.x
+# line numbered itself as if 0.9 were the major version, 0.9.10 a minor and 0.9.10.1 its patch,
+# until 1.0.0 declared the product mature; and the big early pyGPlates jumps are from an era that
+# used the SVN revision as the minor version - so this matches the project's actual practice. It
+# is policy rather than correctness, and a future
 # maintainer wanting a deliberate jump can loosen it without breaking anything.
 #
 # A candidate binds the line it is on, and only that line. 'on_line' says whether the reference
@@ -441,6 +447,60 @@ function(gplates_check_release_target product target reference reference_tag dis
 endfunction()
 
 
+#
+# Check an anchor tag against the release target at the commit it stands on, setting <error_var>
+# to a message to abort with, or to the empty string if the anchor is acceptable.
+#
+# An anchor is a development tag whose number has been raised, and its base is the version the
+# commit it names resolves to - the release target in force there. That is what lets
+# 'GPlates-2.6.0-2000' be read as "the 2.6.0 line, 2000 commits in" rather than as a label
+# somebody chose. The resolver takes only the number from an anchor, so a wrong base would never
+# show in a resolved version; this is the one place it is looked at.
+#
+# 'anchor_version' is the tag with 'tag_prefix' removed, and 'release_file' is the content of
+# 'cmake/modules/VersionRelease.cmake' at the anchor's commit. A commit from before that file
+# existed (upstream's own 'GPlates-2.6.0-47' is one) cannot be checked, and passes; so does one
+# whose file does not set this product's target.
+#
+function(gplates_check_anchor_tag product tag_prefix anchor_version release_file error_var)
+	set(${error_var} "" PARENT_SCOPE)
+
+	string(TOUPPER "${product}" _product_upper)
+	set(_ws "[ \t]*")
+	set(_target_set
+			"set${_ws}\\(${_ws}${_product_upper}_RELEASE_VERSION[ \t]+\"?([^\" \t\r\n)]+)\"?${_ws}\\)")
+	if (NOT release_file MATCHES "${_target_set}")
+		return()
+	endif()
+	set(_target_there "${CMAKE_MATCH_1}")
+
+	gplates_split_version(${product} "${anchor_version}" _ok _anchor_base _anchor_dev)
+	if (NOT _ok OR _anchor_dev EQUAL 0)
+		return()
+	endif()
+	gplates_split_version(${product} "${_target_there}" _ok _target_base _target_dev)
+	if (NOT _ok)
+		return()
+	endif()
+
+	gplates_compare_versions(${product} "${_anchor_base}" "${_target_base}" _cmp)
+	if (_cmp STREQUAL "" OR _cmp EQUAL 0)
+		return()
+	endif()
+
+	gplates_join_version(${product} "${_target_base}" ${_anchor_dev} _retag_version)
+	string(CONCAT _msg
+			"'${tag_prefix}${anchor_version}' is an anchor tag naming the base '${_anchor_base}', "
+			"but the ${product} release target at the commit it stands on is '${_target_base}'. "
+			"An anchor is a development tag whose number has been raised, so its base is the "
+			"version that commit resolves to - it reads as a version, not as a label. Retag that "
+			"commit '${tag_prefix}${_retag_version}' (the number stays, so nothing else changes), "
+			"or delete the tag if it was not meant as an anchor."
+	)
+	set(${error_var} "${_msg}" PARENT_SCOPE)
+endfunction()
+
+
 # Run git in the source tree, returning its exit code and stripped standard output.
 function(_gplates_version_git result_var output_var)
 	execute_process(
@@ -451,6 +511,28 @@ function(_gplates_version_git result_var output_var)
 			OUTPUT_STRIP_TRAILING_WHITESPACE)
 	set(${result_var} ${_result} PARENT_SCOPE)
 	set(${output_var} "${_output}" PARENT_SCOPE)
+endfunction()
+
+
+#
+# Check the anchor tag the count runs from against the release target at its own commit
+# (gplates_check_anchor_tag), aborting the configure on a mismatch. Reaching every build that
+# counts from the anchor, not only one standing on it, is what catches an older commit tagged
+# wrongly: the next build after it fails, naming the tag the commit should carry.
+#
+function(_gplates_version_check_anchor product tag_prefix anchor_tag anchor_commit)
+	_gplates_version_git(_result _release_file
+			show "${anchor_commit}:cmake/modules/VersionRelease.cmake")
+	if (NOT _result EQUAL 0)
+		# The commit predates the release file, so there is no target there to check against.
+		return()
+	endif()
+	string(REGEX REPLACE "^${tag_prefix}" "" _anchor_version "${anchor_tag}")
+	gplates_check_anchor_tag(${product} "${tag_prefix}" "${_anchor_version}" "${_release_file}"
+			_error)
+	if (NOT _error STREQUAL "")
+		message(FATAL_ERROR "${_error}")
+	endif()
 endfunction()
 
 
@@ -573,6 +655,7 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 	set(_best_distance -1)
 	set(_best_offset 0)
 	set(_best_tag "")
+	set(_best_commit "")
 	# The nearest tag that is a *release* rather than an anchor, tracked apart from the tag that
 	# supplies the development number: an anchor tag can be nearer, and supply the number, while
 	# it is a release the target has to be checked against. Among releases tied at the same
@@ -652,10 +735,12 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 			set(_best_distance ${_distance})
 			set(_best_offset ${_dev})
 			set(_best_tag "${_tag}")
+			set(_best_commit "${_tag_commit}")
 		elseif (_distance EQUAL _best_distance)
 			if (_dev GREATER _best_offset)
 				set(_best_offset ${_dev})
 				set(_best_tag "${_tag}")
+				set(_best_commit "${_tag_commit}")
 			endif()
 		endif()
 	endforeach()
@@ -668,6 +753,17 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 	endif()
 	if (_best_distance LESS 0)
 		return()
+	endif()
+
+	# The anchor the count runs from, if it is one - the tag at HEAD when standing on an anchor,
+	# else the nearest tag when that carries a development number - is checked against the
+	# release target at its own commit: an anchor's base is the version its commit resolves to.
+	if (NOT _at_tag_base STREQUAL "" AND NOT _at_tag_dev EQUAL 0)
+		_gplates_version_check_anchor(${product} "${tag_prefix}" "${_at_tag_name}"
+				"${_head_commit}")
+	elseif (_at_tag_base STREQUAL "" AND NOT _best_offset EQUAL 0)
+		_gplates_version_check_anchor(${product} "${tag_prefix}" "${_best_tag}"
+				"${_best_commit}")
 	endif()
 
 	# Check the hand-edited release target against the nearest release.
@@ -701,8 +797,8 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 	if (NOT _at_tag_base STREQUAL "")
 		if (NOT _at_tag_dev EQUAL 0)
 			# An anchor tag - it exists to carry a development number, so take that number and
-			# leave the base version to the release target (a fork's anchor may well name an
-			# older release than the one being worked towards).
+			# leave the base version to the release target (which its own base was checked
+			# against above).
 			gplates_join_version(${product} "${target}" ${_at_tag_dev} _version)
 			set(${out_var} "${_version}" PARENT_SCOPE)
 			return()

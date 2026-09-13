@@ -10,8 +10,9 @@
 # or as the CTest test 'version-resolver-test', which the root 'CMakeLists.txt' registers.
 #
 # This covers only the parts of 'VersionFromGit.cmake' that are pure functions of their
-# arguments - splitting and joining a version, ordering two of them, and checking the
-# hand-edited release target against the nearest release. The parts that consult git are not
+# arguments - splitting and joining a version, ordering two of them, checking the hand-edited
+# release target against the nearest release, and checking an anchor tag against the release
+# target at its own commit. The parts that consult git are not
 # covered case by case: they would need a synthetic repository per case, and what they compute
 # is a commit count rather than a decision. The whole resolver is run once, at the end, against
 # the repository this file is in.
@@ -143,6 +144,36 @@ function(expect_target_rejected_off_line product target reference expected_phras
 	set(_failures ${_failures} PARENT_SCOPE)
 endfunction()
 
+# An empty 'expected_tag' means the anchor is expected to be accepted; otherwise it is expected
+# to be rejected, with a message naming that tag as the one the commit should carry instead.
+# 'release_file' stands in for 'VersionRelease.cmake' as it was at the anchor's commit.
+function(_expect_anchor product prefix version release_file expected_tag)
+	gplates_check_anchor_tag(${product} "${prefix}" "${version}" "${release_file}" _error)
+	if (expected_tag STREQUAL "")
+		if (NOT _error STREQUAL "")
+			_fail("${product} anchor '${prefix}${version}': expected it to be accepted, but got:"
+					"\n  ${_error}")
+		endif()
+	elseif (_error STREQUAL "")
+		_fail("${product} anchor '${prefix}${version}': expected it to be rejected, but it was "
+				"accepted.")
+	elseif (NOT _error MATCHES "'${expected_tag}'")
+		_fail("${product} anchor '${prefix}${version}': rejected, but without naming "
+				"'${expected_tag}' as the tag to use instead, got:\n  ${_error}")
+	endif()
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+function(expect_anchor_ok product prefix version release_file)
+	_expect_anchor(${product} "${prefix}" "${version}" "${release_file}" "")
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+function(expect_anchor_rejected product prefix version release_file expected_tag)
+	_expect_anchor(${product} "${prefix}" "${version}" "${release_file}" "${expected_tag}")
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
 
 #
 # Splitting.
@@ -268,6 +299,32 @@ expect_target_rejected(gplates "2.6.1" "2.6.0-rc.1" "not been finished")
 # The hole this check was added to close: verified by hand before it existed, a target of
 # '0.9.0' with 'PyGPlates-1.0.0' long released resolved to '0.9.0.dev49' and exited 0.
 expect_target_rejected(pygplates "0.9.0" "1.0.0" "sorts below")
+
+#
+# An anchor tag's base must be the release target at its commit - the version that commit
+# resolves to - so that the tag reads as a version rather than as a label. The message names
+# the tag to use instead, which keeps the number and so changes nothing else.
+#
+set(_release_file "set(GPLATES_RELEASE_VERSION 2.6.0)\nset(PYGPLATES_RELEASE_VERSION 1.1.0)\n")
+expect_anchor_ok(gplates "GPlates-" "2.6.0-2000" "${_release_file}")
+expect_anchor_ok(pygplates "PyGPlates-" "1.1.0.dev59" "${_release_file}")
+expect_anchor_rejected(gplates "GPlates-" "2.5.0-2000" "${_release_file}" "GPlates-2.6.0-2000")
+expect_anchor_rejected(gplates "GPlates-" "2.7.0-2000" "${_release_file}" "GPlates-2.6.0-2000")
+expect_anchor_rejected(pygplates "PyGPlates-" "1.0.0.dev59" "${_release_file}"
+		"PyGPlates-1.1.0.dev59")
+# Each product is checked against its own target only.
+expect_anchor_ok(gplates "GPlates-" "2.6.0-2000" "set(PYGPLATES_RELEASE_VERSION 9.9.9)\n")
+# The target may be quoted, and a candidate's development builds anchor like any other.
+expect_anchor_ok(pygplates "PyGPlates-" "1.1.0rc1.dev8"
+		"set(PYGPLATES_RELEASE_VERSION \"1.1.0rc1\")")
+expect_anchor_ok(gplates "GPlates-" "2.6.0-rc.1.8" "set(GPLATES_RELEASE_VERSION 2.6.0-rc.1)")
+expect_anchor_rejected(gplates "GPlates-" "2.6.0-8" "set(GPLATES_RELEASE_VERSION 2.6.0-rc.1)"
+		"GPlates-2.6.0-rc.1.8")
+# A release tag is not an anchor, and a commit from before the release file set this product's
+# target cannot be checked: both pass.
+expect_anchor_ok(gplates "GPlates-" "2.5.0" "${_release_file}")
+expect_anchor_ok(gplates "GPlates-" "2.5.0-2000" "set(PYGPLATES_RELEASE_VERSION 1.1.0)\n")
+expect_anchor_ok(gplates "GPlates-" "2.5.0-2000" "")
 
 #
 # The whole resolver, once, against the repository this file is in: the targets in

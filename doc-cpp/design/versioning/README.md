@@ -44,9 +44,11 @@ The rules that follow from it:
   point (the series to `1.1.0rc1`, `1.1.0`, `1.1.1`; the development branch to `1.2.0`), so it
   conflicts every time — and the one time it would not, because the development branch's copy
   had not changed yet, is the fast-forward that hands it the series' target (section 8.1).
-- **A series branch is cut when the first release in the series is prepared**, not before. A
-  branch cut ahead of need is an empty branch. As of 2026-09-12 none has been cut yet; the first
-  will be `release/pygplates-1.1`.
+- **A series branch is cut when the first release in the series is prepared**, not before, and
+  its first commit is the one tagged: the development branch's target cannot move on until that
+  tag exists (section 7), so the candidate is prepared *before* the cut. A branch cut ahead of
+  need is an empty branch. As of 2026-09-12 none has been cut yet; the first will be
+  `release/pygplates-1.1`.
 - **Series branches are never deleted.** GDAL keeps 29 and QGIS 71 (section 4); a branch ref
   costs nothing, and deleting one loses the "check out the latest 2.6.x" contract for that series.
 - The development branch keeps the name `gplates` for now and will be renamed `main` in a
@@ -236,8 +238,9 @@ section is the reasoning. There are two inputs: a hand-edited **release target**
 6. **N = that tag's development number + its distance**, and the version is `join(target, N)`.
 
 The base always comes from the *target*, never from the tag. A tag contributes a number and a
-position in history; tags' bases are read only by the guards. That is most visible with anchor
-tags (section 9): tagging `GPlates-2.5.0-2000` while the target is `2.6.0` yields `2.6.0-2000`.
+position in history; tags' bases are read only by the guards. An anchor tag's base is checked
+against the target at its own commit (section 9), so the two never disagree in a resolved
+version — but it is the target that is used.
 
 `join` is spelt per product, so that each stays orderable under its own rules (and GPlates under
 Debian's too):
@@ -319,9 +322,11 @@ Four checks abort the configure rather than let a bad version reach a package:
 
    **This one is policy, not correctness**, and the error message says so, because it can be
    loosened without breaking anything. The evidence supports it: the GPlates release line has no
-   skips (the apparent `0.9.5` → `0.9.7.1` gap is a released 0.9.6 whose tag went missing, and the
-   big early pyGPlates jumps used the SVN revision as the minor version). A side benefit: a fork
-   cannot quietly jump to `2.8.0` while upstream is on `2.6` (section 9).
+   skips (the apparent `0.9.5` → `0.9.7.1` gap is a released 0.9.6 whose tag went missing; the
+   0.9.x line numbered itself as if `0.9` were the major version, `0.9.10` a minor and `0.9.10.1`
+   its patch, until 1.0.0 declared the product mature; and the big early pyGPlates jumps used the
+   SVN revision as the minor version). A side benefit: a fork cannot quietly jump to `2.8.0` while
+   upstream is on `2.6` (section 9).
 
 **Which release is "the nearest release"** for checks 3 and 4 is a separate question from which
 tag supplies the count, and is computed separately:
@@ -347,7 +352,13 @@ it was made, and fails ("already released", or "being released on another branch
 keeps that window empty — the cut commit itself is an ancestor of the series tag, so the tag is
 skipped there and that commit still counts from the older release — and it is only non-empty if
 something else lands on the development branch in between. A bisect that lands in it anyway can
-pass the version as a `-D` define.
+pass the version as a `-D` define. So the cut, the first tag and the bump belong in one sitting:
+prepare the candidate on the development branch, cut the series branch once it is ready, tag the
+branch's first commit — the one that sets the target to the candidate — push the tag, and bump.
+The candidate's artifacts are what get tested, and whatever testing finds goes into the next
+candidate; the release itself is tagged only once a candidate has passed. Preparing *on* the
+series branch before its first tag is possible, but every commit of it lengthens the wait on the
+development branch.
 
 The pure parts of the resolver — splitting, joining, ordering and the target checks — are tested
 by `cmake/modules/VersionFromGitTest.cmake`, registered with CTest as `version-resolver-test` in
@@ -463,6 +474,27 @@ A tag with a **non-zero** development number is an *anchor*: it supplies its num
 position, and nothing else. It is not a release, and the guards ignore it when choosing a
 reference release.
 
+**Its base is the version its commit resolves to** — the release target in force there — so an
+anchor is nothing more than a development tag (section 10) whose number has been raised, and it
+reads the same way: `GPlates-2.6.0-2000` is the 2.6.0 line, 2000 commits in. The resolver checks
+it (`gplates_check_anchor_tag`): whenever the count runs from an anchor, at HEAD or further back,
+the anchor's base is compared with the target in `VersionRelease.cmake` at the anchor's own
+commit, and a mismatch aborts the configure naming the tag the commit should carry instead (same
+number, so nothing else changes). Because the check reaches every build that counts from the
+anchor, an older commit tagged wrongly is caught by the next build after it, not only by one
+standing on it. A commit from before that file existed cannot be checked and passes; upstream's
+own anchor is one. The base goes stale, harmlessly, once the target moves on: a fork counting
+from `GPlates-2.6.0-2000` after upstream has moved to `2.7.0` resolves to `2.7.0-2xxx`, since
+upstream's release tags are never nearer than the fork's own anchor, and the tag still says what
+its commit resolved to. The fork may re-anchor as `GPlates-2.7.0-3000` if it wants the base to
+read as current, and need not.
+
+**Where it goes.** On the first-parent line of the commits it is to govern, since that is the
+line the count follows: the development branch for upstream's re-anchoring, a fork's own branch
+for the fork's. A series branch counts from its own release tags and never needs one. A fork
+that syncs by merging keeps its anchor on its line; a rebase rewrites the commits and leaves the
+tag on the old ones, so a fork that rebases re-anchors afterwards.
+
 **Upstream depends on one right now.** The `gplates` branch's first-parent line runs back through
 the 2013 `python-api` branch, and no ancestor of any GPlates release tag newer than that sits on
 it, so without `GPlates-2.6.0-47` the count runs from 2013 and gives `2.6.0-1206`. Deleting the
@@ -475,9 +507,10 @@ and is skipped, so the anchor is the nearest tag again), and those are exactly t
 **A fork keeps its own numbers with one.** Commits on a fork advance its own first-parent line,
 so by default a fork mints the same development version strings as upstream for different code.
 Tagging the fork's branch `GPlates-2.6.0-2000` makes that the nearest tag, and the fork counts on
-from 2000. Because the base comes from the target, the anchor's own version is just a label and
-can name whichever release the fork started from. The advice given to the 17 forks (all with
-default branch `gplates`, 2026-09-11) is to do that rather than to change the release version:
+from 2000. The anchor's base is the target in force there — what
+`cmake -P cmake/modules/VersionFromGit.cmake gplates` prints, with the number raised — and the
+resolver refuses any other. The advice given to the 17 forks (all with default branch `gplates`,
+2026-09-11) is to do that rather than to change the release version:
 editing `GPLATES_RELEASE_VERSION` to `2.7.0` while upstream is on `2.6` produces two different
 projects both publishing something called GPlates 2.7.0, and the no-skip guard now refuses the
 larger jumps anyway.
@@ -522,9 +555,10 @@ git -c versionsort.suffix=a -c versionsort.suffix=b -c versionsort.suffix=rc tag
 (`PyGPlates-*` for pyGPlates.) The `versionsort.suffix` settings are what sort `PyGPlates-1.0.0rc1`
 *before* `PyGPlates-1.0.0` rather than after it. Not every tag listed is a release: **a tag
 carrying a development number is an anchor, never a release** — `GPlates-2.6.0-47` sorts last in
-that list, precisely where the newest release would be expected — and a few very old tags, such
-as `GPlates-1.5+hellinger-testing`, are neither. A release tag is `GPlates-<version>` or
-`PyGPlates-<version>` with no development number.
+that list, precisely where the newest release would be expected — and a few very old tags are
+releases in a form the resolver does not parse, and ignores: `GPlates-1.5+hellinger-testing` was
+a real release, oddly named, given to a subset of users to test. A release tag is
+`GPlates-<version>` or `PyGPlates-<version>` with no development number.
 
 **From a version string back to the commit.** The development number counts first-parent commits
 on from the nearest tag, so subtract that tag's own development number and count that far along
