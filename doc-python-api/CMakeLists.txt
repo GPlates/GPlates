@@ -43,7 +43,10 @@ if (SPHINX_FOUND)
 	# Copy the ".rst" files from our source directory to our binary/output directory.
 	# This is because the sphinx 'autosummary' command (when used with ':toctree:') will generate a
 	# bunch of stub ".rst" files and we don't want them in our source code.
-	FILE(GLOB RST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/*.rst" "${CMAKE_CURRENT_SOURCE_DIR}/sample-code/*.rst")
+	#
+	# The sample scripts ('sample-code/*.py') go with them: the pages include their code through the
+	# 'sample-code' directive (see 'conf.py.in'), relative to the page.
+	FILE(GLOB RST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/*.rst" "${CMAKE_CURRENT_SOURCE_DIR}/sample-code/*.rst" "${CMAKE_CURRENT_SOURCE_DIR}/sample-code/*.py")
 	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sample-code") # Ensure 'sample-code' sub-directory exists in binary build directory.
 	FOREACH(RST_FILE ${RST_FILES})
 		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${RST_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${RST_FILE} @ONLY)

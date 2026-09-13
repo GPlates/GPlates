@@ -139,6 +139,104 @@ def setup(app):
     app.add_css_file('theme_overrides.css')
     # Repair docstrings that contain more than one signature block (see 'process_docstring').
     app.connect('autodoc-process-docstring', process_docstring)
+    # Include sample scripts, whole or by fragment, from 'sample-code/*.py' (see 'SampleCodeDirective').
+    app.add_directive('sample-code', SampleCodeDirective)
+
+
+#
+# The 'sample-code' directive: a sample page's code comes from a runnable script.
+#
+# Each page under 'sample-code/' has its code in a '.py' file beside it, which the CTest
+# 'pygplates-sample-code-test' runs against the fixtures in 'pygplates/test/fixtures/'. The page
+# includes the whole script once, as its "Sample code" listing, and then pieces of it in the
+# "Details" section - so the code exists once and cannot drift from its explanation.
+#
+# The pieces are delimited in the script by marker comments, which the directive strips from
+# every listing:
+#
+#     # [fragment: load-rotations]
+#     rotation_model = pygplates.RotationModel('rotations.rot')
+#     # [end: load-rotations]
+#
+# and included with:
+#
+#     .. sample-code:: pygplates_plate_rotation_hierarchy.py
+#        :fragment: load-rotations
+#
+# Omit ':fragment:' for the whole script. A fragment is dedented, since it usually comes from
+# inside a loop or function. Fragments may nest (the ends are named), and a fragment that the
+# script does not contain is an error - which '-W' turns into a failed build, so a renamed or
+# deleted marker cannot leave a page silently showing nothing.
+#
+import textwrap
+from docutils import nodes
+from docutils.parsers.rst import Directive, directives
+from sphinx.util import logging as sphinx_logging
+
+_FRAGMENT_MARKER_RE = re.compile(r'^\s*#\s*\[(fragment|end):\s*([\w-]+)\]\s*$')
+
+def read_sample_code(path, fragment=None):
+    """
+    Return the lines of the sample script (or of one fragment of it) with all marker lines removed.
+
+    A marker line sitting between two blank lines takes one of them with it, so that stripping the
+    markers does not open up extra blank lines in the listing.
+    """
+    with open(path, encoding='utf-8') as sample_file:
+        source_lines = sample_file.read().splitlines()
+
+    output = []
+    inside = fragment is None
+    found = fragment is None
+    skip_blank = False
+    for line in source_lines:
+        marker = _FRAGMENT_MARKER_RE.match(line)
+        if marker:
+            kind, name = marker.groups()
+            if fragment is not None and name == fragment:
+                if kind == 'fragment':
+                    inside = found = True
+                else:
+                    inside = False
+            # Swallow one blank line that this marker left adjacent to another.
+            skip_blank = bool(output) and not output[-1].strip()
+            continue
+        if skip_blank and not line.strip():
+            skip_blank = False
+            continue
+        skip_blank = False
+        if inside:
+            output.append(line)
+
+    if not found:
+        raise ValueError("fragment '%s' not found in '%s'" % (fragment, path))
+    while output and not output[0].strip():
+        del output[0]
+    while output and not output[-1].strip():
+        del output[-1]
+    if fragment is not None:
+        output = textwrap.dedent('\n'.join(output)).splitlines()
+    return output
+
+class SampleCodeDirective(Directive):
+    required_arguments = 1
+    option_spec = {'fragment': directives.unchanged_required}
+
+    def run(self):
+        env = self.state.document.settings.env
+        rel_filename, filename = env.relfn2path(self.arguments[0])
+        env.note_dependency(rel_filename)
+        try:
+            lines = read_sample_code(filename, self.options.get('fragment'))
+        except (OSError, ValueError) as exc:
+            sphinx_logging.getLogger(__name__).warning(
+                'sample-code: %s', exc, location=(env.docname, self.lineno))
+            return []
+        text = '\n'.join(lines)
+        node = nodes.literal_block(text, text)
+        node['language'] = 'python'
+        node['source'] = filename
+        return [node]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
