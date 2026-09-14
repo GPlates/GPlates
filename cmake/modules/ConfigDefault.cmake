@@ -63,6 +63,11 @@ endif()
 set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
 
 
+# Where the application icons and the macOS Info.plist template are located (see the README there).
+# Set here, rather than in 'Package.cmake', because 'src/CMakeLists.txt' needs it before that is included.
+set(GPLATES_SOURCE_DISTRIBUTION_DIR "${PROJECT_SOURCE_DIR}/cmake/distribution")
+
+
 # The GPlates (or pyGPlates) package contact (Debian requires a name and email address - so use format 'FirstName LastName <EmailAddress>').
 #
 # NOTE: Leave it as the *empty* string here (so it doesn't get committed to source code control).

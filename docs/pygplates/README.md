@@ -30,13 +30,13 @@ configure time you should see:
 If instead it reports `NOT found in <python>`, Sphinx is missing from *that* interpreter and no
 documentation target is created.
 
-Then build the `doc-python-api` target — the `doc-python-api` project in Visual Studio, or:
+Then build the `docs-pygplates` target — the `docs-pygplates` project in Visual Studio, or:
 
 ```bash
-cmake --build <build-dir> --config Release --target doc-python-api
+cmake --build <build-dir> --config Release --target docs-pygplates
 ```
 
-The result is `<build-dir>/doc-python-api/html/index.html`.
+The result is `<build-dir>/docs/pygplates/html/index.html`.
 
 Warnings are errors (`-W`), so the build fails on anything Sphinx complains about; it also builds
 in parallel (`-j auto`) on Linux and macOS — Sphinx ignores `-j` on Windows and builds serially.
@@ -44,14 +44,14 @@ in parallel (`-j auto`) on Linux and macOS — Sphinx ignores `-j` on Windows an
 > **Editing `conf.py.in` does not always trigger a rebuild.** Sphinx invalidates its cached
 > doctrees when *config values* change, not when conf.py *code* changes — so editing a handler
 > such as `process_docstring` leaves the previously built HTML in place. Delete
-> `<build-dir>/doc-python-api/_doctrees` (or run Sphinx by hand with `-E`) when verifying such a
+> `<build-dir>/docs/pygplates/_doctrees` (or run Sphinx by hand with `-E`) when verifying such a
 > change.
 
 > **Build from scratch for anything you publish.** An incremental rebuild produces HTML identical
 > to a from-scratch build except for `searchindex.js`, where it silently drops *all* index entries
 > (`indexentries` goes from 854 to 0, while `terms`, `docnames` and the rest are unchanged) —
 > reproducible across repeated incremental runs. Search still works on page text, but index-entry
-> matches are lost. Delete `<build-dir>/doc-python-api/_doctrees` (and `generated/`) first, or
+> matches are lost. Delete `<build-dir>/docs/pygplates/_doctrees` (and `generated/`) first, or
 > pass `-E`.
 
 ## Docstring conventions

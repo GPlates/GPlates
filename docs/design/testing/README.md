@@ -121,7 +121,7 @@ take everything.
   push builds and tests both products. Until the two develop branches were unified (2026-09)
   each workflow ran only on its own branch and built only its own product, and a change to the
   shared sources could break the other product undetected until the next sync merge — see
-  `doc-cpp/design/versioning/README.md`.
+  `docs/design/versioning/README.md`.
 - sccache cache keys are namespaced per product (`sccache-gplates-*` and `sccache-pygplates-*`):
   `gplates` is the repository's *default* branch, so its caches are visible to every ref, and the
   two build configurations share no cache entries (every common translation unit differs in

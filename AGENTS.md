@@ -113,14 +113,14 @@ cmake --build build-gplates --target gplates gplates-unit-test
 
 Use GoogleTest for all new C++ tests; do not mix frameworks. Conventions (headless,
 working-directory independent, `GPLATES_UNIT_TEST_DATA_DIR`, `QTemporaryDir`, and leaving
-`git status` clean) are in `doc-cpp/design/testing/README.md`.
+`git status` clean) are in `docs/design/testing/README.md`.
 
 ## The pyGPlates module boundary
 
 The pygplates module compiles only the **include closure of the pyGPlates API** — not the
 whole tree. The layering, the rules for new files (which directory kind defaults to
 GPlates-only, `.h`/`.cc` pairing for AUTOMOC, no `QMessageBox` in shared code) and the
-enforcement are described in `doc-cpp/design/architecture/README.md`. Two pyGPlates CTests
+enforcement are described in `docs/design/architecture/README.md`. Two pyGPlates CTests
 enforce the boundary: `pygplates-source-closure-test` (the source list must equal the
 closure computed by `cmake/pygplates_source_closure.py`, which also drift-checks the
 committed dependency matrix) and `pygplates-linkage-test` (`cmake/check_linkage.py` - the
@@ -164,13 +164,13 @@ python pygplates/stub/generate_stub.py --module-dir <dir-containing-built-pygpla
 would show every regeneration as a whole-file change (`--check` ignores line endings).
 
 The docstring conventions are strict and are the highest-value style document in the repo:
-`doc-python-api/README.md`
+`docs/pygplates/README.md`
 
 ## Docs
 
 ```
 conda env update -n gplates -f env.docs.yml
-cmake --build <build-dir> --config Release --target doc-python-api
+cmake --build <build-dir> --config Release --target docs-pygplates
 ```
 
 Sphinx must run in the same interpreter pyGPlates was built against (autodoc imports the module
@@ -179,7 +179,7 @@ a `sphinx-build` on `PATH`. Sphinx runs with `-W`, so warnings are errors.
 
 **Build docs from scratch for anything published.** An incremental rebuild silently drops *all*
 index entries from `searchindex.js` while leaving the HTML identical. Delete
-`<build-dir>/doc-python-api/_doctrees` and `generated/`, or pass `-E`. Removing or renaming a
+`<build-dir>/docs/pygplates/_doctrees` and `generated/`, or pass `-E`. Removing or renaming a
 class also requires deleting its stale `generated/*.rst` or the build fails.
 
 ## Code style
@@ -228,7 +228,7 @@ Where this guidance and a specific file disagree, match the file you are editing
 ## Branches and pull requests
 
 This is **no longer** gitflow — it is the trunk-plus-release-series model, described in `README.md`
-and argued for in `doc-cpp/design/versioning/README.md`.
+and argued for in `docs/design/versioning/README.md`.
 
 - **`gplates`** is the single development branch and the repository's default. Both products are
   developed on it; there is no per-product branch. (It will be renamed `main` in a later change.)
@@ -336,7 +336,7 @@ Plans, status tables, findings reports and step lists do not merge into `gplates
 a feature branch while the work is in progress (to move it between machines, say), but before that
 branch merges, distil them and delete them:
 
-- rationale, constraints and rejected alternatives go into `doc-cpp/design/`, or the README next to
+- rationale, constraints and rejected alternatives go into `docs/design/`, or the README next to
   the code;
 - traps go into comments at the code where they bite;
 - user-visible changes go into the changelog.
