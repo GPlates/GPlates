@@ -203,6 +203,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	}
 
 	geometry_setter.set_geometry(val);
+	// NOTE: now a silent no-op - see the iterator_value_type warning in "model/HandleTraits.h".
 	*property_iter = geom_prop_clone;
 #endif
 

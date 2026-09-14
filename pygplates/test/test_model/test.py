@@ -833,8 +833,9 @@ class FeatureCollectionCase(unittest.TestCase):
         for feature_index, feature in enumerate(self.feature_collection):
             self.assertTrue(feature == self.feature_collection[feature_index])
 
-	# Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch because
-	# currently '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer).
+    # Disabled until the 'feature/pygplates-model-revisions' branch lands, because currently
+    # '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a
+    # non-null pointer).
     if (False):
         def test_set_item(self):
             shallow_copy_feature_collection = pygplates.FeatureCollection(self.feature_collection)

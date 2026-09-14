@@ -34,6 +34,9 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
    `cmake/modules/VersionRelease.cmake` to the target version, and commit. Development versions
    are counted from git and cannot be released — the run rejects a `.dev` version. Check what
    the commit resolves to with `cmake -P cmake/modules/VersionFromGit.cmake pygplates`.
+   For the release itself (not a candidate), rename `pyGPlates <X.Y> (unreleased)` in
+   `CHANGELOG-pyGPlates.md` to the release version in the same commit. Read the section through
+   with the user first: it is the release notes, built up one pull request at a time.
 2. **Tag exactly `PyGPlates-<version>`, on the release commit.** That is the commit on the
    `release/pygplates-<major>.<minor>` branch that sets the target, whether it is a candidate, the
    release itself or a later patch. The tag's version string must match
@@ -59,7 +62,10 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
    - on `gplates`, if this was the *first* tag in the series (the first candidate, or the
      release when there was none), set the target to the next minor (`1.2.0`). The development
      branch's count restarts at that moment, so left on `1.1.0` it would re-issue versions it
-     has already used. Later tags in the series need nothing on `gplates`.
+     has already used. In the same commit, open a `pyGPlates <next minor> (unreleased)` section
+     above the series' section in `CHANGELOG-pyGPlates.md`. Later tags in the series need nothing
+     on `gplates`, except that once the release (or a patch release) is final its changelog
+     section there should match the series branch's.
    Commit each on its own branch. The rules are in `doc-cpp/design/versioning/README.md` (7.2).
 
 ## Recovery

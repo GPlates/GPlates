@@ -160,7 +160,8 @@ python pygplates/stub/generate_stub.py --module-dir <dir-containing-built-pygpla
 
 `--check` only compares and exits non-zero; `--output` is what actually rewrites the stub.
 
-`*.pyi` is pinned to LF in `.gitattributes` because `pygplates-stub-test` compares bytes.
+`*.pyi` is pinned to LF in `.gitattributes` because `--output` always writes LF; a CRLF checkout
+would show every regeneration as a whole-file change (`--check` ignores line endings).
 
 The docstring conventions are strict and are the highest-value style document in the repo:
 `doc-python-api/README.md`
@@ -265,6 +266,19 @@ When in doubt, keep. Rewriting a branch that has already been pushed is a decisi
 author, not something to do in passing: force-pushing detaches any review comments, and other
 people may have fetched it.
 
+**Commit messages.** Because the commits are the permanent record, write them for that reader:
+
+- Subject: imperative mood, no trailing period, **at most 72 characters**, ideally 50-65. Tools
+  that show one line per commit (`git log --oneline`, GitHub's commit list, shortlogs) cut or
+  wrap anything longer.
+- A blank line, then a body wrapped at 72 columns.
+- The body says *why*, and what the diff cannot show: the alternative rejected, the trap avoided,
+  how the change was verified. Don't narrate the diff, list files, or restate a comment or doc
+  the commit adds — point to it instead.
+- Scale the body to the change. A one-line fix needs a line or two, or none; a body longer than
+  its diff is a signal to cut. The message should still make sense on its own.
+- No Conventional Commits `type:` prefixes; nothing here consumes them.
+
 The GitHub remote is `https://github.com/GPlates/GPlates.git`, usually named `origin`. Some
 checkouts give it another name and have no `origin` at all, so **name the remote explicitly** in
 push and fetch commands rather than assuming. There is an active downstream fork tracking the
@@ -301,3 +315,31 @@ requires updating both `[tool.cibuildwheel].build` in `pyproject.toml` and `PYTH
   that its per-platform `config-settings` tables *override* rather than merge with the base table.
 - The `pygplates.pygplates` private submodule must not be flattened: `dill` resolves dotted names
   via `getattr` on the parent package, unlike stdlib `pickle`.
+
+### Changelogs
+
+Each product has its own: `CHANGELOG-GPlates.md` and `CHANGELOG-pyGPlates.md`, newest release
+first. A pull request that changes something users can see adds its entry **in the same pull
+request**, under the product's `(unreleased)` section — the author has the context, and whoever
+prepares the release does not.
+
+- One bullet per change, describing what changed for the user; sub-bullets only for detail a user
+  needs. No implementation detail or file names. Descriptive, not verbose — the same standard as
+  commit messages.
+- A change in shared code that users of both products can see goes in both files, worded for each
+  audience: menus and dialogs for GPlates, API names for pyGPlates.
+- Refactors, CI and build plumbing that users cannot see get no entry.
+
+### Planning documents
+
+Plans, status tables, findings reports and step lists do not merge into `gplates`. They may live on
+a feature branch while the work is in progress (to move it between machines, say), but before that
+branch merges, distil them and delete them:
+
+- rationale, constraints and rejected alternatives go into `doc-cpp/design/`, or the README next to
+  the code;
+- traps go into comments at the code where they bite;
+- user-visible changes go into the changelog.
+
+Design documents describe the design as it is and why. They may record rejected alternatives and
+deferred work, but not progress.

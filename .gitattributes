@@ -15,5 +15,6 @@
 
 *.sh text eol=lf
 
-# The generated pygplates type stub is byte-compared by the 'pygplates-stub-test' ctest.
+# The generated pygplates type stub is always written with LF, so a CRLF checkout would show every
+# regeneration as a whole-file change.
 *.pyi text eol=lf
