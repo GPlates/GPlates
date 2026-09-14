@@ -1520,7 +1520,11 @@ namespace GPlatesApi
 		return bp::object(property);
 	}
 
-	// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch.
+	// Disabled until the 'feature/pygplates-model-revisions' branch lands. The silent no-op
+	// '*property_iter = property' below is a one-line fix (use
+	// 'feature_handle.set(property_iter, property)'), but the property is still held by Python
+	// and would be stored directly, so later in-place edits through either reference would
+	// alias (see the FeatureHandle::set() comment).
 #if 0
 	//
 	// Support for "__setitem__".
@@ -4075,7 +4079,7 @@ export_feature()
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 		.def("__len__", &GPlatesModel::FeatureHandle::size)
 		.def("__getitem__", &GPlatesApi::feature_handle_get_item)
-		// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch.
+		// Disabled until the 'feature/pygplates-model-revisions' branch lands (see 'feature_handle_set_item').
 #if 0
 		.def("__setitem__", &GPlatesApi::feature_handle_set_item)
 #endif

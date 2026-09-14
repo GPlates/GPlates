@@ -19,8 +19,8 @@ on:
     branches: [ "gplates" ]
     paths-ignore:
       # Documentation and repository metadata cannot affect the build or the tests.
-      # Note '.gitattributes' is deliberately NOT listed: it controls line endings, and
-      # 'pygplates-stub-test' byte-compares the '.pyi' stub.
+      # Note '.gitattributes' is deliberately NOT listed: it controls the line endings of
+      # every checked-out source file.
       - '**.md'
       - '.claude/**'
       - 'AUTHORS'
@@ -31,8 +31,8 @@ on:
     branches: [ "gplates" ]
     paths-ignore:
       # Documentation and repository metadata cannot affect the build or the tests.
-      # Note '.gitattributes' is deliberately NOT listed: it controls line endings, and
-      # 'pygplates-stub-test' byte-compares the '.pyi' stub.
+      # Note '.gitattributes' is deliberately NOT listed: it controls the line endings of
+      # every checked-out source file.
       # Caveat: GitHub does not synthesise a skipped-but-successful check for a
       # path-filtered trigger - the run simply never happens. That is fine while
       # these workflows are not *required* status checks (they are not, as of

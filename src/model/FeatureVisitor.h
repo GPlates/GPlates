@@ -816,8 +816,20 @@ namespace GPlatesModel
 	 * no reconstruction is triggered.
 	 *
 	 * Unlike the pre-pyGPlates-merge code (the deleted "FeatureVisitor.cc") this does *not* deep
-	 * clone every visited property - it only re-sets the property when the visit actually created a
-	 * new revision - so the read-only visitors on the reconstruction path are unaffected.
+	 * clone every visited property: it re-sets the property only when the visit created a new
+	 * revision, so read-only visitors pay only a pointer copy and a comparison. Detection is exact,
+	 * since the top-level property is currently the root of the bubble-up chain.
+	 *
+	 * Re-setting the *same* pointer is safe (and needs no clone, as no new sharing is introduced):
+	 * BasicRevision::set() just reassigns the child slot, and RevisionAwareIterator re-reads the
+	 * revision on each dereference, so the enclosing visit_feature_properties() loop stays valid.
+	 *
+	 * Only TotalReconstructionSequenceRotationInserter (Modify Reconstruction Pole -> Apply) needs
+	 * this; the other non-const visitors either run on detached collections, have no callers, or
+	 * are non-const only to obtain non-const references.
+	 *
+	 * The model-revisions branch leaves visit_feature_property() as the plain in-place call, so
+	 * this specialisation must be removed *deliberately* when that work lands - a merge will not.
 	 */
 	template<>
 	inline

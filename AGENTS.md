@@ -160,7 +160,8 @@ python pygplates/stub/generate_stub.py --module-dir <dir-containing-built-pygpla
 
 `--check` only compares and exits non-zero; `--output` is what actually rewrites the stub.
 
-`*.pyi` is pinned to LF in `.gitattributes` because `pygplates-stub-test` compares bytes.
+`*.pyi` is pinned to LF in `.gitattributes` because `--output` always writes LF; a CRLF checkout
+would show every regeneration as a whole-file change (`--check` ignores line endings).
 
 The docstring conventions are strict and are the highest-value style document in the repo:
 `doc-python-api/README.md`

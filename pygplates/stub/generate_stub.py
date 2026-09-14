@@ -281,7 +281,7 @@ class TypeExpressionParser(object):
     Parses the ':type:'/':rtype:' ReST text convention into a stub annotation.
 
     The corpus follows the markup-free type-field style (the docstring type-field style
-    guideline in doc-python-api/PLAN.md): bare and dotted identifiers resolved against
+    guideline in doc-python-api/README.md): bare and dotted identifiers resolved against
     the module ('FiniteRotation', 'NetworkTriangulation.Triangle', enum values like
     'PropertyReturn.exactly_one' standing for their enumeration type), primitive
     spellings ('integer', 'string', 'none', 'double', plurals), Python bracket generics
@@ -504,7 +504,11 @@ class TypeExpressionParser(object):
             stream.accept_word('tuples', 'tuple')
             return annotation
 
-        # A plain atom, possibly '/'-joined ('string/``os.PathLike``').
+        # A plain atom, possibly '/'-joined ('str/os.PathLike'). Note that '/' binds tighter
+        # than 'of': 'sequence of str/os.PathLike' is 'Sequence[str | os.PathLike]', whereas
+        # the ', or' spelling would re-bind the union to the top level
+        # ('Sequence[str] | os.PathLike'). That is why the type-field style guideline
+        # (doc-python-api/README.md) allows '/' only as a prose container's element.
         items = [self._parse_atom(stream)]
         while self._peek_punct(stream, '/'):
             stream.next()
@@ -1324,6 +1328,10 @@ class StubGenerator(object):
         body.append('')
         # Called by the generated package '__init__.py' to tell pygplates its location.
         body.append('def _post_import(package_dir: str) -> None: ...')
+
+        # No '__all__': the stub defines every public name (leaked imports are filtered out
+        # below), so the default stub export rules already give the right surface, and an
+        # '__all__' would be one more list to keep in step with the module.
 
         for name in sorted(vars(self.module)):
             if name.startswith('_') or name in _SKIP_MODULE_NAMES:

@@ -39,7 +39,7 @@ cmake --build <build-dir> --config Release --target doc-python-api
 The result is `<build-dir>/doc-python-api/html/index.html`.
 
 Warnings are errors (`-W`), so the build fails on anything Sphinx complains about; it also builds
-in parallel (`-j auto`).
+in parallel (`-j auto`) on Linux and macOS — Sphinx ignores `-j` on Windows and builds serially.
 
 > **Editing `conf.py.in` does not always trigger a rebuild.** Sphinx invalidates its cached
 > doctrees when *config values* change, not when conf.py *code* changes — so editing a handler
@@ -88,6 +88,14 @@ __init__()
 Without it, autosummary reports `error while formatting arguments for ...: <Boost.Python.function
 object> is not a Python function`.
 
+Do not mark a static method in the body (the old `[*staticmethod*]` marker). Boost.Python's
+`.staticmethod()` installs a real `staticmethod` descriptor, which Sphinx detects and renders as
+the italic *static* prefix itself (and which `process_docstring` reads for its `:staticmethod:`
+option) — a marker only duplicates it.
+
+**Never use single backquotes.** `default_role` is unset in `conf.py.in`, so `` `dict` `` renders
+as an italic title reference, not code. Use double backquotes for a literal, or a role.
+
 ### Overloads
 
 Boost.Python concatenates the docstrings of overloaded `def()`s into a single `__doc__`, and
@@ -104,12 +112,15 @@ protects a `.. versionadded::` / `.. versionchanged::` written flush at column z
 
 `:type x:` / `:rtype:` fields feed **two** consumers: Sphinx auto-links them, and
 `pygplates/stub/generate_stub.py` parses them to produce the type stub
-`pygplates/stub/__init__.pyi` (see `pygplates/stub/PLAN.md`). One style serves both.
+`pygplates/stub/__init__.pyi` (see `pygplates/stub/README.md`). One style serves both.
 
 1. **`:type x:` and `:rtype:` contain only a type expression, 100% markup-free** — no
    `:class:`/`:meth:` roles, no ``` ``literals`` ```, no `*emphasis*`. Sphinx auto-links every
    identifier in a type field, but a *single* piece of inline markup anywhere in the field
-   disables auto-linking for the whole field.
+   disables auto-linking for the whole field. The one intentional exception: the list-like
+   docstrings templated in `src/api/PyRevisionedVector.h` interpolate the element type as a
+   `` :class:`X` `` role (the stub generator accepts roles for them — see
+   `pygplates/stub/README.md`).
 2. **Hybrid syntax**: natural prose where unambiguous — `list of GeometryOnSphere`,
    `FiniteRotation, or None` — and Python bracket syntax whenever tuples, dicts or nesting
    appear: `tuple[GeometryOnSphere, dict]`, `dict[FeatureId, list[Feature]]`.
@@ -147,6 +158,17 @@ Example:
   of :class:`PlateBoundaryStatistic`
 :rtype: list[PlateBoundaryStatistic], or dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]
 ```
+
+This is deliberately *not* NumPy-style (napoleon). Napoleon converts to these same info fields
+internally, so the HTML would be essentially unchanged, while its
+one-Parameters-section-per-docstring assumption conflicts with the per-overload signature-led
+blocks above, and both the stub generator's parser and hundreds of docstrings would need
+rewriting. The rules above map one-to-one onto NumPy-style `name : type` lines should that ever
+be wanted.
+
+Possible future work: `nitpicky` with `nitpick_ignore_regex` would catch unresolvable `:class:`
+and type-field references at build time, but its initial burst of warnings needs a triage pass
+first.
 
 ## Math markup
 
