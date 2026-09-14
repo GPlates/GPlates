@@ -30,8 +30,13 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/weak_ptr.hpp>
 
+#include <QColor>
+#include <QList>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QSize>
+#include <QStringList>
+#include <QWidget>
 
 #include "ui_DrawStyleDialogUi.h"
 #include "GPlatesDialog.h"
@@ -99,8 +104,76 @@ namespace GPlatesQtWidgets
 		void
 		insert_all();
 	};
-	
-	class DrawStyleDialog  : 
+
+
+	/**
+	 * A read-only strip showing the colour ramp that the selected draw style produces, so the
+	 * ramp can be read directly instead of being inferred from the preview thumbnails.
+	 *
+	 * It knows the two things a ramp style exposes: the colours being interpolated between, and
+	 * whether that interpolation is smooth or quantised into a number of steps. End labels are
+	 * optional, and carry the endpoint times for styles that have them.
+	 */
+	class DrawStyleGradientBar :
+			public QWidget
+	{
+		Q_OBJECT
+
+	public:
+
+		explicit
+		DrawStyleGradientBar(
+				QWidget *parent_ = NULL);
+
+		/**
+		 * Show a ramp running through @a colours from left to right.
+		 *
+		 * @a steps quantises the ramp into that many bands; anything below two leaves it
+		 * smooth. @a labels is drawn under the ends of the strip, and is ignored unless it has
+		 * one entry per colour.
+		 */
+		void
+		set_gradient(
+				const QList<QColor> &colours,
+				const QStringList &labels,
+				int steps);
+
+		/**
+		 * Leave the strip blank - for a style that is not a colour ramp.
+		 */
+		void
+		clear_gradient();
+
+		virtual
+		QSize
+		sizeHint() const;
+
+	protected:
+
+		virtual
+		void
+		paintEvent(
+				QPaintEvent *event);
+
+	private:
+
+		static const int BAR_HEIGHT = 20;
+		static const int LABEL_SPACING = 2;
+
+		/**
+		 * The colour this ramp shows at @a position, from 0.0 at its left to 1.0 at its right.
+		 */
+		QColor
+		colour_at(
+				double position) const;
+
+		QList<QColor> d_colours;
+		QStringList d_labels;
+		int d_steps;
+	};
+
+
+	class DrawStyleDialog  :
 			public GPlatesDialog, 
 			protected Ui_DrawStyleDialog
 	{
@@ -212,6 +285,24 @@ namespace GPlatesQtWidgets
 
 		void
 		build_config_panel(const GPlatesGui::Configuration& cfg);
+
+
+		/**
+		 * Show @a style's colour ramp on the gradient bar, or hide the bar if the style does
+		 * not describe one.
+		 */
+		void
+		update_gradient_bar(
+				const GPlatesGui::StyleAdapter* style);
+
+
+		/**
+		 * Say what can be done with the selected style: supplied examples are read-only, and
+		 * have to be copied before they can be used.
+		 */
+		void
+		update_style_hint(
+				const GPlatesGui::StyleAdapter* style);
 
 
 		void
@@ -336,6 +427,7 @@ namespace GPlatesQtWidgets
 		std::vector<QWidget*> d_cfg_widgets;
 		GPlatesPresentation::ViewState& d_view_state;
 		LayerGroupComboBox* d_combo_box;
+		DrawStyleGradientBar* d_gradient_bar;
 		const GPlatesGui::StyleAdapter* d_style_of_all;
 	};
 }
