@@ -82,6 +82,7 @@ There is NO WARRANTY, to the extent permitted by law.
 
 
 # The GPlates copyright - string version to be used in a source file.
+# The derived-code and icon attributions below (in both copyright strings) are also in AUTHORS.md; keep them in sync.
 set(GPLATES_COPYRIGHT_STRING [[
 Copyright (C) 2003-2026 The University of Sydney, Australia
 Copyright (C) 2004-2026 California Institute of Technology
