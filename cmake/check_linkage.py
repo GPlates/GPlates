@@ -6,7 +6,7 @@
 # "pygplates-linkage-test" CTest.
 #
 # This is the binary-level complement of the source-level "pygplates-source-closure-test"
-# (see "cmake/pygplates_source_closure.py" and "doc-cpp/design/architecture/README.md"):
+# (see "cmake/pygplates_source_closure.py" and "docs/design/architecture/README.md"):
 # the closure test proves the module *compiles* no GUI/rendering code, this one proves the
 # built artifact *links* none of it - a GUI dependency can also arrive through a shared
 # source the closure test does compile (the GeoSciML group in "src/file-io" once created a
@@ -109,7 +109,7 @@ def main():
 
     if forbidden:
         sys.exit('\n%d forbidden GUI/rendering dependencies - the module must not link these '
-                 '(see doc-cpp/design/architecture/README.md)' % len(forbidden))
+                 '(see docs/design/architecture/README.md)' % len(forbidden))
     print('OK: no GUI/rendering dependencies')
     return 0
 

@@ -4,7 +4,7 @@
 *built* module by `generate_stub.py` and committed here alongside `py.typed`. This file records why
 it is laid out as it is and how to keep it honest. The regeneration command is in `AGENTS.md`
 ("Python API docstrings and the `.pyi` stub"); the docstring conventions the generator parses are
-in `doc-python-api/README.md`.
+in `docs/pygplates/README.md`.
 
 ## Why introspection, and why the stub is committed
 
@@ -54,7 +54,7 @@ file as deltas, so an API change costs kilobytes, not another copy of a megabyte
    it is an error:
    - **Unparsed type expressions** (emitted as `Any`): the `:type:`/`:rtype:` text defeated
      `TypeExpressionParser`. The fix is normally a docstring restyle to the guideline in
-     `doc-python-api/README.md`; extend the grammar only for natural English that many docstrings
+     `docs/pygplates/README.md`; extend the grammar only for natural English that many docstrings
      share. `MANUAL_OVERRIDES` is the escape hatch for a signature the convention cannot express.
    - **Missing `:type:`/`:rtype:` fields** (emitted as `Any`): add the field. The `Crossover`
      named tuple and `CrossoverTypeFunction` entries are deliberately left on this list.

@@ -380,7 +380,7 @@ gh workflow run build-wheels.yml --ref PyGPlates-1.2.0.dev12
 ```
 
 The tag is what makes the commit findable later from the version string alone
-(`doc-cpp/design/versioning/README.md`, section 10), and it is also the handle the dispatch
+(`docs/design/versioning/README.md`, section 10), and it is also the handle the dispatch
 needs: the ref menu takes a branch or a tag, never a commit hash. Pushing the tag starts nothing,
 since the push trigger excludes `.dev` tags. The dispatch is a full run - every Python version on
 every platform - and the wheels and the sdist are downloaded from the run's artifacts. (Its

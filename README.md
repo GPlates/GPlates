@@ -131,7 +131,7 @@ merged back:
 > the default branch, and releases are tagged on permanent per-series branches. There is no
 > separate 'production' branch and no `hotfix` branch (a patch release is simply a further commit
 > on the release series branch). The reasoning, and what was considered instead, is in
-> [doc-cpp/design/versioning/README.md](doc-cpp/design/versioning/README.md).
+> [docs/design/versioning/README.md](docs/design/versioning/README.md).
 
 > __Note:__ The development branch will be renamed `main` in a later change.
 
@@ -149,4 +149,4 @@ a build standing on a release tag has exactly the release version.
 
 How the version is derived, how to see what a checkout resolves to, how to find the commit that a
 version was built from, and how a fork can keep its own version numbers, are all described in
-[doc-cpp/design/versioning/README.md](doc-cpp/design/versioning/README.md).
+[docs/design/versioning/README.md](docs/design/versioning/README.md).

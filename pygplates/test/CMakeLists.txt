@@ -9,7 +9,7 @@ add_test(
 
 # Add the source-closure test: the pygplates module must compile exactly the include closure
 # of the pyGPlates API (see "cmake/pygplates_source_closure.py" and
-# "doc-cpp/design/architecture/README.md"). This is what stops a new file, or a new #include
+# "docs/design/architecture/README.md"). This is what stops a new file, or a new #include
 # in a shared translation unit, silently re-fattening the module - and what keeps the
 # committed dependency matrix honest ("--check-doc" fails if it is stale, the way
 # pygplates-stub-test fails on a stale type stub). "pygplates_sources.txt" is written at
@@ -18,7 +18,7 @@ add_test(
 	NAME pygplates-source-closure-test
 	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/pygplates_source_closure.py"
 		--check-sources "${PROJECT_BINARY_DIR}/pygplates_sources.txt"
-		--check-doc "${PROJECT_SOURCE_DIR}/doc-cpp/design/architecture/dependency-matrix.md"
+		--check-doc "${PROJECT_SOURCE_DIR}/docs/design/architecture/dependency-matrix.md"
 	# Match the other pygplates tests (see the note on 'pygplates-test' above).
 	CONFIGURATIONS Release MinSizeRel)
 

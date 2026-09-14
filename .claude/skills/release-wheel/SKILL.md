@@ -66,7 +66,7 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
      above the series' section in `CHANGELOG-pyGPlates.md`. Later tags in the series need nothing
      on `gplates`, except that once the release (or a patch release) is final its changelog
      section there should match the series branch's.
-   Commit each on its own branch. The rules are in `doc-cpp/design/versioning/README.md` (7.2).
+   Commit each on its own branch. The rules are in `docs/design/versioning/README.md` (7.2).
 
 ## Recovery
 

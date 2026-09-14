@@ -73,7 +73,7 @@ import sys
 # see 'cmake/modules/Install.cmake').
 #
 # 'pygplates' when the shared library is imported directly, without the package around it. That happens
-# in the documentation build (deliberately - see 'doc-python-api/conf.py.in') and in GPlates' embedded
+# in the documentation build (deliberately - see 'docs/pygplates/conf.py.in') and in GPlates' embedded
 # interpreter (which registers 'pygplates' via 'PyImport_AppendInittab').
 _PYGPLATES_MODULES = ('pygplates', 'pygplates.pygplates')
 
@@ -281,7 +281,7 @@ class TypeExpressionParser(object):
     Parses the ':type:'/':rtype:' ReST text convention into a stub annotation.
 
     The corpus follows the markup-free type-field style (the docstring type-field style
-    guideline in doc-python-api/README.md): bare and dotted identifiers resolved against
+    guideline in docs/pygplates/README.md): bare and dotted identifiers resolved against
     the module ('FiniteRotation', 'NetworkTriangulation.Triangle', enum values like
     'PropertyReturn.exactly_one' standing for their enumeration type), primitive
     spellings ('integer', 'string', 'none', 'double', plurals), Python bracket generics
@@ -508,7 +508,7 @@ class TypeExpressionParser(object):
         # than 'of': 'sequence of str/os.PathLike' is 'Sequence[str | os.PathLike]', whereas
         # the ', or' spelling would re-bind the union to the top level
         # ('Sequence[str] | os.PathLike'). That is why the type-field style guideline
-        # (doc-python-api/README.md) allows '/' only as a prose container's element.
+        # (docs/pygplates/README.md) allows '/' only as a prose container's element.
         items = [self._parse_atom(stream)]
         while self._peek_punct(stream, '/'):
             stream.next()
@@ -1834,7 +1834,7 @@ def _bootstrap_dll_directories():
     # On Windows with Python >= 3.8 (outside conda) extension-module dependency DLLs are no
     # longer found via PATH - register every existing PATH entry, reversed since
     # 'os.add_dll_directory()' appears to insert at the front of the DLL search order.
-    # (Mirrors doc-python-api/conf.py.in; conda already ensures dependencies are found.)
+    # (Mirrors docs/pygplates/conf.py.in; conda already ensures dependencies are found.)
     if platform.system() == 'Windows' and sys.version_info >= (3, 8) and \
             not os.environ.get('CONDA_PREFIX'):
         env_path = os.environ.get('PATH')

@@ -183,8 +183,8 @@ add_subdirectory(src)
 #
 # pyGPlates specific sub-directories.
 #
-# Note: 'doc-cpp/' is not built - it holds the C++ design docs (and the man page installed
-#       by 'cmake/modules/Install.cmake').
+# Note: of 'docs/', only 'docs/pygplates/' is built. 'docs/design/' holds the design docs, and
+#       'docs/gplates/man/' the man page installed by 'cmake/modules/Install.cmake'.
 #
 if (NOT GPLATES_BUILD_GPLATES)
     #
@@ -195,5 +195,5 @@ if (NOT GPLATES_BUILD_GPLATES)
     #
     # Recurse into the sub-directory for generating the Python API documentation.
     #
-    add_subdirectory(doc-python-api)
+    add_subdirectory(docs/pygplates)
 endif()
