@@ -1018,9 +1018,9 @@ endif(APPLE)
 if (GPLATES_BUILD_GPLATES)
 	# Set the platform-dependent icon file.
 	if (APPLE)
-		set(GPlates_ICON "${PROJECT_SOURCE_DIR}/cmake/distribution/gplates_desktop_icon.icns")
+		set(GPlates_ICON "${GPLATES_SOURCE_DISTRIBUTION_DIR}/gplates_desktop_icon.icns")
 	elseif (MSVC)
-		set(GPlates_ICON "${PROJECT_SOURCE_DIR}/cmake/distribution/gplates_desktop_icon.rc")
+		set(GPlates_ICON "${GPLATES_SOURCE_DISTRIBUTION_DIR}/gplates_desktop_icon.rc")
 	endif()
 	if (GPlates_ICON)
 		target_sources_util(gplates PRIVATE ${GPlates_ICON})
@@ -1036,7 +1036,7 @@ if (GPLATES_BUILD_GPLATES)
 
 				# Specify our own Info.plist template file.
 				# We add a couple of keys to ensure Qt includes support Mac Retina displays.
-				MACOSX_BUNDLE_INFO_PLIST "${PROJECT_SOURCE_DIR}/cmake/distribution/MacOSXBundleInfo.plist.in"
+				MACOSX_BUNDLE_INFO_PLIST "${GPLATES_SOURCE_DISTRIBUTION_DIR}/MacOSXBundleInfo.plist.in"
 
 				MACOSX_BUNDLE_INFO_STRING "${PROJECT_DESCRIPTION}"
 				MACOSX_BUNDLE_ICON_FILE gplates_desktop_icon.icns
