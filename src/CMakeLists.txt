@@ -16,9 +16,7 @@
 # closure of the pyGPlates API - see 'cmake/pygplates_source_closure.py'), so it needs
 # neither OpenGL nor GLEW.
 #
-# Note: CMake 3.8 introduced import targets for OpenGL (and CMake 3.1 for GLEW).
-#       So since our min CMake requirement exceeds these we don't need to add imported targets ourself.
-# Note: For CMake >= 3.11 on Linux systems when the *legacy* OpenGL libraries are not found, the default (for OpenGL_GL_PREFERENCE)
+# Note: On Linux systems when the *legacy* OpenGL libraries are not found, the default (for OpenGL_GL_PREFERENCE)
 #       is to utilize GLVND - in this case using the OpenGL::GL target will instead use the GLVND targets OpenGL::OpenGL and OpenGL::GLX.
 if (GPLATES_BUILD_GPLATES)
 	find_package(OpenGL REQUIRED)
@@ -58,23 +56,17 @@ else()
 	set(_PYTHON_MAJOR_VER 2)
 endif()
 
-# CMake version 3.18 introduced 'Development' sub-components:
+# Python 'Development' sub-components:
 # - 'Development.Embed' for Python embedding developments (eg, GPlates), and
 # - 'Development.Module' for Python module developments (eg, pyGPlates).
 #
 # Note: Using 'Development.Module' is necessary when building pyGPlates "manylinux" wheels
 #       (because the manylinux docker image does not have the Python libraries, since you don't link to them on Unix).
 #       See https://scikit-build-core.readthedocs.io/en/latest/faqs.html#finding-python.
-#       So we'll need CMake >= 3.18 when building these wheels.
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
-	if (GPLATES_BUILD_GPLATES)
-		set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development.Embed)
-	else()  # pygplates ...
-		set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development.Module)
-	endif()
-else()  # CMake < 3.18
-	# We have to specify the full 'Development' component which includes both embedding and module developments.
-	set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development)
+if (GPLATES_BUILD_GPLATES)
+	set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development.Embed)
+else()  # pygplates ...
+	set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development.Module)
 endif()
 
 # The 'Development' component provides the Python headers and library, and the 'Interpreter' component
@@ -462,9 +454,6 @@ find_package(PROJ REQUIRED)
 #################
 
 
-# Some useful utilities.
-include (Utils)
-
 
 # Generate the version source file.
 configure_file(${PROJECT_SOURCE_DIR}/src/global/Version.cc.in ${PROJECT_BINARY_DIR}/src/global/Version.cc @ONLY)
@@ -616,7 +605,7 @@ else()  # pygplates ...
 	endif()
 	set_target_properties(pygplates PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${_pygplates_package_build_dir}")
 	unset(_pygplates_package_build_dir)
-	target_sources_util(pygplates PRIVATE
+	target_sources(pygplates PRIVATE
 		${PROJECT_BINARY_DIR}/src/global/Version.cc
 		${PROJECT_BINARY_DIR}/src/global/License.cc
 		${PROJECT_BINARY_DIR}/src/global/config.h)
@@ -742,10 +731,7 @@ set_target_properties(${SOURCE_TARGET} PROPERTIES CXX_STANDARD 14 CXX_STANDARD_R
 # Each target has its own pre-compiled "_pch.h" header that currently lists only external headers.
 # Some internal headers that are used a lot but infrequently changed (such as utils) could be added also.
 if (GPLATES_USE_PRECOMPILED_HEADERS)
-	# Pre-compiled headers are supported natively in CMake 3.16 and above.
-	if (COMMAND target_precompile_headers)
-		target_precompile_headers(${SOURCE_TARGET} PRIVATE ${PROJECT_SOURCE_DIR}/src/${SOURCE_TARGET}_pch.h)
-	endif()
+	target_precompile_headers(${SOURCE_TARGET} PRIVATE ${PROJECT_SOURCE_DIR}/src/${SOURCE_TARGET}_pch.h)
 
 	# Exclude specific source files from including pre-compiled header.
 	#
@@ -984,8 +970,6 @@ endif()
 
 #
 # General LINK_OPTIONS (target_property).
-#
-# Note: CMake 3.13 introduced the 'target_link_options()' command and the LINK_OPTIONS target property.
 
 #
 # LINK_OPTIONS (target_property) for MSVC compiler only.
@@ -1023,7 +1007,7 @@ if (GPLATES_BUILD_GPLATES)
 		set(GPlates_ICON "${GPLATES_SOURCE_DISTRIBUTION_DIR}/gplates_desktop_icon.rc")
 	endif()
 	if (GPlates_ICON)
-		target_sources_util(gplates PRIVATE ${GPlates_ICON})
+		target_sources(gplates PRIVATE ${GPlates_ICON})
 	endif()
 
 	if (APPLE)
@@ -1084,8 +1068,6 @@ if (GPLATES_BUILD_GPLATES)
 	# Apple are unlikely to 'remove' OpenGL in their drivers anytime soon.
 	#
 	# Set as usage requirements (INTERFACE) on the OpenGL imported library target.
-	#
-	# Note: CMake 3.11 is required for the 'target_*()' commands to set INTERFACE_ properties on imported targets.
 	target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
 endif()
 
@@ -1138,12 +1120,9 @@ endif()
 #
 # The workaround involves explicitly adding these include paths as PUBLIC (which is same as PRIVATE plus INTERFACE).
 #
-# Note that CMake 3.8 and above no longer place the generated 'ui_*.h' files in ${CMAKE_CURRENT_BINARY_DIR}.
-# Instead they go in '${CMAKE_CURRENT_BINARY_DIR}/<target-name>_autogen/include' for single-configuration generators, and
-# in '${CMAKE_CURRENT_BINARY_DIR}/<target-name>_autogen/include_$<CONFIG>' for multi-configuration generators.
-# So to cover all CMake versions we add all three include paths.
+# The generated 'ui_*.h' files go in '${CMAKE_CURRENT_BINARY_DIR}/<target-name>_autogen/include' for single-configuration
+# generators, and in '${CMAKE_CURRENT_BINARY_DIR}/<target-name>_autogen/include_$<CONFIG>' for multi-configuration generators.
 target_include_directories(${SOURCE_TARGET} PUBLIC
-	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}/${SOURCE_TARGET}_autogen/include
 	${CMAKE_CURRENT_BINARY_DIR}/${SOURCE_TARGET}_autogen/include_$<CONFIG>)
 # Define QT_NO_KEYWORDS so that Qt will not pollute namespaces.
@@ -1226,8 +1205,6 @@ endif()
 #
 # Include code to *install* the ${BUILD_TARGET} target (either 'gplates' or 'pygplates').
 #
-# This was done in the same directory scope that the targets were created in since this was required by CMake <= 3.12
-# (however this is no longer necessary since our minimum CMake requirement is now above 3.12).
 # Note that, while 'include()' pulls in content from another directory, it pulls it into the *current* directory scope.
 #
 include(Install)

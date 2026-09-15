@@ -302,9 +302,7 @@ option(GPLATES_PROFILE_CODE "Enable GPlates custom CPU profiling functionality."
 #
 # Note: Our CI builds must keep this off - they use a compiler cache (sccache), which cannot
 #       cache pre-compiled header translation units.
-if (COMMAND target_precompile_headers)
-	option(GPLATES_USE_PRECOMPILED_HEADERS "Use pre-compiled headers to speed up build times." false)
-endif()
+option(GPLATES_USE_PRECOMPILED_HEADERS "Use pre-compiled headers to speed up build times." false)
 
 if (MSVC)
 	# If Visual Studio then enable parallel builds WITHIN a project.

@@ -30,5 +30,5 @@ set(srcs
 # Note: This is different to the other sub-directories (which add to 'gplates-lib' static library).
 #       This is because source code in this sub-directory is only needed for unit testing.
 if (TARGET gplates-unit-test)
-    target_sources_util(gplates-unit-test PRIVATE ${srcs})
+    target_sources(gplates-unit-test PRIVATE ${srcs})
 endif()
