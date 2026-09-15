@@ -274,11 +274,6 @@ if (APPLE)
 endif()
 
 
-# We compile with Python 3 (by default).
-#
-# However developers can choose to compile with Python 2 instead.
-option(GPLATES_PYTHON_3 "Compile with Python 3 (not Python 2)." true)
-
 
 # Whether to enable GPlates custom CPU profiling functionality.
 #
