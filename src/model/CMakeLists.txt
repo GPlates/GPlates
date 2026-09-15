@@ -100,4 +100,4 @@ set(srcs
 )
 
 # Add the source files to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})
+target_sources(${SOURCE_TARGET} PRIVATE ${srcs})

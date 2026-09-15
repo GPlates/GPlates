@@ -16,10 +16,12 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-import itertools
+# Aliased with a leading underscore so they do not become public attributes of the
+# 'pygplates' module (this file is exec'd into the module namespace).
+import itertools as _itertools
 # Import numpy if it's available...
 try:
-    import numpy
+    import numpy as _numpy
 except ImportError:
     pass
 
@@ -143,7 +145,7 @@ def geometry_on_sphere_to_lat_lon_array(geometry):
       geometry.to_lat_lon_array().flatten()
     """
     
-    return numpy.array(geometry.to_lat_lon_list())
+    return _numpy.array(geometry.to_lat_lon_list())
 
 # Add the module function as a class method.
 GeometryOnSphere.to_lat_lon_array = geometry_on_sphere_to_lat_lon_array
@@ -216,7 +218,7 @@ def geometry_on_sphere_to_xyz_array(geometry):
     by its interior rings (if any).
     """
     
-    return numpy.array(geometry.to_xyz_list())
+    return _numpy.array(geometry.to_xyz_list())
 
 # Add the module function as a class method.
 GeometryOnSphere.to_xyz_array = geometry_on_sphere_to_xyz_array
@@ -364,30 +366,30 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
             if min_dist is None:
                 if polyline1[0] == polyline2[0]:
                     join_polylines = (
-                        itertools.chain(
+                        _itertools.chain(
                             # Remove the last point of first joined polyline (since is duplicate)...
-                            itertools.islice(reversed(polyline2), len(polyline2)-1),
+                            _itertools.islice(reversed(polyline2), len(polyline2)-1),
                             polyline1),
                         polyline2_index)
                 elif polyline1[0] == polyline2[-1]:
                     join_polylines = (
-                        itertools.chain(
+                        _itertools.chain(
                             # Remove the last point of first joined polyline (since is duplicate)...
-                            itertools.islice(polyline2, len(polyline2)-1),
+                            _itertools.islice(polyline2, len(polyline2)-1),
                             polyline1),
                         polyline2_index)
                 elif polyline1[-1] == polyline2[0]:
                     join_polylines = (
-                        itertools.chain(
+                        _itertools.chain(
                             # Remove the last point of first joined polyline (since is duplicate)...
-                            itertools.islice(polyline1, len(polyline1)-1),
+                            _itertools.islice(polyline1, len(polyline1)-1),
                             polyline2),
                         polyline2_index)
                 elif polyline1[-1] == polyline2[-1]:
                     join_polylines = (
-                        itertools.chain(
+                        _itertools.chain(
                             # Remove the last point of first joined polyline (since is duplicate)...
-                            itertools.islice(polyline1, len(polyline1)-1),
+                            _itertools.islice(polyline1, len(polyline1)-1),
                             reversed(polyline2)),
                         polyline2_index)
                 continue
@@ -408,43 +410,43 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
                 if dist == dist00:
                     if polyline1[0] == polyline2[0]:
                         join_polylines = (
-                            itertools.chain(
+                            _itertools.chain(
                                 # Remove the last point of first joined polyline (since is duplicate)...
-                                itertools.islice(reversed(polyline2), len(polyline2)-1),
+                                _itertools.islice(reversed(polyline2), len(polyline2)-1),
                                 polyline1),
                             polyline2_index)
                     else:
-                        join_polylines = (itertools.chain(reversed(polyline2), polyline1), polyline2_index)
+                        join_polylines = (_itertools.chain(reversed(polyline2), polyline1), polyline2_index)
                 elif dist == dist01:
                     if polyline1[0] == polyline2[-1]:
                         join_polylines = (
-                            itertools.chain(
+                            _itertools.chain(
                                 # Remove the last point of first joined polyline (since is duplicate)...
-                                itertools.islice(polyline2, len(polyline2)-1),
+                                _itertools.islice(polyline2, len(polyline2)-1),
                                 polyline1),
                             polyline2_index)
                     else:
-                        join_polylines = (itertools.chain(polyline2, polyline1), polyline2_index)
+                        join_polylines = (_itertools.chain(polyline2, polyline1), polyline2_index)
                 elif dist == dist10:
                     if polyline1[-1] == polyline2[0]:
                         join_polylines = (
-                            itertools.chain(
+                            _itertools.chain(
                                 # Remove the last point of first joined polyline (since is duplicate)...
-                                itertools.islice(polyline1, len(polyline1)-1),
+                                _itertools.islice(polyline1, len(polyline1)-1),
                                 polyline2),
                             polyline2_index)
                     else:
-                        join_polylines = (itertools.chain(polyline1, polyline2), polyline2_index)
+                        join_polylines = (_itertools.chain(polyline1, polyline2), polyline2_index)
                 else:
                     if polyline1[-1] == polyline2[-1]:
                         join_polylines = (
-                            itertools.chain(
+                            _itertools.chain(
                                 # Remove the last point of first joined polyline (since is duplicate)...
-                                itertools.islice(polyline1, len(polyline1)-1),
+                                _itertools.islice(polyline1, len(polyline1)-1),
                                 reversed(polyline2)),
                             polyline2_index)
                     else:
-                        join_polylines = (itertools.chain(polyline1, reversed(polyline2)), polyline2_index)
+                        join_polylines = (_itertools.chain(polyline1, reversed(polyline2)), polyline2_index)
             
         if join_polylines:
             # Replace 'polyline1' with the joined polyline.

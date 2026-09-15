@@ -49,7 +49,7 @@
 #include "file-io/StandaloneBundle.h"
 
 #include "global/config.h"
-#include "global/python.h"  // PY_MAJOR_VERSION
+#include "global/python.h"  // PY_MINOR_VERSION
 
 #include "presentation/Application.h"
 
@@ -59,11 +59,7 @@
 #include "utils/StringUtils.h"
 
 
-#if PY_MAJOR_VERSION >= 3
 PyMODINIT_FUNC PyInit_pygplates(void);
-#else
-extern "C" void initpygplates();
-#endif 
 
 GPlatesGui::PythonManager::PythonManager() : 
 	d_python_main_thread_runner(NULL),
@@ -132,9 +128,7 @@ GPlatesGui::PythonManager::check_python_capability()
 	// This was discovered because 'register_utils_scripts()' seemed to work,
 	// but the code below did not. And the only difference is 'set_python_prefix()'
 	// is called between them and that calls 'bp::import("sys")'.
-#if PY_MAJOR_VERSION >= 3
 	bp::import("sys");
-#endif
 
 	// TODO: Uncomment the 'print()' statements once stdout/stderr capture and redirection to
 	//       log window/file is properly working (in 'GPlatesQtMsgHandler').
@@ -245,17 +239,12 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	using namespace GPlatesApi;
 	// Initialize the embedded Python interpreter.
 	char GPLATES_MODULE_NAME[] = "pygplates";
-#if PY_MAJOR_VERSION >= 3
 	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &PyInit_pygplates))
-#else
-    if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
-#endif
 	{
 		qWarning() << PythonUtils::get_error_message();
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
-#if PY_MAJOR_VERSION >= 3
 	// Use the PEP 587 'PyConfig' embedding API in place of the (now deprecated) Py_SetProgramName()
 	// and Py_IgnoreEnvironmentFlag.
 	//
@@ -311,23 +300,11 @@ GPlatesGui::PythonManager::init_python_interpreter(
 		qWarning() << "Failed to initialize Python interpreter:" << status.err_msg;
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
-#else
-	Py_SetProgramName(argv[0]);
-
-	// If GPlates has bundled the Python standard library then ignore all PYTHON* environment variables
-	// (eg, PYTHONPATH and PYTHONHOME).
-	if (GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory())
-	{
-		Py_IgnoreEnvironmentFlag = 1;
-	}
-
-	Py_Initialize();
-#endif
 
 	// Initialise Python threading support; this grabs the Global Interpreter Lock for this thread.
 	//
 	// Note: For Python >= 3.9 this no longer does anything (and is deprecated).
-#if (PY_MAJOR_VERSION < 3) || ((PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9))
+#if PY_MINOR_VERSION < 9
 	PyEval_InitThreads();
 #endif
 

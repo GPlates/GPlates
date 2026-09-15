@@ -16,9 +16,7 @@
 # closure of the pyGPlates API - see 'cmake/pygplates_source_closure.py'), so it needs
 # neither OpenGL nor GLEW.
 #
-# Note: CMake 3.8 introduced import targets for OpenGL (and CMake 3.1 for GLEW).
-#       So since our min CMake requirement exceeds these we don't need to add imported targets ourself.
-# Note: For CMake >= 3.11 on Linux systems when the *legacy* OpenGL libraries are not found, the default (for OpenGL_GL_PREFERENCE)
+# Note: On Linux systems when the *legacy* OpenGL libraries are not found, the default (for OpenGL_GL_PREFERENCE)
 #       is to utilize GLVND - in this case using the OpenGL::GL target will instead use the GLVND targets OpenGL::OpenGL and OpenGL::GLX.
 if (GPLATES_BUILD_GPLATES)
 	find_package(OpenGL REQUIRED)
@@ -52,33 +50,22 @@ find_package(CGAL REQUIRED)
 # And put the Python major/minor versions in variables GPLATES_PYTHON_VERSION_MAJOR/GPLATES_PYTHON_VERSION_MINOR
 # since needed by Boost Python.
 #
-if (GPLATES_PYTHON_3)
-	set(_PYTHON_MAJOR_VER 3)
-else()
-	set(_PYTHON_MAJOR_VER 2)
-endif()
 
-# CMake version 3.18 introduced 'Development' sub-components:
+# Python 'Development' sub-components:
 # - 'Development.Embed' for Python embedding developments (eg, GPlates), and
 # - 'Development.Module' for Python module developments (eg, pyGPlates).
 #
 # Note: Using 'Development.Module' is necessary when building pyGPlates "manylinux" wheels
 #       (because the manylinux docker image does not have the Python libraries, since you don't link to them on Unix).
 #       See https://scikit-build-core.readthedocs.io/en/latest/faqs.html#finding-python.
-#       So we'll need CMake >= 3.18 when building these wheels.
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
-	if (GPLATES_BUILD_GPLATES)
-		set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development.Embed)
-	else()  # pygplates ...
-		set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development.Module)
-	endif()
-else()  # CMake < 3.18
-	# We have to specify the full 'Development' component which includes both embedding and module developments.
-	set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development)
+if (GPLATES_BUILD_GPLATES)
+	set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development.Embed)
+else()  # pygplates ...
+	set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development.Module)
 endif()
 
 # The 'Development' component provides the Python headers and library, and the 'Interpreter' component
-# provides Python${_PYTHON_MAJOR_VER}_EXECUTABLE, which we use below (except under conda, which tells us
+# provides Python3_EXECUTABLE, which we use below (except under conda, which tells us
 # which interpreter to use).
 #
 # Note: Both components are requested in a *single* find_package() call, because that is what makes
@@ -86,11 +73,11 @@ endif()
 #       consistent. From 'Support.cmake' in CMake's FindPython module: "if python interpreter is found, use
 #       it to look-up for artifacts to ensure consistency between interpreter and development environments".
 #       Ask for them in two calls instead and each search stands alone (every call also resets all the
-#       Python${_PYTHON_MAJOR_VER}_<component>_FOUND flags first), so on a machine with more than one Python
-#       - and especially with a '-DPython${_PYTHON_MAJOR_VER}_EXECUTABLE=...' pointing at one of them, which
+#       Python3_<component>_FOUND flags first), so on a machine with more than one Python
+#       - and especially with a '-DPython3_EXECUTABLE=...' pointing at one of them, which
 #       the error message further below tells users to pass - you can silently end up with one Python's
 #       headers and library and another Python's version and interpreter. Together in one call that same
-#       mismatch is instead a hard "Could NOT find Python${_PYTHON_MAJOR_VER} (missing: Development.Module)".
+#       mismatch is instead a hard "Could NOT find Python3 (missing: Development.Module)".
 #
 #       Cross-compiling is the one exception, and there the call *must* be split: CMake policy CMP0190
 #       (CMake 4.1) makes requesting 'Interpreter' (or 'Compiler') together with any 'Development' component
@@ -106,20 +93,20 @@ endif()
 #       Splitting the call gives up nothing on that path, because find_package() declines to use the
 #       interpreter for the artifact lookup in precisely that situation anyway (an interpreter built for the
 #       build platform cannot describe the target). We ask for 'Interpreter' first and 'Development' second
-#       so that it is the *target* artifacts that determine Python${_PYTHON_MAJOR_VER}_VERSION.
+#       so that it is the *target* artifacts that determine Python3_VERSION.
 #
 #       NumPy is deliberately not requested as a component in either form - see the NumPy section further
 #       below for why.
 if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
-	find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter)
-	find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME})
+	find_package(Python3 REQUIRED COMPONENTS Interpreter)
+	find_package(Python3 REQUIRED COMPONENTS ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME})
 else()
-	find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME})
+	find_package(Python3 REQUIRED COMPONENTS Interpreter ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME})
 endif()
 
 # Get the Python major/minor versions.
-set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MAJOR})
-set(GPLATES_PYTHON_VERSION_MINOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MINOR})
+set(GPLATES_PYTHON_VERSION_MAJOR ${Python3_VERSION_MAJOR})
+set(GPLATES_PYTHON_VERSION_MINOR ${Python3_VERSION_MINOR})
 
 # Get the Python interpreter executable (GPLATES_PYTHON_EXECUTABLE).
 if (GPLATES_CONDA_BUILD)
@@ -144,7 +131,7 @@ if (GPLATES_CONDA_BUILD)
 	#       (CMake policy CMP0190). See the comment there.
 	#
 	# When not cross-compiling there's only a 'host' prefix (conda only installs Python into the 'host' prefix, not also the 'build' prefix).
-	# In this situation the PYTHON environment variable should be the same as that found with 'find_package(Python2/3)'.
+	# In this situation the PYTHON environment variable should be the same as that found with 'find_package(Python3)'.
 	#
 	# Note: The Python major.minor versions will match between the 'build' and 'host' prefixes, so we can still use
 	#       'GPLATES_PYTHON_VERSION_MAJOR' and 'GPLATES_PYTHON_VERSION_MINOR' (obtained from 'build' prefix when cross-compiling).
@@ -152,8 +139,8 @@ if (GPLATES_CONDA_BUILD)
 	# Python interpreter executable from conda-build PYTHON environment variable ('host' prefix).
 	set(GPLATES_PYTHON_EXECUTABLE $ENV{PYTHON})
 else()
-	# Python interpreter executable from 'find_package(Python2/3)'.
-	set(GPLATES_PYTHON_EXECUTABLE ${Python${GPLATES_PYTHON_VERSION_MAJOR}_EXECUTABLE})
+	# Python interpreter executable from 'find_package(Python3)'.
+	set(GPLATES_PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
 endif()
 
 # Make sure Python interpreter exists before we use it.
@@ -172,8 +159,8 @@ if (GPLATES_CONDA_BUILD)
 		message(FATAL_ERROR "Unable to find Python standard library location")
 	endif()
 else()
-	# Python standard library location from 'find_package(Python2/3)' (provides Python{2/3}_STDLIB variable).
-	set(GPLATES_PYTHON_STDLIB_DIR ${Python${GPLATES_PYTHON_VERSION_MAJOR}_STDLIB})
+	# Python standard library location from 'find_package(Python3)' (provides Python3_STDLIB variable).
+	set(GPLATES_PYTHON_STDLIB_DIR ${Python3_STDLIB})
 endif()
 
 # Get the Python prefix directory (GPLATES_PYTHON_PREFIX_DIR).
@@ -219,7 +206,7 @@ if (GPLATES_BUILD_GPLATES)
 			"A venv has no standard library of its own, so the embedded interpreter cannot locate its "
 			"stdlib (you would get \"ModuleNotFoundError: No module named 'encodings'\") and the standalone "
 			"install has no stdlib to bundle. Build GPlates against a full Python installation instead - "
-			"point CMake at it with, eg, -DPython${GPLATES_PYTHON_VERSION_MAJOR}_EXECUTABLE=/path/to/python "
+			"point CMake at it with, eg, -DPython3_EXECUTABLE=/path/to/python "
 			"- and curate that installation's site-packages (eg, numpy only) to keep the standalone "
 			"dependency scan clean. (A venv is fine for building the pyGPlates module via 'pip install .'.)")
 	endif()
@@ -228,7 +215,7 @@ endif()
 # Find the Python NumPy C-API include directories (and store in GPLATES_PYTHON_NUMPY_INCLUDE_DIRS if found).
 #
 # Note: We ask the Python interpreter for its NumPy include directory rather than using the 'NumPy' component of
-#       find_package(Python2/3), for two reasons:
+#       find_package(Python3), for two reasons:
 #       - GPLATES_PYTHON_EXECUTABLE is the interpreter we are actually building against (under conda that is the
 #         'host' prefix Python, whereas the component would report the 'build' prefix when cross-compiling), and
 #       - requesting the 'NumPy' component implicitly adds 'Interpreter' to that find_package() call, and on
@@ -323,41 +310,29 @@ else()  # CMake >= 3.30 ...
 	set(_GPLATES_MIN_BOOST_VERSION 1.70)
 endif()
 
-# First find the Boost library version (since the boost python component naming scheme changed in Boost version 1.67).
+# First find the Boost library version (it decides how the Boost Python component is named below).
 # We find the library version by finding Boost without any library components (this just finds the Boost headers).
 find_package(Boost ${_GPLATES_MIN_BOOST_VERSION} REQUIRED)
 
-# We've just found Boost, so check its version.
-if (Boost_VERSION VERSION_LESS 1.67.0)
-	# Boost versions prior to 1.67 use 'python' and 'python3' for Python 2 and 3 Boost python components respectively.
-	if (GPLATES_PYTHON_VERSION_MAJOR EQUAL 3)
-		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python3)
-		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy3)
-	else()
-		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python)
-		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy)
-	endif()
+# Boost Python components have Python version suffixes (eg, 'python37' and 'numpy37').
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.30 AND NOT WIN32 AND Boost_VERSION VERSION_LESS 1.71)
+	# CMake 3.30 removed the FindBoost module (thus requiring boost-cmake). (This also means our Boost version must be >= 1.70).
+	# We could use Python version suffixes but Boost 1.70's boost-cmake scripts have an error (fixed in Boost 1.71 by
+	# https://github.com/boostorg/boost_install/commit/e193f08) where it fails to detect 3-digits Python version (ie, boost_python310).
+	# However specifying NO version works, so we'll just specify no version (for this old Boost).
+	set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python)
+	set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy)
 else()
-	# Boost 1.67 and above use Python version suffixes (eg, 'python37' and 'numpy37').
-	if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.30 AND NOT WIN32 AND Boost_VERSION VERSION_LESS 1.71)
-		# CMake 3.30 removed the FindBoost module (thus requiring boost-cmake). (This also means our Boost version must be >= 1.70).
-		# We could use Python version suffixes but Boost 1.70's boost-cmake scripts have an error (fixed in Boost 1.71 by
-		# https://github.com/boostorg/boost_install/commit/e193f08) where it fails to detect 3-digits Python version (ie, boost_python310).
-		# However specifying NO version works, so we'll just specify no version (for this old Boost).
-		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python)
-		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy)
-	else()
-		# Match Boost Python with the Python version we found earlier.
-		#
-		# Note: An unversioned component (eg, 'python' rather than 'python313') would also work via boost-cmake when
-		#       only one Boost.Python variant is installed. But when multiple variants are installed (eg, the manylinux
-		#       wheel image installs boost_python39...boost_python314 side by side) the unversioned config just picks
-		#       the first variant it finds - which is the wrong Python version for all but one wheel. So always request
-		#       the exact variant. Also, on Windows, the boost-python target WITHOUT a version (eg, Boost::python)
-		#       has trouble finding the DLL at runtime.
-		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
-		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
-	endif()
+	# Match Boost Python with the Python version we found earlier.
+	#
+	# Note: An unversioned component (eg, 'python' rather than 'python313') would also work via boost-cmake when
+	#       only one Boost.Python variant is installed. But when multiple variants are installed (eg, the manylinux
+	#       wheel image installs boost_python39...boost_python314 side by side) the unversioned config just picks
+	#       the first variant it finds - which is the wrong Python version for all but one wheel. So always request
+	#       the exact variant. Also, on Windows, the boost-python target WITHOUT a version (eg, Boost::python)
+	#       has trouble finding the DLL at runtime.
+	set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
+	set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
 endif()
 
 # Now find the Boost library components.
@@ -461,9 +436,6 @@ find_package(PROJ REQUIRED)
 # Initial setup #
 #################
 
-
-# Some useful utilities.
-include (Utils)
 
 
 # Generate the version source file.
@@ -571,13 +543,7 @@ else()  # pygplates ...
 	# Add the 'pygplates' Python extension module.
 	#
 	# Note this is the external Python library that is not embedded inside GPlates.
-	if (GPLATES_PYTHON_3)
-		# We used the Python3 find module.
-		Python3_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
-	else()  # Python2
-		# We used the Python2 find module.
-		Python2_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
-	endif()
+	Python3_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
 	# All sources files compiled in pygplates need to be position independent and hence compiled differently than 'gplates-lib'.
 	# This is why it's not linked to 'gplates-lib' and why source files get added to both 'pygplates' and 'gplates-lib'.
 	#
@@ -616,7 +582,7 @@ else()  # pygplates ...
 	endif()
 	set_target_properties(pygplates PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${_pygplates_package_build_dir}")
 	unset(_pygplates_package_build_dir)
-	target_sources_util(pygplates PRIVATE
+	target_sources(pygplates PRIVATE
 		${PROJECT_BINARY_DIR}/src/global/Version.cc
 		${PROJECT_BINARY_DIR}/src/global/License.cc
 		${PROJECT_BINARY_DIR}/src/global/config.h)
@@ -709,27 +675,19 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # General COMPILE_FEATURES (target property).
 #
 
-# Set the minimum C++ language standard to C++14.
+# Set the minimum C++ language standard to C++17.
 #
-# std::auto_ptr was deprecated in C++11 (and removed in C++17), so we now use std::unique_ptr introduced in C++11.
-# Also GDAL 2.3 and above require C++11.
-# And CGAL 5.x requires C++14, and this requirement is transitively passed to us via the CGAL::CGAL target
-# (where CMake chooses the stricter requirement between our requirement and CGAL's C++14 requirement).
-# And Boost 1.81 (in math library) started warning if we used less than C++14 - it seems Boost's CMake configuration
-# doesn't transitively pass its C++14 requirement to us, like CGAL does - so we just set our requirement to C++14.
-# And Qt 6 requires C++17, and this requirement is transitively passed to us via the Qt6 targets (like Qt6::Core)
-# where Qt chooses the stricter requirement between our C++11 and Qt's C++17 (which is C++17)
+# Qt 6 and CGAL 6 both require C++17 (and pass that requirement on through their imported targets), so nearly
+# every build was already compiled as C++17. Requiring it here makes the Qt5 builds that use an older CGAL
+# (eg, Ubuntu's own packages) compile with the same standard, and lets shared code rely on C++17.
 #
-# Note: Specifying compile features avoids the problem of compile errors when C++17 features are used (eg, by Qt 6)
-#       since we're not forcing C++14 by specifying '-std=c++14' directly on the compiler command-line.
-target_compile_features(${SOURCE_TARGET} PUBLIC cxx_std_14)
+# Note: A compile feature (rather than the CXX_STANDARD property) is a minimum, so a dependency that needs a
+#       later standard still gets it.
+target_compile_features(${SOURCE_TARGET} PUBLIC cxx_std_17)
 #
-# We also want to disable compiler-specific extensions (eg, for C++11 on GNU compilers we want '-std=c++11' instead of '-std=g++11').
-# However CMake policy CMP0128 is a bit confusing about how to do this using 'CMAKE_CXX_EXTENSIONS'.
-# It seems to indicate that, prior to CMake 3.22, 'CMAKE_CXX_EXTENSIONS' is ignored unless 'CMAKE_CXX_STANDARD' is also set.
-# So we'll go ahead and also include the old pre-CMake-3.8 approach to setting C++14 via target properties.
-# Apparently CMake will use the stronger requirement of cxx_std_14 and CXX_STANDARD=14 (which is just C++14 anyway).
-set_target_properties(${SOURCE_TARGET} PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+# Disable compiler-specific extensions (eg, '-std=c++17' rather than '-std=gnu++17' on GNU compilers).
+# With CMake policy CMP0128 (CMake 3.22) this is honoured without also setting CXX_STANDARD.
+set_target_properties(${SOURCE_TARGET} PROPERTIES CXX_EXTENSIONS OFF)
 
 
 #
@@ -742,10 +700,7 @@ set_target_properties(${SOURCE_TARGET} PROPERTIES CXX_STANDARD 14 CXX_STANDARD_R
 # Each target has its own pre-compiled "_pch.h" header that currently lists only external headers.
 # Some internal headers that are used a lot but infrequently changed (such as utils) could be added also.
 if (GPLATES_USE_PRECOMPILED_HEADERS)
-	# Pre-compiled headers are supported natively in CMake 3.16 and above.
-	if (COMMAND target_precompile_headers)
-		target_precompile_headers(${SOURCE_TARGET} PRIVATE ${PROJECT_SOURCE_DIR}/src/${SOURCE_TARGET}_pch.h)
-	endif()
+	target_precompile_headers(${SOURCE_TARGET} PRIVATE ${PROJECT_SOURCE_DIR}/src/${SOURCE_TARGET}_pch.h)
 
 	# Exclude specific source files from including pre-compiled header.
 	#
@@ -984,8 +939,6 @@ endif()
 
 #
 # General LINK_OPTIONS (target_property).
-#
-# Note: CMake 3.13 introduced the 'target_link_options()' command and the LINK_OPTIONS target property.
 
 #
 # LINK_OPTIONS (target_property) for MSVC compiler only.
@@ -1023,7 +976,7 @@ if (GPLATES_BUILD_GPLATES)
 		set(GPlates_ICON "${GPLATES_SOURCE_DISTRIBUTION_DIR}/gplates_desktop_icon.rc")
 	endif()
 	if (GPlates_ICON)
-		target_sources_util(gplates PRIVATE ${GPlates_ICON})
+		target_sources(gplates PRIVATE ${GPlates_ICON})
 	endif()
 
 	if (APPLE)
@@ -1084,8 +1037,6 @@ if (GPLATES_BUILD_GPLATES)
 	# Apple are unlikely to 'remove' OpenGL in their drivers anytime soon.
 	#
 	# Set as usage requirements (INTERFACE) on the OpenGL imported library target.
-	#
-	# Note: CMake 3.11 is required for the 'target_*()' commands to set INTERFACE_ properties on imported targets.
 	target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
 endif()
 
@@ -1138,12 +1089,9 @@ endif()
 #
 # The workaround involves explicitly adding these include paths as PUBLIC (which is same as PRIVATE plus INTERFACE).
 #
-# Note that CMake 3.8 and above no longer place the generated 'ui_*.h' files in ${CMAKE_CURRENT_BINARY_DIR}.
-# Instead they go in '${CMAKE_CURRENT_BINARY_DIR}/<target-name>_autogen/include' for single-configuration generators, and
-# in '${CMAKE_CURRENT_BINARY_DIR}/<target-name>_autogen/include_$<CONFIG>' for multi-configuration generators.
-# So to cover all CMake versions we add all three include paths.
+# The generated 'ui_*.h' files go in '${CMAKE_CURRENT_BINARY_DIR}/<target-name>_autogen/include' for single-configuration
+# generators, and in '${CMAKE_CURRENT_BINARY_DIR}/<target-name>_autogen/include_$<CONFIG>' for multi-configuration generators.
 target_include_directories(${SOURCE_TARGET} PUBLIC
-	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}/${SOURCE_TARGET}_autogen/include
 	${CMAKE_CURRENT_BINARY_DIR}/${SOURCE_TARGET}_autogen/include_$<CONFIG>)
 # Define QT_NO_KEYWORDS so that Qt will not pollute namespaces.
@@ -1189,20 +1137,10 @@ target_link_libraries(${SOURCE_TARGET} PUBLIC PROJ::proj)
 #
 # Python dependency.
 #
-if (GPLATES_PYTHON_3)
-	if (GPLATES_BUILD_GPLATES)
-		# We used the Python3 find module.
-		target_link_libraries(gplates-lib PUBLIC Python3::Python)
-	else()
-		# Note that the Python3_add_library() call above has already linked pygplates to Python3::Module.
-	endif()
-else()  # Python2
-	if (GPLATES_BUILD_GPLATES)
-		# We used the Python2 find module.
-		target_link_libraries(gplates-lib PUBLIC Python2::Python)
-	else()
-		# Note that the Python2_add_library() call above has already linked pygplates to Python2::Module.
-	endif()
+if (GPLATES_BUILD_GPLATES)
+	target_link_libraries(gplates-lib PUBLIC Python3::Python)
+else()
+	# Note that the Python3_add_library() call above has already linked pygplates to Python3::Module.
 endif()
 # Add the NumPy include directories if found.
 if (GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)
@@ -1226,8 +1164,6 @@ endif()
 #
 # Include code to *install* the ${BUILD_TARGET} target (either 'gplates' or 'pygplates').
 #
-# This was done in the same directory scope that the targets were created in since this was required by CMake <= 3.12
-# (however this is no longer necessary since our minimum CMake requirement is now above 3.12).
 # Note that, while 'include()' pulls in content from another directory, it pulls it into the *current* directory scope.
 #
 include(Install)
