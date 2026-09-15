@@ -5,9 +5,9 @@ description: Conventions for writing or reviewing pyGPlates Python API docstring
 
 # pyGPlates API docstring conventions
 
-Read @doc-python-api/README.md — it is the authoritative reference and this skill is a summary of
+Read @docs/pygplates/README.md — it is the authoritative reference and this skill is a summary of
 its "Docstring conventions" and "Math markup" sections. Read `process_docstring` in
-`doc-python-api/conf.py.in` before changing docstring *layout* (as opposed to wording).
+`docs/pygplates/conf.py.in` before changing docstring *layout* (as opposed to wording).
 
 ## Where docstrings live
 

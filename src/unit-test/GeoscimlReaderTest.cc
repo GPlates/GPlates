@@ -142,6 +142,14 @@ namespace
 		return string_property(feature, GPlatesModel::PropertyName::create_gml("name"));
 	}
 
+	/**
+	 * The feature's one geometry.
+	 *
+	 * The caller must keep the returned pointer alive for as long as it uses the geometry:
+	 * a gml:Point is stored as a coordinate pair and synthesises its PointGeometryOnSphere
+	 * on demand, so - unlike a gml:LineString or a gml:Polygon - the feature itself holds
+	 * no reference to it.
+	 */
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 	only_geometry(
 			const GPlatesModel::FeatureHandle::weak_ref &feature)
@@ -198,8 +206,10 @@ TEST_F(GeoscimlReaderTest, line_string_swaps_pos_list_to_lat_lon)
 			string_property(line, GPlatesModel::PropertyName::create_gml("description")));
 
 	// gml:posList is longitude latitude; GPlates stores latitude longitude.
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type line_geometry =
+			only_geometry(line);
 	const GPlatesMaths::PolylineOnSphere *polyline =
-			dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(only_geometry(line).get());
+			dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(line_geometry.get());
 	ASSERT_TRUE(polyline);
 	ASSERT_EQ(3u, polyline->number_of_vertices());
 	expect_lat_lon(20, 10, *polyline->vertex_begin());
@@ -220,9 +230,10 @@ TEST_F(GeoscimlReaderTest, point_is_read_in_gpml_order)
 	ASSERT_LE(2u, features.size());
 
 	// Unlike a gml:posList, a gml:pos is not swapped: it is read as GPML's latitude longitude.
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
+			only_geometry(features[1]);
 	const GPlatesMaths::PointGeometryOnSphere *point =
-			dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(
-					only_geometry(features[1]).get());
+			dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(geometry.get());
 	ASSERT_TRUE(point);
 	expect_lat_lon(45, -30, point->position());
 }
@@ -234,9 +245,10 @@ TEST_F(GeoscimlReaderTest, polygon_and_repeated_properties)
 	ASSERT_LE(3u, features.size());
 	const GPlatesModel::FeatureHandle::weak_ref &polygon_feature = features[2];
 
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type polygon_geometry =
+			only_geometry(polygon_feature);
 	const GPlatesMaths::PolygonOnSphere *polygon =
-			dynamic_cast<const GPlatesMaths::PolygonOnSphere *>(
-					only_geometry(polygon_feature).get());
+			dynamic_cast<const GPlatesMaths::PolygonOnSphere *>(polygon_geometry.get());
 	ASSERT_TRUE(polygon);
 	EXPECT_EQ(4, std::distance(
 			polygon->exterior_ring_vertex_begin(), polygon->exterior_ring_vertex_end()));
@@ -265,9 +277,10 @@ TEST_F(GeoscimlReaderTest, macrostrat_properties)
 	EXPECT_EQ(3.0, double_property(rock_unit, gpml_property("rock_min_thick")).get_value_or(-1));
 
 	EXPECT_EQ(7.0, double_property(fossils, gpml_property("fossil_diversity")).get_value_or(-1));
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
+			only_geometry(fossils);
 	const GPlatesMaths::PointGeometryOnSphere *point =
-			dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(
-					only_geometry(fossils).get());
+			dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(geometry.get());
 	ASSERT_TRUE(point);
 	expect_lat_lon(-33, 151, point->position());
 }
@@ -281,12 +294,63 @@ TEST_F(GeoscimlReaderTest, three_dimensional_pos_list_in_another_srs)
 	// srsDimension="3" is read off the bare gml:posList start tag, so the coordinates are
 	// consumed in triples and the height dropped. (The SRS itself is not transformed - that
 	// code has been disabled since GDAL 3 - so the values pass through, and are swapped.)
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
+			only_geometry(features[5]);
 	const GPlatesMaths::PolylineOnSphere *polyline =
-			dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(only_geometry(features[5]).get());
+			dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(geometry.get());
 	ASSERT_TRUE(polyline);
 	ASSERT_EQ(3u, polyline->number_of_vertices());
 	expect_lat_lon(20, 10, *polyline->vertex_begin());
 	expect_lat_lon(30, 20, *--polyline->vertex_end());
+}
+
+
+TEST_F(GeoscimlReaderTest, malformed_point_is_not_read_as_the_origin)
+{
+	// A gml:pos that does not begin with two numbers used to be extracted as (0, 0) - a point
+	// in the Gulf of Guinea, indistinguishable from a real one. It is now a read error, which
+	// the GeoSciML reader reports by skipping the member it came from.
+	const feature_seq_type features = read("malformed_point.gsml");
+
+	// The member is abandoned part-built rather than removed, so it still counts - but it
+	// carries no geometry, which is the point.
+	ASSERT_EQ(2u, features.size());
+	GPlatesFeatureVisitors::GeometryFinder finder;
+	finder.visit_feature(features[0]);
+	EXPECT_EQ(0, std::distance(finder.found_geometries_begin(), finder.found_geometries_end()));
+
+	// The member after it still reads.
+	EXPECT_EQ("Good point", name(features[1]));
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
+			only_geometry(features[1]);
+	const GPlatesMaths::PointGeometryOnSphere *point =
+			dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(geometry.get());
+	ASSERT_TRUE(point);
+	expect_lat_lon(-33, 151, point->position());
+}
+
+
+TEST_F(GeoscimlReaderTest, point_by_coordinates_and_the_malformed_case)
+{
+	// gml:coordinates is the other spelling of a gml:Point's position, and it read the same
+	// way: coordinates that are not two numbers used to become (0, 0) rather than an error.
+	const feature_seq_type features = read("point_coordinates.gsml");
+	ASSERT_EQ(2u, features.size());
+
+	// Read as GPML's latitude longitude, like a gml:pos.
+	EXPECT_EQ("Point by coordinates", name(features[0]));
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
+			only_geometry(features[0]);
+	const GPlatesMaths::PointGeometryOnSphere *point =
+			dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(geometry.get());
+	ASSERT_TRUE(point);
+	expect_lat_lon(45, -30, point->position());
+
+	// The member with one coordinate where two were needed is abandoned part-built, carrying
+	// no geometry.
+	GPlatesFeatureVisitors::GeometryFinder finder;
+	finder.visit_feature(features[1]);
+	EXPECT_EQ(0, std::distance(finder.found_geometries_begin(), finder.found_geometries_end()));
 }
 
 
@@ -297,8 +361,10 @@ TEST_F(GeoscimlReaderTest, feature_without_a_feature_member_wrapper)
 	ASSERT_EQ(1u, features.size());
 	EXPECT_EQ("Unwrapped feature", name(features[0]));
 
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
+			only_geometry(features[0]);
 	const GPlatesMaths::PolylineOnSphere *polyline =
-			dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(only_geometry(features[0]).get());
+			dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(geometry.get());
 	ASSERT_TRUE(polyline);
 	EXPECT_EQ(2u, polyline->number_of_vertices());
 	expect_lat_lon(-10, 100, *polyline->vertex_begin());

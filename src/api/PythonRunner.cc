@@ -209,19 +209,21 @@ GPlatesApi::PythonRunner::exec_file(
 		// Python expects the file to end with a newline.
 		file_contents.append("\n");
 
-		// Encode the filename using the given encoding.
 		PythonInterpreterLocker interpreter_locker;
-		str encoded_filename;
+		str script_filename;
+#if PY_MAJOR_VERSION < 3
+		// Encode the filename using the given encoding, since Python 2 'compile()' wants
+		// the file name as a byte string.
 		try
 		{
-			encoded_filename = str(unicode_filename.attr("encode")(
+			script_filename = str(unicode_filename.attr("encode")(
 					filename_encoding.toUtf8().constData()));
 		}
 		catch (const error_already_set &)
 		{
 			try
 			{
-				encoded_filename = str(unicode_filename.attr("encode")("ascii", "replace"));
+				script_filename = str(unicode_filename.attr("encode")("ascii", "replace"));
 			}
 			catch (const error_already_set &)
 			{
@@ -233,10 +235,16 @@ GPlatesApi::PythonRunner::exec_file(
 				return;
 			}
 		}
+#else
+		// Python 3 'compile()' takes the file name as a Unicode 'str', so pass it through
+		// unencoded. Encoding gives 'bytes', and wrapping that in 'str' would name the
+		// script "b'...'" wherever the file name is shown, such as in a traceback.
+		script_filename = str(unicode_filename);
+#endif
 
 		try
 		{
-			object code = d_compile(file_contents.constData(), encoded_filename, "exec");
+			object code = d_compile(file_contents.constData(), script_filename, "exec");
 			d_console.attr("runcode")(code);
 		}
 		catch (const error_already_set &)

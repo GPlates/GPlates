@@ -1,5 +1,5 @@
 #
-# Generate a "doc-python-api" target that uses Sphinx to generate HTML from the docstrings in the 'pygplates' python module.
+# Generate a "docs-pygplates" target that uses Sphinx to generate HTML from the docstrings in the 'pygplates' python module.
 #
 
 # Sphinx must run in the *same* Python interpreter that pygplates was built for, because the
@@ -86,7 +86,7 @@ if (SPHINX_FOUND)
 		INPUT "${CMAKE_CURRENT_BINARY_DIR}/conf.py.intermediate")
 
 	# Note that the source directory for sphinx is our current binary/output directory (we've copied our source ".rst" files there).
-	add_custom_target(doc-python-api
+	add_custom_target(docs-pygplates
 		COMMAND "${GPLATES_PYTHON_EXECUTABLE}" -m sphinx
 			-q -b html -W -j auto
 			-c "${BINARY_BUILD_DIR}/$<CONFIG>"
@@ -94,6 +94,6 @@ if (SPHINX_FOUND)
 			"${CMAKE_CURRENT_BINARY_DIR}"
 			"${SPHINX_HTML_DIR}"
 		COMMENT "Building HTML documentation with Sphinx")
-	# Make sure the 'pygplates' target is built before we build the 'doc-python-api' target (Sphinx generates documentation).
-	add_dependencies(doc-python-api pygplates)
+	# Make sure the 'pygplates' target is built before we build the 'docs-pygplates' target (Sphinx generates documentation).
+	add_dependencies(docs-pygplates pygplates)
 endif (SPHINX_FOUND)

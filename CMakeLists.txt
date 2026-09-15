@@ -148,6 +148,17 @@ enable_testing()
 # Print test output when test fails - when running tests with 'make test' or building 'RUN_TESTS' (in Visual Studio).
 list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")  # Ignored if CMake < 3.17
 
+# Test the version resolver's pure helper functions - splitting and ordering versions, and
+# checking the hand-edited release target against the nearest release ('VersionFromGit.cmake').
+#
+# Registered here rather than under 'pygplates/test/' because it belongs to neither product: it
+# runs a CMake script, needs nothing built, and both products resolve both versions. For the same
+# reason it carries no CONFIGURATIONS restriction - the Debug caveat on the other tests is about
+# 'GPlatesGlobal::Assert' aborting instead of throwing, which nothing here goes near.
+add_test(
+    NAME version-resolver-test
+    COMMAND ${CMAKE_COMMAND} -P "${PROJECT_SOURCE_DIR}/cmake/modules/VersionFromGitTest.cmake")
+
 #
 # Include configuration options (default options and options overridden by user).
 #
@@ -172,8 +183,8 @@ add_subdirectory(src)
 #
 # pyGPlates specific sub-directories.
 #
-# Note: 'doc-cpp/' is not built - it holds the C++ design docs (and the man page installed
-#       by 'cmake/modules/Install.cmake').
+# Note: of 'docs/', only 'docs/pygplates/' is built. 'docs/design/' holds the design docs, and
+#       'docs/gplates/man/' the man page installed by 'cmake/modules/Install.cmake'.
 #
 if (NOT GPLATES_BUILD_GPLATES)
     #
@@ -184,5 +195,5 @@ if (NOT GPLATES_BUILD_GPLATES)
     #
     # Recurse into the sub-directory for generating the Python API documentation.
     #
-    add_subdirectory(doc-python-api)
+    add_subdirectory(docs/pygplates)
 endif()

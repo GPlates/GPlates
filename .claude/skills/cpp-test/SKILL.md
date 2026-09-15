@@ -5,7 +5,7 @@ description: Conventions for adding or modifying C++ unit tests in GPlates (Goog
 
 # Adding a C++ test
 
-Authoritative reference: @doc-cpp/design/testing/README.md. This skill covers the mechanics and
+Authoritative reference: @docs/design/testing/README.md. This skill covers the mechanics and
 the rules that are easy to violate.
 
 ## Mechanics

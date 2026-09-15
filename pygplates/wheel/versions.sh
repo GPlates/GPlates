@@ -7,9 +7,9 @@
 # '.github/workflows/build-wheels.yml').
 #
 # Not everything is pinned here: the libraries vcpkg supplies to the Windows build are pinned
-# by the vcpkg baseline in 'vcpkg.json' instead. For the libraries both systems pin - GLEW,
-# PROJ and GDAL - the versions here are kept equal to what that baseline supplies, so all three
-# platforms' wheels ship the same geospatial behaviour. Bump the baseline and these three
+# by the vcpkg baseline in 'vcpkg.json' instead. For the libraries both systems pin - PROJ and
+# GDAL - the versions here are kept equal to what that baseline supplies, so all three
+# platforms' wheels ship the same geospatial behaviour. Bump the baseline and these two
 # together, as one act, with vcpkg setting the cadence (it is the one of the two whose available
 # versions cannot be picked freely); 'build_windows_deps.sh' fails if they drift apart.
 #
@@ -25,8 +25,6 @@
 PYTHON_VERSIONS="3.9 3.10 3.11 3.12 3.13 3.14"
 
 QT_VERSION=6.7.3
-GLEW_VERSION=2.3.1
-QWT_VERSION=6.3.0
 BOOST_VERSION=1.91.0
 PROJ_VERSION=9.8.1
 GDAL_VERSION=3.12.4

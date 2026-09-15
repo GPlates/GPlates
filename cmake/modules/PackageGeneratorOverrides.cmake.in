@@ -27,17 +27,22 @@ if (CPACK_GENERATOR MATCHES "^NSIS$")
     #   This may be used by some CPack generators like NSIS to create an installation directory e.g.,
     #   "CMake 2.5" below the installation prefix. All installed elements will be put inside this directory..
     #
-    # We want, for example, "GPlates\GPlates 2.3.0\" (which ends up as "C:\Program Files\GPlates\GPlates 2.3.0\").
+    # We want, for example, "GPlates\GPlates 2.6\" (which ends up as "C:\Program Files\GPlates\GPlates 2.6\").
     # This way multiple versions can be installed at the same time (in different sub-directories of "C:\Program Files\GPlates\").
-    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "@PROJECT_NAME@\\@PROJECT_NAME@ @GPLATES_VERSION_PRERELEASE_USER@")
+    #
+    # This is the install *slot* rather than the full version: the development number changes with
+    # every commit, and keying the directory on it would leave one program directory per build installed.
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "@PROJECT_NAME@\\@PROJECT_NAME@ @GPLATES_VERSION_INSTALL_SLOT@")
 
     #   CPACK_PACKAGE_INSTALL_REGISTRY_KEY - Registry key used when installing this project.
     #
     #   This is only used by installers for Windows. The default value is based on the installation directory.
     #
-    # We want, for example, "GPlates 2.3.0-dev1" for a development release so that multiple installations
-    # with different version numbers don't conflict with each other.
-    SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "@PROJECT_NAME@ @GPLATES_VERSION_PRERELEASE_USER@")
+    # We want, for example, "GPlates 2.6-dev" for a development release so that installations of
+    # different releases don't conflict with each other - while successive development builds of the
+    # same release share the one uninstall entry, rather than adding a new one to "Apps & features"
+    # every time one is installed.
+    SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "@PROJECT_NAME@ @GPLATES_VERSION_INSTALL_SLOT@")
 
     # Note that CPACK_PACKAGE_ICON can be used by NSIS, but we don't set this for now since apparently NSIS needs this to be 150x57 pixels.
 endif()
@@ -65,5 +70,7 @@ if (CPACK_GENERATOR MATCHES "^DragNDrop$")
     # Make sure everything ends up in the specified directory (which the user can then drag'n'drop into "/Applications/").
     # This way the GPlates app bundle and geodata stay together in the one directory.
     # And using the version in the directory name enables multiple versions to be installed (in different sub-directories of, eg, "/Applications").
-    SET(CPACK_PACKAGING_INSTALL_PREFIX "/@PROJECT_NAME@_@GPLATES_VERSION_PRERELEASE_USER@")
+    # As on Windows, this is the install *slot*, so that successive development builds of one release
+    # replace each other instead of filling "/Applications" with a folder per commit.
+    SET(CPACK_PACKAGING_INSTALL_PREFIX "/@PROJECT_NAME@_@GPLATES_VERSION_INSTALL_SLOT@")
 endif()

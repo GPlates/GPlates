@@ -21,20 +21,17 @@ on:
     branches: [ "gplates" ]
     paths-ignore:
       # Documentation and repository metadata cannot affect the build or the tests.
-      # Note '.gitattributes' is deliberately NOT listed: it controls line endings, and
-      # 'pygplates-stub-test' byte-compares the '.pyi' stub.
+      # Note '.gitattributes' is deliberately NOT listed: it controls the line endings of
+      # every checked-out source file.
       - '**.md'
       - '.claude/**'
-      - 'AUTHORS'
       - 'COPYING'
-      - 'CREDITS'
-      - 'CHANGELOG'
   pull_request:
     branches: [ "gplates" ]
     paths-ignore:
       # Documentation and repository metadata cannot affect the build or the tests.
-      # Note '.gitattributes' is deliberately NOT listed: it controls line endings, and
-      # 'pygplates-stub-test' byte-compares the '.pyi' stub.
+      # Note '.gitattributes' is deliberately NOT listed: it controls the line endings of
+      # every checked-out source file.
       # Caveat: GitHub does not synthesise a skipped-but-successful check for a
       # path-filtered trigger - the run simply never happens. That is fine while
       # these workflows are not *required* status checks (they are not, as of
@@ -43,10 +40,7 @@ on:
       # the usual fix is to move the filter into a job-level 'if' instead.
       - '**.md'
       - '.claude/**'
-      - 'AUTHORS'
       - 'COPYING'
-      - 'CREDITS'
-      - 'CHANGELOG'
   workflow_dispatch:
 
 # Superseded runs are cancelled rather than left to finish (a build takes ~30-60 minutes).
@@ -103,6 +97,12 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          # Whole history and all tags: the version is counted from the distance to the
+          # nearest release tag (see 'cmake/modules/VersionFromGit.cmake'), and a shallow
+          # clone is refused rather than allowed to produce a smaller, plausible-looking
+          # number.
+          fetch-depth: 0
 
       - name: Restore compiler cache
         # 'restore-keys' is what makes this useful: the primary key includes the commit SHA and so

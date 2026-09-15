@@ -189,21 +189,34 @@ On **Windows**:
 Install from source code
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The first step is to obtain the source code for the current pyGPlates release by checking out the
-``release-pygplates`` branch of the `GPlates GitHub repository <https://github.com/GPlates/GPlates>`_.
-Or you can check out the pyGPlates *development* branch ``pygplates`` (if you want the latest *unofficial* updates).
+The first step is to obtain the source code for the current pyGPlates release by checking out its
+release tag in the `GPlates GitHub repository <https://github.com/GPlates/GPlates>`_.
+Or you can check out the development branch ``gplates`` (if you want the latest *unofficial* updates).
 
 .. note:: You'll first need to `install git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
   (if you don't already have it).
 
-In a terminal or command window, type the following to download the GPlates repository and switch to the ``release-pygplates`` branch
-(replacing ``<parent-of-source-code-dir>`` with the directory you want to download the repository into):
+In a terminal or command window, type the following to download the GPlates repository and switch to the
+latest pyGPlates release (replacing ``<parent-of-source-code-dir>`` with the directory you want to download
+the repository into):
 ::
 
   cd <parent-of-source-code-dir>
   git clone https://github.com/GPlates/GPlates.git
   cd GPlates
-  git switch release-pygplates
+  git switch --detach <release-tag>
+
+where ``<release-tag>`` is the tag of the latest release, such as ``PyGPlates-1.0.0`` - the
+`releases page <https://github.com/GPlates/GPlates/releases>`_ lists them, or list them from the
+clone, newest last (the ``versionsort`` settings put a release candidate, or a development build,
+before the release it precedes):
+::
+
+  git -c versionsort.suffix=a -c versionsort.suffix=b -c versionsort.suffix=rc -c versionsort.suffix=.dev tag --list 'PyGPlates-*' --sort=version:refname
+
+.. note:: Each release series also has a branch of its own, such as ``release/pygplates-1.1``, whose tip is
+  always the most recent release in that series. So ``git switch release/pygplates-1.1`` gets you the latest
+  1.1.x, rather than a specific version.
 
 Then follow the instructions in ``BUILD-Linux.md`` (on Linux), ``BUILD-macOS.md`` (on macOS) or ``BUILD-Windows.md`` (on Windows) to install
 the dependency libraries required by pyGPlates (and to install the compilation tools).
@@ -243,36 +256,48 @@ This section covers issues you might encounter when installing or running pyGPla
 
 .. _pygplates_getting_started_troubleshooting_:
 
-glib ImportError on Linux
-^^^^^^^^^^^^^^^^^^^^^^^^^
+libGL or glib ImportError on Linux
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you have installed pyGPlates :ref:`using pip<pygplates_getting_started_install_using_pip>` and
-you get the following error on a Linux distribution (when pyGPlates is imported)...
+.. note:: This applies to pyGPlates **1.0.x** only. From pyGPlates **1.1.0** the Linux wheels no longer link
+          Qt's GUI library or OpenGL, and their Qt Core is built with GLib support disabled, so they import on
+          a bare ``python:3.x-slim`` container with no system packages installed at all.
+
+If you have installed pyGPlates 1.0.x :ref:`using pip<pygplates_getting_started_install_using_pip>` and
+you get one of the following errors on a Linux distribution (when pyGPlates is imported)...
 
 ::
 
+  ImportError: libGL.so.1: cannot open shared object file: No such file or directory
   ImportError: libglib-2.0.so.0: cannot open shared object file: No such file or directory
 
 ...then it's likely you are using a *minimal* Linux distribution.
+PyGPlates 1.0.x needs *both* of these libraries, so you might fix the first error only to be met by the second.
 
 .. note:: This shouldn't happen when installing pyGPlates :ref:`using conda<pygplates_getting_started_install_using_conda>`.
 
 For example, you might have a Dockerfile that builds on a Debian or Ubuntu Docker base image (such as ``python:3.x-slim``) by installing pyGPlates (using ``pip``).
-Or you might be installing pyGPlates (using ``pip``) in an environment like WSL (Windows Subsystem for Linux) where not all system libraries are pre-installed.
+Or you might be installing pyGPlates (using ``pip``) in an environment like WSL (Windows Subsystem for Linux) where graphical and other system libraries are not always pre-installed.
 
-The solution is to install the GLib library. For example, in a Debian or Ubuntu Dockerfile you could add the following...
+The solution is to upgrade to pyGPlates 1.1.0 or later, or - if you must stay on 1.0.x - to install the libGL and GLib libraries.
+For example, in a Debian or Ubuntu Dockerfile you could add the following...
 
 ::
 
-  RUN apt-get install -y libglib2.0-0
+  RUN apt-get install -y libgl1 libglib2.0-0
 
-.. note:: PyGPlates uses the Qt Core library (for its non-graphical functionality such as strings, files and XML), and on Linux Qt Core requires GLib
-          even though pyGPlates doesn't actually use it. PyGPlates does not use any of Qt's graphical libraries and so does not require a display or OpenGL.
+On older Debian and Ubuntu releases the ``libgl1`` package is called ``libgl1-mesa-glx`` instead.
+
+.. note:: PyGPlates 1.0.x was built from the GPlates (desktop) sources as a whole, and so it linked the graphical libraries
+          that GPlates draws with - Qt's GUI library and OpenGL - even though pyGPlates itself never draws anything.
+          That is where its requirement on ``libGL.so.1`` came from. The requirement on ``libglib-2.0.so.0`` came from Qt itself:
+          pyGPlates uses the Qt Core library (for its non-graphical functionality such as strings and files), and the Qt Core
+          that pyGPlates 1.0.x was built against required GLib.
           When you install pyGPlates with ``pip install pygplates`` it downloads and installs a wheel for your platform and Python version.
-          However, on Linux platforms, GLib was not copied into the pyGPlates wheel when it was built (like the other dependency libraries were).
-          This is because the ``auditwheel`` tool (used when building the wheel) whitelisted GLib (since it is expected to be available by default on all Linux distributions).
-          However ``libglib-2.0.so.0`` is not always included by default in some *minimal* Linux distributions (such as the ``python:3.x-slim`` Docker base images)
-          even though it is available in the usual Linux desktop distributions.
+          However, on Linux platforms, neither libGL nor GLib was copied into the pyGPlates 1.0.x wheel when it was built (like the other dependency libraries were).
+          This is because the ``auditwheel`` tool (used when building the wheel) whitelisted them (since they are expected to be available by default on all Linux distributions).
+          However ``libGL.so.1`` and ``libglib-2.0.so.0`` are not always included by default in some *minimal* Linux distributions (such as the ``python:3.x-slim`` Docker base images)
+          even though they are available in the usual Linux desktop distributions.
 
 
 .. _pygplates_getting_started_tutorial:

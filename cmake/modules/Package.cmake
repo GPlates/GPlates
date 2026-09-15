@@ -156,9 +156,6 @@ SET(CPACK_MONOLITHIC_INSTALL ON)
 # Some non-CPack variables #
 ############################
 
-# Where all the distribution files are located.
-SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${PROJECT_SOURCE_DIR}/cmake/distribution")
-
 # Lower case PROJECT_NAME.
 STRING(TOLOWER "${PROJECT_NAME}" _PROJECT_NAME_LOWER)
 

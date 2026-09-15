@@ -24,7 +24,6 @@
  */
 
 #include <ostream>
-#include <sstream>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QDebug>
@@ -678,8 +677,7 @@ namespace GPlatesApi
 void
 export_version()
 {
-	std::stringstream version_class_docstring_stream;
-	version_class_docstring_stream <<
+	const char *const version_class_docstring =
 			"A version of pyGPlates (GPlates Python API).\n"
 			"\n"
 			"Versions are defined by the `PEP440 versioning scheme <https://www.python.org/dev/peps/pep-0440/>`_ as "
@@ -709,13 +707,11 @@ export_version()
 			"\n"
 			"  print('imported pyGPlates version: {}'.format(pygplates.Version.get_imported_version()))\n"
 			"\n"
-			"...which, for this version of pyGPlates, will print ``imported pyGPlates version: "
-			<< GPlatesApi::Version::get_imported_version().get_version_string().toStdString() <<
-			"``.\n"
+			"...which, for pyGPlates version 1.0.0, will print "
+			"``imported pyGPlates version: 1.0.0``.\n"
 			"\n"
-			"There is also a ``pygplates.__version__`` string which will also print ``"
-			<< GPlatesApi::Version::get_imported_version().get_version_string().toStdString() <<
-			"``.\n"
+			"There is also a ``pygplates.__version__`` string which, for that same version, "
+			"would be ``1.0.0``.\n"
 			"\n"
 			".. versionchanged:: 0.42\n"
 			"   Added pickle support.\n";
@@ -735,7 +731,7 @@ export_version()
 #endif
 			>(
 					"Version",
-					version_class_docstring_stream.str().c_str(),
+					version_class_docstring,
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

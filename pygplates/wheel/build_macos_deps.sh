@@ -70,8 +70,9 @@ fi
 # Qt (the official binaries, downloaded with aqtinstall - much faster than the source build
 # the Linux image needs, and they're the same binaries the Qt online installer provides).
 #
-# 'qtbase' provides Core, Gui, Network, Widgets, Xml, OpenGL and OpenGLWidgets; 'qtsvg'
-# provides Svg. Qwt below needs Svg/OpenGL too.
+# 'qtbase' is the smallest archive aqt offers and carries every base module; the pyGPlates
+# module links only QtCore ('cmake/check_linkage.py' fails the build if that ever changes) and
+# only QtCore is vendored into the wheels, since delocate copies what is actually referenced.
 #
 # The official binaries are universal (arm64 + x86_64), so each framework library is thinned
 # to the build architecture - halving what delocate later vendors into the wheels.
@@ -82,9 +83,9 @@ QT_DIR=${PYGPLATES_DEPS}/qt/${QT_VERSION}/macos
 if [ ! -f "${PYGPLATES_DEPS}/stamps/qt-${QT_VERSION}" ]; then
     python3 -m venv aqt-venv
     ./aqt-venv/bin/pip -q install 'aqtinstall<4'
-    # '--archives qtbase qtsvg' limits the download to the parts of the base package we need
+    # '--archives qtbase' limits the download to the part of the base package we need
     # (skipping qtdeclarative, qttools etc, which are most of it).
-    ./aqt-venv/bin/aqt install-qt mac desktop ${QT_VERSION} clang_64 --archives qtbase qtsvg --outputdir "${PYGPLATES_DEPS}/qt"
+    ./aqt-venv/bin/aqt install-qt mac desktop ${QT_VERSION} clang_64 --archives qtbase --outputdir "${PYGPLATES_DEPS}/qt"
     ln -sfn "${QT_DIR}" "${PYGPLATES_DEPS}/qt/current"
     # Thin the universal framework libraries to the build architecture.
     for framework in "${QT_DIR}"/lib/Qt*.framework; do
@@ -95,49 +96,6 @@ if [ ! -f "${PYGPLATES_DEPS}/stamps/qt-${QT_VERSION}" ]; then
         fi
     done
     touch "${PYGPLATES_DEPS}/stamps/qt-${QT_VERSION}"
-fi
-
-# GLEW ('make' auto-detects darwin and links the system OpenGL framework; the darwin makefile
-# gives the library an absolute install name under GLEW_DEST, which is what delocate needs).
-if [ ! -f "${PYGPLATES_DEPS}/stamps/glew-${GLEW_VERSION}" ]; then
-    rm -rf glew && mkdir glew && cd glew
-    curl -sSL https://github.com/nigels-com/glew/releases/download/glew-${GLEW_VERSION}/glew-${GLEW_VERSION}.tgz | tar xz --strip-components=1
-    make -j ${NPROC} GLEW_DEST="${PYGPLATES_DEPS}"
-    make install GLEW_DEST="${PYGPLATES_DEPS}"
-    cd .. && rm -rf glew
-    touch "${PYGPLATES_DEPS}/stamps/glew-${GLEW_VERSION}"
-fi
-
-# Qwt (must be built against the Qt above - it has no Qt6 binary packages anywhere).
-#
-# Same qwtconfig.pri edits as the Linux image (install prefix, and no designer plugin/
-# examples/playground/tests), plus QwtFramework is disabled so Qwt builds as a plain dylib
-# (simpler for FindQwt.cmake and delocate than a framework).
-#
-# qmake does not give the installed dylib a usable install name, and does not record where
-# the Qt frameworks it links live - so the install name is set to the installed path (which
-# the pyGPlates build then records, for delocate to follow) and an rpath entry is added for
-# Qt (which delocate follows from the Qwt library to the Qt frameworks).
-if [ ! -f "${PYGPLATES_DEPS}/stamps/qwt-${QWT_VERSION}" ]; then
-    rm -rf qwt && mkdir qwt && cd qwt
-    curl -sSL -o qwt.tar.bz2 https://sourceforge.net/projects/qwt/files/qwt/${QWT_VERSION}/qwt-${QWT_VERSION}.tar.bz2
-    tar xjf qwt.tar.bz2 --strip-components=1
-    # (BSD sed: '-E' extended regexes, since the basic ones have no alternation; '@' as the
-    # substitution delimiter, since the deps prefix contains '/' and the regexes contain '|'.)
-    sed -i '' -E \
-        -e "s@^([[:space:]]*QWT_INSTALL_PREFIX[[:space:]]*=).*@\1 ${PYGPLATES_DEPS}@" \
-        -e 's@^QWT_CONFIG[[:space:]]*[+]=[[:space:]]*(QwtDesigner|QwtExamples|QwtPlayground|QwtTests)@# &@' \
-        -e 's@^([[:space:]]*)QWT_CONFIG[[:space:]]*[+]=[[:space:]]*QwtFramework@\1# QWT_CONFIG += QwtFramework@' \
-        qwtconfig.pri
-    "${QT_DIR}/bin/qmake" qwt.pro
-    make -j ${NPROC}
-    make install
-    install_name_tool -id "${PYGPLATES_DEPS}/lib/libqwt.${QWT_VERSION}.dylib" "${PYGPLATES_DEPS}/lib/libqwt.${QWT_VERSION}.dylib"
-    if ! otool -l "${PYGPLATES_DEPS}/lib/libqwt.${QWT_VERSION}.dylib" | grep -q "${QT_DIR}/lib"; then
-        install_name_tool -add_rpath "${QT_DIR}/lib" "${PYGPLATES_DEPS}/lib/libqwt.${QWT_VERSION}.dylib"
-    fi
-    cd .. && rm -rf qwt
-    touch "${PYGPLATES_DEPS}/stamps/qwt-${QWT_VERSION}"
 fi
 
 # Boost (only the compiled non-Python libraries pyGPlates needs - Boost.Python is built per
@@ -253,12 +211,9 @@ fi
 
 # Sanity-check the installs (fails the run if anything is missing).
 "${QT_DIR}/bin/qmake" -query QT_VERSION
-test -d "${QT_DIR}/lib/QtSvg.framework"
-test -d "${QT_DIR}/lib/QtNetwork.framework"
+test -d "${QT_DIR}/lib/QtCore.framework"
 test -L "${PYGPLATES_DEPS}/qt/current"
-ls "${PYGPLATES_DEPS}/lib/libqwt.${QWT_VERSION}.dylib"
 ls "${PYGPLATES_DEPS}/lib/libboost_program_options.dylib" "${PYGPLATES_DEPS}/lib/libboost_thread.dylib"
-ls "${PYGPLATES_DEPS}/lib/libGLEW.dylib"
 ls "${PYGPLATES_DEPS}/lib/libproj.dylib"
 ls "${PYGPLATES_DEPS}/lib/libgdal.dylib"
 ls "${PYGPLATES_DEPS}/lib/libgmp.dylib" "${PYGPLATES_DEPS}/lib/libmpfr.dylib"
@@ -269,8 +224,8 @@ test -d "${PYGPLATES_DEPS}/include/CGAL"
 # disappear or change ABI with runner image updates. Print the dependencies first so a
 # failure here is diagnosable from the log. ('/usr/local/opt' and '/usr/local/Cellar' are
 # the Homebrew prefixes on Intel, '/opt/homebrew' on Apple Silicon.)
-otool -L "${PYGPLATES_DEPS}"/lib/libqwt.${QWT_VERSION}.dylib "${PYGPLATES_DEPS}"/lib/libGLEW.*.*.dylib "${PYGPLATES_DEPS}"/lib/libproj.*.dylib "${PYGPLATES_DEPS}"/lib/libgdal.*.dylib
-! otool -L "${PYGPLATES_DEPS}"/lib/libqwt.${QWT_VERSION}.dylib "${PYGPLATES_DEPS}"/lib/libGLEW.*.*.dylib "${PYGPLATES_DEPS}"/lib/libproj.*.dylib "${PYGPLATES_DEPS}"/lib/libgdal.*.dylib | grep -E '/opt/homebrew/|/usr/local/opt/|/usr/local/Cellar/'
+otool -L "${PYGPLATES_DEPS}"/lib/libproj.*.dylib "${PYGPLATES_DEPS}"/lib/libgdal.*.dylib
+! otool -L "${PYGPLATES_DEPS}"/lib/libproj.*.dylib "${PYGPLATES_DEPS}"/lib/libgdal.*.dylib | grep -E '/opt/homebrew/|/usr/local/opt/|/usr/local/Cellar/'
 
 # Mark the whole prefix built and checked. The CI cache-save step skips re-saving a prefix
 # that already carried this stamp when restored (see '.github/workflows/build-wheels.yml').

@@ -23,6 +23,13 @@
 # Qt 6.7 is the last series supporting macOS 11, which the macOS wheels target - the Linux
 # image uses the same version so all wheels ship the same Qt.
 #
+# Only Qt Core is built. The pyGPlates module links Qt6Core and nothing else - 'cmake/
+# check_linkage.py' fails the build if that ever changes - so a Gui/Widgets/OpenGL Qt would be
+# ~25 minutes of build time, a couple of dozen X11 development packages and a GLEW/Qwt/QtSvg
+# stack, all of it to produce libraries no wheel ever loads. Building Core alone is also what
+# lets the wheel import on a bare 'python:3.x-slim' with no system packages installed (see
+# FEATURE_glib below).
+#
 # The dependency versions come from 'versions.sh' (in this directory), shared with the macOS
 # dependency build so the platforms cannot drift apart.
 #
@@ -39,36 +46,18 @@ ARG ARCH
 #
 # Install the dependencies that EL8 provides as binary packages.
 #
-# - Most '-devel' packages live in the 'powertools' repo on EL8 (and 'xcb-util-cursor-devel' in EPEL).
 # - GMP/MPFR (for CGAL) are new enough in EL8 - the source builds in the old manylinux2014
 #   (CentOS 7) dockerfile are no longer needed.
-# - The X11/xcb/xkbcommon/fontconfig set is what Qt needs to build its xcb platform plugin.
+# - All four are in EL8's base repositories, so no 'powertools'/EPEL enabling is needed. The
+#   X11/xcb/xkbcommon/fontconfig/mesa set that used to be here (and the 'dnf-plugins-core' and
+#   'epel-release' that existed to reach parts of it) went with the Qt Gui build.
 #
-RUN dnf -y install dnf-plugins-core epel-release && \
-    dnf config-manager --set-enabled powertools && \
-    dnf -y update && \
+RUN dnf -y update && \
     dnf -y install \
         bzip2 \
         zlib-devel \
         gmp-devel \
-        mpfr-devel \
-        mesa-libGL-devel \
-        mesa-libGLU-devel \
-        fontconfig-devel \
-        freetype-devel \
-        libX11-devel \
-        libXext-devel \
-        libXrender-devel \
-        libXi-devel \
-        libxkbcommon-devel \
-        libxkbcommon-x11-devel \
-        libxcb-devel \
-        xcb-util-devel \
-        xcb-util-image-devel \
-        xcb-util-keysyms-devel \
-        xcb-util-renderutil-devel \
-        xcb-util-wm-devel \
-        xcb-util-cursor-devel && \
+        mpfr-devel && \
     dnf clean all
 
 # A current Ninja from PyPI, for the Qt builds below - EL8's 'ninja-build' package is
@@ -119,36 +108,25 @@ RUN . /tmp/versions.sh && \
     ldconfig && \
     rm -rf /tmp/build
 
-# GLEW, built against the LEGACY 'libGL' (auditwheel-whitelisted - comes from the end user's
-# system, like the old CentOS 7 'glew-devel' package used to).
+# Qt Core (from qtbase - see the note at the top of this file for why nothing else is built).
 #
-# EL8's 'glew-devel' package must NOT be used instead: it links the GLVND libraries
-# (libGLX/libOpenGL/libGLdispatch), which are not whitelisted by auditwheel and so would be
-# vendored into the wheel - recreating the two-libGLdispatch-copies segmentation fault at
-# 'import pygplates' that OpenGL_GL_PREFERENCE=LEGACY exists to prevent
-# (see 'pygplates/wheel/README.md' for that history).
-WORKDIR /tmp/build
-RUN . /tmp/versions.sh && \
-    curl -sSL https://github.com/nigels-com/glew/releases/download/glew-${GLEW_VERSION}/glew-${GLEW_VERSION}.tgz | tar xz --strip-components=1 && \
-    make -j $(nproc) GLEW_DEST=/usr/local && \
-    make install GLEW_DEST=/usr/local && \
-    ldconfig && \
-    rm -rf /tmp/build
-
-# Qt (qtbase and qtsvg - pyGPlates needs Core, Gui, Widgets, Xml, OpenGL, OpenGLWidgets and
-# Svg, and Qwt below needs Svg/OpenGL).
+# Each FEATURE_* below is off for a reason, and the whole point of them is what libQt6Core.so.6
+# must NOT end up needing: anything outside auditwheel's whitelist is vendored into the wheel,
+# and anything on it becomes a system library the user has to have installed. The sanity layer
+# at the end of this file asserts the resulting NEEDED list, so a future edit here cannot
+# quietly reintroduce one.
 #
-# FEATURE_xcb=ON is asserted explicitly so that configure *fails* if the xcb dependencies are
-# incomplete (rather than silently building a Qt that cannot connect to an X display).
+# - gui: no Gui means no Widgets, OpenGL, xcb, EGL, fontconfig or freetype either - the whole
+#   X11 stack the image used to install, and most of the build time.
+# - glib: Qt's Core event loop can integrate with GLib's, and configure enables it whenever
+#   glib2-devel is present (EL8's is, as a dependency of the base image's toolchain). GLib is
+#   auditwheel-whitelisted, so it was not vendored - it was simply *required* from the user's
+#   system, which is why 'import pygplates' failed on a bare 'python:3.x-slim' until now.
+# - dbus: Qt6DBus was built and vendored only because Gui pulled it in; nothing links it.
+# - icu: already off today only because 'libicu-devel' is absent from the image. Asserting it
+#   means a base-image change cannot silently vendor ~30 MB of ICU into every wheel.
+# - network/sql/xml/testlib/concurrent: modules nothing links, each costing build time.
 #
-# FEATURE_egl=OFF because a Qt6Gui linking libEGL gets libEGL (and its libGLdispatch
-# dependency) vendored into the wheel by auditwheel - triggering the same
-# two-libGLdispatch-copies segmentation fault described above for GLEW. Desktop OpenGL on X11
-# goes through GLX/libGL and does not need EGL.
-#
-# OpenGL_GL_PREFERENCE=LEGACY for the same reason: Qt's build uses CMake's FindOpenGL, whose
-# default GLVND preference makes libQt6Gui link libGLX/libOpenGL directly (both vendored by
-# auditwheel) instead of the whitelisted legacy libGL.
 # (${QT_VERSION%.*} strips the patch level - the download path groups releases by series.)
 WORKDIR /tmp/build
 RUN . /tmp/versions.sh && \
@@ -159,49 +137,18 @@ RUN . /tmp/versions.sh && \
         -DCMAKE_INSTALL_PREFIX=/usr/local \
         -DQT_BUILD_EXAMPLES=OFF \
         -DQT_BUILD_TESTS=OFF \
-        -DFEATURE_xcb=ON \
-        -DFEATURE_egl=OFF \
-        -DINPUT_opengl=desktop \
-        -DOpenGL_GL_PREFERENCE=LEGACY \
+        -DFEATURE_gui=OFF \
+        -DFEATURE_glib=OFF \
+        -DFEATURE_dbus=OFF \
+        -DFEATURE_icu=OFF \
+        -DFEATURE_network=OFF \
+        -DFEATURE_sql=OFF \
+        -DFEATURE_xml=OFF \
+        -DFEATURE_testlib=OFF \
+        -DFEATURE_concurrent=OFF \
         .. && \
     ninja && \
     ninja install && \
-    ldconfig && \
-    rm -rf /tmp/build
-WORKDIR /tmp/build
-RUN . /tmp/versions.sh && \
-    curl -sSL https://download.qt.io/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/qtsvg-everywhere-src-${QT_VERSION}.tar.xz | tar xJ --strip-components=1 && \
-    mkdir build && cd build && \
-    cmake -G Ninja \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_INSTALL_PREFIX=/usr/local \
-        -DCMAKE_PREFIX_PATH=/usr/local \
-        -DQT_BUILD_EXAMPLES=OFF \
-        -DQT_BUILD_TESTS=OFF \
-        .. && \
-    ninja && \
-    ninja install && \
-    ldconfig && \
-    rm -rf /tmp/build
-
-# Qwt (must be built against the Qt above - it has no Qt6 binary packages anywhere).
-#
-# The install prefix is changed from the default (a versioned directory like /usr/local/qwt-6.3.0)
-# to /usr/local so that pyGPlates' FindQwt.cmake finds it without any hints.
-# The designer plugin is disabled because it needs Qt Designer headers (from the qttools
-# module, which is not built here); the examples/playground/tests (all on by default) are
-# disabled because they just waste build time.
-WORKDIR /tmp/build
-RUN . /tmp/versions.sh && \
-    curl -sSL -o qwt.tar.bz2 https://sourceforge.net/projects/qwt/files/qwt/${QWT_VERSION}/qwt-${QWT_VERSION}.tar.bz2 && \
-    tar xjf qwt.tar.bz2 --strip-components=1 && \
-    sed -i \
-        -e 's|^\([[:space:]]*QWT_INSTALL_PREFIX[[:space:]]*=\).*|\1 /usr/local|' \
-        -e 's|^QWT_CONFIG[[:space:]]*+=[[:space:]]*\(QwtDesigner\b\|QwtExamples\|QwtPlayground\|QwtTests\)|# &|' \
-        qwtconfig.pri && \
-    qmake qwt.pro && \
-    make -j $(nproc) && \
-    make install && \
     ldconfig && \
     rm -rf /tmp/build
 
@@ -278,19 +225,23 @@ WORKDIR /
 RUN . /tmp/versions.sh && \
     ldconfig && \
     qmake -query QT_VERSION && \
-    test -f /usr/local/lib/libQt6Svg.so -o -f /usr/local/lib64/libQt6Svg.so && \
-    ls /usr/local/lib/libqwt.so && \
+    ls /usr/local/lib*/libQt6Core.so.6 && \
     for python_version in ${PYTHON_VERSIONS}; do \
         ls /usr/local/lib/libboost_python$(echo ${python_version} | tr -d .).so || exit 1; \
     done && \
-    ls /usr/local/lib*/libGLEW.so && \
     ls /usr/local/lib*/libproj.so && \
     ls /usr/local/lib*/libgdal.so && \
     test -d /usr/local/include/CGAL && \
     sccache --version && \
-    # Neither Qt nor GLEW may *directly* link the GLVND family (libEGL/libGLX/libOpenGL) -
-    # auditwheel would vendor those into the wheel, causing the segfault described above.
-    # (Direct DT_NEEDED entries only - transitive GLVND dependencies *of the whitelisted
-    # libGL* are fine, auditwheel does not traverse past whitelisted libraries.)
-    readelf -d /usr/local/lib*/libQt6Gui.so.6 /usr/local/lib*/libGLEW.so | grep -E 'File|NEEDED' && \
-    ! readelf -d /usr/local/lib*/libQt6Gui.so.6 /usr/local/lib*/libGLEW.so | grep NEEDED | grep -E 'libEGL|libGLX|libOpenGL'
+    # Qt Gui, Qwt and GLEW must stay gone: they are what the Qt configure flags above are for,
+    # and an accidental reappearance would be vendored into every wheel unnoticed.
+    ! ls /usr/local/lib*/libQt6Gui.* /usr/local/lib*/libqwt.* /usr/local/lib*/libGLEW.* 2> /dev/null && \
+    # libQt6Core may not need anything beyond the C/C++ runtime: the GLVND family and libX11
+    # would be vendored into the wheel by auditwheel (two copies of libGLdispatch in one
+    # process is the segfault at 'import pygplates' this image's history turns on), while
+    # GLib, ICU and D-Bus are whitelisted and so become system packages the user must install
+    # - which is what stopped the wheel importing on a bare python image.
+    # (Direct DT_NEEDED entries only, printed first so a failure here is diagnosable.)
+    readelf -d /usr/local/lib*/libQt6Core.so.6 | grep -E 'File|NEEDED' && \
+    ! readelf -d /usr/local/lib*/libQt6Core.so.6 | grep NEEDED | \
+        grep -E 'glib|gthread|libGL|libEGL|libicu|libdbus|libX11'
