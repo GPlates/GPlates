@@ -83,10 +83,14 @@ _PYGPLATES_MODULES = ('pygplates', 'pygplates.pygplates')
 _SKIP_MODULE_NAMES = frozenset(['iteritems', 'itervalues', 'listitems', 'listvalues'])
 
 # Class attributes that are implementation machinery, not API.
+#
+# '__firstlineno__' and '__static_attributes__' are set on every class defined in Python
+# (the pure-Python API classes, eg 'CrossoverType') by Python 3.13 and later only, so
+# emitting them would make the stub depend on the Python version that generated it.
 _SKIP_CLASS_ATTRS = frozenset([
     '__doc__', '__module__', '__qualname__', '__name__', '__dict__', '__weakref__',
     '__slots__', '__instance_size__', '__safe_for_unpickling__', '__getinitargs__',
-    '__reduce__',
+    '__reduce__', '__firstlineno__', '__static_attributes__',
 ])
 
 # A column-0 docstring signature line: 'name(args)'.
@@ -892,10 +896,10 @@ class TypeExpressionParser(object):
         resolved = self.generator.resolve_dotted(text)
         if isinstance(resolved, type) and self.generator._is_pygplates_module(
                 getattr(resolved, '__module__', '')):
-            return resolved.__qualname__
+            return self.generator.qualified_name(resolved)
         if resolved is not None and isinstance(resolved, int) and \
                 self.generator.is_enum_class(type(resolved)):
-            return type(resolved).__qualname__
+            return self.generator.qualified_name(type(resolved))
         return None
 
     def _parse_role(self, token):
@@ -911,6 +915,8 @@ class TypeExpressionParser(object):
             text = text[len('pygplates.'):]
         resolved = self.generator.resolve_dotted(text)
         if isinstance(resolved, type):
+            if self.generator._is_pygplates_module(getattr(resolved, '__module__', '')):
+                return self.generator.qualified_name(resolved)
             return resolved.__qualname__
         if text in ('int', 'float', 'str', 'bool', 'bytes', 'list', 'tuple', 'dict'):
             return text
@@ -1179,12 +1185,48 @@ class StubGenerator(object):
         self.uses_any = False
         self.uses_callable = False
         self.uses_classvar = False
+        self.uses_named_tuple = False
         self.uses_numpy = False
         self.uses_overload = False
         self.uses_sequence = False
         self.uses_os = False
+        # Dotted paths (from the module) at which each pygplates class is reachable - see
+        # 'qualified_name()'.
+        self._class_paths = None
 
     # -- Helpers -----------------------------------------------------------
+
+    def qualified_name(self, cls):
+        """
+        The name of a pygplates class as the stub spells it: 'NetworkTriangulation.Triangle'
+        for a nested class.
+
+        This comes from where the class is found in the module rather than from its
+        '__qualname__', because older Boost.Python (1.74, for example) sets '__qualname__'
+        of a nested class to just its own name ('Triangle'), which would make the stub
+        depend on the Boost version it was generated with.
+        """
+        if self._class_paths is None:
+            self._class_paths = {}
+            self._collect_class_paths(self.module, '')
+        paths = self._class_paths.get(id(cls), [])
+        if cls.__qualname__ in paths or not paths:
+            return cls.__qualname__
+        # '__qualname__' is unqualified: pick the (deepest) path that ends with it.
+        matching = [path for path in paths if path.split('.')[-1] == cls.__qualname__]
+        return max(matching or paths, key=lambda path: (path.count('.'), path))
+
+    def _collect_class_paths(self, scope, prefix):
+        for name, member in sorted(vars(scope).items()):
+            if name.startswith('_') or not isinstance(member, type) or \
+                    not self._is_pygplates_module(getattr(member, '__module__', '')):
+                continue
+            path = prefix + name
+            paths = self._class_paths.setdefault(id(member), [])
+            if path in paths or any(path.startswith(p + '.') for p in paths):
+                continue  # already recorded (or a class refers back to itself)
+            paths.append(path)
+            self._collect_class_paths(member, path + '.')
 
     def resolve_dotted(self, dotted):
         obj = self.module
@@ -1361,6 +1403,8 @@ class StubGenerator(object):
             typing_names.append('Callable')
         if self.uses_classvar:
             typing_names.append('ClassVar')
+        if self.uses_named_tuple:
+            typing_names.append('NamedTuple')
         if self.uses_sequence:
             typing_names.append('Sequence')
         if self.uses_overload:
@@ -1388,7 +1432,7 @@ class StubGenerator(object):
     def _annotation_for_value(self, value):
         value_type = type(value)
         if self._is_pygplates_module(getattr(value_type, '__module__', '')):
-            return value_type.__qualname__
+            return self.qualified_name(value_type)
         if value_type.__module__ == 'builtins':
             return value_type.__name__
         self.uses_any = True
@@ -1397,13 +1441,15 @@ class StubGenerator(object):
     # -- Classes -----------------------------------------------------------
 
     def _emit_class(self, name, cls, indent):
+        if issubclass(cls, tuple) and isinstance(getattr(cls, '_fields', None), tuple):
+            return self._emit_named_tuple(name, cls, indent)
         member_indent = indent + '    '
         lines = ['%sclass %s%s:' % (indent, name, self._format_bases(cls))]
 
         doc_text = _clean_docstring_text((cls.__doc__ or '').split('\n'), dedent=False)
         body = _format_docstring(doc_text, member_indent)
 
-        qualified_prefix = cls.__qualname__
+        qualified_prefix = self.qualified_name(cls)
         for member_name in sorted(vars(cls)):
             if member_name in _SKIP_CLASS_ATTRS:
                 continue
@@ -1426,7 +1472,7 @@ class StubGenerator(object):
         for base in cls.__bases__:
             base_module = getattr(base, '__module__', '')
             if self._is_pygplates_module(base_module):
-                bases.append(base.__qualname__)
+                bases.append(self.qualified_name(base))
             elif base_module == 'builtins' and base is not object:
                 bases.append(base.__name__)
             # Anything else ('Boost.Python.instance') is implementation detail.
@@ -1479,6 +1525,26 @@ class StubGenerator(object):
         self.uses_classvar = True
         return ['%s%s: ClassVar[%s]' % (indent, name, self._annotation_for_value(member))]
 
+    def _emit_named_tuple(self, name, cls, indent):
+        """
+        A 'collections.namedtuple' class (eg, 'Crossover') as a 'typing.NamedTuple'.
+
+        Emitting its members one by one would write out what 'namedtuple' generates
+        ('__new__', '__repr__', '__match_args__', and '__replace__' from Python 3.13), which
+        is not API and varies with the Python version - and would annotate its fields as
+        class variables rather than instance attributes.
+        """
+        self.uses_named_tuple = True
+        self.uses_any = True
+        member_indent = indent + '    '
+        lines = ['%sclass %s(NamedTuple):' % (indent, name)]
+        doc_text = _clean_docstring_text((cls.__doc__ or '').split('\n'), dedent=False)
+        lines.extend(_format_docstring(doc_text, member_indent))
+        # The fields have no type documentation to parse, so they are 'Any'.
+        for field in cls._fields:
+            lines.append('%s%s: Any' % (member_indent, field))
+        return lines
+
     # -- Enums -------------------------------------------------------------
 
     def _emit_enum(self, name, cls, indent=''):
@@ -1487,7 +1553,7 @@ class StubGenerator(object):
         lines = ['%sclass %s(int):' % (indent, name)]
         doc_text = _clean_docstring_text((cls.__doc__ or '').split('\n'), dedent=False)
         lines.extend(_format_docstring(doc_text, member_indent))
-        qualname = cls.__qualname__
+        qualname = self.qualified_name(cls)
         # Members ordered by integer value (their C++ declaration order).
         for value, member_name in sorted((int(member), member_name)
                                          for member_name, member in cls.names.items()):
@@ -1819,7 +1885,7 @@ class StubGenerator(object):
                 self.is_enum_class(default_type):
             for member_name, member in sorted(default_type.names.items()):
                 if int(member) == int(default):
-                    return '%s.%s' % (default_type.__qualname__, member_name)
+                    return '%s.%s' % (self.qualified_name(default_type), member_name)
             return '...'
         if default is None or isinstance(default, (bool, int, float, str)):
             return repr(default)
