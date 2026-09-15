@@ -10,7 +10,7 @@
 import numpy
 import os
 
-from typing import Any, Callable, ClassVar, Sequence, overload
+from typing import Any, Callable, ClassVar, NamedTuple, Sequence, overload
 
 __version__: str
 
@@ -38,48 +38,18 @@ class CoverageReturn(int):
     names: ClassVar[dict[str, CoverageReturn]]
     values: ClassVar[dict[int, CoverageReturn]]
 
-class Crossover(tuple):
+class Crossover(NamedTuple):
     """Crossover(type, time, moving_plate_id, young_crossover_fixed_plate_id, old_crossover_fixed_plate_id, young_crossover_rotation_sequence, old_crossover_rotation_sequence)
     """
-
-    def __getnewargs__(self) -> Any:
-        """Return self as a plain tuple.  Used by copy and pickle.
-        """
-
-    __match_args__: ClassVar[tuple]
-
-    @staticmethod
-    def __new__(_cls: Any, type: Any, time: Any, moving_plate_id: Any, young_crossover_fixed_plate_id: Any, old_crossover_fixed_plate_id: Any, young_crossover_rotation_sequence: Any, old_crossover_rotation_sequence: Any) -> Any:
-        """Create new instance of Crossover(type, time, moving_plate_id, young_crossover_fixed_plate_id, old_crossover_fixed_plate_id, young_crossover_rotation_sequence, old_crossover_rotation_sequence)
-        """
-
-    def __replace__(self, **kwds: Any) -> Any:
-        """Return a new Crossover object replacing specified fields with new values
-        """
-
-    def __repr__(self) -> Any:
-        """Return a nicely formatted representation string
-        """
-
-    moving_plate_id: ClassVar[Any]
-
-    old_crossover_fixed_plate_id: ClassVar[Any]
-
-    old_crossover_rotation_sequence: ClassVar[Any]
-
-    time: ClassVar[Any]
-
-    type: ClassVar[Any]
-
-    young_crossover_fixed_plate_id: ClassVar[Any]
-
-    young_crossover_rotation_sequence: ClassVar[Any]
+    type: Any
+    time: Any
+    moving_plate_id: Any
+    young_crossover_fixed_plate_id: Any
+    old_crossover_fixed_plate_id: Any
+    young_crossover_rotation_sequence: Any
+    old_crossover_rotation_sequence: Any
 
 class CrossoverResult:
-    __firstlineno__: ClassVar[int]
-
-    __static_attributes__: ClassVar[tuple]
-
     error: ClassVar[int]
 
     ignored: ClassVar[int]
@@ -89,10 +59,6 @@ class CrossoverResult:
     synchronised: ClassVar[int]
 
 class CrossoverType:
-    __firstlineno__: ClassVar[int]
-
-    __static_attributes__: ClassVar[tuple]
-
     ignore: ClassVar[int]
 
     synch_old_crossover_and_stages: ClassVar[int]
@@ -106,10 +72,6 @@ class CrossoverType:
     unknown: ClassVar[int]
 
 class CrossoverTypeFunction:
-    __firstlineno__: ClassVar[int]
-
-    __static_attributes__: ClassVar[tuple]
-
     @staticmethod
     def type_from_xo_tags_in_comment(crossover_time: Any, moving_plate_id: Any, young_crossover_fixed_plate_id: Any, old_crossover_fixed_plate_id: Any, young_crossover_rotation_sequence: Any, old_crossover_rotation_sequence: Any) -> Any:
         """Extracts the crossover type using the @xo_ys, @xo_yf, @xo_os and @xo_of tags in the
