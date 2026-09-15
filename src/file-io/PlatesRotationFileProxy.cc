@@ -264,11 +264,13 @@ GPlatesFileIO::PlatesRotationFileProxy::init(
 
 
 GPlatesFileIO::RotationFileReaderV2::RotationFileReaderV2() :
-	d_commnet_line_rx(COMMENT_LINE_REGEXP),
-	d_pole_rx(ROTATION_POLE_REGEXP),
-	d_attr_rx(ATTRIBUTE_LINE_REGEXP),
+	// Rotation files are user data, so match "\s" and "\d" against Unicode whitespace and digits
+	// (as QRegExp did) rather than the ASCII-only default of QRegularExpression.
+	d_commnet_line_rx(COMMENT_LINE_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
+	d_pole_rx(ROTATION_POLE_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
+	d_attr_rx(ATTRIBUTE_LINE_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
 	d_multi_line_attr_rx(MULTI_LINE_ATTR_REGEXP),
-	d_mprs_header_rx(MPRS_HEADER_REGEXP),
+	d_mprs_header_rx(MPRS_HEADER_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
 	d_last_moving_pid(0),
 	d_processing_mprs(false)
 {
@@ -342,7 +344,7 @@ GPlatesFileIO::RotationFileReaderV2::read(
 		RegExpVector::iterator begin = d_regexp_vec.begin(), end = d_regexp_vec.end();
 		for(;begin != end; begin++)
 		{
-			if( -1 != (*begin)->indexIn(next_line))
+			if((*begin)->match(next_line).hasMatch())
 			{
 				(this->*d_function_map[*begin])(rot_file, d_segmetns);
 				break;
@@ -412,25 +414,26 @@ GPlatesFileIO::RotationFileReaderV2::process_attribute_line(
 		}
 	}
 
+	static const QRegularExpression attr_rx(ATTRIBUTE_REGEXP);
+
 	while(-1 != buf.indexOf(ATTRIBUTE_LEADING_CHARACTER))
 	{
-		QRegExp rx (ATTRIBUTE_REGEXP);
 		bool is_multi_line_attr=false;
-		int idx = rx.indexIn(buf);
-		if(-1 == idx)// no simple attribute
+		QRegularExpressionMatch match = attr_rx.match(buf);
+		if(!match.hasMatch())// no simple attribute
 		{
-			rx = d_multi_line_attr_rx;
-			idx = rx.indexIn(buf);
-			if(-1 == idx) // no multiple line attribute either
+			match = d_multi_line_attr_rx.match(buf);
+			if(!match.hasMatch()) // no multiple line attribute either
 				break;
 			else
 				is_multi_line_attr = true;
 		}
 
 		//get the matched strings
-		QString attr_str = rx.cap(0);
-		QString attr_name = rx.cap(1);
-		QString attr_value = rx.cap(2);
+		int idx = match.capturedStart(0);
+		QString attr_str = match.captured(0);
+		QString attr_name = match.captured(1);
+		QString attr_value = match.captured(2);
 		container.push_back(boost::shared_ptr<RotationFileSegment>(
 				new AttributeSegment(attr_name, attr_value, is_multi_line_attr)));
 
@@ -554,11 +557,7 @@ bool
 GPlatesFileIO::RotationFileReaderV2::is_valid_rotation_pole_line(
 		const QString& str)
 {
-	QRegExp rx(ROTATION_POLE_REGEXP);
-	if(-1 == rx.indexIn(str))
-		return false;
-	else
-		return true;
+	return d_pole_rx.match(str).hasMatch();
 }
 
 bool
@@ -571,18 +570,17 @@ GPlatesFileIO::RotationFileReaderV2::parse_rotation_pole_line(
 	if(line.startsWith(COMMENT_LEADING_CHARACTER))
 		data.disabled = true;
 
-	QRegExp rx(ROTATION_POLE_REGEXP);
-	
-	if(-1 == rx.indexIn(str))
+	const QRegularExpressionMatch match = d_pole_rx.match(str);
+	if(!match.hasMatch())
 		return false;
-	
-	data.text = rx.cap(0);
-	data.moving_plate_id = rx.cap(1).toInt(); 
-	data.time = rx.cap(2).toDouble();
-	data.lat = rx.cap(3).toDouble();
-	data.lon = rx.cap(4).toDouble();
-	data.angle = rx.cap(5).toDouble();
-	data.fix_plate_id = rx.cap(6).toInt();
+
+	data.text = match.captured(0);
+	data.moving_plate_id = match.captured(1).toInt();
+	data.time = match.captured(2).toDouble();
+	data.lat = match.captured(3).toDouble();
+	data.lon = match.captured(4).toDouble();
+	data.angle = match.captured(5).toDouble();
+	data.fix_plate_id = match.captured(6).toInt();
 	return true;
 }
 

@@ -131,6 +131,7 @@ namespace GPlatesFileIO
 			InsufficientMemoryToLoadRaster,
 			ErrorGeneratingTexture,
 			UnrecognisedRasterFileType,
+			RasterReaderNotAvailable,
 			ErrorReadingRasterFile,
 			ErrorReadingRasterBand,
 			InvalidRegionInRaster,

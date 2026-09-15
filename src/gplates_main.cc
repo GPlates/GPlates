@@ -67,6 +67,7 @@
 #include "opengl/GLContext.h"
 
 #include "presentation/Application.h"
+#include "presentation/FileIOInjections.h"
 
 #include "qt-widgets/PythonInitFailedDialog.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -520,6 +521,11 @@ namespace
 		// dialogs such as QMessageBox (which happens in some file I/O code, but really shouldn't).
 		GPlatesGui::GPlatesQApplication qapplication(argc, argv);
 
+		// The command-line interface never constructs a 'GPlatesPresentation::Application', so
+		// it registers the file-io injections itself (no dialog parent: the shapefile mapper
+		// stays unregistered and OgrReader falls back to a default attribute mapping).
+		GPlatesPresentation::register_file_io_injections(NULL);
+
 		// Get the command-line arguments from QCoreApplication, now that there is one, rather
 		// than from CommandLineParser::get_command_line_arguments().
 		//
@@ -788,7 +794,6 @@ internal_main(int argc, char* argv[])
 	Q_INIT_RESOURCE(python);
 	Q_INIT_RESOURCE(gpgim);
 	Q_INIT_RESOURCE(qt_widgets);
-	Q_INIT_RESOURCE(python);
 
 	//on Ubuntu Natty, we need to set this env variable to avoid the funny looking of spherical grid.
 	#if defined(linux) || defined(__linux__) || defined(__linux)

@@ -29,8 +29,8 @@
 # Where the dependencies come from:
 #
 # - Qt: the official binaries, as on macOS (downloaded with aqtinstall).
-# - GLEW, zlib, PROJ, GDAL, GMP and MPFR: vcpkg (see 'vcpkg.json' for what is there and why).
-# - Qwt, Boost and CGAL: built here from the 'versions.sh' pins shared with the other platforms.
+# - zlib, PROJ, GDAL, GMP and MPFR: vcpkg (see 'vcpkg.json' for what is there and why).
+# - Boost and CGAL: built here from the 'versions.sh' pins shared with the other platforms.
 #
 # Requirements: Visual Studio 2022 (or its Build Tools) with the C++ x64 toolset, Git for
 # Windows (this is a bash script - cibuildwheel's hooks run in cmd, which is why 'pyproject.toml'
@@ -72,8 +72,8 @@ WHEEL_DIR=$(cd "$(dirname "$(cygpath --unix "$0")")" && pwd)
 # the single source of truth for all three platforms).
 . "${WHEEL_DIR}/versions.sh"
 
-# Put cl/nmake/the Windows SDK in this shell's environment (for Boost's b2 and Qwt's qmake,
-# which are not CMake builds and so cannot find Visual Studio for themselves).
+# Put cl/the Windows SDK in this shell's environment (for Boost's b2, which is not a CMake
+# build and so cannot find Visual Studio for itself).
 . "${WHEEL_DIR}/msvc_env.sh"
 
 NPROC=$(nproc)
@@ -118,8 +118,11 @@ fi
 # Qt (the official binaries, downloaded with aqtinstall - the same binaries the Qt online
 # installer provides, and the same ones the macOS deps script uses).
 #
-# 'qtbase' provides Core, Gui, Network, Widgets, Xml, OpenGL and OpenGLWidgets; 'qtsvg' provides
-# Svg; the 'qt5compat' module provides Core5Compat (QRegExp etc). Qwt below needs Svg/OpenGL too.
+# 'qtbase' is the smallest archive aqt offers and carries every base module; the pyGPlates
+# module links only Qt6Core ('cmake/check_linkage.py' fails the build if that ever changes) and
+# only Qt6Core.dll is vendored into the wheels, since delvewheel copies what is actually
+# referenced. Qt6Gui.dll and the rest still land in 'qt/bin' - the archive is all or nothing -
+# so do not read their presence as a sign that anything needs them.
 #
 # Installed to a version-less directory (unlike macOS, which points a 'qt/current' symlink at the
 # versioned one - Git for Windows has no usable symlinks), so the Qt version stays here in
@@ -129,10 +132,10 @@ if [ ! -f "${PYGPLATES_DEPS}/stamps/qt-${QT_VERSION}" ]; then
     rm -rf "${QT_DIR}" qt-download aqt-venv
     "${PYTHON_EXE}" -m venv aqt-venv
     ./aqt-venv/Scripts/pip -q install 'aqtinstall<4'
-    # '--archives qtbase qtsvg' limits the download to the parts of the base package we need
+    # '--archives qtbase' limits the download to the part of the base package we need
     # (skipping qtdeclarative, qttools etc, which are most of it).
     ./aqt-venv/Scripts/aqt install-qt windows desktop ${QT_VERSION} win64_msvc2019_64 \
-        -m qt5compat --archives qtbase qtsvg --outputdir qt-download
+        --archives qtbase --outputdir qt-download
     mv "qt-download/${QT_VERSION}/msvc2019_64" "${QT_DIR}"
     rm -rf qt-download
 
@@ -150,7 +153,7 @@ if [ ! -f "${PYGPLATES_DEPS}/stamps/qt-${QT_VERSION}" ]; then
     touch "${PYGPLATES_DEPS}/stamps/qt-${QT_VERSION}"
 fi
 
-# The vcpkg libraries (GLEW, zlib, PROJ, GDAL, GMP, MPFR - see 'vcpkg.json').
+# The vcpkg libraries (zlib, PROJ, GDAL, GMP, MPFR - see 'vcpkg.json').
 #
 # vcpkg is checked out at the baseline commit named in 'vcpkg.json', which is what pins these
 # libraries' versions - so the stamp is named after it and a baseline bump rebuilds them. The
@@ -238,40 +241,6 @@ if [ ! -f "${PYGPLATES_DEPS}/stamps/vcpkg-${VCPKG_BASELINE}" ]; then
     touch "${PYGPLATES_DEPS}/stamps/vcpkg-${VCPKG_BASELINE}"
 fi
 
-# Qwt (must be built against the Qt above - it has no Qt6 binary packages anywhere).
-#
-# Same qwtconfig.pri edits as the Linux image and the macOS build (install prefix, and no
-# designer plugin/examples/playground/tests), plus QwtDll is disabled so Qwt is built as a
-# static library: a Qwt DLL would need every consumer to compile with -DQWT_DLL (Qwt's headers
-# declare no import attributes without it), and Qwt is small enough that linking it into the
-# pyGPlates module is simpler than carrying a DLL for it.
-#
-# qmake's Windows makefiles build both a debug and a release configuration by default, and
-# nothing here builds against a debug Qt, so only the release one is asked for.
-if [ ! -f "${PYGPLATES_DEPS}/stamps/qwt-${QWT_VERSION}" ]; then
-    rm -rf qwt && mkdir qwt && cd qwt
-    curl -sSL -o qwt.tar.bz2 https://sourceforge.net/projects/qwt/files/qwt/${QWT_VERSION}/qwt-${QWT_VERSION}.tar.bz2
-    tar xjf qwt.tar.bz2 --strip-components=1
-    # ('-E' extended regexes, since the basic ones have no alternation; '@' as the substitution
-    # delimiter, since the deps prefix contains '/' and the regexes contain '|'.)
-    sed -i -E \
-        -e "s@^([[:space:]]*QWT_INSTALL_PREFIX[[:space:]]*=).*@\1 ${PYGPLATES_DEPS}@" \
-        -e 's@^QWT_CONFIG[[:space:]]*[+]=[[:space:]]*(QwtDesigner|QwtExamples|QwtPlayground|QwtTests)@# &@' \
-        -e 's@^([[:space:]]*)QWT_CONFIG[[:space:]]*[+]=[[:space:]]*QwtDll@\1# QWT_CONFIG += QwtDll@' \
-        qwtconfig.pri
-    # 'qwtbuild.pri' turns on 'debug_and_release' and 'build_all' for Windows, which overrides
-    # the qmake command line below and builds a debug Qwt as well - against a debug Qt, which
-    # is not installed (its libraries are deleted above). Comment both out. The command line
-    # still says 'CONFIG-=debug_and_release' because that is what clears the same setting where
-    # it also comes from: the compiler's own qmake spec, before any of Qwt's files are read.
-    sed -i -E 's@^([[:space:]]*CONFIG[[:space:]]*[+]=[[:space:]]*(debug_and_release|build_all))@#\1@' qwtbuild.pri
-    "${QT_DIR}/bin/qmake" qwt.pro CONFIG+=release CONFIG-=debug_and_release
-    nmake
-    nmake install
-    cd .. && rm -rf qwt
-    touch "${PYGPLATES_DEPS}/stamps/qwt-${QWT_VERSION}"
-fi
-
 # Boost (only the compiled non-Python libraries pyGPlates needs - Boost.Python is built per
 # Python version by 'build_boost_python.sh', which reuses this source tree, so the tree is NOT
 # deleted after installing).
@@ -352,7 +321,7 @@ require_vcpkg_version() {
         "${PYGPLATES_DEPS}/vcpkg/vcpkg/status")
     if [ "${_got}" != "$2" ]; then
         echo "error: vcpkg installed $1 ${_got:-(nothing)} but 'versions.sh' pins $1 $2. The vcpkg" >&2
-        echo "       baseline in 'vcpkg.json' and the GLEW/PROJ/GDAL pins in 'versions.sh' are meant" >&2
+        echo "       baseline in 'vcpkg.json' and the PROJ/GDAL pins in 'versions.sh' are meant" >&2
         echo "       to move together, as one act, so every platform's wheels ship the same versions" >&2
         echo "       of the libraries a user can feel." >&2
         exit 1
@@ -360,23 +329,18 @@ require_vcpkg_version() {
 }
 #
 # The vcpkg libraries are checked by their headers rather than their import libraries: a port
-# decides for itself what to call the library it installs (glew32.lib, proj_9.lib, ...), whereas
+# decides for itself what to call the library it installs (proj_9.lib, gdal.lib, ...), whereas
 # the header a dependent compiles against is the port's contract. The library directories are
 # listed in the log instead, so that a link failure later can be read against what is actually
 # installed.
 "${QT_DIR}/bin/qmake" -query QT_VERSION
-ls "${QT_DIR}/bin/Qt6Core.dll" "${QT_DIR}/bin/Qt6Gui.dll" "${QT_DIR}/bin/Qt6Widgets.dll" \
-    "${QT_DIR}/bin/Qt6Network.dll" "${QT_DIR}/bin/Qt6Svg.dll" "${QT_DIR}/bin/Qt6OpenGL.dll" \
-    "${QT_DIR}/bin/Qt6Core5Compat.dll"
-ls "${PYGPLATES_DEPS}/lib/qwt.lib"
+ls "${QT_DIR}/bin/Qt6Core.dll"
 ls "${PYGPLATES_DEPS}/lib/boost_program_options.lib" "${PYGPLATES_DEPS}/lib/boost_thread.lib"
-require_file "${VCPKG_PREFIX}/include/GL/glew.h" "GLEW"
 require_file "${VCPKG_PREFIX}/include/zlib.h" "zlib"
 require_file "${VCPKG_PREFIX}/include/proj.h" "PROJ"
 require_file "${VCPKG_PREFIX}/include/gdal.h" "GDAL"
 require_file "${VCPKG_PREFIX}/include/gmp.h" "GMP"
 require_file "${VCPKG_PREFIX}/include/mpfr.h" "MPFR"
-require_vcpkg_version glew "${GLEW_VERSION}"
 require_vcpkg_version proj "${PROJ_VERSION}"
 require_vcpkg_version gdal "${GDAL_VERSION}"
 # PROJ and GDAL read these data directories at run time, and the wheel build copies both into

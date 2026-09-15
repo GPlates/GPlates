@@ -38,13 +38,7 @@
 
 #include "ActionButtonBox.h"
 
- // Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
- // It has been deprecated since Qt 5.13.
- //
- // TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 #include "ConnectWFSDialog.h"
-#endif // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 
 #include "CreateFeatureDialog.h"
 #include "ExportCoordinatesDialog.h"
@@ -194,12 +188,6 @@ GPlatesQtWidgets::DigitisationWidget::handle_export()
 	}
 }
 
-// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-// It has been deprecated since Qt 5.13.
-//
-// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-
 void
 GPlatesQtWidgets::DigitisationWidget::handle_use_in_wfs()
 {
@@ -220,7 +208,6 @@ GPlatesQtWidgets::DigitisationWidget::handle_use_in_wfs()
 	}
 }
 
-#endif // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 
 
 void
@@ -233,18 +220,12 @@ GPlatesQtWidgets::DigitisationWidget::make_signal_slot_connections()
 			this,
 			SLOT(handle_export()));
 
-	// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-	// It has been deprecated since Qt 5.13.
-	//
-	// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 	// Use in WFS button to open the WFS dialog.
 	QObject::connect(
 			button_use_in_wfs,
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_use_in_wfs()));
-#endif
 
 	// Create... button to open the Create Feature dialog.
 	QObject::connect(
@@ -313,14 +294,6 @@ GPlatesQtWidgets::DigitisationWidget::handle_geometry_changed()
 	emit_clear_action_enabled_changed(has_geometry);
 	button_export_coordinates->setEnabled(has_geometry);
 
-	// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-	// It has been deprecated since Qt 5.13.
-	//
-	// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-	button_use_in_wfs->setEnabled(false);
-#else
 	button_use_in_wfs->setEnabled(has_geometry);
-#endif  // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 }
 

@@ -27,6 +27,7 @@
 
 #include <boost/foreach.hpp>
 
+#include "ColourQt.h"
 #include "FeatureTypeColourPalette.h"
 #include "GMTColourNames.h"
 #include "Palette.h"
@@ -96,13 +97,13 @@ GPlatesGui::RegionalPlateIdPalette::get_colour(const Key& k)  const
 
 		if(c)
 		{
-			HSVColour hsv = Colour::to_hsv(*c);
+			HSVColour hsv = hsv_from_colour(*c);
 			// spread the v values from 0.6-1.0
 			const double V_MIN = 0.6; // why 0.6? enough variation while not being too dark
 			const double V_MAX = 1.0;
 			const int V_STEPS = 13; // why 13? same rationale as for DEFAULT_COLOUR_ARRAY above
 			hsv.v = (*int_val % V_STEPS) / static_cast<double>(V_STEPS) * (V_MAX - V_MIN) + V_MIN;
-			return Colour::from_hsv(hsv);
+			return colour_from_hsv(hsv);
 		}
 	}
 	return boost::none;
@@ -212,14 +213,14 @@ namespace
 					data.float_array[2]);
 
 		case  CptParser::HSV:
-			return Colour(
+			return colour_from_qcolor(
 					QColor::fromHsvF(
 							data.float_array[0],
 							data.float_array[1],
 							data.float_array[2]));
 
 		case  CptParser::CMYK:
-			return Colour(
+			return colour_from_qcolor(
 					QColor::fromCmykF(
 							data.float_array[0],
 							data.float_array[1],
@@ -227,7 +228,7 @@ namespace
 							data.float_array[3]));
 
 		case  CptParser::RGB_HEX: 
-			return Colour(QColor(data.str_data));
+			return colour_from_qcolor(QColor(data.str_data));
 
 		case  CptParser::GREY:
 			return Colour( data.float_array[0], data.float_array[0], data.float_array[0]);

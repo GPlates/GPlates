@@ -37,7 +37,7 @@
 #include <boost/variant.hpp>
 #include <QDebug>
 #include <QFileInfo>
-#include <QRegExp>
+#include <QRegularExpression>
 
 #include "TranscribeSession.h"
 
@@ -989,7 +989,7 @@ namespace GPlatesPresentation
 		 * Regular expression for a variant of a draw style name that ends with
 		 * an underscore and a number (eg, "_1").
 		 */
-		const QRegExp DRAW_STYLE_NAME_VARIANT_REGEXP("^(.*)_\\d+$");
+		const QRegularExpression DRAW_STYLE_NAME_VARIANT_REGEXP("^(.*)_\\d+$");
 
 		/**
 		 * Return the draw style name with any integer suffixes (eg, "_1") removed.
@@ -999,9 +999,11 @@ namespace GPlatesPresentation
 				const QString &draw_style_name)
 		{
 			// Return the base part if ends with "_1" for example.
-			if (DRAW_STYLE_NAME_VARIANT_REGEXP.indexIn(draw_style_name) >= 0)
+			const QRegularExpressionMatch draw_style_name_variant_match =
+					DRAW_STYLE_NAME_VARIANT_REGEXP.match(draw_style_name);
+			if (draw_style_name_variant_match.hasMatch())
 			{
-				return DRAW_STYLE_NAME_VARIANT_REGEXP.cap(1);
+				return draw_style_name_variant_match.captured(1);
 			}
 
 			return draw_style_name;

@@ -3,9 +3,18 @@
 
 # Isolate binary files in case auto-detection algorithm fails.
 # These are extensions of binary files that exist in repository.
-*.{icns,ico,gz,dbf,shp,shx,png} binary
+# (One pattern per extension - gitattributes has no brace expansion.)
+*.icns binary
+*.ico binary
+*.gz binary
+*.dbf binary
+*.shp binary
+*.shx binary
+*.png binary
+*.tif binary
 
 *.sh text eol=lf
 
-# The generated pygplates type stub is byte-compared by the 'pygplates-stub-test' ctest.
+# The generated pygplates type stub is always written with LF, so a CRLF checkout would show every
+# regeneration as a whole-file change.
 *.pyi text eol=lf

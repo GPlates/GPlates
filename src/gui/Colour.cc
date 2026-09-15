@@ -80,84 +80,6 @@ DEFINE_COLOUR(aqua, 0.0, 1.0, 1.0)
 #undef DEFINE_COLOUR
 
 
-namespace
-{
-	inline
-	qreal
-	clamp_zero_one(
-			qreal value)
-	{
-		if (value < 0.0)
-		{
-			return 0.0;
-		}
-		else if (value > 1.0)
-		{
-			return 1.0;
-		}
-		else
-		{
-			return value;
-		}
-	}
-}
-
-
-GPlatesGui::HSVColour
-GPlatesGui::HSVColour::linearly_interpolate(
-		const GPlatesGui::HSVColour &first,
-		const GPlatesGui::HSVColour &second,
-		const double &position)
-{
-	const double one_minus_position = (1.0 - position);
-
-	// If either colour has a saturation of zero then it is achromatic (ie, gray or white) and hence
-	// the hue value is meaningless. In this case we want both colours to have the same hue so that
-	// we don't unnecessarily interpolate through a range of hues.
-	double first_h = first.h;
-	double second_h = second.h;
-	if (first.s < 1e-12)
-	{
-		first_h = second_h;
-	}
-	else if (second.s < 1e-12)
-	{
-		second_h = first_h;
-	}
-
-	// Hue is cyclic (wraps from 1.0 back to 0.0).
-	// So we need to take the shortest path between two colours.
-	const double h_delta = second_h - first_h;
-	double h_interp;
-	if (h_delta < -0.5)
-	{
-		h_interp = first_h * one_minus_position + (1.0 + second_h) * position;
-		if (h_interp > 1.0)
-		{
-			h_interp -= 1.0;
-		}
-	}
-	else if (h_delta > 0.5)
-	{
-		h_interp = (1.0 + first_h) * one_minus_position + second_h * position;
-		if (h_interp > 1.0)
-		{
-			h_interp -= 1.0;
-		}
-	}
-	else // Shortest path is directly between the two colours (no wrapping needed)...
-	{
-		h_interp = first_h * one_minus_position + second_h * position;
-	}
-
-	return HSVColour(
-			h_interp,
-			first.s * one_minus_position + second.s * position,
-			first.v * one_minus_position + second.v * position,
-			first.a * one_minus_position + second.a * position);
-}
-
-
 void
 GPlatesGui::convert_argb32_to_rgba8(
 		const boost::uint32_t *argb32_pixels,
@@ -271,28 +193,6 @@ GPlatesGui::Colour::Colour(
 	d_rgba[GREEN_INDEX] = green_;
 	d_rgba[BLUE_INDEX]  = blue_;
 	d_rgba[ALPHA_INDEX] = alpha_;
-}
-
-
-GPlatesGui::Colour::Colour(
-		const QColor &qcolor)
-{
-	d_rgba[RED_INDEX] = static_cast<float>(qcolor.redF());
-	d_rgba[GREEN_INDEX] = static_cast<float>(qcolor.greenF());
-	d_rgba[BLUE_INDEX] = static_cast<float>(qcolor.blueF());
-	d_rgba[ALPHA_INDEX] = static_cast<float>(qcolor.alphaF());
-}
-
-
-GPlatesGui::Colour::operator QColor() const
-{
-	QColor qcolor;
-	qcolor.setRgbF(
-			::clamp_zero_one(d_rgba[RED_INDEX]),
-			::clamp_zero_one(d_rgba[GREEN_INDEX]),
-			::clamp_zero_one(d_rgba[BLUE_INDEX]),
-			::clamp_zero_one(d_rgba[ALPHA_INDEX]));
-	return qcolor;
 }
 
 
@@ -457,38 +357,6 @@ GPlatesGui::Colour::to_cmyk(
 }
 
 
-GPlatesGui::Colour
-GPlatesGui::Colour::from_hsv(
-		const HSVColour &hsv)
-{
-	QColor qcolor;
-	qcolor.setHsvF(hsv.h, hsv.s, hsv.v, hsv.a);
-	return static_cast<Colour>(qcolor);
-}
-
-
-GPlatesGui::HSVColour
-GPlatesGui::Colour::to_hsv(
-		const Colour &colour)
-{
-	QColor qcolor = static_cast<QColor>(colour);
-#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
-	float h, s, v, a;
-#else
-	qreal h, s, v, a;
-#endif
-	qcolor.getHsvF(&h, &s, &v, &a);
-	// Qt returns -1 for achromatic colours (ie, grays, where saturation is zero).
-	// Set to a value in the range [0,1] since that's the expected range.
-	if (h < 0)
-	{
-		h = 0;
-	}
-
-	return HSVColour(h, s, v, a);
-}
-
-
 namespace
 {
 	// The parentheses around min/max are to prevent the windows min/max macros
@@ -541,23 +409,6 @@ GPlatesGui::Colour::to_rgba8(
 		result.components[i] = float_to_uint8(source_components[i]);
 	}
 	return result;
-}
-
-
-GPlatesGui::Colour
-GPlatesGui::Colour::from_qrgb(
-		const QRgb &rgba)
-{
-	return QColor::fromRgba(rgba);
-}
-
-
-QRgb
-GPlatesGui::Colour::to_qrgb(
-		const Colour &colour)
-{
-	QColor qcolor = colour;
-	return qcolor.rgba();
 }
 
 

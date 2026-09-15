@@ -10,6 +10,8 @@ set(srcs
     Application.h
     DeprecatedSessionRestore.cc
     DeprecatedSessionRestore.h
+    FileIOInjections.cc
+    FileIOInjections.h
     InternalSession.cc
     InternalSession.h
     LayerOutputRenderer.cc

@@ -9,12 +9,35 @@ same sources, selected by the CMake option `GPLATES_BUILD_GPLATES`. It is declar
 `cmake/modules/Version.cmake` (not `ConfigDefault.cmake`) and **defaults to `TRUE`**, so a
 pyGPlates build that omits `-DGPLATES_BUILD_GPLATES=FALSE` silently builds GPlates instead.
 
-Either product can be built from either develop branch. Default to the product matching the
-checked-out branch — `pygplates` branch to `build-pygplates/`, `gplates` branch to
-`build-gplates/` — but building the other product from the same worktree is normal and fine.
+There is one development branch, `gplates`, and both products are developed on it. Building
+either one from the same worktree is normal; keep them in separate build trees
+(`build-pygplates/`, `build-gplates/`) so neither reconfigure invalidates the other.
 
-Versions live in `cmake/modules/Version.cmake`: `GPLATES_SEMANTIC_VERSION` and
-`PYGPLATES_PEP440_VERSION`.
+Versions are **derived, not written**. `cmake/modules/VersionRelease.cmake` holds the release
+each line is heading towards (`GPLATES_RELEASE_VERSION`, `PYGPLATES_RELEASE_VERSION`), and
+`cmake/modules/VersionFromGit.cmake` adds a development number counted from the first-parent
+distance to the nearest release tag — giving `GPLATES_SEMANTIC_VERSION` (eg, `2.6.0-47`) and
+`PYGPLATES_PEP440_VERSION` (eg, `1.1.0.dev46`) in `cmake/modules/Version.cmake`. Do not add a
+literal version back: a hand-incremented development number has to anticipate the order in
+which branches *merge*, which is why the old one repeatedly collided and drifted.
+
+To see what a checkout resolves to, without configuring a build:
+
+```
+cmake -P cmake/modules/VersionFromGit.cmake pygplates
+cmake -P cmake/modules/VersionFromGit.cmake gplates
+```
+
+Counting needs the full history, so a shallow clone is refused rather than allowed to produce
+a plausible but wrong number. A build with no repository at all (a source archive, or a wheel
+built inside the Linux container) takes the versions from `-D` defines, environment variables
+of the same names, or the generated `cmake/modules/VersionRecorded.cmake` that ships in the
+sdist; `VersionFromGit.cmake` documents the whole resolution order.
+
+**Both versions are always resolved, whichever product is being built** — `src/global/Version.cc`
+is compiled into pyGPlates as well, and the GPlates version string reaches user data (exported
+shapefiles carry it). So supplying only `PYGPLATES_PEP440_VERSION` to a git-less pyGPlates build
+is not enough.
 
 ## Build
 
@@ -69,16 +92,18 @@ in Debug instead of throwing, which kills every test that exercises an error pat
 products enforce that differently, and the difference decides how you fix an empty run:
 
 - **pyGPlates** tests are registered `CONFIGURATIONS Release MinSizeRel`. Omitting `-C Release`
-  matches nothing and CTest still **exits 0**, so the run looks like a pass.
+  matches none of them and CTest still **exits 0**, so the run looks like a pass.
 - **GPlates** tests are registered by `gtest_discover_tests()`, which cannot attach
   `CONFIGURATIONS`, so they are instead skipped at *configure* time by
   `if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")` (`src/CMakeLists.txt`). A Debug build tree contains
-  no registered tests at all and **no `-C` value will reveal any** — reconfigure as Release. On a
+  no GPlates tests at all and **no `-C` value will reveal any** — reconfigure as Release. On a
   single-config Release tree a bare `ctest` does work; `-C Release` matters for the multi-config
   generators (Visual Studio, Xcode).
 
-So: zero tests from `build-pygplates` usually means a missing `-C Release`; zero tests from
-`build-gplates` usually means the tree was configured Debug.
+So: only `version-resolver-test` from `build-pygplates` usually means a missing `-C Release`, and
+only it from `build-gplates` usually means the tree was configured Debug. That one test carries
+no configuration restriction, deliberately — it runs a CMake script and builds nothing — so it
+runs, and passes, in exactly those mis-run cases. One passing test is not a green suite.
 
 The GPlates unit-test binary is `EXCLUDE_FROM_ALL`, so build it explicitly:
 
@@ -88,14 +113,14 @@ cmake --build build-gplates --target gplates gplates-unit-test
 
 Use GoogleTest for all new C++ tests; do not mix frameworks. Conventions (headless,
 working-directory independent, `GPLATES_UNIT_TEST_DATA_DIR`, `QTemporaryDir`, and leaving
-`git status` clean) are in `doc-cpp/design/testing/README.md`.
+`git status` clean) are in `docs/design/testing/README.md`.
 
 ## The pyGPlates module boundary
 
 The pygplates module compiles only the **include closure of the pyGPlates API** — not the
 whole tree. The layering, the rules for new files (which directory kind defaults to
 GPlates-only, `.h`/`.cc` pairing for AUTOMOC, no `QMessageBox` in shared code) and the
-enforcement are described in `doc-cpp/design/architecture/README.md`. Two pyGPlates CTests
+enforcement are described in `docs/design/architecture/README.md`. Two pyGPlates CTests
 enforce the boundary: `pygplates-source-closure-test` (the source list must equal the
 closure computed by `cmake/pygplates_source_closure.py`, which also drift-checks the
 committed dependency matrix) and `pygplates-linkage-test` (`cmake/check_linkage.py` - the
@@ -103,21 +128,18 @@ built module must have no direct dependency on GPlates' GUI/rendering libraries)
 either fails after adding a file or an `#include`, the failure message says which CMake list
 to fix — do that rather than weakening the tracer.
 
-CI coverage gap: each develop branch's workflow builds only its own product
-(`build-test-pygplates.yml` → pyGPlates, `build-test-gplates.yml` → GPlates), so CI will not
-catch a change to the shared sources or the CMake source lists breaking the *other* product.
-Build both **locally** before pushing such a change: pyGPlates and GPlates under Qt6, plus
-GPlates under Qt5 when the change could plausibly be Qt-version-sensitive (the Qt5-only
-`list(APPEND srcs …)` blocks, any `QT_VERSION` conditional, `qt-widgets`, or a Qt include
-whose header moved between Qt5 and Qt6). The Qt5 build needs a second conda environment (see
-*Build* above); if it is not set up, say what you could not verify rather than skipping it
-silently. The nastiest case: a change landing on `gplates` (the default branch, which the
-downstream fork tracks) that breaks pyGPlates surfaces only at the next sync merge into
-`pygplates`, where it looks like the merge's fault.
+**CI builds both products on every push**, which is what makes the boundary enforceable: the
+two CTests above are pyGPlates tests, so only a pyGPlates build can run them. Until the develop
+branches were unified each workflow ran on its own branch and built only its own product, and a
+change to the shared sources or the CMake source lists could break the other product undetected
+— discovered at the next sync merge, where it looked like the merge's fault. Both defects PR #70
+fixed had been hiding in exactly that gap.
 
-The gap could be closed by adding the other product's configure+build to each workflow, at the
-cost of roughly doubling CI compute per push. That is a maintainer decision, recorded here so
-it can be made deliberately — not a change to make in passing (see *Working agreements*).
+What CI still does **not** cover is Qt5. Build GPlates under Qt5 locally before pushing a change
+that could plausibly be Qt-version-sensitive (any `QT_VERSION` conditional, `qt-widgets`, or a Qt
+include whose header moved between Qt5 and Qt6). That needs a second conda environment (see
+*Build* above); if it is not set up, say what you could not verify rather than skipping it
+silently.
 
 ## Python API docstrings and the `.pyi` stub
 
@@ -138,16 +160,17 @@ python pygplates/stub/generate_stub.py --module-dir <dir-containing-built-pygpla
 
 `--check` only compares and exits non-zero; `--output` is what actually rewrites the stub.
 
-`*.pyi` is pinned to LF in `.gitattributes` because `pygplates-stub-test` compares bytes.
+`*.pyi` is pinned to LF in `.gitattributes` because `--output` always writes LF; a CRLF checkout
+would show every regeneration as a whole-file change (`--check` ignores line endings).
 
 The docstring conventions are strict and are the highest-value style document in the repo:
-`doc-python-api/README.md`
+`docs/pygplates/README.md`
 
 ## Docs
 
 ```
 conda env update -n gplates -f env.docs.yml
-cmake --build <build-dir> --config Release --target doc-python-api
+cmake --build <build-dir> --config Release --target docs-pygplates
 ```
 
 Sphinx must run in the same interpreter pyGPlates was built against (autodoc imports the module
@@ -156,7 +179,7 @@ a `sphinx-build` on `PATH`. Sphinx runs with `-W`, so warnings are errors.
 
 **Build docs from scratch for anything published.** An incremental rebuild silently drops *all*
 index entries from `searchindex.js` while leaving the HTML identical. Delete
-`<build-dir>/doc-python-api/_doctrees` and `generated/`, or pass `-E`. Removing or renaming a
+`<build-dir>/docs/pygplates/_doctrees` and `generated/`, or pass `-E`. Removing or renaming a
 class also requires deleting its stale `generated/*.rst` or the build fails.
 
 ## Code style
@@ -169,7 +192,9 @@ new code is expected to match it. Measured over `src/`:
   functions *and* for `if` / `for` / `while` bodies (~92%). Do not use K&R style.
 - **Wrap at 100 columns.** (Much of the existing tree wraps nearer 80; 100 is the current target,
   and ~97% of existing lines already fit it. Don't rewrap old code to suit it.)
-- **Pointer and reference tokens bind to the name**: `Type *name`, never `Type* name`.
+- **Pointer and reference tokens bind to the name**: `Type *name` and `Type &name`, never
+  `Type* name` or `Type& name`. This one wins over the file-matching rule below: a few older
+  files bind them to the type, and new code in them still binds to the name.
 - **Data members are prefixed `d_`** — `d_feature_ref`, `d_is_active`.
 - **Function and method signatures always break across lines**, however short they are. The return
   type goes on its own line, the name and `(` on the next, and **every** parameter on its own line
@@ -202,23 +227,32 @@ Where this guidance and a specific file disagree, match the file you are editing
 
 ## Branches and pull requests
 
-The branching model is a gitflow variant, described in `README.md`.
+This is **no longer** gitflow — it is the trunk-plus-release-series model, described in `README.md`
+and argued for in `docs/design/versioning/README.md`.
 
-- **develop** branches: `gplates` (the repository's default branch) and `pygplates`. These are
-  kept closely in sync — GPlates-related work is done on `gplates` and pyGPlates-related work on
-  `pygplates`, but they are otherwise near-identical.
-- **main** branches: `release-gplates` and `release-pygplates` track release history.
-- Short-lived branches: `feature/<name>`, `release/{gplates,pygplates}-<version>`,
-  `hotfix/{gplates,pygplates}-<version>`.
+- **`gplates`** is the single development branch and the repository's default. Both products are
+  developed on it; there is no per-product branch. (It will be renamed `main` in a later change.)
+- **release series** branches — `release/gplates-<X.Y>`, `release/pygplates-<X.Y>` — are
+  permanent, cut from `gplates` when the first release in the series is prepared. **Release tags
+  live only here**, never on `gplates`: candidates, the release, and each later patch release are
+  successive commits on the one branch, so the tip is always the newest X.Y.z. There is no
+  `hotfix/` concept and no permanent 'production' branch.
+- **short-lived** branches: `feature/<name>` and `fix/<name>` off `gplates` (a fix rather than a
+  feature, but otherwise identical), and patch branches off a release series branch.
+- **fixes move between `gplates` and a series branch by `git cherry-pick -x`**, in either
+  direction — never by merging a series branch into `gplates`. Such a merge conflicts on
+  `VersionRelease.cmake` every time (each side has moved its release target), and when it does
+  not conflict it silently hands `gplates` the series branch's target.
 
-**Base pull requests on the develop branch you are working from — `pygplates` or `gplates` —
-never on a `release-*` branch.** CI enforces this: `build-test-pygplates.yml` only runs on
-`pygplates` and `build-test-gplates.yml` only on `gplates`.
+**Base pull requests on `gplates`, never on a release series branch.** CI enforces this: both
+`build-test-gplates.yml` and `build-test-pygplates.yml` run only on `gplates`. Building **both**
+products on every push is deliberate — it is what closes the coverage gap that two develop
+branches used to leave open (see *The pyGPlates module boundary*).
 
 Pull requests are merged with a merge commit (`Merge pull request #N from …`), so a branch's
 commits become the permanent record. **Whether to tidy a branch before merging is a judgement
-about that branch, not a convention** — neither develop branch has a squash policy, and they do
-not differ in this any more than in anything else. Ask what a reader hitting the commit in
+about that branch, not a convention** — there is no squash policy. Ask what a reader hitting the
+commit in
 `git log` or `git bisect` a year from now gets from it:
 
 - **Squash** commits that exist only because of iteration — "fix the CI", "try again", a typo
@@ -232,6 +266,19 @@ When in doubt, keep. Rewriting a branch that has already been pushed is a decisi
 author, not something to do in passing: force-pushing detaches any review comments, and other
 people may have fetched it.
 
+**Commit messages.** Because the commits are the permanent record, write them for that reader:
+
+- Subject: imperative mood, no trailing period, **at most 72 characters**, ideally 50-65. Tools
+  that show one line per commit (`git log --oneline`, GitHub's commit list, shortlogs) cut or
+  wrap anything longer.
+- A blank line, then a body wrapped at 72 columns.
+- The body says *why*, and what the diff cannot show: the alternative rejected, the trap avoided,
+  how the change was verified. Don't narrate the diff, list files, or restate a comment or doc
+  the commit adds — point to it instead.
+- Scale the body to the change. A one-line fix needs a line or two, or none; a body longer than
+  its diff is a signal to cut. The message should still make sense on its own.
+- No Conventional Commits `type:` prefixes; nothing here consumes them.
+
 The GitHub remote is `https://github.com/GPlates/GPlates.git`, usually named `origin`. Some
 checkouts give it another name and have no `origin` at all, so **name the remote explicitly** in
 push and fetch commands rather than assuming. There is an active downstream fork tracking the
@@ -239,8 +286,21 @@ push and fetch commands rather than assuming. There is an active downstream fork
 
 ## Releases (pyGPlates wheels)
 
-Set `PYGPLATES_PEP440_VERSION` in `cmake/modules/Version.cmake`, commit, then tag **exactly**
-`PyGPlates-<version>`; the workflow fails in its first minute on a mismatch or a `.dev` version.
+Set `PYGPLATES_RELEASE_VERSION` in `cmake/modules/VersionRelease.cmake` to the release version,
+commit, then tag **exactly** `PyGPlates-<version>` on the release series branch
+`release/pygplates-<X.Y>` (release tags belong only there — see *Branches and pull requests*).
+Pushing the tag starts the run, which fails in its first minute on a mismatch or a `.dev`
+version. A development version is built only by a manual dispatch — from a `PyGPlates-*.dev*`
+tag, by preference, so that the build stays findable — and a dispatch can never publish.
+Standing on the release tag, the derived version *is* the release target (no development
+number), which is what makes the two agree. Afterwards move the
+targets on, on both branches: the series branch to the next patch after a release (nothing after
+a candidate — the next commit there prepares the next candidate or the release, and nothing else
+is accepted until the release is final), and `gplates` to the next minor when the series gets its
+*first* tag. Left behind, the following commit resolves to a version sorting below the one just
+released, or re-issues numbers the development branch has already used — a hard error rather
+than a bad package. The resolver also refuses a target that sorts below the nearest release or
+skips a version; `cmake -P cmake/modules/VersionFromGitTest.cmake` runs those rules as tests.
 Publishing uses PyPI Trusted Publishing (OIDC, no tokens) and pauses for manual approval on the
 `pypi` deployment environment. **Renaming `.github/workflows/build-wheels.yml` silently breaks
 publishing** — the trusted-publisher registration binds to the filename. Adding a Python version
@@ -255,3 +315,31 @@ requires updating both `[tool.cibuildwheel].build` in `pyproject.toml` and `PYTH
   that its per-platform `config-settings` tables *override* rather than merge with the base table.
 - The `pygplates.pygplates` private submodule must not be flattened: `dill` resolves dotted names
   via `getattr` on the parent package, unlike stdlib `pickle`.
+
+### Changelogs
+
+Each product has its own: `CHANGELOG-GPlates.md` and `CHANGELOG-pyGPlates.md`, newest release
+first. A pull request that changes something users can see adds its entry **in the same pull
+request**, under the product's `(unreleased)` section — the author has the context, and whoever
+prepares the release does not.
+
+- One bullet per change, describing what changed for the user; sub-bullets only for detail a user
+  needs. No implementation detail or file names. Descriptive, not verbose — the same standard as
+  commit messages.
+- A change in shared code that users of both products can see goes in both files, worded for each
+  audience: menus and dialogs for GPlates, API names for pyGPlates.
+- Refactors, CI and build plumbing that users cannot see get no entry.
+
+### Planning documents
+
+Plans, status tables, findings reports and step lists do not merge into `gplates`. They may live on
+a feature branch while the work is in progress (to move it between machines, say), but before that
+branch merges, distil them and delete them:
+
+- rationale, constraints and rejected alternatives go into `docs/design/`, or the README next to
+  the code;
+- traps go into comments at the code where they bite;
+- user-visible changes go into the changelog.
+
+Design documents describe the design as it is and why. They may record rejected alternatives and
+deferred work, but not progress.

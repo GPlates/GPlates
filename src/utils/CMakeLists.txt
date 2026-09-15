@@ -82,8 +82,6 @@ set(srcs
     XmlNamespaces.h
     XPath.cc
     XPath.h
-    XQueryUtils.cc
-    XQueryUtils.h
 )
 
 # GPlates-only sources: excluded from the pygplates module, whose source list is the

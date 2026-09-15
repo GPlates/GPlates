@@ -65,6 +65,8 @@ GPlatesQtWidgets::ConnectWFSDialog::ConnectWFSDialog(
 			parent_, 
 			Qt::Window),
 	d_app_state(app_state),
+	d_reply(NULL),
+	d_xml_file(NULL),
 	d_request_id(0),
 	d_httpRequestAborted(false)
 {
@@ -85,6 +87,10 @@ GPlatesQtWidgets::ConnectWFSDialog::ConnectWFSDialog(
 
 	// set up progress dialog 
 	d_progress_dlg = new QProgressDialog(this);
+	// A QProgressDialog shows itself minimumDuration() after construction unless reset, which
+	// would pop up an empty one a few seconds after this dialog opens (whose Cancel would then
+	// abort a request that was never made). downloadFile() shows it when there is a request.
+	d_progress_dlg->reset();
 	QObject::connect( 
 		d_progress_dlg, 
 		SIGNAL(canceled()), 
@@ -315,7 +321,10 @@ void
 GPlatesQtWidgets::ConnectWFSDialog::cancelDownload()
 {
 	d_httpRequestAborted = true;
-	d_reply->abort();
+	if (d_reply)
+	{
+		d_reply->abort();
+	}
 	d_progress_dlg->hide();
 }   
 
@@ -334,6 +343,7 @@ GPlatesQtWidgets::ConnectWFSDialog::httpFinished()
              d_xml_file = 0;
 		}
 		d_reply->deleteLater();
+		d_reply = 0;
 
 		d_progress_dlg->hide();
 		return;
@@ -365,12 +375,34 @@ GPlatesQtWidgets::ConnectWFSDialog::httpFinished()
 				tr("Redirect to %1 ?").arg(newUrl.toString()),
 				QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) 
 		{
-             d_url = newUrl;
-             d_reply->deleteLater();
-             d_xml_file->open(QIODevice::WriteOnly);
-             d_xml_file->resize(0);
-             startRequest(d_url);
-             return;
+			d_url = newUrl;
+			d_reply->deleteLater();
+			// Reopened to receive the redirected download. If it cannot be, there is
+			// nowhere to put the response - every write in 'httpReadyRead()' would fail
+			// silently, with the progress dialog already hidden - so abandon the transfer
+			// instead of issuing the request. This is the cleanup below the if/else chain,
+			// which returning here skips, less the 'deleteLater()' just done.
+			if (!d_xml_file->open(QIODevice::WriteOnly))
+			{
+				QMessageBox::information(
+					this, tr("HTTP"),
+					tr("Could not reopen the download file: %1.")
+							.arg(d_xml_file->errorString()));
+				d_reply = 0;
+				d_xml_file->remove();
+				delete d_xml_file;
+				d_xml_file = 0;
+				d_xml_data.clear();
+				return;
+			}
+			// The bytes received before the redirect are dropped from the file; drop them
+			// from the buffer too, or 'process_xml()' sees them in front of the payload
+			// that follows and neither the "<?xml" check nor the feature count means
+			// anything.
+			d_xml_file->resize(0);
+			d_xml_data.clear();
+			startRequest(d_url);
+			return;
 		}
 	} 
 	else 
@@ -439,6 +471,9 @@ GPlatesQtWidgets::ConnectWFSDialog::process_xml()
 	{
 		QErrorMessage *e = new QErrorMessage( this );
 		e->showMessage("Error with query or returned XML; Please Cancel;");
+		// Discard it, as the path below does on the way out: left in the buffer it would
+		// sit in front of the next query's response.
+		d_xml_data.clear();
 		return;
 	}
 	

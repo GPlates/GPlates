@@ -1,48 +1,58 @@
 {% set name = "pygplates" %}
-{% set version = "1.0.0" %}
+
+# LOCAL form (this repository): the version comes from the PYGPLATES_PEP440_VERSION environment
+# variable, and the source is a clone of this checkout (committed files only, like the sdist).
+# Export it before building:
+#
+#     export PYGPLATES_PEP440_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
+#
+# That is the same resolver the build itself uses ('cmake/modules/VersionFromGit.cmake'), but
+# the recipe cannot run it: conda-build renders this file with Jinja, which has no way to run a
+# command. It is 'environ[...]' rather than 'environ.get(...)' so an unset variable fails here,
+# rather than rendering the package as version "None".
+#
+# The conda-forge FEEDSTOCK form replaces this block and the 'source:' block below - both halves
+# have to be swapped together, and README.md has the steps.
+{% set version = environ["PYGPLATES_PEP440_VERSION"] %}
+#
+# FEEDSTOCK form, half one: delete the '{% set version %}' line above and uncomment the line below,
+# dropping its leading '# '. It has to stay ABOVE 'package:'. Jinja runs '{% set %}' statements in
+# document order, so a version set after its use renders as blank and the recipe goes to conda-forge
+# with no version at all - while the 'url:' below still interpolates correctly, which hides that.
+#
+# {% set version = "1.1.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  path: ../../
+  git_url: ../../
 
-  #url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  #sha256: 24d5eccfb1716d4fd1eb109d0a46cf62a58e247676623ff578d773904b94e645
+# FEEDSTOCK form, half two: replace the 'source:' block above with these three lines, minus their
+# leading '# '. From then on the autotick bot maintains the version, the sha256 and the build
+# number. Inert as it stands: conda-build blanks every comment line before it renders the Jinja.
+#
+# source:
+#   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+#   sha256: <sha256 of the PyPI sdist>
 
 build:
   number: 0
 
 requirements:
   build:
+    # Cross builds (conda-forge cross-compiles linux-aarch64, linux-ppc64le and osx-arm64).
     - python                                 # [build_platform != target_platform]
     - cross-python_{{ target_platform }}     # [build_platform != target_platform]
     - numpy                                  # [build_platform != target_platform]
     - cmake
     - make  # [unix]
     - {{ compiler('c') }}
-    # Note: stdlib("c") should only be specified in the conda-forge feedstock (not for local conda builds).
-    #       Otherwise local conda builds will give a dependency error that "c_win-64 does not exist".
-    #- {{ stdlib("c") }}
+    # Locally this needs the c_stdlib values in conda_build_config.yaml (conda-build has no default
+    # and would ask for a nonexistent 'c_win-64'); conda-forge supplies them itself.
+    - {{ stdlib("c") }}
     - {{ compiler('cxx') }}
-    - libdrm                             # [linux]
-    - libegl-devel                       # [linux]
-    - libgl-devel                        # [linux]
-    - xorg-libx11                        # [linux]
-    - xorg-libxau                        # [linux]
-    - xorg-libxcomposite                 # [linux]
-    - xorg-libxcursor                    # [linux]
-    - xorg-libxdamage                    # [linux]
-    - xorg-libxext                       # [linux]
-    - xorg-libxi                         # [linux]
-    - xorg-libxrandr                     # [linux]
-    - xorg-libxrender                    # [linux]
-    - xorg-libxscrnsaver                 # [linux]
-    - xorg-libxtst                       # [linux]
-    - xorg-libxxf86vm                    # [linux]
-    - xorg-xorgproto                     # [linux]
-    - {{ cdt('libselinux-devel') }}      # [linux]
   host:
     - python
     - pip
@@ -50,40 +60,55 @@ requirements:
     # explains them - conda-build runs pip without build isolation, so this pin (not that one)
     # selects the backend version here.
     - scikit-build-core >=0.11.1,<2
+    # Must be NumPy 2.x at build time (pyproject's 'numpy>=2.0' build requirement is not enforced
+    # here): a module built against 1.x refuses to import under NumPy 2. conda-forge pins numpy 2;
+    # conda_build_config.yaml does the same locally. Without NumPy, configure only warns and the
+    # module silently loses NumPy scalar support (src/CMakeLists.txt).
     - numpy
+    # CGAL is header-only (no run_exports), so host-only. GMP/MPFR reach the link line only through
+    # the CGAL::CGAL target; their run_exports cover run time.
     - cgal-cpp
     - gmp
     - mpfr
-    - glew
-    - libopengl-devel  # [linux]
-    - libgl-devel      # [linux]
-    - libglx-devel     # [linux]
-    - libglu           # [linux]
-    - xorg-libxfixes   # [linux]
-    - qt-main
+    # The module links Qt Core ONLY (src/CMakeLists.txt) - no Gui/Widgets/OpenGL - so no GLEW, Qwt,
+    # libGL/EGL/GLX/GLU or X11 anywhere in this recipe. The test block fails if any creep back.
+    - qt6-main
     - libboost-devel
     - libboost-python-devel
+    # The metapackage, not libgdal-core: its run_exports carry the plugin drivers (netCDF etc).
     - libgdal
     - proj
-    - qwt
     - zlib
   run:
+    # Explicit as well as via the host run_exports (belt-and-braces: the feedstock builds with
+    # error_overlinking). Each of these is absorbed by the pinned run_export of the same package,
+    # so naming it costs nothing. 'zlib' is deliberately NOT among them: the library the module
+    # links is libz/zlib1, which ships in 'libzlib', and host 'zlib' exports a pin on that. Naming
+    # 'zlib' here adds a second, unpinned dependency on the development package instead.
     - python
-    - glew
-    - libglu     # [linux]
-    - qt-main
+    - numpy
+    - qt6-main
     - libgdal
     - proj
-    - qwt
-    - zlib
 
 test:
   source_files:
     - pygplates/test
+    - cmake/check_linkage.py
+  requires:
+    # check_linkage.py lists dependencies with readelf on Linux (unprefixed, from 'binutils').
+    - binutils  # [linux]
   imports:
     - pygplates
   commands:
-    - python pygplates/test/test.py
+    # Mirrors the wheel test-command in pyproject.toml. '-X faulthandler' prints the Python stack if
+    # the native module crashes. test.py writes into its own fixtures/ (source_files are copied to a
+    # writable directory) and fails unless at least 400 tests ran.
+    - python -X faulthandler pygplates/test/test.py
+    # Fails if the installed module links Qwt/GLEW/OpenGL/Qt Gui|Widgets|Svg. Skipped on Windows:
+    # dumpbin is not on PATH in a conda test environment and the script fails loudly without its
+    # lister (the wheel CI covers Windows linkage).
+    - python cmake/check_linkage.py --installed  # [not win]
 
 about:
   home: https://www.gplates.org/

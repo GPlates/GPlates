@@ -30,6 +30,8 @@
 
 #include "QtWidgetUtils.h"
 
+#include "gui/ColourQt.h"
+
 
 GPlatesQtWidgets::ChooseColourButton::ChooseColourButton(
 		QWidget *parent_) :
@@ -64,7 +66,7 @@ GPlatesQtWidgets::ChooseColourButton::set_colour(
 
 	// Create an icon to display the colour.
 	QPixmap pixmap(iconSize());
-	pixmap.fill(colour);
+	pixmap.fill(GPlatesGui::qcolor_from_colour(colour));
 	setIcon(QIcon(pixmap));
 
 	Q_EMIT colour_changed(*this);

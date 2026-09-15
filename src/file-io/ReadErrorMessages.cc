@@ -432,6 +432,10 @@ namespace
 		{ GPlatesFileIO::ReadErrors::UnrecognisedRasterFileType,
 				QT_TR_NOOP("Unrecognised raster file type."),
 				QT_TR_NOOP("The raster file was of an unrecognised type.") },
+		{ GPlatesFileIO::ReadErrors::RasterReaderNotAvailable,
+				QT_TR_NOOP("Raster reader not available."),
+				QT_TR_NOOP("The raster file is of a recognised type, but the reader for that type "
+					"is not available in this build (it is part of the GPlates desktop application).") },
 		{ GPlatesFileIO::ReadErrors::ErrorReadingRasterFile,
 				QT_TR_NOOP("Error reading raster file."),
 				QT_TR_NOOP("An error was encountered while opening a raster file for reading.") },

@@ -247,8 +247,30 @@ def suite():
     
     return suite
 
+# The lower bound on the number of tests the run must contain.
+#
+# The suite is assembled from hand-maintained lists (the 'test_cases' and 'test_modules' lists in
+# 'suite()' above, and the equivalent lists in the sibling test modules), so a test case - or an
+# entire module - can drop out of the run without anything failing. An empty suite is the extreme
+# case: 'unittest' prints "NO TESTS RAN", but 'wasSuccessful()' is still True and the exit status
+# is still 0, so the run passes having tested nothing.
+#
+# This is a floor, *not* an exact count, and is deliberately not meant to be updated whenever a
+# test is added. At the time of writing the suite holds 441 tests (223 from 'test_model', 134 from
+# 'test_maths', 77 from 'test_app_logic' and 7 from this module), so this catches an empty run and
+# the loss of any one of the three sibling modules. It cannot catch a single unregistered test
+# case; only raise it if it stops being a useful lower bound.
+MINIMUM_EXPECTED_TESTS = 400
+
 if __name__ == "__main__":
     test_result = unittest.TextTestRunner().run(suite())
+    if test_result.testsRun < MINIMUM_EXPECTED_TESTS:
+        # Note: this is reported separately from the 'unittest' verdict because it is not a failing
+        # test - it means tests that should have run were never registered in the first place.
+        sys.stderr.write(
+                "Only %d tests ran, expected at least %d. A test case or module is probably missing "
+                "from the lists in 'suite()'.\n" % (test_result.testsRun, MINIMUM_EXPECTED_TESTS))
+        sys.exit(1)
     if test_result.wasSuccessful():
         sys.exit(0)
     else:

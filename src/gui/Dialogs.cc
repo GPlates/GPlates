@@ -64,13 +64,7 @@
 #include "qt-widgets/ConfigureTextOverlayDialog.h"
 #include "qt-widgets/ConfigureVelocityLegendOverlayDialog.h"
 
-// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-// It has been deprecated since Qt 5.13.
-//
-// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 #include "qt-widgets/ConnectWFSDialog.h"
-#endif // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 
 #include "qt-widgets/CreateVGPDialog.h"
 #include "qt-widgets/DrawStyleDialog.h"
@@ -377,12 +371,6 @@ GPlatesGui::Dialogs::pop_up_configure_velocity_legend_overlay_dialog()
 	}
 }
 
-// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-// It has been deprecated since Qt 5.13.
-//
-// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-
 GPlatesQtWidgets::ConnectWFSDialog &
 GPlatesGui::Dialogs::connect_wfs_dialog()
 {
@@ -404,7 +392,6 @@ GPlatesGui::Dialogs::pop_up_connect_wfs_dialog()
 	connect_wfs_dialog().pop_up();
 }
 
-#endif // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 
 
 GPlatesQtWidgets::CreateVGPDialog &

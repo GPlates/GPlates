@@ -8,6 +8,10 @@
 set(srcs
     AgeModelReader.cc
     AgeModelReader.h
+    ArbitraryNodeProcessor.h
+    ArbitraryXmlProfile.h
+    ArbitraryXmlReader.cc
+    ArbitraryXmlReader.h
     CitcomsFormatVelocityVectorFieldExport.cc
     CitcomsFormatVelocityVectorFieldExport.h
     CitcomsGMTFormatResolvedTopologicalBoundaryExport.cc
@@ -57,6 +61,8 @@ set(srcs
     GdalUtils.cc
     GdalUtils.h
     GeometryExporter.h
+    GeoscimlProfile.cc
+    GeoscimlProfile.h
     GmapReader.cc
     GmapReader.h
     GMTFormatDeformationExport.cc
@@ -108,6 +114,19 @@ set(srcs
     GpmlStructuralTypeReaderUtils.h
     GpmlUpgradeReaderUtils.cc
     GpmlUpgradeReaderUtils.h
+    GsmlConst.h
+    GsmlFeatureHandlers.cc
+    GsmlFeatureHandlers.h
+    GsmlFeaturesDef.h
+    GsmlNodeProcessor.cc
+    GsmlNodeProcessor.h
+    GsmlNodeProcessorFactory.cc
+    GsmlNodeProcessorFactory.h
+    GsmlPropertyDef.h
+    GsmlPropertyHandlers.cc
+    GsmlPropertyHandlers.h
+    GsmlXmlQuery.cc
+    GsmlXmlQuery.h
     GzipFile.cc
     GzipFile.h
     HellingerReader.cc
@@ -222,48 +241,6 @@ set(srcs
     XmlWriter.h
 )
 
-# Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-# It has been deprecated since Qt 5.13.
-#
-# TODO: Find a replacement library. Re-implementing these sources on one is a sizeable job, and whether
-#       the GeoSciML support is worth preserving at all has not been investigated - so for now they
-#       simply build against Qt5 and not against Qt6.
-#
-# Note: "GeoscimlProfile.cc" creates a QProgressDialog directly, so a Qt5 build of "file-io" links Qt
-#       Widgets even though nothing else in this directory does. That is left as is deliberately.
-#       pyGPlates is built against Qt6 - by the conda environments ("qt6-main" in "env.*.yml") and by the
-#       wheels ("QT_VERSION" in "pygplates/wheel/versions.sh") - so no pyGPlates we ship compiles this
-#       file at all, and the Qt Widgets dependency it would introduce cannot reach the module. Building
-#       pyGPlates against Qt5 is an undocumented path; the pyGPlates linkage test is what would catch it.
-if (QT_VERSION_MAJOR LESS 6)
-    # Note: a few of these headers ("ArbitraryXmlReader.h", "GeoscimlProfile.h", ...) are
-    #       #included by translation units every build compiles (with the uses guarded by
-    #       QT_VERSION), which is harmless - but they must only be *listed* here, in the
-    #       Qt5-only block: "GeoscimlProfile.h" is a Q_OBJECT header, so listing it in the
-    #       pygplates module's sources would AUTOMOC it there while its ".cc" is not compiled,
-    #       and the link fails. The source-closure tracer keeps this whole group out of the
-    #       module's closure for the same reason (see QT5_ONLY_FILES in
-    #       "cmake/pygplates_source_closure.py").
-    list(APPEND srcs
-        ArbitraryNodeProcessor.h
-        ArbitraryXmlProfile.h
-        ArbitraryXmlReader.cc
-        ArbitraryXmlReader.h
-        GeoscimlProfile.cc
-        GeoscimlProfile.h
-        GsmlConst.h
-        GsmlFeatureHandlers.cc
-        GsmlFeatureHandlers.h
-        GsmlFeaturesDef.h
-        GsmlNodeProcessor.cc
-        GsmlNodeProcessor.h
-        GsmlNodeProcessorFactory.cc
-        GsmlNodeProcessorFactory.h
-        GsmlPropertyDef.h
-        GsmlPropertyHandlers.cc
-        GsmlPropertyHandlers.h)
-endif()
-
 
 # GPlates-only sources: excluded from the pygplates module, whose source list is the
 # include closure of the pyGPlates API (see "cmake/pygplates_source_closure.py"; the
@@ -319,6 +296,8 @@ set(gplates_only_srcs
     ReadErrorUtils.h
     ReconstructedScalarCoverageExport.cc
     ReconstructedScalarCoverageExport.h
+    RgbaRasterReader.cc
+    RgbaRasterReader.h
     RgbaRasterWriter.cc
     RgbaRasterWriter.h
     ScalarField3DFileFormat.cc

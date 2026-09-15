@@ -11,7 +11,10 @@ set(srcs
     CptPaletteTest.cc
     CsvExportTest.cc
     DataAssociationDataTableTest.cc
+    ExportTemplateFilenameTest.cc
     GenerateVelocityDomainCitcomsTest.cc
+    GeoscimlReaderTest.cc
+    GsmlXmlQueryTest.cc
     MipmapperTest.cc
     RealTest.cc
     ScribeExportUnitTest.h

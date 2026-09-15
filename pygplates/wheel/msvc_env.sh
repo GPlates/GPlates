@@ -4,11 +4,11 @@
 #
 #   . "$(dirname "$0")/msvc_env.sh"
 #
-# The Windows dependency builds need it because they are not CMake builds: Boost's b2 and Qwt's
-# qmake/nmake compile with whatever 'cl' the environment provides. The pyGPlates wheel build
-# needs it too, since it moved from the Visual Studio generator (which locates Visual Studio by
-# itself) to Ninja (which does not) - but a cibuildwheel hook cannot set the environment for the
-# CMake build that follows it, so that comes from the shell cibuildwheel is started from: in CI
+# The Windows dependency builds need it because Boost's b2 is not a CMake build: it compiles
+# with whatever 'cl' the environment provides. The pyGPlates wheel build needs it too, since it
+# moved from the Visual Studio generator (which locates Visual Studio by itself) to Ninja
+# (which does not) - but a cibuildwheel hook cannot set the environment for the CMake build
+# that follows it, so that comes from the shell cibuildwheel is started from: in CI
 # the workflow imports this file's results into the whole job (see 'build-wheels.yml'), and a
 # local wheel build starts from an "x64 Native Tools Command Prompt" instead.
 #
@@ -31,7 +31,7 @@
 export MSVC_ENV_VARS="INCLUDE LIB LIBPATH UCRTVersion VCToolsVersion VSINSTALLDIR WindowsSdkDir WindowsSDKVersion VCINSTALLDIR VSCMD_ARG_TGT_ARCH"
 
 # ...but only if that environment targets x64, which is what everything built here is. An "x86
-# Native Tools Command Prompt" also sets VCINSTALLDIR, and taking it would build Boost and Qwt
+# Native Tools Command Prompt" also sets VCINSTALLDIR, and taking it would build Boost
 # 32-bit while 'b2 address-model=64' and the wheel expect 64-bit - which does not fail here, it
 # fails much later at link, saying nothing about the shell it came from. So say it now instead.
 # (An environment set up some other way may not set VSCMD_ARG_TGT_ARCH at all; that is not

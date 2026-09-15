@@ -35,6 +35,8 @@ set(srcs
     ColourPaletteVisitor.h
     ColourProxy.cc
     ColourProxy.h
+    ColourQt.cc
+    ColourQt.h
     ColourRawRaster.h
     ColourScaleGenerator.cc
     ColourScaleGenerator.h

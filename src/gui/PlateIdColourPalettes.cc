@@ -27,6 +27,7 @@
  */
 #include <vector>
 #include "PlateIdColourPalettes.h"
+#include "ColourQt.h"
 #include "Palette.h"
 
 namespace
@@ -133,7 +134,7 @@ GPlatesGui::RegionalPlateIdColourPalette::get_colour(
 		value_type plate_id) const
 {
 	int region = get_region_from_plate_id(plate_id);
-	HSVColour hsv = Colour::to_hsv(
+	HSVColour hsv = hsv_from_colour(
 			GPlatesUtils::Singleton<RegionalColours>::instance().get_colours()[region]);
 
 	// spread the v values from 0.6-1.0
@@ -141,6 +142,6 @@ GPlatesGui::RegionalPlateIdColourPalette::get_colour(
 	const double V_MAX = 1.0;
 	const int V_STEPS = 13; // why 13? same rationale as for DEFAULT_COLOUR_ARRAY above
 	hsv.v = (plate_id % V_STEPS) / static_cast<double>(V_STEPS) * (V_MAX - V_MIN) + V_MIN;
-	return Colour::from_hsv(hsv);
+	return colour_from_hsv(hsv);
 }
 

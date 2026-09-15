@@ -51,9 +51,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <time.h>
-#endif
 #include <tuple>
 #include <typeinfo>
 #include <utility>
@@ -228,9 +226,7 @@
 #include <QDrag>
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QErrorMessage>
-#endif
 #include <QEvent>
 #include <QEventLoop>
 #include <QFile>
@@ -308,15 +304,12 @@
 #include <QPointF>
 #include <QProcess>
 #include <QProgressBar>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QProgressDialog>
-#endif
 #include <QPushButton>
 #include <QQueue>
 #include <QRadioButton>
 #include <QRect>
 #include <QRectF>
-#include <QRegExp>
 #include <QRegularExpression>
 #include <QResizeEvent>
 #include <QScopedPointer>
@@ -367,7 +360,6 @@
 #include <QtGui/QIcon>
 #include <QThread>
 #include <QTimer>
-#include <QtNetwork/QHostInfo>
 #include <QToolBar>
 #include <QToolButton>
 #include <QToolTip>
@@ -438,15 +430,6 @@
 #include <QWidget>
 #include <QWizard>
 #include <QWizardPage>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QXmlQuery>
-#endif
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QXmlResultItems>
-#endif
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QXmlSerializer>
-#endif
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 

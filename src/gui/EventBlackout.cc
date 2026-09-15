@@ -28,6 +28,7 @@
 #include <QEvent>
 #include <QApplication>
 #include <QDebug>
+#include <QWindow>
 
 #include "EventBlackout.h"
 
@@ -85,6 +86,32 @@ namespace
 		}
 
 		return false;
+	}
+
+	/**
+	 * Returns the widget on whose behalf @a obj delivers events, if any.
+	 *
+	 * Input, expose and close events are delivered first to a widget's QWindow, and a
+	 * QWindow is not a child of the widget it belongs to, so the ancestry test in
+	 * @a is_exempt never matches for those events. Map such a window back to its widget
+	 * so that an exempt widget's window - and any dialog parented to that widget - is
+	 * exempt too. Without this a dialog opened while the blackout is in force never
+	 * receives an expose event, and so is never painted or able to be closed.
+	 */
+	QObject *
+	resolve_event_target(
+			QObject *obj)
+	{
+		QWindow *window = qobject_cast<QWindow *>(obj);
+		if (window == NULL ||
+			window->handle() == NULL)  // avoid creating a native window just to look it up
+		{
+			return obj;
+		}
+
+		QWidget *widget = QWidget::find(window->winId());
+
+		return (widget != NULL) ? static_cast<QObject *>(widget) : obj;
 	}
 
 	bool
@@ -157,7 +184,7 @@ GPlatesGui::EventBlackout::eventFilter(
 		QEvent *ev)
 {
 	if (::is_control_c(ev) ||
-		::is_exempt(obj, d_exempt_widgets) ||
+		::is_exempt(::resolve_event_target(obj), d_exempt_widgets) ||
 		::is_permitted_while_monitoring(ev->type()))
 	{
 		return QObject::eventFilter(obj, ev);

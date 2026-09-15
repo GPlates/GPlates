@@ -28,7 +28,8 @@
 #ifndef GPLATES_FILEIO_GEOSCIMLPROFILE_H
 #define GPLATES_FILEIO_GEOSCIMLPROFILE_H
 
-#include <QObject>
+#include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QString>
 
 #include "ArbitraryXmlProfile.h"
@@ -37,12 +38,57 @@
 namespace GPlatesFileIO
 {
 	class GeoscimlProfile :
-			public QObject,
 			public ArbitraryXmlProfile
 	{
-		Q_OBJECT
-
 	public:
+
+		/**
+		 * Reports the progress of @a populate to the user and lets them cancel it.
+		 *
+		 * The only implementation (@a GPlatesQtWidgets::GeoscimlProgressDialog) is a Qt Widgets
+		 * progress dialog, which the pygplates module does not link, so - like
+		 * @a RasterReader::set_rgba_reader_factory - it is injected by GPlates
+		 * (see @a GPlatesPresentation::Application) rather than referenced from here.
+		 * When no factory is registered @a populate runs silently and cannot be cancelled.
+		 */
+		class ProgressReporter
+		{
+		public:
+
+			virtual
+			~ProgressReporter()
+			{ }
+
+			/**
+			 * The number of features about to be translated.
+			 */
+			virtual
+			void
+			set_count(
+					int count) = 0;
+
+			/**
+			 * Called before translating the feature at @a index (1-based).
+			 *
+			 * Returns false if the user has cancelled, in which case @a populate stops.
+			 */
+			virtual
+			bool
+			update(
+					int index) = 0;
+		};
+
+		typedef boost::function<boost::shared_ptr<ProgressReporter> ()>
+				progress_reporter_factory_type;
+
+		/**
+		 * Registers the factory that @a populate uses to create its @a ProgressReporter.
+		 */
+		static
+		void
+		set_progress_reporter_factory(
+				const progress_reporter_factory_type &progress_reporter_factory);
+
 
 		GeoscimlProfile()
 		{ }
@@ -66,16 +112,12 @@ namespace GPlatesFileIO
 		count_features(
 				QByteArray& xml_data);
 
-	public Q_SLOTS:
-
-		void cancel(); // will cancel read process
-
 	protected:
 		GeoscimlProfile(
 					const GeoscimlProfile&);
 
 	private:
-		bool d_cancel;
+		static progress_reporter_factory_type s_progress_reporter_factory;
 
 	};
 }

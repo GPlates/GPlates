@@ -39,8 +39,6 @@
 
 #include "file-io/XmlWriter.h"
 
-#include "utils/XQueryUtils.h"
-
 namespace GPlatesModel
 {
 
@@ -315,7 +313,7 @@ namespace GPlatesModel
 				QXmlStreamReader& reader)
 		{
 			set_dc_namespace(reader.readElementText());
-			GPlatesUtils::XQuery::next_start_element(reader);
+			reader.readNextStartElement();
 		}
 		
 		void
@@ -323,7 +321,7 @@ namespace GPlatesModel
 				QXmlStreamReader& reader)
 		{
 			set_dc_title(reader.readElementText());
-			GPlatesUtils::XQuery::next_start_element(reader);
+			reader.readNextStartElement();
 		}
 		
 		void
@@ -331,7 +329,7 @@ namespace GPlatesModel
 				QXmlStreamReader& reader)
 		{
 			set_dc_bibliographicCitation(reader.readElementText());
-			GPlatesUtils::XQuery::next_start_element(reader);
+			reader.readNextStartElement();
 		}
 		
 		void
@@ -339,7 +337,7 @@ namespace GPlatesModel
 				QXmlStreamReader& reader)
 		{
 			set_dc_description(reader.readElementText());
-			GPlatesUtils::XQuery::next_start_element(reader);
+			reader.readNextStartElement();
 		}
 		
 		void
@@ -347,7 +345,7 @@ namespace GPlatesModel
 				QXmlStreamReader& reader)
 		{
 			set_dc_contributor(reader.readElementText());
-			GPlatesUtils::XQuery::next_start_element(reader);
+			reader.readNextStartElement();
 		}
 
 		void 

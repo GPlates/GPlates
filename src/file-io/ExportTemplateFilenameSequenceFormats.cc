@@ -24,7 +24,7 @@
  */
 
 #include <boost/numeric/conversion/cast.hpp>
-#include <QRegExp>
+#include <QRegularExpression>
 
 #include "ExportTemplateFilenameSequenceFormats.h"
 
@@ -217,16 +217,17 @@ boost::optional<int>
 GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::match_format(
 		const QString &rest_of_filename_template)
 {
-	QRegExp regex = get_full_regular_expression();
+	const QRegularExpression &regex = get_full_regular_expression();
 
-	if (regex.indexIn(rest_of_filename_template) == -1)
+	const QRegularExpressionMatch match = regex.match(rest_of_filename_template);
+	if (!match.hasMatch())
 	{
 		// Regular expression didn't match so this is not our format string.
 		return boost::none;
 	}
 
 	// Get the entire matched string.
-	const QString format_string = regex.cap(0);
+	const QString format_string = match.captured(0);
 	return format_string.size();
 }
 
@@ -235,11 +236,11 @@ GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::Reconstru
 		const QString &format_string) :
 	d_format_string(format_string.toStdString())
 {
-	QRegExp regex = get_integer_regular_expression();
+	const QRegularExpression &regex = get_integer_regular_expression();
 
 	// See if we need to convert the reconstruction time to the nearest integer before
 	// passing to printf-style format specifier.
-	d_is_integer_format = (regex.indexIn(format_string) != -1);
+	d_is_integer_format = regex.match(format_string).hasMatch();
 }
 
 
@@ -264,7 +265,7 @@ GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::expand_fo
 }
 
 
-const QRegExp &
+const QRegularExpression &
 GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_full_regular_expression()
 {
 	// QString::sprintf() does not support the length modifiers (eg, h for short, ll for long long)
@@ -274,18 +275,21 @@ GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_full_
 	// Where flags is one or more of space, +, -, 0, #.
 	// And 'length' has been omitted.
 	// And 'specifier' is limited to 'd' and 'f'.
-	static QRegExp s_regex("^%[ +-#0]*\\d*(?:\\.\\d+)?[df]");
+	//
+	// Note the '-' is listed first in the flags character class so that it is a literal '-'
+	// rather than the start of a character range.
+	static const QRegularExpression s_regex("^%[-+ #0]*\\d*(?:\\.\\d+)?[df]");
 
 	return s_regex;
 }
 
 
-const QRegExp &
+const QRegularExpression &
 GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_integer_regular_expression()
 {
 	// Same as returned by 'get_full_regular_expression()' but only for
 	// the '%d' integer specifier.
-	static QRegExp s_regex("^%[ +-#0]*\\d*(?:\\.\\d+)?d");
+	static const QRegularExpression s_regex("^%[-+ #0]*\\d*(?:\\.\\d+)?d");
 
 	return s_regex;
 }

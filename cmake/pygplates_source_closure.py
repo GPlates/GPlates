@@ -43,7 +43,7 @@
 #   python cmake/pygplates_source_closure.py --check-doc
 #
 #   # Rewrite the dependency-matrix doc (the only mode that writes anything).
-#   python cmake/pygplates_source_closure.py --output-doc doc-cpp/design/architecture/dependency-matrix.md
+#   python cmake/pygplates_source_closure.py --output-doc docs/design/architecture/dependency-matrix.md
 #
 #   # Report the closure / the per-directory exclusion candidates (for maintaining the
 #   # "gplates_only_srcs" lists in "src/*/CMakeLists.txt").
@@ -63,7 +63,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SCRIPT_DIR)
 SRC_DIR = os.path.join(ROOT_DIR, 'src')
 
-DEFAULT_DOC_PATH = os.path.join(ROOT_DIR, 'doc-cpp', 'design', 'architecture', 'dependency-matrix.md')
+DEFAULT_DOC_PATH = os.path.join(ROOT_DIR, 'docs', 'design', 'architecture', 'dependency-matrix.md')
 
 HEADER_SUFFIXES = ('.h', '.hh', '.hpp')
 SOURCE_SUFFIXES = ('.cc', '.cpp', '.cxx')
@@ -101,39 +101,19 @@ GUI_ALLOWLIST = frozenset([
     'gui/RasterColourPalette.cc',
 ])
 
-# The GeoSciML files only a Qt5 build lists as sources (the "QT_VERSION_MAJOR LESS 6" block
-# in "src/file-io/CMakeLists.txt" - they need QtXmlPatterns, which Qt6 removed). A few of
-# the headers *are* #included by TUs every build compiles (with the uses guarded by
-# QT_VERSION) - harmless, because a header need not be listed as a target source to be
-# includable - but the whole group is kept out of the closure by fiat: pulling the headers
-# in would pull their ".cc" in via the header->cc rule, and listing "GeoscimlProfile.h" (a
-# Q_OBJECT header) in the module's sources would AUTOMOC it there while its ".cc" is not
-# compiled, failing the link. pyGPlates is only built against Qt6 (see the note above that
-# CMake block); under a Qt5 pygplates configure these files enter the target sources and the
-# --check-sources diff fails loudly, which is deliberate.
-QT5_ONLY_FILES = frozenset([
-    'file-io/ArbitraryNodeProcessor.h',
-    'file-io/ArbitraryXmlProfile.h',
-    'file-io/ArbitraryXmlReader.cc',
-    'file-io/ArbitraryXmlReader.h',
-    'file-io/GeoscimlProfile.cc',
-    'file-io/GeoscimlProfile.h',
-    'file-io/GsmlConst.h',
-    'file-io/GsmlFeatureHandlers.cc',
-    'file-io/GsmlFeatureHandlers.h',
-    'file-io/GsmlFeaturesDef.h',
-    'file-io/GsmlNodeProcessor.cc',
-    'file-io/GsmlNodeProcessor.h',
-    'file-io/GsmlNodeProcessorFactory.cc',
-    'file-io/GsmlNodeProcessorFactory.h',
-    'file-io/GsmlPropertyDef.h',
-    'file-io/GsmlPropertyHandlers.cc',
-    'file-io/GsmlPropertyHandlers.h',
-])
-
-# Angle includes the closure must not contain: the Qt Widgets / OpenGL / Qwt surface that
-# "Step 7" removes from the module's link line.
-FORBIDDEN_ANGLE_INCLUDE_RE = re.compile(r'^(QtWidgets/|QOpenGL|qwt|GL/|glew)')
+# Angle includes the closure must not contain: the Qt Gui / Qt Widgets / OpenGL / Qwt surface
+# the module does not link (see the Qt find_package split in 'src/CMakeLists.txt' and the
+# pygplates-linkage test).
+#
+# Qt Gui is listed header by header rather than as a module prefix, because Qt's own class
+# headers ("<QColor>") carry no module name. The list is deliberately explicit: the module's
+# Qt surface is small (Core, and QXmlStreamReader/Writer), and a shared file reaching for one
+# of these should be a decision - hoist the Qt Gui code into a GPlates-only translation unit
+# (as 'gui/ColourQt.cc' and 'file-io/RgbaRasterReader.cc' were) rather than extend this list.
+FORBIDDEN_ANGLE_INCLUDE_RE = re.compile(
+    r'^(QtWidgets/|QtGui/|QOpenGL|qwt|GL/|glew'
+    r'|(QColor|QImage|QImageReader|QImageWriter|QPainter|QPixmap|QFont|QIcon|QBrush|QPen|QRgb'
+    r'|QPalette|QCursor|QClipboard)$)')
 
 # Strip /* */ and // comments, preserving line structure (so commented-out includes and
 # commented-out export_*() calls disappear before any other parsing).
@@ -286,7 +266,7 @@ class Closure(object):
             includer_dir = os.path.dirname(rel)
             for include in _QUOTED_INCLUDE_RE.findall(read_stripped(os.path.join(SRC_DIR, rel))):
                 resolved = self._resolve(include, includer_dir)
-                if resolved is None or resolved in self.parent or resolved in QT5_ONLY_FILES:
+                if resolved is None or resolved in self.parent:
                     continue
                 self.parent[resolved] = rel
                 queue.append(resolved)
@@ -296,7 +276,6 @@ class Closure(object):
                     for cc_suffix in SOURCE_SUFFIXES:
                         sibling = stem + cc_suffix
                         if sibling not in self.parent and \
-                                sibling not in QT5_ONLY_FILES and \
                                 os.path.isfile(os.path.join(SRC_DIR, sibling)):
                             self.parent[sibling] = resolved
                             queue.append(sibling)
@@ -418,7 +397,7 @@ def generate_doc(closure):
     lines = []
     lines.append('<!-- Generated by cmake/pygplates_source_closure.py - do not edit.')
     lines.append('     Regenerate: python cmake/pygplates_source_closure.py --output-doc '
-                 'doc-cpp/design/architecture/dependency-matrix.md')
+                 'docs/design/architecture/dependency-matrix.md')
     lines.append('     The pygplates-source-closure test fails if this file is stale. -->')
     lines.append('')
     lines.append('# `src/` dependency matrix')
@@ -507,7 +486,8 @@ def main():
                              'gplates_only_srcs candidates)')
     args = parser.parse_args()
 
-    closure = Closure(discover_roots())
+    roots = discover_roots()
+    closure = Closure(roots)
 
     errors = check_forbidden(closure)
     if args.check_sources:

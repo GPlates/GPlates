@@ -242,10 +242,14 @@ boost::optional<GPlatesModel::PropertyName>
 GPlatesUtils::convert_property_name(
 		const QString& name)
 {
-	QRegExp rx("^\\s*(gpml|gml)\\s*:\\s*(\\w+)\\s*"); // (gpml|gml):(name)
-	rx.indexIn(name);
-	QString prefix = rx.cap(1);
-	QString short_name = rx.cap(2);
+	// Property names come from user data, so match "\w" against Unicode letters (as QRegExp did)
+	// rather than the ASCII-only default of QRegularExpression.
+	static const QRegularExpression rx(
+			"^\\s*(gpml|gml)\\s*:\\s*(\\w+)\\s*", // (gpml|gml):(name)
+			QRegularExpression::UseUnicodePropertiesOption);
+	const QRegularExpressionMatch rx_match = rx.match(name);
+	QString prefix = rx_match.captured(1);
+	QString short_name = rx_match.captured(2);
 	
 	boost::optional<GPlatesModel::PropertyName> ret = boost::none;
 	if(prefix.length() == 0 || short_name.length() == 0)

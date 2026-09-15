@@ -542,21 +542,27 @@ GPlatesQtWidgets::KinematicGraphsDialog::handle_use_feature()
 
 		std::vector<double> times = property_finder.get_times();
 
-		// Motion path times are stored in increasing order, i.e. youngest (end-time) to oldest (begin-time)
-		d_begin_time = times.back();
-		d_end_time = times.front();
-		int steps = static_cast<int>(times.size());
-
-		// If we're not able to get a sensible time step for some reason, d_step_time
-		// will not be updated.
-		if (steps > 1)
+		// A motion path carrying no times has no range to take, and 'front()' and 'back()'
+		// on an empty vector are undefined - which is what GCC's -Warray-bounds sees. Leave
+		// the dialog's own range in that case.
+		if (!times.empty())
 		{
-			d_step_time = (d_begin_time - d_end_time)/(steps-1);
-		}
+			// Motion path times are stored in increasing order, i.e. youngest (end-time) to oldest (begin-time)
+			d_begin_time = times.back();
+			d_end_time = times.front();
+			int steps = static_cast<int>(times.size());
 
-		spinbox_begin_time->setValue(d_begin_time);
-		spinbox_end_time->setValue(d_end_time);
-		spinbox_dt->setValue(d_step_time);
+			// If we're not able to get a sensible time step for some reason, d_step_time
+			// will not be updated.
+			if (steps > 1)
+			{
+				d_step_time = (d_begin_time - d_end_time)/(steps-1);
+			}
+
+			spinbox_begin_time->setValue(d_begin_time);
+			spinbox_end_time->setValue(d_end_time);
+			spinbox_dt->setValue(d_step_time);
+		}
 	}
 
 	// And we might as well do the whole calculation thing here as well.

@@ -182,8 +182,8 @@ jobs:
           # reachable too, and whoever adds one has no reason to know this file exists.
           #
           # Grouping by ref as well as prefix is not optional: caches are ref-scoped, and dropping
-          # the newest 'refs/heads/pygplates' entry because a newer 'refs/heads/gplates' one
-          # happened to share its prefix would cost that branch a cold build.
+          # the newest 'refs/pull/<n>/merge' entry because a newer 'refs/heads/gplates' one
+          # happened to share its prefix would cost that pull request a cold build.
           #
           # Keeping exactly one per group is not a heuristic - it is the reachable set. It also
           # needs no special case for a partial cache saved by a failed build: that partial is the

@@ -31,6 +31,7 @@
 #include <QtGlobal>
 
 #include "VelocityLegendOverlay.h"
+#include "ColourQt.h"
 
 #include "VelocityLegendOverlaySettings.h"
 
@@ -325,19 +326,19 @@ namespace
 		// Draw background box
 		if (settings.background_enabled())
 		{
-			qpainter->setBrush(QBrush(settings.get_background_colour()));
-			qpainter->setPen(settings.get_background_colour());
+			qpainter->setBrush(QBrush(qcolor_from_colour(settings.get_background_colour())));
+			qpainter->setPen(qcolor_from_colour(settings.get_background_colour()));
 			qpainter->drawRect(background_box);
 		}
 
 
 		// Draw legend text
-		qpainter->setPen(settings.get_scale_text_colour());
+		qpainter->setPen(qcolor_from_colour(settings.get_scale_text_colour()));
 		qpainter->setFont(scale_font(settings.get_scale_text_font(), scale));
 		qpainter->drawText(background_box.center().x() - text_width / 2, background_box.bottom() - legend_margin, text);
 
-		qpainter->setPen(settings.get_arrow_colour());
-		qpainter->setBrush(QBrush(settings.get_arrow_colour()));
+		qpainter->setPen(qcolor_from_colour(settings.get_arrow_colour()));
+		qpainter->setBrush(QBrush(qcolor_from_colour(settings.get_arrow_colour())));
 		double arrow_head_size = 5.0 * scale;
 
 		QTransform transform;
