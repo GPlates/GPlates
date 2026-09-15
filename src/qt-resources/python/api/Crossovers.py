@@ -16,36 +16,11 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-from collections import namedtuple
-from functools import partial
-import math
+# Aliased with a leading underscore so they do not become public attributes of the
+# 'pygplates' module (this file is exec'd into the module namespace).
+from collections import namedtuple as _namedtuple
+from functools import partial as _partial
 
-#
-# Python 2 and 3 compatibility.
-#
-# Iterating over a dict.
-try:
-    dict.iteritems
-except AttributeError:
-    # Python 3
-    def itervalues(d):
-        return iter(d.values())
-    def iteritems(d):
-        return iter(d.items())
-    def listvalues(d):
-        return list(d.values())
-    def listitems(d):
-        return list(d.items())
-else:
-    # Python 2
-    def itervalues(d):
-        return d.itervalues()
-    def iteritems(d):
-        return d.iteritems()
-    def listvalues(d):
-        return d.values()
-    def listitems(d):
-        return d.items()
 
 
 # The maximum number of iterations over all crossovers to be synchronised.
@@ -182,7 +157,7 @@ class CrossoverResult(object):
     ignored = 3           # Crossover was ignored (since crossover type was 'ignore').
 
 
-Crossover = namedtuple("Crossover",
+Crossover = _namedtuple("Crossover",
     "type "
     "time "
     "moving_plate_id "
@@ -389,7 +364,7 @@ def find_crossovers(
     if CrossoverType._is_valid(crossover_type_function):
         # Convert crossover type to a function returning that crossover type.
         # Use partial to avoid lambda function referencing itself.
-        crossover_type_function = partial(lambda *args: args[0], crossover_type_function)
+        crossover_type_function = _partial(lambda *args: args[0], crossover_type_function)
     # ...else it's a function so leave it as it is.
     
     # A 'dict' to map each moving plate to a list of total reconstruction poles
@@ -416,7 +391,7 @@ def find_crossovers(
     crossovers = []
     
     # Iterate over the moving plates.
-    for moving_plate_id, fixed_plate_rotation_sequences in iteritems(total_reconstruction_poles_by_moving_plate):
+    for moving_plate_id, fixed_plate_rotation_sequences in total_reconstruction_poles_by_moving_plate.items():
         # Only one fixed plate means no crossovers for the current moving plate.
         if len(fixed_plate_rotation_sequences) == 1:
             continue
@@ -768,7 +743,7 @@ def synchronise_crossovers(
     
     # Prepare the crossovers before processing them in iterations.
     # This avoids repeating redundant work at each iteration.
-    CrossoverInfo = namedtuple("CrossoverInfo",
+    CrossoverInfo = _namedtuple("CrossoverInfo",
         "crossover crossover_index "
         "disabled_samples_at_crossover_time "
         "synchronised_samples_at_crossover_time "
