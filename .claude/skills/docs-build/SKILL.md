@@ -1,13 +1,13 @@
 ---
 name: docs-build
-description: Build the pyGPlates Python API documentation (Sphinx, doc-python-api). Use when asked to build, rebuild or check the Python API docs, or to verify a docstring change renders correctly.
+description: Build the pyGPlates Python API documentation (Sphinx, docs-pygplates). Use when asked to build, rebuild or check the Python API docs, or to verify a docstring change renders correctly.
 ---
 
 # Build the pyGPlates API documentation
 
 ## Prerequisites
 
-The docs are built by the `doc-python-api` CMake target, so a configured pyGPlates build tree is
+The docs are built by the `docs-pygplates` CMake target, so a configured pyGPlates build tree is
 required (see `/build-pygplates`). Sphinx and its theme come from an overlay environment file:
 
 ```
@@ -29,11 +29,11 @@ than `rm -rf`, which does not exist in the Anaconda Prompt (cmd) or PowerShell t
 skills direct Windows users to:
 
 ```
-cmake -E rm -rf <build-dir>/doc-python-api/_doctrees <build-dir>/doc-python-api/generated
-cmake --build <build-dir> --config Release --target doc-python-api
+cmake -E rm -rf <build-dir>/docs/pygplates/_doctrees <build-dir>/docs/pygplates/generated
+cmake --build <build-dir> --config Release --target docs-pygplates
 ```
 
-Output lands at `<build-dir>/doc-python-api/html/index.html`.
+Output lands at `<build-dir>/docs/pygplates/html/index.html`.
 
 An incremental build (skipping the deletion) is acceptable only for a quick local look at a page
 you are actively editing — say so explicitly when you do it.
@@ -53,5 +53,5 @@ you are actively editing — say so explicitly when you do it.
 After the build, confirm `searchindex.js` actually has index entries rather than assuming the
 build was clean — a zero count means the from-scratch deletion did not take effect.
 
-Conventions for the docstrings themselves are in `doc-python-api/README.md`; see the
+Conventions for the docstrings themselves are in `docs/pygplates/README.md`; see the
 `/api-docstring` skill.

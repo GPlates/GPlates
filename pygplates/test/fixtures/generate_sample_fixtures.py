@@ -1,7 +1,7 @@
 """
 Generate the small fixtures that the documentation's sample scripts read.
 
-The sample pages under 'doc-python-api/sample-code/' name their input files ('coastlines.gpml',
+The sample pages under 'docs/pygplates/sample-code/' name their input files ('coastlines.gpml',
 'isochrons.gpml', 'static_polygons.gpml', ...), and 'pygplates-sample-code-test' runs every sample
 script in a directory seeded with this directory. These files are stand-ins that let the scripts run:
 a few dozen small real features where a real source exists, synthetic geometry where one does not.

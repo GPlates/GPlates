@@ -9,7 +9,7 @@ add_test(
 
 # Add the source-closure test: the pygplates module must compile exactly the include closure
 # of the pyGPlates API (see "cmake/pygplates_source_closure.py" and
-# "doc-cpp/design/architecture/README.md"). This is what stops a new file, or a new #include
+# "docs/design/architecture/README.md"). This is what stops a new file, or a new #include
 # in a shared translation unit, silently re-fattening the module - and what keeps the
 # committed dependency matrix honest ("--check-doc" fails if it is stale, the way
 # pygplates-stub-test fails on a stale type stub). "pygplates_sources.txt" is written at
@@ -18,7 +18,7 @@ add_test(
 	NAME pygplates-source-closure-test
 	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/pygplates_source_closure.py"
 		--check-sources "${PROJECT_BINARY_DIR}/pygplates_sources.txt"
-		--check-doc "${PROJECT_SOURCE_DIR}/doc-cpp/design/architecture/dependency-matrix.md"
+		--check-doc "${PROJECT_SOURCE_DIR}/docs/design/architecture/dependency-matrix.md"
 	# Match the other pygplates tests (see the note on 'pygplates-test' above).
 	CONFIGURATIONS Release MinSizeRel)
 
@@ -46,14 +46,14 @@ add_test(
 	# Match the other pygplates tests (see the note on 'pygplates-test' above).
 	CONFIGURATIONS Release MinSizeRel)
 
-# Add the sample-code test: every script under 'doc-python-api/sample-code/' must run. The scripts
+# Add the sample-code test: every script under 'docs/pygplates/sample-code/' must run. The scripts
 # are the code of the documentation's sample pages (each page includes its script rather than
-# repeating it - see the 'sample-code' directive in 'doc-python-api/conf.py.in'), so this is what
+# repeating it - see the 'sample-code' directive in 'docs/pygplates/conf.py.in'), so this is what
 # keeps the published samples runnable. Each runs in a temporary directory seeded with 'fixtures/'.
 add_test(
 	NAME pygplates-sample-code-test
 	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/sample_code_test.py"
-		"${PROJECT_SOURCE_DIR}/doc-python-api/sample-code"
+		"${PROJECT_SOURCE_DIR}/docs/pygplates/sample-code"
 		"${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
 	# Match the other pygplates tests (see the note on 'pygplates-test' above).
 	CONFIGURATIONS Release MinSizeRel)

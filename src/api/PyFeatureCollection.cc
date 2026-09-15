@@ -225,8 +225,9 @@ namespace GPlatesApi
 		return bp::object(feature);
 	}
 
-	// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch because
-	// currently '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer).
+	// Disabled until the 'feature/pygplates-model-revisions' branch lands, because currently
+	// '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer
+	// by value - see 'HandleTraits.h').
 #if 0
 	//
 	// Support for "__setitem__".
@@ -950,8 +951,7 @@ export_feature_collection()
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureCollectionHandle>())
 		.def("__len__", &GPlatesModel::FeatureCollectionHandle::size)
 		.def("__getitem__", &GPlatesApi::feature_collection_handle_get_item)
-	// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch because
-	// currently '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer).
+	// Disabled until the 'feature/pygplates-model-revisions' branch lands (see 'feature_collection_handle_set_item').
 #if 0
 		.def("__setitem__", &GPlatesApi::feature_collection_handle_set_item)
 #endif

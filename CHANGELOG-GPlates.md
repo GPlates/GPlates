@@ -1,3 +1,48 @@
+GPlates Changelog
+=================
+
+Changes in each GPlates release, newest first. Changes to pyGPlates (the Python library) are listed in `CHANGELOG-pyGPlates.md`.
+
+GPlates 2.6 (unreleased)
+========================
+
+Changes since 2.5:
+
+* Subduction teeth on individual subduction zone features (static or topological lines), not only on topological plate/network boundaries.
+* Upgraded to Qt 6 (Qt 5.15 is still supported when compiling from source).
+* Python console:
+  * Now provides the full pyGPlates API (the same API as the standalone pygplates module).
+    * `pygplates.reconstruct()` and `pygplates.reverse_reconstruct()` have new signatures; scripts passing positional arguments need updating.
+    * The previous thin `Feature` and `FeatureCollection` wrappers are still available as `OldFeature` and `OldFeatureCollection`.
+  * Fixed `help()` opening an empty "Python Readline" window that could not be closed.
+    * The dialog now shows its prompt and has Cancel and close buttons, and `q`/`quit` exits help.
+  * Fixed the cancel button of the "Running Python code..." dialog not interrupting the running code.
+  * Script filenames now appear correctly in tracebacks (instead of as `b'...'`).
+* Hellinger tool: fixed "Calculate Uncertainties" failing with a Python error (with NumPy 1.12 or later).
+* Non-ASCII (eg, Chinese or accented) file paths on Windows:
+  * Fixed saving rotation files (GROT format) and reading data-mining configuration files.
+  * Fixed CSV export (eg, from the Total Reconstruction Poles dialog).
+  * Fixed filenames given on the command line (data files, projects, config files and response files).
+* Bug fixes:
+  * Fixed gaps in boundary sections in the Resolved Topologies (General) export (since GPlates 2.2).
+  * Fixed Small Circle tool time period being limited to 1000 Ma (now 9999 Ma).
+  * Fixed colour lookups occasionally falling between adjacent colour slices of a palette.
+  * Fixed CPT palettes with a lower-case "COLOR_MODEL = hsv" comment (as written by GMT) being read as RGB.
+  * Fixed the "-" (left-justify) flag not being recognised in export filename templates (eg, "%-5d").
+  * A malformed "gml:pos" or "gml:coordinates" in a GPML file is now reported as a read error instead of silently loading as a point at (0, 0).
+  * GeoSciML (".gsml" files and "File > Connect WFS"):
+    * Fixed only the first of several values of a property (eg, "gml:name") being read.
+    * Fixed an unsupported feature member (eg, "gsml:MappedFeature") discarding all members after it; it is now skipped with a warning.
+    * Fixed "rock_max_thick" being stored as "rock_min_thick".
+    * Fixed three-dimensional coordinates (in a spatial reference system other than EPSG:4326) being read in pairs.
+    * Fixed the Cancel button of the progress dialog doing nothing.
+    * Fixed an empty progress dialog appearing in the Connect WFS dialog (and crashing when cancelled).
+  * Read Errors dialog now says "OGR" rather than "Shapefile" (other OGR formats, such as GeoJSON, are read the same way).
+  * Errors that previously crashed GPlates without any message are now reported in a dialog and written to the log.
+* Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
+* Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.
+  * So installing a newer build replaces the previous one instead of adding another program directory (and another "Apps & features" entry on Windows).
+
 GPlates 2.5
 ===========
 
@@ -147,7 +192,7 @@ Changes since 2.2:
    * Fixed macOS scrollbar in layers window obscuring underlying layer controls:
      * For example, inability to click '-' icon to remove a layer connection.
    * Save GPlates log to writable location when current working directory does not have write permission:
-     * For example save to "C:/Users/<USER>/AppData/Local/GPlates/" when GPlates is installed to "C:\Program Files".
+     * For example save to `C:/Users/<USER>/AppData/Local/GPlates/` when GPlates is installed to "C:\Program Files".
    * Enable writing of '.json' files (not just '.geojson).
    * Kinematics tool:
      * Angular velocity (rads/Myr) is now always positive since stage rotation 'pole' is arbitrary (can negate pole/angle pair and get same rotation),
@@ -1073,7 +1118,7 @@ Changes since 1.2:
  * Fixed export of resolved topologies to individual files (separated by plate id) only writing one resolved geometry per plate id file.
  * Fixed colour-by-age should be relative to feature's begin time instead of present day.
  * Fixed CPT parsing error at space in quoted strings.
- * Fixed PLATES line format having multiple "<identity>" tags.
+ * Fixed PLATES line format having multiple `<identity>` tags.
  * Fixed lat/lon exception when importing rasters.
  * Store all OpenGL shader source files as resources in GPlates executable.
  * Fixed reading wrong header lines after PLATES features with no geometry.
@@ -1454,8 +1499,6 @@ GPlates 0.9.10
 
 Changes since 0.9.9:
 
-TODO: Change this to list actual changes implemented (this is currently a copy of the release email).
-
 This release is a preview of raster reconstructions and layers. 
 We have implemented raster reconstructions to take advantage of
 the majority of graphics systems so please let us know if you are
@@ -1624,3 +1667,564 @@ Changes since 0.9.5:
    additional work has gone into improving the user experience and making the
    topology algorithms more intelligent, and enables the export of geometry
    sub-segments involved in topologies.
+
+
+Early history: GPlates 0.9.5 and earlier
+========================================
+
+The releases up to 0.9.5 predate this changelog. Their entries were written at the time, and
+also record who contributed to each release, who directed the work and who funded it.
+
+GPlates 0.9.5
+-------------
+
+Released 2009-06-16, GPlates 0.9.5 contained several significant developments
+of the GPlates 0.9.4 functionality and GUI.
+
+The GPlates 0.9.5 release actually consisted of two simultaneous releases:
+ * a "stable" mainline release (like all previous 0.9.x releases), named
+   "GPlates 0.9.5"
+ * a "testing" release of the widely-anticipated continuously-closing plates
+   and lithosphere-velocity-field functionality developed primarily at Caltech,
+   named "GPlates 0.9.5+platepolygon-testing"
+
+GPlates 0.9.5 was created (Jan 2009 - Jun 2009) by:
+ * James Boyden [technical lead]
+ * John Cannon
+ * James Clark
+ * Mark Turner
+ * Robin Watson
+
+under the direction of:
+ * Dietmar Müller
+ * Trond Torsvik
+ * Mike Gurnis
+
+funded by grants from:
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+ * The Norwegian Research Council
+ * Statoil-Hydro
+ * The Gordon and Betty Moore Foundation
+
+The GPlates User-Manual was created (Mar 2008 - Jun 2009) by:
+ * Rhi McKeon (University of Sydney) [documentation developer]
+
+with planning and review by:
+ * James Boyden
+ * James Clark
+
+and contributions from:
+ * Robin Watson
+
+GPlates 0.9.5 compiled and ran on Linux, Windows XP, Windows Vista and MacOS X.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+
+ * Robin Watson:
+   + Shapefile export (in addition to existing Shapefile import)
+   + Shapefile export of reconstructed geometries at reconstruction time
+   + map projections:
+     - overall design and implementation
+     - extending 3-D globe tools to work on a 2-D map canvas
+     - projections implemented: Rectangular, Mercator, Mollweide, Robinson
+   + SVG export of map projections
+   + contributions to user-documentation
+
+ * Mark Turner:
+   + continuously-closing plates and lithosphere-velocity-field functionality
+     (construction of time-varying topological plate-boundary polygons and
+     calculation of lithosphere velocities at CitComS mesh-node locations):
+     - overall design and implementation of user-interface, workflow and
+       algorithms in the "GPlates 0.8.x" prototype series, including:
+       * extension of the PLATES4 file-format to represent geometric
+         intersection topologies
+       * development of the GPlates GUI for the topology-construction workflow
+       * determination and implementation of the application logic of the
+         topology-construction workflow
+       * implementation of Citcoms-mesh-node loading and mesh-node velocity
+         calculation
+     - porting of "GPlates 0.8.x" user-interface, workflow and algorithms into
+       GPlates 0.9 user-interface and data-structures, including:
+       * re-structuring GPlates 0.8 user-interface into GPlates 0.9 Canvas Tool
+         and Task Panel user-interface patterns
+       * menu controls to show/hide geometries by geometry type
+
+ * Rhi McKeon:
+   + user-documentation
+
+ * James Clark:
+   + Animation Export infrastructure and user-interface design
+   + contributions to continuously-closing plates / lithosphere-velocity-field
+     functionality:
+     - GPGIM design of topology components for continuously-closing plates
+     - design input into topology-construction user-interface and workflow (for
+       compatibility with 0.9)
+     - Topology Sections table for tabular editing of topologies
+   + user-interface improvements:
+     - improvements to layout of main window
+     - menu-layout improvements
+     - integrated animation slider
+     - icon design of new Canvas Tools
+     - display conjugate/left/right plate IDs as appropriate
+   + user-documentation planning and review
+
+ * John Cannon:
+   + CMake build system to build MacOS X binary bundles in .dmg files
+   + infrastructure for export of reconstructed geometries
+   + GMT export of reconstructed geometries
+   + new Canvas Tools (with accompanying Task Panel widgets):
+     - delete vertex
+     - insert vertex
+   + template filename generator for Animation Export
+   + velocity-field arrow decorations (which automatically scale with zoom)
+   + thresholding of the visual density of velocity-field arrow decorations
+   + better handling of multi-geometries (multiple-geometries per feature):
+     - reading and writing pen-up/pen-down commands in the PLATES4 line format
+       as multi-geometries in GPlates
+     - improved feature focus and Canvas Tool handling of multi-geometries
+   + responsive, interactive highlight of geometries during Canvas Tool use
+     (red highlight of vertices for deletion, yellow highlight of vertices for
+     moving, yellow highlight of line-segments for vertex-insertion, etc.)
+   + contributions to continuously-closing plates / lithosphere-velocity-field
+     functionality:
+     - automated generation and export of GML DataBlock velocity fields
+   + general user-interface processing optimisations for improved response time
+
+ * James Boyden:
+   + further development in the Model:
+     - internal feature-referencing data-structures for O(1) look-up
+     - unloading feature collections and updating feature-referencing
+   + contributions to continuously-closing plates / lithosphere-velocity-field
+     functionality:
+     - GPGIM design of topology components for continuously-closing plates
+     - design input into topology-construction user-interface and workflow (for
+       compatibility with 0.9)
+     - calculation of point-velocity from plate motion
+     - C++ implementation and GPML output of GML DataBlock for velocity field
+   + user-documentation planning and review
+
+
+GPlates 0.9.4
+-------------
+
+Released 2008-12-19, GPlates 0.9.4 contained several significant developments
+of the GPlates 0.9.3.1 functionality and GUI.
+
+GPlates 0.9.4 was created (Oct 2008 - Dec 2008) by:
+ * James Boyden [technical lead]
+ * John Cannon (University of Sydney)
+ * James Clark
+ * Mark Turner
+ * Robin Watson
+
+under the direction of:
+ * Dietmar Müller
+ * Trond Torsvik
+ * Mike Gurnis
+
+funded by grants from:
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+ * The Norwegian Research Council
+ * Statoil-Hydro
+ * The Gordon and Betty Moore Foundation
+
+GPlates 0.9.4 compiled and ran on Linux, Windows XP, Windows Vista and MacOS X.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+ * John Cannon
+   + CMake-based build system (replacing both the
+     Autoconf/Automake/Libtool-based build system for Linux and the project
+     files for the MS Visual Studio compilers, and enabling compilation on
+     MacOS X)
+   + GPlates on OS X (porting and testing the software, and coordinating the
+     beta trial)
+   + GMT export of feature collection data files and digitised geometries
+   + interactive manipulation of feature geometries and digitised geometries
+     by dragging vertices
+ * James Clark
+   + enhancements to the Manage Feature Collections dialog (reload files from
+     disk; categorise and enable/disable feature collections by reconstructable
+     feature or reconstruction feature without unloading or reloading files)
+   + various improvements to the main-window user-interface
+ * Robin Watson
+   + the ability to specify extents for rasters, for rasters which do not cover
+     the entire surface of the globe.
+   + the ability to edit Shapefile attributes in the Feature Properties dialog
+   + a tabular (spreadsheet) display of all Shapefile attributes in a file
+
+The following GPlates users took part in the beta trial of GPlates on OS X:
+ * Christian Heine
+ * Bob Kopp
+ * Patrice Rey
+ * Maria Seton
+ * Jo Whittaker
+ * Florian Wobbe
+
+
+GPlates 0.9.3.1
+---------------
+
+Released 2008-10-19, GPlates 0.9.3.1 contained a minor bugfix to GPlates 0.9.3
+to fix a bug which was noticed after 0.9.3 was uploaded, but before any release
+announcement had been made.  The bug was related to the mapping of Shapefile
+attributes.  There were no other changes from 0.9.3.
+
+GPlates 0.9.3.1 compiled and ran on Linux, Windows XP and Windows Vista.
+
+
+GPlates 0.9.3
+-------------
+
+Released 2008-09-19, GPlates 0.9.3 contained several significant developments
+of the GPlates 0.9.2 functionality and GUI.
+
+GPlates 0.9.3 was created (May 2008 - Sep 2008) by:
+ * James Boyden [software architect and technical lead]
+ * James Clark
+ * Hamish Ivey-Law
+ * Robin Watson
+ * John Xu (University of Sydney)
+
+under the direction of:
+ * Dietmar Müller
+ * Trond Torsvik
+
+funded by grants from:
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+ * The Norwegian Research Council
+ * Statoil-Hydro
+
+GPlates 0.9.3 compiled and ran on Linux, Windows XP and Windows Vista.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+ * James Boyden
+   + interactive modification of total reconstruction poles by dragging
+     geometries
+   + an overhaul of the internal geometry types, reconstruction mechanism and
+     graphics to enable polygons and multi-geometries, as well as duplicate
+     vertices in polylines and polygons
+   + a decoration and highlight mechanism for selected features, temporary
+     digitised geometries, dragged geometries, etc.
+ * James Clark
+   + feature digitisation
+   + the Task Panel
+   + the ability to edit geometries in the Feature Properties dialog
+   + integration and testing of the new GPML parser
+   + compressed GPML file I/O
+ * Hamish Ivey-Law
+   + the GPML parser
+   + XML-conformance of GPML output
+ * Robin Watson
+   + compatibility between GPML and Shapefiles
+   + extensive testing and debugging of new GPlates functionality, particularly
+     on Microsoft Windows
+ * John Xu
+   + the ability to choose between different feature colouring schemes (by
+     feature-type, by feature age and by a single user-specified colour), in
+     addition to the existing colouring by plate ID
+
+
+GPlates 0.9.2
+-------------
+
+Released 2008-05-19, GPlates 0.9.2 contained several significant developments
+of the GPlates 0.9.1 functionality and GUI.
+
+GPlates 0.9.2 was created (Feb 2008 - May 2008) by:
+ * James Boyden [software architect and technical lead]
+ * James Clark
+ * Hamish Ivey-Law
+ * Robin Watson
+
+under the direction of:
+ * Dietmar Müller
+ * Trond Torsvik
+
+funded by grants from:
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+ * The Norwegian Research Council
+ * Statoil-Hydro
+
+GPlates 0.9.2 compiled and ran on Linux, Windows XP and Windows Vista.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+ * James Clark
+   + extended Query Feature Properties dialog to enable the editing of feature
+     properties (using custom widgets) and the display of reconstructed
+     geometries in parallel with present-day geometries
+   + enhanced synchronisation between GUI elements which display the properties
+     of features
+ * Robin Watson
+   + Total Reconstruction Poles dialog, which displays: relative and equivalent
+     finite rotations; the tree-like hierarchy of relative rotations; and the
+     circuit between any plate and the stationary plate.
+   + the ability to overlay global rasters (in JPEG image format) on the globe
+     as OpenGL textures
+   + the ability to load time-sequences of global rasters, which are rendered
+     by GPlates according to the reconstruction time
+   + the ability to map (and re-map) arbitrary Shapefile attributes to GPlates
+     Model properties, automatically saving the user-specified mappings on disk
+     between sessions
+
+
+GPlates 0.9.1
+-------------
+
+Released 2008-02-03, GPlates 0.9.1 contained further developments of the
+GPlates 0.9 functionality and GUI.
+
+GPlates 0.9.1 was created (Dec 2007 - Jan 2008) by:
+ * James Boyden [software architect and technical lead]
+ * James Clark
+ * Hamish Ivey-Law
+ * Robin Watson
+
+under the direction of:
+ * Dietmar Müller
+ * Trond Torsvik
+
+funded by grants from:
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+ * The Norwegian Research Council
+ * Statoil-Hydro
+
+GPlates 0.9.1 compiled and ran on Linux, Windows XP and Windows Vista.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+ * James Clark
+   + enhanced zoom, camera positioning and camera orientation controls
+   + the feature table (as a Qt Model-View) in the "Clicked" tab
+ * Robin Watson
+   + SVG export of the orthogonal projection of geometries on the globe
+
+
+GPlates 0.9
+-----------
+
+Released 2007-12-21, GPlates 0.9 was the first public release of GPlates.
+GPlates 0.9 offered all the functionality of the GPlates 0.5 prototype (now
+re-implemented on top of the re-engineered 0.9.x-series codebase), as well as
+the following additional functionality: the ability to read ESRI Shapefiles;
+the ability to save data in the PLATES4 line format; the ability to query the
+GPGIM and GML properties of geological features in the Query Feature Properties
+dialog box; and the ability to calculate the equivalent rotation which was used
+to reconstruct a feature.
+
+GPlates 0.9 was created (2005-2007) by:
+ * James Boyden [software architect and technical lead]
+ * James Clark
+ * James Farrow (University of Sydney)
+ * Glen Fernandes (University of Sydney)
+ * Hamish Ivey-Law
+ * Robin Watson (Geological Survey of Norway (NGU))
+
+under the direction of:
+ * Dietmar Müller
+
+funded by grants from:
+ * The Australian Research Council (ARC)
+ * The Australian Partnership for Advanced Computing (APAC)
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+ * The Norwegian Research Council
+ * Statoil-Hydro
+
+GPlates 0.9 compiled and ran on Linux and Windows XP.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+ * James Boyden
+   + software architecture
+   + design and majority implementation of the new Model component
+   + GUI and interaction design
+   + a new PLATES4 rotation-format parser for the new Model
+ * James Clark
+   + development of the Qt GUI
+ * James Farrow
+   + new Autoconf/Automake/Libtool-based build system
+   + conversion of the existing wxWidgets-based GUI to Qt
+   + installation and configuration of the Trac site for the GPlates Project
+ * Glen Fernandes
+   + expertise in porting GPlates to Microsoft Windows
+   + project files for the MS Visual Studio compilers (MSVC 7.1 and MSVC 8)
+   + a new PLATES4 line-format parser for the new Model
+   + additional implementation of the new Model component
+ * Hamish Ivey-Law
+   + PLATES4 line-format writer
+   + PLATES4 rotation-format writer
+   + OpenGL enhancements
+   + command-line argument handling
+ * Robin Watson
+   + ESRI Shapefile parser
+   + testing and debugging on Microsoft Windows
+
+
+The GPlates 0.9.x series
+------------------------
+
+The GPlates 0.9.x series was a significant re-engineering of the GPlates 0.5
+codebase, to implement the GPGIM inside GPlates (in the new "Model" component
+of the GPlates software architecture), to restructure the architecture to allow
+greater extensibility (for both geological/geophysical and general-purpose
+functionality) and to migrate to a Qt-based GUI.
+
+
+GPGIM and GPML 1.5
+------------------
+
+The GPGIM (GPlates Geological Information Model) is the formal description of
+the geological and tectonic entities which GPlates simulates, the conceptual
+building-blocks which GPlates defines, and the processing and simulation
+constraints to which GPlates adheres.
+
+The GPGIM is our abstract representation of our model of plate tectonics (as
+far as our plans for GPlates functionality are concerned); as our information
+model, it serves as our primary requirement for what needs to be implemented
+in GPlates in order for GPlates to be able to represent our model of plate
+tectonics.
+
+The GPML (GPlates Markup Language) is an application schema of GML (Geography
+Markup Language).  The GPML is intended to serve as the native file format of
+GPlates.
+
+The modelling for GPGIM 1.5 was performed (2005-2007) by:
+ * James Clark (University of Sydney)
+
+with assistance from:
+ * Simon Cox (CSIRO Exploration & Mining)
+
+with contributions by:
+ * James Boyden
+ * Mark Turner
+
+with the geological expertise of:
+ * Mike Gurnis
+ * Christian Heine (postgrad student, EarthByte group, University of Sydney)
+ * Dietmar Müller
+ * Tim Redfield
+ * Maria Sdrolias (postgrad student, EarthByte group, University of Sydney)
+ * Trond Torsvik
+ * Jo Whittaker (postgrad student, EarthByte group, University of Sydney)
+
+under the direction of:
+ * Dietmar Müller
+
+funded by grants from:
+ * The Australian Research Council (ARC)
+ * The Australian Partnership for Advanced Computing (APAC)
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+
+The XML schema for GPML 1.5 was created by:
+ * James Clark
+
+with assistance from:
+ * Simon Cox
+
+
+The GPlates 0.8.x series
+------------------------
+
+The GPlates 0.8.x series was a specialised branch of GPlates development
+initiated and directed by Mike Gurnis at Caltech.  GPlates 0.8.x enhanced and
+extended the GPlates 0.5 codebase with a significant amount of specialised
+functionality, to enable GPlates to integrate with geodynamic modelling
+software such as CitcomS and to become a component in a geodynamic modelling
+workflow, in addition to broad additions to the general interactive
+functionality.   Releases in the GPlates 0.8.x series were not released to the
+public.
+
+GPlates 0.8.x enabled the user to construct closed plate-boundaries
+interactively and use plate-reconstructions to calculate plate-velocity fields
+for input into CitcomS.
+
+GPlates 0.8.x was created (2004-2007) by:
+ * Mark Turner (Caltech)
+
+with contributions by:
+ * James Boyden
+ * Hamish Ivey-Law
+
+under the direction of:
+ * Mike Gurnis
+
+funded by grants through the Caltech Tectonics Observatory by:
+ * The Gordon and Betty Moore Foundation
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+ * Mark Turner
+   + extension of the PLATES4 file-format to represent geometric intersection
+     topologies
+   + extension of the PLATES4 data-model implementation in GPlates to represent
+     geometric intersection topologies
+   + development of the GPlates GUI for the topology-construction workflow
+   + determination and implementation of the application logic of the manual
+     topology-construction workflow
+ * James Boyden
+   + in-software mouse-pointer-interaction with graphical objects in the
+     viewport
+   + algorithmic intersection of spherical polyline geometries
+   + calculation of point-velocities using finite rotations
+ * Hamish Ivey-Law
+   + research into automated topology-construction
+   + the initial topology-construction prototype (2004)
+
+
+GPlates 0.5
+-----------
+
+The first GPlates prototype ("GPlates 0.5") was created (2003) by:
+ * James Boyden (University of Sydney)
+ * Hamish Ivey-Law (University of Sydney)
+
+with contributions by:
+ * Mike Dowman (University of Sydney)
+ * David Symonds (University of Sydney)
+
+under the direction of:
+ * Dietmar Müller
+
+funded by grants from:
+ * The Australian Research Council (ARC)
+
+GPlates 0.5 was able to load geological data from PLATES4 line-format files
+and total reconstruction poles (finite rotations) from PLATES4 rotation-format
+files, perform plate-reconstructions to user-specified geological times, and
+display animations over user-specified geological time intervals.  GPlates 0.5
+had a simple, wxWidgets-based interactive graphical user-interface (GUI) and
+displayed the 3-D globe in an orthographic projection in an OpenGL window.
+Geological data were coloured according to reconstruction plate ID.
+
+GPlates 0.5 compiled and ran on Linux.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+ * James Boyden
+   + spherical geometries and quaternions
+   + interpolation of finite rotations
+   + plate-reconstructions
+ * Hamish Ivey-Law
+   + 3-D graphics using OpenGL
+   + GPML v1 language and parser
+   + interactive GUI
+ * David Symonds
+   + Autoconf-based build system
+
+
+Conception
+----------
+
+GPlates was conceived in 2002 by the following committee:
+ * Dietmar Müller [committee chair] (University of Sydney)
+ * Stuart Clark (University of Sydney)
+ * Mike Coffin (ORI/IFREE)
+ * Mike Gurnis (Caltech)
+ * Lawrence Lawver (PLATES/UTIG)
+ * Louis Moresi (Monash University/VPAC)
+ * Tim Redfield (PGP/NGU)
+ * Walter Roest (GSC)
+ * Trond Torsvik (PGP/NGU)

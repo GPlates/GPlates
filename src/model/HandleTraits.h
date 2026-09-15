@@ -187,6 +187,13 @@ namespace GPlatesModel
 		/**
 		 * Typedef for PointerTraits<TopLevelProperty>::non_null_ptr_type, the type
 		 * returned on dereference of the FeatureHandle iterator.
+		 *
+		 * WARNING: this is a pointer returned *by value* (the pyGPlates merge removed the old
+		 * TopLevelPropertyRef proxy, whose assignment operator committed to the model via
+		 * FeatureHandle::set()). So '*iter = new_property' compiles but assigns to a temporary
+		 * and silently does nothing - the feature is unchanged and no unsaved-changes flag is
+		 * set. Use 'feature_ref->set(iter, new_property)' instead, and watch for the spelling
+		 * '**opt_iter = x' on a boost::optional<FeatureHandle::iterator> as well.
 		 */
 		typedef GPlatesGlobal::PointerTraits<TopLevelProperty>::non_null_ptr_type iterator_value_type;
 

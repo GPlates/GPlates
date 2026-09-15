@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 """
-Run every sample script in the pyGPlates API documentation ('doc-python-api/sample-code/*.py').
+Run every sample script in the pyGPlates API documentation ('docs/pygplates/sample-code/*.py').
 
 Each script is the code of one documentation page (the page includes it through the 'sample-code'
-directive - see 'doc-python-api/conf.py.in'), written to run in a directory holding the data files
+directive - see 'docs/pygplates/conf.py.in'), written to run in a directory holding the data files
 it names ('rotations.rot', 'topologies.gpml', ...). So each one runs in its own temporary directory
 seeded with a copy of the test fixtures, and passes if it exits zero. The documented "Output" blocks
 are captured from real geodata and are not compared: the fixtures are small stand-ins that let the

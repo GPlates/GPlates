@@ -42,7 +42,7 @@ namespace GPlatesApi
 		 * transcription object) by the entry-point below, and checked on unpickle.
 		 *
 		 * This is the client-owned coarse version gate described in the fast-path ("raw lane") design
-		 * (see "doc-cpp/design/scribe-system/fast-path-plan.md"). It sits *above* the two lower-level
+		 * (see "docs/design/scribe-system/fast-path.md"). It sits *above* the two lower-level
 		 * gates that already protect a pickle:
 		 *   - the raw-stream *codec* version (scribe-owned, written at the head of each raw blob), and
 		 *   - the binary *archive* format version (bumped to 1 only when a raw stream is present, so an
@@ -97,7 +97,7 @@ namespace GPlatesApi
 				// The 'RAW' option streams the entire object subtree into a single raw-stream blob
 				// (the "raw lane") instead of the usual one-transcription-object-per-child encoding -
 				// this is the fast path for pickling (see "scribe/ScribeOptions.h" and
-				// "doc-cpp/design/scribe-system/fast-path-plan.md").
+				// "docs/design/scribe-system/fast-path.md").
 				scribe.save(TRANSCRIBE_SOURCE, object, "object", GPlatesScribe::RAW);
 			}
 
