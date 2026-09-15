@@ -77,11 +77,6 @@ import sys
 # interpreter (which registers 'pygplates' via 'PyImport_AppendInittab').
 _PYGPLATES_MODULES = ('pygplates', 'pygplates.pygplates')
 
-# Module-level names to always exclude from the stub:
-# Python 2 compatibility helpers exec'd into the module dict (they get
-# '__module__' == 'pygplates' so the foreign-module filter does not catch them).
-_SKIP_MODULE_NAMES = frozenset(['iteritems', 'itervalues', 'listitems', 'listvalues'])
-
 # Class attributes that are implementation machinery, not API.
 #
 # '__firstlineno__' and '__static_attributes__' are set on every class defined in Python
@@ -1376,7 +1371,7 @@ class StubGenerator(object):
         # '__all__' would be one more list to keep in step with the module.
 
         for name in sorted(vars(self.module)):
-            if name.startswith('_') or name in _SKIP_MODULE_NAMES:
+            if name.startswith('_'):
                 continue
             obj = vars(self.module)[name]
             if inspect.ismodule(obj):
