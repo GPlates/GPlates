@@ -55,7 +55,7 @@ from pathlib import Path
 
 # 'docs/pygplates/' - this script lives beside 'conf.py.in' and the '.rst' sources.
 SOURCE_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SOURCE_DIR.parent
+REPO_ROOT = SOURCE_DIR.parents[1]
 
 
 def find_package_dir(module_dir):
