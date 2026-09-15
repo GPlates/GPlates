@@ -332,14 +332,40 @@ prepares the release does not.
 
 ### Planning documents
 
-Plans, status tables, findings reports and step lists do not merge into `gplates`. They may live on
-a feature branch while the work is in progress (to move it between machines, say), but before that
-branch merges, distil them and delete them:
+A plan records work in progress: steps, status, open questions, findings. Design documents
+describe the design as it is and why. They may record rejected alternatives and deferred work, but
+not progress, so a plan never goes in `docs/design/`. Distilling a plan means moving what lasts out
+of it:
 
 - rationale, constraints and rejected alternatives go into `docs/design/`, or the README next to
   the code;
 - traps go into comments at the code where they bite;
 - user-visible changes go into the changelog.
 
-Design documents describe the design as it is and why. They may record rejected alternatives and
-deferred work, but not progress.
+Where the plan lives depends on the branch:
+
+- **A short-lived branch** keeps its plan outside the repository, and distils it once, before its
+  pull request is opened.
+- **A long-lived branch** keeps its plan in the repository, in `docs/plans/<name>/`, where `<name>`
+  is the branch name without its `feature/` or `fix/` prefix. The plan then travels with the branch
+  to every clone. `PLAN.md` is the entry point; add files beside it as the plan grows. Distil as the
+  work goes, not all at the end:
+  - Record a decision, a rejected alternative or a trap when it is made or found, in the plan or
+    in a comment at the code. The code will never show a rejected alternative, so one left for
+    the end is lost.
+  - Write a stage's design document when the stage is complete. A design document written ahead of
+    the code describes a moving target, and has to be rewritten.
+  - Before the branch merges, check every design statement against the code, then delete
+    `docs/plans/<name>/`.
+  - If the work reaches `gplates` in several pull requests, the plan merges with them: each pull
+    request distils what it completed, and the last one deletes the plan.
+
+Whether a branch is long-lived is the developer's decision; an agent does not promote a branch on
+its own judgement. When the developer says that a branch is long-lived, move its plan into
+`docs/plans/<name>/PLAN.md` on that branch, from wherever it was kept outside the repository (an
+agent's plan directory, say), and commit it. From then on, update the copy in the repository and
+not the old one.
+
+Once a plan is deleted, anything it held that was not distilled survives only in git history, which
+nobody reads. So distil with the most capable model available, and check the result against the
+code.
