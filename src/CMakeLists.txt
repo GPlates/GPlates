@@ -675,27 +675,19 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # General COMPILE_FEATURES (target property).
 #
 
-# Set the minimum C++ language standard to C++14.
+# Set the minimum C++ language standard to C++17.
 #
-# std::auto_ptr was deprecated in C++11 (and removed in C++17), so we now use std::unique_ptr introduced in C++11.
-# Also GDAL 2.3 and above require C++11.
-# And CGAL 5.x requires C++14, and this requirement is transitively passed to us via the CGAL::CGAL target
-# (where CMake chooses the stricter requirement between our requirement and CGAL's C++14 requirement).
-# And Boost 1.81 (in math library) started warning if we used less than C++14 - it seems Boost's CMake configuration
-# doesn't transitively pass its C++14 requirement to us, like CGAL does - so we just set our requirement to C++14.
-# And Qt 6 requires C++17, and this requirement is transitively passed to us via the Qt6 targets (like Qt6::Core)
-# where Qt chooses the stricter requirement between our C++11 and Qt's C++17 (which is C++17)
+# Qt 6 and CGAL 6 both require C++17 (and pass that requirement on through their imported targets), so nearly
+# every build was already compiled as C++17. Requiring it here makes the Qt5 builds that use an older CGAL
+# (eg, Ubuntu's own packages) compile with the same standard, and lets shared code rely on C++17.
 #
-# Note: Specifying compile features avoids the problem of compile errors when C++17 features are used (eg, by Qt 6)
-#       since we're not forcing C++14 by specifying '-std=c++14' directly on the compiler command-line.
-target_compile_features(${SOURCE_TARGET} PUBLIC cxx_std_14)
+# Note: A compile feature (rather than the CXX_STANDARD property) is a minimum, so a dependency that needs a
+#       later standard still gets it.
+target_compile_features(${SOURCE_TARGET} PUBLIC cxx_std_17)
 #
-# We also want to disable compiler-specific extensions (eg, for C++11 on GNU compilers we want '-std=c++11' instead of '-std=g++11').
-# However CMake policy CMP0128 is a bit confusing about how to do this using 'CMAKE_CXX_EXTENSIONS'.
-# It seems to indicate that, prior to CMake 3.22, 'CMAKE_CXX_EXTENSIONS' is ignored unless 'CMAKE_CXX_STANDARD' is also set.
-# So we'll go ahead and also include the old pre-CMake-3.8 approach to setting C++14 via target properties.
-# Apparently CMake will use the stronger requirement of cxx_std_14 and CXX_STANDARD=14 (which is just C++14 anyway).
-set_target_properties(${SOURCE_TARGET} PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+# Disable compiler-specific extensions (eg, '-std=c++17' rather than '-std=gnu++17' on GNU compilers).
+# With CMake policy CMP0128 (CMake 3.22) this is honoured without also setting CXX_STANDARD.
+set_target_properties(${SOURCE_TARGET} PROPERTIES CXX_EXTENSIONS OFF)
 
 
 #
