@@ -265,7 +265,7 @@ set(srcs
 
 if (TARGET gplates-lib)
     # Add the source files to the gplates static library.
-    target_sources_util(gplates-lib PRIVATE ${srcs})
+    target_sources(gplates-lib PRIVATE ${srcs})
 else()
     # The pygplates module takes only these dependency-free value types (colours,
     # palettes and the mipmapper used by the raster property values) - the include
@@ -293,5 +293,5 @@ else()
         endif()
     endforeach()
     # Add the source files to the pygplates extension module.
-    target_sources_util(pygplates PRIVATE ${pygplates_srcs})
+    target_sources(pygplates PRIVATE ${pygplates_srcs})
 endif()

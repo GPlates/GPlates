@@ -146,7 +146,7 @@ endif()
 # either via running 'ctest', or 'make test', or building 'RUN_TESTS' in Visual Studio.
 enable_testing()
 # Print test output when test fails - when running tests with 'make test' or building 'RUN_TESTS' (in Visual Studio).
-list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")  # Ignored if CMake < 3.17
+list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
 # Test the version resolver's pure helper functions - splitting and ordering versions, and
 # checking the hand-edited release target against the nearest release ('VersionFromGit.cmake').

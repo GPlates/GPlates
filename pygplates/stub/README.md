@@ -98,13 +98,3 @@ open a project that uses it in VS Code: `pygplates.RotationModel(` should offer 
 overloads in signature help (Ctrl+Shift+Space), `PropertyReturn.first` should resolve, and hover on
 `get_rotation` should show the full docstring. Bare hover on an overloaded member shows only the
 *first* overload's docstring - that is Pylance behaviour, not a stub defect.
-
-## Open item
-
-Some pure-Python API files leak names as runtime attributes of `pygplates`: `Crossovers.py` leaks
-`namedtuple`, `partial` and `math`, `GeometriesOnSphere.py` leaks `itertools` (and `numpy`, when
-installed), and both `Crossovers.py` and `PlatePartitioning.py` leak the Py2-compat `iteritems`
-helpers. The generator keeps them out of the stub (foreign `__module__`, `inspect.ismodule`,
-`_SKIP_MODULE_NAMES`), but removing them at runtime - a module-level `del` after use, as
-`PlatePartitioning.py`, `Feature.py` and `GeometriesOnSphere.py` already do for their helper
-functions - is API-visible and needs sign-off first.

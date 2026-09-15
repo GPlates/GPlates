@@ -75,7 +75,7 @@ if (PROJ4_FOUND)
   else()
     # There was a CONFIG package but it defined a 'proj' target instead of a 'PROJ4::proj' target.
     # So make 'PROJ::proj' alias 'proj'.
-    # But before we can do this we first need to promote 'proj' to global visibility (requires CMake 3.11 or above).
+    # But before we can do this we first need to promote 'proj' to global visibility.
     set_target_properties(proj PROPERTIES IMPORTED_GLOBAL TRUE)
     # Also it seems that, while the 'proj' target has set the library import location, it doesn't set the location of the include directories.
     set_target_properties(proj PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${PROJ4_INCLUDE_DIRS}")
