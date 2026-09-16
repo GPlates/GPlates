@@ -46,7 +46,7 @@
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 #include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
 #include "app-logic/TotalReconstructionSequenceTimePeriodFinder.h"
 
@@ -735,7 +735,7 @@ namespace
 
         // Obtain the IrregularSampling that contains the TimeSamples.
 		boost::optional<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlIrregularSampling>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlIrregularSampling>(
 						feature_ref, 
 						totalReconstructionPole_prop_name());
         if (!irreg_sampling)
@@ -1814,7 +1814,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_pole_data_from_feature
 			*id_finder.fixed_ref_frame_plate_id() : 0;
 
 	boost::optional<GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling =
-			GPlatesFeatureVisitors::get_property_value<GpmlIrregularSampling>(
+			GPlatesModel::get_property_value<GpmlIrregularSampling>(
 					feature_ref, 
 					totalReconstructionPole_prop_name());
     if (irreg_sampling)
@@ -1927,7 +1927,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_seq_disabled(
 	if(feature_ref.is_valid())
 	{
 		boost::optional<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling_const =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlIrregularSampling>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlIrregularSampling>(
 						feature_ref,
 						totalReconstructionPole_prop_name());
 		if (irreg_sampling_const)
@@ -1988,7 +1988,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 	if(proxy)
 	{
 		boost::optional<GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling_const =
-				GPlatesFeatureVisitors::get_property_value<GpmlIrregularSampling>(
+				GPlatesModel::get_property_value<GpmlIrregularSampling>(
 						feature_ref, 
 						totalReconstructionPole_prop_name());
 		if (!irreg_sampling_const)

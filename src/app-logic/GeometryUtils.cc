@@ -39,7 +39,7 @@
 
 #include "app-logic/GeometryFinder.h"
 #include "app-logic/GeometryTypeFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"

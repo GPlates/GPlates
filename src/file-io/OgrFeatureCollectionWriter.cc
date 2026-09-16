@@ -41,7 +41,7 @@
 #include "OgrUtils.h"
 #include "app-logic/GeometryTypeFinder.h"
 #include "property-values/KeyValueDictionaryFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 #include "property-values/ToQvariantConverter.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -512,7 +512,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
 
 		boost::optional<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_to_const_type> old_plates_header =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
 						feature_handle.reference(), old_plates_header_property_name);
 		if (old_plates_header)
 		{
@@ -654,7 +654,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature, plate_id_property_name);
 		if (recon_plate_id)
 		{
@@ -696,7 +696,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> conjugate_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature, conjugate_plate_id_property_name);
 		if (conjugate_plate_id)
 		{
@@ -736,7 +736,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("leftPlate");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> left_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature, left_plate_id_property_name);
 		if (left_plate_id)
 		{
@@ -775,7 +775,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("rightPlate");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> right_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature, right_plate_id_property_name);
 		if (right_plate_id)
 		{
@@ -816,7 +816,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 
 		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> recon_method =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(
 						feature, recon_method_property_name);
 		if (recon_method)
 		{
@@ -856,7 +856,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("spreadingAsymmetry");
 
 		boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> spreading_asymmetry =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsDouble>(
 						feature, spreading_asymmetry_property_name);
 		if (spreading_asymmetry)
 		{
@@ -895,7 +895,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 
 		boost::optional<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type> time_instant =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimeInstant>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimeInstant>(
 						feature, geometry_import_time_property_name);
 		if (time_instant)
 		{
@@ -1016,7 +1016,7 @@ namespace
 				GPlatesModel::PropertyName::create_gml("validTime");
 
 		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 						feature, valid_time_property_name);
 		if (time_period)
 		{
@@ -1084,7 +1084,7 @@ namespace
 				GPlatesModel::PropertyName::create_gml("name");
 
 		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 						feature, name_property_name);
 		if (name)
 		{
@@ -1124,7 +1124,7 @@ namespace
 				GPlatesModel::PropertyName::create_gml("description");
 
 		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> description =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 						feature, description_property_name);
 		if (description)
 		{

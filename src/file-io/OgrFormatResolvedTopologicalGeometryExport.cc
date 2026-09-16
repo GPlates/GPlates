@@ -44,7 +44,7 @@
 
 #include "app-logic/GeometryTypeFinder.h"
 #include "property-values/KeyValueDictionaryFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsDouble.h"

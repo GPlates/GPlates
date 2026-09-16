@@ -31,7 +31,6 @@ boundary is marked within it rather than described separately.
     |  app-logic (reconstruction core: ReconstructMethod*, Reconstruct-     |
     |   Context, ReconstructionTree*, topology resolvers, ...)              |
     |  file-io (core readers/writers: GPML, PLATES, OGR, rasters, ...)      |
-    |  feature-visitors (the API-reached subset)                            |
     |  gui (value types only: Colour, palettes, Mipmapper)                  |
     |  scribe (binary archives + transcribing; text/XML archives are        |
     |   GPlates-only)                                                       |
@@ -121,5 +120,3 @@ Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
   embedded-interpreter files out of `src/api/` (they serve `gui/PythonManager`, not the API).
   Directory moves multiply merge risk across the `vulkan` branch and the downstream fork, so
   this waits for a dedicated commit at a quiet merge point.
-- Dissolve `src/feature-visitors/` and delete the dead `deprecated/` subtrees (separate PR,
-  already planned).

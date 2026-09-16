@@ -37,7 +37,7 @@
 #include "property-values/XsDouble.h"
 
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesModel
 {
 	namespace
 	{
@@ -173,7 +173,7 @@ namespace GPlatesFeatureVisitors
 }
 
 void
-GPlatesFeatureVisitors::Implementation::visit_gpml_constant_value(
+GPlatesModel::Implementation::visit_gpml_constant_value(
 		GPlatesModel::ConstFeatureVisitor::gpml_constant_value_type &gpml_constant_value,
 		GPlatesModel::ConstFeatureVisitor &property_value_finder_visitor)
 {
@@ -182,7 +182,7 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_constant_value(
 
 
 void
-GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconstruction_time(
+GPlatesModel::Implementation::visit_gpml_irregular_sampling_at_reconstruction_time(
 		GPlatesModel::ConstFeatureVisitor::gpml_irregular_sampling_type &gpml_irregular_sampling,
 		GPlatesModel::ConstFeatureVisitor &property_value_finder_visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
@@ -270,7 +270,7 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 
 
 void
-GPlatesFeatureVisitors::Implementation::visit_gpml_piecewise_aggregation_at_reconstruction_time(
+GPlatesModel::Implementation::visit_gpml_piecewise_aggregation_at_reconstruction_time(
 		GPlatesModel::ConstFeatureVisitor::gpml_piecewise_aggregation_type &gpml_piecewise_aggregation,
 		GPlatesModel::ConstFeatureVisitor &property_value_finder_visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)

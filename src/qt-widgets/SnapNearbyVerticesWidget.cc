@@ -29,7 +29,7 @@
 
 #include "canvas-tools/ModifyGeometryState.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "gui/FeatureFocus.h"
 
@@ -57,7 +57,7 @@ namespace{
 			GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature_handle, property_name);
 		if (plate_id)
 		{

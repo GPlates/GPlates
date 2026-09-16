@@ -33,7 +33,7 @@
 
 #include "app-logic/TopologyInternalUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "model/PropertyName.h"
 #include "model/FeatureHandle.h"
@@ -79,7 +79,7 @@ namespace
 		if (table_row.get_feature_ref().is_valid())
 		{
 			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 							table_row.get_feature_ref(), valid_time_property_name);
 			if (time_period)
 			{
@@ -115,7 +115,7 @@ namespace
 		if (table_row.get_feature_ref().is_valid())
 		{
 			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 							table_row.get_feature_ref(), valid_time_property_name);
 			if (time_period)
 			{
@@ -226,7 +226,7 @@ namespace
 		if (row_data.get_feature_ref().is_valid()) {
 			// Attempt to find the property name and value we are interested in.
 			boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> property_return_value =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 							row_data.get_feature_ref(),
 							plate_id_property_name);
 			if (property_return_value)
@@ -258,7 +258,7 @@ namespace
 			
 			// Attempt to find the property name and value we are interested in.
 			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> property_return_value =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 							row_data.get_feature_ref(),
 							gml_name_property_name);
 			if (property_return_value)

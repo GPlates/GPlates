@@ -24,8 +24,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_PROPERTYVALUEFINDER_H
-#define GPLATES_FEATUREVISITORS_PROPERTYVALUEFINDER_H
+#ifndef GPLATES_MODEL_PROPERTYVALUEFINDER_H
+#define GPLATES_MODEL_PROPERTYVALUEFINDER_H
 
 #include <algorithm>  // std::find
 #include <typeinfo>
@@ -48,7 +48,7 @@
 #include "utils/CopyConst.h"
 
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesModel
 {
 	///////////////
 	// Interface //
@@ -419,7 +419,7 @@ namespace GPlatesFeatureVisitors
 			property_value_type, \
 			visit_property_value_method \
 		) \
-		namespace GPlatesFeatureVisitors \
+		namespace GPlatesModel \
 		{ \
 			namespace Implementation \
 			{ \
@@ -653,4 +653,4 @@ namespace GPlatesFeatureVisitors
 	}
 }
 
-#endif // GPLATES_FEATUREVISITORS_PROPERTYVALUEFINDER_H
+#endif // GPLATES_MODEL_PROPERTYVALUEFINDER_H

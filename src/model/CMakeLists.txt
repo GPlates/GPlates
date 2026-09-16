@@ -59,6 +59,8 @@ set(srcs
     PropertyName.h
     PropertyValue.cc
     PropertyValue.h
+    PropertyValueFinder.cc
+    PropertyValueFinder.h
     QualifiedXmlName.h
     Revision.h
     Revisionable.cc

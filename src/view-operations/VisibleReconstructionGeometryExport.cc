@@ -42,7 +42,7 @@
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/TopologyUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/ReconstructedFlowlineExport.h"
@@ -176,7 +176,7 @@ namespace GPlatesViewOperations
 
 								// Check for subduction polarity enumeration.
 								boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> subduction_polarity_enum =
-										GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+										GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(
 												resolved_topological_section->get_feature_ref(),
 												subduction_polarity_property_name,
 												reconstruction_time);

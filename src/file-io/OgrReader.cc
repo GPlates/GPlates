@@ -48,7 +48,7 @@
 #include "ReadErrorOccurrence.h"
 #include "ShapefileXmlReader.h"
 
-#include "feature-visitors/PropertyValueFinder.h" 
+#include "model/PropertyValueFinder.h" 
 #include "file-io/ShapefileAttributeFinder.h"
 
 #include "model/ChangesetHandle.h"

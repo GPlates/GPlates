@@ -40,7 +40,7 @@
 
 #include "utils/UnicodeStringUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "file-io/FileInfo.h"
 
@@ -85,7 +85,7 @@ namespace
 			const GPlatesModel::PropertyName &property_name)
 	{
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature_ref, property_name);
 		if (plate_id)
 		{
@@ -277,7 +277,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 		GPlatesModel::PropertyName::create_gml("name");
 
 	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 					feature_ref, name_property_name);
 	if (name)
 	{
@@ -316,7 +316,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 		GPlatesModel::PropertyName::create_gml("validTime");
 
 	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 					feature_ref, valid_time_property_name);
 	if (time_period)
 	{

@@ -66,7 +66,7 @@
 
 #include "data-mining/DataTable.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -208,7 +208,7 @@ namespace
 				// See if has a 'gpml:subductionPolarity' property.
 				static const GPlatesModel::PropertyName subduction_polarity_property_name = GPlatesModel::PropertyName::create_gpml("subductionPolarity");
 				boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> subduction_polarity_property_value =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(feature_ref.get(), subduction_polarity_property_name);
+					GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(feature_ref.get(), subduction_polarity_property_name);
 				if (subduction_polarity_property_value)
 				{
 					// See if property is a 'gpml:SubductionPolarityEnumeration' enumeration.

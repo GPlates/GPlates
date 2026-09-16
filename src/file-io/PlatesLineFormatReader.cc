@@ -40,7 +40,7 @@
 #include "ReadErrors.h"
 #include "LineReader.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
@@ -376,7 +376,7 @@ qDebug() << "use_tail_next = " << use_tail_next;
 			GPlatesModel::PropertyName::create_gml("validTime");
 
 		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 				feature_ref, valid_time_property_name);
 	
 		// Casting time details

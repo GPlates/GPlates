@@ -44,7 +44,7 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "app-logic/GeometryFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
@@ -128,7 +128,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature, plate_id_property_name);
 		if (recon_plate_id)
 		{
@@ -214,7 +214,7 @@ namespace
 		if (weak_ref)
 		{
 			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 							*weak_ref, valid_time_property_name);
 			if (time_period)
 			{
@@ -241,7 +241,7 @@ namespace
 		if (weak_ref)
 		{
 			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 							*weak_ref, valid_time_property_name);
 			if (time_period)
 			{
@@ -269,7 +269,7 @@ namespace
 		if (weak_ref)
 		{
 			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 							*weak_ref, name_property_name);
 			if (name)
 			{
@@ -294,7 +294,7 @@ namespace
 		if (weak_ref)
 		{
 			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> description =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 							*weak_ref, description_property_name);
 			if (description)
 			{

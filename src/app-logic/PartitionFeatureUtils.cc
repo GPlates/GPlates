@@ -43,7 +43,7 @@
 #include "ScalarCoverageFeatureProperties.h"
 
 #include "app-logic/GeometrySetter.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "maths/AngularExtent.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
@@ -1148,7 +1148,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_reconstruction_plate_id_from_feature
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
 	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 					feature_ref,
 					get_reconstruction_plate_id_property_name());
 	if (!recon_plate_id)
@@ -1195,7 +1195,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_conjugate_plate_id_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
 	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> conjugate_plate_id =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 					feature_ref,
 					get_conjugate_plate_id_property_name());
 	if (!conjugate_plate_id)
@@ -1242,7 +1242,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_valid_time_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
 	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 					feature_ref,
 					get_valid_time_property_name());
 	if (!time_period)

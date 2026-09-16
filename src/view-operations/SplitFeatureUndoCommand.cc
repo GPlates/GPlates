@@ -32,7 +32,7 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "app-logic/GeometrySetter.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "model/Model.h"
 #include "model/ModelUtils.h"
@@ -170,7 +170,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	//since the non-const value finder has been disabled, 
 	//use const_cast as workaround for now
 	const GPlatesPropertyValues::GmlLineString* const_val;
-	GPlatesFeatureVisitors::get_property_value(
+	GPlatesModel::get_property_value(
 			*d_old_feature,	
 			property_name,
 			const_val);

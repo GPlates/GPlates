@@ -37,7 +37,7 @@
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/MultiPointVectorField.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "maths/CalculateVelocity.h"
 
@@ -164,7 +164,7 @@ namespace
 			// Get the property value from the domain feature.
 			boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type>
 					domain_reconstruction_plate_id_property_value =
-							GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+							GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 									domain_feature_ref,
 									RECONSTRUCTION_PLATE_ID_PROPERTY_NAME);
 			if (domain_reconstruction_plate_id_property_value)
@@ -193,7 +193,7 @@ namespace
 
 			// Get the property value from the domain feature.
 			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name_property_value =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 							domain_feature_ref,
 							NAME_PROPERTY_NAME);
 			if (name_property_value)

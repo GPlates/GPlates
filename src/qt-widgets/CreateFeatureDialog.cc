@@ -63,7 +63,7 @@
 #include "app-logic/TopologyUtils.h"
 
 #include "app-logic/GeometrySetter.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -492,7 +492,7 @@ namespace
 			}
 
 			boost::optional<typename PropertyValueType::non_null_ptr_to_const_type> derived_property_value =
-					GPlatesFeatureVisitors::get_property_value<PropertyValueType>(*property_value.get());
+					GPlatesModel::get_property_value<PropertyValueType>(*property_value.get());
 			if (!derived_property_value)
 			{
 				continue;
@@ -1667,7 +1667,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 			if (prop_value_maybe) {
 				// We know the name (should be) an XsString.
 				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> prop_value_string =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(*prop_value_maybe.get());
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(*prop_value_maybe.get());
 				if (!prop_value_string)
 				{
 					continue;
@@ -1696,7 +1696,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 			if (prop_value_maybe) {
 				// We know the quality (should be) an Enumeration.
 				boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> prop_value_enum =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(*prop_value_maybe.get());
+						GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(*prop_value_maybe.get());
 				if (!prop_value_enum)
 				{
 					continue;

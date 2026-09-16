@@ -68,7 +68,7 @@
 #include "app-logic/TopologyUtils.h"
 
 #include "app-logic/GeometryTypeFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 #include "gui/TopologySectionsFinder.h"
 #include "qt-widgets/ViewFeatureGeometriesWidgetPopulator.h"
 
@@ -3653,7 +3653,7 @@ GPlatesGui::TopologyTools::show_numbers()
 			GPlatesModel::PropertyName::create_gml("name");
 
 		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 						d_feature_focus_ptr->focused_feature(), name_property_name);
 		if (name)
 		{

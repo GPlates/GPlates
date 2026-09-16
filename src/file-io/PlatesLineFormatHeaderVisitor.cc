@@ -27,7 +27,7 @@
 #include "PlatesLineFormatHeaderVisitor.h"
 #include "PlatesFormatUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 

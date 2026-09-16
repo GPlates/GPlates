@@ -40,7 +40,7 @@
 #include "GeometryUtils.h"
 #include "ReconstructionGeometryVisitor.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"

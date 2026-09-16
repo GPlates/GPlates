@@ -42,7 +42,7 @@
 #include "app-logic/ScalarCoverageFeatureProperties.h"
 #include "app-logic/TopologyReconstructedFeatureGeometry.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
@@ -92,7 +92,7 @@ namespace
 				if (range_property_value_base)
 				{
 					boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_to_const_type> range_property_value =
-							GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlDataBlock>(*range_property_value_base.get());
+							GPlatesModel::get_property_value<GPlatesPropertyValues::GmlDataBlock>(*range_property_value_base.get());
 					if (range_property_value)
 					{
 						const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &

@@ -35,7 +35,7 @@
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/InternalInconsistencyException.h"

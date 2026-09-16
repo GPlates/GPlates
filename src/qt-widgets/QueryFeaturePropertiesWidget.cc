@@ -29,7 +29,7 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 #include "qt-widgets/QueryFeaturePropertiesWidgetPopulator.h"
 
 #include "gui/FeatureFocus.h"

@@ -614,7 +614,6 @@ set(source_sub_directories
 	canvas-tools
 	cli
 	data-mining
-	feature-visitors
 	file-io
 	global
 	gui

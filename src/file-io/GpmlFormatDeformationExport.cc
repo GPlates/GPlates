@@ -41,7 +41,7 @@
 #include "app-logic/ScalarCoverageFeatureProperties.h"
 #include "app-logic/TopologyReconstructedFeatureGeometry.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "maths/MathsUtils.h"
 
