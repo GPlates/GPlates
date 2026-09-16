@@ -53,7 +53,6 @@
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/SceneView.h"
 
-#include "utils/FeatureUtils.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryUtils.h"
