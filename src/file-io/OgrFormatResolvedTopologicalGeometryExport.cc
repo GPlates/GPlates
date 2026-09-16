@@ -43,7 +43,7 @@
 #include "app-logic/ResolvedTopologicalSection.h"
 
 #include "app-logic/GeometryTypeFinder.h"
-#include "property-values/KeyValueDictionaryFinder.h"
+#include "model/KeyValueDictionaryFinder.h"
 #include "model/PropertyValueFinder.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPlateId.h"
@@ -100,7 +100,7 @@ namespace
 		GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(QString("FILE"), referenced_files, kvd_for_export);
 		GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(QString("RECONFILE"), active_reconstruction_files, kvd_for_export);
 
-		GPlatesPropertyValues::KeyValueDictionaryFinder kvd_finder;
+		GPlatesModel::KeyValueDictionaryFinder kvd_finder;
 		if (export_per_collection)
 		{
 			kvd_finder.visit_feature(feature_ref);

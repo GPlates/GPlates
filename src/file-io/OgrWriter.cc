@@ -44,7 +44,7 @@
 #include "OgrUtils.h"
 #include "OgrWriter.h"
 
-#include "property-values/ToQvariantConverter.h"
+#include "model/ToQvariantConverter.h"
 
 #include "maths/LatLonPoint.h"
 

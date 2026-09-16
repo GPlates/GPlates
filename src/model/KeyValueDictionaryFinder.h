@@ -26,15 +26,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_PROPERTYVALUES_KEYVALUEDICTIONARYFINDER_H
-#define GPLATES_PROPERTYVALUES_KEYVALUEDICTIONARYFINDER_H
+#ifndef GPLATES_MODEL_KEYVALUEDICTIONARYFINDER_H
+#define GPLATES_MODEL_KEYVALUEDICTIONARYFINDER_H
 
 #include <vector>
 #include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 
-namespace GPlatesPropertyValues
+namespace GPlatesModel
 {
 	/**
 	 * This const feature visitor finds key value dictionaries in the feature collection.
@@ -104,4 +104,4 @@ namespace GPlatesPropertyValues
 	};
 }
 
-#endif // GPLATES_PROPERTYVALUES_KEYVALUEDICTIONARYFINDER_H
+#endif // GPLATES_MODEL_KEYVALUEDICTIONARYFINDER_H

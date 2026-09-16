@@ -44,6 +44,8 @@ set(srcs
     GpgimVersion.h
     HandleTraits.h
     IdTypeGenerator.h
+    KeyValueDictionaryFinder.cc
+    KeyValueDictionaryFinder.h
     Metadata.cc
     Metadata.h
     Model.cc
@@ -80,6 +82,8 @@ set(srcs
     TopLevelProperty.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h
+    ToQvariantConverter.cc
+    ToQvariantConverter.h
     TranscribeIdTypeGenerator.h
     TranscribeQualifiedXmlName.h
     TranscribeRevisionedVector.h

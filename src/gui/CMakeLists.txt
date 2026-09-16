@@ -135,6 +135,8 @@ set(srcs
     FileIODirectoryConfigurations.h
     FileIOFeedback.cc
     FileIOFeedback.h
+    FromQvariantConverter.cc
+    FromQvariantConverter.h
     FullScreenMode.cc
     FullScreenMode.h
     GenericColourScheme.h

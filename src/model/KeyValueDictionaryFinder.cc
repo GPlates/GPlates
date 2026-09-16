@@ -46,7 +46,7 @@ namespace
 
 
 bool
-GPlatesPropertyValues::KeyValueDictionaryFinder::initialise_pre_property_values(
+GPlatesModel::KeyValueDictionaryFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
@@ -63,7 +63,7 @@ GPlatesPropertyValues::KeyValueDictionaryFinder::initialise_pre_property_values(
 
 
 void
-GPlatesPropertyValues::KeyValueDictionaryFinder::visit_gpml_key_value_dictionary(
+GPlatesModel::KeyValueDictionaryFinder::visit_gpml_key_value_dictionary(
 		const GPlatesPropertyValues::GpmlKeyValueDictionary &dictionary)
 {
 

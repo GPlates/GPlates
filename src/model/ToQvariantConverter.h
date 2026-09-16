@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_PROPERTYVALUES_TOQVARIANTCONVERTER_H
-#define GPLATES_PROPERTYVALUES_TOQVARIANTCONVERTER_H
+#ifndef GPLATES_MODEL_TOQVARIANTCONVERTER_H
+#define GPLATES_MODEL_TOQVARIANTCONVERTER_H
 
 #include <vector>
 #include <QVariant>
@@ -37,7 +37,7 @@
 #include "model/PropertyName.h"
 
 
-namespace GPlatesPropertyValues
+namespace GPlatesModel
 {
 	/**
 	 * The ToQvariantConverter feature-visitor is used to locate specific property values
@@ -242,4 +242,4 @@ namespace GPlatesPropertyValues
 
 }
 
-#endif  // GPLATES_PROPERTYVALUES_TOQVARIANTCONVERTER_H
+#endif  // GPLATES_MODEL_TOQVARIANTCONVERTER_H

@@ -29,8 +29,8 @@
 
 #include "app-logic/FeatureCollectionFileState.h"
 
-#include "property-values/KeyValueDictionaryFinder.h"
-#include "property-values/ToQvariantConverter.h"
+#include "model/KeyValueDictionaryFinder.h"
+#include "model/ToQvariantConverter.h"
 
 #include "file-io/FileInfo.h"
 
@@ -55,7 +55,7 @@ namespace
 			static const GPlatesModel::PropertyName shapefile_attribute_property_name =
 				GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
 
-			GPlatesPropertyValues::KeyValueDictionaryFinder finder(shapefile_attribute_property_name);
+			GPlatesModel::KeyValueDictionaryFinder finder(shapefile_attribute_property_name);
 			finder.visit_feature(iter);
 			if (finder.found_key_value_dictionaries_begin() != finder.found_key_value_dictionaries_end())
 			{	
@@ -97,7 +97,7 @@ namespace
 		static const GPlatesModel::PropertyName shapefile_attribute_property_name =
 			GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
 
-		GPlatesPropertyValues::KeyValueDictionaryFinder finder(shapefile_attribute_property_name);
+		GPlatesModel::KeyValueDictionaryFinder finder(shapefile_attribute_property_name);
 		finder.visit_feature(feature);
 		if (finder.found_key_value_dictionaries_begin() != finder.found_key_value_dictionaries_end())
 		{
@@ -137,7 +137,7 @@ namespace
 		static const GPlatesModel::PropertyName shapefile_attribute_property_name =
 			GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
 
-		GPlatesPropertyValues::KeyValueDictionaryFinder finder(shapefile_attribute_property_name);
+		GPlatesModel::KeyValueDictionaryFinder finder(shapefile_attribute_property_name);
 		finder.visit_feature(feature);
 		if (finder.found_key_value_dictionaries_begin() != finder.found_key_value_dictionaries_end())
 		{
@@ -158,7 +158,7 @@ namespace
 
 			for (int column = 0; iter != end ; ++iter, ++ column)
 			{
-				GPlatesPropertyValues::ToQvariantConverter qvariant_finder;
+				GPlatesModel::ToQvariantConverter qvariant_finder;
 				iter->value()->accept_visitor(qvariant_finder);
 				QString text = qvariant_finder.found_values_begin()->toString();
 				QTableWidgetItem *item = new QTableWidgetItem(text);

@@ -34,8 +34,8 @@
 #include "model/PropertyName.h"
 #include "model/ModelUtils.h"
 #include "utils/UnicodeStringUtils.h"
-#include "property-values/ToQvariantConverter.h"
-#include "property-values/FromQvariantConverter.h"
+#include "model/ToQvariantConverter.h"
+#include "gui/FromQvariantConverter.h"
 
 
 namespace
@@ -51,7 +51,7 @@ namespace
 			int role)
 	{
 		// For now, just test the actual feature - no modified cache yet.
-		GPlatesPropertyValues::ToQvariantConverter qvariant_converter;
+		GPlatesModel::ToQvariantConverter qvariant_converter;
 		qvariant_converter.set_desired_role(role);
 		top_level_property.accept_visitor(qvariant_converter);
 		
@@ -80,13 +80,13 @@ namespace
 			return top_level_property_to_simple_qvariant(top_level_property, role);
 		}
 		
-		GPlatesPropertyValues::ToQvariantConverter toqv_converter;
+		GPlatesModel::ToQvariantConverter toqv_converter;
 		top_level_property.accept_visitor(toqv_converter);
 		QString str;
 		if (toqv_converter.found_time_dependencies_begin() != toqv_converter.found_time_dependencies_end()) {
-			GPlatesPropertyValues::ToQvariantConverter::qvariant_container_const_iterator it =
+			GPlatesModel::ToQvariantConverter::qvariant_container_const_iterator it =
 					toqv_converter.found_time_dependencies_begin();
-			GPlatesPropertyValues::ToQvariantConverter::qvariant_container_const_iterator end =
+			GPlatesModel::ToQvariantConverter::qvariant_container_const_iterator end =
 					toqv_converter.found_time_dependencies_end();
 			for ( ; it != end; ++it) {
 				str.append((*it).toString());
@@ -96,9 +96,9 @@ namespace
 		}
 		if (toqv_converter.found_values_begin() != toqv_converter.found_values_end()) {
 			str.append("[");
-			GPlatesPropertyValues::ToQvariantConverter::qvariant_container_const_iterator it =
+			GPlatesModel::ToQvariantConverter::qvariant_container_const_iterator it =
 					toqv_converter.found_values_begin();
-			GPlatesPropertyValues::ToQvariantConverter::qvariant_container_const_iterator end =
+			GPlatesModel::ToQvariantConverter::qvariant_container_const_iterator end =
 					toqv_converter.found_values_end();
 			for ( ; it != end; ++it) {
 				str.append(" '");
@@ -256,7 +256,7 @@ GPlatesGui::FeaturePropertyTableModel::setData(
 	}
 	
 	// Convert the supplied QVariant to a PropertyValue.
-	GPlatesPropertyValues::FromQvariantConverter fromqv_converter(value);
+	GPlatesGui::FromQvariantConverter fromqv_converter(value);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*it)->clone();
 	top_level_prop_clone->accept_visitor(fromqv_converter);
 
@@ -410,7 +410,7 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 				// This is a read-only query so the dry run visits a clone (which is then discarded)
 				// rather than committing anything back into the model.
 				QVariant dummy;
-				GPlatesPropertyValues::FromQvariantConverter qvariant_converter(dummy);
+				GPlatesGui::FromQvariantConverter qvariant_converter(dummy);
 				GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*add_it)->clone();
 				top_level_prop_clone->accept_visitor(qvariant_converter);
 				bool can_convert_inline = static_cast<bool>(qvariant_converter.get_property_value());

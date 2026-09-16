@@ -25,7 +25,7 @@
 #include "PyOldFeature.h"
 
 #include "file-io/ShapefileAttributeFinder.h"
-#include "property-values/KeyValueDictionaryFinder.h"
+#include "model/KeyValueDictionaryFinder.h"
 
 #include "property-values/GpmlKeyValueDictionary.h"
 
@@ -180,7 +180,7 @@ GPlatesApi::OldFeature::get_all_property_names()
 		
 		if(shape_file_attr_name == name)//shape file attributes
 		{
-			GPlatesPropertyValues::KeyValueDictionaryFinder finder(shape_file_attr_name);
+			GPlatesModel::KeyValueDictionaryFinder finder(shape_file_attr_name);
 			(*it)->accept_visitor(finder);
 			//finder.visit_feature(d_handle);
 			

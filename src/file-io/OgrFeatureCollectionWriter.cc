@@ -40,9 +40,9 @@
 #include "PropertyMapper.h"
 #include "OgrUtils.h"
 #include "app-logic/GeometryTypeFinder.h"
-#include "property-values/KeyValueDictionaryFinder.h"
+#include "model/KeyValueDictionaryFinder.h"
 #include "model/PropertyValueFinder.h"
-#include "property-values/ToQvariantConverter.h"
+#include "model/ToQvariantConverter.h"
 
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"

@@ -40,7 +40,7 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
 #include "app-logic/GeometryTypeFinder.h"
-#include "property-values/KeyValueDictionaryFinder.h"
+#include "model/KeyValueDictionaryFinder.h"
 #include "model/PropertyValueFinder.h"
 
 #include "property-values/GpmlKeyValueDictionary.h"
@@ -322,7 +322,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		OgrUtils::add_filename_sequence_to_kvd(QString("FILE"),referenced_files,kvd_for_export);
 		OgrUtils::add_filename_sequence_to_kvd(QString("RECONFILE"),active_reconstruction_files,kvd_for_export);
 
-		GPlatesPropertyValues::KeyValueDictionaryFinder kvd_finder;
+		GPlatesModel::KeyValueDictionaryFinder kvd_finder;
 		kvd_finder.visit_feature(feature_ref);
 		if (kvd_finder.number_of_found_dictionaries() != 0)
 		{

@@ -32,8 +32,8 @@
 
 #include "boost/foreach.hpp"
 
-#include "property-values/KeyValueDictionaryFinder.h"
-#include "property-values/ToQvariantConverter.h"
+#include "model/KeyValueDictionaryFinder.h"
+#include "model/ToQvariantConverter.h"
 #include "model/GpgimProperty.h"
 #include "model/GpgimStructuralType.h"
 #include "property-values/Enumeration.h"
@@ -227,7 +227,7 @@ GPlatesFileIO::OgrUtils::create_default_kvd_from_collection(
 		for ( ; iter != end; ++iter)
 		{
 			// FIXME: Replace this kvd-finder with the new PropertyValueFinder.
-			GPlatesPropertyValues::KeyValueDictionaryFinder finder;
+			GPlatesModel::KeyValueDictionaryFinder finder;
 			finder.visit_feature(iter);
 			if (finder.number_of_found_dictionaries() != 0)
 			{
@@ -950,7 +950,7 @@ QVariant
 GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(
 		const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
 {
-	GPlatesPropertyValues::ToQvariantConverter converter;
+	GPlatesModel::ToQvariantConverter converter;
 
 	element.value()->accept_visitor(converter);
 

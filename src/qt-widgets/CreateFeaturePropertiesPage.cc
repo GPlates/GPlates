@@ -41,7 +41,7 @@
 #include "QtWidgetUtils.h"
 #include "ResizeToContentsTextEdit.h"
 
-#include "property-values/ToQvariantConverter.h"
+#include "model/ToQvariantConverter.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -111,7 +111,7 @@ namespace
 	convert_top_level_property_to_display_string(
 			const GPlatesModel::TopLevelProperty &top_level_property)
 	{
-		GPlatesPropertyValues::ToQvariantConverter qvariant_converter;
+		GPlatesModel::ToQvariantConverter qvariant_converter;
 		top_level_property.accept_visitor(qvariant_converter);
 
 		if (qvariant_converter.found_values_begin() == qvariant_converter.found_values_end())
