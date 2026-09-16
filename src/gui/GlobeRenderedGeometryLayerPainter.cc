@@ -32,7 +32,6 @@
 #include <boost/utility/in_place_factory.hpp>
 #include <opengl/OpenGL.h>
 
-#include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "ColourQt.h"
 #include "LayerPainter.h"
@@ -139,7 +138,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 		const double &inverse_viewport_zoom_factor,
 		const double &device_independent_pixel_to_world_space_ratio,
 		const GlobeVisibilityTester &visibility_tester,
-		ColourScheme::non_null_ptr_type colour_scheme,
 		PaintRegionType paint_region,
 		boost::optional<Colour> vector_geometries_override_colour,
 		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
@@ -148,7 +146,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 	d_device_independent_pixel_to_world_space_ratio(device_independent_pixel_to_world_space_ratio),
 	d_visibility_tester(visibility_tester),
-	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
 	d_paint_region(paint_region),
 	d_vector_geometries_override_colour(vector_geometries_override_colour),

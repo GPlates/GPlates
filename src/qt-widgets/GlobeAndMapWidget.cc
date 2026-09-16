@@ -36,7 +36,6 @@
 #include "MapCanvas.h"
 #include "MapView.h"
 
-#include "gui/ColourScheme.h"
 #include "gui/MapTransform.h"
 #include "gui/SimpleGlobeOrientation.h"
 #include "gui/ViewportProjection.h"
@@ -54,12 +53,10 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 	d_globe_canvas_ptr(
 			new GlobeCanvas(
 				d_view_state,
-				d_view_state.get_colour_scheme(),
 				this)),
 	d_map_view_ptr(
 			new MapView(
 				d_view_state,
-				d_view_state.get_colour_scheme(),
 				this,
 				d_globe_canvas_ptr.get(),
 				d_globe_canvas_ptr->get_gl_context(),

@@ -37,7 +37,6 @@
 
 #include "Colour.h"
 #include "ColourProxy.h"
-#include "ColourScheme.h"
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
 
@@ -108,7 +107,6 @@ namespace GPlatesGui
 				const double &inverse_viewport_zoom_factor,
 				const double &device_independent_pixel_to_world_space_ratio,
 				const GlobeVisibilityTester &visibility_tester,
-				ColourScheme::non_null_ptr_type colour_scheme,
 				PaintRegionType paint_region,
 				boost::optional<Colour> vector_geometries_override_colour = boost::none,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
@@ -343,9 +341,6 @@ namespace GPlatesGui
 
 		//! For determining whether a particular point on the globe is visible or not
 		GlobeVisibilityTester d_visibility_tester;
-
-		//! For assigning colours to RenderedGeometry
-		ColourScheme::non_null_ptr_type d_colour_scheme;
 
 		//! When rendering scaled globes that are meant to be a scaled version of another
 		float d_scale;

@@ -37,7 +37,6 @@
 #include "global/PointerTraits.h"
 
 #include "gui/Colour.h"
-#include "gui/ColourScheme.h"
 
 #include "maths/LatLonPoint.h"
 

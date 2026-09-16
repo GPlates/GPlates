@@ -38,7 +38,6 @@
 #include <QTransform>
 
 #include "Colour.h"
-#include "ColourScheme.h"
 #include "MapRenderedGeometryLayerPainter.h"
 #include "MapProjection.h"
 
@@ -286,14 +285,12 @@ GPlatesGui::MapRenderedGeometryLayerPainter::MapRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const double &inverse_viewport_zoom_factor,
-		const double &device_independent_pixel_to_map_space_ratio,
-		ColourScheme::non_null_ptr_type colour_scheme) :
+		const double &device_independent_pixel_to_map_space_ratio) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_gl_visual_layers(gl_visual_layers),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 	d_device_independent_pixel_to_map_space_ratio(device_independent_pixel_to_map_space_ratio),
-	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
 	d_dateline_wrapper(
 			GPlatesMaths::DateLineWrapper::create(

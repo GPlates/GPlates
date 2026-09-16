@@ -60,7 +60,6 @@ GPlatesGui::Globe::Globe(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		const GlobeVisibilityTester &visibility_tester,
-		ColourScheme::non_null_ptr_type colour_scheme,
 		int device_pixel_ratio) :
 	d_view_state(view_state),
 	d_gl_visual_layers(gl_visual_layers),
@@ -73,7 +72,6 @@ GPlatesGui::Globe::Globe(
 			gl_visual_layers,
 			visual_layers,
 			visibility_tester,
-			colour_scheme,
 			device_pixel_ratio),
 	d_device_pixel_ratio(device_pixel_ratio)
 {  }

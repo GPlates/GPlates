@@ -43,7 +43,6 @@
 #include <QOpenGLWidget>
 
 #include "gui/Colour.h"
-#include "gui/ColourScheme.h"
 #include "gui/Globe.h"
 #include "gui/ViewportZoom.h"
 
@@ -137,7 +136,6 @@ namespace GPlatesQtWidgets
 
 		GlobeCanvas(
 				GPlatesPresentation::ViewState &view_state,
-				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = 0);
 
 		~GlobeCanvas();

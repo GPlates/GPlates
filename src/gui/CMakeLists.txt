@@ -39,11 +39,6 @@ set(srcs
     ColourScaleGenerator.cc
     ColourScaleGenerator.h
     ColourScheme.h
-    ColourSchemeContainer.cc
-    ColourSchemeContainer.h
-    ColourSchemeDelegator.cc
-    ColourSchemeDelegator.h
-    ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
     CommandServer.cc
@@ -216,8 +211,6 @@ set(srcs
     SessionMenu.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
-    SingleColourScheme.cc
-    SingleColourScheme.h
     SmallCircleCanvasToolWorkflow.cc
     SmallCircleCanvasToolWorkflow.h
     SphericalGrid.cc

@@ -54,7 +54,6 @@
 
 #include "gui/Colour.h"
 #include "gui/ColourQt.h"
-#include "gui/ColourScheme.h"
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/SimpleGlobeOrientation.h"
 #include "gui/TextOverlay.h"
@@ -366,7 +365,6 @@ GPlatesQtWidgets::GlobeCanvas::centre_of_viewport()
 
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
-		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
 	QOpenGLWidget(parent_),
 	d_view_state(view_state),
@@ -387,7 +385,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
 			GPlatesGui::GlobeVisibilityTester(*this),
-			colour_scheme,
 			devicePixelRatio()),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
