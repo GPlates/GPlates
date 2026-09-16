@@ -22,7 +22,7 @@
    <string>Add Property</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >
+   <iconset resource="../qt-resources/qt_resources.qrc" >
     <normaloff>:/gnome_gtk_edit_16.png</normaloff>:/gnome_gtk_edit_16.png</iconset>
   </property>
   <property name="sizeGripEnabled" >
@@ -116,7 +116,7 @@
       <item>
        <widget class="QLabel" name="label_warning_icon" >
         <property name="pixmap" >
-         <pixmap resource="../qt-resources/qt_widgets.qrc" >:/gnome_dialog_warning_16.png</pixmap>
+         <pixmap resource="../qt-resources/qt_resources.qrc" >:/gnome_dialog_warning_16.png</pixmap>
         </property>
        </widget>
       </item>
@@ -159,7 +159,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_resources.qrc" />
  </resources>
  <connections>
   <connection>

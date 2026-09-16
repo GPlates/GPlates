@@ -148,7 +148,7 @@
            <string>...</string>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
           </property>
           <property name="iconSize">
@@ -209,7 +209,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>

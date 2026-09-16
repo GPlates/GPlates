@@ -14,7 +14,7 @@
    <string>Configure Graticules</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/GPlates-icon-160x160-opaque.png</normaloff>:/GPlates-icon-160x160-opaque.png</iconset>
   </property>
   <property name="modal">
@@ -170,7 +170,7 @@
   <tabstop>longitude_delta_spinbox</tabstop>
  </tabstops>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>
