@@ -250,12 +250,6 @@ namespace GPlatesQtWidgets
 			action_Unload_Symbol->setVisible(false);
 		}
 
-		void
-		hide_python_menu()
-		{
-			action_Open_Python_Console->setVisible(false);
-		}
-
 	protected:
 	
 		/**

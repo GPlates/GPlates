@@ -116,7 +116,7 @@
          </font>
         </property>
         <property name="text">
-         <string>These locations will be searched for Python scripts to load when GPlates starts, if Python is enabled.</string>
+         <string>These locations will be searched for Python scripts to load when GPlates starts.</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
