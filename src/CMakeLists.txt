@@ -738,11 +738,6 @@ target_include_directories(${SOURCE_TARGET} SYSTEM PUBLIC ${PROJECT_SOURCE_DIR}/
 
 # Add GPLATES_DEBUG preprocessor define to DEBUG and RELWITHDEBINFO configurations.
 target_compile_definitions(${SOURCE_TARGET} PUBLIC $<$<CONFIG:DEBUG>:GPLATES_DEBUG> $<$<CONFIG:RELWITHDEBINFO>:GPLATES_DEBUG>)
-# The 64-bit C99 macro UINT64_C macro fails to compile on Visual Studio 2005 using boost 1.36.
-# Boost 1.42 defines __STDC_CONSTANT_MACROS in <boost/cstdint.hpp> but prior to that the application
-# is required to define it and it needs to be defined before any header inclusion to ensure it is defined
-# before it is accessed (which means before pre-compiled headers). So we define it on the compiler command-line.
-target_compile_definitions(${SOURCE_TARGET} PUBLIC __STDC_CONSTANT_MACROS)
 # Boost 1.58 introduced a breaking change in boost::variant that does compile-time with boost::get<U>(variant)
 # to see if U is one of the variant types. However it seems to generate compile errors for references and boost::optional.
 # So we'll default to using the old relaxed (run-time) method.

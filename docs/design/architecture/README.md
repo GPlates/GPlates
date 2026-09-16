@@ -37,7 +37,7 @@ boundary is marked within it rather than described separately.
     |   GPlates-only)                                                       |
     '-----------------------------------------------------------------------'
     |  model   property-values   maths   utils   global   qt-resources      |
-    |  (gpgim.qrc + python.qrc shared; opengl.qrc + qt_widgets.qrc are      |
+    |  (gpgim.qrc + python.qrc shared; opengl.qrc + qt_resources.qrc are    |
     |   GPlates-only)                                                       |
     '-----------------------------------------------------------------------'
 ```

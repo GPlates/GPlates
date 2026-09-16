@@ -333,7 +333,7 @@ GPlatesGui::GetBeginTimeCommand::execute(
 			{
 				bt_str = "-inf";
 			}
-			if(begin_time->is_positive_infinity())
+			else if(begin_time->is_positive_infinity())
 			{
 				bt_str = "inf";
 			}

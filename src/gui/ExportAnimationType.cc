@@ -30,7 +30,6 @@
 
 #include "ExportAnimationType.h"
 
-#include "global/CompilerWarnings.h"
 #include "global/PreconditionViolationError.h"
 #include "global/GPlatesAssert.h"
 
@@ -346,10 +345,6 @@ GPlatesGui::ExportAnimationType::get_export_format_filename_extension(
 	return s_export_format_filename_extension_map[format];
 }
 
-// For the BOOST_STATIC_ASSERT below with GCC 4.2.
-PUSH_GCC_WARNINGS
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 GPlatesGui::ExportAnimationType::ExportID
 GPlatesGui::ExportAnimationType::get_export_id(
 		Type type,
@@ -361,7 +356,6 @@ GPlatesGui::ExportAnimationType::get_export_id(
 	return (static_cast<ExportID>(type) << 16) | static_cast<ExportID>(format);
 }
 
-POP_GCC_WARNINGS
 
 GPlatesGui::ExportAnimationType::Type
 GPlatesGui::ExportAnimationType::get_export_type(
