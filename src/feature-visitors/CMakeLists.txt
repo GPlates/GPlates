@@ -8,8 +8,6 @@
 set(srcs
     FeatureClassifier.cc
     FeatureClassifier.h
-    FromQvariantConverter.cc
-    FromQvariantConverter.h
     GeometryFinder.cc
     GeometryFinder.h
     GeometryRotator.cc
@@ -18,12 +16,8 @@ set(srcs
     GeometrySetter.h
     GeometryTypeFinder.cc
     GeometryTypeFinder.h
-    KeyValueDictionaryFinder.cc
-    KeyValueDictionaryFinder.h
     PropertyValueFinder.cc
     PropertyValueFinder.h
-    ToQvariantConverter.cc
-    ToQvariantConverter.h
     TotalReconstructionSequencePlateIdFinder.cc
     TotalReconstructionSequencePlateIdFinder.h
     TotalReconstructionSequenceRotationInserter.cc
@@ -42,8 +36,6 @@ set(srcs
 set(gplates_only_srcs
     FeatureClassifier.cc
     FeatureClassifier.h
-    FromQvariantConverter.cc
-    FromQvariantConverter.h
     GeometryRotator.cc
     GeometryRotator.h
     TotalReconstructionSequenceRotationInserter.cc

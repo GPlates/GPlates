@@ -12,6 +12,8 @@ set(srcs
     Enumeration.h
     EnumerationContent.h
     EnumerationType.h
+    FromQvariantConverter.cc
+    FromQvariantConverter.h
     Georeferencing.cc
     Georeferencing.h
     GeoTimeInstant.cc
@@ -102,6 +104,8 @@ set(srcs
     GpmlTopologicalPolygon.h
     GpmlTopologicalSection.cc
     GpmlTopologicalSection.h
+    KeyValueDictionaryFinder.cc
+    KeyValueDictionaryFinder.h
     OldVersionPropertyValue.cc
     OldVersionPropertyValue.h
     ProxiedRasterCache.cc
@@ -123,6 +127,8 @@ set(srcs
     TextContent.h
     TimescaleBand.h
     TimescaleName.h
+    ToQvariantConverter.cc
+    ToQvariantConverter.h
     UninterpretedPropertyValue.cc
     UninterpretedPropertyValue.h
     ValueObjectType.h
@@ -142,6 +148,8 @@ set(srcs
 # Keep ".h"/".cc" pairs together: AUTOMOC mocs any Q_OBJECT header listed in the
 # module's sources, and a moc'ed header whose ".cc" is excluded fails at link time.
 set(gplates_only_srcs
+    FromQvariantConverter.cc
+    FromQvariantConverter.h
     ScalarCoverageStatistics.h
 )
 # Guard against stale entries (eg, after a file rename).

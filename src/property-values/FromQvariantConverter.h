@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_FROMQVARIANTCONVERTER_H
-#define GPLATES_FEATUREVISITORS_FROMQVARIANTCONVERTER_H
+#ifndef GPLATES_PROPERTYVALUES_FROMQVARIANTCONVERTER_H
+#define GPLATES_PROPERTYVALUES_FROMQVARIANTCONVERTER_H
 
 #include <QVariant>
 #include <boost/optional.hpp>
@@ -35,7 +35,7 @@
 #include "model/PropertyName.h"
 
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesPropertyValues
 {
 	/**
 	 * The FromQvariantConverter feature-visitor is used to create a property value
@@ -148,4 +148,4 @@ namespace GPlatesFeatureVisitors
 
 }
 
-#endif  // GPLATES_FEATUREVISITORS_FROMQVARIANTCONVERTER_H
+#endif  // GPLATES_PROPERTYVALUES_FROMQVARIANTCONVERTER_H

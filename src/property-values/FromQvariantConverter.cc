@@ -45,14 +45,14 @@
 
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_enumeration(
+GPlatesPropertyValues::FromQvariantConverter::visit_enumeration(
 		const GPlatesPropertyValues::Enumeration &enumeration)
 {
 }
 
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_gml_time_instant(
+GPlatesPropertyValues::FromQvariantConverter::visit_gml_time_instant(
 		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	double d = d_qvariant.toDouble();
@@ -63,7 +63,7 @@ GPlatesFeatureVisitors::FromQvariantConverter::visit_gml_time_instant(
 
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_gpml_constant_value(
+GPlatesPropertyValues::FromQvariantConverter::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
@@ -71,7 +71,7 @@ GPlatesFeatureVisitors::FromQvariantConverter::visit_gpml_constant_value(
 
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_gpml_plate_id(
+GPlatesPropertyValues::FromQvariantConverter::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	int plateid = d_qvariant.toInt();
@@ -81,14 +81,14 @@ GPlatesFeatureVisitors::FromQvariantConverter::visit_gpml_plate_id(
 
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_gpml_old_plates_header(
+GPlatesPropertyValues::FromQvariantConverter::visit_gpml_old_plates_header(
 		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
 }
 
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_xs_boolean(
+GPlatesPropertyValues::FromQvariantConverter::visit_xs_boolean(
 		const GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
 	bool b = d_qvariant.toBool();
@@ -98,7 +98,7 @@ GPlatesFeatureVisitors::FromQvariantConverter::visit_xs_boolean(
 
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_xs_double(
+GPlatesPropertyValues::FromQvariantConverter::visit_xs_double(
 		const GPlatesPropertyValues::XsDouble& xs_double)
 {
 	double d = d_qvariant.toDouble();
@@ -107,7 +107,7 @@ GPlatesFeatureVisitors::FromQvariantConverter::visit_xs_double(
 }
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_xs_integer(
+GPlatesPropertyValues::FromQvariantConverter::visit_xs_integer(
 		const GPlatesPropertyValues::XsInteger& xs_integer)
 {
 	int i = d_qvariant.toInt();
@@ -116,7 +116,7 @@ GPlatesFeatureVisitors::FromQvariantConverter::visit_xs_integer(
 }
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::visit_xs_string(
+GPlatesPropertyValues::FromQvariantConverter::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
 	QString qs = d_qvariant.toString();
@@ -127,7 +127,7 @@ GPlatesFeatureVisitors::FromQvariantConverter::visit_xs_string(
 
 
 void
-GPlatesFeatureVisitors::FromQvariantConverter::set_return_value(
+GPlatesPropertyValues::FromQvariantConverter::set_return_value(
 		GPlatesModel::PropertyValue::non_null_ptr_type new_value)
 {
 	if ( ! d_property_value) {
@@ -139,7 +139,7 @@ GPlatesFeatureVisitors::FromQvariantConverter::set_return_value(
 #if 0
 
 bool
-GPlatesFeatureVisitors::FromQvariantConverter::assign_single_value(
+GPlatesPropertyValues::FromQvariantConverter::assign_single_value(
 		GPlatesModel::PropertyValue::non_null_ptr_type new_value)
 {
 	if (d_last_top_level_property_inline_visited_ptr == NULL) {
