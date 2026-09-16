@@ -49,6 +49,38 @@ The per-directory numbers, the full include matrix between directories, and the 
 files the module takes from each partially-included directory are in the generated
 [dependency-matrix.md](dependency-matrix.md).
 
+## What goes in which directory
+
+The layering above says which directories the module compiles. It does not say which directory a
+new class belongs in, and two rules here were learned by getting them wrong.
+
+**A directory is a subject, not a shape of code.** `src/feature-visitors/` grouped classes solely
+because they inherited `FeatureVisitor` or `ConstFeatureVisitor`. That put a `QTreeWidget`
+populator and the model's own `get_property_value()` in one directory, while 44 other feature
+visitors stayed in `app-logic/`, `file-io/`, `data-mining/` and `qt-widgets/`, where they
+belonged. Sharing a base class - or a suffix like `*Finder` or `*Utils` - is not a reason to sit
+together. The directory was dissolved for that reason and each class went beside the code it
+serves.
+
+**`property-values/` holds property values, not code that operates on them.** Everything in it
+either *is* a property value (`Gml*`, `Gpml*`, `Xs*`, `Enumeration`,
+`UninterpretedPropertyValue`) or is a value type one is built from and owns (`GeoTimeInstant`,
+`RawRaster`, `StructuralType`, the raster georeferencing). A visitor or helper that reads or
+builds property values goes in `model/`, beside `ModelUtils` and `PropertyValueFinder`. Before
+the dissolution `property-values/` contained no feature visitor at all and `model/` already did,
+which is the distinction to keep.
+
+Two practical constraints on that choice, both of which the build will tell you about:
+
+- Every file in `model/` is inside the pyGPlates closure (the matrix reports it as 97 / 97), and
+  `model/CMakeLists.txt` has no `gplates_only_srcs` list as a result. A GPlates-only class does
+  not belong there; `FromQvariantConverter` went to `gui/` beside `FeaturePropertyTableModel`,
+  the one consumer its own comment names.
+- Moving a class between directories moves its namespace with it. Watch for free functions
+  declared in the same header - `GeometryTypeFinder.h` declares four, which a sweep by class name
+  misses - and for `using namespace` sites, which stop compiling only if something else in that
+  function also relied on them.
+
 ## How the boundary is defined and enforced
 
 The module's source list is not curated by hand: it is the **include closure of the pyGPlates

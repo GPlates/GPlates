@@ -118,15 +118,17 @@ working-directory independent, `GPLATES_UNIT_TEST_DATA_DIR`, `QTemporaryDir`, an
 ## The pyGPlates module boundary
 
 The pygplates module compiles only the **include closure of the pyGPlates API** — not the
-whole tree. The layering, the rules for new files (which directory kind defaults to
-GPlates-only, `.h`/`.cc` pairing for AUTOMOC, no `QMessageBox` in shared code) and the
-enforcement are described in `docs/design/architecture/README.md`. Two pyGPlates CTests
-enforce the boundary: `pygplates-source-closure-test` (the source list must equal the
-closure computed by `cmake/pygplates_source_closure.py`, which also drift-checks the
-committed dependency matrix) and `pygplates-linkage-test` (`cmake/check_linkage.py` - the
-built module must have no direct dependency on GPlates' GUI/rendering libraries). When
-either fails after adding a file or an `#include`, the failure message says which CMake list
-to fix — do that rather than weakening the tracer.
+whole tree. The layering, which directory a new class belongs in (a directory is a subject,
+not a shape of code; `property-values/` holds property values, not code that operates on
+them), the rules for new files (which directory kind defaults to GPlates-only, `.h`/`.cc`
+pairing for AUTOMOC, no `QMessageBox` in shared code) and the enforcement are described in
+`docs/design/architecture/README.md`. Two pyGPlates CTests enforce the boundary:
+`pygplates-source-closure-test` (the source list must equal the closure computed by
+`cmake/pygplates_source_closure.py`, which also drift-checks the committed dependency matrix)
+and `pygplates-linkage-test` (`cmake/check_linkage.py` - the built module must have no direct
+dependency on GPlates' GUI/rendering libraries). When either fails after adding a file or an
+`#include`, the failure message says which CMake list to fix — do that rather than
+weakening the tracer.
 
 **CI builds both products on every push**, which is what makes the boundary enforceable: the
 two CTests above are pyGPlates tests, so only a pyGPlates build can run them. Until the develop
