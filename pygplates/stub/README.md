@@ -44,6 +44,12 @@ file as deltas, so an API change costs kilobytes, not another copy of a megabyte
 - `*.pyi` is pinned to LF in `.gitattributes` because `--output` always writes LF, so on a CRLF
   checkout every regeneration would show the whole file as modified. (`--check` reads the committed
   stub with universal newlines, so it would not fail either way.)
+- The stub must not depend on the Python or Boost version that generated it, or
+  `pygplates-stub-test` fails for any developer whose versions differ from the committer's. So the
+  generator skips the attributes Python 3.13 adds to every class statement (`__firstlineno__`,
+  `__static_attributes__`), emits a `namedtuple` as a `typing.NamedTuple` rather than listing what
+  `namedtuple` generates (`__replace__` is new in 3.13), and names nested classes by where it finds
+  them in the module rather than by `__qualname__`, which Boost.Python 1.74 leaves unqualified.
 
 ## The maintenance loop
 
@@ -56,8 +62,9 @@ file as deltas, so an API change costs kilobytes, not another copy of a megabyte
      `TypeExpressionParser`. The fix is normally a docstring restyle to the guideline in
      `docs/pygplates/README.md`; extend the grammar only for natural English that many docstrings
      share. `MANUAL_OVERRIDES` is the escape hatch for a signature the convention cannot express.
-   - **Missing `:type:`/`:rtype:` fields** (emitted as `Any`): add the field. The `Crossover`
-     named tuple and `CrossoverTypeFunction` entries are deliberately left on this list.
+   - **Missing `:type:`/`:rtype:` fields** (emitted as `Any`): add the field. The
+     `CrossoverTypeFunction` entries are deliberately left on this list. (The `Crossover` named
+     tuple's fields are `Any` too, but it is not reported: it is emitted as a `typing.NamedTuple`.)
    - **Suspicious `:rtype:` omissions** (emitted as `-> None`): a C++ `void` function omits the
      field by convention, but this prose says it returns something - probably a forgotten field.
    - `WARNING:` lines are lint, chiefly the `list of A or list of B` ambiguity: a bare `or` binds

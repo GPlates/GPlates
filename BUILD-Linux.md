@@ -35,7 +35,7 @@ Alternatively, create the environment directly (see `env.Linux.yml` for the Open
 packages that are also required):
 
 ```bash
-conda create -n gplates -c conda-forge cmake ninja make cxx-compiler python numpy "libblas=*=*openblas" qt6-main qwt libboost-devel libboost-python-devel libgdal proj cgal-cpp gmp mpfr glew zlib
+conda create -n gplates -c conda-forge cmake ninja make cxx-compiler patchelf python numpy "libblas=*=*openblas" qt6-main qwt libboost-devel libboost-python-devel libgdal proj cgal-cpp gmp mpfr glew zlib
 conda activate gplates
 ```
 
@@ -58,7 +58,7 @@ will need Qt6 packages.
 ```bash
 sudo apt-get update
 sudo apt-get install \
-    cmake ninja-build g++ \
+    cmake ninja-build g++ patchelf \
     libgl1-mesa-dev libglu1-mesa-dev libglew-dev \
     python3-dev python3-numpy python3-pip \
     libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev \
@@ -166,6 +166,10 @@ python3 -m pip install .
 
 > This works for both dependency routes: an activated conda environment is auto-detected, and Ubuntu
 > system packages are found in the standard system locations.
+
+> `pip install .` copies pyGPlates' dependency libraries into the installed package and sets their
+> RPATHs so they find each other there, which needs `patchelf` (included in both dependency lists
+> above). Without it the configure step stops with "Unable to find 'patchelf' command".
 
 A `pygplates` package should then be importable in the environment (`python3 -m pip list` shows
 `pygplates`).
