@@ -74,7 +74,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 			&GPlatesAppLogic::is_not_geometry_property);
 #endif
 	boost::optional<GPlatesModel::FeatureHandle::iterator> property_iter_opt = 
-		*GPlatesAppLogic::find_first_geometry_property(*d_old_feature);
+		GPlatesAppLogic::find_first_geometry_property(*d_old_feature);
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			property_iter_opt,

@@ -25,6 +25,7 @@
 #include "PyOldFeature.h"
 
 #include "file-io/ShapefileAttributeFinder.h"
+
 #include "model/KeyValueDictionaryFinder.h"
 
 #include "property-values/GpmlKeyValueDictionary.h"

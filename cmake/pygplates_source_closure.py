@@ -301,6 +301,11 @@ def check_forbidden(closure):
         elif top_dir(rel) == 'gui' and rel not in GUI_ALLOWLIST:
             errors.append('reaches non-allowlisted gui file: %s\n    via: %s'
                           % (rel, closure.chain(rel)))
+        elif '/deprecated/' in rel:
+            # No 'deprecated/' directory survives on this branch, but the vulkan branch and
+            # the downstream fork still carry them, so one can arrive back through a merge.
+            errors.append('reaches deprecated (dead, uncompiled) file: %s\n    via: %s'
+                          % (rel, closure.chain(rel)))
     for rel in closure.files():
         for include in _ANGLE_INCLUDE_RE.findall(read_stripped(os.path.join(SRC_DIR, rel))):
             if FORBIDDEN_ANGLE_INCLUDE_RE.match(include):

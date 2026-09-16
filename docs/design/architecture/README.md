@@ -56,11 +56,13 @@ new class belongs in, and two rules here were learned by getting them wrong.
 
 **A directory is a subject, not a shape of code.** `src/feature-visitors/` grouped classes solely
 because they inherited `FeatureVisitor` or `ConstFeatureVisitor`. That put a `QTreeWidget`
-populator and the model's own `get_property_value()` in one directory, while 49 other feature
-visitors sat in `app-logic/` (30), `file-io/` (9), `data-mining/` (3), `api/` (2), `qt-widgets/`
-(2), `utils/` (2) and `model/` (1), where they belonged. Sharing a base class - or a suffix like
-`*Finder` or `*Utils` - is not a reason to sit together. The directory was dissolved for that
-reason and each class went beside the code it serves.
+populator and the model's own `get_property_value()` in one directory. It never held most of
+them: of the files declaring a class derived from `FeatureVisitor` or `ConstFeatureVisitor`, 15
+were in that directory and 45 were spread across seven others - `app-logic/` (27), `file-io/`
+(8), `data-mining/` (3), `api/` (2), `qt-widgets/` (2), `utils/` (2) and `model/` (1) - where
+they belonged. Sharing a base class, or a suffix like `*Finder` or `*Utils`, is not a reason to
+sit together. The directory was dissolved for that reason and each class went beside the code it
+serves.
 
 **`property-values/` holds property values, not code that operates on them.** Everything in it
 either *is* a property value (`Gml*`, `Gpml*`, `Xs*`, `Enumeration`,
