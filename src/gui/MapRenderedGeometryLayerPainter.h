@@ -457,19 +457,12 @@ namespace GPlatesGui
 
 		/**
 		 * Determines the colour of vector geometries.
-		 *
-		 * Returns colour of a ColourProxy using our colour scheme.
-		 *
-		 * TODO: Remove colour schemes when full symbology implemented.
-		 * We're no longer really using colour schemes (via colour proxies) anymore since
-		 * the Python colouring code generates colours directly (ie, our ColourProxy objects have
-		 * colours stored internally instead of delegating to a colour scheme).
 		 */
 		boost::optional<Colour>
 		get_vector_geometry_colour(
 				const ColourProxy &colour_proxy)
 		{
-			return colour_proxy.get_colour(d_colour_scheme);
+			return colour_proxy.get_colour();
 		}
 
 		/**

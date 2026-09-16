@@ -431,15 +431,9 @@ namespace GPlatesGui
 		/**
 		 * Determines the colour of vector geometries.
 		 *
-		 * If an override colour has been provided then returns that, otherwise returns colour of a
-		 * ColourProxy using our colour scheme.
-		 *
-		 * TODO: Remove colour schemes when full symbology implemented.
-		 * We're no longer really using colour schemes (via colour proxies) anymore since
-		 * the Python colouring code generates colours directly (ie, our ColourProxy objects have
-		 * colours stored internally instead of delegating to a colour scheme).
-		 * But we still need a central colour access point (like this method) to override
-		 * rendered geometry colours (such as geometries on rear of globe rendered gray).
+		 * If an override colour has been provided then returns that, otherwise the rendered
+		 * geometry's own colour. The override is how geometries on the rear of the globe are
+		 * drawn grey, so this stays the one place vector geometry colour is decided.
 		 */
 		inline
 		boost::optional<Colour>

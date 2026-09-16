@@ -19,11 +19,11 @@ should respect is described in [README.md](README.md).
 | data-mining |  |  | 18 |  |  | 81 | 4 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
 | file-io |  |  | 82 |  |  |  | 537 | 117 | 19 | 112 | 241 |  |  | 415 |  |  |  | 78 |  |
 | global |  |  |  |  |  |  |  | 25 |  |  |  |  |  |  |  |  |  | 5 |  |
-| gui |  | 18 | 173 | 53 |  | 3 | 53 | 95 | 512 | 117 | 82 | 113 | 79 | 97 | 163 | 14 |  | 93 | 108 |
+| gui |  | 18 | 172 | 53 |  | 3 | 53 | 95 | 507 | 117 | 82 | 113 | 79 | 97 | 163 | 14 |  | 93 | 108 |
 | maths |  |  |  |  |  |  |  | 75 |  | 410 | 1 |  |  |  |  | 24 |  | 41 |  |
 | model |  |  | 7 |  |  |  | 2 | 30 |  | 1 | 218 |  |  | 58 |  | 23 |  | 48 |  |
 | opengl |  |  | 16 |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
-| presentation |  | 1 | 100 |  |  | 1 | 24 | 23 | 78 | 12 | 9 | 3 | 93 | 6 | 26 | 25 |  | 11 | 19 |
+| presentation |  | 1 | 100 |  |  | 1 | 24 | 23 | 79 | 12 | 9 | 3 | 93 | 6 | 26 | 25 |  | 11 | 19 |
 | property-values |  |  |  |  |  |  | 11 | 64 | 5 | 26 | 292 |  |  | 176 |  | 103 |  | 35 |  |
 | qt-widgets |  | 17 | 276 | 7 |  | 8 | 79 | 133 | 230 | 116 | 266 | 35 | 116 | 211 | 834 |  |  | 56 | 26 |
 | scribe |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
@@ -51,7 +51,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | data-mining | 0 / 42 |
 | file-io | 173 / 235 |
 | global | 24 / 32 |
-| gui | 12 / 259 |
+| gui | 12 / 257 |
 | maths | 100 / 133 |
 | model | 97 / 97 |
 | opengl | 0 / 158 |
@@ -506,7 +506,7 @@ What the module takes from each partially-included directory:
 - `global/python.h`
 - `global/unicode.h`
 
-## gui (12 of 259)
+## gui (12 of 257)
 
 - `gui/Colour.cc`
 - `gui/Colour.h`

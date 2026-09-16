@@ -28,6 +28,8 @@
 
 #include "VisualLayerParams.h"
 
+#include "gui/DrawStyleManager.h"
+
 #include "view-operations/RenderedGeometryParameters.h"
 
 
@@ -126,7 +128,16 @@ namespace GPlatesPresentation
 		VelocityFieldCalculatorVisualLayerParams( 
 				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
 				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters) :
-			VisualLayerParams(layer_params),
+			// Start from the default draw style, as every other renderable layer type does.
+			//
+			// Keep it even though a velocity layer has no draw style of its own in the
+			// interface: with no style adapter to ask, the renderer gets back a
+			// default-constructed DrawStyle, whose Colour is opaque black, and every arrow
+			// is drawn black. Selecting "All" layers in the Draw Style dialog does reach
+			// a velocity layer, so this is a default and not the only possible style.
+			VisualLayerParams(
+				layer_params,
+				GPlatesGui::DrawStyleManager::instance()->default_style()),
 			d_arrow_spacing(rendered_geometry_parameters
 					.get_reconstruction_layer_arrow_spacing()),
 			d_arrow_body_scale(rendered_geometry_parameters

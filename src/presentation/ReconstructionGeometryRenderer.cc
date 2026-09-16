@@ -26,6 +26,7 @@
 
 #include <cmath>
 #include <cstddef> // For std::size_t
+#include <map>
 #include <utility>
 #include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
@@ -518,6 +519,14 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 	GPlatesAppLogic::MultiPointVectorField::codomain_type::const_iterator codomain_iter = mpvf->begin();
 
+	// The colour of each arrow, by the reconstruction geometry that determines it.
+	//
+	// There is an arrow per domain point but only a colour per plate, and asking for that
+	// colour asks the draw style, which for a Python style acquires the GIL and calls into
+	// Python. A global velocity domain has tens of thousands of points and is recalculated
+	// on every reconstruction, so the lookup is cached rather than repeated per point.
+	std::map<const GPlatesAppLogic::ReconstructionGeometry *, GPlatesGui::ColourProxy> arrow_colours;
+
 	for ( ; domain_iter != domain_end; ++domain_iter, ++codomain_iter)
 	{
 		if ( ! *codomain_iter) {
@@ -549,9 +558,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			//   - in a interior rigid block of a network, or
 			//   - in a plate boundary (or a reconstructed static polygon), or
 			//   - a reconstructed domain point that used the domain features' plate ID.
-			// Colour the arrow according to the plate ID.
+			// Colour the arrow the same way the geometry it belongs to is coloured.
 			//
-			// The ReconstructionGeometry passed into the ColourProxy is either that of the plate
+			// The ReconstructionGeometry that determines the colour is either that of the plate
 			// boundary or that of the originating/domain feature depending on the 'reason'.
 			// But situations are handled the same though.
 
@@ -561,12 +570,21 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type rg_non_null_ptr =
 						plate_id_recon_geom.get();
 
+				auto arrow_colour_iter = arrow_colours.find(rg_non_null_ptr.get());
+				if (arrow_colour_iter == arrow_colours.end())
+				{
+					arrow_colour_iter = arrow_colours.insert(
+							std::make_pair(
+									rg_non_null_ptr.get(),
+									get_colour(rg_non_null_ptr, d_colour, d_style_adapter))).first;
+				}
+
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 								point,
 								velocity.d_vector,
 								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
-								GPlatesGui::ColourProxy(rg_non_null_ptr),
+								arrow_colour_iter->second,
 								d_render_params.ratio_arrowhead_size_to_globe_radius);
 
 				// Render the rendered geometry.

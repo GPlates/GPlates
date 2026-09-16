@@ -2351,7 +2351,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::get_vector_geometry_colour(
 		return d_vector_geometries_override_colour.get();
 	}
 
-	return colour_proxy.get_colour(d_colour_scheme);
+	return colour_proxy.get_colour();
 }
 
 
