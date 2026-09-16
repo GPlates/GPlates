@@ -72,7 +72,7 @@
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::populate(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::populate(
 		GPlatesModel::FeatureHandle::const_weak_ref &feature,
 		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg)
 {
@@ -105,7 +105,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::populate(
 
 
 bool
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::initialise_pre_property_values(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const QString name = convert_qualified_xml_name_to_qstring(top_level_property_inline.get_property_name());
@@ -136,7 +136,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::initialise_pre_pr
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::finalise_post_property_values(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::finalise_post_property_values(
 		const GPlatesModel::TopLevelPropertyInline &)
 {
 	d_tree_widget_builder.pop_current_item();
@@ -144,7 +144,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::finalise_post_pro
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_enumeration(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_enumeration(
 		const GPlatesPropertyValues::Enumeration &enumeration)
 {
 	static const int which_column = 1;
@@ -156,7 +156,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_enumeration
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_line_string(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gml_line_string(
 		const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	// The focused geometry property will be expanded but the others won't.
@@ -207,7 +207,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_line_st
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_multi_point(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gml_multi_point(
 		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	// FIXME: Check if the following is the appropriate form of output.
@@ -266,7 +266,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_multi_p
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orientable_curve(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gml_orientable_curve(
 		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	// The focused geometry property will be expanded but the others won't.
@@ -290,7 +290,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orienta
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
@@ -326,7 +326,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	// FIXME: Check if the following is the appropriate form of output.
@@ -392,7 +392,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_instant(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_instant(
 		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	static const int which_column = 1;
@@ -414,7 +414,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_in
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_period(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_period(
 		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
@@ -432,14 +432,14 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_pe
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_constant_value(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_key_value_dictionary(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gpml_key_value_dictionary(
 		const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
 {
 	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
@@ -467,7 +467,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_key_va
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_plate_id(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	static const int which_column = 1;
@@ -478,7 +478,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_plate_
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_measure(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gpml_measure(
 	const GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 {
 	static const int which_column = 1;
@@ -490,7 +490,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_measur
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_old_plates_header(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gpml_old_plates_header(
 		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
 	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
@@ -523,7 +523,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_old_pl
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_string_list(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gpml_string_list(
 		const GPlatesPropertyValues::GpmlStringList &gpml_string_list)
 {
 	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
@@ -557,7 +557,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_string
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_uninterpreted_property_value(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_uninterpreted_property_value(
 		const GPlatesPropertyValues::UninterpretedPropertyValue &uninterpreted_prop_val)
 {
 	static const int which_column = 1;
@@ -569,7 +569,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_uninterpret
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_boolean(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_xs_boolean(
 		const GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
 	static const int which_column = 1;
@@ -581,7 +581,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_boolean(
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_double(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_xs_double(
 	const GPlatesPropertyValues::XsDouble& xs_double)
 {
 	static const int which_column = 1;
@@ -595,7 +595,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_double(
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_integer(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_xs_integer(
 	const GPlatesPropertyValues::XsInteger& xs_integer)
 {
 	static const int which_column = 1;
@@ -609,7 +609,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_integer(
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_string(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
 	static const int which_column = 1;
@@ -621,7 +621,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_string(
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_child_then_visit_value(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::add_child_then_visit_value(
 		const QString &name,
 		const QString &value,
 		const GPlatesModel::PropertyValue &property_value_to_visit)
@@ -635,7 +635,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_child_then_vi
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_gpml_key_value_dictionary_element(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::add_gpml_key_value_dictionary_element(
 			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
 {
 
@@ -647,7 +647,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_gpml_key_valu
 
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_polygon_ring(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::write_polygon_ring(
 		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_begin,
 		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_end)
 {
@@ -680,7 +680,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_polygon_rin
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_multipoint_member(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::write_multipoint_member(
 	const GPlatesMaths::PointOnSphere &point)
 {
 
@@ -707,7 +707,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_multipoint_
 }
 
 void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_array(
+GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator::visit_gpml_array(
 		const GPlatesPropertyValues::GpmlArray &gpml_array)
 {
 	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later

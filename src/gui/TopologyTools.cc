@@ -70,7 +70,7 @@
 #include "feature-visitors/GeometryTypeFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "gui/TopologySectionsFinder.h"
-#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
+#include "qt-widgets/ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"

@@ -256,7 +256,7 @@ namespace
 
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::populate(
 		GPlatesModel::FeatureHandle::weak_ref &feature,
 		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg)
 {
@@ -289,7 +289,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate(
 
 
 bool
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::initialise_pre_feature_properties(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Iterate over the Reconstruction and grab the reconstructed geometry that originates
@@ -302,7 +302,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::initialise_pre_fea
 
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::finalise_post_feature_properties(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::finalise_post_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Now add any geometric properties we were interested in (and delete the others)
@@ -321,7 +321,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::finalise_post_feat
 
 
 bool
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::initialise_pre_property_values(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::initialise_pre_property_values(
 		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	// Create a top-level item for this property and remember it - do not add it just yet.
@@ -355,7 +355,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::initialise_pre_pro
 
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::finalise_post_property_values(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::finalise_post_property_values(
 		GPlatesModel::TopLevelPropertyInline &)
 {
 	d_tree_widget_builder.pop_current_item();
@@ -363,7 +363,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::finalise_post_prop
 
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_line_string(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::visit_gml_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	//PROFILE_FUNC();
@@ -438,7 +438,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_line_str
 }
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_multi_point(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::visit_gml_multi_point(
 		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 // This whole gml_multi_point function is essentially a copy of the gml_line_string function. 
@@ -507,7 +507,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_multi_po
 }
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_orientable_curve(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::visit_gml_orientable_curve(
 		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	// The focused geometry property will be expanded but the others won't.
@@ -535,7 +535,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_orientab
 
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
@@ -599,7 +599,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 }
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_polygon(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::visit_gml_polygon(
 		GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	// Like the multi_point function, I've more or less just copied the line_string function here. 
@@ -667,7 +667,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_polygon(
 }
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gpml_constant_value(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
@@ -677,7 +677,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gpml_constan
 
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geometries_for_feature(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geometries_for_feature(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Get the RFGs (and generate if not already), for all active ReconstructLayer's, that reference the feature.
@@ -701,7 +701,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geome
 
 
 boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::get_reconstructed_geometry_for_property(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::get_reconstructed_geometry_for_property(
 		const GPlatesModel::FeatureHandle::iterator property)
 {
 	geometries_for_property_const_iterator it = d_rfg_geometries.begin();
@@ -719,7 +719,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::get_reconstructed_
 
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::add_child_then_visit_value(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::add_child_then_visit_value(
 		const QString &name,
 		const QString &value,
 		GPlatesModel::PropertyValue &property_value_to_visit)
@@ -733,7 +733,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::add_child_then_vis
 }
 
 void
-GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::write_polygon_ring(
+GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator::write_polygon_ring(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon,
 		boost::optional<unsigned int> interior_ring_index)
 {

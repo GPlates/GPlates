@@ -30,7 +30,7 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
-#include "feature-visitors/QueryFeaturePropertiesWidgetPopulator.h"
+#include "qt-widgets/QueryFeaturePropertiesWidgetPopulator.h"
 
 #include "gui/FeatureFocus.h"
 
@@ -225,7 +225,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 	if (isVisible())
 	{
-		GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(property_tree());
+		GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator populator(property_tree());
 		GPlatesModel::FeatureHandle::const_weak_ref const_feature = d_feature_ref;
 		populator.populate(const_feature, d_focused_rg);
 
@@ -245,7 +245,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::showEvent(
 {
 	if (d_populate_property_tree_when_visible)
 	{
-		GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(property_tree());
+		GPlatesQtWidgets::QueryFeaturePropertiesWidgetPopulator populator(property_tree());
 		GPlatesModel::FeatureHandle::const_weak_ref const_feature = d_feature_ref;
 		populator.populate(const_feature, d_focused_rg);
 

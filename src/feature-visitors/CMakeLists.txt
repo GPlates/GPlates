@@ -22,8 +22,6 @@ set(srcs
     KeyValueDictionaryFinder.h
     PropertyValueFinder.cc
     PropertyValueFinder.h
-    QueryFeaturePropertiesWidgetPopulator.cc
-    QueryFeaturePropertiesWidgetPopulator.h
     ToQvariantConverter.cc
     ToQvariantConverter.h
     TotalReconstructionSequencePlateIdFinder.cc
@@ -34,8 +32,6 @@ set(srcs
     TotalReconstructionSequenceRotationInterpolater.h
     TotalReconstructionSequenceTimePeriodFinder.cc
     TotalReconstructionSequenceTimePeriodFinder.h
-    ViewFeatureGeometriesWidgetPopulator.cc
-    ViewFeatureGeometriesWidgetPopulator.h
 )
 
 # GPlates-only sources: excluded from the pygplates module, whose source list is the
@@ -50,16 +46,12 @@ set(gplates_only_srcs
     FromQvariantConverter.h
     GeometryRotator.cc
     GeometryRotator.h
-    QueryFeaturePropertiesWidgetPopulator.cc
-    QueryFeaturePropertiesWidgetPopulator.h
     TotalReconstructionSequenceRotationInserter.cc
     TotalReconstructionSequenceRotationInserter.h
     TotalReconstructionSequenceRotationInterpolater.cc
     TotalReconstructionSequenceRotationInterpolater.h
     TotalReconstructionSequenceTimePeriodFinder.cc
     TotalReconstructionSequenceTimePeriodFinder.h
-    ViewFeatureGeometriesWidgetPopulator.cc
-    ViewFeatureGeometriesWidgetPopulator.h
 )
 # Guard against stale entries (eg, after a file rename).
 foreach(gplates_only_src ${gplates_only_srcs})
