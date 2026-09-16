@@ -5,8 +5,8 @@
 # `src/` dependency matrix
 
 Counts of resolved quoted `#include` lines from files in the *row* directory to files
-in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirectories
-(the dead `deprecated/` subtrees are excluded). `(src root)` is the files directly in
+in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirectories.
+`(src root)` is the files directly in
 `src/`. The intended layering these numbers should respect is described in
 [README.md](README.md).
 

@@ -301,9 +301,6 @@ def check_forbidden(closure):
         elif top_dir(rel) == 'gui' and rel not in GUI_ALLOWLIST:
             errors.append('reaches non-allowlisted gui file: %s\n    via: %s'
                           % (rel, closure.chain(rel)))
-        elif '/deprecated/' in rel:
-            errors.append('reaches deprecated (dead, uncompiled) file: %s\n    via: %s'
-                          % (rel, closure.chain(rel)))
     for rel in closure.files():
         for include in _ANGLE_INCLUDE_RE.findall(read_stripped(os.path.join(SRC_DIR, rel))):
             if FORBIDDEN_ANGLE_INCLUDE_RE.match(include):
@@ -348,15 +345,13 @@ def build_dirs():
 
 
 def all_source_files():
-    """Every .h/.cc under the built 'src/' subdirectories plus the 'src/' root, excluding the
-    dead 'deprecated/' subtrees (they are in no CMake source list)."""
+    """Every .h/.cc under the built 'src/' subdirectories plus the 'src/' root."""
     dirs = set(build_dirs())
     files = []
     for base, subdirs, names in os.walk(SRC_DIR):
         rel_base = os.path.relpath(base, SRC_DIR).replace(os.sep, '/')
         if rel_base == '.':
             subdirs[:] = [d for d in subdirs if d in dirs]
-        subdirs[:] = [d for d in subdirs if d != 'deprecated']
         for name in names:
             if name.endswith(HEADER_SUFFIXES + SOURCE_SUFFIXES):
                 files.append(name if rel_base == '.' else rel_base + '/' + name)
@@ -403,8 +398,8 @@ def generate_doc(closure):
     lines.append('# `src/` dependency matrix')
     lines.append('')
     lines.append('Counts of resolved quoted `#include` lines from files in the *row* directory to files')
-    lines.append('in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirectories')
-    lines.append('(the dead `deprecated/` subtrees are excluded). `(src root)` is the files directly in')
+    lines.append('in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirectories.')
+    lines.append('`(src root)` is the files directly in')
     lines.append('`src/`. The intended layering these numbers should respect is described in')
     lines.append('[README.md](README.md).')
     lines.append('')
