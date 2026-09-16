@@ -49,7 +49,7 @@
 #include "ShapefileXmlReader.h"
 
 #include "feature-visitors/PropertyValueFinder.h" 
-#include "feature-visitors/ShapefileAttributeFinder.h"
+#include "file-io/ShapefileAttributeFinder.h"
 
 #include "model/ChangesetHandle.h"
 #include "model/Gpgim.h"
@@ -271,7 +271,7 @@ namespace
 		QString shapefile_property_name,
 		const GPlatesModel::FeatureHandle::weak_ref &feature)
 	{
-		GPlatesFeatureVisitors::ShapefileAttributeFinder finder(shapefile_property_name);
+		GPlatesFileIO::ShapefileAttributeFinder finder(shapefile_property_name);
 
 		finder.visit_feature(feature);
 		if (finder.found_qvariants_begin() != finder.found_qvariants_end())

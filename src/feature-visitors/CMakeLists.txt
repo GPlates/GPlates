@@ -24,8 +24,6 @@ set(srcs
     PropertyValueFinder.h
     QueryFeaturePropertiesWidgetPopulator.cc
     QueryFeaturePropertiesWidgetPopulator.h
-    ShapefileAttributeFinder.cc
-    ShapefileAttributeFinder.h
     TopologySectionsFinder.cc
     TopologySectionsFinder.h
     ToQvariantConverter.cc

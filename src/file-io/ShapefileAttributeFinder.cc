@@ -66,7 +66,7 @@ namespace
 
 
 bool
-GPlatesFeatureVisitors::ShapefileAttributeFinder::initialise_pre_property_values(
+GPlatesFileIO::ShapefileAttributeFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	// FIXME:  Why are we comparing QString to string literal rather than PropertyName to (static) PropertyName?
@@ -82,7 +82,7 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::initialise_pre_property_values
 
 
 void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gpml_key_value_dictionary(
+GPlatesFileIO::ShapefileAttributeFinder::visit_gpml_key_value_dictionary(
 		const GPlatesPropertyValues::GpmlKeyValueDictionary &dictionary)
 {
 
@@ -98,7 +98,7 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gpml_key_value_dictionar
 }
 
 void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_boolean(
+GPlatesFileIO::ShapefileAttributeFinder::visit_xs_boolean(
 		const GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
 	d_found_qvariants.push_back(QVariant(xs_boolean.get_value()));
@@ -106,21 +106,21 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_boolean(
 
 
 void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_double(
+GPlatesFileIO::ShapefileAttributeFinder::visit_xs_double(
 	const GPlatesPropertyValues::XsDouble& xs_double)
 {
 	d_found_qvariants.push_back(QVariant(xs_double.get_value()));
 }
 
 void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_integer(
+GPlatesFileIO::ShapefileAttributeFinder::visit_xs_integer(
 	const GPlatesPropertyValues::XsInteger& xs_integer)
 {
 	d_found_qvariants.push_back(QVariant(xs_integer.get_value()));
 }
 
 void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_string(
+GPlatesFileIO::ShapefileAttributeFinder::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
 	QString qstring = GPlatesUtils::make_qstring(xs_string.get_value());
@@ -130,7 +130,7 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_xs_string(
 
 
 void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::find_shapefile_attribute_in_element(
+GPlatesFileIO::ShapefileAttributeFinder::find_shapefile_attribute_in_element(
 		const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
 {
 	QString temp = GPlatesUtils::make_qstring(element.key()->get_value());

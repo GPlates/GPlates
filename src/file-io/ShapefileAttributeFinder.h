@@ -26,8 +26,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_SHAPEFILEATTRIBUTEFINDER_H
-#define GPLATES_FEATUREVISITORS_SHAPEFILEATTRIBUTEFINDER_H
+#ifndef GPLATES_FILEIO_SHAPEFILEATTRIBUTEFINDER_H
+#define GPLATES_FILEIO_SHAPEFILEATTRIBUTEFINDER_H
 
 #include <vector>
 #include <QVariant>
@@ -41,7 +41,7 @@ namespace GPlatesPropertyValues
 	class GpmlKeyValueDictionaryElement;
 }
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesFileIO
 {
 	/**
 	 * The ToQvariantConverter feature-visitor is used to locate specific property values
@@ -162,5 +162,5 @@ namespace GPlatesFeatureVisitors
 
 }
 
-#endif  // GPLATES_FEATUREVISITORS_SHAPEFILEATTRIBUTEFINDER_H
+#endif  // GPLATES_FILEIO_SHAPEFILEATTRIBUTEFINDER_H
 
