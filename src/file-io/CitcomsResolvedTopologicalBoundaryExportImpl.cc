@@ -25,10 +25,9 @@
 
 #include "CitcomsResolvedTopologicalBoundaryExportImpl.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GeoTimeInstant.h"
@@ -221,7 +220,7 @@ namespace GPlatesFileIO
 					GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
 
 				boost::optional<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_to_const_type> old_plates_header =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
 								feature,
 								old_plates_header_property_name);
 				if (old_plates_header)
@@ -434,7 +433,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segmen
 			GPlatesModel::PropertyName::create_gpml("slabEdgeType");
 
 	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> property_value =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 					sub_segment_feature_ref, property_name);
 	if (property_value)
 	{

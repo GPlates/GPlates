@@ -35,21 +35,19 @@
 #include <QStringList>
 #include <QVariant>
 
-#include "Gdal.h"
-#include "GdalUtils.h"
+#include "OgrReader.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileLoadAbortedException.h"
-#include "OgrReader.h"
+#include "Gdal.h"
+#include "GdalUtils.h"
 #include "OgrUtils.h"
 #include "PropertyMapper.h"
 #include "ReadErrorAccumulation.h"
 #include "ReadErrorOccurrence.h"
+#include "ShapefileAttributeFinder.h"
 #include "ShapefileXmlReader.h"
-
-#include "feature-visitors/PropertyValueFinder.h" 
-#include "feature-visitors/ShapefileAttributeFinder.h"
 
 #include "model/ChangesetHandle.h"
 #include "model/Gpgim.h"
@@ -57,6 +55,7 @@
 #include "model/Model.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyValueFinder.h"
 #include "model/QualifiedXmlName.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
@@ -271,7 +270,7 @@ namespace
 		QString shapefile_property_name,
 		const GPlatesModel::FeatureHandle::weak_ref &feature)
 	{
-		GPlatesFeatureVisitors::ShapefileAttributeFinder finder(shapefile_property_name);
+		GPlatesFileIO::ShapefileAttributeFinder finder(shapefile_property_name);
 
 		finder.visit_feature(feature);
 		if (finder.found_qvariants_begin() != finder.found_qvariants_end())

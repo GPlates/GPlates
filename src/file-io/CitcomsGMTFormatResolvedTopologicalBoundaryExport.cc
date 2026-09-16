@@ -146,7 +146,7 @@ namespace GPlatesFileIO
 				static const GPlatesModel::PropertyName name_property_name =
 					GPlatesModel::PropertyName::create_gml("name");
 				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> feature_name =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 								feature, name_property_name);
 				if (!feature_name)
 				{
@@ -180,7 +180,7 @@ namespace GPlatesFileIO
 				static const GPlatesModel::PropertyName name_property_name =
 					GPlatesModel::PropertyName::create_gml("name");
 				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> feature_name =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 								feature, name_property_name);
 				if (!feature_name)
 				{
@@ -206,7 +206,7 @@ namespace GPlatesFileIO
 					GPlatesModel::PropertyName::create_gpml("subductionZoneAge");
 
 				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsDouble>(
 								feature, property_name);
 				if (!property_value)
 				{
@@ -232,7 +232,7 @@ namespace GPlatesFileIO
 					GPlatesModel::PropertyName::create_gpml("subductionZoneConvergence");
 
 				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsDouble>(
 								feature, property_name);
 				if (!property_value)
 				{
@@ -259,7 +259,7 @@ namespace GPlatesFileIO
 					GPlatesModel::PropertyName::create_gpml("subductionZoneDeepDip");
 
 				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsDouble>(
 								feature, property_name);
 				if (!property_value)
 				{
@@ -285,7 +285,7 @@ namespace GPlatesFileIO
 					GPlatesModel::PropertyName::create_gpml("subductionZoneDepth");
 
 				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsDouble>(
 								feature, property_name);
 				if (!property_value)
 				{
@@ -312,7 +312,7 @@ namespace GPlatesFileIO
 					GPlatesModel::PropertyName::create_gpml("subductionZoneSystem");
 
 				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> property_value =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 								feature, property_name);
 				if (!property_value)
 				{
@@ -338,7 +338,7 @@ namespace GPlatesFileIO
 					GPlatesModel::PropertyName::create_gpml("subductionZoneSystemOrder");
 
 				boost::optional<GPlatesPropertyValues::XsInteger::non_null_ptr_to_const_type> property_value =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsInteger>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsInteger>(
 								feature, property_name);
 				if (!property_value)
 				{
@@ -366,7 +366,7 @@ namespace GPlatesFileIO
 					GPlatesModel::PropertyName::create_gpml("rheaFault");
 
 				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> property_value =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 								feature, property_name);
 				if (!property_value)
 				{
@@ -391,7 +391,7 @@ namespace GPlatesFileIO
 					GPlatesModel::PropertyName::create_gpml("slabFlatLying");
 
 				boost::optional<GPlatesPropertyValues::XsBoolean::non_null_ptr_to_const_type> property_value =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsBoolean>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsBoolean>(
 								feature, property_name);
 				if (!property_value)
 				{
@@ -414,7 +414,7 @@ namespace GPlatesFileIO
 					GPlatesModel::PropertyName::create_gpml("slabFlatLyingDepth");
 
 				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsDouble>(
 								feature, property_name);
 				if (!property_value)
 				{
@@ -480,7 +480,7 @@ namespace GPlatesFileIO
 
 				boost::optional<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_to_const_type>
 						source_feature_old_plates_header =
-								GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
+								GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
 										source_feature,
 										old_plates_header_property_name);
 

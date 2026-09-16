@@ -41,8 +41,6 @@
 #include "QtWidgetUtils.h"
 #include "ResizeToContentsTextEdit.h"
 
-#include "feature-visitors/ToQvariantConverter.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
@@ -51,6 +49,7 @@
 #include "model/GpgimFeatureClass.h"
 #include "model/GpgimProperty.h"
 #include "model/ModelUtils.h"
+#include "model/ToQvariantConverter.h"
 
 namespace
 {
@@ -111,7 +110,7 @@ namespace
 	convert_top_level_property_to_display_string(
 			const GPlatesModel::TopLevelProperty &top_level_property)
 	{
-		GPlatesFeatureVisitors::ToQvariantConverter qvariant_converter;
+		GPlatesModel::ToQvariantConverter qvariant_converter;
 		top_level_property.accept_visitor(qvariant_converter);
 
 		if (qvariant_converter.found_values_begin() == qvariant_converter.found_values_end())

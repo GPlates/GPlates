@@ -43,14 +43,13 @@
 #include "PythonConverterUtils.h"
 #include "PythonVariableFunctionArguments.h"
 
+#include "app-logic/GeometrySetter.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
+#include "app-logic/ReconstructedMotionPath.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructMethodInterface.h"
 #include "app-logic/ReconstructMethodRegistry.h"
-#include "app-logic/ReconstructedMotionPath.h"
-
-#include "feature-visitors/GeometrySetter.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
@@ -531,7 +530,7 @@ namespace GPlatesApi
 									true/*reverse_reconstruct*/);
 
 					// Set the reverse reconstructed (present day) geometry back onto the feature's geometry property.
-					GPlatesFeatureVisitors::GeometrySetter(present_day_geometry).set_geometry(
+					GPlatesAppLogic::GeometrySetter(present_day_geometry).set_geometry(
 							(*feature_reconstructed_geometry.property_iterator).get());
 				}
 			}

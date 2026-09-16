@@ -222,6 +222,8 @@ set(srcs
     ScalarField3DFileFormat.h
     ScalarField3DFileFormatReader.cc
     ScalarField3DFileFormatReader.h
+    ShapefileAttributeFinder.cc
+    ShapefileAttributeFinder.h
     ShapefileXmlReader.cc
     ShapefileXmlReader.h
     ShapefileXmlWriter.cc

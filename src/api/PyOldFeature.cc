@@ -24,8 +24,9 @@
  */
 #include "PyOldFeature.h"
 
-#include "feature-visitors/ShapefileAttributeFinder.h"
-#include "feature-visitors/KeyValueDictionaryFinder.h"
+#include "file-io/ShapefileAttributeFinder.h"
+
+#include "model/KeyValueDictionaryFinder.h"
 
 #include "property-values/GpmlKeyValueDictionary.h"
 
@@ -119,7 +120,7 @@ GPlatesApi::OldFeature::get_properties_by_name(
 			}
 			else
 			{
-				GPlatesFeatureVisitors::ShapefileAttributeFinder visitor(*shapefile_attr);
+				GPlatesFileIO::ShapefileAttributeFinder visitor(*shapefile_attr);
 				(*it)->accept_visitor(visitor);
 				
 				if(1 < std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
@@ -180,7 +181,7 @@ GPlatesApi::OldFeature::get_all_property_names()
 		
 		if(shape_file_attr_name == name)//shape file attributes
 		{
-			GPlatesFeatureVisitors::KeyValueDictionaryFinder finder(shape_file_attr_name);
+			GPlatesModel::KeyValueDictionaryFinder finder(shape_file_attr_name);
 			(*it)->accept_visitor(finder);
 			//finder.visit_feature(d_handle);
 			

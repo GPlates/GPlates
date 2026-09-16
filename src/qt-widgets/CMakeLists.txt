@@ -457,6 +457,8 @@ set(srcs
     QtWidgetUtils.h
     QueryFeaturePropertiesWidget.cc
     QueryFeaturePropertiesWidget.h
+    QueryFeaturePropertiesWidgetPopulator.cc
+    QueryFeaturePropertiesWidgetPopulator.h
     QueryFeaturePropertiesWidgetUi.ui
     RasterBandPage.cc
     RasterBandPage.h
@@ -596,6 +598,8 @@ set(srcs
     VelocityMethodWidgetUi.ui
     ViewFeatureGeometriesWidget.cc
     ViewFeatureGeometriesWidget.h
+    ViewFeatureGeometriesWidgetPopulator.cc
+    ViewFeatureGeometriesWidgetPopulator.h
     ViewFeatureGeometriesWidgetUi.ui
     ViewportWindow.cc
     ViewportWindow.h

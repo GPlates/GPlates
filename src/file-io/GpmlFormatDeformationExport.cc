@@ -41,13 +41,12 @@
 #include "app-logic/ScalarCoverageFeatureProperties.h"
 #include "app-logic/TopologyReconstructedFeatureGeometry.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "maths/MathsUtils.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlDataBlock.h"

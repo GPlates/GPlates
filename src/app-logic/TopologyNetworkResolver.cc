@@ -42,8 +42,6 @@
 #include "TopologyNetworkResolver.h"
 #include "TopologyUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -54,6 +52,7 @@
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"

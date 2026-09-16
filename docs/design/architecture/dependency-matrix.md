@@ -5,33 +5,31 @@
 # `src/` dependency matrix
 
 Counts of resolved quoted `#include` lines from files in the *row* directory to files
-in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirectories
-(the dead `deprecated/` subtrees are excluded). `(src root)` is the files directly in
-`src/`. The intended layering these numbers should respect is described in
-[README.md](README.md).
+in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirectories.
+`(src root)` is the files directly in `src/`. The intended layering these numbers
+should respect is described in [README.md](README.md).
 
-| includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | feature-visitors | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| (src root) |  | 2 | 2 |  | 1 | 1 |  | 1 | 3 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
-| api |  | 275 | 124 |  |  | 8 | 4 | 35 | 156 | 14 | 86 | 75 | 2 | 3 | 112 | 5 | 29 |  | 46 |  |
-| app-logic |  |  | 918 |  |  | 7 | 14 | 20 | 159 |  | 249 | 241 | 12 |  | 263 |  | 25 |  | 123 |  |
-| canvas-tools |  |  | 12 | 42 |  |  | 2 |  | 3 | 37 | 27 | 12 |  | 7 | 2 | 38 |  |  | 8 | 68 |
-| cli |  |  | 17 |  | 42 |  |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
-| data-mining |  |  | 17 |  |  | 81 | 2 | 3 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
-| feature-visitors |  |  | 15 |  |  |  | 19 | 1 | 2 | 3 | 49 | 93 |  |  | 155 |  |  |  | 8 |  |
-| file-io |  |  | 78 |  |  |  | 26 | 535 | 117 | 19 | 112 | 214 |  |  | 403 |  |  |  | 77 |  |
-| global |  |  |  |  |  |  |  |  | 25 |  |  |  |  |  |  |  |  |  | 5 |  |
-| gui |  | 18 | 166 | 53 |  | 3 | 11 | 53 | 95 | 506 | 110 | 58 | 113 | 79 | 49 | 163 | 14 |  | 91 | 108 |
-| maths |  |  |  |  |  |  |  |  | 75 |  | 410 | 1 |  |  |  |  | 24 |  | 41 |  |
-| model |  |  | 7 |  |  |  |  | 2 | 30 |  |  | 199 |  |  | 35 |  | 23 |  | 45 |  |
-| opengl |  |  | 16 |  |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
-| presentation |  | 1 | 100 |  |  | 1 | 1 | 24 | 23 | 78 | 12 | 8 | 3 | 93 | 6 | 26 | 25 |  | 12 | 19 |
-| property-values |  |  |  |  |  |  | 42 | 11 | 64 | 5 | 26 | 250 |  |  | 176 |  | 103 |  | 35 |  |
-| qt-widgets |  | 17 | 253 | 7 |  | 8 | 35 | 81 | 133 | 238 | 105 | 244 | 35 | 117 | 180 | 836 |  |  | 59 | 26 |
-| scribe |  |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
-| unit-test |  |  | 2 |  |  | 2 | 3 | 11 | 2 | 5 | 9 | 10 |  |  | 5 |  | 16 | 2 | 6 |  |
-| utils |  | 1 |  |  |  |  |  | 1 | 34 |  | 14 | 7 |  |  | 58 |  | 3 |  | 52 |  |
-| view-operations |  |  | 39 | 6 |  |  | 7 | 5 | 27 | 62 | 92 | 25 |  | 6 | 9 | 1 | 3 |  | 13 | 232 |
+| includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 3 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
+| api |  | 275 | 125 |  |  | 8 | 36 | 156 | 15 | 86 | 76 | 2 | 3 | 112 | 5 | 29 |  | 46 |  |
+| app-logic |  |  | 936 |  |  | 7 | 21 | 161 |  | 279 | 289 | 12 |  | 304 |  | 25 |  | 123 |  |
+| canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 37 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
+| cli |  |  | 17 |  | 42 |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
+| data-mining |  |  | 18 |  |  | 81 | 4 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
+| file-io |  |  | 82 |  |  |  | 537 | 117 | 19 | 112 | 241 |  |  | 415 |  |  |  | 78 |  |
+| global |  |  |  |  |  |  |  | 25 |  |  |  |  |  |  |  |  |  | 5 |  |
+| gui |  | 18 | 173 | 53 |  | 3 | 53 | 95 | 512 | 117 | 82 | 113 | 79 | 97 | 164 | 14 |  | 93 | 108 |
+| maths |  |  |  |  |  |  |  | 75 |  | 410 | 1 |  |  |  |  | 24 |  | 41 |  |
+| model |  |  | 7 |  |  |  | 2 | 30 |  | 1 | 218 |  |  | 58 |  | 23 |  | 48 |  |
+| opengl |  |  | 16 |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
+| presentation |  | 1 | 100 |  |  | 1 | 24 | 23 | 78 | 12 | 9 | 3 | 93 | 6 | 26 | 25 |  | 12 | 19 |
+| property-values |  |  |  |  |  |  | 11 | 64 | 5 | 26 | 292 |  |  | 176 |  | 103 |  | 35 |  |
+| qt-widgets |  | 17 | 280 | 7 |  | 8 | 81 | 133 | 240 | 116 | 271 | 35 | 117 | 211 | 840 |  |  | 61 | 26 |
+| scribe |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
+| unit-test |  |  | 4 |  |  | 2 | 11 | 2 | 5 | 9 | 11 |  |  | 5 |  | 16 | 2 | 6 |  |
+| utils |  | 1 |  |  |  |  | 1 | 34 |  | 14 | 7 |  |  | 58 |  | 3 |  | 52 |  |
+| view-operations |  |  | 44 | 6 |  |  | 5 | 27 | 62 | 92 | 27 |  | 6 | 9 | 1 | 3 |  | 13 | 232 |
 
 # The pyGPlates module subset
 
@@ -47,20 +45,19 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | --- | ---: |
 | (src root) | 1 / 7 |
 | api | 77 / 110 |
-| app-logic | 143 / 267 |
+| app-logic | 151 / 285 |
 | canvas-tools | 0 / 51 |
 | cli | 0 / 20 |
 | data-mining | 0 / 42 |
-| feature-visitors | 16 / 34 |
-| file-io | 171 / 233 |
+| file-io | 173 / 235 |
 | global | 24 / 32 |
-| gui | 12 / 255 |
+| gui | 12 / 259 |
 | maths | 100 / 133 |
-| model | 91 / 91 |
+| model | 97 / 97 |
 | opengl | 0 / 158 |
 | presentation | 0 / 48 |
 | property-values | 127 / 128 |
-| qt-widgets | 0 / 439 |
+| qt-widgets | 0 / 443 |
 | scribe | 56 / 64 |
 | unit-test | 0 / 16 |
 | utils | 45 / 77 |
@@ -152,7 +149,7 @@ What the module takes from each partially-included directory:
 - `api/PythonVariableFunctionArguments.cc`
 - `api/PythonVariableFunctionArguments.h`
 
-## app-logic (143 of 267)
+## app-logic (151 of 285)
 
 - `app-logic/AppLogicUtils.cc`
 - `app-logic/AppLogicUtils.h`
@@ -170,6 +167,12 @@ What the module takes from each partially-included directory:
 - `app-logic/FlowlineUtils.h`
 - `app-logic/GeometryCookieCutter.cc`
 - `app-logic/GeometryCookieCutter.h`
+- `app-logic/GeometryFinder.cc`
+- `app-logic/GeometryFinder.h`
+- `app-logic/GeometrySetter.cc`
+- `app-logic/GeometrySetter.h`
+- `app-logic/GeometryTypeFinder.cc`
+- `app-logic/GeometryTypeFinder.h`
 - `app-logic/GeometryUtils.cc`
 - `app-logic/GeometryUtils.h`
 - `app-logic/MotionPathGeometryPopulator.cc`
@@ -294,30 +297,13 @@ What the module takes from each partially-included directory:
 - `app-logic/TopologyReconstructedFeatureGeometry.h`
 - `app-logic/TopologyUtils.cc`
 - `app-logic/TopologyUtils.h`
+- `app-logic/TotalReconstructionSequencePlateIdFinder.cc`
+- `app-logic/TotalReconstructionSequencePlateIdFinder.h`
 - `app-logic/VelocityDeltaTime.cc`
 - `app-logic/VelocityDeltaTime.h`
 - `app-logic/VelocityUnits.h`
 
-## feature-visitors (16 of 34)
-
-- `feature-visitors/GeometryFinder.cc`
-- `feature-visitors/GeometryFinder.h`
-- `feature-visitors/GeometrySetter.cc`
-- `feature-visitors/GeometrySetter.h`
-- `feature-visitors/GeometryTypeFinder.cc`
-- `feature-visitors/GeometryTypeFinder.h`
-- `feature-visitors/KeyValueDictionaryFinder.cc`
-- `feature-visitors/KeyValueDictionaryFinder.h`
-- `feature-visitors/PropertyValueFinder.cc`
-- `feature-visitors/PropertyValueFinder.h`
-- `feature-visitors/ShapefileAttributeFinder.cc`
-- `feature-visitors/ShapefileAttributeFinder.h`
-- `feature-visitors/ToQvariantConverter.cc`
-- `feature-visitors/ToQvariantConverter.h`
-- `feature-visitors/TotalReconstructionSequencePlateIdFinder.cc`
-- `feature-visitors/TotalReconstructionSequencePlateIdFinder.h`
-
-## file-io (171 of 233)
+## file-io (173 of 235)
 
 - `file-io/ArbitraryNodeProcessor.h`
 - `file-io/ArbitraryXmlProfile.h`
@@ -479,6 +465,8 @@ What the module takes from each partially-included directory:
 - `file-io/ResolvedTopologicalGeometryExport.h`
 - `file-io/RotationAttributesRegistry.cc`
 - `file-io/RotationAttributesRegistry.h`
+- `file-io/ShapefileAttributeFinder.cc`
+- `file-io/ShapefileAttributeFinder.h`
 - `file-io/ShapefileXmlReader.cc`
 - `file-io/ShapefileXmlReader.h`
 - `file-io/ShapefileXmlWriter.cc`
@@ -518,7 +506,7 @@ What the module takes from each partially-included directory:
 - `global/python.h`
 - `global/unicode.h`
 
-## gui (12 of 255)
+## gui (12 of 259)
 
 - `gui/Colour.cc`
 - `gui/Colour.h`
