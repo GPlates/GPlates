@@ -201,13 +201,6 @@ namespace GPlatesGui
 		}
 
 		
-		bool
-		show_init_fail_dlg() const
-		{
-			return d_show_python_init_fail_dlg;
-		}
-
-		
 		const QString&
 		python_version() const
 		{
@@ -224,11 +217,6 @@ namespace GPlatesGui
 
 		void
 		find_python();
-		
-
-		void
-		set_show_init_fail_dlg(
-				bool b);
 
 
 		void
@@ -396,7 +384,7 @@ namespace GPlatesGui
 		*/
 		GPlatesGui::EventBlackout d_event_blackout;
 
-		bool d_show_python_init_fail_dlg, d_clear_python_prefix_flag;
+		bool d_clear_python_prefix_flag;
 
 		QString d_python_home;
 		

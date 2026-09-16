@@ -92,13 +92,6 @@
         </item>
        </layout>
       </item>
-      <item>
-       <widget class="QCheckBox" name="show_python_fail_dlg">
-        <property name="text">
-         <string>Show Python Initialize Fail Dialog</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </widget>
    </item>

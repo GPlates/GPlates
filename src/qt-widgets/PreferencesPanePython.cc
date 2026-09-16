@@ -74,11 +74,6 @@ GPlatesQtWidgets::PreferencesPanePython::PreferencesPanePython(
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(lineedit_python_user_script_dir, prefs,
 			"paths/python_user_script_dir", toolbutton_reset_python_user_script_dir);
 	link_dir_chooser_button(toolbutton_choose_python_user_script_dir, lineedit_python_user_script_dir);
-	
-	
-	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(show_python_fail_dlg, prefs,
-			"python/show_python_init_fail_dialog", reset_python_home);
-	
 }
 
 

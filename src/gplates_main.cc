@@ -716,27 +716,29 @@ namespace
 			GPlatesPresentation::Application *app,
 			char* argv[])
 	{
-		using namespace GPlatesGui;
-		PythonManager* mgr = PythonManager::instance();
 		try
 		{
-			mgr->initialize(argv,app);
+			GPlatesGui::PythonManager::instance()->initialize(argv,app);
 		}
-		catch(const PythonInitFailed& ex)
+		catch (const GPlatesGui::PythonInitFailed &ex)
 		{
+			//
+			// If Python initialisation failed then show a troubleshooting dialog and then exit GPlates.
+			//
+			// It's possible that Python could not be found or was not installed.
+			// However that should not happen for a binary distribution of GPlates since it
+			// should have the Python library included in the installation.
+			//
+
+			// Emit warning message (to console/log).
 			std::stringstream ss;
 			ex.write(ss);
 			qWarning() << ss.str().c_str();
-			
-			if(mgr->show_init_fail_dlg())
-			{
-				using namespace GPlatesQtWidgets;
-				boost::scoped_ptr<PythonInitFailedDialog> python_fail_dlg(
-					new PythonInitFailedDialog);
 
-				python_fail_dlg->exec();
-				mgr->set_show_init_fail_dlg(python_fail_dlg->show_again());
-			}
+			// Show dialog.
+			boost::scoped_ptr<GPlatesQtWidgets::PythonInitFailedDialog> python_fail_dlg(
+					new GPlatesQtWidgets::PythonInitFailedDialog);
+			python_fail_dlg->exec();
 
 			// Destroy the Python manager before the caller exits the process.
 			//
@@ -747,7 +749,7 @@ namespace
 			// preference and stops the thread, and only takes the GIL through members that
 			// exist when Python did initialise. The singleton pointer dangles afterwards, which
 			// is why this is done immediately before exiting.
-			delete mgr;
+			delete GPlatesGui::PythonManager::instance();
 
 			return false;
 		}
