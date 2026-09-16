@@ -211,11 +211,9 @@ GPlatesUtils::get_begin_time(
 {
 	PropertyFinder finder;
 	using namespace  GPlatesPropertyValues;
-	boost::optional<GeoTimeInstant> s_time = GeoTimeInstant(0.0);
-	// This strange initialization is a workaround for Ubuntu Precise 32-bit. 
-	// The g++ doesn't like boost::optional.
-	s_time = boost::none; 
-	
+	boost::optional<GeoTimeInstant> s_time;
+
+
 	GPlatesModel::FeatureHandle::const_iterator 
 		iter = feature_ptr->begin(),
 		end = feature_ptr->end();

@@ -24,11 +24,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#if defined(_MSC_VER) && _MSC_VER <= 1400
-////Visual C++ 2005
-#pragma warning( disable : 4005 )
-#endif 
-
 #include <iostream>
 #include <iterator>
 #include <memory>
