@@ -28,9 +28,9 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLPLATEID_H
 #define GPLATES_PROPERTYVALUES_GPMLPLATEID_H
 
-#include "model/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 #include "model/types.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.

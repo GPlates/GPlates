@@ -30,9 +30,9 @@
 
 #include <vector>
 
-#include "model/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"

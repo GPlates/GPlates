@@ -41,8 +41,6 @@
 #include "QtWidgetUtils.h"
 #include "ResizeToContentsTextEdit.h"
 
-#include "model/ToQvariantConverter.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
@@ -51,6 +49,7 @@
 #include "model/GpgimFeatureClass.h"
 #include "model/GpgimProperty.h"
 #include "model/ModelUtils.h"
+#include "model/ToQvariantConverter.h"
 
 namespace
 {

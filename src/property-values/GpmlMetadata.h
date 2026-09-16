@@ -29,13 +29,13 @@
 
 #include <QDebug>
 
-#include "model/PropertyValueFinder.h"
 
 #include "file-io/XmlWriter.h"
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/Metadata.h"
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"

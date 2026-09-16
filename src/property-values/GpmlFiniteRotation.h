@@ -34,12 +34,11 @@
 #include "GpmlMeasure.h"
 #include "GmlPoint.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "maths/FiniteRotation.h"
 
 #include "model/Metadata.h"
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 
 #include "scribe/ScribeLoadRef.h"
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.

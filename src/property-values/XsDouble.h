@@ -28,11 +28,11 @@
 #ifndef GPLATES_PROPERTYVALUES_XSDOUBLE_H
 #define GPLATES_PROPERTYVALUES_XSDOUBLE_H
 
-#include "model/PropertyValueFinder.h"
 
 #include "maths/MathsUtils.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"

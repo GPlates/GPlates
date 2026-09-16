@@ -28,9 +28,9 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLREVISIONID_H
 #define GPLATES_PROPERTYVALUES_GPMLREVISIONID_H
 
-#include "model/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 #include "model/RevisionId.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.

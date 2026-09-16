@@ -29,12 +29,11 @@
 
 #include "canvas-tools/ModifyGeometryState.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "gui/FeatureFocus.h"
 
 #include "model/FeatureHandle.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ViewState.h"
 

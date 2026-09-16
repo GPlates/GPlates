@@ -37,8 +37,6 @@
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "global/InternalInconsistencyException.h"
 
 #include "gui/TopologyTools.h"
@@ -46,6 +44,7 @@
 #include "maths/LatLonPoint.h"
 
 #include "model/FeatureHandle.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ViewState.h"
 

@@ -26,7 +26,6 @@
 #include "CloneOperation.h"
 
 #include "app-logic/ApplicationState.h"
-
 #include "app-logic/GeometryTypeFinder.h"
 
 #include "gui/CanvasToolWorkflows.h"

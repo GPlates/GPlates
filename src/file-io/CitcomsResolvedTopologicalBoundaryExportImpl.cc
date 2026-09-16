@@ -25,10 +25,9 @@
 
 #include "CitcomsResolvedTopologicalBoundaryExportImpl.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GeoTimeInstant.h"

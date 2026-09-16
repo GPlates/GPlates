@@ -6,8 +6,8 @@ writing and displaying it, which nothing else in the repository does.
 
 **Both are out of date, and are kept here unrevised.** They describe the tree as it stood around
 2010, and were moved into a `deprecated/` directory in 2021 for that reason. Read them for the
-shape of the task and the order of the steps, not for the identifiers — every class either guide
-names as the place to edit has since gone:
+shape of the task and the order of the steps, not for the identifiers. Every class either guide
+names as the place to edit has since gone, and one step has simply moved:
 
 - The property-type guide edits `PropertyCreationUtils`, `StructurePropertyCreatorMap` and
   `GpmlOnePointSixOutputVisitor`. Reading is now split between
@@ -16,6 +16,10 @@ names as the place to edit has since gone:
 - The feature-type guide edits `FeaturePropertiesMap`, a hard-coded table of which properties each
   feature type may carry. Feature types are now data: `model/Gpgim` loads them at startup from the
   Qt resource `:/gpgim/gpgim.xml`, which holds a `<FeatureClass>` element per type.
+- Step 5 of the property-type guide is still right, but has moved. The
+  `DECLARE_PROPERTY_VALUE_FINDER` macro still exists and is still what you add; its header is now
+  `model/PropertyValueFinder.h`, not `feature-visitors/PropertyValueFinder.h`, and the functions
+  it enables are `GPlatesModel::get_property_value()` and `get_property_values()`.
 
 They are preserved rather than deleted because the sequence they describe is still broadly right,
 and rewriting them is a separate piece of work. Correct one in place when you next follow it.

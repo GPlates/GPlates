@@ -24,9 +24,9 @@
  */
 
 #include "ViewFeatureGeometriesWidget.h"
+#include "ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "app-logic/ApplicationState.h"
-#include "qt-widgets/ViewFeatureGeometriesWidgetPopulator.h"
 #include "presentation/ViewState.h"
 #include "utils/UnicodeStringUtils.h"
 

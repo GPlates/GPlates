@@ -42,8 +42,6 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/TopologyInternalUtils.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
@@ -56,6 +54,7 @@
 #include "model/GpgimProperty.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ViewState.h"
 

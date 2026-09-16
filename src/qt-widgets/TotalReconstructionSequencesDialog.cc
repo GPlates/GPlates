@@ -45,8 +45,6 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructUtils.h"
-
-#include "model/PropertyValueFinder.h"
 #include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
 #include "app-logic/TotalReconstructionSequenceTimePeriodFinder.h"
 
@@ -55,6 +53,7 @@
 #include "maths/MathsUtils.h"
 
 #include "model/ModelUtils.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ViewState.h"
 

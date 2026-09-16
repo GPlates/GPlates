@@ -27,16 +27,15 @@
 #include "SplitFeatureUndoCommand.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/GeometryUtils.h"
-#include "app-logic/ReconstructUtils.h"
-#include "app-logic/ReconstructionGeometryUtils.h"
-
 #include "app-logic/GeometrySetter.h"
-#include "model/PropertyValueFinder.h"
+#include "app-logic/GeometryUtils.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructUtils.h"
 
 #include "model/Model.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyValueFinder.h"
 #include "model/TopLevelPropertyInline.h"
 
 

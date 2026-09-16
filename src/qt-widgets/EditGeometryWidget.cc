@@ -38,9 +38,8 @@
 #include "UninitialisedEditWidgetException.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/GeometryUtils.h"
-
 #include "app-logic/GeometrySetter.h"
+#include "app-logic/GeometryUtils.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/InvalidLatLonException.h"

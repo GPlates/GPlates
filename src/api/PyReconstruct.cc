@@ -43,14 +43,13 @@
 #include "PythonConverterUtils.h"
 #include "PythonVariableFunctionArguments.h"
 
+#include "app-logic/GeometrySetter.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
+#include "app-logic/ReconstructedMotionPath.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructMethodInterface.h"
 #include "app-logic/ReconstructMethodRegistry.h"
-#include "app-logic/ReconstructedMotionPath.h"
-
-#include "app-logic/GeometrySetter.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"

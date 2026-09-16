@@ -55,8 +55,10 @@
 
 #include "ChooseCanvasToolUndoCommand.h"
 #include "FeatureFocus.h"
+#include "TopologySectionsFinder.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/GeometryTypeFinder.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructedFeatureGeometryFinder.h"
@@ -66,11 +68,6 @@
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
-
-#include "app-logic/GeometryTypeFinder.h"
-#include "model/PropertyValueFinder.h"
-#include "gui/TopologySectionsFinder.h"
-#include "qt-widgets/ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
@@ -91,6 +88,7 @@
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
@@ -124,6 +122,7 @@
 #include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/TopologyToolsWidget.h"
+#include "qt-widgets/ViewFeatureGeometriesWidgetPopulator.h"
 #include "qt-widgets/ViewportWindow.h"
 
 #include "utils/GeometryCreationUtils.h"

@@ -34,12 +34,10 @@
 #include <QDebug>
 
 #include "GeometryUtils.h"
+#include "GeometryFinder.h"
+#include "GeometryTypeFinder.h"
 #include "ReconstructedFeatureGeometryFinder.h"
 #include "ReconstructionTree.h"
-
-#include "app-logic/GeometryFinder.h"
-#include "app-logic/GeometryTypeFinder.h"
-#include "model/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -52,9 +50,10 @@
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/FeatureVisitor.h"
-#include "model/PropertyName.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlLineString.h"

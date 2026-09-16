@@ -32,8 +32,6 @@
 
 #include "GmlPoint.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
@@ -41,6 +39,7 @@
 #include "maths/PointOnSphere.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"

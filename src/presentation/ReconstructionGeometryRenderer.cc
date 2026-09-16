@@ -42,7 +42,6 @@
 #include "ViewState.h"
 #include "VisualLayerParamsVisitor.h"
 
-
 #include "app-logic/ApplicationState.h"
 #include "app-logic/CoRegistrationData.h"
 #include "app-logic/GeometryUtils.h"
@@ -66,8 +65,6 @@
 
 #include "data-mining/DataTable.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -83,6 +80,7 @@
 
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/EnumerationContent.h"

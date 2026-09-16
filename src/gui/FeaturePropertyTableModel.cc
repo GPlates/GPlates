@@ -28,6 +28,7 @@
 #include <QDebug>
 #include <vector>
 #include "FeaturePropertyTableModel.h"
+#include "FromQvariantConverter.h"
 
 #include "model/types.h"
 #include "model/FeatureHandle.h"
@@ -35,7 +36,6 @@
 #include "model/ModelUtils.h"
 #include "utils/UnicodeStringUtils.h"
 #include "model/ToQvariantConverter.h"
-#include "gui/FromQvariantConverter.h"
 
 
 namespace

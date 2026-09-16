@@ -41,7 +41,6 @@
 #include "app-logic/RasterLayerProxy.h"
 #include "app-logic/ReconstructionFeatureProperties.h"
 #include "app-logic/ReconstructLayerProxy.h"
-
 #include "app-logic/TotalReconstructionSequenceTimePeriodFinder.h"
 
 #include "maths/Real.h"

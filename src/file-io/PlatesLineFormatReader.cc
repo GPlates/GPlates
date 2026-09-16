@@ -40,8 +40,6 @@
 #include "ReadErrors.h"
 #include "LineReader.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
 #include "maths/MultiPointOnSphere.h"
@@ -52,6 +50,7 @@
 #include "model/FeatureRevision.h"
 #include "model/Model.h"
 #include "model/ModelUtils.h"
+#include "model/PropertyValueFinder.h"
 #include "model/TopLevelPropertyInline.h"
 
 #include "property-values/GmlLineString.h"

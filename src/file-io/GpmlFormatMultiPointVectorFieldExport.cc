@@ -37,13 +37,12 @@
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/MultiPointVectorField.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "maths/CalculateVelocity.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlDataBlock.h"

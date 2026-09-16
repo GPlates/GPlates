@@ -6,9 +6,8 @@
 
 Counts of resolved quoted `#include` lines from files in the *row* directory to files
 in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirectories.
-`(src root)` is the files directly in
-`src/`. The intended layering these numbers should respect is described in
-[README.md](README.md).
+`(src root)` is the files directly in `src/`. The intended layering these numbers
+should respect is described in [README.md](README.md).
 
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |

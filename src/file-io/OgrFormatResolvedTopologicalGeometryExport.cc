@@ -36,13 +36,13 @@
 #include "OgrGeometryExporter.h"
 #include "OgrUtils.h"
 
+#include "app-logic/GeometryTypeFinder.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ResolvedTopologicalSection.h"
 
-#include "app-logic/GeometryTypeFinder.h"
 #include "model/KeyValueDictionaryFinder.h"
 #include "model/PropertyValueFinder.h"
 #include "property-values/GpmlKeyValueDictionary.h"

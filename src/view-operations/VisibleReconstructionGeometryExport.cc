@@ -42,8 +42,6 @@
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/TopologyUtils.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/ReconstructedFlowlineExport.h"
 #include "file-io/ReconstructedMotionPathExport.h"
@@ -52,6 +50,7 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/EnumerationContent.h"
 #include "property-values/EnumerationType.h"

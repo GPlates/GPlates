@@ -37,10 +37,9 @@
 #include "gui/FeatureFocus.h"
 
 #include "model/FeatureHandle.h"
+#include "model/PropertyValueFinder.h"
 
 #include "utils/UnicodeStringUtils.h"
-
-#include "model/PropertyValueFinder.h"
 
 #include "file-io/FileInfo.h"
 

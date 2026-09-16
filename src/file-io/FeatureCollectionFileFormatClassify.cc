@@ -33,8 +33,8 @@
 #include "app-logic/ReconstructMethodRegistry.h"
 #include "app-logic/ScalarCoverageFeatureProperties.h"
 #include "app-logic/TopologyUtils.h"
-
 #include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
+
 
 namespace GPlatesFileIO
 {

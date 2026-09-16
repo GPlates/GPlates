@@ -33,7 +33,6 @@
 #include "RenderedGeometryCollection.h"
 
 #include "app-logic/ApplicationState.h"
-
 #include "app-logic/GeometryFinder.h"
 #include "app-logic/GeometryTypeFinder.h"
 

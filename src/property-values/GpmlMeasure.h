@@ -30,11 +30,11 @@
 
 #include <map>
 
-#include "model/PropertyValueFinder.h"
 
 #include "maths/MathsUtils.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 

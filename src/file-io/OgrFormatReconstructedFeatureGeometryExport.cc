@@ -36,10 +36,10 @@
 #include "OgrGeometryExporter.h"
 #include "OgrUtils.h"
 
+#include "app-logic/GeometryTypeFinder.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
-#include "app-logic/GeometryTypeFinder.h"
 #include "model/KeyValueDictionaryFinder.h"
 #include "model/PropertyValueFinder.h"
 

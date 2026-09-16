@@ -31,6 +31,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FlowlineUtils.h"
+#include "app-logic/GeometrySetter.h"
 #include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionFeatureProperties.h"
@@ -40,8 +41,6 @@
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
-
-#include "app-logic/GeometrySetter.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"

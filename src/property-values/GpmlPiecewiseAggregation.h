@@ -34,10 +34,9 @@
 #include "GpmlTimeWindow.h"
 #include "StructuralType.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
 #include "model/RevisionedVector.h"

@@ -33,11 +33,10 @@
 
 #include "app-logic/TopologyInternalUtils.h"
 
-#include "model/PropertyValueFinder.h"
-
-#include "model/PropertyName.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GmlTimePeriod.h"

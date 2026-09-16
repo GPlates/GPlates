@@ -39,12 +39,10 @@
 #include "FeatureFocus.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/ReconstructGraph.h"
-#include "app-logic/ReconstructedFeatureGeometry.h"
-#include "app-logic/ReconstructionGeometryUtils.h"
-
 #include "app-logic/GeometryFinder.h"
-#include "model/PropertyValueFinder.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructGraph.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
@@ -52,8 +50,9 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
-#include "model/types.h"
 #include "model/FeatureHandle.h"
+#include "model/PropertyValueFinder.h"
+#include "model/types.h"
 
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"

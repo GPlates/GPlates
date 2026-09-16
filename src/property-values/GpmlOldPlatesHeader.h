@@ -35,13 +35,12 @@
 
 #include "TextContent.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "global/unicode.h"
 
 #include "maths/MathsUtils.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 #include "model/types.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.

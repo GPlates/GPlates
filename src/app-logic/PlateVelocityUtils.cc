@@ -46,8 +46,6 @@
 #include "ResolvedTriangulationUtils.h"
 #include "TopologyUtils.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -63,6 +61,7 @@
 #include "model/Model.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 #include "model/types.h"
 
 #include "property-values/GmlMultiPoint.h"

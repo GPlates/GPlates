@@ -55,15 +55,13 @@
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/FlowlineUtils.h"
+#include "app-logic/GeometrySetter.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/TopologyGeometryType.h"
 #include "app-logic/TopologyUtils.h"
-
-#include "app-logic/GeometrySetter.h"
-#include "model/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -81,6 +79,7 @@
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 #include "model/types.h"
 
 #include "presentation/ViewState.h"

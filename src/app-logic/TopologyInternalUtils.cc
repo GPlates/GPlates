@@ -47,8 +47,6 @@
 #include "ResolvedTopologicalLine.h"
 #include "TopologyReconstructedFeatureGeometry.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -61,8 +59,9 @@
 #include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
-#include "model/PropertyName.h"
 #include "model/ModelUtils.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"

@@ -34,6 +34,7 @@
 
 #include "PartitionFeatureUtils.h"
 
+#include "GeometrySetter.h"
 #include "GeometryUtils.h"
 #include "PartitionFeatureTask.h"
 #include "ReconstructionFeatureProperties.h"
@@ -41,9 +42,6 @@
 #include "ReconstructionTree.h"
 #include "ReconstructMethodRegistry.h"
 #include "ScalarCoverageFeatureProperties.h"
-
-#include "app-logic/GeometrySetter.h"
-#include "model/PropertyValueFinder.h"
 
 #include "maths/AngularExtent.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
@@ -55,6 +53,7 @@
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 #include "model/TopLevelPropertyInline.h"
 
 #include "property-values/GpmlConstantValue.h"

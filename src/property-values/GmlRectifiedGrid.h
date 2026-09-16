@@ -38,9 +38,8 @@
 #include "GmlPoint.h"
 #include "XsString.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
 #include "model/XmlAttributeName.h"

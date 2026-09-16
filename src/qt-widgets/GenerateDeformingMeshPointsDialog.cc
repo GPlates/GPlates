@@ -48,8 +48,6 @@
 #include "app-logic/ScalarCoverageEvolution.h"
 #include "app-logic/ScalarCoverageFeatureProperties.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
@@ -63,6 +61,7 @@
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayer.h"

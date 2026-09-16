@@ -28,9 +28,9 @@
 
 #include <boost/any.hpp>
 
-#include "model/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 
 #include "utils/UnicodeStringUtils.h"
 

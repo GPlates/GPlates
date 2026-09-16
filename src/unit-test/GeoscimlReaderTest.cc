@@ -30,7 +30,6 @@
 #include <gtest/gtest.h>
 
 #include "app-logic/GeometryFinder.h"
-#include "model/PropertyValueFinder.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
@@ -47,6 +46,7 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/XsDouble.h"

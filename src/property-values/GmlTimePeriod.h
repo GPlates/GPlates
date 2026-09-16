@@ -30,11 +30,10 @@
 
 #include "GmlTimeInstant.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "global/PreconditionViolationError.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
 

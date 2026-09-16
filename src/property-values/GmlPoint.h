@@ -31,12 +31,12 @@
 #include <utility>  /* std::pair */
 #include <boost/optional.hpp>
 
-#include "model/PropertyValueFinder.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"

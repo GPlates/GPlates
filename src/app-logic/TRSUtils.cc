@@ -23,8 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
-#include "app-logic/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "model/types.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlConstantValue.h"
@@ -32,6 +30,8 @@
 #include "property-values/GpmlPlateId.h"
 
 #include "TRSUtils.h"
+#include "TotalReconstructionSequencePlateIdFinder.h"
+#include "TotalReconstructionSequenceTimePeriodFinder.h"
 
 
 namespace

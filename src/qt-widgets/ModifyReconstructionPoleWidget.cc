@@ -44,7 +44,6 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructionTree.h"
-
 #include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
 #include "app-logic/TotalReconstructionSequenceTimePeriodFinder.h"
 

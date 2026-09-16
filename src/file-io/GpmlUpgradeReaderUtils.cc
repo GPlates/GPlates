@@ -34,13 +34,12 @@
 #include "GpmlReaderUtils.h"
 #include "GpmlStructuralTypeReaderUtils.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "model/FeatureVisitor.h"
 #include "model/GpgimProperty.h"
 #include "model/GpgimStructuralType.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 #include "model/TopLevelProperty.h"
 #include "model/XmlNodeUtils.h"
 

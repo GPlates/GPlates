@@ -31,10 +31,9 @@
 #include "PartitionFeatureUtils.h"
 #include "ReconstructionGeometryUtils.h"
 
-#include "model/PropertyValueFinder.h"
-
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GmlPoint.h"
 

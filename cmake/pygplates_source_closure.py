@@ -399,9 +399,8 @@ def generate_doc(closure):
     lines.append('')
     lines.append('Counts of resolved quoted `#include` lines from files in the *row* directory to files')
     lines.append('in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirectories.')
-    lines.append('`(src root)` is the files directly in')
-    lines.append('`src/`. The intended layering these numbers should respect is described in')
-    lines.append('[README.md](README.md).')
+    lines.append('`(src root)` is the files directly in `src/`. The intended layering these numbers')
+    lines.append('should respect is described in [README.md](README.md).')
     lines.append('')
     header = ['includes ->'] + dirs
     lines.append('| ' + ' | '.join(header) + ' |')
