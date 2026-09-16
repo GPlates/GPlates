@@ -36,7 +36,6 @@
 #include <opengl/OpenGL.h>
 
 #include "Colour.h"
-#include "ColourProxy.h"
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
 
@@ -431,9 +430,15 @@ namespace GPlatesGui
 		 * drawn grey, so this stays the one place vector geometry colour is decided.
 		 */
 		inline
+		const Colour &
+		get_vector_geometry_colour(
+				const Colour &colour);
+
+		//! Overload for a colour that may be absent, such as a text shadow.
+		inline
 		boost::optional<Colour>
 		get_vector_geometry_colour(
-				const ColourProxy &colour_proxy);
+				const boost::optional<Colour> &colour);
 
 		/**
 		 * Paints great circle arcs of polylines and polygons.

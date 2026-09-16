@@ -34,7 +34,6 @@
 #include <boost/noncopyable.hpp>
 
 #include "Colour.h"
-#include "ColourProxy.h"
 #include "LayerPainter.h"
 
 #include "maths/DateLineWrapper.h"
@@ -453,11 +452,19 @@ namespace GPlatesGui
 		/**
 		 * Determines the colour of vector geometries.
 		 */
-		boost::optional<Colour>
+		const Colour &
 		get_vector_geometry_colour(
-				const ColourProxy &colour_proxy)
+				const Colour &colour)
 		{
-			return colour_proxy.get_colour();
+			return colour;
+		}
+
+		//! Overload for a colour that may be absent, such as a text shadow.
+		const boost::optional<Colour> &
+		get_vector_geometry_colour(
+				const boost::optional<Colour> &colour)
+		{
+			return colour;
 		}
 
 		/**

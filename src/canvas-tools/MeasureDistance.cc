@@ -34,7 +34,6 @@
 #include "MeasureDistanceState.h"
 
 #include "gui/Colour.h"
-#include "gui/ColourProxy.h"
 
 #include "maths/GeometryType.h"
 #include "maths/GreatCircleArc.h"
