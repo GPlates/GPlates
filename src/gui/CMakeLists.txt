@@ -234,6 +234,8 @@ set(srcs
     TopologyCanvasToolWorkflow.h
     TopologySectionsContainer.cc
     TopologySectionsContainer.h
+    TopologySectionsFinder.cc
+    TopologySectionsFinder.h
     TopologySectionsTable.cc
     TopologySectionsTable.h
     TopologySectionsTableColumns.cc

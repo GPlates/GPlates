@@ -82,7 +82,7 @@
 #include "utils/UnicodeStringUtils.h"
 
 
-GPlatesFeatureVisitors::TopologySectionsFinder::TopologySectionsFinder()
+GPlatesGui::TopologySectionsFinder::TopologySectionsFinder()
 {
 	// clear the working vector
 	d_boundary_sections.clear();
@@ -92,7 +92,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::TopologySectionsFinder()
 
 
 bool
-GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_properties(
+GPlatesGui::TopologySectionsFinder::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	// NOTE: We don't test for topological feature types anymore.
@@ -111,7 +111,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_propertie
 
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_constant_value(
+GPlatesGui::TopologySectionsFinder::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
@@ -120,7 +120,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_constant_value(
 
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_piecewise_aggregation(
+GPlatesGui::TopologySectionsFinder::visit_gpml_piecewise_aggregation(
 		const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
@@ -149,7 +149,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_piecewise_aggregation
 
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::process_gpml_time_window(
+GPlatesGui::TopologySectionsFinder::process_gpml_time_window(
 		const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
 	gpml_time_window.time_dependent_value()->accept_visitor(*this);
@@ -158,7 +158,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::process_gpml_time_window(
 
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line(
+GPlatesGui::TopologySectionsFinder::visit_gpml_topological_line(
  		const GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
 {
 	// Set the sequence number
@@ -179,7 +179,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line(
 
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network(
+GPlatesGui::TopologySectionsFinder::visit_gpml_topological_network(
 		const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
 {
 	// Set the sequence number for the boundary sections.
@@ -212,7 +212,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network(
 }
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network_interior(
+GPlatesGui::TopologySectionsFinder::visit_gpml_topological_network_interior(
 		const GPlatesPropertyValues::GpmlPropertyDelegate &gpml_topological_network_interior)
 {
 	// source geom.'s value is a delegate 
@@ -236,7 +236,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network_i
 
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_polygon(
+GPlatesGui::TopologySectionsFinder::visit_gpml_topological_polygon(
 		const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
 {
 	// Set the sequence number
@@ -256,7 +256,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_polygon(
 }
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line_section(
+GPlatesGui::TopologySectionsFinder::visit_gpml_topological_line_section(
 		const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section)
 {  
 	// source geom.'s value is a delegate 
@@ -290,7 +290,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line_sect
 
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_point(
+GPlatesGui::TopologySectionsFinder::visit_gpml_topological_point(
 		const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point)
 {  
 	// DO NOT visit the delegate with:
@@ -320,7 +320,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_point(
 		
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::report()
+GPlatesGui::TopologySectionsFinder::report()
 {
 	qDebug() << "-------------------------------------------------------------";
 	qDebug() << "TopologySectionsFinder::report()";

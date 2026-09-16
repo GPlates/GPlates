@@ -69,7 +69,7 @@
 
 #include "feature-visitors/GeometryTypeFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
-#include "feature-visitors/TopologySectionsFinder.h"
+#include "gui/TopologySectionsFinder.h"
 #include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "global/GPlatesAssert.h"
@@ -1180,7 +1180,7 @@ GPlatesGui::TopologyTools::initialise_topological_sections_from_edit_topology_fo
 
 	// Create a new TopologySectionsFinder to fill a topology sections container
 	// table row for each topology section found.
-	GPlatesFeatureVisitors::TopologySectionsFinder topo_sections_finder;
+	GPlatesGui::TopologySectionsFinder topo_sections_finder;
 
 	// Visit the topology feature.
 	topo_sections_finder.visit_feature(edit_topology_feature_ref);

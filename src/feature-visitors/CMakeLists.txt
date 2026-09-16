@@ -24,8 +24,6 @@ set(srcs
     PropertyValueFinder.h
     QueryFeaturePropertiesWidgetPopulator.cc
     QueryFeaturePropertiesWidgetPopulator.h
-    TopologySectionsFinder.cc
-    TopologySectionsFinder.h
     ToQvariantConverter.cc
     ToQvariantConverter.h
     TotalReconstructionSequencePlateIdFinder.cc
@@ -54,8 +52,6 @@ set(gplates_only_srcs
     GeometryRotator.h
     QueryFeaturePropertiesWidgetPopulator.cc
     QueryFeaturePropertiesWidgetPopulator.h
-    TopologySectionsFinder.cc
-    TopologySectionsFinder.h
     TotalReconstructionSequenceRotationInserter.cc
     TotalReconstructionSequenceRotationInserter.h
     TotalReconstructionSequenceRotationInterpolater.cc

@@ -71,7 +71,7 @@ namespace GPlatesPropertyValues
 }
 
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesGui
 {
 	class TopologySectionsFinder :
 			public GPlatesModel::ConstFeatureVisitor,
