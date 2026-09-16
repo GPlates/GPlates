@@ -39,7 +39,7 @@
 #include "OgrException.h"
 #include "PropertyMapper.h"
 #include "OgrUtils.h"
-#include "feature-visitors/GeometryTypeFinder.h"
+#include "app-logic/GeometryTypeFinder.h"
 #include "property-values/KeyValueDictionaryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "property-values/ToQvariantConverter.h"
@@ -1575,7 +1575,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 
 	// Check what types of geometries exist in the feature collection.
 
-	GPlatesFeatureVisitors::GeometryTypeFinder finder;
+	GPlatesAppLogic::GeometryTypeFinder finder;
 
 	GPlatesModel::FeatureCollectionHandle::const_iterator
 			iter = feature_collection_ref->begin(),

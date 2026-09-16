@@ -32,6 +32,8 @@ set(srcs
     ExtractRasterFeatureProperties.h
     ExtractScalarField3DFeatureProperties.cc
     ExtractScalarField3DFeatureProperties.h
+    FeatureClassifier.cc
+    FeatureClassifier.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
@@ -48,6 +50,14 @@ set(srcs
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
     GeometryCookieCutter.h
+    GeometryFinder.cc
+    GeometryFinder.h
+    GeometryRotator.cc
+    GeometryRotator.h
+    GeometrySetter.cc
+    GeometrySetter.h
+    GeometryTypeFinder.cc
+    GeometryTypeFinder.h
     GeometryUtils.cc
     GeometryUtils.h
     GPlatesQtMsgHandler.cc
@@ -256,6 +266,14 @@ set(srcs
     TopologyReconstructedFeatureGeometry.h
     TopologyUtils.cc
     TopologyUtils.h
+    TotalReconstructionSequencePlateIdFinder.cc
+    TotalReconstructionSequencePlateIdFinder.h
+    TotalReconstructionSequenceRotationInserter.cc
+    TotalReconstructionSequenceRotationInserter.h
+    TotalReconstructionSequenceRotationInterpolater.cc
+    TotalReconstructionSequenceRotationInterpolater.h
+    TotalReconstructionSequenceTimePeriodFinder.cc
+    TotalReconstructionSequenceTimePeriodFinder.h
     TRSUtils.cc
     TRSUtils.h
     UserPreferences.cc
@@ -297,18 +315,22 @@ set(gplates_only_srcs
     CoRegistrationLayerTask.h
     DependentTopologicalSectionLayers.cc
     DependentTopologicalSectionLayers.h
+    FeatureClassifier.cc
+    FeatureClassifier.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
     FeatureCollectionFileState.h
-    GPlatesQtMsgHandler.cc
-    GPlatesQtMsgHandler.h
     GenerateVelocityDomainCitcoms.cc
     GenerateVelocityDomainCitcoms.h
     GenerateVelocityDomainTerra.cc
     GenerateVelocityDomainTerra.h
     GenericPartitionFeatureTask.cc
     GenericPartitionFeatureTask.h
+    GeometryRotator.cc
+    GeometryRotator.h
+    GPlatesQtMsgHandler.cc
+    GPlatesQtMsgHandler.h
     HellingerModel.cc
     HellingerModel.h
     Layer.cc
@@ -349,6 +371,15 @@ set(gplates_only_srcs
     ReconstructGraph.h
     ReconstructGraphImpl.cc
     ReconstructGraphImpl.h
+    Reconstruction.cc
+    Reconstruction.h
+    ReconstructionLayerParams.h
+    ReconstructionLayerProxy.cc
+    ReconstructionLayerProxy.h
+    ReconstructionLayerTask.cc
+    ReconstructionLayerTask.h
+    ReconstructionParams.cc
+    ReconstructionParams.h
     ReconstructLayerParams.cc
     ReconstructLayerParams.h
     ReconstructLayerProxy.cc
@@ -363,15 +394,6 @@ set(gplates_only_srcs
     ReconstructScalarCoverageLayerTask.h
     ReconstructScalarCoverageParams.cc
     ReconstructScalarCoverageParams.h
-    Reconstruction.cc
-    Reconstruction.h
-    ReconstructionLayerParams.h
-    ReconstructionLayerProxy.cc
-    ReconstructionLayerProxy.h
-    ReconstructionLayerTask.cc
-    ReconstructionLayerTask.h
-    ReconstructionParams.cc
-    ReconstructionParams.h
     ResolvedRaster.cc
     ResolvedRaster.h
     ResolvedScalarField3D.cc
@@ -382,8 +404,6 @@ set(gplates_only_srcs
     ScalarField3DLayerProxy.h
     ScalarField3DLayerTask.cc
     ScalarField3DLayerTask.h
-    TRSUtils.cc
-    TRSUtils.h
     TopologyGeometryResolverLayerProxy.cc
     TopologyGeometryResolverLayerProxy.h
     TopologyGeometryResolverLayerTask.cc
@@ -393,6 +413,14 @@ set(gplates_only_srcs
     TopologyNetworkResolverLayerProxy.h
     TopologyNetworkResolverLayerTask.cc
     TopologyNetworkResolverLayerTask.h
+    TotalReconstructionSequenceRotationInserter.cc
+    TotalReconstructionSequenceRotationInserter.h
+    TotalReconstructionSequenceRotationInterpolater.cc
+    TotalReconstructionSequenceRotationInterpolater.h
+    TotalReconstructionSequenceTimePeriodFinder.cc
+    TotalReconstructionSequenceTimePeriodFinder.h
+    TRSUtils.cc
+    TRSUtils.h
     UserPreferences.cc
     UserPreferences.h
     VelocityFieldCalculatorLayerParams.cc

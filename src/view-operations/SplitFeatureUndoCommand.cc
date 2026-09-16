@@ -31,7 +31,7 @@
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
-#include "feature-visitors/GeometrySetter.h"
+#include "app-logic/GeometrySetter.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/Model.h"
@@ -68,14 +68,14 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 	// split geometry property will be appended to the cloned feature later.
 	d_new_feature = (*d_old_feature)->clone(
 			d_feature_collection_ref,
-			&GPlatesFeatureVisitors::is_not_geometry_property);
+			&GPlatesAppLogic::is_not_geometry_property);
 #if 0
 	d_new_feature_2 = feature_ref->clone(
 			d_feature_collection_ref,
-			&GPlatesFeatureVisitors::is_not_geometry_property);
+			&GPlatesAppLogic::is_not_geometry_property);
 #endif
 	boost::optional<GPlatesModel::FeatureHandle::iterator> property_iter_opt = 
-		*GPlatesFeatureVisitors::find_first_geometry_property(*d_old_feature);
+		*GPlatesAppLogic::find_first_geometry_property(*d_old_feature);
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			property_iter_opt,
@@ -84,7 +84,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	//Here we assume there is only one geometry in the feature
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere =
-		GPlatesFeatureVisitors::find_first_geometry(property_iter);
+		GPlatesAppLogic::find_first_geometry(property_iter);
 
 	std::vector<GPlatesMaths::PointOnSphere> points;
 	GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
@@ -161,7 +161,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	GeometryBuilder::PointIndex point_index_to_split;
 	point_index_to_split = d_point_index_to_insert_at + 1;
 	
-	GPlatesFeatureVisitors::GeometrySetter geometry_setter(
+	GPlatesAppLogic::GeometrySetter geometry_setter(
 			GPlatesMaths::PolylineOnSphere::create(
 					points.begin(), 
 					points.begin() + point_index_to_split));
@@ -274,7 +274,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 #else
 	d_feature_focus->set_focus(
 			*d_old_feature,
-			*GPlatesFeatureVisitors::find_first_geometry_property(
+			*GPlatesAppLogic::find_first_geometry_property(
 					*d_old_feature));
 #endif
 
@@ -312,7 +312,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 	//DON'T USE ANY DATA OF "UNDO OBJECT" AFTER SETTING FOCUS.
 #if 1	
 	GPlatesModel::FeatureHandle::iterator it=
-			*GPlatesFeatureVisitors::find_first_geometry_property(
+			*GPlatesAppLogic::find_first_geometry_property(
 					*d_old_feature);
 	
 	// We release the model notification guard which will cause a reconstruction to occur

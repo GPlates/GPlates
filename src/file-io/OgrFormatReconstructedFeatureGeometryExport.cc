@@ -39,7 +39,7 @@
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
-#include "feature-visitors/GeometryTypeFinder.h"
+#include "app-logic/GeometryTypeFinder.h"
 #include "property-values/KeyValueDictionaryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -115,7 +115,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 {
 
 	// Iterate through the reconstructed geometries and check which geometry types we have.
-	GPlatesFeatureVisitors::GeometryTypeFinder finder;
+	GPlatesAppLogic::GeometryTypeFinder finder;
 
 	std::list<feature_geometry_group_type>::const_iterator feature_iter;
 	for (feature_iter = feature_geometry_group_seq.begin();
@@ -246,7 +246,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		bool wrap_to_dateline)
 {
 	// Iterate through the reconstructed geometries and check which geometry types we have.
-	GPlatesFeatureVisitors::GeometryTypeFinder finder;
+	GPlatesAppLogic::GeometryTypeFinder finder;
 
 	std::list<feature_geometry_group_type>::const_iterator feature_iter;
 	for (feature_iter = feature_geometry_group_seq.begin();

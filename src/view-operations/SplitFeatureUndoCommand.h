@@ -34,8 +34,8 @@
 
 #include "app-logic/ApplicationState.h"
 
-#include "feature-visitors/GeometryFinder.h"
-#include "feature-visitors/GeometryTypeFinder.h"
+#include "app-logic/GeometryFinder.h"
+#include "app-logic/GeometryTypeFinder.h"
 
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/InvalidParametersException.h"

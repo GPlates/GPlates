@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_TOTALRECONSTRUCTIONSEQUENCEPLATEIDFINDER_H
-#define GPLATES_FEATUREVISITORS_TOTALRECONSTRUCTIONSEQUENCEPLATEIDFINDER_H
+#ifndef GPLATES_APP_LOGIC_TOTALRECONSTRUCTIONSEQUENCEPLATEIDFINDER_H
+#define GPLATES_APP_LOGIC_TOTALRECONSTRUCTIONSEQUENCEPLATEIDFINDER_H
 
 #include <vector>
 #include <boost/optional.hpp>
@@ -37,7 +37,7 @@
 #include "model/FeatureHandle.h"
 
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesAppLogic
 {
 	/**
 	 * This const feature visitor finds the fixed and moving reference frame plate IDs within a
@@ -100,4 +100,4 @@ namespace GPlatesFeatureVisitors
 	};
 }
 
-#endif  // GPLATES_FEATUREVISITORS_TOTALRECONSTRUCTIONSEQUENCEPLATEIDFINDER_H
+#endif  // GPLATES_APP_LOGIC_TOTALRECONSTRUCTIONSEQUENCEPLATEIDFINDER_H

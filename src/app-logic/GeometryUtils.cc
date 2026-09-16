@@ -37,8 +37,8 @@
 #include "ReconstructedFeatureGeometryFinder.h"
 #include "ReconstructionTree.h"
 
-#include "feature-visitors/GeometryFinder.h"
-#include "feature-visitors/GeometryTypeFinder.h"
+#include "app-logic/GeometryFinder.h"
+#include "app-logic/GeometryTypeFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
@@ -1559,7 +1559,7 @@ GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(
 				feature_properties_iter;
 		++feature_properties_iter;
 
-		if (GPlatesFeatureVisitors::is_geometry_property(
+		if (GPlatesAppLogic::is_geometry_property(
 					*current_feature_properties_iter))
 		{
 			feature_ref->remove(current_feature_properties_iter);

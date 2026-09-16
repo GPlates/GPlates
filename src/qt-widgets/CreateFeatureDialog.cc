@@ -62,7 +62,7 @@
 #include "app-logic/TopologyGeometryType.h"
 #include "app-logic/TopologyUtils.h"
 
-#include "feature-visitors/GeometrySetter.h"
+#include "app-logic/GeometrySetter.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
@@ -2593,7 +2593,7 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 	// Note: Cannot use '*geometry_property_iterator = ...' since dereferencing a feature
 	// properties iterator returns a temporary pointer (so assigning to it does nothing) -
 	// instead set the property via the feature.
-	GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
+	GPlatesAppLogic::GeometrySetter geometry_setter(present_day_geometry);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone =
 			(*geometry_property_iterator)->clone();
 	geometry_setter.set_geometry(geometry_property_clone.get());

@@ -35,7 +35,7 @@
 #include "property-values/GpmlPlateId.h"
 
 
-GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::TotalReconstructionSequencePlateIdFinder()
+GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder::TotalReconstructionSequencePlateIdFinder()
 {
 	d_property_names_to_allow.push_back(
 			GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame"));
@@ -58,7 +58,7 @@ namespace
 
 
 bool
-GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::initialise_pre_property_values(
+GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
@@ -74,7 +74,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::initialise_pre
 
 
 void
-GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_gpml_constant_value(
+GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
@@ -82,7 +82,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_gpml_con
 
 
 void
-GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_gpml_plate_id(
+GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	static const GPlatesModel::PropertyName fixed_ref_frame_property_name =
@@ -102,7 +102,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_gpml_pla
 
 
 void
-GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::reset()
+GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder::reset()
 {
 	d_fixed_ref_frame_plate_id = boost::none;
 	d_moving_ref_frame_plate_id = boost::none;

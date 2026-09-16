@@ -47,7 +47,7 @@
 
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_line_string(
+GPlatesAppLogic::GeometryTypeFinder::visit_gml_line_string(
 		const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	++d_num_polyline_geometries_found;
@@ -55,7 +55,7 @@ GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_line_string(
 
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_multi_point(
+GPlatesAppLogic::GeometryTypeFinder::visit_gml_multi_point(
 		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	++d_num_multi_point_geometries_found;
@@ -63,7 +63,7 @@ GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_multi_point(
 
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_orientable_curve(
+GPlatesAppLogic::GeometryTypeFinder::visit_gml_orientable_curve(
 		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	gml_orientable_curve.base_curve()->accept_visitor(*this);
@@ -71,7 +71,7 @@ GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_orientable_curve(
 
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_point(
+GPlatesAppLogic::GeometryTypeFinder::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	++d_num_point_geometries_found;
@@ -79,7 +79,7 @@ GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_point(
 
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_polygon(
+GPlatesAppLogic::GeometryTypeFinder::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	++d_num_polygon_geometries_found;
@@ -87,7 +87,7 @@ GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_polygon(
 
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_gpml_constant_value(
+GPlatesAppLogic::GeometryTypeFinder::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
@@ -95,35 +95,35 @@ GPlatesFeatureVisitors::GeometryTypeFinder::visit_gpml_constant_value(
 
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_multipoint_on_sphere(
+GPlatesAppLogic::GeometryTypeFinder::visit_multipoint_on_sphere(
 	const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 {
 	++d_num_multi_point_geometries_found;
 }
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_point_on_sphere(
+GPlatesAppLogic::GeometryTypeFinder::visit_point_on_sphere(
 	const GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
 	++d_num_point_geometries_found;
 }
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_polygon_on_sphere(
+GPlatesAppLogic::GeometryTypeFinder::visit_polygon_on_sphere(
 	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
 	++d_num_polygon_geometries_found;
 }
 
 void
-GPlatesFeatureVisitors::GeometryTypeFinder::visit_polyline_on_sphere(
+GPlatesAppLogic::GeometryTypeFinder::visit_polyline_on_sphere(
 	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {
 	++d_num_polyline_geometries_found;
 }
 
 bool
-GPlatesFeatureVisitors::GeometryTypeFinder::has_found_multiple_geometry_types() const
+GPlatesAppLogic::GeometryTypeFinder::has_found_multiple_geometry_types() const
 {
 	int number_of_geometry_types = 0;
 
@@ -149,7 +149,7 @@ GPlatesFeatureVisitors::GeometryTypeFinder::has_found_multiple_geometry_types() 
 
 
 bool
-GPlatesFeatureVisitors::GeometryTypeFinder::has_found_multiple_geometries_of_the_same_type() const
+GPlatesAppLogic::GeometryTypeFinder::has_found_multiple_geometries_of_the_same_type() const
 {
 	return num_point_geometries_found() > 1 ||
 			num_multi_point_geometries_found() > 1 ||
@@ -159,7 +159,7 @@ GPlatesFeatureVisitors::GeometryTypeFinder::has_found_multiple_geometries_of_the
 
 
 boost::optional<GPlatesModel::FeatureHandle::iterator>
-GPlatesFeatureVisitors::find_first_geometry_property(
+GPlatesAppLogic::find_first_geometry_property(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
 		if(!feature_ref.is_valid())
@@ -170,14 +170,14 @@ GPlatesFeatureVisitors::find_first_geometry_property(
 }
 
 boost::optional<GPlatesModel::FeatureHandle::iterator>
-GPlatesFeatureVisitors::find_first_geometry_property(
+GPlatesAppLogic::find_first_geometry_property(
 			GPlatesModel::FeatureHandle& feature_ref)
 {
 	GPlatesModel::FeatureHandle::iterator 
 			iter	 = feature_ref.begin(), 
 			iter_end = feature_ref.end();
 
-	GPlatesFeatureVisitors::GeometryFinder geometry_finder;
+	GPlatesAppLogic::GeometryFinder geometry_finder;
 	for(; iter != iter_end; iter++)
 	{
 		(*iter)->accept_visitor(geometry_finder);
@@ -194,25 +194,25 @@ GPlatesFeatureVisitors::find_first_geometry_property(
  */
 
 bool
-GPlatesFeatureVisitors::is_not_geometry_property(
+GPlatesAppLogic::is_not_geometry_property(
 	const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &top_level_prop_ptr)
 {
-	GPlatesFeatureVisitors::GeometryTypeFinder geom_type_finder;
+	GPlatesAppLogic::GeometryTypeFinder geom_type_finder;
 	top_level_prop_ptr->accept_visitor(geom_type_finder);
 	return !geom_type_finder.has_found_geometries();
 }
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type 
-GPlatesFeatureVisitors::find_first_geometry(
+GPlatesAppLogic::find_first_geometry(
 	GPlatesModel::FeatureHandle::iterator iter)
 {
-	GPlatesFeatureVisitors::GeometryFinder geometry_finder;
+	GPlatesAppLogic::GeometryFinder geometry_finder;
 	(*iter)->accept_visitor(geometry_finder);
 	return *geometry_finder.found_geometries_begin();
 }
 
 bool
-GPlatesFeatureVisitors::is_geometry_property(
+GPlatesAppLogic::is_geometry_property(
 		const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &top_level_prop_ptr)
 {
 	return !is_not_geometry_property(top_level_prop_ptr);

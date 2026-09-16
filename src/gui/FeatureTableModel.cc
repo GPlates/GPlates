@@ -43,7 +43,7 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
-#include "feature-visitors/GeometryFinder.h"
+#include "app-logic/GeometryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "maths/LatLonPoint.h"
@@ -479,7 +479,7 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::iterator> property =
 				get_geometry_property_if_valid(geometry);
 		if (property) {
-			GPlatesFeatureVisitors::GeometryFinder geometry_finder;
+			GPlatesAppLogic::GeometryFinder geometry_finder;
 			(**property)->accept_visitor(geometry_finder);
 			if (geometry_finder.has_found_geometries()) {
 				GeometryOnSphereSummaryAsStringVisitor geometry_visitor;

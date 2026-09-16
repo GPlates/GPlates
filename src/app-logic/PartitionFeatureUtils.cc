@@ -42,7 +42,7 @@
 #include "ReconstructMethodRegistry.h"
 #include "ScalarCoverageFeatureProperties.h"
 
-#include "feature-visitors/GeometrySetter.h"
+#include "app-logic/GeometrySetter.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "maths/AngularExtent.h"
@@ -1025,7 +1025,7 @@ GPlatesAppLogic::PartitionFeatureUtils::add_unpartitioned_geometry_to_feature(
 				reverse_reconstruct(reconstructed_geometry.get(), feature, reconstruct_method_context, reconstruction_time);
 
 		// Store the present day geometry back in the cloned property.
-		GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
+		GPlatesAppLogic::GeometrySetter geometry_setter(present_day_geometry);
 		geometry_setter.set_geometry(property_clone.domain.get());
 
 		// Set the cloned geometry domain property (and optional cloned range property) on the feature.

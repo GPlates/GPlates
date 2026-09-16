@@ -6,26 +6,8 @@
 # automatically re-run, so the build would be unaware of the change.)
 #
 set(srcs
-    FeatureClassifier.cc
-    FeatureClassifier.h
-    GeometryFinder.cc
-    GeometryFinder.h
-    GeometryRotator.cc
-    GeometryRotator.h
-    GeometrySetter.cc
-    GeometrySetter.h
-    GeometryTypeFinder.cc
-    GeometryTypeFinder.h
     PropertyValueFinder.cc
     PropertyValueFinder.h
-    TotalReconstructionSequencePlateIdFinder.cc
-    TotalReconstructionSequencePlateIdFinder.h
-    TotalReconstructionSequenceRotationInserter.cc
-    TotalReconstructionSequenceRotationInserter.h
-    TotalReconstructionSequenceRotationInterpolater.cc
-    TotalReconstructionSequenceRotationInterpolater.h
-    TotalReconstructionSequenceTimePeriodFinder.cc
-    TotalReconstructionSequenceTimePeriodFinder.h
 )
 
 # GPlates-only sources: excluded from the pygplates module, whose source list is the
@@ -34,16 +16,6 @@ set(srcs
 # Keep ".h"/".cc" pairs together: AUTOMOC mocs any Q_OBJECT header listed in the
 # module's sources, and a moc'ed header whose ".cc" is excluded fails at link time.
 set(gplates_only_srcs
-    FeatureClassifier.cc
-    FeatureClassifier.h
-    GeometryRotator.cc
-    GeometryRotator.h
-    TotalReconstructionSequenceRotationInserter.cc
-    TotalReconstructionSequenceRotationInserter.h
-    TotalReconstructionSequenceRotationInterpolater.cc
-    TotalReconstructionSequenceRotationInterpolater.h
-    TotalReconstructionSequenceTimePeriodFinder.cc
-    TotalReconstructionSequenceTimePeriodFinder.h
 )
 # Guard against stale entries (eg, after a file rename).
 foreach(gplates_only_src ${gplates_only_srcs})

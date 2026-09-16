@@ -29,7 +29,7 @@
 #include <QString>
 #include <gtest/gtest.h>
 
-#include "feature-visitors/GeometryFinder.h"
+#include "app-logic/GeometryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
@@ -154,7 +154,7 @@ namespace
 	only_geometry(
 			const GPlatesModel::FeatureHandle::weak_ref &feature)
 	{
-		GPlatesFeatureVisitors::GeometryFinder finder;
+		GPlatesAppLogic::GeometryFinder finder;
 		finder.visit_feature(feature);
 		EXPECT_EQ(1, std::distance(finder.found_geometries_begin(), finder.found_geometries_end()));
 		return *finder.found_geometries_begin();
@@ -315,7 +315,7 @@ TEST_F(GeoscimlReaderTest, malformed_point_is_not_read_as_the_origin)
 	// The member is abandoned part-built rather than removed, so it still counts - but it
 	// carries no geometry, which is the point.
 	ASSERT_EQ(2u, features.size());
-	GPlatesFeatureVisitors::GeometryFinder finder;
+	GPlatesAppLogic::GeometryFinder finder;
 	finder.visit_feature(features[0]);
 	EXPECT_EQ(0, std::distance(finder.found_geometries_begin(), finder.found_geometries_end()));
 
@@ -348,7 +348,7 @@ TEST_F(GeoscimlReaderTest, point_by_coordinates_and_the_malformed_case)
 
 	// The member with one coordinate where two were needed is abandoned part-built, carrying
 	// no geometry.
-	GPlatesFeatureVisitors::GeometryFinder finder;
+	GPlatesAppLogic::GeometryFinder finder;
 	finder.visit_feature(features[1]);
 	EXPECT_EQ(0, std::distance(finder.found_geometries_begin(), finder.found_geometries_end()));
 }

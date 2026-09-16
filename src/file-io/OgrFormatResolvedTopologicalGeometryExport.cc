@@ -42,7 +42,7 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ResolvedTopologicalSection.h"
 
-#include "feature-visitors/GeometryTypeFinder.h"
+#include "app-logic/GeometryTypeFinder.h"
 #include "property-values/KeyValueDictionaryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "property-values/GpmlKeyValueDictionary.h"
@@ -148,7 +148,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 		bool wrap_to_dateline)
 {
 	// Iterate through the reconstructed geometries and check which geometry types we have.
-	GPlatesFeatureVisitors::GeometryTypeFinder finder;
+	GPlatesAppLogic::GeometryTypeFinder finder;
 
 	std::list<feature_geometry_group_type>::const_iterator feature_iter;
 	for (feature_iter = feature_geometry_group_seq.begin();

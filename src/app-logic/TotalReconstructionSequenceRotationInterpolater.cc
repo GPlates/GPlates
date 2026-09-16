@@ -8,7 +8,6 @@
  *   $Date$
  * 
  * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
- * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -27,16 +26,8 @@
  */
 
 #include <boost/none.hpp>  // boost::none
-#include <QDebug>
 
-#include "TotalReconstructionSequencePlateIdFinder.h"
-
-#include "app-logic/ApplicationState.h"
-#include "app-logic/FeatureCollectionFileState.h"
-
-#include "file-io/PlatesRotationFileProxy.h"
-
-#include "TotalReconstructionSequenceRotationInserter.h"
+#include "TotalReconstructionSequenceRotationInterpolater.h"
 
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
@@ -65,104 +56,39 @@ namespace
 }
 */
 
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::TotalReconstructionSequenceRotationInserter(
-		const double &recon_time,
-		const GPlatesMaths::Rotation &rotation_to_apply,
-		GPlatesAppLogic::FeatureCollectionFileState &file_state) :
-	d_file_state(file_state),
+GPlatesAppLogic::TotalReconstructionSequenceRotationInterpolater::TotalReconstructionSequenceRotationInterpolater(
+		const double &recon_time):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
-	d_rotation_to_apply(rotation_to_apply),
 	d_is_expecting_a_finite_rotation(false),
-	d_trp_time_matches_exactly(false),
-	d_grot_proxy(NULL),
-	d_moving_plate_id(0),
-	d_fixed_plate_id(0)
+	d_trp_time_matches_exactly(false)
 {  }
 
 
 bool
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::initialise_pre_feature_properties(
-		GPlatesModel::FeatureHandle &feature_handle)
+GPlatesAppLogic::TotalReconstructionSequenceRotationInterpolater::initialise_pre_feature_properties(
+		const GPlatesModel::FeatureHandle &feature_handle)
 {
-	using namespace GPlatesAppLogic;
-	using namespace GPlatesModel;
-	using namespace GPlatesFileIO;
 	d_is_expecting_a_finite_rotation = false;
 	d_trp_time_matches_exactly = false;
-	d_finite_rotation = boost::none;
+	d_finite_rotation_result = boost::none;
+	d_finite_rotation_for_interp = boost::none;
 
-	TotalReconstructionSequencePlateIdFinder id_finder;
-	id_finder.visit_feature(feature_handle.reference());
-	boost::optional<GPlatesModel::integer_plate_id_type> 
-		moving_plate_id = id_finder.moving_ref_frame_plate_id(),
-		fixed_plate_id = id_finder.fixed_ref_frame_plate_id();
-	if(moving_plate_id)
-	{
-		d_moving_plate_id = *moving_plate_id;
-
-	}
-	if(fixed_plate_id)
-	{
-		d_fixed_plate_id = *fixed_plate_id;
-	}
-
-	std::vector<FeatureCollectionFileState::file_reference> loaded_files = d_file_state.get_loaded_files();
-
-	std::vector<FeatureCollectionFileState::file_reference>::iterator 
-		iter = loaded_files.begin(),
-		end = loaded_files.end();
-	for ( ; iter != end; ++iter) 
-	{
-		GPlatesModel::FeatureCollectionHandle::weak_ref fc = iter->get_file().get_feature_collection();
-		GPlatesModel::FeatureCollectionHandle::iterator 
-			fc_it = fc->begin(),
-			fc_end = fc->end();
-		for(; fc_it != fc_end; fc_it++)
-		{
-			if((*fc_it).get() == &feature_handle)
-			{
-				const boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> cfg = 
-					iter->get_file().get_file_configuration();
-				if(cfg)
-				{
-					boost::shared_ptr<const FeatureCollectionFileFormat::RotationFileConfiguration> rotation_cfg_const =
-						boost::dynamic_pointer_cast<const FeatureCollectionFileFormat::RotationFileConfiguration>(*cfg);
-					boost::shared_ptr<FeatureCollectionFileFormat::RotationFileConfiguration> rotation_cfg =
-						boost::const_pointer_cast< FeatureCollectionFileFormat::RotationFileConfiguration>(rotation_cfg_const);
-					if(rotation_cfg)
-					{
-						d_grot_proxy = &rotation_cfg->get_rotation_file_proxy();
-						return true;
-					}
-
-				}
-			}
-		}
-	}
 	return true;
 }
 
 
 void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_finite_rotation(
-		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
+GPlatesAppLogic::TotalReconstructionSequenceRotationInterpolater::visit_gpml_finite_rotation(
+		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
-	if (d_is_expecting_a_finite_rotation)
-	{
+	if (d_is_expecting_a_finite_rotation) {
 		// The visitor was expecting a FiniteRotation, which means the structure of the
 		// Total Reconstruction Sequence is (more or less) correct.
-		if (d_trp_time_matches_exactly)
-		{
+		if (d_trp_time_matches_exactly) {
 			// The time of the total reconstruction pole (TRP) matches exactly, so
-			// we'll update the finite rotation in place, right now.
-			update_finite_rotation(gpml_finite_rotation);
-
-			// The time of the total reconstruction pole (TRP) matches exactly, so
-			// we'll update the pole metadata.
-			update_pole_metadata(gpml_finite_rotation);
-		}
-		else
-		{
+			// we have our result.
+			d_finite_rotation_result = gpml_finite_rotation.get_finite_rotation();
+		} else {
 			// The finite rotation needs to be interpolated and a new time-sample needs
 			// to be inserted.  That means this function will be called twice by
 			// 'visit_gpml_irregular_sampling', first to obtain the finite rotation in
@@ -172,20 +98,18 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			//
 			// Hence, we'll just fetch the finite rotation now, and the interpolation
 			// and insertion will happen back in 'visit_gpml_irregular_sampling'.
-			d_finite_rotation = gpml_finite_rotation.get_finite_rotation();
+			d_finite_rotation_for_interp = gpml_finite_rotation.get_finite_rotation();
 		}
 		d_is_expecting_a_finite_rotation = false;
-	}
-	else
-	{
+	} else {
 		// FIXME:  Should we complain?
 	}
 }
 
 
 void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_finite_rotation_slerp(
-		GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
+GPlatesAppLogic::TotalReconstructionSequenceRotationInterpolater::visit_gpml_finite_rotation_slerp(
+		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
 {
 	// FIXME:  We should use this for something... (Currently, FiniteRotation SLERP is the only
 	// option, so the code below is hard-coded to perform a FiniteRotation SLERP.  But still,
@@ -194,15 +118,15 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 
 
 void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_irregular_sampling(
-		GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+GPlatesAppLogic::TotalReconstructionSequenceRotationInterpolater::visit_gpml_irregular_sampling(
+		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
 	using namespace GPlatesPropertyValues;
 	using namespace GPlatesModel;
 
 	// It is assumed that an IrregularSampling instance which has been reached by the visit
-	// function of a TotalReconstructionSequenceRotationInserter instance will only ever contain
-	// FiniteRotation instances.
+	// function of a TotalReconstructionSequenceRotationInterpolater instance will only ever
+	// contain FiniteRotation instances.
 	// FIXME:  Should we check this? (by looking at the 'value_type' value of the IrrSampling).
 
 	// It is assumed that an IrregularSampling must contain at least one time sample, however,
@@ -215,15 +139,15 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 		return;
 	}
 
-	RevisionedVector<GpmlTimeSample> &time_samples = gpml_irregular_sampling.time_samples();
-
 	// Otherwise, the reconstruction time is either the present-day, or in the past.
 	// First, let's see whether the reconstruction time matches the time of the most-recent
 	// (non-disabled) time sample.
 
 	// So, let's get to the most-recent non-disabled time sample.
-	RevisionedVector<GpmlTimeSample>::iterator iter = time_samples.begin();
-	RevisionedVector<GpmlTimeSample>::iterator end = time_samples.end();
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator iter =
+			gpml_irregular_sampling.time_samples().begin();
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator end =
+			gpml_irregular_sampling.time_samples().end();
 	while (iter != end && iter->is_disabled()) {
 		// This time-sample is disabled.  Let's move to the next one.
 		++iter;
@@ -253,10 +177,8 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 		d_trp_time_matches_exactly = true;
 		iter->value()->accept_visitor(*this);
 
-        // Note that we leave the comment unmodified.
-
 		// Did the visitor successfully collect the FiniteRotation?
-		if ( ! d_finite_rotation) {
+		if ( ! d_finite_rotation_result) {
 			// No, it didn't.
 			// FIXME:  Should we complain?
 		}
@@ -279,7 +201,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 	// remaining rails and posts.
 
 	// 'prev' is the previous non-disabled time sample.
-	RevisionedVector<GpmlTimeSample>::iterator prev = iter;
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator prev = iter;
 	for (++iter; iter != end; ++iter) {
 		if (iter->is_disabled()) {
 			// This time-sample is disabled.  Let's move to the next one.
@@ -305,13 +227,13 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
-			if ( ! d_finite_rotation) {
+			if ( ! d_finite_rotation_for_interp) {
 				// No, it didn't.
 				// FIXME:  Should we complain?
 				return;
 			} else {
 				// Success!
-				current_finite_rotation = d_finite_rotation;
+				current_finite_rotation = d_finite_rotation_for_interp;
 			}
 
 			// Now let's visit the _previous_ non-disabled time sample, to collect
@@ -320,13 +242,13 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			prev->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
-			if ( ! d_finite_rotation) {
+			if ( ! d_finite_rotation_for_interp) {
 				// No, it didn't.
 				// FIXME:  Should we complain?
 				return;
 			} else {
 				// Success!
-				previous_finite_rotation = d_finite_rotation;
+				previous_finite_rotation = d_finite_rotation_for_interp;
 			}
 
 			GPlatesMaths::real_t current_time =
@@ -343,42 +265,12 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			} else if (current_finite_rotation->axis_hint()) {
 				axis_hint = current_finite_rotation->axis_hint();
 			}
-			GPlatesMaths::FiniteRotation interpolated_finite_rotation =
+			d_finite_rotation_result =
 					GPlatesMaths::interpolate(
 						*previous_finite_rotation, *current_finite_rotation,
 						previous_time, current_time, target_time,
 						axis_hint);
 
-			// Now we have the updated (interpolated) finite rotation, which is to be
-			// inserted back into the irregular sampling, in a new time-sample.
-			GPlatesMaths::FiniteRotation updated_finite_rotation =
-					GPlatesMaths::compose(d_rotation_to_apply, interpolated_finite_rotation);
-
-			// Create the new time-sample.
-			GpmlFiniteRotation::non_null_ptr_type value = GpmlFiniteRotation::create(updated_finite_rotation);
-			// Set/modify the pole metadata (if needed) in the GpmlFiniteRotation.
-			set_pole_metadata(*value);
-
-			GmlTimeInstant::non_null_ptr_type valid_time =
-					ModelUtils::create_gml_time_instant(d_recon_time);
-			boost::optional<XsString::non_null_ptr_type> description =
-					XsString::create(GPlatesUtils::UnicodeString());
-			StructuralType value_type =
-					StructuralType::create_gpml("FiniteRotation");
-			GpmlTimeSample::non_null_ptr_type new_time_sample =
-					GpmlTimeSample::create(value, valid_time, description, value_type);
-
-			// Now insert the time-sample at the appropriate position.
-			time_samples.insert(iter, new_time_sample);
-			GPlatesFileIO::RotationPoleData data(
-					updated_finite_rotation,
-					d_moving_plate_id,
-					d_fixed_plate_id,
-					d_recon_time.value());
-			if(d_grot_proxy)
-			{
-				d_grot_proxy->insert_pole(data);
-			}
 			// OK, our task is complete.  Hence, we're going to exit from this loop by
 			// returning out of this function.  Hence, we won't be iterating through
 			// the vector of time-samples any more.  Hence, there's no need to correct
@@ -395,10 +287,8 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			d_trp_time_matches_exactly = true;
 			iter->value()->accept_visitor(*this);
 
-            // Note that we leave the comment unmodified.
-
 			// Did the visitor successfully collect the FiniteRotation?
-			if ( ! d_finite_rotation) {
+			if ( ! d_finite_rotation_result) {
 				// No, it didn't.
 				// FIXME:  Should we complain?
 			}
@@ -412,51 +302,4 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 	}
 	// FIXME:  We've passed the last fence-post, and not yet reached the requested recon time. 
 	// Should we complain?
-}
-
-
-void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::update_finite_rotation(
-		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
-{
-	// Note: Must be captured *before* the finite rotation is updated below.
-	const GPlatesMaths::FiniteRotation original_finite_rotation =
-			gpml_finite_rotation.get_finite_rotation();
-
-	const GPlatesMaths::FiniteRotation updated_finite_rotation =
-			GPlatesMaths::compose(d_rotation_to_apply, original_finite_rotation);
-	gpml_finite_rotation.set_finite_rotation(updated_finite_rotation);
-
-	if (d_grot_proxy)
-	{
-		const GPlatesFileIO::RotationPoleData new_pole(
-				updated_finite_rotation,
-				d_moving_plate_id,
-				d_fixed_plate_id,
-				d_recon_time.value());
-		const GPlatesFileIO::RotationPoleData old_pole(
-				original_finite_rotation,
-				d_moving_plate_id,
-				d_fixed_plate_id,
-				d_recon_time.value());
-
-		d_grot_proxy->update_pole(old_pole, new_pole);
-	}
-}
-
-
-void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::update_pole_metadata(
-		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
-{
-	set_pole_metadata(gpml_finite_rotation);
-
-	// TODO: Update the GROT proxy.
-}
-
-
-void
-GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::set_pole_metadata(
-		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
-{
 }

@@ -70,7 +70,7 @@
 #include "app-logic/ReconstructionTreeCreator.h"
 #include "app-logic/RotationUtils.h"
 #include "app-logic/UserPreferences.h"
-#include "feature-visitors/GeometryFinder.h"
+#include "app-logic/GeometryFinder.h"
 #include "gui/AnimationController.h"
 #include "gui/CsvExport.h"
 #include "gui/FeatureFocus.h"
@@ -495,11 +495,11 @@ GPlatesQtWidgets::KinematicGraphsDialog::handle_use_feature()
 	}
 
 	// TODO: we can also use featured_focus().associated_reconstruction_geometry() for example.
-	GPlatesFeatureVisitors::GeometryFinder finder;
+	GPlatesAppLogic::GeometryFinder finder;
 
 	finder.visit_feature(d_feature_focus.focused_feature());
 
-	GPlatesFeatureVisitors::GeometryFinder::geometry_container_const_iterator
+	GPlatesAppLogic::GeometryFinder::geometry_container_const_iterator
 			it = finder.found_geometries_begin();
 
 	if (it != finder.found_geometries_end())

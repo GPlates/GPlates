@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_GEOMETRYSETTER_H
-#define GPLATES_FEATUREVISITORS_GEOMETRYSETTER_H
+#ifndef GPLATES_APP_LOGIC_GEOMETRYSETTER_H
+#define GPLATES_APP_LOGIC_GEOMETRYSETTER_H
 
 #include <vector>
 
@@ -41,7 +41,7 @@ namespace GPlatesModel
 	class TopLevelProperty;
 }
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesAppLogic
 {
 	/**
 	 * This feature visitor takes a GPlatesMaths::GeometryOnSphere, and assigns it 
@@ -130,4 +130,4 @@ namespace GPlatesFeatureVisitors
 	};
 }
 
-#endif  // GPLATES_FEATUREVISITORS_GEOMETRYSETTER_H
+#endif  // GPLATES_APP_LOGIC_GEOMETRYSETTER_H

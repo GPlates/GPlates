@@ -26,8 +26,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_TOTALRECONSTRUCTIONSEQUENCEROTATIONINSERTER_H
-#define GPLATES_FEATUREVISITORS_TOTALRECONSTRUCTIONSEQUENCEROTATIONINSERTER_H
+#ifndef GPLATES_APP_LOGIC_TOTALRECONSTRUCTIONSEQUENCEROTATIONINSERTER_H
+#define GPLATES_APP_LOGIC_TOTALRECONSTRUCTIONSEQUENCEROTATIONINSERTER_H
 
 #include <boost/optional.hpp>
 
@@ -50,7 +50,7 @@ namespace GPlatesFileIO
 	class PlatesRotationFileProxy;
 }
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesAppLogic
 {
 	/**
 	 * Insert an updated finite rotation into a total reconstruction sequence for a particular
@@ -144,4 +144,4 @@ namespace GPlatesFeatureVisitors
 	};
 }
 
-#endif  // GPLATES_FEATUREVISITORS_TOTALRECONSTRUCTIONSEQUENCEROTATIONINSERTER_H
+#endif  // GPLATES_APP_LOGIC_TOTALRECONSTRUCTIONSEQUENCEROTATIONINSERTER_H

@@ -27,7 +27,7 @@
 
 #include "app-logic/ApplicationState.h"
 
-#include "feature-visitors/GeometryTypeFinder.h"
+#include "app-logic/GeometryTypeFinder.h"
 
 #include "gui/CanvasToolWorkflows.h"
 #include "gui/FeatureFocus.h"
@@ -145,10 +145,10 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature(
 		feature_ref,
 		feature_collection_ref,
 		get_view_state().get_application_state().get_model_interface(),
-		&GPlatesFeatureVisitors::is_not_geometry_property);
+		&GPlatesAppLogic::is_not_geometry_property);
 
 	GPlatesModel::FeatureHandle::children_iterator geo_property_iter =
-		*GPlatesFeatureVisitors::find_first_geometry_property(feature_ref);
+		*GPlatesAppLogic::find_first_geometry_property(feature_ref);
 
 	//create the geometry property and append to feature
 	GPlatesModel::ModelUtils::append_property_value_to_feature(

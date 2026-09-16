@@ -35,7 +35,7 @@
 #include "property-values/GpmlIrregularSampling.h"
 
 
-GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::TotalReconstructionSequenceTimePeriodFinder(
+GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder::TotalReconstructionSequenceTimePeriodFinder(
 		bool skip_over_disabled_samples):
 	d_skip_over_disabled_samples(skip_over_disabled_samples)
 {
@@ -58,7 +58,7 @@ namespace
 
 
 bool
-GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::initialise_pre_property_values(
+GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
@@ -74,7 +74,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::initialise_
 
 
 void
-GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_irregular_sampling(
+GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_irregular_sampling(
 		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
 	using namespace GPlatesPropertyValues;
@@ -149,7 +149,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_
 
 
 void
-GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::reset()
+GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder::reset()
 {
 	d_begin_time = boost::none;
 	d_end_time = boost::none;

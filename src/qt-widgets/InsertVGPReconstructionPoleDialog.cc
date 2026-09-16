@@ -31,8 +31,8 @@
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructionTree.h"
 
-#include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
-#include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
+#include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
+#include "app-logic/TotalReconstructionSequenceTimePeriodFinder.h"
 
 #include "presentation/ViewState.h"
 
@@ -49,8 +49,8 @@ namespace
 	examine_trs(
 		std::vector<GPlatesQtWidgets::PoleSequenceTableWidget::PoleSequenceInfo> &
 		sequence_choices,
-		GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
-		GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
+		GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
+		GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 		GPlatesModel::integer_plate_id_type plate_id_of_interest,
 		const double &reconstruction_time,
 		GPlatesModel::FeatureCollectionHandle::iterator &current_feature)
@@ -146,8 +146,8 @@ namespace
 	find_trses(
 			std::vector<GPlatesQtWidgets::PoleSequenceTableWidget::PoleSequenceInfo> &
 					sequence_choices,
-			GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
-			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
+			GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
+			GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
 			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 			const GPlatesAppLogic::Reconstruction &reconstruction)
@@ -290,8 +290,8 @@ GPlatesQtWidgets::InsertVGPReconstructionPoleDialog::setup(
 	// Find all the TRSes (total reconstruction sequences) whose moving ref-frame
 	// plate ID matches our plate ID of interest.
 	std::vector<PoleSequenceTableWidget::PoleSequenceInfo> sequence_choices;
-	GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder trs_plate_id_finder;
-	GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
+	GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder trs_plate_id_finder;
+	GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
 
 #if 0 // Needs to pass in a ReconstructionTree instead of a Reconstruction...
 	find_trses(sequence_choices, trs_plate_id_finder, trs_time_period_finder, d_reconstruction_pole.d_moving_plate,

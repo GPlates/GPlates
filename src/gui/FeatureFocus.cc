@@ -43,7 +43,7 @@
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/GeometryUtils.h"
 
-#include "feature-visitors/GeometryFinder.h"
+#include "app-logic/GeometryFinder.h"
 
 #include "model/FeatureHandle.h"
 #include "model/WeakReferenceCallback.h"

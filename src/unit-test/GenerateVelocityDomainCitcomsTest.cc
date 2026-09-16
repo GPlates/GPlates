@@ -36,7 +36,7 @@
 #include "file-io/FileInfo.h"
 #include "file-io/File.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
-#include "feature-visitors/GeometryFinder.h"
+#include "app-logic/GeometryFinder.h"
 
 namespace
 {
@@ -127,7 +127,7 @@ namespace
 				GPlatesModel::FeatureCollectionHandle::const_iterator inner_end = (*it)->end();
 				for(; inner_it != inner_end; inner_it++)
 				{
-					GPlatesFeatureVisitors::GeometryFinder visitor;
+					GPlatesAppLogic::GeometryFinder visitor;
 					visitor.visit_feature((*inner_it)->reference());
 					citcoms_multipoints.insert(
 						citcoms_multipoints.end(),

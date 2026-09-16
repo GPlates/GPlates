@@ -67,7 +67,7 @@
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
 
-#include "feature-visitors/GeometryTypeFinder.h"
+#include "app-logic/GeometryTypeFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "gui/TopologySectionsFinder.h"
 #include "qt-widgets/ViewFeatureGeometriesWidgetPopulator.h"
@@ -1040,7 +1040,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	//
 	// The general solution to this is to use some kind of property id in the property delegate
 	// that uniquely identifies a property instead of using a property name.
-	GPlatesFeatureVisitors::GeometryTypeFinder geometry_type_finder;
+	GPlatesAppLogic::GeometryTypeFinder geometry_type_finder;
 	geometry_type_finder.visit_feature(d_feature_focus_ptr->focused_feature());
 
 // NOTE: MULTIPLE GEOM FIXME

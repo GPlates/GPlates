@@ -32,7 +32,7 @@
 #include "model/FeatureVisitor.h"
 
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesAppLogic
 {
 	/**
 	 * Visits all geometry properties in a feature, rotates them and

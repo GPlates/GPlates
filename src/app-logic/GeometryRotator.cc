@@ -43,7 +43,7 @@
 
 
 void
-GPlatesFeatureVisitors::GeometryRotator::visit_gml_line_string(
+GPlatesAppLogic::GeometryRotator::visit_gml_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	gml_line_string.set_polyline(
@@ -52,7 +52,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_line_string(
 
 
 void
-GPlatesFeatureVisitors::GeometryRotator::visit_gml_multi_point(
+GPlatesAppLogic::GeometryRotator::visit_gml_multi_point(
 		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	gml_multi_point.set_multipoint(
@@ -61,7 +61,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_multi_point(
 
 
 void
-GPlatesFeatureVisitors::GeometryRotator::visit_gml_orientable_curve(
+GPlatesAppLogic::GeometryRotator::visit_gml_orientable_curve(
 		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	gml_orientable_curve.base_curve()->accept_visitor(*this);
@@ -69,7 +69,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_orientable_curve(
 
 
 void
-GPlatesFeatureVisitors::GeometryRotator::visit_gml_point(
+GPlatesAppLogic::GeometryRotator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	gml_point.set_point(
@@ -78,7 +78,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_point(
 
 
 void
-GPlatesFeatureVisitors::GeometryRotator::visit_gml_polygon(
+GPlatesAppLogic::GeometryRotator::visit_gml_polygon(
 		GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	gml_polygon.set_polygon(
@@ -87,7 +87,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_polygon(
 
 
 void
-GPlatesFeatureVisitors::GeometryRotator::visit_gpml_constant_value(
+GPlatesAppLogic::GeometryRotator::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);

@@ -41,7 +41,7 @@
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 
-#include "feature-visitors/GeometrySetter.h"
+#include "app-logic/GeometrySetter.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -375,7 +375,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 		geometry_on_sphere = reverse_reconstruct(geometry_on_sphere, focused_rfg.get()->get_feature_ref());
 
 		// Set the actual geometry in the geometry property of the focused geometry.
-		GPlatesFeatureVisitors::GeometrySetter geometry_setter(geometry_on_sphere);
+		GPlatesAppLogic::GeometrySetter geometry_setter(geometry_on_sphere);
 
 		// Since we can have multiple geometry properties per feature we make sure we
 		// set the geometry that the user actually clicked on.
@@ -417,7 +417,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geom
 	geometry_on_sphere = reverse_reconstruct(geometry_on_sphere, rfg.get()->get_feature_ref());
 
 	// Set the actual geometry in the geometry property of the focused geometry.
-	GPlatesFeatureVisitors::GeometrySetter geometry_setter(geometry_on_sphere);
+	GPlatesAppLogic::GeometrySetter geometry_setter(geometry_on_sphere);
 
 	// Since we can have multiple geometry properties per feature we make sure we
 	// set the geometry that the user actually clicked on.

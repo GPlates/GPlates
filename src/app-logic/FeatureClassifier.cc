@@ -46,7 +46,7 @@ namespace
 }
 
 
-GPlatesFeatureVisitors::FeatureClassifier::FeatureClassifier():
+GPlatesAppLogic::FeatureClassifier::FeatureClassifier():
 		d_looks_like_reconstruction_feature(false),
 		d_looks_like_reconstructable_feature(false),
 		d_looks_like_instantaneous_feature(false),
@@ -79,7 +79,7 @@ GPlatesFeatureVisitors::FeatureClassifier::FeatureClassifier():
 
 
 void
-GPlatesFeatureVisitors::FeatureClassifier::reset()
+GPlatesAppLogic::FeatureClassifier::reset()
 {
 	d_reconstruction_feature_count = 0;
 	d_reconstructable_feature_count = 0;
@@ -89,7 +89,7 @@ GPlatesFeatureVisitors::FeatureClassifier::reset()
 
 
 bool
-GPlatesFeatureVisitors::FeatureClassifier::initialise_pre_feature_properties(
+GPlatesAppLogic::FeatureClassifier::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Reset the boolean flags so we can have a quick peek at the tell-tale
@@ -103,7 +103,7 @@ GPlatesFeatureVisitors::FeatureClassifier::initialise_pre_feature_properties(
 
 
 void
-GPlatesFeatureVisitors::FeatureClassifier::finalise_post_feature_properties(
+GPlatesAppLogic::FeatureClassifier::finalise_post_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	d_total_feature_count++;
@@ -128,7 +128,7 @@ GPlatesFeatureVisitors::FeatureClassifier::finalise_post_feature_properties(
 
 
 bool
-GPlatesFeatureVisitors::FeatureClassifier::initialise_pre_property_values(
+GPlatesAppLogic::FeatureClassifier::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
@@ -144,7 +144,7 @@ GPlatesFeatureVisitors::FeatureClassifier::initialise_pre_property_values(
 
 
 void
-GPlatesFeatureVisitors::FeatureClassifier::visit_gml_time_instant(
+GPlatesAppLogic::FeatureClassifier::visit_gml_time_instant(
 		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	// Instantaneous Features:
@@ -161,7 +161,7 @@ GPlatesFeatureVisitors::FeatureClassifier::visit_gml_time_instant(
 
 
 void
-GPlatesFeatureVisitors::FeatureClassifier::visit_gpml_constant_value(
+GPlatesAppLogic::FeatureClassifier::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
@@ -169,7 +169,7 @@ GPlatesFeatureVisitors::FeatureClassifier::visit_gpml_constant_value(
 
 
 void
-GPlatesFeatureVisitors::FeatureClassifier::visit_gpml_plate_id(
+GPlatesAppLogic::FeatureClassifier::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	// Reconstruction Features:

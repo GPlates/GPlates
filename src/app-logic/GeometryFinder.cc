@@ -58,7 +58,7 @@ namespace
 
 
 bool
-GPlatesFeatureVisitors::GeometryFinder::initialise_pre_property_values(
+GPlatesAppLogic::GeometryFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
@@ -75,7 +75,7 @@ GPlatesFeatureVisitors::GeometryFinder::initialise_pre_property_values(
 
 
 void
-GPlatesFeatureVisitors::GeometryFinder::visit_gml_line_string(
+GPlatesAppLogic::GeometryFinder::visit_gml_line_string(
 		const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	d_found_geometries.push_back(gml_line_string.get_polyline());
@@ -84,7 +84,7 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_line_string(
 
 
 void
-GPlatesFeatureVisitors::GeometryFinder::visit_gml_multi_point(
+GPlatesAppLogic::GeometryFinder::visit_gml_multi_point(
 		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	d_found_geometries.push_back(gml_multi_point.get_multipoint());
@@ -93,7 +93,7 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_multi_point(
 
 
 void
-GPlatesFeatureVisitors::GeometryFinder::visit_gml_orientable_curve(
+GPlatesAppLogic::GeometryFinder::visit_gml_orientable_curve(
 		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	gml_orientable_curve.base_curve()->accept_visitor(*this);
@@ -101,7 +101,7 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_orientable_curve(
 
 
 void
-GPlatesFeatureVisitors::GeometryFinder::visit_gml_point(
+GPlatesAppLogic::GeometryFinder::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	d_found_geometries.push_back(gml_point.get_point().get_geometry_on_sphere());
@@ -110,7 +110,7 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_point(
 
 
 void
-GPlatesFeatureVisitors::GeometryFinder::visit_gml_polygon(
+GPlatesAppLogic::GeometryFinder::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	d_found_geometries.push_back(gml_polygon.get_polygon());
@@ -119,15 +119,15 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_polygon(
 
 
 void
-GPlatesFeatureVisitors::GeometryFinder::visit_gpml_constant_value(
+GPlatesAppLogic::GeometryFinder::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
 
-GPlatesFeatureVisitors::GeometryFinder::geometry_elem_type
-GPlatesFeatureVisitors::GeometryFinder::first_geometry_found() const
+GPlatesAppLogic::GeometryFinder::geometry_elem_type
+GPlatesAppLogic::GeometryFinder::first_geometry_found() const
 {
 	if ( ! has_found_geometries()) {
 		// Whoops, the container's empty.

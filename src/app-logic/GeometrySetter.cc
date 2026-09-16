@@ -44,21 +44,21 @@
 #include "maths/PolylineOnSphere.h"
 
 void
-GPlatesFeatureVisitors::GeometrySetter::set_geometry(
+GPlatesAppLogic::GeometrySetter::set_geometry(
 		GPlatesModel::PropertyValue *geometry_property_value)
 {
 	geometry_property_value->accept_visitor(*this);
 }
 
 void
-GPlatesFeatureVisitors::GeometrySetter::set_geometry(
+GPlatesAppLogic::GeometrySetter::set_geometry(
 		GPlatesModel::TopLevelProperty *geometry_top_level_property)
 {
 	geometry_top_level_property->accept_visitor(*this);
 }
 
 void
-GPlatesFeatureVisitors::GeometrySetter::visit_gml_line_string(
+GPlatesAppLogic::GeometrySetter::visit_gml_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	// We use a dynamic cast here (despite the fact that dynamic casts are
@@ -77,7 +77,7 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gml_line_string(
 
 
 void
-GPlatesFeatureVisitors::GeometrySetter::visit_gml_multi_point(
+GPlatesAppLogic::GeometrySetter::visit_gml_multi_point(
 		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	// We use a dynamic cast here (despite the fact that dynamic casts are
@@ -96,7 +96,7 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gml_multi_point(
 
 
 void
-GPlatesFeatureVisitors::GeometrySetter::visit_gml_orientable_curve(
+GPlatesAppLogic::GeometrySetter::visit_gml_orientable_curve(
 		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
 	gml_orientable_curve.base_curve()->accept_visitor(*this);
@@ -104,7 +104,7 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gml_orientable_curve(
 
 
 void
-GPlatesFeatureVisitors::GeometrySetter::visit_gml_point(
+GPlatesAppLogic::GeometrySetter::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	// We use a dynamic cast here (despite the fact that dynamic casts are
@@ -122,7 +122,7 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gml_point(
 
 
 void
-GPlatesFeatureVisitors::GeometrySetter::visit_gml_polygon(
+GPlatesAppLogic::GeometrySetter::visit_gml_polygon(
 		GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	// We use a dynamic cast here (despite the fact that dynamic casts are
@@ -141,7 +141,7 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gml_polygon(
 
 
 void
-GPlatesFeatureVisitors::GeometrySetter::visit_gpml_constant_value(
+GPlatesAppLogic::GeometrySetter::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);

@@ -26,8 +26,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_GEOMETRYTYPEFINDER_H
-#define GPLATES_FEATUREVISITORS_GEOMETRYTYPEFINDER_H
+#ifndef GPLATES_APP_LOGIC_GEOMETRYTYPEFINDER_H
+#define GPLATES_APP_LOGIC_GEOMETRYTYPEFINDER_H
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/MultiPointOnSphere.h"
@@ -36,7 +36,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "model/FeatureVisitor.h"
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesAppLogic
 {
 	/**
 	 * This feature visitor can be used to determine which geometry types exist in a feature.
@@ -243,4 +243,4 @@ namespace GPlatesFeatureVisitors
 
 }
 
-#endif  // GPLATES_FEATUREVISITORS_GEOMETRYTYPEFINDER_H
+#endif  // GPLATES_APP_LOGIC_GEOMETRYTYPEFINDER_H

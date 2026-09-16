@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
-#include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
+#include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
+#include "app-logic/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "model/types.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlConstantValue.h"
@@ -144,8 +144,6 @@ GPlatesAppLogic::TRSUtils::build_trs_summary_string_from_trs_feature(
 {
 	// This code taken largely from the TotalReconstructionSequenceDialog.
 
-	using namespace GPlatesFeatureVisitors;
-
 	TotalReconstructionSequencePlateIdFinder plate_id_finder;
 	TotalReconstructionSequenceTimePeriodFinder time_period_finder(false);
 
@@ -212,8 +210,6 @@ bool
 GPlatesAppLogic::TRSUtils::one_of_trs_plate_ids_is_999
 	(const GPlatesModel::FeatureHandle::weak_ref &trs_feature)
 {
-	using namespace GPlatesFeatureVisitors;
-
 	TotalReconstructionSequencePlateIdFinder plate_id_finder;
 
 	using namespace GPlatesModel;

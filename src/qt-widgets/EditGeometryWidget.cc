@@ -40,7 +40,7 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/GeometryUtils.h"
 
-#include "feature-visitors/GeometrySetter.h"
+#include "app-logic/GeometrySetter.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/InvalidLatLonException.h"
@@ -1025,7 +1025,7 @@ GPlatesQtWidgets::EditGeometryWidget::set_geometry_for_property_value()
 		geometry_opt_ptr_type geometry_opt_ptr =
 				create_geometry_on_sphere(points, problems.validity, d_geometry_type);
 		if (geometry_opt_ptr) {
-			GPlatesFeatureVisitors::GeometrySetter geometry_setter(*geometry_opt_ptr);
+			GPlatesAppLogic::GeometrySetter geometry_setter(*geometry_opt_ptr);
 			geometry_setter.set_geometry(d_property_value_ptr.get());
 			return true;
 		}

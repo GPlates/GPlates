@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_GEOMETRYFINDER_H
-#define GPLATES_FEATUREVISITORS_GEOMETRYFINDER_H
+#ifndef GPLATES_APP_LOGIC_GEOMETRYFINDER_H
+#define GPLATES_APP_LOGIC_GEOMETRYFINDER_H
 
 #include <vector>
 
@@ -39,7 +39,7 @@
 #include "model/PropertyName.h"
 
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesAppLogic
 {
 	/**
 	 * This const feature visitor finds all geometry contained within the feature.
@@ -251,4 +251,4 @@ namespace GPlatesFeatureVisitors
 	};
 }
 
-#endif  // GPLATES_FEATUREVISITORS_GEOMETRYFINDER_H
+#endif  // GPLATES_APP_LOGIC_GEOMETRYFINDER_H

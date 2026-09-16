@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FEATUREVISITORS_FEATURECLASSIFIER_H
-#define GPLATES_FEATUREVISITORS_FEATURECLASSIFIER_H
+#ifndef GPLATES_APP_LOGIC_FEATURECLASSIFIER_H
+#define GPLATES_APP_LOGIC_FEATURECLASSIFIER_H
 
 
 #include <boost/optional.hpp>
@@ -37,7 +37,7 @@
 #include "model/FeatureCollectionHandle.h"
 
 
-namespace GPlatesFeatureVisitors
+namespace GPlatesAppLogic
 {
 	/**
 	 * This const feature visitor can be applied to all the features in
@@ -156,4 +156,4 @@ namespace GPlatesFeatureVisitors
 }
 
 
-#endif	// GPLATES_FEATUREVISITORS_FEATURECLASSIFIER_H
+#endif	// GPLATES_APP_LOGIC_FEATURECLASSIFIER_H
