@@ -94,7 +94,7 @@ with conda builds.
 cmake --build build-gplates
 ```
 
-This produces `gplates.exe` under `build-gplates`.
+This produces `gplates.exe` under `build-gplates\bin`.
 
 To check the build, run the unit tests — see [Run the tests](#run-the-tests).
 
