@@ -16,7 +16,11 @@ manager.
    - [Option B: Ubuntu system packages](#option-b-ubuntu-system-packages)
 2. [Build GPlates](#build-gplates)
 3. [Build pyGPlates](#build-pygplates)
-4. [Code intelligence (clangd)](#code-intelligence-clangd)
+4. [Run the tests](#run-the-tests)
+   - [GPlates](#gplates)
+   - [pyGPlates](#pygplates)
+   - [Reading the result](#reading-the-result)
+5. [Code intelligence (clangd)](#code-intelligence-clangd)
 
 ## Install the dependencies
 
@@ -109,6 +113,8 @@ cmake --build build-gplates
 
 This produces the `gplates` executable under `build-gplates/bin`.
 
+To check the build, run the unit tests — see [Run the tests](#run-the-tests).
+
 > If the link step fails with `DSO missing from command line` referencing a `/mnt/c/...` library, see the
 > WSL note under [Configure](#configure).
 
@@ -184,11 +190,84 @@ A `pygplates` package should then be importable in the environment (`python3 -m 
 > ```
 >
 > then `cmake --build build-pygplates`. Using a separate build directory (rather than reusing
-> `build-gplates`) avoids mixing up which tree was configured for which target.
+> `build-gplates`) avoids mixing up which tree was configured for which target. This tree is also
+> what the pyGPlates tests run from — see [Run the tests](#run-the-tests).
 
 > Python binary wheels can also be built for distribution to other computers — see
 > `pygplates/wheel/README.md`. These are manylinux wheels compatible with a broad range of Linux
 > distributions.
+
+## Run the tests
+
+Both products have a test suite, run with
+[CTest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) from the build tree, which is the
+quickest way to confirm that a from-source build works. Two rules apply to every test run:
+
+- **Configure Release, and pass `-C Release` to `ctest`.** Several tests exercise error paths that
+  throw in a Release build but abort in a Debug build, so a Debug test run is unsupported. The
+  pyGPlates tests are registered for Release (and MinSizeRel) only, and `-C Release` is what selects
+  them: `ctest` does not infer the configuration from the build tree, so without it they are
+  silently skipped — even on the single-configuration Ninja tree used above (see
+  [Reading the result](#reading-the-result)). The GPlates tests carry no such restriction; a Debug
+  tree is left without any of them instead (see [GPlates](#gplates) below).
+- **Run `ctest` from the activated conda environment** you built in, so that the test executables
+  find the dependency libraries. (With the Ubuntu system packages there is nothing to activate.)
+
+### GPlates
+
+The unit tests are a separate executable, `gplates-unit-test`, which a plain `cmake --build` does
+not build. Build it by name, then run the tests:
+
+```bash
+cmake --build build-gplates --target gplates-unit-test
+ctest --test-dir build-gplates -C Release --output-on-failure
+```
+
+Each test case is registered with CTest individually, so `ctest -R <pattern>` runs a subset and
+`ctest -j <N>` runs them in parallel.
+
+> The `gplates-unit-test` target only exists if CMake found GoogleTest when the tree was configured
+> (the `gtest` conda package, or `libgtest-dev` on Ubuntu — both are in the dependency lists
+> above). Without it there are no GPlates tests at all: the configure output says `Warning:
+> GoogleTest (gtest) not found so GPlates unit-test executable gplates-unit-test will not be
+> available` (the message is suppressed when building a release version), and the build command
+> above fails with an unknown target. Install the package and re-configure.
+
+> A **Debug** tree registers no GPlates tests, whatever `-C` value you pass — re-configure it as
+> Release.
+
+### pyGPlates
+
+The pyGPlates tests run against a **build tree**, not against the package that `pip install .`
+installs (`pip` builds in a fresh temporary directory). So they need the separate `build-pygplates`
+tree from the Developers note under [Build pyGPlates](#build-pygplates), configured with
+`-DGPLATES_BUILD_GPLATES=FALSE`. Build it, then run the tests:
+
+```bash
+cmake --build build-pygplates
+ctest --test-dir build-pygplates -C Release --output-on-failure
+```
+
+This runs the Python test suite (`pygplates-test`) against the module just built, plus three checks
+that the built module is what the repository says it should be: `pygplates-stub-test` (the
+committed type stub `pygplates/stub/__init__.pyi` still matches the module), and
+`pygplates-source-closure-test` and `pygplates-linkage-test` (the module was compiled from, and
+links against, only what it should).
+
+### Reading the result
+
+One test, `version-resolver-test`, belongs to neither product and is registered by every tree for
+every configuration (it checks the version resolver's own logic, and needs nothing built). So if
+`ctest` reports **only that test** — `100% tests passed, 0 tests failed out of 1` — nothing else
+was selected, and the run says nothing about your build:
+
+- **pyGPlates tree:** `-C Release` was omitted.
+- **GPlates tree:** the tree was configured Debug, or GoogleTest was not found when it was
+  configured (see the notes under [GPlates](#gplates)).
+
+A GPlates tree whose `gplates-unit-test` target has *not been built* is louder: `ctest` reports a
+single *failing* placeholder test, `gplates-unit-test_NOT_BUILT`. Build the target and run `ctest`
+again.
 
 ## Code intelligence (clangd)
 
