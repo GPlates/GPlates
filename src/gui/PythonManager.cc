@@ -70,11 +70,6 @@ GPlatesGui::PythonManager::PythonManager() :
 	d_stopped_event_blackout_for_python_runner(false),
 	d_clear_python_prefix_flag(true)
 {
-	//this UserPreferences must be local.
-	//don't use global UserPreferences because it hasn't been constructed yet.
-	GPlatesAppLogic::UserPreferences user_pref(NULL);
-	d_python_home = user_pref.get_value("python/python_home").toString();
-
 	// Match the leading "major.minor" (eg, "3.12" from "3.12.4 (main, ...)").
 	static const QRegularExpression rx("^\\d+\\.\\d+");
 	d_python_version = rx.match(QString(Py_GetVersion())).captured();
@@ -197,6 +192,9 @@ void
 GPlatesGui::PythonManager::set_python_prefix(
 		const QString& str)
 {
+	// Recorded for diagnosis only - nothing reads "python/prefix" back. It is written at
+	// start-up and cleared by the destructor, so a user's settings show which Python a
+	// session used.
 	GPlatesAppLogic::UserPreferences(NULL).set_value(
 			"python/prefix",
 			str);
@@ -209,13 +207,6 @@ GPlatesGui::PythonManager::set_python_prefix()
 	bp::object module = bp::import("sys");
 	const char* prefix = bp::extract<const char*>(module.attr("prefix"));
 	set_python_prefix(QString(prefix));
-}
-
-
-QString
-GPlatesGui::PythonManager::get_python_prefix_from_preferences()
-{
-	return GPlatesAppLogic::UserPreferences(NULL).get_value("python/prefix").toString();
 }
 
 

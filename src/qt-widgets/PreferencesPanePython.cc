@@ -61,10 +61,6 @@ GPlatesQtWidgets::PreferencesPanePython::PreferencesPanePython(
 	setupUi(this);
 	GPlatesAppLogic::UserPreferences &prefs = app_state.get_user_preferences();
 	
-	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(python_home, prefs,
-			"python/python_home", reset_python_home);
-	link_dir_chooser_button(python_home_button, python_home);
-		
 	// Python Script Locations UserPreferences link:-
 	
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(lineedit_python_system_script_dir, prefs,
