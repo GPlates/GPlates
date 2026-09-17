@@ -105,7 +105,6 @@ namespace
 	public:
 		GuiCommandLineOptions() :
 			debug_gui(false),
-			enable_python(true), // Enabled by default.
 			enable_external_syncing(false),
 			enable_data_mining(true),//Enable data mining by default
 			enable_symbol_table(false),
@@ -115,7 +114,6 @@ namespace
 		boost::optional<QString> project_filename;
 		QStringList feature_collection_filenames;
 		bool debug_gui;
-		bool enable_python;
 		bool enable_external_syncing;
 		bool enable_data_mining;
 		bool enable_symbol_table;
@@ -143,9 +141,6 @@ namespace
 
 	//! Enable symbol-table feature by secret command line option.
 	const char *SYMBOL_TABLE_OPTION_NAME = "symbol-table";
-
-	//! Enable python by secret command line option.
-	const char *NO_PYTHON_OPTION_NAME = "no-python";
 
 	//! Enable communication with external programs
 	const char *ENABLE_EXTERNAL_SYNCING_OPTION_NAME = "enable-external-syncing";
@@ -314,10 +309,6 @@ namespace
 		//Add secret symbol-table options.
 		input_options.hidden_options.add_options()
 			(SYMBOL_TABLE_OPTION_NAME, "Enable symbol feature");
-
-		//Add secret python options.
-		input_options.hidden_options.add_options()
-			(NO_PYTHON_OPTION_NAME, "Disable python");
 
 		// Add enable-external-syncing options
 		input_options.hidden_options.add_options()
@@ -494,12 +485,6 @@ namespace
 		if(vm.count(ENABLE_HELLINGER_THREE_PLATE_OPTION_NAME))
 		{
 			command_line_options.enable_hellinger_three_plate = true;
-		}
-
-		// Disable python if command line option specified.
-		if (vm.count(NO_PYTHON_OPTION_NAME))
-		{
-			command_line_options.enable_python = false;
 		}
 
 		return command_line_options;
@@ -726,36 +711,50 @@ namespace
 		throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 	}
 
-	void
+	bool
 	initialise_python(
 			GPlatesPresentation::Application *app,
 			char* argv[])
 	{
-		using namespace GPlatesGui;
-		PythonManager* mgr = PythonManager::instance();
 		try
 		{
-			mgr->initialize(argv,app);
+			GPlatesGui::PythonManager::instance()->initialize(argv,app);
 		}
-		catch(const PythonInitFailed& ex)
+		catch (const GPlatesGui::PythonInitFailed &ex)
 		{
+			//
+			// If Python initialisation failed then show a troubleshooting dialog and then exit GPlates.
+			//
+			// It's possible that Python could not be found or was not installed.
+			// However that should not happen for a binary distribution of GPlates since it
+			// should have the Python library included in the installation.
+			//
+
+			// Emit warning message (to console/log).
 			std::stringstream ss;
 			ex.write(ss);
 			qWarning() << ss.str().c_str();
-			
-			if(mgr->show_init_fail_dlg())
-			{
-				using namespace GPlatesQtWidgets;
-				boost::scoped_ptr<PythonInitFailedDialog> python_fail_dlg(
-					new PythonInitFailedDialog);
 
-				python_fail_dlg->exec();
-				mgr->set_show_init_fail_dlg(python_fail_dlg->show_again());
-			}
+			// Show dialog.
+			boost::scoped_ptr<GPlatesQtWidgets::PythonInitFailedDialog> python_fail_dlg(
+					new GPlatesQtWidgets::PythonInitFailedDialog);
+			python_fail_dlg->exec();
 
-			GPlatesUtils::ComponentManager::instance().disable(
-				GPlatesUtils::ComponentManager::Component::python());
+			// Destroy the Python manager before the caller exits the process.
+			//
+			// 'PythonManager::initialize()' starts the Python execution thread before the step
+			// that most often fails, so that thread can still be running here. Normally
+			// 'clean_up()' stops it, but the caller exits without reaching it. Destroying the
+			// manager is the part of 'clean_up()' that is safe either way: it writes a Qt
+			// preference and stops the thread, and only takes the GIL through members that
+			// exist when Python did initialise. The singleton pointer dangles afterwards, which
+			// is why this is done immediately before exiting.
+			delete GPlatesGui::PythonManager::instance();
+
+			return false;
 		}
+
+		return true;
 	}
 
 	void
@@ -766,8 +765,6 @@ namespace
 		// is called then contained objects are destroyed in correct order.
 		// Also we should be careful about excessive use of singletons because they are essentially global data.
 
-		if(GPlatesUtils::ComponentManager::instance().is_enabled(
-				GPlatesUtils::ComponentManager::Component::python()))
 		{
 			GPlatesApi::PythonInterpreterLocker lock;
 			delete GPlatesGui::DrawStyleManager::instance(); //delete draw style manager singleton.
@@ -834,18 +831,6 @@ internal_main(int argc, char* argv[])
 	{
 		GPlatesUtils::ComponentManager::instance().enable(
 				GPlatesUtils::ComponentManager::Component::symbology());
-	}
-
-	// Enable or disable python as specified on command-line.
-	if (gui_command_line_options->enable_python)
-	{
-		GPlatesUtils::ComponentManager::instance().enable(
-			GPlatesUtils::ComponentManager::Component::python());
-	}
-	else
-	{
-		GPlatesUtils::ComponentManager::instance().disable(
-			GPlatesUtils::ComponentManager::Component::python());
 	}
 
 	// Enable or disable hellinger tool.
@@ -970,11 +955,17 @@ internal_main(int argc, char* argv[])
 	// Note that python references 'Application' so this should be instantiated before python is initialised.
 	GPlatesPresentation::Application application;
 
-	// Initialise python if it's enabled.
-	if(GPlatesUtils::ComponentManager::instance().is_enabled(
-			GPlatesUtils::ComponentManager::Component::python()))
+	// Initialise Python.
+	//
+	// GPlates requires Python, so a failure here ends the session. We exit rather than return
+	// because the normal shutdown path is not usable without an interpreter: 'clean_up()' takes
+	// the GIL, and PyGILState_Ensure() aborts the process outright when Python never initialised.
+	// The dialog explaining the failure has already been shown by 'initialise_python()', which
+	// has also stopped the Python execution thread if it managed to start one.
+	if (!initialise_python(&application, argv))
 	{
-		initialise_python(&application,argv);
+		// A non-zero value indicates error.
+		exit(1);
 	}
 
 	// Also load a project file or any feature collection files specified on the command-line.

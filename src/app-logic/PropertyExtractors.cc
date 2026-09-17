@@ -30,49 +30,9 @@
 
 const boost::optional<GPlatesAppLogic::PlateIdPropertyExtractor::return_type>
 GPlatesAppLogic::PlateIdPropertyExtractor::operator()(
-		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
-{
-	return ReconstructionGeometryUtils::get_plate_id(
-				&reconstruction_geometry);
-}
-
-const boost::optional<GPlatesAppLogic::PlateIdPropertyExtractor::return_type>
-GPlatesAppLogic::PlateIdPropertyExtractor::operator()(
 		const GPlatesModel::FeatureHandle& feature) const
 {
 	return GPlatesUtils::get_recon_plate_id_as_int(&feature);
-}
-
-
-const boost::optional<GPlatesAppLogic::AgePropertyExtractor::return_type>
-GPlatesAppLogic::AgePropertyExtractor::operator()(
-		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
-{
-	boost::optional<GPlatesPropertyValues::GeoTimeInstant> geo_time =
-		ReconstructionGeometryUtils::get_time_of_formation(
-			&reconstruction_geometry);
-	if (!geo_time)
-	{
-		return boost::none;
-	}
-
-	if (geo_time->is_distant_past())
-	{
-		// Distant past.
-		// Cannot calculate 'age' from the point of view of the current reconstruction time.
-		return GPlatesMaths::Real::positive_infinity();
-	}
-	else if (geo_time->is_distant_future())
-	{
-		// Distant future.
-		return GPlatesMaths::Real::negative_infinity();
-	}
-	else
-	{
-		// Has a real time of formation.
-		return GPlatesMaths::Real(
-				geo_time->value() - d_application_state.get_current_reconstruction_time());
-	}
 }
 
 

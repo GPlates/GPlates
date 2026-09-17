@@ -40,11 +40,6 @@ namespace GPlatesQtWidgets
 		PythonInitFailedDialog(
 				QWidget *parent_ = NULL);
 
-		bool
-		show_again()
-		{
-			return !show_again_button->isChecked();
-		}
 	protected:
 		
 		void

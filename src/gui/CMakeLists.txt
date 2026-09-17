@@ -24,7 +24,6 @@ set(srcs
     ChooseCanvasToolUndoCommand.h
     Colour.cc
     Colour.h
-    ColourFilter.h
     ColourNameSet.cc
     ColourNameSet.h
     ColourPalette.h
@@ -33,19 +32,12 @@ set(srcs
     ColourPaletteUtils.cc
     ColourPaletteUtils.h
     ColourPaletteVisitor.h
-    ColourProxy.cc
-    ColourProxy.h
     ColourQt.cc
     ColourQt.h
     ColourRawRaster.h
     ColourScaleGenerator.cc
     ColourScaleGenerator.h
     ColourScheme.h
-    ColourSchemeContainer.cc
-    ColourSchemeContainer.h
-    ColourSchemeDelegator.cc
-    ColourSchemeDelegator.h
-    ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
     CommandServer.cc
@@ -218,8 +210,6 @@ set(srcs
     SessionMenu.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
-    SingleColourScheme.cc
-    SingleColourScheme.h
     SmallCircleCanvasToolWorkflow.cc
     SmallCircleCanvasToolWorkflow.h
     SphericalGrid.cc

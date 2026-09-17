@@ -12,24 +12,24 @@ should respect is described in [README.md](README.md).
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 3 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
-| api |  | 275 | 125 |  |  | 8 | 36 | 156 | 15 | 86 | 76 | 2 | 3 | 112 | 5 | 29 |  | 46 |  |
+| api |  | 275 | 125 |  |  | 8 | 36 | 156 | 15 | 86 | 76 | 2 | 3 | 112 | 5 | 29 |  | 45 |  |
 | app-logic |  |  | 936 |  |  | 7 | 21 | 161 |  | 279 | 289 | 12 |  | 304 |  | 25 |  | 123 |  |
-| canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 37 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
+| canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 36 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
 | cli |  |  | 17 |  | 42 |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
 | data-mining |  |  | 18 |  |  | 81 | 4 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
 | file-io |  |  | 82 |  |  |  | 537 | 117 | 19 | 112 | 241 |  |  | 415 |  |  |  | 78 |  |
 | global |  |  |  |  |  |  |  | 25 |  |  |  |  |  |  |  |  |  | 5 |  |
-| gui |  | 18 | 173 | 53 |  | 3 | 53 | 95 | 512 | 117 | 82 | 113 | 79 | 97 | 164 | 14 |  | 93 | 108 |
+| gui |  | 18 | 169 | 53 |  | 3 | 53 | 95 | 480 | 117 | 79 | 113 | 79 | 97 | 163 | 14 |  | 90 | 108 |
 | maths |  |  |  |  |  |  |  | 75 |  | 410 | 1 |  |  |  |  | 24 |  | 41 |  |
 | model |  |  | 7 |  |  |  | 2 | 30 |  | 1 | 218 |  |  | 58 |  | 23 |  | 48 |  |
 | opengl |  |  | 16 |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
-| presentation |  | 1 | 100 |  |  | 1 | 24 | 23 | 78 | 12 | 9 | 3 | 93 | 6 | 26 | 25 |  | 12 | 19 |
+| presentation |  | 1 | 100 |  |  | 1 | 24 | 23 | 76 | 12 | 9 | 3 | 93 | 6 | 26 | 25 |  | 11 | 19 |
 | property-values |  |  |  |  |  |  | 11 | 64 | 5 | 26 | 292 |  |  | 176 |  | 103 |  | 35 |  |
-| qt-widgets |  | 17 | 280 | 7 |  | 8 | 81 | 133 | 240 | 116 | 271 | 35 | 117 | 211 | 840 |  |  | 61 | 26 |
+| qt-widgets |  | 17 | 276 | 7 |  | 8 | 79 | 133 | 223 | 116 | 266 | 35 | 116 | 211 | 834 |  |  | 56 | 26 |
 | scribe |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
 | unit-test |  |  | 4 |  |  | 2 | 11 | 2 | 5 | 9 | 11 |  |  | 5 |  | 16 | 2 | 6 |  |
 | utils |  | 1 |  |  |  |  | 1 | 34 |  | 14 | 7 |  |  | 58 |  | 3 |  | 52 |  |
-| view-operations |  |  | 44 | 6 |  |  | 5 | 27 | 62 | 92 | 27 |  | 6 | 9 | 1 | 3 |  | 13 | 232 |
+| view-operations |  |  | 44 | 6 |  |  | 5 | 27 | 56 | 92 | 27 |  | 6 | 9 | 1 | 3 |  | 13 | 232 |
 
 # The pyGPlates module subset
 
@@ -51,13 +51,13 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | data-mining | 0 / 42 |
 | file-io | 173 / 235 |
 | global | 24 / 32 |
-| gui | 12 / 259 |
+| gui | 12 / 249 |
 | maths | 100 / 133 |
 | model | 97 / 97 |
 | opengl | 0 / 158 |
 | presentation | 0 / 48 |
 | property-values | 127 / 128 |
-| qt-widgets | 0 / 443 |
+| qt-widgets | 0 / 441 |
 | scribe | 56 / 64 |
 | unit-test | 0 / 16 |
 | utils | 45 / 77 |
@@ -506,7 +506,7 @@ What the module takes from each partially-included directory:
 - `global/python.h`
 - `global/unicode.h`
 
-## gui (12 of 259)
+## gui (12 of 249)
 
 - `gui/Colour.cc`
 - `gui/Colour.h`

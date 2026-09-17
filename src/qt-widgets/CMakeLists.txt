@@ -68,9 +68,6 @@ set(srcs
     ChooseFontButton.h
     ChoosePropertyWidget.cc
     ChoosePropertyWidget.h
-    ColouringDialog.cc
-    ColouringDialog.h
-    ColouringDialogUi.ui
     ColourScaleButton.cc
     ColourScaleButton.h
     ColourScaleWidget.cc
