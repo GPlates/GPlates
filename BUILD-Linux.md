@@ -35,7 +35,7 @@ Alternatively, create the environment directly (see `env.Linux.yml` for the Open
 packages that are also required):
 
 ```bash
-conda create -n gplates -c conda-forge cmake ninja make cxx-compiler patchelf python numpy "libblas=*=*openblas" qt6-main qwt libboost-devel libboost-python-devel libgdal proj cgal-cpp gmp mpfr glew zlib
+conda create -n gplates -c conda-forge cmake ninja make cxx-compiler patchelf python numpy "libblas=*=*openblas" qt6-main qwt libboost-devel libboost-python-devel libgdal proj cgal-cpp gmp mpfr glew zlib gtest
 conda activate gplates
 ```
 
@@ -61,9 +61,10 @@ sudo apt-get install \
     cmake ninja-build g++ patchelf \
     libgl1-mesa-dev libglu1-mesa-dev libglew-dev \
     python3-dev python3-numpy python3-pip \
-    libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev \
+    libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev \
     libqt5opengl5-dev libqt5svg5-dev libqwt-qt5-dev \
-    libgdal-dev libcgal-dev libproj-dev zlib1g-dev
+    libgdal-dev libcgal-dev libproj-dev proj-bin zlib1g-dev \
+    libgtest-dev
 ```
 
 You can check whether a particular package is installed with `dpkg-query -l <package>` (a leading

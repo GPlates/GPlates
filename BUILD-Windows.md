@@ -49,7 +49,7 @@ conda activate gplates
 Alternatively, create the environment directly:
 
 ```bat
-conda create -n gplates -c conda-forge cmake ninja vs2022_win-64 python numpy "libblas=*=*openblas" qt6-main qwt libboost-devel libboost-python-devel libgdal proj cgal-cpp gmp mpfr glew zlib
+conda create -n gplates -c conda-forge cmake ninja vs2022_win-64 python numpy "libblas=*=*openblas" qt6-main qwt libboost-devel libboost-python-devel libgdal proj cgal-cpp gmp mpfr glew zlib gtest
 conda activate gplates
 ```
 
