@@ -24,6 +24,7 @@
  */	
 
 #include <iostream>
+#include <sstream>
 
 #include "GetPropertyAsPythonObjVisitor.h"
 
@@ -85,7 +86,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gml_data_block(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -96,7 +97,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_plate_id(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 void 
@@ -106,7 +107,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gml_time_period(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 void 
@@ -116,7 +117,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_enumeration(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 QString
@@ -135,7 +136,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gml_line_string(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 void 
@@ -145,7 +146,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gml_multi_point(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 void 
@@ -155,7 +156,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gml_orientable_curve(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 void
@@ -165,7 +166,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gml_point(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 void 
@@ -175,7 +176,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gml_polygon(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 void 
@@ -185,7 +186,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gml_time_instant(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -196,7 +197,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_feature_reference(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -207,7 +208,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_feature_snapshot_referen
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -218,7 +219,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_finite_rotation(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -229,7 +230,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_finite_rotation_slerp(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -240,7 +241,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_hot_spot_trail_mark(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -251,7 +252,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_irregular_sampling(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -262,7 +263,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_key_value_dictionary(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -273,7 +274,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_measure(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -284,7 +285,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_old_plates_header(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -295,7 +296,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_piecewise_aggregation(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -306,7 +307,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_polarity_chron_id(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -317,7 +318,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_property_delegate(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -328,7 +329,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_revision_id(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -339,7 +340,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_topological_polygon(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 		
 
@@ -350,7 +351,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_topological_line_section
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -361,7 +362,7 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_topological_point(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }
 
 
@@ -372,5 +373,5 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_uninterpreted_property_value(
 	//TODO:
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
-				property_value_to_qstring(v));
+				to_qstring(v));
 }

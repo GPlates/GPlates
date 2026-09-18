@@ -78,10 +78,12 @@
 #include "maths/GeometryOnSphere.h"
 #include "maths/UnitQuaternion3D.h"
 #include "model/FeatureHandle.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 #include "presentation/ViewState.h"
+#include "property-values/GpmlPlateId.h"
 #include "qt-widgets/KinematicGraphsConfigurationDialog.h"
 #include "qt-widgets/SaveFileDialog.h"
-#include "utils/FeatureUtils.h"
 #include "view-operations/GeometryBuilder.h" // for GeometryVertexFinder
 #include "KinematicGraphPicker.h"
 
@@ -485,12 +487,15 @@ GPlatesQtWidgets::KinematicGraphsDialog::handle_use_feature()
 		return;
 	}
 
-	boost::optional<GPlatesModel::integer_plate_id_type> plate_id =
-			GPlatesUtils::get_recon_plate_id_as_int(d_feature_focus.focused_feature().handle_ptr());
-
-	if (plate_id)
+	static const GPlatesModel::PropertyName GPML_RECONSTRUCTION_PLATE_ID =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> gpml_plate_id =
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					d_feature_focus.focused_feature(),
+					GPML_RECONSTRUCTION_PLATE_ID);
+	if (gpml_plate_id)
 	{
-		d_moving_id = *plate_id;
+		d_moving_id = gpml_plate_id.get()->get_value();
 		spinbox_plateid->setValue(d_moving_id);
 	}
 

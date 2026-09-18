@@ -27,12 +27,65 @@
 
 #include "PropertyExtractors.h"
 
+#include "ApplicationState.h"
+
+#include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
+
+#include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlPlateId.h"
+
 
 const boost::optional<GPlatesAppLogic::PlateIdPropertyExtractor::return_type>
 GPlatesAppLogic::PlateIdPropertyExtractor::operator()(
 		const GPlatesModel::FeatureHandle& feature) const
 {
-	return GPlatesUtils::get_recon_plate_id_as_int(&feature);
+	static const GPlatesModel::PropertyName GPML_RECONSTRUCTION_PLATE_ID =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> gpml_plate_id =
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					feature.reference(),
+					GPML_RECONSTRUCTION_PLATE_ID);
+	if (!gpml_plate_id)
+	{
+		return boost::none;
+	}
+
+	return gpml_plate_id.get()->get_value();
+}
+
+
+const boost::optional<GPlatesAppLogic::AgePropertyExtractor::return_type>
+GPlatesAppLogic::AgePropertyExtractor::operator()(
+		const GPlatesModel::FeatureHandle& feature) const
+{
+	static const GPlatesModel::PropertyName GML_VALID_TIME =
+			GPlatesModel::PropertyName::create_gml("validTime");
+	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> gml_valid_time =
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					feature.reference(),
+					GML_VALID_TIME);
+	if (!gml_valid_time)
+	{
+		return boost::none;
+	}
+
+	// The age is measured from the feature's time of formation (the begin of its valid time).
+	const GPlatesPropertyValues::GeoTimeInstant time_of_formation =
+			gml_valid_time.get()->begin()->get_time_position();
+	if (time_of_formation.is_distant_past())
+	{
+		return GPlatesMaths::Real::positive_infinity();
+	}
+	else if (time_of_formation.is_distant_future())
+	{
+		return GPlatesMaths::Real::negative_infinity();
+	}
+	else
+	{
+		return GPlatesMaths::Real(
+				time_of_formation.value() - d_application_state.get_current_reconstruction_time());
+	}
 }
 
 
