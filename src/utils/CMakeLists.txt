@@ -30,8 +30,6 @@ set(srcs
     Endian.h
     Environment.cc
     Environment.h
-    FeatureUtils.cc
-    FeatureUtils.h
     FunctionTypes.h
     GeometryCreationUtils.h
     GetPropertyAsPythonObjVisitor.cc
@@ -105,8 +103,6 @@ set(gplates_only_srcs
     DeferredCallEvent.h
     Environment.cc
     Environment.h
-    FeatureUtils.cc
-    FeatureUtils.h
     FunctionTypes.h
     GetPropertyAsPythonObjVisitor.cc
     GetPropertyAsPythonObjVisitor.h
