@@ -145,18 +145,23 @@ Both products have a test suite, run with
 [CTest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) from the build tree, which is the
 quickest way to confirm that a from-source build works. Two rules apply to every test run:
 
-- **Configure Release, and pass `-C Release` to `ctest`.** Several tests exercise error paths that
-  throw in a Release build but abort in a Debug build, so a Debug test run is unsupported. The
-  pyGPlates tests are registered for Release (and MinSizeRel) only, and `-C Release` is what selects
-  them: `ctest` does not infer the configuration from the build tree, so without it they are
-  silently skipped — even on the single-configuration Ninja tree used above (see
-  [Reading the result](#reading-the-result)). The GPlates tests carry no such restriction; a Debug
-  tree is left without any of them instead (see [GPlates](#gplates) below).
+- **Any build configuration works.** A Release tree is the natural one to test, since it is what
+  you would install, but a Debug or RelWithDebInfo tree runs the same tests. Pass `ctest` the
+  configuration you built with `-C`, as in the commands below: the single-configuration Ninja
+  generator used above finds the tests without it, but the
+  [Visual Studio generator](#using-the-visual-studio-ide) builds every configuration from one tree,
+  and `-C` is what selects the one to test.
 - **Run `ctest` from the shell you built in**, with the `gplates` environment activated: the test
   executables and the built `pygplates` module find the dependency DLLs through `PATH`, and a shell
   in which another environment was activated earlier resolves the wrong ones — see
   [Switching between conda environments](#switching-between-conda-environments), which describes
   that failure for `ctest`.
+
+> A Debug or RelWithDebInfo build uses the same *release* C runtime as a Release build. The conda
+> dependencies are built against it and have no debug builds, and a process that mixes the two
+> runtimes crashes before a single test runs — so `cmake/modules/ConfigDefault.cmake` selects it
+> for you. If you have built debug versions of the dependencies yourself, configure with
+> `-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL`.
 
 ### GPlates
 
@@ -178,8 +183,10 @@ Each test case is registered with CTest individually, so `ctest -R <pattern>` ru
 > release version), and the build command above fails with an unknown target. Install the package
 > and re-configure.
 
-> A **Debug** tree registers no GPlates tests, whatever `-C` value you pass — re-configure it as
-> Release.
+> A failed assertion aborts a Debug or RelWithDebInfo build of GPlates, so that a debugger stops
+> where it failed. The unit-test executable makes it throw instead, which is what lets the tests
+> that check error handling pass in every configuration. To stop in the debugger after all, set the
+> environment variable `GPLATES_UNIT_TEST_ABORT_ON_ASSERT` before running `gplates-unit-test`.
 
 > **Visual Studio tree** ([Using the Visual Studio IDE](#using-the-visual-studio-ide)): the same
 > commands work with `build-gplates-vs`, with the configuration named on the build too —
@@ -187,7 +194,7 @@ Each test case is registered with CTest individually, so `ctest -R <pattern>` ru
 > `gplates-unit-test` project in the IDE with the Release configuration selected), then
 > `ctest --test-dir build-gplates-vs -C Release --output-on-failure`. This generator builds every
 > configuration from one tree, and the test cases are discovered for whichever configuration you
-> built, so build Release: a Debug executable aborts on the tests that exercise error paths.
+> built, so pass that same configuration to `-C`.
 
 ### pyGPlates
 
@@ -218,11 +225,9 @@ links against, only what it should).
 One test, `version-resolver-test`, belongs to neither product and is registered by every tree for
 every configuration (it checks the version resolver's own logic, and needs nothing built). So if
 `ctest` reports **only that test** — `100% tests passed, 0 tests failed out of 1` — nothing else
-was selected, and the run says nothing about your build:
-
-- **pyGPlates tree:** `-C Release` was omitted.
-- **GPlates tree:** the tree was configured Debug, or GoogleTest was not found when it was
-  configured (see the notes under [GPlates](#gplates)).
+was selected, and the run says nothing about your build. With the Ninja generator used above, that
+happens in a GPlates tree when GoogleTest was not found at configure time (see the notes under
+[GPlates](#gplates)).
 
 A GPlates tree whose `gplates-unit-test` target has *not been built* is louder: `ctest` reports a
 single *failing* placeholder test, `gplates-unit-test_NOT_BUILT`. Build the target and run `ctest`

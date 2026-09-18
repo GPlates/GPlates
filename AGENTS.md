@@ -79,31 +79,34 @@ Full instructions: `BUILD-Windows.md`, `BUILD-macOS.md`, `BUILD-Linux.md`.
 
 ## Test
 
-CTest is the only top-level test runner. **Always configure Release and always pass
-`-C Release`:**
+CTest is the only top-level test runner, and the tests run in every build configuration. Pass
+`-C` the configuration you built:
 
 ```
 ctest --test-dir build-pygplates -C Release --output-on-failure
 ctest --test-dir build-gplates   -C Release --output-on-failure
 ```
 
-A Debug test run is unsupported either way, because `GPlatesGlobal::Assert` calls `std::abort()`
-in Debug instead of throwing, which kills every test that exercises an error path. But the two
-products enforce that differently, and the difference decides how you fix an empty run:
+On a single-config (Ninja) tree `ctest` finds every test without `-C`; with a multi-config
+generator (Visual Studio, Xcode) `-C` is what selects the configuration to test.
 
-- **pyGPlates** tests are registered `CONFIGURATIONS Release MinSizeRel`. Omitting `-C Release`
-  matches none of them and CTest still **exits 0**, so the run looks like a pass.
-- **GPlates** tests are registered by `gtest_discover_tests()`, which cannot attach
-  `CONFIGURATIONS`, so they are instead skipped at *configure* time by
-  `if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")` (`src/CMakeLists.txt`). A Debug build tree contains
-  no GPlates tests at all and **no `-C` value will reveal any** — reconfigure as Release. On a
-  single-config Release tree a bare `ctest` does work; `-C Release` matters for the multi-config
-  generators (Visual Studio, Xcode).
+A failed `GPlatesGlobal::Assert` aborts by default in a GPlates debug build (`GPLATES_DEBUG`, which
+is Debug *and* RelWithDebInfo), so that a debugger stops where it failed.
+`gplates_unit_test_main.cc` makes it throw instead (`GPLATES_UNIT_TEST_ABORT_ON_ASSERT` restores
+the abort), and the pygplates module always throws, so error-path tests pass everywhere — never
+guard one with `#ifndef GPLATES_DEBUG`. The per-product default is in
+`src/global/GPlatesAssert.cc`, keyed on `GPLATES_PYTHON_EMBEDDING`. Do not move that choice into
+`BOOST_PYTHON_MODULE(pygplates)`: the module init also runs inside GPlates' embedded interpreter,
+so it would flip GPlates too.
 
-So: only `version-resolver-test` from `build-pygplates` usually means a missing `-C Release`, and
-only it from `build-gplates` usually means the tree was configured Debug. That one test carries
-no configuration restriction, deliberately — it runs a CMake script and builds nothing — so it
-runs, and passes, in exactly those mis-run cases. One passing test is not a green suite.
+On Windows every configuration builds against the release C runtime
+(`cmake/modules/ConfigDefault.cmake`): conda has no debug builds of the dependencies, and a Debug
+tree on the debug C runtime crashes before running a single test.
+
+**One passing test is not a green suite.** `version-resolver-test` belongs to neither product — it
+runs a CMake script and builds nothing — so it is registered, and passes, in every tree. If it is
+the only test in `build-gplates`, GoogleTest was not found at configure time and there is no
+unit-test target.
 
 The GPlates unit-test binary is `EXCLUDE_FROM_ALL`, so build it explicitly:
 
