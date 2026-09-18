@@ -381,8 +381,8 @@ namespace GPlatesGui
 				#     diverging_map[std::make_pair(Spectral, ThreeDivergingClasses)] = to_colours(coloursSpectral3, coloursSpectral3 + 3);
 				#
 				for colour_dict, classes_dict, palette_type_str in ((sequential_colour_dict, sequential_classes_dict, 'sequential'), (diverging_colour_dict, diverging_classes_dict, 'diverging')):
-					for colour_name, colour_name_dict in colour_dict.iteritems():
-						for classes, colours in colour_name_dict.iteritems():
+					for colour_name, colour_name_dict in colour_dict.items():
+						for classes, colours in colour_name_dict.items():
 							text1 = 'const QColor colours{0}{1}[{1}] = {{ '.format(colour_name, classes)
 							for colour_index in range(len(colours)):
 								colour = colours[colour_index]
@@ -390,14 +390,14 @@ namespace GPlatesGui
 								if colour_index != len(colours) - 1:
 									text1 += ', '
 							text1 += ' };'
-							print text1
+							print(text1)
 				            
 							text2 = '{3}_map[std::make_pair({0}, {2})] = to_colours(colours{0}{1}, colours{0}{1} + {1});'.format(colour_name, classes, classes_dict[classes], palette_type_str)
-							print text2
-						print
-					print
-					print
-					print
+							print(text2)
+						print()
+					print()
+					print()
+					print()
 
 			*/
 

@@ -151,7 +151,7 @@ endif()
 # Get the Python standard library location (GPLATES_PYTHON_STDLIB_DIR).
 if (GPLATES_CONDA_BUILD)
 	# Get the 'host' prefix Python to print the standard library location.
-	execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sysconfig; print(sysconfig.get_path('stdlib'));"
+	execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "import sysconfig; print(sysconfig.get_path('stdlib'));"
 		RESULT_VARIABLE _PYTHON_STDLIB_RESULT
 		OUTPUT_VARIABLE GPLATES_PYTHON_STDLIB_DIR
 		ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -166,7 +166,7 @@ endif()
 # Get the Python prefix directory (GPLATES_PYTHON_PREFIX_DIR).
 #
 # Note: When building with conda this will be the 'host' prefix Python.
-execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix);"
+execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "import sys; print(sys.prefix);"
 	RESULT_VARIABLE _PYTHON_PREFIX_RESULT
 	OUTPUT_VARIABLE GPLATES_PYTHON_PREFIX_DIR
 	ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -194,7 +194,7 @@ file(TO_CMAKE_PATH ${GPLATES_PYTHON_PREFIX_DIR} GPLATES_PYTHON_PREFIX_DIR)
 # Python. A venv is detected by sys.prefix differing from sys.base_prefix (conda environments, being full
 # prefixes, are not flagged).
 if (GPLATES_BUILD_GPLATES)
-	execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix != getattr(sys, 'base_prefix', sys.prefix));"
+	execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "import sys; print(sys.prefix != sys.base_prefix);"
 		RESULT_VARIABLE _PYTHON_VENV_RESULT
 		OUTPUT_VARIABLE _PYTHON_IS_VENV
 		ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -222,7 +222,7 @@ endif()
 #         CMake 4.1 'Development.Module' along with it, which re-triggers CMP0190 when cross-compiling no matter
 #         how the calls above are split. CMake >= 4.2 drops that second implication (policy CMP0201), but there
 #         is no reason to depend on the CMake version here when the interpreter can just be asked directly.
-execute_process(COMMAND "${GPLATES_PYTHON_EXECUTABLE}" "-c" "from __future__ import print_function; import numpy as np; print(np.get_include());"
+execute_process(COMMAND "${GPLATES_PYTHON_EXECUTABLE}" "-c" "import numpy as np; print(np.get_include());"
 	RESULT_VARIABLE _NUMPY_RESULT
 	OUTPUT_VARIABLE _NUMPY_OUTPUT
 	ERROR_VARIABLE _NUMPY_ERROR

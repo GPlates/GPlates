@@ -130,7 +130,6 @@ GPlatesGui::PythonManager::check_python_capability()
 	//       Also now that we bundle the Python standard library with GPlates (and consequently disable
 	//       PYTHONHOME and PYTHONPATH) it's not so bad if we don't print the Python prefix.
 	QString test_code = QString() +
-			"from __future__ import print_function;" +
 			//"print(\'******Start testing python capability******\');" +
 			"import sys;" +
 			"import code;"  +
