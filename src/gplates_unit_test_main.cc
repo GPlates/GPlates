@@ -27,6 +27,8 @@
 #include <QApplication>
 #include <QtGlobal>
 
+#include "global/GPlatesAssert.h"
+
 #include "maths/MathsUtils.h"
 
 
@@ -75,6 +77,15 @@ int main(int argc, char* argv[])
 	Q_INIT_RESOURCE(python);
 	Q_INIT_RESOURCE(gpgim);
 	Q_INIT_RESOURCE(qt_resources);
+
+	// A failed assertion throws rather than aborting, so that the tests which exercise error
+	// paths work in a Debug (or RelWithDebInfo) build too - an abort would take the whole run
+	// down. Set GPLATES_UNIT_TEST_ABORT_ON_ASSERT to keep the abort, to catch a failure in a
+	// debugger at the point it happens.
+	if (!qEnvironmentVariableIsSet("GPLATES_UNIT_TEST_ABORT_ON_ASSERT"))
+	{
+		GPlatesGlobal::set_assertion_failures_abort(false);
+	}
 
 	// Sanity check: Proceed only if we have access to infinity and NaN.
 	// This should pass on all systems that we support.

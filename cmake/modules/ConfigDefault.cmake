@@ -313,6 +313,26 @@ if (MSVC)
 	set(GPLATES_MSVC_PARALLEL_BUILD_PROCESSES 0 CACHE STRING "Number of parallel build processes (if GPLATES_MSVC_PARALLEL_BUILD enabled). Set to zero for max.")
 endif()
 
+# With MSVC, build against the *release* C runtime in every configuration, Debug included.
+#
+# Our conda dependencies (Qt, Boost, GDAL, Qwt, Python) are built against the release C runtime and
+# conda has no debug builds of them. CMake's default selects the debug C runtime for a Debug
+# build, which then loads two C runtimes into one process - and the Debug executables crash with an
+# access violation before they get anywhere (the unit-test executable before it can list a single
+# test). The release C runtime keeps a Debug build fully debuggable (no optimisation, full debug
+# information, GPLATES_DEBUG); it only gives up the debug heap and iterator checking, which the
+# dependencies could not have shared anyway.
+#
+# A consequence: MSVC defines _DEBUG only with the debug C runtime, so a Debug build no longer has
+# it. Nothing in 'src/' reads it except the workaround in 'global/python.h', which becomes a no-op
+# here but still matters under an explicit debug runtime. GPLATES_DEBUG is ours and is unaffected.
+#
+# Only a default: an explicit '-DCMAKE_MSVC_RUNTIME_LIBRARY=...' still wins, for anyone who
+# built debug versions of the dependencies themselves.
+if (MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+endif()
+
 
 # The location of the GPlates executable is placed here when it is built (but not installed).
 # Note that this is different from the "RUNTIME DESTINATION" in the "install" command which specifies

@@ -36,10 +36,54 @@
 
 namespace GPlatesGlobal
 {
+	namespace AssertInternals
+	{
+		/**
+		 * Whether a failed assertion aborts instead of throwing.
+		 *
+		 * Defined in 'GPlatesAssert.cc', which sets the default for each product.
+		 * Read it through 'assertion_failures_abort()' rather than directly.
+		 */
+		extern bool s_assertion_failures_abort;
+	}
+
+
+	/**
+	 * Returns true if a failed assertion aborts, false if it throws.
+	 *
+	 * By default this is true only for GPlates in a GPLATES_DEBUG build (Debug or RelWithDebInfo).
+	 * pyGPlates always throws, since an abort would take the host Python interpreter down with it.
+	 *
+	 * This is only consulted once an assertion has already failed, so the cost falls entirely on
+	 * the failure path. Why it is a run-time flag rather than a compile-time one (and what was
+	 * rejected instead) is recorded in "docs/design/testing/README.md".
+	 */
+	inline
+	bool
+	assertion_failures_abort()
+	{
+		return AssertInternals::s_assertion_failures_abort;
+	}
+
+
+	/**
+	 * Chooses whether a failed assertion aborts or throws, overriding the build-type default.
+	 *
+	 * Aborting is what lets a developer catch a failure in a debugger at the point it happens,
+	 * which is why it is the default in a debug build of GPlates. But a test that exercises an
+	 * error path needs the exception, and an abort takes the whole test run down with it - so the
+	 * GPlates unit-test executable turns it off before running the tests.
+	 *
+	 * Call this before starting any thread that can trip an assertion.
+	 */
+	void
+	set_assertion_failures_abort(
+			bool assertion_failures_abort);
+
+
 	/**
 	 * Outputs the call stack contained in @a CallStack and then calls @a std::abort
-	 * (if the current GPlates build is considered a debug build) or an instance of
-	 * @a AbortException is instantiated and thrown.
+	 * (if @a assertion_failures_abort is true) or throws an instance of @a AbortException.
 	 *
 	 * @param abort_location the caller's call stack location.
 	 */
@@ -56,8 +100,8 @@ namespace GPlatesGlobal
 	 *   Assert<ExceptionType>(assertion, assert_location, additional_exception_args...);
 	 *
 	 * If @a assertion is true then nothing happens.
-	 * If @a assertion is false then either @a Abort is called (if the current GPlates build
-	 * is considered a debug build) or an instance of @a ExceptionType is instantiated and thrown.
+	 * If @a assertion is false then either @a Abort is called (if @a assertion_failures_abort is
+	 * true) or an instance of @a ExceptionType is instantiated and thrown.
 	 * In the latter case the exception constructor's first argument is @a assert_location
 	 * (which doubles as the exception location) and any additional arguments are provided
 	 * by the various overloaded versions of @a Assert.
@@ -68,6 +112,9 @@ namespace GPlatesGlobal
 	 *
 	 * Note: There are several overloaded versions of @a Assert
 	 * each taking a different number of arguments for the exception constructor.
+	 * They take the constructor's arguments, rather than a ready-made exception object, so that
+	 * the exception is only constructed once the assertion has failed - constructing one at every
+	 * call site, on the successful path too, was found to be too costly.
 	 *
 	 * Note: The first argument to every exception constructor must be
 	 * @a GPlatesUtils::CallStack::Trace. This means each class derived from
@@ -93,11 +140,11 @@ namespace GPlatesGlobal
 	{
 		if (!assertion)
 		{
-#ifdef GPLATES_DEBUG
-			Abort(assert_location);
-#else
+			if (assertion_failures_abort())
+			{
+				Abort(assert_location);
+			}
 			throw ExceptionType(assert_location);
-#endif
 		}
 	}
 
@@ -113,12 +160,11 @@ namespace GPlatesGlobal
 	{
 		if (!assertion)
 		{
-#ifdef GPLATES_DEBUG
-			(void)arg1; // Unused variables.
-			Abort(assert_location);
-#else
+			if (assertion_failures_abort())
+			{
+				Abort(assert_location);
+			}
 			throw ExceptionType(assert_location, arg1);
-#endif
 		}
 	}
 
@@ -134,12 +180,11 @@ namespace GPlatesGlobal
 	{
 		if (!assertion)
 		{
-#ifdef GPLATES_DEBUG
-			(void)arg1; (void)arg2; // Unused variables.
-			Abort(assert_location);
-#else
+			if (assertion_failures_abort())
+			{
+				Abort(assert_location);
+			}
 			throw ExceptionType(assert_location, arg1, arg2);
-#endif
 		}
 	}
 
@@ -155,12 +200,11 @@ namespace GPlatesGlobal
 	{
 		if (!assertion)
 		{
-#ifdef GPLATES_DEBUG
-			(void)arg1; (void)arg2; (void)arg3; // Unused variables.
-			Abort(assert_location);
-#else
+			if (assertion_failures_abort())
+			{
+				Abort(assert_location);
+			}
 			throw ExceptionType(assert_location, arg1, arg2, arg3);
-#endif
 		}
 	}
 
@@ -176,12 +220,11 @@ namespace GPlatesGlobal
 	{
 		if (!assertion)
 		{
-#ifdef GPLATES_DEBUG
-			(void)arg1; (void)arg2; (void)arg3; (void)arg4; // Unused variables.
-			Abort(assert_location);
-#else
+			if (assertion_failures_abort())
+			{
+				Abort(assert_location);
+			}
 			throw ExceptionType(assert_location, arg1, arg2, arg3, arg4);
-#endif
 		}
 	}
 
@@ -197,12 +240,11 @@ namespace GPlatesGlobal
 	{
 		if (!assertion)
 		{
-#ifdef GPLATES_DEBUG
-			(void)arg1; (void)arg2; (void)arg3; (void)arg4; (void)arg5; // Unused variables.
-			Abort(assert_location);
-#else
+			if (assertion_failures_abort())
+			{
+				Abort(assert_location);
+			}
 			throw ExceptionType(assert_location, arg1, arg2, arg3, arg4, arg5);
-#endif
 		}
 	}
 }

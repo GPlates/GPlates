@@ -35,8 +35,9 @@ Do not add `-DCMAKE_PREFIX_PATH` or `-DBoost_ROOT`. Confirm the configure output
 `Detected active conda environment`; if it does not, the environment was not active.
 
 Skip configure only if `build-gplates/CMakeCache.txt` already has **both**
-`GPLATES_BUILD_GPLATES=TRUE` and `CMAKE_BUILD_TYPE=Release`. A Debug cache must be
-reconfigured — see step 4.
+`GPLATES_BUILD_GPLATES=TRUE` and `CMAKE_BUILD_TYPE=Release`: `build-gplates` is the Release
+tree. For a Debug build, configure a separate tree (eg, `build-gplates-dbg`) rather than
+reconfiguring this one.
 
 ## 3. Build
 
@@ -55,17 +56,16 @@ For an application-only build, `cmake --build build-gplates` is fine.
 ctest --test-dir build-gplates -C Release --output-on-failure
 ```
 
-**The build tree must have been configured `Release`.** Unlike the pyGPlates tests, the GPlates
-tests are registered by `gtest_discover_tests()`, which cannot attach `CONFIGURATIONS`; they are
-skipped at *configure* time instead, by `if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")` in
-`src/CMakeLists.txt`. So a Debug tree has no registered tests and **no `-C` value will reveal
-any** — reconfigure as Release.
+The tests are registered in every build configuration, so a Debug or RelWithDebInfo tree runs
+them too: `gplates_unit_test_main.cc` makes a failed assertion throw rather than abort (set
+`GPLATES_UNIT_TEST_ABORT_ON_ASSERT` to stop in a debugger instead).
 
-Pass `-C Release` regardless: it is required for the multi-config generators (Visual Studio,
-Xcode), and harmless on a single-config Release tree.
+Pass `-C` with the tree's configuration: it is required for the multi-config generators
+(Visual Studio, Xcode), and harmless on a single-config tree.
 
-If the run reports 0 tests, check `CMAKE_BUILD_TYPE` in `build-gplates/CMakeCache.txt` before
-anything else — do not simply retry the command.
+If the run reports only `version-resolver-test`, GoogleTest was not found at configure time and
+there is no unit-test target. If it reports a failing `gplates-unit-test_NOT_BUILT`, the target
+was not built (step 3). Do not simply retry the command.
 
 Tests are GoogleTest cases and run headless. On failure, CI uploads
 `build-gplates/Testing/Temporary/`; locally, read that directory for the detailed log.

@@ -189,6 +189,6 @@ jobs:
           key: sccache-pygplates-${{ matrix.name }}-${{ github.sha }}
 
       - name: Test
-        # '-C Release' is required: the tests are registered with 'CONFIGURATIONS Release MinSizeRel',
-        # so without it CTest filters them all out and reports success having run nothing.
+        # '-C Release' names the configuration this tree was built with. The tests are registered
+        # in every configuration, so on this single-config tree CTest would find them without it.
         run: ctest --test-dir build-pygplates -C Release --output-on-failure

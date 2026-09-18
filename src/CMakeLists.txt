@@ -504,26 +504,25 @@ if (GPLATES_BUILD_GPLATES)
 
 		# Register each GoogleTest test case as an individual CTest test.
 		#
-		# Tests are not registered for Debug builds: GPlatesGlobal::Assert calls std::abort() in
-		# Debug builds (GPLATES_DEBUG) instead of throwing, which kills the tests that exercise
-		# error paths. This mirrors the pyGPlates tests (registered with CONFIGURATIONS Release
-		# MinSizeRel). Note: gtest_discover_tests() cannot attach CONFIGURATIONS to the discovered
-		# tests, so for multi-config generators (Visual Studio/Xcode) the tests are discovered for
-		# whichever config was built - run 'ctest -C Release' (a Debug test run is unsupported).
+		# The tests are registered in every build configuration. A failed GPlatesGlobal::Assert
+		# aborts by default in a GPLATES_DEBUG (Debug or RelWithDebInfo) build of GPlates, which
+		# would kill the tests that exercise error paths, so 'gplates_unit_test_main.cc' makes it
+		# throw instead (see 'global/GPlatesAssert.h'). Note: gtest_discover_tests() cannot attach
+		# CONFIGURATIONS to the discovered tests, so for multi-config generators (Visual Studio/Xcode)
+		# the tests are discovered for whichever configuration was built - pass that configuration
+		# to 'ctest -C'.
 		#
 		# Note: Do not pass WORKING_DIRECTORY (or a PROPERTIES WORKING_DIRECTORY - the keyword
 		# would be re-parsed as the WORKING_DIRECTORY argument): discovery leaves a
 		# 'cmake_test_discovery_*.json' scratch file in its working directory, which must
 		# therefore remain the build directory. The tests themselves are working-directory
 		# independent (see GPLATES_UNIT_TEST_DATA_DIR above).
-		if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-			include(GoogleTest)
-			gtest_discover_tests(gplates-unit-test
-				# Discovery (running the executable with '--gtest_list_tests' after building it) can
-				# be slow on a busy CI runner since the executable links the entire gplates-lib.
-				DISCOVERY_TIMEOUT 120
-				PROPERTIES TIMEOUT 600)
-		endif()
+		include(GoogleTest)
+		gtest_discover_tests(gplates-unit-test
+			# Discovery (running the executable with '--gtest_list_tests' after building it) can
+			# be slow on a busy CI runner since the executable links the entire gplates-lib.
+			DISCOVERY_TIMEOUT 120
+			PROPERTIES TIMEOUT 600)
 	else()
 		# Only print status message if this is not a public release.
 		# Because it'll only confuse users (because gplates-unit-test is not part of public release).

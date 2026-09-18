@@ -152,9 +152,7 @@ list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 # checking the hand-edited release target against the nearest release ('VersionFromGit.cmake').
 #
 # Registered here rather than under 'pygplates/test/' because it belongs to neither product: it
-# runs a CMake script, needs nothing built, and both products resolve both versions. For the same
-# reason it carries no CONFIGURATIONS restriction - the Debug caveat on the other tests is about
-# 'GPlatesGlobal::Assert' aborting instead of throwing, which nothing here goes near.
+# runs a CMake script, needs nothing built, and both products resolve both versions.
 add_test(
     NAME version-resolver-test
     COMMAND ${CMAKE_COMMAND} -P "${PROJECT_SOURCE_DIR}/cmake/modules/VersionFromGitTest.cmake")
