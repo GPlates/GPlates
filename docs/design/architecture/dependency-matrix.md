@@ -11,7 +11,7 @@ should respect is described in [README.md](README.md).
 
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 3 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
+| (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 4 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
 | api |  | 275 | 125 |  |  | 8 | 36 | 156 | 15 | 86 | 76 | 2 | 3 | 112 | 5 | 29 |  | 45 |  |
 | app-logic |  |  | 936 |  |  | 7 | 21 | 161 |  | 279 | 289 | 12 |  | 304 |  | 25 |  | 123 |  |
 | canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 36 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
