@@ -11,7 +11,10 @@ The real features are cut from the sample data installed with GPlates 2.5 (the E
 coastlines, the Seton et al. 2020 isochrons, the Zahirovic et al. 2022 plate-boundary geometries, the
 Atlantic flowlines and the GPMDB virtual geomagnetic poles), keeping only features with few points, on a
 handful of plates that 'rotations.rot' knows. Re-run this only to regenerate them; the outputs are
-committed.
+committed. Re-running reproduces the real ones byte for byte, but the synthetic ones (the motion
+paths, the velocity domain, the static polygons and 'sample-code/topologies.gpml') come back with
+new feature IDs and nothing else - restore those with git checkout unless they were meant to
+change.
 
 Usage: generate_sample_fixtures.py [<GeoData/FeatureCollections directory>]
 """
@@ -133,6 +136,8 @@ write('static_polygons.gpml', [
 # were chosen by searching 'rotations.rot' for a trench that converges and a ridge that diverges at
 # every time the samples visit (0 to 140 Ma). With plates that do not move consistently the samples
 # would report ridges converging and trenches diverging, which is what they look for as anomalies.
+# Beyond 140 Ma the layout is unchecked, and 'rotations.rot' thins out: Eurasia's chain to the anchor
+# (through Africa) ends at 141 Ma, the deforming zone's at 170 Ma and the Pacific plates' at 240 Ma.
 #
 # Every boundary section is on plate 0, so the geometry stays put and the bands always close. That is
 # enough for the samples, because what they measure comes from the topologies, not their sections: a
