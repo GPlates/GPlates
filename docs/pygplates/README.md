@@ -142,8 +142,8 @@ protects a `.. versionadded::` / `.. versionchanged::` written flush at column z
    half links. Write `str, or os.PathLike`. The sole exception is a union used as a prose
    container's element (`sequence of str/os.PathLike`), where `, or` would re-bind it to the top
    level and change the meaning.
-8. Other conventions: enum-value lists keep the listed values without italics
-   (`PropertyReturn.exactly_one, PropertyReturn.first_matching`); "returns the *default*
+8. Other conventions: a parameter taking an enumeration names the enumeration type
+   (`:type property_return: PropertyReturn`), not a list of its values; "returns the *default*
    argument" cases are written `type(default)`; numpy arrays are `numpy.ndarray`.
 
 `intersphinx` is enabled for the Python and numpy documentation, so `str`, `int`, `os.PathLike`
@@ -181,15 +181,15 @@ the Primer (`pygplates_primer.rst`), and the docstring points at it:
   .. seealso:: :ref:`pygplates_primer_equivalent_stage_rotation` in the *Primer* documentation.
 ```
 
-`PyReconstructionTree.cc`, `PyResolveTopologyParameters.cc` and `PyTopologicalModel.cc` follow
-this pattern. The reason is duplication: a convention explained inside one method's docstring
+`PyResolveTopologyParameters.cc` and `PyTopologicalModel.cc` follow this pattern. The reason is duplication: a convention explained inside one method's docstring
 gets pasted into the next method that needs it, and the copies then drift. Conversely, a
 docstring should not merely say "see the Primer" - it must still state the member's contract.
 
 Enumerations (`bp::enum_`) take their docstring from the constructor's second argument; the
 docstring is the only place their values are described (a table of `Value` / `Description`), so
-a parameter that accepts an enumeration says which values it accepts in its `:type:` field and
-leaves the meaning of each value to the enumeration's page. Exceptions take their docstring from
+a parameter that accepts an enumeration names it in its `:type:` field (which links to the
+enumeration's page), and its `:param:` text mentions only the values that particular function
+restricts or defaults to. Exceptions take their docstring from
 `export_exception()` in `PyExceptions.cc`. Both are listed in the *Enumerations* and *Exceptions*
 sections of `pygplates_reference.rst`; the enumerations use the custom autosummary template
 `_templates/autosummary/enum.rst`, because the default class template would list every method

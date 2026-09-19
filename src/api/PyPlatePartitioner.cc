@@ -465,7 +465,7 @@ export_plate_partitioner()
 			"SortPartitioningPlates",
 			"The order in which partitioning plates are searched when partitioning.\n"
 			"\n"
-			"  Accepted by :meth:`PlatePartitioner.__init__` and :func:`partition_into_plates`. The order matters when partitioning plates overlap each other, because the first plate found to contain a geometry (or part of it) wins. Resolved topologies do not tend to overlap, but reconstructed static polygons do (at reconstruction times other than present day), so their order affects the result.\n"
+			"  Accepted by :meth:`PlatePartitioner.__init__` and :func:`partition_into_plates`. The order matters when partitioning plates overlap each other, because the first plate found to contain a geometry (or part of it) wins. Resolved topologies do not tend to overlap, but reconstructed static polygons do (at reconstruction times other than present day), so their order affects the result. Grouping by partition type searches resolved topological networks first, because they usually overlay the resolved topological boundaries.\n"
 			"\n"
 			"  ======================================================== ==============\n"
 			"  Value                                                    Description\n"
@@ -479,7 +479,7 @@ export_plate_partitioner()
 			"\n"
 			"  .. note:: To leave the partitioning plates in their original order, explicitly pass ``None`` (omitting the argument selects the default).\n"
 			"\n"
-			"  Partitioning *points* is faster when plates are sorted by area, because a point is more likely to be found in a large plate first, letting the remaining plates be skipped. Since resolved topologies do not tend to overlap, sorting them by area (rather than by plate ID) still gives deterministic results, so *by_partition_type_then_plate_area* is a good choice when partitioning many points into topological plates and networks.\n")
+			"  Partitioning *points* is faster when plates are sorted by area, because a point is more likely to be found in a large plate first, letting the remaining plates be skipped. Since resolved topologies do not tend to overlap, sorting them by area (rather than by plate ID) still gives deterministic results (though less robustly, since editing a plate's geometry changes its area but not its plate ID), so *by_partition_type_then_plate_area* is a good choice when partitioning many points into topological plates and networks.\n")
 			.value("by_partition_type", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE)
 			.value("by_partition_type_then_plate_id", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)
 			.value("by_partition_type_then_plate_area", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_AREA)

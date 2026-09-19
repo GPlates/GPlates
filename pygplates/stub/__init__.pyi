@@ -35,10 +35,9 @@ class AllReconstructionTreeEdgesViewIterator:
 class AmbiguousGeometryCoverageError(PreconditionViolationError):
     """A coverage range could not be unambiguously matched to its geometry (coverage domain).
 
-      Raised when a feature has more than one coverage and two or more of the coverage ranges have the same
-      number of scalar values as a geometry has points, so pyGPlates cannot tell which range belongs to which geometry.
-
-      .. seealso:: :meth:`Feature.set_geometry` and :meth:`Feature.get_geometry`
+      Raised by :meth:`Feature.set_geometry` when it is given more than one coverage and two or more of the coverage
+      geometries have the same number of points. A range is matched to its geometry by its number of scalar values,
+      so pyGPlates could not tell which range belongs to which geometry.
     """
 
 class AssertionFailureError(GPlatesError):
@@ -8007,9 +8006,9 @@ class InsufficientPointsForMultiPointConstructionError(PreconditionViolationErro
     """
 
 class InterpolationError(PreconditionViolationError):
-    """A time-dependent property value could not be interpolated.
+    """A rotation or a time-dependent property value could not be interpolated.
 
-      For example, one of the sample times is the :meth:`distant past <GeoTimeInstant.is_distant_past>`
+      For example, one of the times involved is the :meth:`distant past <GeoTimeInstant.is_distant_past>`
       or the :meth:`distant future <GeoTimeInstant.is_distant_future>`.
     """
 
@@ -10312,7 +10311,7 @@ class PlatePartitioner:
         :param partition_return: how to return the partitioned and unpartitioned features and whether to include the partitioning plates         (defaults to *PartitionReturn.combined_partitioned_and_unpartitioned*)
         :type partition_return: PartitionReturn
 
-        :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see table below)         (**note:** new features are always returned, never the originals passed in via *features*)
+        :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features*)
         :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
 
         The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
@@ -12873,7 +12872,7 @@ class ReconstructSnapshot:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def export_reconstructed_geometries(self, export_filename: str | os.PathLike, reconstruct_type: ReconstructType = ReconstructType.feature_geometry, wrap_to_dateline: bool = True, force_polygon_orientation: int = ...) -> None:
+    def export_reconstructed_geometries(self, export_filename: str | os.PathLike, reconstruct_type: ReconstructType = ReconstructType.feature_geometry, wrap_to_dateline: bool = True, force_polygon_orientation: PolygonOnSphereOrientation | None = ...) -> None:
         """Exports the reconstructed geometries of the requested type(s) to a file.
 
         :param export_filename: the name of the export file
@@ -12883,7 +12882,7 @@ class ReconstructSnapshot:
         :param wrap_to_dateline: Whether to wrap/clip reconstructed geometries to the dateline (currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.
         :type wrap_to_dateline: bool
         :param force_polygon_orientation: Optionally force boundary orientation to clockwise (``PolygonOnSphere.Orientation.clockwise``) or counter-clockwise (``PolygonOnSphere.Orientation.counter_clockwise``). Only applies to reconstructed feature geometries (excludes *motion paths* and *flowlines*) that are polygons. Note that ESRI Shapefiles always use *clockwise* orientation (and so ignore this parameter).
-        :type force_polygon_orientation: int
+        :type force_polygon_orientation: PolygonOnSphereOrientation, or None
         :raises ValueError: if *reconstruct_type* (if specified) is not **one** of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``
 
         .. note:: *reconstruct_type* must be a **single** reconstruct type.  This is different than :meth:`get_reconstructed_geometries` and :meth:`get_reconstructed_features` which can specify multiple types.
@@ -12924,13 +12923,7 @@ class ReconstructSnapshot:
 
         .. note:: Each point that is *outside* all reconstructed static polygons will have a point location (reconstructed static polygon) of ``None``.
 
-        Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike :class:`resolved topological plates <TopologicalSnapshot>` which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be returned for that point. However, you can change the search order of reconstructed static polygons using *sort_reconstructed_static_polygons*:
-
-        - ``pygplates.SortReconstructedStaticPolygons.by_plate_id``: Search by *plate ID* (from highest to lowest).
-        - ``pygplates.SortReconstructedStaticPolygons.by_plate_area``: Search by *plate area* (from highest to lowest).
-        - ``None``: Search using the original order. This is the order of reconstructable features (see :meth:`constructor<__init__>`), and includes the order across any reconstructable feature collections/files.
-
-        .. note:: The default search order is ``pygplates.SortReconstructedStaticPolygons.by_plate_id`` to ensure the results are the same regardless of the order of reconstructable features (specified in the :meth:`constructor<__init__>`).
+        Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike :class:`resolved topological plates <TopologicalSnapshot>` which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be returned for that point. However, you can change the search order of reconstructed static polygons using *sort_reconstructed_static_polygons* (see :class:`SortReconstructedStaticPolygons`). The default searches by plate ID, so the results do not depend on the order of the reconstructable features (specified in the :meth:`constructor<__init__>`).
 
         To associate each point with the reconstructed static polygon containing it:
         ::
@@ -12971,13 +12964,7 @@ class ReconstructSnapshot:
 
         .. note:: Each point that is *outside* all reconstructed static polygons will have a velocity of ``None``, and optionally (if *return_point_locations* is ``True``) have a point location (reconstructed static polygon) of ``None``.
 
-        Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike :class:`resolved topological plates <TopologicalSnapshot>` which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be returned for that point. However, you can change the search order of reconstructed static polygons using *sort_reconstructed_static_polygons*:
-
-        - ``pygplates.SortReconstructedStaticPolygons.by_plate_id``: Search by *plate ID* (from highest to lowest).
-        - ``pygplates.SortReconstructedStaticPolygons.by_plate_area``: Search by *plate area* (from highest to lowest).
-        - ``None``: Search using the original order. This is the order of reconstructable features (see :meth:`constructor<__init__>`), and includes the order across any reconstructable feature collections/files.
-
-        .. note:: The default search order is ``pygplates.SortReconstructedStaticPolygons.by_plate_id`` to ensure the results are the same regardless of the order of reconstructable features (specified in the :meth:`constructor<__init__>`).
+        Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike :class:`resolved topological plates <TopologicalSnapshot>` which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be returned for that point. However, you can change the search order of reconstructed static polygons using *sort_reconstructed_static_polygons* (see :class:`SortReconstructedStaticPolygons`). The default searches by plate ID, so the results do not depend on the order of the reconstructable features (specified in the :meth:`constructor<__init__>`).
 
         To associate each point with its velocity and the reconstructed static polygon containing it:
         ::
@@ -16285,7 +16272,7 @@ class ScalarType:
 class SortPartitioningPlates(int):
     """The order in which partitioning plates are searched when partitioning.
 
-      Accepted by :meth:`PlatePartitioner.__init__` and :func:`partition_into_plates`. The order matters when partitioning plates overlap each other, because the first plate found to contain a geometry (or part of it) wins. Resolved topologies do not tend to overlap, but reconstructed static polygons do (at reconstruction times other than present day), so their order affects the result.
+      Accepted by :meth:`PlatePartitioner.__init__` and :func:`partition_into_plates`. The order matters when partitioning plates overlap each other, because the first plate found to contain a geometry (or part of it) wins. Resolved topologies do not tend to overlap, but reconstructed static polygons do (at reconstruction times other than present day), so their order affects the result. Grouping by partition type searches resolved topological networks first, because they usually overlay the resolved topological boundaries.
 
       ======================================================== ==============
       Value                                                    Description
@@ -16299,7 +16286,7 @@ class SortPartitioningPlates(int):
 
       .. note:: To leave the partitioning plates in their original order, explicitly pass ``None`` (omitting the argument selects the default).
 
-      Partitioning *points* is faster when plates are sorted by area, because a point is more likely to be found in a large plate first, letting the remaining plates be skipped. Since resolved topologies do not tend to overlap, sorting them by area (rather than by plate ID) still gives deterministic results, so *by_partition_type_then_plate_area* is a good choice when partitioning many points into topological plates and networks.
+      Partitioning *points* is faster when plates are sorted by area, because a point is more likely to be found in a large plate first, letting the remaining plates be skipped. Since resolved topologies do not tend to overlap, sorting them by area (rather than by plate ID) still gives deterministic results (though less robustly, since editing a plate's geometry changes its area but not its plate ID), so *by_partition_type_then_plate_area* is a good choice when partitioning many points into topological plates and networks.
     """
     by_partition_type: ClassVar[SortPartitioningPlates]
     by_partition_type_then_plate_id: ClassVar[SortPartitioningPlates]
@@ -17102,7 +17089,7 @@ class TopologicalSnapshot:
         :param export_filename: the name of the export file
         :type export_filename: str, or os.PathLike
         :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` (or both types) are listed in the exported resolved topological sections. Note that ``pygplates.ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. Defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>`.
-        :type resolve_topological_section_types: a bitwise combination of any of pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
+        :type resolve_topological_section_types: a bitwise combination of ResolveTopologyType enumeration values
         :param export_topological_line_sub_segments: Whether to export the individual sub-segments of each boundary segment that came from a resolved topological line (``True``) or export a single geometry per boundary segment (``False``). Defaults to ``True``.
         :type export_topological_line_sub_segments: bool
         :param wrap_to_dateline: Whether to wrap/clip resolved topological sections to the dateline (currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.
@@ -17131,7 +17118,7 @@ class TopologicalSnapshot:
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
         """
 
-    def export_resolved_topologies(self, export_filename: str | os.PathLike, resolve_topology_types: ResolveTopologyType | int = ..., wrap_to_dateline: bool = True, force_boundary_orientation: int = ...) -> None:
+    def export_resolved_topologies(self, export_filename: str | os.PathLike, resolve_topology_types: ResolveTopologyType | int = ..., wrap_to_dateline: bool = True, force_boundary_orientation: PolygonOnSphereOrientation | None = ...) -> None:
         """Exports the resolved topologies of the requested type(s) to a file.
 
         :param export_filename: the name of the export file
@@ -17141,7 +17128,7 @@ class TopologicalSnapshot:
         :param wrap_to_dateline: Whether to wrap/clip resolved topologies to the dateline (currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.
         :type wrap_to_dateline: bool
         :param force_boundary_orientation: Optionally force boundary orientation to clockwise (``PolygonOnSphere.Orientation.clockwise``) or counter-clockwise (``PolygonOnSphere.Orientation.counter_clockwise``). Only applies to resolved topological *boundaries* and *networks* (excludes *lines*). Note that ESRI Shapefiles always use *clockwise* orientation (and so ignore this parameter).
-        :type force_boundary_orientation: int
+        :type force_boundary_orientation: PolygonOnSphereOrientation, or None
         :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
         The following *export* file formats are currently supported:
@@ -17298,7 +17285,7 @@ class TopologicalSnapshot:
         """Returns the resolved topological sections of the requested type(s).
 
         :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` (or both types) are listed in the returned resolved topological sections. Note that ``pygplates.ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. Defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>`.
-        :type resolve_topological_section_types: a bitwise combination of any of pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
+        :type resolve_topological_section_types: a bitwise combination of ResolveTopologyType enumeration values
         :param same_order_as_topological_features: whether the returned resolved topological sections are sorted in the order of the topological features (including order across topological files, if there were any) - defaults to ``False``
         :type same_order_as_topological_features: bool
         :rtype: list of ResolvedTopologicalSection
@@ -18467,7 +18454,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
     :param sort_partitioning_plates: optional sort order of partitioning plates         (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
     :type sort_partitioning_plates: SortPartitioningPlates, or None
 
-    :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see table below)         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
+    :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
 
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
@@ -18613,13 +18600,8 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
       (since this always gives deterministic partitioning results).
 
 
-    Partitioning of points is more efficient if you sort by plate *area* because an arbitrary
-    point is likely to be found sooner when testing against larger partitioning polygons first
-    (and hence more remaining partitioning polygons can be skipped). Since resolved topologies don't tend
-    to overlap you don't need to sort them by plate *ID* to get deterministic partitioning results.
-    So we are free to sort by plate *area* (well, plate area is also deterministic but not as deterministic
-    as sorting by plate *ID* since modifications to the plate geometries change their areas but not their plate IDs).
-    Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:
+    When partitioning many *points* into topological plates and networks, sorting by plate *area* is faster
+    (and still deterministic since resolved topologies do not tend to overlap):
     ::
 
         features = pygplates.partition_into_plates(...,
@@ -18670,47 +18652,47 @@ def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike 
 
     The following optional keyword arguments are supported by *output_parameters*:
 
-    +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+
-    | Name                                 | Type            | Default                          | Description                                                                      |
-    +======================================+=================+==================================+==================================================================================+
-    | reconstruct_type                     | ReconstructType | ReconstructType.feature_geometry | - *ReconstructType.feature_geometry*:                                            |
-    |                                      |                 |                                  |   only reconstruct regular features (not motion paths or                         |
-    |                                      |                 |                                  |   flowlines), this generates                                                     |
-    |                                      |                 |                                  |   :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>`        |
-    |                                      |                 |                                  | - *ReconstructType.motion_path*:                                                 |
-    |                                      |                 |                                  |   only reconstruct motion path features, this generates                          |
-    |                                      |                 |                                  |   :class:`reconstructed motion paths<ReconstructedMotionPath>`                   |
-    |                                      |                 |                                  | - *ReconstructType.flowline*:                                                    |
-    |                                      |                 |                                  |   only reconstruct flowline features, this generates                             |
-    |                                      |                 |                                  |   :class:`reconstructed flowlines<ReconstructedFlowline>`                        |
-    +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+
-    | group_with_feature                   | bool            | False                            | | Group reconstructed geometries with their feature.                             |
-    |                                      |                 |                                  | | This can be useful when a feature has more than one geometry and hence         |
-    |                                      |                 |                                  |   more than one reconstructed geometry.                                          |
-    |                                      |                 |                                  | | *reconstructed_geometries* then becomes a list of tuples where each            |
-    |                                      |                 |                                  |   tuple contains a :class:`feature<Feature>` and a ``list`` of                   |
-    |                                      |                 |                                  |   reconstructed geometries.                                                      |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | .. note:: Only applies when *reconstructed_geometries* is a ``list``             |
-    |                                      |                 |                                  |    because exported files are always grouped with feature.                       |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | .. note:: Any *ReconstructType* can be grouped.                                  |
-    +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+
-    | export_wrap_to_dateline              | bool            | True                             | | Wrap/clip reconstructed geometries to the dateline (currently                  |
-    |                                      |                 |                                  |   ignored unless exporting to an ESRI Shapefile format *file*).                  |
-    |                                      |                 |                                  | | Only applies when exporting to a file (ESRI Shapefile).                        |
-    +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+
-    | export_force_boundary_orientation    | int             | ``None`` (don't force)           | Optionally force boundary orientation (clockwise or counter-clockwise):          |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | - ``PolygonOnSphere.Orientation.clockwise``                                      |
-    |                                      |                 |                                  | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | .. note:: Only applies to reconstructed feature geometries that are *polygons*.  |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |
-    +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+
+    +--------------------------------------+----------------------------+----------------------------------+----------------------------------------------------------------------------------+
+    | Name                                 | Type                       | Default                          | Description                                                                      |
+    +======================================+============================+==================================+==================================================================================+
+    | reconstruct_type                     | ReconstructType            | ReconstructType.feature_geometry | - *ReconstructType.feature_geometry*:                                            |
+    |                                      |                            |                                  |   only reconstruct regular features (not motion paths or                         |
+    |                                      |                            |                                  |   flowlines), this generates                                                     |
+    |                                      |                            |                                  |   :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>`        |
+    |                                      |                            |                                  | - *ReconstructType.motion_path*:                                                 |
+    |                                      |                            |                                  |   only reconstruct motion path features, this generates                          |
+    |                                      |                            |                                  |   :class:`reconstructed motion paths<ReconstructedMotionPath>`                   |
+    |                                      |                            |                                  | - *ReconstructType.flowline*:                                                    |
+    |                                      |                            |                                  |   only reconstruct flowline features, this generates                             |
+    |                                      |                            |                                  |   :class:`reconstructed flowlines<ReconstructedFlowline>`                        |
+    +--------------------------------------+----------------------------+----------------------------------+----------------------------------------------------------------------------------+
+    | group_with_feature                   | bool                       | False                            | | Group reconstructed geometries with their feature.                             |
+    |                                      |                            |                                  | | This can be useful when a feature has more than one geometry and hence         |
+    |                                      |                            |                                  |   more than one reconstructed geometry.                                          |
+    |                                      |                            |                                  | | *reconstructed_geometries* then becomes a list of tuples where each            |
+    |                                      |                            |                                  |   tuple contains a :class:`feature<Feature>` and a ``list`` of                   |
+    |                                      |                            |                                  |   reconstructed geometries.                                                      |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | .. note:: Only applies when *reconstructed_geometries* is a ``list``             |
+    |                                      |                            |                                  |    because exported files are always grouped with feature.                       |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | .. note:: Any *ReconstructType* can be grouped.                                  |
+    +--------------------------------------+----------------------------+----------------------------------+----------------------------------------------------------------------------------+
+    | export_wrap_to_dateline              | bool                       | True                             | | Wrap/clip reconstructed geometries to the dateline (currently                  |
+    |                                      |                            |                                  |   ignored unless exporting to an ESRI Shapefile format *file*).                  |
+    |                                      |                            |                                  | | Only applies when exporting to a file (ESRI Shapefile).                        |
+    +--------------------------------------+----------------------------+----------------------------------+----------------------------------------------------------------------------------+
+    | export_force_boundary_orientation    | PolygonOnSphereOrientation | ``None`` (don't force)           | Optionally force boundary orientation (clockwise or counter-clockwise):          |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | - ``PolygonOnSphere.Orientation.clockwise``                                      |
+    |                                      |                            |                                  | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | .. note:: Only applies to reconstructed feature geometries that are *polygons*.  |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |
+    +--------------------------------------+----------------------------+----------------------------------+----------------------------------------------------------------------------------+
 
     Only the :class:`features<Feature>`, in *reconstructable_features*, that match the optional keyword argument *reconstruct_type* (see *output_parameters* table) are reconstructed. This also determines the type of reconstructed geometries output in *reconstructed_geometries* which are either :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` (default) or :class:`reconstructed motion paths<ReconstructedMotionPath>` or :class:`reconstructed flowlines<ReconstructedFlowline>`.
 
@@ -18827,55 +18809,55 @@ def resolve_topologies(topological_features: FeatureCollection | str | os.PathLi
 
     The following optional keyword arguments are supported by *output_parameters*:
 
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
-    | Name                                 | Type | Default                                                         | Description                                                                      |
-    +======================================+======+=================================================================+==================================================================================+
-    | resolve_topology_types               | int  | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | A bitwise combination of any of the following:                                   |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | - ``ResolveTopologyType.line``:                                                  |
-    |                                      |      |                                                                 | - ``ResolveTopologyType.boundary``:                                              |
-    |                                      |      |                                                                 | - ``ResolveTopologyType.network``:                                               |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | Determines whether to output :class:`ResolvedTopologicalLine`,                   |
-    |                                      |      |                                                                 | :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.    |
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
-    | resolve_topological_section_types    | int  | Same value as *resolve_topology_types* (if specified),          | A bitwise combination of any of the following:                                   |
-    |                                      |      | otherwise its default value                                     |                                                                                  |
-    |                                      |      | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | - ``ResolveTopologyType.boundary``:                                              |
-    |                                      |      |                                                                 | - ``ResolveTopologyType.network``:                                               |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. note:: ``ResolveTopologyType.line`` is excluded since only                    |
-    |                                      |      |                                                                 |    topologies with boundaries are considered.                                    |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | Determines whether :class:`ResolvedTopologicalBoundary` or                       |
-    |                                      |      |                                                                 | :class:`ResolvedTopologicalNetwork` (or both types) are referenced in the        |
-    |                                      |      |                                                                 | :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>`     |
-    |                                      |      |                                                                 | of *resolved_topological_sections*.                                              |
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
-    | export_topological_line_sub_segments | bool | True                                                            | | Export the individual sub-segments of each boundary segment that came from a   |
-    |                                      |      |                                                                 |   resolved topological line (instead of exporting a single geometry per          |
-    |                                      |      |                                                                 |   boundary segment).                                                             |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. note:: Only applies when exporting to a file specified with                   |
-    |                                      |      |                                                                 |    *resolved_topological_sections*.                                              |
-    |                                      |      |                                                                 | .. seealso:: :meth:`TopologicalSnapshot.export_resolved_topological_sections`    |
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
-    | export_wrap_to_dateline              | bool | True                                                            | | Wrap/clip resolved topologies to the dateline (currently                       |
-    |                                      |      |                                                                 |   ignored unless exporting to an ESRI Shapefile format *file*).                  |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. note:: Only applies when exporting to a file (ESRI Shapefile).                |
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
-    | export_force_boundary_orientation    | int  | ``None`` (don't force)                                          | Optionally force boundary orientation (clockwise or counter-clockwise):          |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | - ``PolygonOnSphere.Orientation.clockwise``                                      |
-    |                                      |      |                                                                 | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. note:: Only applies to resolved topological *boundaries* and *networks*.      |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | Name                                 | Type                       | Default                                                         | Description                                                                      |
+    +======================================+============================+=================================================================+==================================================================================+
+    | resolve_topology_types               | int                        | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | A bitwise combination of any of the following:                                   |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | - ``ResolveTopologyType.line``:                                                  |
+    |                                      |                            |                                                                 | - ``ResolveTopologyType.boundary``:                                              |
+    |                                      |                            |                                                                 | - ``ResolveTopologyType.network``:                                               |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | Determines whether to output :class:`ResolvedTopologicalLine`,                   |
+    |                                      |                            |                                                                 | :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.    |
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | resolve_topological_section_types    | int                        | Same value as *resolve_topology_types* (if specified),          | A bitwise combination of any of the following:                                   |
+    |                                      |                            | otherwise its default value                                     |                                                                                  |
+    |                                      |                            | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | - ``ResolveTopologyType.boundary``:                                              |
+    |                                      |                            |                                                                 | - ``ResolveTopologyType.network``:                                               |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. note:: ``ResolveTopologyType.line`` is excluded since only                    |
+    |                                      |                            |                                                                 |    topologies with boundaries are considered.                                    |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | Determines whether :class:`ResolvedTopologicalBoundary` or                       |
+    |                                      |                            |                                                                 | :class:`ResolvedTopologicalNetwork` (or both types) are referenced in the        |
+    |                                      |                            |                                                                 | :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>`     |
+    |                                      |                            |                                                                 | of *resolved_topological_sections*.                                              |
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | export_topological_line_sub_segments | bool                       | True                                                            | | Export the individual sub-segments of each boundary segment that came from a   |
+    |                                      |                            |                                                                 |   resolved topological line (instead of exporting a single geometry per          |
+    |                                      |                            |                                                                 |   boundary segment).                                                             |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. note:: Only applies when exporting to a file specified with                   |
+    |                                      |                            |                                                                 |    *resolved_topological_sections*.                                              |
+    |                                      |                            |                                                                 | .. seealso:: :meth:`TopologicalSnapshot.export_resolved_topological_sections`    |
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | export_wrap_to_dateline              | bool                       | True                                                            | | Wrap/clip resolved topologies to the dateline (currently                       |
+    |                                      |                            |                                                                 |   ignored unless exporting to an ESRI Shapefile format *file*).                  |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. note:: Only applies when exporting to a file (ESRI Shapefile).                |
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | export_force_boundary_orientation    | PolygonOnSphereOrientation | ``None`` (don't force)                                          | Optionally force boundary orientation (clockwise or counter-clockwise):          |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | - ``PolygonOnSphere.Orientation.clockwise``                                      |
+    |                                      |                            |                                                                 | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. note:: Only applies to resolved topological *boundaries* and *networks*.      |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
 
     | The argument *topological_features* consists of the *topological* :class:`features<Feature>` as well as the topological sections (also :class:`features<Feature>`) that are referenced by the *topological* features.
     | They can all be mixed in a single :class:`feature collection<FeatureCollection>` or file, or they can be distributed across multiple :class:`feature collections<FeatureCollection>` or files.

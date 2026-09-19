@@ -360,10 +360,9 @@ export_exceptions()
 					"AmbiguousGeometryCoverageError",
 					"A coverage range could not be unambiguously matched to its geometry (coverage domain).\n"
 					"\n"
-					"  Raised when a feature has more than one coverage and two or more of the coverage ranges have the same\n"
-					"  number of scalar values as a geometry has points, so pyGPlates cannot tell which range belongs to which geometry.\n"
-					"\n"
-					"  .. seealso:: :meth:`Feature.set_geometry` and :meth:`Feature.get_geometry`\n",
+					"  Raised by :meth:`Feature.set_geometry` when it is given more than one coverage and two or more of the coverage\n"
+					"  geometries have the same number of points. A range is matched to its geometry by its number of scalar values,\n"
+					"  so pyGPlates could not tell which range belongs to which geometry.\n",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::DifferentAnchoredPlatesInReconstructionTreesError =
 			export_exception<GPlatesApi::DifferentAnchoredPlatesInReconstructionTreesException>(
@@ -428,9 +427,9 @@ export_exceptions()
 	GPlatesApi::InterpolationError =
 			export_exception<GPlatesApi::InterpolationException>(
 					"InterpolationError",
-					"A time-dependent property value could not be interpolated.\n"
+					"A rotation or a time-dependent property value could not be interpolated.\n"
 					"\n"
-					"  For example, one of the sample times is the :meth:`distant past <GeoTimeInstant.is_distant_past>`\n"
+					"  For example, one of the times involved is the :meth:`distant past <GeoTimeInstant.is_distant_past>`\n"
 					"  or the :meth:`distant future <GeoTimeInstant.is_distant_future>`.\n",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::InvalidPointsForPolygonConstructionError =

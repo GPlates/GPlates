@@ -111,7 +111,7 @@ def plate_partitioner_partition_features(
     :type partition_return: PartitionReturn
     
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
-        (see table below) \
+        (see :class:`PartitionReturn`) \
         (**note:** new features are always returned, never the originals passed in via *features*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
@@ -460,7 +460,7 @@ def partition_into_plates(
     :type sort_partitioning_plates: SortPartitioningPlates, or None
     
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
-        (see table below) \
+        (see :class:`PartitionReturn`) \
         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
@@ -608,13 +608,8 @@ def partition_into_plates(
       (since this always gives deterministic partitioning results).
     
     
-    Partitioning of points is more efficient if you sort by plate *area* because an arbitrary
-    point is likely to be found sooner when testing against larger partitioning polygons first
-    (and hence more remaining partitioning polygons can be skipped). Since resolved topologies don't tend
-    to overlap you don't need to sort them by plate *ID* to get deterministic partitioning results.
-    So we are free to sort by plate *area* (well, plate area is also deterministic but not as deterministic
-    as sorting by plate *ID* since modifications to the plate geometries change their areas but not their plate IDs).
-    Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:
+    When partitioning many *points* into topological plates and networks, sorting by plate *area* is faster
+    (and still deterministic since resolved topologies do not tend to overlap):
     ::
     
         features = pygplates.partition_into_plates(...,
