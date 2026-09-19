@@ -38,10 +38,10 @@ The features are reconstructed to their 10Ma positions.
 .. sample-code:: pygplates_find_nearest_feature_to_a_point.py
    :fragment: point
 
-| All features are reconstructed to 10Ma using :func:`pygplates.reconstruct`.
-| We specify a ``list`` for *reconstructed_features* instead of a filename.
-| We also set the output parameter *group_with_feature* to ``True`` (it defaults to ``False``)
-  so that our :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>`
+| All features are reconstructed to 10Ma in a :class:`pygplates.ReconstructSnapshot`.
+| We ask the snapshot for its :meth:`reconstructed features<pygplates.ReconstructSnapshot.get_reconstructed_features>`
+  (rather than its reconstructed geometries) so that our
+  :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>`
   are grouped with their :class:`feature<pygplates.Feature>`. This isn't strictly necessary
   in this particular example though.
 

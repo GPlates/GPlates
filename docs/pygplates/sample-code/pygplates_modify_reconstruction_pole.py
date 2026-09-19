@@ -49,9 +49,8 @@ rotation_model_before_adjustment = pygplates.RotationModel(rotation_features.get
 
 # [fragment: reconstruct-before-adjustment]
 # Reconstruct our point feature to obtain the reconstructed point location.
-reconstructed_feature_geometries = []
-pygplates.reconstruct(point_feature, rotation_model_before_adjustment, reconstructed_feature_geometries, reconstruction_time)
-reconstructed_position = reconstructed_feature_geometries[0].get_reconstructed_geometry()
+reconstruct_snapshot = pygplates.ReconstructSnapshot(point_feature, rotation_model_before_adjustment, reconstruction_time)
+reconstructed_position = reconstruct_snapshot.get_reconstructed_geometries()[0].get_reconstructed_geometry()
 # [end: reconstruct-before-adjustment]
 
 # Print the actual and desired reconstructed point positions to show they are different.
@@ -143,9 +142,8 @@ if reconstructed_position != desired_reconstructed_position:
     # [fragment: reconstruct-after-adjustment]
     # Get a new rotation model that uses the adjusted rotation features.
     rotation_model_after_adjustment = pygplates.RotationModel(rotation_features.get_features())
-    reconstructed_feature_geometries = []
-    pygplates.reconstruct(point_feature, rotation_model_after_adjustment, reconstructed_feature_geometries, reconstruction_time)
-    reconstructed_position = reconstructed_feature_geometries[0].get_reconstructed_geometry()
+    reconstruct_snapshot = pygplates.ReconstructSnapshot(point_feature, rotation_model_after_adjustment, reconstruction_time)
+    reconstructed_position = reconstruct_snapshot.get_reconstructed_geometries()[0].get_reconstructed_geometry()
 
     # Print the adjusted reconstructed point position - should now be same as desired position.
     print('Reconstructed lat/lon position after adjustment ({:f}, {:f})'.format(*reconstructed_position.to_lat_lon()))

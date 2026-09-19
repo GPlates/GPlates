@@ -38,8 +38,8 @@ Smaller time values are closer to present day (younger).
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: creation-time-test
 
-The ridges are reconstructed to their locations at time 'isochron_creation_time' using
-:meth:`pygplates.reconstruct`.
+The ridges are reconstructed to their locations at time 'isochron_creation_time' in a
+:class:`pygplates.ReconstructSnapshot`.
 
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: reconstruct-ridge

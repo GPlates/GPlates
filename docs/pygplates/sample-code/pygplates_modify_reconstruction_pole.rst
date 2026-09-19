@@ -72,7 +72,7 @@ The filenames of one or more rotation files. We'll be writing modifications back
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: rotation-model-before-adjustment
 
-| To find the *actual* reconstructed point location at 60Ma we :func:`reconstruct<pygplates.reconstruct>` our point feature.
+| To find the *actual* reconstructed point location at 60Ma we :class:`reconstruct<pygplates.ReconstructSnapshot>` our point feature.
 | Since our point feature is valid for all time (by default if we don't :meth:`set its valid time<pygplates.Feature.set_valid_time>`)
   we should get one :class:`pygplates.ReconstructedFeatureGeometry` from which we obtain the
   :meth:`reconstructed point position<pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry>`.

@@ -27,11 +27,8 @@ for time in range(num_time_steps + 1):
     all_velocities = []
 
     # Partition our velocity domain features into our topological plate polygons at the current 'time'.
-    partitioned_domain_features = pygplates.partition_into_plates(
-        topology_features,
-        rotation_model,
-        velocity_domain_features,
-        reconstruction_time = time)
+    plate_partitioner = pygplates.PlatePartitioner(topology_features, rotation_model, time)
+    partitioned_domain_features = plate_partitioner.partition_features(velocity_domain_features)
 
     for partitioned_domain_feature in partitioned_domain_features:
 

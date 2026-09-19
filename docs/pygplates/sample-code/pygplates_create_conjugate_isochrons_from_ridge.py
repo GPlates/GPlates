@@ -38,8 +38,8 @@ for ridge_feature in ridge_features:
             # [fragment: reconstruct-ridge]
             # Reconstruct the mid-ocean ridge to isochron creation time.
             # The ridge geometry will be in the same position as the left/right isochrons at that time.
-            reconstructed_ridges = []
-            pygplates.reconstruct(ridge_feature, rotation_model, reconstructed_ridges, isochron_creation_time)
+            reconstructed_ridges = pygplates.ReconstructSnapshot(
+                    ridge_feature, rotation_model, isochron_creation_time).get_reconstructed_geometries()
             # [end: reconstruct-ridge]
 
             # [fragment: isochron-geometry]

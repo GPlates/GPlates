@@ -24,8 +24,8 @@ polygon = pygplates.PolygonOnSphere([(0,0), (90,0), (0,90)])
 
 # [fragment: reconstruct]
 # Reconstruct the features to 10Ma.
-reconstructed_features = []
-pygplates.reconstruct(features, rotation_model, reconstructed_features, reconstruction_time, group_with_feature=True)
+reconstruct_snapshot = pygplates.ReconstructSnapshot(features, rotation_model, reconstruction_time)
+reconstructed_features = reconstruct_snapshot.get_reconstructed_features()
 # [end: reconstruct]
 
 # The list of features that overlap the polygon when reconstructed to 10Ma.

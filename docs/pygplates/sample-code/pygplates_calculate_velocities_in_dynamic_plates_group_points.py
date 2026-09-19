@@ -28,13 +28,11 @@ for time in range(num_time_steps + 1):
 
     # Partition our velocity domain features into our topological plate polygons at the current 'time'.
     # Note that we don't copy plate IDs - we rely on the returned partition grouping instead.
-    partitioned_domain_feature_groups, unpartitioned_domain_features = pygplates.partition_into_plates(
-        topology_features,
-        rotation_model,
+    plate_partitioner = pygplates.PlatePartitioner(topology_features, rotation_model, time)
+    partitioned_domain_feature_groups, unpartitioned_domain_features = plate_partitioner.partition_features(
         velocity_domain_features,
         # We'll get plate ID directly from partitioning plate instead of assigned plate ID in partitioned feature...
         properties_to_copy = [],
-        reconstruction_time = time,
         partition_return = pygplates.PartitionReturn.partitioned_groups_and_unpartitioned)
 
     for partitioning_plate, partitioned_domain_features in partitioned_domain_feature_groups:

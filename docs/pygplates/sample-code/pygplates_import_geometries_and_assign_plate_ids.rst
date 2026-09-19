@@ -114,6 +114,12 @@ The input points file is opened and read line-by-line.
   for :func:`pygplates.partition_into_plates`) and should therefore partition all the input points.
 | We also explicitly specify the argument *properties_to_copy* to assign both the reconstruction plate
   ID and valid time period (the default is just to assign the reconstruction plate ID).
+| This page calls the function :func:`pygplates.partition_into_plates`, rather than creating a
+  :class:`pygplates.PlatePartitioner`, because it partitions only once. The function creates a
+  partitioner, partitions the features with :meth:`pygplates.PlatePartitioner.partition_features`
+  and discards the partitioner. To partition more than one set of features with the same plates,
+  create a :class:`pygplates.PlatePartitioner` once and use it for each set
+  (:ref:`pygplates_calculate_velocities_in_dynamic_plates` creates one for each time).
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: partition-into-plates

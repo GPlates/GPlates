@@ -37,10 +37,10 @@ The test polygon will capture all features whose reconstructed geometry(s) overl
 .. sample-code:: pygplates_find_features_overlapping_a_polygon.py
    :fragment: polygon
 
-| All features are reconstructed to 10Ma using :func:`pygplates.reconstruct`.
-| We specify a ``list`` for *reconstructed_features* instead of a filename.
-| We also set the output parameter *group_with_feature* to ``True`` (it defaults to ``False``)
-  so that our :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>`
+| All features are reconstructed to 10Ma in a :class:`pygplates.ReconstructSnapshot`.
+| We ask the snapshot for its :meth:`reconstructed features<pygplates.ReconstructSnapshot.get_reconstructed_features>`
+  (rather than its reconstructed geometries) so that our
+  :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>`
   are grouped with their :class:`feature<pygplates.Feature>`.
 
 .. sample-code:: pygplates_find_features_overlapping_a_polygon.py
