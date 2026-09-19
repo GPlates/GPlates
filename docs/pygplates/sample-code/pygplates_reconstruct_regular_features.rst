@@ -90,15 +90,6 @@ Sample code
 Details
 """""""
 
-| We define a function to return the centroid of a geometry.
-| If the geometry is a :class:`pygplates.MultiPointOnSphere`, :class:`pygplates.PolylineOnSphere` or :class:`pygplates.PolygonOnSphere`
-  then we can call ``get_centroid()`` on it (since those geometry types all have that method).
-  However, if it's a :class:`pygplates.PointOnSphere` then it does not have that method, in which case we just return
-  the point since it's already its own centroid.
-
-.. sample-code:: pygplates_reconstruct_regular_features_distance.py
-   :fragment: centroid-function
-
 The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
 
 .. sample-code:: pygplates_reconstruct_regular_features_distance.py
@@ -120,7 +111,8 @@ The features will be reconstructed to their 50Ma positions.
 .. sample-code:: pygplates_reconstruct_regular_features_distance.py
    :fragment: reconstruct
 
-| We use our ``get_geometry_centroid()`` function to find the centroid of the
+| We use ``get_centroid()``, which every geometry type has (a :class:`point<pygplates.PointOnSphere>` is its
+  own centroid), to find the centroid of the
   :meth:`present day<pygplates.ReconstructedFeatureGeometry.get_present_day_geometry>` and
   :meth:`reconstructed<pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry>` geometries.
 | We use the :meth:`pygplates.GeometryOnSphere.distance` function to calculate the shortest

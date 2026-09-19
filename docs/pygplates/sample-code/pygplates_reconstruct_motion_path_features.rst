@@ -134,6 +134,9 @@ The motion path feature will be reconstructed to its 50Ma position.
   So we need to start at the last (oldest) time and work our way backwards.
   The last sample is at index ``-1`` and ``point_index`` starts at zero.
   So our time indices are ``-1``, ``-2``, etc, which means last sample, then second last sample, etc.
+| This labelling assumes the reconstruction time is one of the motion path's times (as 50Ma is here). At any
+  other time the path's youngest point is at the reconstruction time itself, but is labelled with the
+  next younger sample time.
 
 .. sample-code:: pygplates_reconstruct_motion_path_features_query.py
    :fragment: motion-path-points

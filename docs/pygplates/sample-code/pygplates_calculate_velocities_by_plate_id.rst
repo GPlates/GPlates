@@ -49,7 +49,7 @@ They can be any :class:`type<pygplates.FeatureType>` of feature as long as they 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id.py
    :fragment: reconstruction-time-and-delta-time
 
-:class:`pygplates.RotationModel` enables to calculate both the rotation from present day to 10Ma
+:class:`pygplates.RotationModel` enables us to calculate both the rotation from present day to 10Ma
 of a particular tectonic plate relative to the anchor plate (which is zero because *rotation_model*
 was created without specifying a default anchor plate):
 

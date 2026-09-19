@@ -69,7 +69,7 @@ passing the regular features (and topological *line*), the list of features refe
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-topological-polygon
 
-Then we collect a list of features ID strings that our new topological *polygon* will reference.
+Then we collect a list of features ID strings that our new topological *network* will reference.
 A topological network has a boundary (which is a list of boundary sections) and interior geometries (which is a list of interior sections).
 So we have two lists of feature ID strings:
 

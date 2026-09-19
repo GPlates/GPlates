@@ -3,7 +3,7 @@ import math
 
 
 # Some finite rotation pole data for moving plate 550 relative to fixed plate 801.
-# The data order is (pole_time, pole_lat, pole_lan, pole_angle, pole_description).
+# The data order is (pole_time, pole_lat, pole_lon, pole_angle, pole_description).
 pole_data_550_rel_801 = [
         (99.0 ,   0.72 , -179.98,   50.78,  'INA-AUS Muller et.al 2000'),
         (120.4,   10.32, -177.4 ,   61.12,  'INA-AUS M0 Muller et.al 2000'),

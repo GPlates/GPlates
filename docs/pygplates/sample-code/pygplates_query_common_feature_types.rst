@@ -468,8 +468,9 @@ Data files
 
 ``motion_paths.gpml``
     Motion path features. Each has a reconstruction plate ID, a relative plate ID, a list of times, a
-    valid time period and a seed point geometry (a point or multipoint). Such a file can be created as
-    in :ref:`pygplates_create_motion_path_feature`.
+    valid time period and a seed point geometry (a point or multipoint).
+    :ref:`pygplates_create_motion_path_feature` shows how to create such features (write them to a file
+    with :meth:`pygplates.FeatureCollection.write`).
 
 Sample code
 """""""""""
@@ -521,7 +522,7 @@ Output
       description: 
       plate ID: 701
       relative plate ID: 201
-      times:  [[0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0]
+      times:  [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0]
       seed point lat: -19.000000, seed point lon: 12.500000
       seed point lat: -28.000000, seed point lon: 15.700000
       valid time period: 90.000000 -> 0.000000

@@ -116,7 +116,8 @@ This includes both the normal (extension/compression) and shear components.
 
 The :meth:`strain rate style <pygplates.StrainRate.get_strain_rate_style>` is a measure categorising the type of deformation.
 A value of ``-1`` represents contraction (eg, pure reverse faulting), ``0`` represents pure strike-slip faulting and
-``1`` represents extension (eg, pure normal faulting).
+``1`` represents extension (eg, pure normal faulting). It is ``NaN`` where the strain rate is zero, as it is for every point
+on a rigid plate.
 
 .. sample-code:: pygplates_reconstruct_strain_and_strain_rate.py
    :fragment: strain-rate-style

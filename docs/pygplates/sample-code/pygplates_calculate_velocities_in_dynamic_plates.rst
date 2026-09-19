@@ -8,6 +8,10 @@ This example shows three similar ways to calculate velocities of topological pla
 | All three read the same files and calculate the same velocities: at each time the topological plates
   are resolved, each point is matched to the plate containing it, and the velocity of that plate is
   calculated at the point.
+| All three treat every plate as rigid: a point's velocity comes from the stage rotation of its plate's
+  reconstruction plate ID. That is wrong inside a deforming network, whose velocity varies across it.
+  For velocities that account for deforming networks use
+  :meth:`pygplates.TopologicalSnapshot.get_point_velocities` instead.
 | They differ in how the points are matched to plates. The first partitions the point features and
   reads the plate ID assigned to each partitioned feature. The second partitions the point features but
   keeps them grouped by partitioning plate, and reads the plate ID from the plate. The third partitions
@@ -27,9 +31,9 @@ All three scripts read the same files:
     ``topologies.gpml``, since the velocity of a plate comes from its stage rotation.
 
 ``topologies.gpml``
-    Topological plate polygon features (deforming networks can also be included). They are resolved at
-    each time to give the partitioning plates, and each must have a reconstruction plate ID, since that
-    is the plate ID whose stage rotation is used.
+    Topological plate polygon features. They are resolved at each time to give the partitioning plates,
+    and each must have a reconstruction plate ID, since that is the plate ID whose stage rotation is used.
+    A deforming network would be treated as a rigid plate (see above).
 
 ``lat_lon_velocity_domain_9_18.gpml``
     The velocity domain: features whose geometries contain the static points at which velocities are

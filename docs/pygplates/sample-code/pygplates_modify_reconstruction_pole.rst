@@ -99,7 +99,7 @@ The filenames of one or more rotation files. We'll be writing modifications back
    :fragment: rotation-adjustment
 
 | Next we iterate over all the rotation features to find those whose moving plate ID matches the plate ID
-  of our point feature. This is because we only want to our rotation adjustment to affect the plate on
+  of our point feature. This is because we only want our rotation adjustment to affect the plate on
   which our point lies (and all :ref:`child plates<pygplates_primer_plate_reconstruction_hierarchy>`
   at the reconstruction time).
 | We obtain the moving/fixed plate IDs and the time-varying total reconstruction poles from the rotation feature
@@ -190,19 +190,11 @@ This is written in pyGPlates as:
 
 ...where ``fixed_plate_frame`` represents :math:`R(0 \rightarrow t,P_{A} \rightarrow P_{F})`.
 
-| Now that we have calculated the adjusted relative rotation we need to set it back in the rotation feature.
-| The process of getting the original rotation, adjusting it and setting the adjusted rotation is essentially the following:
+| Now that we have calculated the adjusted relative rotation we set it back in the rotation feature, at
+  the reconstruction time, with the description we kept from any existing sample at that time.
 
-::
-
-    rotation = rotation_sequence.get_value(reconstruction_time).get_finite_rotation()
-    
-    adjusted_rotation = fixed_plate_frame.get_inverse() * rotation_adjustment * fixed_plate_frame * rotation
-    
-    rotation_sequence.set_value(
-        pygplates.GpmlFiniteRotation(adjusted_rotation),
-        reconstruction_time,
-        rotation_description)
+.. sample-code:: pygplates_modify_reconstruction_pole.py
+   :fragment: set-adjusted-rotation
 
 | Our rotation adjustment may require crossovers to be re-synchronised. This can happen when
   a child plate (a plate that moves relative to the plate we made the adjustment on) crosses over

@@ -101,7 +101,7 @@ The input points file is opened and read line-by-line.
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: read-lines
 
-| Each line contains a latitude string and a longitude string.
+| Each line contains a longitude string and a latitude string (GMT order).
 | We attempt to convert them to floating-point numbers.
 | If that fails then we catch the ``ValueError`` exception that Python raises and ignore that line in the file.
 
@@ -315,7 +315,7 @@ The input polylines file is opened and read line-by-line.
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: polyline-separator
 
-| Each line contains a latitude string and a longitude string.
+| Each line contains a longitude string and a latitude string (GMT order).
 | We attempt to convert them to floating-point numbers.
 | If that fails then we catch the ``ValueError`` exception that Python raises and ignore that line in the file.
 

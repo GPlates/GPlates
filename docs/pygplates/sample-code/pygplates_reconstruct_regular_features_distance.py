@@ -1,19 +1,6 @@
 import pygplates
 
 
-# [fragment: centroid-function]
-# A function to return the centroid of the geometry (point/multipoint/polyline/polygon).
-def get_geometry_centroid(geometry):
-
-    try:
-        # See if geometry is a polygon, polyline or multipoint.
-        return geometry.get_centroid()
-    except AttributeError:
-        # Geometry must be a point - it is already its own centroid.
-        return geometry
-# [end: centroid-function]
-
-
 # [fragment: load-rotations]
 # Load one or more rotation files into a rotation model.
 rotation_model = pygplates.RotationModel('rotations.rot')
@@ -43,8 +30,8 @@ for reconstructed_feature_geometry in reconstructed_feature_geometries:
     #  - the centroid of the present-day geometry, and
     #  - the centroid of the reconstructed geometry.
     distance_reconstructed = pygplates.GeometryOnSphere.distance(
-        get_geometry_centroid(reconstructed_feature_geometry.get_present_day_geometry()),
-        get_geometry_centroid(reconstructed_feature_geometry.get_reconstructed_geometry()))
+        reconstructed_feature_geometry.get_present_day_geometry().get_centroid(),
+        reconstructed_feature_geometry.get_reconstructed_geometry().get_centroid())
 
     # Convert distance from radians to Kms.
     distance_reconstructed_in_kms = distance_reconstructed * pygplates.Earth.mean_radius_in_kms

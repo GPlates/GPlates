@@ -160,9 +160,9 @@ Details
   using the :meth:`pygplates.Feature.create_reconstructable_feature` function.
 | The *reverse_reconstruct* parameter is a ``tuple`` containing a :class:`rotation model<pygplates.RotationModel>`
   and the time-of-appearance of the isochron (the time representing the geometry).
-| We give the `pygplates.Feature.create_reconstructable_feature` function a geometry at
-  its time of appearance, the time of appearance (and rotation model), a name, a valid time period
-  and a reconstruction plate ID. The valid time period ends in the
+| We give the :meth:`pygplates.Feature.create_reconstructable_feature` function a geometry at
+  its time of appearance, the time of appearance (and rotation model), a name, a valid time period,
+  a reconstruction plate ID and a conjugate plate ID. The valid time period ends in the
   :meth:`distant future<pygplates.GeoTimeInstant.create_distant_future>`.
 
 .. sample-code:: pygplates_create_common_feature_types_isochron.py
@@ -544,7 +544,7 @@ Details
 | First we collect some rotation pole data that we want to build a rotation feature from.
 | The data is essentially in the same format as you'd find in a PLATES4 rotation file (``.rot``)
   except the moving and fixed plate IDs are absent (they are the same for all poles in the sequence).
-| The data order is (pole_time, pole_lat, pole_lan, pole_angle, pole_description).
+| The data order is (pole_time, pole_lat, pole_lon, pole_angle, pole_description).
 
 ::
 

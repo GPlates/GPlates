@@ -76,7 +76,7 @@ if reconstructed_position != desired_reconstructed_position:
             continue
 
         fixed_plate_id, moving_plate_id, rotation_sequence = total_reconstruction_pole
-        # We're only interested in rotation features whose moving plate ID matches are reconstruction plate ID.
+        # We're only interested in rotation features whose moving plate ID matches our reconstruction plate ID.
         if moving_plate_id != reconstruction_plate_id:
             continue
         # [end: find-rotation-features]
@@ -122,11 +122,13 @@ if reconstructed_position != desired_reconstructed_position:
                 break
         # [end: rotation-description]
 
+        # [fragment: set-adjusted-rotation]
         # Set the adjusted rotation back into the rotation sequence.
         rotation_sequence.set_value(
             pygplates.GpmlFiniteRotation(adjusted_rotation),
             reconstruction_time,
             rotation_description)
+        # [end: set-adjusted-rotation]
 
     # [fragment: synchronise-crossovers]
     # Our rotation adjustment may require crossovers to be re-synchronised.

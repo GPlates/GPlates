@@ -14,8 +14,8 @@ Data files
 """"""""""
 
 ``topologies.gpml``
-    Topological plate polygon and/or deforming network features. A resolved plate polygon only
-    contributes to net rotation if it has a reconstruction plate ID.
+    Topological plate polygon and/or deforming network features. Each plate polygon should have a
+    reconstruction plate ID: one without is treated as plate zero, and still contributes.
 
 ``rotations.rot``
     A rotation file. It must contain rotations for the plate IDs of the topological features.
@@ -79,7 +79,6 @@ Now that we have the *total* net rotation, we next calculate the *individual* ne
 For each resolved topology we retrieve its :meth:`individual net rotation<pygplates.NetRotationSnapshot.get_net_rotation>` from the net rotation snapshot.
 However not all resolved topologies will necessarily contribute to net rotation. This can happen if a resolved topology did not intersect
 any of the sample points used to calculate net rotation (eg, because the resolved topology was too thin and fell between the points).
-It can also happen to a resolved plate boundary when it does not have a plate ID.
 
 ::
 
