@@ -150,10 +150,18 @@ namespace GPlatesAppLogic
 		std::vector<GPlatesMaths::FiniteRotation> d_right_rotations;
 		
 		/**
-		 * Rotations for moving the seed point prior to building the rest of the flowline.                                                                    
+		 * Rotations for moving the seed point prior to building the rest of the flowline.
 		 */
 		std::vector<GPlatesMaths::FiniteRotation> d_left_seed_point_rotations;
 		std::vector<GPlatesMaths::FiniteRotation> d_right_seed_point_rotations;
+
+		/**
+		 * Moves the seed point from the left plate's frame (the frame it is stored in) into the
+		 * right plate's frame, before the right-hand half of the flowline is built up.
+		 *
+		 * See FlowlineUtils::get_left_to_right_plate_frame_rotation().
+		 */
+		boost::optional<GPlatesMaths::FiniteRotation> d_left_to_right_plate_frame_rotation;
 
 	};
 }
