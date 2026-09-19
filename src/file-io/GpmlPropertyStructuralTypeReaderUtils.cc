@@ -4,7 +4,7 @@
  * @file 
  * This file contains the implementation of the functions in the
  * GpmlPropertyStructuralTypeReaderUtils namespace.  You should read the documentation
- * found in the file  "src/file-io/HOWTO-add_support_for_a_new_property_type"
+ * found in "docs/howto/add-support-for-a-new-property-type.txt"
  * before editting this file.
  *
  * Most recent change:

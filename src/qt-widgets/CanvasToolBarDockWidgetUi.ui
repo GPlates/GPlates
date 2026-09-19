@@ -58,7 +58,7 @@
       </property>
       <widget class="QWidget" name="tab_view">
        <attribute name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/drag_globe_35.png</normaloff>:/drag_globe_35.png</iconset>
        </attribute>
        <attribute name="title">
@@ -107,7 +107,7 @@
         </sizepolicy>
        </property>
        <attribute name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
        </attribute>
        <attribute name="title">
@@ -159,7 +159,7 @@
         </sizepolicy>
        </property>
        <attribute name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/digitise_polyline_35.png</normaloff>:/digitise_polyline_35.png</iconset>
        </attribute>
        <attribute name="title">
@@ -202,7 +202,7 @@
       </widget>
       <widget class="QWidget" name="tab_topology">
        <attribute name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/topology_build_boundary_35.png</normaloff>:/topology_build_boundary_35.png</iconset>
        </attribute>
        <attribute name="title">
@@ -245,7 +245,7 @@
       </widget>
       <widget class="QWidget" name="tab_pole_manipulation">
        <attribute name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
        </attribute>
        <attribute name="title">
@@ -294,7 +294,7 @@
         </sizepolicy>
        </property>
        <attribute name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/small_circle_35.png</normaloff>:/small_circle_35.png</iconset>
        </attribute>
        <attribute name="title">
@@ -337,7 +337,7 @@
       </widget>
       <widget class="QWidget" name="tab_hellinger">
        <attribute name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/hellinger_35.png</normaloff>:/hellinger_35.png</iconset>
        </attribute>
        <attribute name="title">
@@ -390,7 +390,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/drag_globe_35.png</normaloff>:/drag_globe_35.png</iconset>
    </property>
    <property name="text">
@@ -411,7 +411,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/zoom_globe_35.png</normaloff>:/zoom_globe_35.png</iconset>
    </property>
    <property name="text">
@@ -432,7 +432,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/measure_distance_35.png</normaloff>:/measure_distance_35.png</iconset>
    </property>
    <property name="text">
@@ -456,7 +456,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
    </property>
    <property name="text">
@@ -483,7 +483,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/digitise_polyline_35.png</normaloff>:/digitise_polyline_35.png</iconset>
    </property>
    <property name="text">
@@ -510,7 +510,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/digitise_multipoint_35.png</normaloff>:/digitise_multipoint_35.png</iconset>
    </property>
    <property name="text">
@@ -537,7 +537,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/digitise_polygon_35.png</normaloff>:/digitise_polygon_35.png</iconset>
    </property>
    <property name="text">
@@ -564,7 +564,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/move_geometry_35.png</normaloff>:/move_geometry_35.png</iconset>
    </property>
    <property name="text">
@@ -591,7 +591,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/move_vertex_35.png</normaloff>:/move_vertex_35.png</iconset>
    </property>
    <property name="text">
@@ -618,7 +618,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/delete_vertex_35.png</normaloff>:/delete_vertex_35.png</iconset>
    </property>
    <property name="text">
@@ -645,7 +645,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/insert_vertex_35.png</normaloff>:/insert_vertex_35.png</iconset>
    </property>
    <property name="text">
@@ -669,7 +669,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/split_geometry_35.png</normaloff>:/split_geometry_35.png</iconset>
    </property>
    <property name="text">
@@ -693,7 +693,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
    </property>
    <property name="text">
@@ -717,7 +717,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/topology_build_boundary_35.png</normaloff>:/topology_build_boundary_35.png</iconset>
    </property>
    <property name="text">
@@ -744,7 +744,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/topology_edit_35.png</normaloff>:/topology_edit_35.png</iconset>
    </property>
    <property name="text">
@@ -768,7 +768,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/small_circle_35.png</normaloff>:/small_circle_35.png</iconset>
    </property>
    <property name="text">
@@ -792,7 +792,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/topology_build_line_35.png</normaloff>:/topology_build_line_35.png</iconset>
    </property>
    <property name="text">
@@ -819,7 +819,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/topology_build_network_35.png</normaloff>:/topology_build_network_35.png</iconset>
    </property>
    <property name="text">
@@ -846,7 +846,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/change_lighting_35.png</normaloff>:/change_lighting_35.png</iconset>
    </property>
    <property name="text">
@@ -870,7 +870,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/plate_move_pole_35.png</normaloff>:/plate_move_pole_35.png</iconset>
    </property>
    <property name="text">
@@ -891,7 +891,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
    </property>
    <property name="text">
@@ -909,7 +909,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
+    <iconset resource="../qt-resources/qt_resources.qrc">
      <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
    </property>
    <property name="text">
@@ -924,7 +924,7 @@
   </action>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>

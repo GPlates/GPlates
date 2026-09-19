@@ -36,8 +36,6 @@
 #include <opengl/OpenGL.h>
 
 #include "Colour.h"
-#include "ColourProxy.h"
-#include "ColourScheme.h"
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
 
@@ -108,7 +106,6 @@ namespace GPlatesGui
 				const double &inverse_viewport_zoom_factor,
 				const double &device_independent_pixel_to_world_space_ratio,
 				const GlobeVisibilityTester &visibility_tester,
-				ColourScheme::non_null_ptr_type colour_scheme,
 				PaintRegionType paint_region,
 				boost::optional<Colour> vector_geometries_override_colour = boost::none,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
@@ -344,9 +341,6 @@ namespace GPlatesGui
 		//! For determining whether a particular point on the globe is visible or not
 		GlobeVisibilityTester d_visibility_tester;
 
-		//! For assigning colours to RenderedGeometry
-		ColourScheme::non_null_ptr_type d_colour_scheme;
-
 		//! When rendering scaled globes that are meant to be a scaled version of another
 		float d_scale;
 
@@ -431,20 +425,20 @@ namespace GPlatesGui
 		/**
 		 * Determines the colour of vector geometries.
 		 *
-		 * If an override colour has been provided then returns that, otherwise returns colour of a
-		 * ColourProxy using our colour scheme.
-		 *
-		 * TODO: Remove colour schemes when full symbology implemented.
-		 * We're no longer really using colour schemes (via colour proxies) anymore since
-		 * the Python colouring code generates colours directly (ie, our ColourProxy objects have
-		 * colours stored internally instead of delegating to a colour scheme).
-		 * But we still need a central colour access point (like this method) to override
-		 * rendered geometry colours (such as geometries on rear of globe rendered gray).
+		 * If an override colour has been provided then returns that, otherwise the rendered
+		 * geometry's own colour. The override is how geometries on the rear of the globe are
+		 * drawn grey, so this stays the one place vector geometry colour is decided.
 		 */
+		inline
+		const Colour &
+		get_vector_geometry_colour(
+				const Colour &colour);
+
+		//! Overload for a colour that may be absent, such as a text shadow.
 		inline
 		boost::optional<Colour>
 		get_vector_geometry_colour(
-				const ColourProxy &colour_proxy);
+				const boost::optional<Colour> &colour);
 
 		/**
 		 * Paints great circle arcs of polylines and polygons.

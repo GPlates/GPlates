@@ -27,7 +27,7 @@
 #include <QTableWidgetItem>
 #include <QVariant>
 
-#include "feature-visitors/ToQvariantConverter.h"
+#include "model/ToQvariantConverter.h"
 #include "file-io/OgrUtils.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"

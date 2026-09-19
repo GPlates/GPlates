@@ -79,31 +79,34 @@ Full instructions: `BUILD-Windows.md`, `BUILD-macOS.md`, `BUILD-Linux.md`.
 
 ## Test
 
-CTest is the only top-level test runner. **Always configure Release and always pass
-`-C Release`:**
+CTest is the only top-level test runner, and the tests run in every build configuration. Pass
+`-C` the configuration you built:
 
 ```
 ctest --test-dir build-pygplates -C Release --output-on-failure
 ctest --test-dir build-gplates   -C Release --output-on-failure
 ```
 
-A Debug test run is unsupported either way, because `GPlatesGlobal::Assert` calls `std::abort()`
-in Debug instead of throwing, which kills every test that exercises an error path. But the two
-products enforce that differently, and the difference decides how you fix an empty run:
+On a single-config (Ninja) tree `ctest` finds every test without `-C`; with a multi-config
+generator (Visual Studio, Xcode) `-C` is what selects the configuration to test.
 
-- **pyGPlates** tests are registered `CONFIGURATIONS Release MinSizeRel`. Omitting `-C Release`
-  matches none of them and CTest still **exits 0**, so the run looks like a pass.
-- **GPlates** tests are registered by `gtest_discover_tests()`, which cannot attach
-  `CONFIGURATIONS`, so they are instead skipped at *configure* time by
-  `if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")` (`src/CMakeLists.txt`). A Debug build tree contains
-  no GPlates tests at all and **no `-C` value will reveal any** — reconfigure as Release. On a
-  single-config Release tree a bare `ctest` does work; `-C Release` matters for the multi-config
-  generators (Visual Studio, Xcode).
+A failed `GPlatesGlobal::Assert` aborts by default in a GPlates debug build (`GPLATES_DEBUG`, which
+is Debug *and* RelWithDebInfo), so that a debugger stops where it failed.
+`gplates_unit_test_main.cc` makes it throw instead (`GPLATES_UNIT_TEST_ABORT_ON_ASSERT` restores
+the abort), and the pygplates module always throws, so error-path tests pass everywhere — never
+guard one with `#ifndef GPLATES_DEBUG`. The per-product default is in
+`src/global/GPlatesAssert.cc`, keyed on `GPLATES_PYTHON_EMBEDDING`. Do not move that choice into
+`BOOST_PYTHON_MODULE(pygplates)`: the module init also runs inside GPlates' embedded interpreter,
+so it would flip GPlates too.
 
-So: only `version-resolver-test` from `build-pygplates` usually means a missing `-C Release`, and
-only it from `build-gplates` usually means the tree was configured Debug. That one test carries
-no configuration restriction, deliberately — it runs a CMake script and builds nothing — so it
-runs, and passes, in exactly those mis-run cases. One passing test is not a green suite.
+On Windows every configuration builds against the release C runtime
+(`cmake/modules/ConfigDefault.cmake`): conda has no debug builds of the dependencies, and a Debug
+tree on the debug C runtime crashes before running a single test.
+
+**One passing test is not a green suite.** `version-resolver-test` belongs to neither product — it
+runs a CMake script and builds nothing — so it is registered, and passes, in every tree. If it is
+the only test in `build-gplates`, GoogleTest was not found at configure time and there is no
+unit-test target.
 
 The GPlates unit-test binary is `EXCLUDE_FROM_ALL`, so build it explicitly:
 
@@ -118,15 +121,17 @@ working-directory independent, `GPLATES_UNIT_TEST_DATA_DIR`, `QTemporaryDir`, an
 ## The pyGPlates module boundary
 
 The pygplates module compiles only the **include closure of the pyGPlates API** — not the
-whole tree. The layering, the rules for new files (which directory kind defaults to
-GPlates-only, `.h`/`.cc` pairing for AUTOMOC, no `QMessageBox` in shared code) and the
-enforcement are described in `docs/design/architecture/README.md`. Two pyGPlates CTests
-enforce the boundary: `pygplates-source-closure-test` (the source list must equal the
-closure computed by `cmake/pygplates_source_closure.py`, which also drift-checks the
-committed dependency matrix) and `pygplates-linkage-test` (`cmake/check_linkage.py` - the
-built module must have no direct dependency on GPlates' GUI/rendering libraries). When
-either fails after adding a file or an `#include`, the failure message says which CMake list
-to fix — do that rather than weakening the tracer.
+whole tree. The layering, which directory a new class belongs in (a directory is a subject,
+not a shape of code; `property-values/` holds property values, not code that operates on
+them), the rules for new files (which directory kind defaults to GPlates-only, `.h`/`.cc`
+pairing for AUTOMOC, no `QMessageBox` in shared code) and the enforcement are described in
+`docs/design/architecture/README.md`. Two pyGPlates CTests enforce the boundary:
+`pygplates-source-closure-test` (the source list must equal the closure computed by
+`cmake/pygplates_source_closure.py`, which also drift-checks the committed dependency matrix)
+and `pygplates-linkage-test` (`cmake/check_linkage.py` - the built module must have no direct
+dependency on GPlates' GUI/rendering libraries). When either fails after adding a file or an
+`#include`, the failure message says which CMake list to fix — do that rather than
+weakening the tracer.
 
 **CI builds both products on every push**, which is what makes the boundary enforceable: the
 two CTests above are pyGPlates tests, so only a pyGPlates build can run them. Until the develop
@@ -332,14 +337,40 @@ prepares the release does not.
 
 ### Planning documents
 
-Plans, status tables, findings reports and step lists do not merge into `gplates`. They may live on
-a feature branch while the work is in progress (to move it between machines, say), but before that
-branch merges, distil them and delete them:
+A plan records work in progress: steps, status, open questions, findings. Design documents
+describe the design as it is and why. They may record rejected alternatives and deferred work, but
+not progress, so a plan never goes in `docs/design/`. Distilling a plan means moving what lasts out
+of it:
 
 - rationale, constraints and rejected alternatives go into `docs/design/`, or the README next to
   the code;
 - traps go into comments at the code where they bite;
 - user-visible changes go into the changelog.
 
-Design documents describe the design as it is and why. They may record rejected alternatives and
-deferred work, but not progress.
+Where the plan lives depends on the branch:
+
+- **A short-lived branch** keeps its plan outside the repository, and distils it once, before its
+  pull request is opened.
+- **A long-lived branch** keeps its plan in the repository, in `docs/plans/<name>/`, where `<name>`
+  is the branch name without its `feature/` or `fix/` prefix. The plan then travels with the branch
+  to every clone. `PLAN.md` is the entry point; add files beside it as the plan grows. Distil as the
+  work goes, not all at the end:
+  - Record a decision, a rejected alternative or a trap when it is made or found, in the plan or
+    in a comment at the code. The code will never show a rejected alternative, so one left for
+    the end is lost.
+  - Write a stage's design document when the stage is complete. A design document written ahead of
+    the code describes a moving target, and has to be rewritten.
+  - Before the branch merges, check every design statement against the code, then delete
+    `docs/plans/<name>/`.
+  - If the work reaches `gplates` in several pull requests, the plan merges with them: each pull
+    request distils what it completed, and the last one deletes the plan.
+
+Whether a branch is long-lived is the developer's decision; an agent does not promote a branch on
+its own judgement. When the developer says that a branch is long-lived, move its plan into
+`docs/plans/<name>/PLAN.md` on that branch, from wherever it was kept outside the repository (an
+agent's plan directory, say), and commit it. From then on, update the copy in the repository and
+not the old one.
+
+Once a plan is deleted, anything it held that was not distilled survives only in git history, which
+nobody reads. So distil with the most capable model available, and check the result against the
+code.

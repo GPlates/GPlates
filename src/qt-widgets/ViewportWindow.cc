@@ -24,11 +24,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#if defined(_MSC_VER) && _MSC_VER <= 1400
-////Visual C++ 2005
-#pragma warning( disable : 4005 )
-#endif 
-
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -107,7 +102,6 @@
 
 #include "gui/AnimationController.h"
 #include "gui/CanvasToolWorkflows.h"
-#include "gui/ColourSchemeDelegator.h"
 #include "gui/DockState.h"
 #include "gui/Dialogs.h"
 #include "gui/FeatureFocus.h"
@@ -412,13 +406,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	// Synchronise "Show Stars" with what's in ViewState.
 	action_Show_Stars->setChecked(get_view_state().get_show_stars());
-
-	// Repaint the globe/map when the colour scheme delegator's target changes.
-	QObject::connect(
-			get_view_state().get_colour_scheme_delegator().get(),
-			SIGNAL(changed()),
-			this,
-			SLOT(handle_colour_scheme_delegator_changed()));
 
 	// Get notified about visual layers being added so we can open the layers dialog.
 	QObject::connect(
@@ -766,16 +753,8 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 void
 GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 {
-	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
-	{
-		QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
-				&dialogs(), SLOT(pop_up_colouring_dialog()));
-	}
-	else
-	{
-		QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
-			&dialogs(), SLOT(pop_up_draw_style_dialog()));
-	}
+	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
+		&dialogs(), SLOT(pop_up_draw_style_dialog()));
 	// ----
 	QObject::connect(action_Load_Symbol, SIGNAL(triggered()),
 			this, SLOT(handle_load_symbol_file()));
@@ -851,23 +830,15 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 
 	}
 
-	if(GPlatesUtils::ComponentManager::instance().is_enabled(
-			GPlatesUtils::ComponentManager::Component::python()))
-	{
-		d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
-				menu_Utilities,
-				action_Open_Python_Console,
-				get_view_state().get_python_manager(),
-				this);
-		
-		// ----
-		QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
-				this, SLOT(pop_up_python_console()));
-	}
-	else
-	{
-		hide_python_menu();
-	}
+	d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
+			menu_Utilities,
+			action_Open_Python_Console,
+			get_view_state().get_python_manager(),
+			this);
+
+	// ----
+	QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
+			this, SLOT(pop_up_python_console()));
 }
 
 
@@ -1674,13 +1645,6 @@ GPlatesQtWidgets::ViewportWindow::install_gui_debug_menu()
 			new GPlatesGui::GuiDebug(*this, get_view_state(), get_application_state(), this);
 
 	gui_debug->setObjectName("GuiDebug");
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_colour_scheme_delegator_changed()
-{
-	d_reconstruction_view_widget_ptr->globe_and_map_widget().update_canvas();
 }
 
 

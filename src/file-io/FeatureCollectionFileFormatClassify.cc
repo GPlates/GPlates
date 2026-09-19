@@ -33,8 +33,8 @@
 #include "app-logic/ReconstructMethodRegistry.h"
 #include "app-logic/ScalarCoverageFeatureProperties.h"
 #include "app-logic/TopologyUtils.h"
+#include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
 
-#include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 
 namespace GPlatesFileIO
 {
@@ -131,7 +131,7 @@ namespace GPlatesFileIO
 				// Check if the feature is a reconstruction features.
 				if (!classifications.test(RECONSTRUCTION)) // Only test if not classified already...
 				{
-					GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder reconstruction_sequence_finder;
+					GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder reconstruction_sequence_finder;
 					reconstruction_sequence_finder.visit_feature(feature);
 					if (reconstruction_sequence_finder.fixed_ref_frame_plate_id() ||
 						reconstruction_sequence_finder.moving_ref_frame_plate_id())

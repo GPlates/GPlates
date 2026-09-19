@@ -364,9 +364,6 @@ if (GPLATES_INSTALL_STANDALONE)
     # This consists of a bunch of "install(CODE ...)" commands to install code into "cmake_install.cmake" that CMake in turn
     # executes at 'install' time into the install prefix location ${CMAKE_INSTALL_PREFIX} (evaluated at 'install' time).
     #
-    # Note: The command "install(CODE)" requires CMake 3.14 since we're using generator expressions in the code.
-    #       And using FOLLOW_SYMLINK_CHAIN in file(INSTALL) requires CMake 3.15.
-    #
     # Note: When using CODE with double quotes, as with install(CODE "<code>"), variable subsitution is *enabled*.
     #       So we use this when transferring variables.
     #       However when using square brackets, as with install(CODE [[<code>]]), variable subitition is *disabled* (as is escaping).

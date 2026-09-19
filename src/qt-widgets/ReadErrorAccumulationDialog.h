@@ -26,6 +26,8 @@
 #ifndef GPLATES_GUI_READERRORACCUMULATIONDIALOG_H
 #define GPLATES_GUI_READERRORACCUMULATIONDIALOG_H
 
+#include <cstddef>
+
 #include <QObject>
 #include <QString>
 
@@ -210,7 +212,7 @@ namespace GPlatesQtWidgets
 		create_occurrence_type_summary_item(
 				const GPlatesFileIO::ReadErrorOccurrence &error,
 				const QIcon &occurrence_icon,
-				size_t quantity);
+				std::size_t quantity);
 
 		/**
 		 * Creates a File Info item for an error occurrence with base file name and type.

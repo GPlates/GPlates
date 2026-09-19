@@ -25,7 +25,7 @@
 
 #include "maths/PolylineOnSphere.h"
 
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 
 
 namespace GPlatesViewOperations
@@ -43,7 +43,7 @@ namespace GPlatesViewOperations
 		RenderedSubductionTeethPolyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
 				SubductionPolarity subduction_polarity,
-				const GPlatesGui::ColourProxy &colour,
+				const GPlatesGui::Colour &colour,
 				float line_width_hint,
 				float teeth_width_in_pixels,
 				float teeth_spacing_to_width_ratio,
@@ -93,7 +93,7 @@ namespace GPlatesViewOperations
 			return d_subduction_polarity;
 		}
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -128,7 +128,7 @@ namespace GPlatesViewOperations
 	private:
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_polyline_on_sphere;
 		SubductionPolarity d_subduction_polarity;
-		GPlatesGui::ColourProxy d_colour;
+		GPlatesGui::Colour d_colour;
 		float d_line_width_hint;
 		float d_teeth_width_in_pixels;
 		float d_teeth_spacing_to_width_ratio;

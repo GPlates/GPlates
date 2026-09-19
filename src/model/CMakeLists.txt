@@ -44,6 +44,8 @@ set(srcs
     GpgimVersion.h
     HandleTraits.h
     IdTypeGenerator.h
+    KeyValueDictionaryFinder.cc
+    KeyValueDictionaryFinder.h
     Metadata.cc
     Metadata.h
     Model.cc
@@ -59,6 +61,8 @@ set(srcs
     PropertyName.h
     PropertyValue.cc
     PropertyValue.h
+    PropertyValueFinder.cc
+    PropertyValueFinder.h
     QualifiedXmlName.h
     Revision.h
     Revisionable.cc
@@ -78,6 +82,8 @@ set(srcs
     TopLevelProperty.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h
+    ToQvariantConverter.cc
+    ToQvariantConverter.h
     TranscribeIdTypeGenerator.h
     TranscribeQualifiedXmlName.h
     TranscribeRevisionedVector.h
@@ -100,4 +106,4 @@ set(srcs
 )
 
 # Add the source files to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})
+target_sources(${SOURCE_TARGET} PRIVATE ${srcs})

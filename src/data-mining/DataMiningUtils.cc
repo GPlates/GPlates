@@ -30,7 +30,7 @@
 
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
-#include "feature-visitors/ShapefileAttributeFinder.h"
+#include "file-io/ShapefileAttributeFinder.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "global/LogException.h"
 #include "maths/GeometryDistance.h"
@@ -215,7 +215,7 @@ GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 	{
 		if((*it)->get_property_name().get_name() == "shapefileAttributes")
 		{
-			GPlatesFeatureVisitors::ShapefileAttributeFinder visitor(name);
+			GPlatesFileIO::ShapefileAttributeFinder visitor(name);
 			(*it)->accept_visitor(visitor);
 			if(1 < std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
 			{

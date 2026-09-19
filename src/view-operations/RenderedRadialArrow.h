@@ -32,7 +32,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
 
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 
 
 namespace GPlatesViewOperations
@@ -80,10 +80,10 @@ namespace GPlatesViewOperations
 				float arrow_projected_length,
 				float arrowhead_projected_size,
 				float arrowline_projected_width,
-				const GPlatesGui::ColourProxy &arrow_colour,
+				const GPlatesGui::Colour &arrow_colour,
 				SymbolType symbol_type,
 				float symbol_size,
-				const GPlatesGui::ColourProxy &symbol_colour) :
+				const GPlatesGui::Colour &symbol_colour) :
 			d_position(position),
 			d_arrow_projected_length(arrow_projected_length),
 			d_arrowhead_projected_size(arrowhead_projected_size),
@@ -184,7 +184,7 @@ namespace GPlatesViewOperations
 		 *
 		 * This is only used for the 3D globe view because an arrow is not rendered in the 2D map views.
 		 */
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_arrow_colour() const
 		{
 			return d_arrow_colour;
@@ -214,7 +214,7 @@ namespace GPlatesViewOperations
 		/**
 		 * Returns the colour of the symbol.
 		 */
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_symbol_colour() const
 		{
 			return d_symbol_colour;
@@ -226,10 +226,10 @@ namespace GPlatesViewOperations
 		const float d_arrow_projected_length;
 		const float d_arrowhead_projected_size;
 		const float d_arrowline_projected_width;
-		const GPlatesGui::ColourProxy d_arrow_colour;
+		const GPlatesGui::Colour d_arrow_colour;
 		SymbolType d_symbol_type;
 		float d_symbol_size;
-		const GPlatesGui::ColourProxy d_symbol_colour;
+		const GPlatesGui::Colour d_symbol_colour;
 	};
 }
 

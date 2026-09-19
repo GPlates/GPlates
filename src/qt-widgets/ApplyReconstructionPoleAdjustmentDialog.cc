@@ -30,8 +30,8 @@
 #include "ApplyReconstructionPoleAdjustmentDialog.h"
 
 #include "app-logic/ApplicationState.h"
-#include "feature-visitors/TotalReconstructionSequenceRotationInterpolater.h"
-#include "feature-visitors/TotalReconstructionSequenceRotationInserter.h"
+#include "app-logic/TotalReconstructionSequenceRotationInterpolater.h"
+#include "app-logic/TotalReconstructionSequenceRotationInserter.h"
 #include "maths/MathsUtils.h"
 #include "model/NotificationGuard.h"
 #include "presentation/ViewState.h"
@@ -307,7 +307,7 @@ GPlatesQtWidgets::AdjustmentApplicator::handle_pole_sequence_choice_changed(
 
 	// Get the interpolated original pole.
 	GPlatesModel::FeatureHandle::weak_ref chosen_pole_seq = d_sequence_choices.at(index).d_trs;
-	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater interpolater(d_pole_time);
+	GPlatesAppLogic::TotalReconstructionSequenceRotationInterpolater interpolater(d_pole_time);
 	if ( ! chosen_pole_seq.is_valid()) {
 		// Nothing we can do.
 		// FIXME:  Should we complain?
@@ -399,7 +399,7 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 	GPlatesModel::NotificationGuard model_notification_guard(
 			*d_application_state_ptr->get_model_interface().access_model());
 
-	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
+	GPlatesAppLogic::TotalReconstructionSequenceRotationInserter inserter(
 			d_pole_time,
 			*d_adjustment_rel_fixed,
 			d_application_state_ptr->get_feature_collection_file_state());

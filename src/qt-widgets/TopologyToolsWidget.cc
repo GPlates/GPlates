@@ -42,8 +42,6 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/TopologyInternalUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
@@ -56,6 +54,7 @@
 #include "model/GpgimProperty.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ViewState.h"
 
@@ -98,7 +97,7 @@ namespace
 			const GPlatesModel::PropertyName &property_name)
 	{
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature_ref, property_name);
 		if (plate_id)
 		{
@@ -368,7 +367,7 @@ GPlatesQtWidgets::TopologyToolsWidget::activate(
 				GPlatesModel::PropertyName::create_gml("validTime");
 
 		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> edit_topology_time_period =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 						d_edit_topology_feature_ref.get(), valid_time_property_name);
 		if (edit_topology_time_period)
 		{
@@ -442,7 +441,7 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 		GPlatesModel::PropertyName::create_gml("name");
 
 	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 					feature_ref, name_property_name);
 	if (name)
 	{
@@ -461,7 +460,7 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 		GPlatesModel::PropertyName::create_gml("validTime");
 
 	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 					feature_ref, valid_time_property_name);
 	if (time_period)
 	{

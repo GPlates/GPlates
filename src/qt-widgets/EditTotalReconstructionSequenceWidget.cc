@@ -33,9 +33,9 @@
 #include <QVariant>
 
 #include "app-logic/TRSUtils.h"
-#include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
-#include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
+#include "app-logic/TotalReconstructionSequenceTimePeriodFinder.h"
+#include "model/PropertyValueFinder.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/ModelUtils.h"

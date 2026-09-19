@@ -34,8 +34,6 @@
 #include <boost/noncopyable.hpp>
 
 #include "Colour.h"
-#include "ColourProxy.h"
-#include "ColourScheme.h"
 #include "LayerPainter.h"
 
 #include "maths/DateLineWrapper.h"
@@ -86,8 +84,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const double &inverse_viewport_zoom_factor,
-				const double &device_independent_pixel_to_map_space_ratio,
-				ColourScheme::non_null_ptr_type colour_scheme);
+				const double &device_independent_pixel_to_map_space_ratio);
 
 
 		/**
@@ -422,9 +419,6 @@ namespace GPlatesGui
 		//! The size of one device-independent pixel in (post projection) map space units.
 		const double d_device_independent_pixel_to_map_space_ratio;
 
-		//! For assigning colours to RenderedGeometry
-		ColourScheme::non_null_ptr_type d_colour_scheme;
-
 		//! When rendering scaled maps that are meant to be a scaled version of another
 		float d_scale;
 
@@ -457,19 +451,20 @@ namespace GPlatesGui
 
 		/**
 		 * Determines the colour of vector geometries.
-		 *
-		 * Returns colour of a ColourProxy using our colour scheme.
-		 *
-		 * TODO: Remove colour schemes when full symbology implemented.
-		 * We're no longer really using colour schemes (via colour proxies) anymore since
-		 * the Python colouring code generates colours directly (ie, our ColourProxy objects have
-		 * colours stored internally instead of delegating to a colour scheme).
 		 */
-		boost::optional<Colour>
+		const Colour &
 		get_vector_geometry_colour(
-				const ColourProxy &colour_proxy)
+				const Colour &colour)
 		{
-			return colour_proxy.get_colour(d_colour_scheme);
+			return colour;
+		}
+
+		//! Overload for a colour that may be absent, such as a text shadow.
+		const boost::optional<Colour> &
+		get_vector_geometry_colour(
+				const boost::optional<Colour> &colour)
+		{
+			return colour;
 		}
 
 		/**

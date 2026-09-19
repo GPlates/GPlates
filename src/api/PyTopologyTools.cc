@@ -25,7 +25,7 @@
 #include "PyOldFeature.h"
 #include "global/python.h"
 #include "gui/TopologySectionsContainer.h"
-#include "feature-visitors/TopologySectionsFinder.h"
+#include "gui/TopologySectionsFinder.h"
 #include "model/FeatureHandle.h"
 
 
@@ -41,7 +41,7 @@ namespace GPlatesApi
 		sections_info(OldFeature feaure)
 		{
 			bp::list ret;
-			GPlatesFeatureVisitors::TopologySectionsFinder topo_sections_finder;
+			GPlatesGui::TopologySectionsFinder topo_sections_finder;
 			topo_sections_finder.visit_feature(GPlatesModel::FeatureHandle::weak_ref(feaure));
 			GPlatesGui::TopologySectionsContainer::const_iterator 
 				b_iter = topo_sections_finder.boundary_sections_begin(),

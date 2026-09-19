@@ -23,8 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QtGlobal>
-
 #include "PythonInitFailedDialog.h"
 
 #include "gui/PythonManager.h"
@@ -32,47 +30,20 @@
 
 namespace
 {
-	const char* python_failed_msg =
+	const char *python_failed_msg =
 		"<html> <body> \
-		<h2> Python initialization failed. <br /> \
-		GPlates will start up without python support.</h2> \
+		<h2> Python initialisation failed. </h2> \
+		GPlates requires Python, and so will not start up. \
 		<br /> \
 		<h3>Troubleshooting</h3> \
-		<h4>Check if <font color=\"red\">$PYTHON_NAME</font> has been installed.</h4> \
-		<h4>If $PYTHON_NAME has been installed at an unusual location, \
-		set \"python/python_home\" variable in GPlates preference \"Edit->Preference->Advanced Settings\" \
-		and restart GPlates. </h4> \
-		<h3>Install Python</h3> \
-		$INSTALL_INSTRUCTION \
+		<h4>If this GPlates was installed from a binary distribution</h4> \
+		<font color=\"red\">$PYTHON_NAME</font> is part of the installation, so the \
+		installation is most likely incomplete or damaged. Install GPlates again, and contact the \
+		GPlates developers if that does not help. \
+		<h4>If this GPlates was built from source</h4> \
+		Check that $PYTHON_NAME is installed and is the Python that GPlates was built against. \
 		</body> </html>"
 		;
-#ifdef Q_OS_WIN
-	const char* python26_install_instructions_win =
-		"<p><a href=\"http://www.python.org/download/releases/2.6.6/\">Click here to download Python installer for Windows</a></p>" \
-		;
-
-	const char* python27_install_instructions_win =
-		"<p><a href=\"http://www.python.org/download/releases/2.7.2/\">Click here to download Python installer for Windows</a></p>" \
-		;
-#endif
-#ifdef Q_OS_MACOS
-	const char* python26_install_instructions_mac =
-		"<h4>Type in \"sudo port install python26\" in terminal to install python.</h4>" \
-		;
-
-	const char* python27_install_instructions_mac =
-		"<h4>Type in \"sudo port install python27\" in terminal to install python.</h4>" \
-		;
-#endif
-#ifdef Q_OS_LINUX
-	const char* python26_install_instructions_linux =
-		"<h4>Type in \"sudo apt-get install python2.6\" in terminal to install python.</h4>" \
-		;
-
-	const char* python27_install_instructions_linux =
-		"<h4>Type in \"sudo apt-get install python2.7\" in terminal to install python.</h4>" \
-		;
-#endif
 }
 
 
@@ -92,26 +63,7 @@ void
 GPlatesQtWidgets::PythonInitFailedDialog::assemble_message()
 {
 	d_html_page = QString(python_failed_msg);
-	QString python_version = GPlatesGui::PythonManager::instance()->python_version();
-	d_html_page.replace("$PYTHON_NAME", QString("Python") + python_version);
-#ifdef Q_OS_MACOS   
-	if("2.7" == python_version)
-		d_html_page.replace("$INSTALL_INSTRUCTION", python27_install_instructions_mac);
-	else if("2.6" == python_version)
-		d_html_page.replace("$INSTALL_INSTRUCTION", python26_install_instructions_mac);
-#elif defined Q_OS_LINUX 
-	if("2.7" == python_version)
-		d_html_page.replace("$INSTALL_INSTRUCTION", python27_install_instructions_linux);
-	else if("2.6" == python_version)
-		d_html_page.replace("$INSTALL_INSTRUCTION", python26_install_instructions_linux);
-#elif defined Q_OS_WIN
-	if("2.7" == python_version)
-		d_html_page.replace("$INSTALL_INSTRUCTION", python27_install_instructions_win);
-	else if("2.6" == python_version)
-		d_html_page.replace("$INSTALL_INSTRUCTION", python26_install_instructions_win);
-#endif
+	d_html_page.replace(
+			"$PYTHON_NAME",
+			QString("Python ") + GPlatesGui::PythonManager::instance()->python_version());
 }
-
-
-
-

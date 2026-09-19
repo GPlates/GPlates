@@ -30,8 +30,6 @@ set(srcs
     Endian.h
     Environment.cc
     Environment.h
-    FeatureUtils.cc
-    FeatureUtils.h
     FunctionTypes.h
     GeometryCreationUtils.h
     GetPropertyAsPythonObjVisitor.cc
@@ -105,8 +103,6 @@ set(gplates_only_srcs
     DeferredCallEvent.h
     Environment.cc
     Environment.h
-    FeatureUtils.cc
-    FeatureUtils.h
     FunctionTypes.h
     GetPropertyAsPythonObjVisitor.cc
     GetPropertyAsPythonObjVisitor.h
@@ -133,4 +129,4 @@ if (NOT TARGET gplates-lib)
 endif()
 
 # Add the source files to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})
+target_sources(${SOURCE_TARGET} PRIVATE ${srcs})

@@ -44,6 +44,12 @@ file as deltas, so an API change costs kilobytes, not another copy of a megabyte
 - `*.pyi` is pinned to LF in `.gitattributes` because `--output` always writes LF, so on a CRLF
   checkout every regeneration would show the whole file as modified. (`--check` reads the committed
   stub with universal newlines, so it would not fail either way.)
+- The stub must not depend on the Python or Boost version that generated it, or
+  `pygplates-stub-test` fails for any developer whose versions differ from the committer's. So the
+  generator skips the attributes Python 3.13 adds to every class statement (`__firstlineno__`,
+  `__static_attributes__`), emits a `namedtuple` as a `typing.NamedTuple` rather than listing what
+  `namedtuple` generates (`__replace__` is new in 3.13), and names nested classes by where it finds
+  them in the module rather than by `__qualname__`, which Boost.Python 1.74 leaves unqualified.
 
 ## The maintenance loop
 
@@ -56,8 +62,9 @@ file as deltas, so an API change costs kilobytes, not another copy of a megabyte
      `TypeExpressionParser`. The fix is normally a docstring restyle to the guideline in
      `docs/pygplates/README.md`; extend the grammar only for natural English that many docstrings
      share. `MANUAL_OVERRIDES` is the escape hatch for a signature the convention cannot express.
-   - **Missing `:type:`/`:rtype:` fields** (emitted as `Any`): add the field. The `Crossover`
-     named tuple and `CrossoverTypeFunction` entries are deliberately left on this list.
+   - **Missing `:type:`/`:rtype:` fields** (emitted as `Any`): add the field. The
+     `CrossoverTypeFunction` entries are deliberately left on this list. (The `Crossover` named
+     tuple's fields are `Any` too, but it is not reported: it is emitted as a `typing.NamedTuple`.)
    - **Suspicious `:rtype:` omissions** (emitted as `-> None`): a C++ `void` function omits the
      field by convention, but this prose says it returns something - probably a forgotten field.
    - `WARNING:` lines are lint, chiefly the `list of A or list of B` ambiguity: a bare `or` binds
@@ -98,13 +105,3 @@ open a project that uses it in VS Code: `pygplates.RotationModel(` should offer 
 overloads in signature help (Ctrl+Shift+Space), `PropertyReturn.first` should resolve, and hover on
 `get_rotation` should show the full docstring. Bare hover on an overloaded member shows only the
 *first* overload's docstring - that is Pylance behaviour, not a stub defect.
-
-## Open item
-
-Some pure-Python API files leak names as runtime attributes of `pygplates`: `Crossovers.py` leaks
-`namedtuple`, `partial` and `math`, `GeometriesOnSphere.py` leaks `itertools` (and `numpy`, when
-installed), and both `Crossovers.py` and `PlatePartitioning.py` leak the Py2-compat `iteritems`
-helpers. The generator keeps them out of the stub (foreign `__module__`, `inspect.ismodule`,
-`_SKIP_MODULE_NAMES`), but removing them at runtime - a module-level `del` after use, as
-`PlatePartitioning.py`, `Feature.py` and `GeometriesOnSphere.py` already do for their helper
-functions - is API-visible and needs sign-off first.

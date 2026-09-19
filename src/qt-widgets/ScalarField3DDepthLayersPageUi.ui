@@ -25,7 +25,7 @@
         <string>Add &amp;directory...</string>
        </property>
        <property name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/tango_folder_open_16.png</normaloff>:/tango_folder_open_16.png</iconset>
        </property>
        <property name="toolButtonStyle">
@@ -45,7 +45,7 @@
         <string>&amp;Add files...</string>
        </property>
        <property name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/tango_document_open_16.png</normaloff>:/tango_document_open_16.png</iconset>
        </property>
        <property name="toolButtonStyle">
@@ -125,7 +125,7 @@
            <string>Sort table by depth</string>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/gnome_stock_sort_column_ascending_16.png</normaloff>:/gnome_stock_sort_column_ascending_16.png</iconset>
           </property>
          </widget>
@@ -136,7 +136,7 @@
            <string>Sort table by file name</string>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/gnome_stock_sort_ascending_16.png</normaloff>:/gnome_stock_sort_ascending_16.png</iconset>
           </property>
          </widget>
@@ -153,7 +153,7 @@
            <string>Toggle show full paths to files</string>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/slash.png</normaloff>:/slash.png</iconset>
           </property>
           <property name="checkable">
@@ -188,7 +188,7 @@
       <item>
        <widget class="QLabel" name="warning_icon">
         <property name="pixmap">
-         <pixmap resource="../qt-resources/qt_widgets.qrc">:/gnome_dialog_warning_16.png</pixmap>
+         <pixmap resource="../qt-resources/qt_resources.qrc">:/gnome_dialog_warning_16.png</pixmap>
         </property>
        </widget>
       </item>
@@ -208,12 +208,12 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>

@@ -30,20 +30,19 @@
 #include "PythonManager.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/GeometryFinder.h"
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometry.h"
-#include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructionGeometryFinder.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionGeometryVisitor.h"
+#include "app-logic/ReconstructUtils.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
-#include "app-logic/GeometryUtils.h"
-
-#include "feature-visitors/GeometryFinder.h"
 
 #include "model/FeatureHandle.h"
 #include "model/WeakReferenceCallback.h"
@@ -54,7 +53,6 @@
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/SceneView.h"
 
-#include "utils/FeatureUtils.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryUtils.h"
