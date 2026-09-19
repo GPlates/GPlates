@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os, platform, re, inspect
+import sys, os, platform, re, inspect, json
 
 # Read the Docs Sphinx Theme.
 # Note: This needs to be installed with 'pip install sphinx_rtd_theme'.
@@ -144,6 +144,8 @@ def setup(app):
     app.connect('autodoc-process-docstring', process_docstring)
     # Include sample scripts, whole or by fragment, from 'sample-code/*.py' (see 'SampleCodeDirective').
     app.add_directive('sample-code', SampleCodeDirective)
+    # Redirect links to the old single-page Primer (see 'write_primer_anchors').
+    app.connect('build-finished', write_primer_anchors)
 
 
 #
@@ -280,6 +282,11 @@ class SampleCodeDirective(Directive):
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['@SPHINX_STATIC_DIR@']
+
+# Custom autosummary templates. Only '_templates/autosummary/enum.rst' exists: it is selected by the
+# ':template:' option of the Enumerations block in 'pygplates_reference.rst', because the default
+# class template lists every method and attribute a Boost.Python enum inherits from 'int'.
+templates_path = ['_templates']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -544,3 +551,110 @@ def process_docstring(app, what, name, obj, options, lines):
     # 'prepare_docstring()' guarantees a trailing blank line - keep that guarantee.
     output.append('')
     lines[:] = output
+
+
+# -- Primer anchor redirect ----------------------------------------------------
+
+# The Primer was once a single page, 'pygplates_primer.html', and links to its sections are
+# published outside these docs. Those links used two kinds of anchor: a label's (eg,
+# '#pygplates-primer-topological-model'), which 'write_primer_anchors' finds for itself, and a
+# section title's (eg, '#topological-model'), which its table of contents and permalinks used.
+# A title's anchor is not unique across pages - a later page may well have its own "Velocities" -
+# so each one the old page had is listed here, frozen, against the label of the section it belonged
+# to (or, for an unlabelled section, the label of the section containing it).
+#
+# Sphinx's numbered anchors ('#id1', ...) are deliberately absent: they depend on the order of the
+# sections on a page, so a number on the old page means something else on every new one.
+_OLD_PRIMER_TITLE_ANCHORS = {
+    'composing-finite-rotations': 'pygplates_primer_composing_finite_rotations',
+    'crustal-thickness-factors':
+        'pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors',
+    'deactivating-points':
+        'pygplates_primer_what_is_topological_reconstruction_deactivating_points',
+    'deformation': 'pygplates_primer_deformation',
+    'equivalent-stage-rotation': 'pygplates_primer_equivalent_stage_rotation',
+    'equivalent-total-rotation': 'pygplates_primer_equivalent_total_rotation',
+    'exponential-rift-stretching-profile': 'pygplates_primer_exponential_rift_stretching_profile',
+    'geometry-points': 'pygplates_primer_reconstructed_geometry_time_span_geometry_points',
+    'network-triangulation': 'pygplates_primer_network_triangulation',
+    'plate-boundary-statistics': 'pygplates_primer_plate_boundary_statistics',
+    'plate-circuit-paths': 'pygplates_primer_plate_circuit_paths',
+    'plate-reconstruction-hierarchy': 'pygplates_primer_plate_reconstruction_hierarchy',
+    'reconstructed-geometry-time-span': 'pygplates_primer_reconstructed_geometry_time_span',
+    'reconstruction-plate-id':
+        'pygplates_primer_what_is_topological_reconstruction_reconstruction_plate_id',
+    'relative-stage-rotation': 'pygplates_primer_relative_stage_rotation',
+    'relative-total-rotation': 'pygplates_primer_relative_total_rotation',
+    'rift-edge-length-threshold': 'pygplates_primer_exponential_rift_stretching_profile',
+    'rift-exponential-stretching-constant': 'pygplates_primer_exponential_rift_stretching_profile',
+    'rift-left-right-plate-ids': 'pygplates_primer_exponential_rift_stretching_profile',
+    'rift-strain-rate-resolution': 'pygplates_primer_exponential_rift_stretching_profile',
+    'rigid-blocks': 'pygplates_primer_rigid_blocks',
+    'scalar-values': 'pygplates_primer_reconstructed_geometry_time_span_scalar_values',
+    'strain-rate-clamping': 'pygplates_primer_strain_rate_clamping',
+    'strain-rate-smoothing': 'pygplates_primer_strain_rate_smoothing',
+    'strain-rates': 'pygplates_primer_reconstructed_geometry_time_span_strain_rates',
+    'strain-rates-in-triangulation': 'pygplates_primer_strain_rates_in_triangulation',
+    'strains': 'pygplates_primer_reconstructed_geometry_time_span_strains',
+    'tectonic-subsidence': 'pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence',
+    'time-spans': 'pygplates_primer_using_topological_reconstruction_time_spans',
+    'topological-model': 'pygplates_primer_topological_model',
+    'topological-network': 'pygplates_primer_topological_network',
+    'topological-snapshot': 'pygplates_primer_topological_snapshot',
+    'topologically-reconstruct-geometries': 'pygplates_primer_topologically_reconstruct_geometries',
+    'topologies': 'pygplates_primer_topologies',
+    'topology-locations': 'pygplates_primer_reconstructed_geometry_time_span_topology_locations',
+    'using-topological-reconstruction': 'pygplates_primer_using_topological_reconstruction',
+    'velocities': 'pygplates_primer_reconstructed_geometry_time_span_velocities',
+    'what-is-topological-reconstruction': 'pygplates_primer_what_is_topological_reconstruction',
+    'working-with-finite-rotations': 'pygplates_primer_working_with_finite_rotations'}
+
+def write_primer_anchors(app, exception):
+    """
+    Write '_static/primer_anchors.js', which maps an old Primer anchor to the page now holding it.
+
+    A script on 'pygplates_primer.rst' looks up the anchor of a link to the old single-page Primer
+    in this map, and redirects to the page. Each anchor's page comes from the label of its
+    section, so the map follows a section that moves to another page.
+
+    Warns (an error under '-W') if an anchor would redirect to a page that does not have it: a
+    label removed, or a new section on the same page taking a title's anchor from an old one.
+    """
+    # By name, not 'app.builder.format': 'dirhtml', 'singlehtml' and 'epub' are also 'html' format,
+    # but lay the pages out differently, so the pages in the map would be wrong for them.
+    if exception is not None or app.builder.name != 'html':
+        return
+
+    from sphinx.util import logging
+    logger = logging.getLogger(__name__)
+
+    # Label name -> (docname, anchor, section title), for every label in the documentation.
+    labels = app.env.get_domain('std').labels
+
+    anchors = {}
+    for label, (docname, anchor, _) in labels.items():
+        if label.startswith('pygplates_primer_') and docname.startswith('primer/'):
+            anchors[anchor] = app.builder.get_target_uri(docname)
+    for anchor, label in _OLD_PRIMER_TITLE_ANCHORS.items():
+        if label not in labels:
+            logger.warning(f"the old Primer anchor '#{anchor}' cannot be redirected: its label "
+                           f"'{label}' no longer exists (see '_OLD_PRIMER_TITLE_ANCHORS' in "
+                           f"conf.py)")
+            continue
+        anchors[anchor] = app.builder.get_target_uri(labels[label][0])
+
+    page_ids = {}
+    for anchor, page in sorted(anchors.items()):
+        if page not in page_ids:
+            with open(os.path.join(app.builder.outdir, page), encoding='utf-8') as html:
+                page_ids[page] = set(_HTML_ID_RE.findall(html.read()))
+        if anchor not in page_ids[page]:
+            logger.warning(f"the old Primer anchor '#{anchor}' redirects to '{page}', which has no "
+                           f"such anchor (see '_OLD_PRIMER_TITLE_ANCHORS' in conf.py)")
+
+    with open(os.path.join(app.builder.outdir, '_static', 'primer_anchors.js'), 'w',
+              encoding='utf-8') as js:
+        js.write('// Generated by write_primer_anchors() in conf.py - do not edit.\n')
+        js.write('var PRIMER_ANCHORS = ' + json.dumps(anchors, indent=1, sort_keys=True) + ';\n')
+
+_HTML_ID_RE = re.compile(r'\bid="([^"]+)"')

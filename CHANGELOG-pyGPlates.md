@@ -10,6 +10,7 @@ Changes since 1.0.0:
 
 * Supports Python 3.9 to 3.14 (Python 3.8 is no longer supported).
 * Type stub included in the package (PEP 561), so editors and type checkers get completion, signature help and type checking for the whole API.
+* The API reference documents every enumeration (eg, `PartitionMethod`) and exception (eg, `InvalidLatLonError`) on its own page, and parameter types and raised exceptions now link to those pages.
 * Pickling is much faster (eg, a `RotationModel` pickles about 7 times faster and unpickles about 5 times faster).
   * Pickles written by pyGPlates 1.0 can still be loaded, but pickles written by 1.1 cannot be loaded by 1.0.
   * Fixed pickling an object that had extra attributes added to it from Python (previously raised "Incomplete pickle support").
@@ -23,6 +24,8 @@ Changes since 1.0.0:
     * So pyGPlates imports on a minimal Linux system (no `libGL` or `glib` packages needed) and the packages are smaller.
   * Linux wheels require glibc 2.28 or later (manylinux_2_28), instead of glibc 2.17 (manylinux2014).
   * Wheels on all platforms bundle the same PROJ (9.8.1) and GDAL (3.12.4) versions.
+* Documentation: corrected the supported Python versions and platforms in *Getting started*, fixed the introductory examples (which raised `NameError`), and documented the Python console in GPlates.
+* Documentation: the *Primer* is split into one page per topic (rotations, topologies and deformation). Links to sections of the old single-page Primer still work, redirecting to the section on its new page.
 * Removed the undocumented classes `Colour`, `Palette`, `PaletteKey`, `OldFeature` and `OldFeatureCollection` (they were only meaningful inside GPlates).
 * Removed `namedtuple`, `partial`, `math`, `itertools`, `numpy`, `iteritems`, `itervalues`, `listitems` and `listvalues` from the `pygplates` module. They were internal imports and Python 2 helpers, exposed as `pygplates.<name>` by accident; import them from the standard library (or `numpy`) instead.
 * Bug fixes:

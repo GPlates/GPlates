@@ -9,10 +9,52 @@ This document lists the Python functions and classes that make up the GPlates Py
 
 .. note:: Please see the :ref:`tutorial<pygplates_getting_started_tutorial>` section to help get you started using pyGPlates.
 
+Most scripts start from one of five *model* classes, each built from files (or features) and each able to produce a *snapshot* at a reconstruction time:
+
+* :class:`pygplates.RotationModel` - the rotations that move the plates,
+* :class:`pygplates.ReconstructModel` - reconstruct regular features (and motion paths and flowlines),
+* :class:`pygplates.TopologicalModel` - resolve topological plate boundaries and deforming networks,
+* :class:`pygplates.NetRotationModel` - the net rotation of the plates,
+* :class:`pygplates.PlatePartitioner` - assign plate IDs (and other properties) to your own data.
+
+The :ref:`pygplates_primer` explains the concepts behind them, and the :ref:`pygplates_sample_code` shows them solving common problems.
 
 .. contents::
    :local:
    :depth: 2
+
+Rotations
+---------
+
+| ``RotationModel`` is the main class for getting finite and stage rotations from rotation models/files.
+| ``FiniteRotation`` is a useful maths class for rotating geometries (and vectors).
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.RotationModel
+   pygplates.FiniteRotation
+
+.. note:: ``ReconstructionTreeEdge`` is only needed for very advanced scenarios.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.ReconstructionTree
+   pygplates.ReconstructionTreeEdge
+
+Functions to find and fix finite rotation crossovers (transitions of fixed plate):
+
+.. autosummary::
+   :toctree: generated
+
+   pygplates.find_crossovers
+   pygplates.synchronise_crossovers
+
+.. seealso:: :ref:`pygplates_primer_plate_reconstruction_hierarchy` and :ref:`pygplates_primer_working_with_finite_rotations` in the *Primer*,
+   and the sample code :ref:`pygplates_plate_rotation_hierarchy`, :ref:`pygplates_plate_circuits_to_anchored_plate` and :ref:`pygplates_modify_reconstruction_pole`.
 
 Reconstruction
 --------------
@@ -26,7 +68,7 @@ Classes to query the history of reconstructions:
    pygplates.ReconstructModel
    pygplates.ReconstructSnapshot
 
-Function to reconstruct backward and forward in time:
+Functions to reconstruct backward and forward in time (the classes above are preferred when reconstructing to more than one time):
 
 .. autosummary::
    :toctree: generated
@@ -50,8 +92,11 @@ All three above reconstructed feature types inherit from:
 .. autosummary::
    :nosignatures:
    :toctree: generated
-   
+
    pygplates.ReconstructionGeometry
+
+.. seealso:: The sample code :ref:`pygplates_reconstruct_regular_features`, :ref:`pygplates_reconstruct_motion_path_features` and
+   :ref:`pygplates_reconstruct_flowline_features`.
 
 Topology
 --------
@@ -75,7 +120,7 @@ Parameters to control how topologies are resolved:
 
    pygplates.ResolveTopologyParameters
 
-Function to resolve topologies:
+Function to resolve topologies (the classes above are preferred when resolving at more than one time):
 
 .. autosummary::
    :toctree: generated
@@ -98,7 +143,7 @@ All three above resolved topology types inherit from:
 .. autosummary::
    :nosignatures:
    :toctree: generated
-   
+
    pygplates.ReconstructionGeometry
 
 The following class represents a sub-segment of a *single* resolved topological line, boundary or network.
@@ -106,7 +151,7 @@ The following class represents a sub-segment of a *single* resolved topological 
 .. autosummary::
    :nosignatures:
    :toctree: generated
-   
+
    pygplates.ResolvedTopologicalSubSegment
 
 The following classes represent sub-segments *shared* by one or more resolved topological boundaries and/or networks.
@@ -126,24 +171,20 @@ The following class contains the triangulation of the deforming region of a reso
 
    pygplates.NetworkTriangulation
 
-Velocity and strain
--------------------
+.. seealso:: :ref:`pygplates_primer_topologies` and :ref:`pygplates_primer_deformation` in the *Primer*, and the sample code
+   :ref:`pygplates_find_total_ridge_and_subduction_zone_lengths`, :ref:`pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies`,
+   :ref:`pygplates_detect_topology_gaps_and_overlaps`, :ref:`pygplates_reconstruct_strain_and_strain_rate` and
+   :ref:`pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence`.
 
-Functions to calculate velocities:
+Velocity, strain and net rotation
+---------------------------------
+
+Function to calculate velocities:
 
 .. autosummary::
    :toctree: generated
 
    pygplates.calculate_velocities
-
-The following classes represent strain rate and strain (at a particular surface location).
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-
-   pygplates.Strain
-   pygplates.StrainRate
 
 The following class contains statistics (like convergence velocity) at a point on a plate boundary.
 
@@ -153,83 +194,62 @@ The following class contains statistics (like convergence velocity) at a point o
 
    pygplates.PlateBoundaryStatistic
 
-Rotation
---------
-
-| ``RotationModel`` is the main class for getting finite and stage rotations from rotation models/files.
-| ``FiniteRotation`` is a useful maths class for rotating geometries (and vectors).
-| ``NetRotationModel`` is for calculating net rotation of topological plates and deforming networks.
+The following classes represent strain rate and strain (at a particular surface location).
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
 
-   pygplates.RotationModel
-   pygplates.FiniteRotation
+   pygplates.StrainRate
+   pygplates.Strain
+
+Classes to calculate the net rotation of topological plates and deforming networks:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
    pygplates.NetRotationModel
    pygplates.NetRotationSnapshot
    pygplates.NetRotation
 
-.. note:: ``ReconstructionTreeEdge`` is only needed for very advanced scenarios.
+.. seealso:: :ref:`pygplates_primer_plate_boundary_statistics` in the *Primer*, and the sample code
+   :ref:`pygplates_calculate_velocities_by_plate_id`, :ref:`pygplates_calculate_velocities_in_dynamic_plates`,
+   :ref:`pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges`,
+   :ref:`pygplates_sample_intra-plate_strain_rates_at_subduction_zones` and :ref:`pygplates_calculate_net_rotation`.
 
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-
-   pygplates.ReconstructionTree
-   pygplates.ReconstructionTreeEdge
-
-Functions to find and fix finite rotation crossovers (transitions of fixed plate):
-
-.. autosummary::
-   :toctree: generated
-
-   pygplates.find_crossovers
-   pygplates.synchronise_crossovers
-
-Plate Partitioning
+Plate partitioning
 ------------------
 
-Functions to partition into plates:
-
-.. autosummary::
-   :toctree: generated
-   
-   pygplates.partition_into_plates
-
-Classes to partition into plates:
+Class to partition features and geometries into plates:
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
-   
+
    pygplates.PlatePartitioner
 
-File I/O
---------
+Function to partition into plates (the class above is preferred when partitioning at more than one time):
 
-Classes that read/write data from/to files:
+.. autosummary::
+   :toctree: generated
+
+   pygplates.partition_into_plates
+
+.. seealso:: The sample code :ref:`pygplates_import_geometries_and_assign_plate_ids`.
+
+Features and properties
+-----------------------
+
+| ``Feature`` is the main class to go to for querying/setting geological feature properties.
+| ``FeatureCollection`` groups features and reads/writes them from/to files.
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
 
-   pygplates.FeatureCollection
-
-Feature
--------
-
-``Feature`` is the main class to go to for querying/setting geological feature properties.
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-   
    pygplates.Feature
    pygplates.FeatureCollection
-
-Feature property
-----------------
 
 A :class:`feature<pygplates.Feature>` is essentially a list of :class:`properties<pygplates.Property>`
 where each property has a :class:`name<pygplates.PropertyName>` and a :class:`value<pygplates.PropertyValue>`.
@@ -245,8 +265,22 @@ where each property has a :class:`name<pygplates.PropertyName>` and a :class:`va
    pygplates.PropertyValue
    pygplates.PropertyValueVisitor
 
-Feature property value
-----------------------
+String-like types that identify features, feature types, property names, scalar types and enumeration types:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.FeatureType
+   pygplates.FeatureId
+   pygplates.ScalarType
+   pygplates.EnumerationType
+
+.. seealso:: The sample code :ref:`pygplates_load_and_save_feature_collections`, :ref:`pygplates_create_common_feature_types`,
+   :ref:`pygplates_query_common_feature_types` and :ref:`pygplates_create_topological_features`.
+
+Property values
+---------------
 
 | These classes represent the various types of property values that a :class:`feature<pygplates.Feature>` can contain.
 | Property values contain things such as plate IDs, geometries, finite rotations, strings, numbers, etc.
@@ -257,7 +291,7 @@ Feature property value
 .. autosummary::
    :nosignatures:
    :toctree: generated
-   
+
    pygplates.Enumeration
    pygplates.GmlDataBlock
    pygplates.GmlLineString
@@ -341,7 +375,7 @@ There are four types of geometry:
 .. autosummary::
    :nosignatures:
    :toctree: generated
-   
+
    pygplates.PointOnSphere
    pygplates.MultiPointOnSphere
    pygplates.PolylineOnSphere
@@ -352,7 +386,7 @@ All four above geometry types inherit from:
 .. autosummary::
    :nosignatures:
    :toctree: generated
-   
+
    pygplates.GeometryOnSphere
 
 A :class:`polyline<pygplates.PolylineOnSphere>` or a :class:`polygon<pygplates.PolygonOnSphere>` is
@@ -363,7 +397,7 @@ Each *segment* is a great circle arc:
 .. autosummary::
    :nosignatures:
    :toctree: generated
-   
+
    pygplates.GreatCircleArc
 
 There is also a latitude/longitude version of a point:
@@ -374,6 +408,18 @@ There is also a latitude/longitude version of a point:
 
    pygplates.LatLonPoint
 
+The following class wraps geometries to the dateline (so they can be drawn in a 2D map projection without horizontal artefacts):
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.DateLineWrapper
+
+.. seealso:: The sample code :ref:`pygplates_find_nearest_feature_to_a_point`, :ref:`pygplates_find_features_overlapping_a_polygon`,
+   :ref:`pygplates_find_overriding_plate_of_closest_subducting_line`, :ref:`pygplates_create_conjugate_isochrons_from_ridge` and
+   :ref:`pygplates_split_isochron_into_ridges_and_transforms`.
+
 Vector
 ------
 
@@ -382,24 +428,9 @@ A vector class, and conversions between global cartesian and local magnitude/azi
 .. autosummary::
    :nosignatures:
    :toctree: generated
-   
-   pygplates.LocalCartesian
+
    pygplates.Vector3D
-
-String
-------
-
-String-type classes used in various areas of pyGPlates:
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated
-   
-   pygplates.EnumerationType
-   pygplates.FeatureId
-   pygplates.FeatureType
-   pygplates.PropertyName
-   pygplates.ScalarType
+   pygplates.LocalCartesian
 
 Utility
 -------
@@ -409,9 +440,94 @@ General utility classes:
 .. autosummary::
    :nosignatures:
    :toctree: generated
-   
-   pygplates.DateLineWrapper
+
    pygplates.Earth
-   pygplates.FeaturesFunctionArgument
    pygplates.GeoTimeInstant
    pygplates.Version
+   pygplates.FeaturesFunctionArgument
+
+Enumerations
+------------
+
+Enumerated values accepted by (or returned from) the functions and methods above. Each page lists the values and their meaning.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+   :template: autosummary/enum.rst
+
+   pygplates.CoverageReturn
+   pygplates.FeatureReturn
+   pygplates.FlattenLongitudeOverlaps
+   pygplates.PartitionMethod
+   pygplates.PartitionProperty
+   pygplates.PartitionReturn
+   pygplates.PolygonOnSphereOrientation
+   pygplates.PolygonOnSpherePartitionResult
+   pygplates.PolylineConversion
+   pygplates.PrincipalAngleType
+   pygplates.PropertyReturn
+   pygplates.ReconstructType
+   pygplates.ResolveTopologyType
+   pygplates.SortPartitioningPlates
+   pygplates.SortReconstructedStaticPolygons
+   pygplates.StrainRateSmoothing
+   pygplates.VelocityDeltaTimeType
+   pygplates.VelocityUnits
+   pygplates.VerifyInformationModel
+
+Exceptions
+----------
+
+All pyGPlates exceptions inherit from :class:`pygplates.GPlatesError`, which in turn inherits from Python's ``Exception``.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.GPlatesError
+
+Errors reading and writing files, and internal errors:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.FileFormatNotSupportedError
+   pygplates.OpenFileForReadingError
+   pygplates.OpenFileForWritingError
+   pygplates.AbortError
+   pygplates.AssertionFailureError
+
+Errors caused by an argument that does not satisfy the requirements of a function or method (all inherit from ``PreconditionViolationError``):
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.PreconditionViolationError
+   pygplates.AmbiguousGeometryCoverageError
+   pygplates.DifferentAnchoredPlatesInReconstructionTreesError
+   pygplates.DifferentTimesInPartitioningPlatesError
+   pygplates.GeometryTypeError
+   pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError
+   pygplates.IndeterminateArcRotationAxisError
+   pygplates.IndeterminateGreatCircleArcDirectionError
+   pygplates.IndeterminateGreatCircleArcNormalError
+   pygplates.InformationModelError
+   pygplates.InsufficientPointsForMultiPointConstructionError
+   pygplates.InterpolationError
+   pygplates.InvalidLatLonError
+   pygplates.InvalidPointsForPolygonConstructionError
+   pygplates.InvalidPointsForPolylineConstructionError
+
+Errors from mathematical operations (all inherit from ``MathematicalError``):
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.MathematicalError
+   pygplates.IndeterminateResultError
+   pygplates.UnableToNormaliseZeroVectorError
+   pygplates.ViolatedUnitVectorInvariantError

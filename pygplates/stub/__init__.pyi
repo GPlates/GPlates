@@ -16,7 +16,11 @@ __version__: str
 
 def _post_import(package_dir: str) -> None: ...
 
-class AbortError(GPlatesError): ...
+class AbortError(GPlatesError):
+    """PyGPlates aborted the current operation because of an unexpected internal error.
+
+      This indicates a bug in pyGPlates rather than a mistake in your script. The error message includes the call stack trace - please report it (and the trace) to the GPlates developers.
+    """
 
 class AllReconstructionTreeEdgesViewIterator:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -28,11 +32,34 @@ class AllReconstructionTreeEdgesViewIterator:
 
     def __next__(self, *args: Any, **kwargs: Any) -> Any: ...
 
-class AmbiguousGeometryCoverageError(PreconditionViolationError): ...
+class AmbiguousGeometryCoverageError(PreconditionViolationError):
+    """A coverage range could not be unambiguously matched to its geometry (coverage domain).
 
-class AssertionFailureError(GPlatesError): ...
+      Raised by :meth:`Feature.set_geometry` when it is given more than one coverage and two or more of the coverage
+      geometries have the same number of points. A range is matched to its geometry by its number of scalar values,
+      so pyGPlates could not tell which range belongs to which geometry.
+    """
+
+class AssertionFailureError(GPlatesError):
+    """An internal assertion failed inside pyGPlates.
+
+      This indicates a bug in pyGPlates rather than a mistake in your script. The error message includes the call stack trace - please report it (and the trace) to the GPlates developers.
+    """
 
 class CoverageReturn(int):
+    """Whether to return geometries only, or geometries together with their per-point scalar values (coverages).
+
+      Accepted by :meth:`Feature.get_geometry`, :meth:`Feature.get_geometries` and :meth:`Feature.get_all_geometries`.
+
+      A *coverage* is a geometry (the coverage *domain*) together with a ``dict`` mapping each :class:`ScalarType` to a ``list`` of scalar values (the coverage *range*), with one scalar value per point in the geometry.
+
+      =================================== ==============
+      Value                               Description
+      =================================== ==============
+      CoverageReturn.geometry_only        Return just the geometry (the default).
+      CoverageReturn.geometry_and_scalars Return a 2-tuple of the geometry and the ``dict`` of scalar values.
+      =================================== ==============
+    """
     geometry_only: ClassVar[CoverageReturn]
     geometry_and_scalars: ClassVar[CoverageReturn]
     names: ClassVar[dict[str, CoverageReturn]]
@@ -329,9 +356,16 @@ class DateLineWrapper:
          tessellation threshold is clamped to the range [0, 180] to avoid an exception.
         """
 
-class DifferentAnchoredPlatesInReconstructionTreesError(PreconditionViolationError): ...
+class DifferentAnchoredPlatesInReconstructionTreesError(PreconditionViolationError):
+    """Two reconstruction trees do not have the same anchor plate.
 
-class DifferentTimesInPartitioningPlatesError(PreconditionViolationError): ...
+      Raised when rotations from two :class:`reconstruction trees <ReconstructionTree>` built with
+      different anchor plates are combined (for example, to calculate a stage rotation).
+    """
+
+class DifferentTimesInPartitioningPlatesError(PreconditionViolationError):
+    """The partitioning plates given to a :class:`PlatePartitioner` do not all have the same reconstruction time.
+    """
 
 class Earth:
     """Various Earth-related parameters (such as radius).
@@ -393,8 +427,8 @@ class Enumeration(PropertyValue):
         :param content: the content (value) of the enumeration
         :type content: str
         :param verify_information_model: whether to check the information model for valid enumeration *type* and *content*
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and either *type* is not a recognised enumeration type or *content* is not a valid value for *type*
+        :type verify_information_model: VerifyInformationModel
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and either *type* is not a recognised enumeration type or *content* is not a valid value for *type*
 
         ::
 
@@ -423,8 +457,8 @@ class Enumeration(PropertyValue):
         :param content: the content (value)
         :type content: str
         :param verify_information_model: whether to check the information model for valid enumeration *value*
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *content* is not a valid value for this enumeration :meth:`type<get_type>`
+        :type verify_information_model: VerifyInformationModel
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *content* is not a valid value for this enumeration :meth:`type<get_type>`
 
         ::
 
@@ -676,8 +710,8 @@ class Feature:
         :param feature_id: the feature identifier
         :type feature_id: FeatureId
         :param verify_information_model: whether to check *feature_type* with the information model (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *feature_type* is not a recognised feature type
+        :type verify_information_model: VerifyInformationModel
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *feature_type* is not a recognised feature type
 
         See :class:`FeatureType` for a list of available feature types.
 
@@ -714,10 +748,10 @@ class Feature:
         :param property_value: the value (or values) of the property (or properties) to add
         :type property_value: PropertyValue, or sequence (eg, list or tuple) of PropertyValue
         :param verify_information_model: whether to check the information model before adding (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property added to the feature, or a ``list`` of properties added if *property_value* is a sequence of property values
         :rtype: Property, or list[Property]
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_value* does not have a property value type supported by *property_name*
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_value* does not have a property value type supported by *property_name*
 
         ::
 
@@ -739,10 +773,10 @@ class Feature:
         :param properties: the property name/value pairs to add
         :type properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
         :param verify_information_model: whether to check the information model before adding (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the list of properties added to the feature
         :rtype: list of Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and any of the property names are not recognised property names or not supported by the feature type, or if any property value type is not supported by its associated property name
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and any of the property names are not recognised property names or not supported by the feature type, or if any property value type is not supported by its associated property name
 
         ::
 
@@ -798,10 +832,10 @@ class Feature:
         :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *left_plate*) - this is only required if *seed_geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
         :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])
         :param verify_information_model: whether to check the information model (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :rtype: Feature
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time
 
         This function calls :meth:`set_geometry`. It optionally calls :meth:`set_times`, :meth:`set_name`, :meth:`set_description`, :meth:`set_valid_time`, :meth:`set_left_plate`, :meth:`set_right_plate`, :meth:`set_reconstruction_method` and :meth:`add`. The :class:`feature type<FeatureType>` is a `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_.
 
@@ -883,10 +917,10 @@ class Feature:
         :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if *seed_geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
         :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])
         :param verify_information_model: whether to check the information model (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :rtype: Feature
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time
 
         This function calls :meth:`set_geometry`. It optionally calls :meth:`set_times`, :meth:`set_name`, :meth:`set_description`, :meth:`set_valid_time`, :meth:`set_relative_plate`, :meth:`set_reconstruction_plate_id`, :meth:`set_reconstruction_method` and :meth:`add`. The :class:`feature type<FeatureType>` is a `motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_.
 
@@ -964,10 +998,10 @@ class Feature:
         :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
         :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])
         :param verify_information_model: whether to check the information model (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :rtype: Feature
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *feature_type* is not a `reconstructable feature <http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature>`_.
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *feature_type* is not a `reconstructable feature <http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature>`_.
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time
 
         This function creates a feature of :class:`type<FeatureType>` that falls in the category of a `reconstructable feature <http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature>`_ - note that there are multiple :class:`feature types<FeatureType>` that fall into this category.
 
@@ -1078,10 +1112,10 @@ class Feature:
         :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
         :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])
         :param verify_information_model: whether to check the information model (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :rtype: Feature
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *feature_type* is not a `tectonic section <http://www.gplates.org/docs/gpgim/#gpml:TectonicSection>`_.
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *feature_type* is not a `tectonic section <http://www.gplates.org/docs/gpgim/#gpml:TectonicSection>`_.
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time
 
         This function creates a feature of :class:`type<FeatureType>` that falls in the category of a `tectonic section <http://www.gplates.org/docs/gpgim/#gpml:TectonicSection>`_ - note that there are multiple :class:`feature types<FeatureType>` that fall into this category.
 
@@ -1155,9 +1189,9 @@ class Feature:
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
         :type feature_id: FeatureId
         :param verify_information_model: whether to check the information model (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :rtype: Feature
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time
 
         .. note:: A topological feature really only differs from a reconstructable feature in that it has a *topological* geometry instead of a regular geometry (ie, internally it calls :meth:`set_topological_geometry` instead of :meth:`set_geometry`.
 
@@ -1216,9 +1250,9 @@ class Feature:
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
         :type feature_id: FeatureId
         :param verify_information_model: whether to check the information model (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :rtype: Feature
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time
 
         This function is a specialised version of :meth:`create_topological_feature` designed for topological *network* features. Whereas :meth:`create_topological_feature` can be used for topological lines, boundaries or networks.
 
@@ -1277,7 +1311,7 @@ class Feature:
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
         :type feature_id: FeatureId
         :param verify_information_model: whether to check the information model (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :rtype: Feature
 
         This function creates a rotation feature containing a :meth:`total reconstruction pole<get_total_reconstruction_pole>` (a time sequence of :class:`finite rotations<GpmlFiniteRotation>`) for a fixed/moving plate pair. The :class:`feature type<FeatureType>` is a `total reconstruction sequence <http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence>`_.
@@ -1307,7 +1341,7 @@ class Feature:
         :param property_query: the property name (or predicate function) that matches the property (or properties) to get
         :type property_query: PropertyName, or callable (accepting single Property argument)
         :param property_return: whether to return exactly one property, the first property or all matching properties
-        :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+        :type property_return: PropertyReturn
         :rtype: Property, or list of Property, or None
 
         This method is similar to :meth:`get_value` except it returns properties instead of property *values*.
@@ -1346,7 +1380,7 @@ class Feature:
         """Return a list of all *present day* geometries of this feature (regardless of their property names).
 
         :param coverage_return: whether to return geometries only (the default), or coverages (where a coverage is a geometry and associated per-point scalar values)
-        :type coverage_return: CoverageReturn.geometry_only or CoverageReturn.geometry_and_scalars
+        :type coverage_return: CoverageReturn
         :returns: the geometries - or coverages (2-tuples of geometry and a ``dict`` mapping :class:`ScalarType` to a ``list`` of scalar values) if *CoverageReturn.geometry_and_scalars* is specified
         :rtype: list[GeometryOnSphere], or list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]]
 
@@ -1393,7 +1427,7 @@ class Feature:
         :param default: the default boolean value (defaults to False), or default boolean values
         :type default: bool or list or None
         :param property_return: whether to return exactly one boolean, the first boolean or all matching booleans
-        :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+        :type property_return: PropertyReturn
         :rtype: bool, or list of bool, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for :class:`XsBoolean` properties.
@@ -1423,7 +1457,7 @@ class Feature:
         :param default: the default plate ID (defaults to zero), or default plate IDs
         :type default: int or list or None
         :param property_return: whether to return exactly one ID, the first ID or all IDs
-        :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+        :type property_return: PropertyReturn
         :rtype: int, or list of int, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for the common property
@@ -1525,7 +1559,7 @@ class Feature:
         :param default: the default float value (defaults to 0.0), or default float values
         :type default: float or list or None
         :param property_return: whether to return exactly one float, the first float or all matching floats
-        :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+        :type property_return: PropertyReturn
         :rtype: float, or list of float, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for :class:`XsDouble` properties.
@@ -1589,7 +1623,7 @@ class Feature:
         :param property_query: The optional property name or predicate function used to find the geometry properties. If not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead. And if there are no default geometry properties then non-default geometry properties are queried instead.
         :type property_query: PropertyName, or callable (accepting single Property argument)
         :param coverage_return: whether to return geometries only (the default), or coverages (where a coverage is a geometry and associated per-point scalar values)
-        :type coverage_return: CoverageReturn.geometry_only or CoverageReturn.geometry_and_scalars
+        :type coverage_return: CoverageReturn
         :returns: the geometries - or coverages (2-tuples of geometry and a ``dict`` mapping :class:`ScalarType` to a ``list`` of scalar values) if *CoverageReturn.geometry_and_scalars* is specified
         :rtype: list[GeometryOnSphere], or list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]]
 
@@ -1619,9 +1653,9 @@ class Feature:
         :param property_query: The optional property name or predicate function used to find the geometry property or properties. If not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead. And if there are no default geometry properties then non-default geometry properties are queried instead.
         :type property_query: PropertyName, or callable (accepting single Property argument)
         :param property_return: whether to return exactly one geometry, the first geometry or all geometries
-        :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+        :type property_return: PropertyReturn
         :param coverage_return: whether to return geometry(s) only (the default), or coverage(s) (where a coverage is a geometry and associated per-point scalar values)
-        :type coverage_return: CoverageReturn.geometry_only or CoverageReturn.geometry_and_scalars
+        :type coverage_return: CoverageReturn
         :returns: the geometry, or ``list`` of geometries, or ``None`` (depending on *property_return* - see table below). If *CoverageReturn.geometry_and_scalars* is specified then each geometry is instead a *coverage* - a 2-tuple of geometry and a ``dict`` mapping :class:`ScalarType` to a ``list`` of scalar values.
         :rtype: GeometryOnSphere, or list[GeometryOnSphere], or tuple[GeometryOnSphere, dict[ScalarType, list[float]]], or list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]], or None
 
@@ -1748,7 +1782,7 @@ class Feature:
         :param default: the default integer value (defaults to zero), or default integer values
         :type default: int or list or None
         :param property_return: whether to return exactly one integer, the first integer or all matching integers
-        :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+        :type property_return: PropertyReturn
         :rtype: int, or list of int, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for :class:`XsInteger` properties.
@@ -1805,7 +1839,7 @@ class Feature:
         :param default: the default name (defaults to an empty string), or default names
         :type default: str or list or None
         :param property_return: whether to return exactly one name, the first name or all names
-        :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+        :type property_return: PropertyReturn
         :rtype: str, or list of str, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for the common property
@@ -2057,7 +2091,7 @@ class Feature:
         :param default: the default string value (defaults to an empty string), or default string values
         :type default: str or list or None
         :param property_return: whether to return exactly one string, the first string or all matching strings
-        :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+        :type property_return: PropertyReturn
         :rtype: str, or list of str, or type(default)
 
         This is a convenience method that wraps :meth:`get_value` for :class:`XsString` properties.
@@ -2142,7 +2176,7 @@ class Feature:
         :param property_query: The optional property name or predicate function used to find the topological geometry property or properties. If not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead. And if there are no default topological geometry properties then non-default topological geometry properties are queried instead.
         :type property_query: PropertyName, or callable (accepting single Property argument)
         :param property_return: whether to return exactly one topological geometry, the first geometry or all topological geometries
-        :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+        :type property_return: PropertyReturn
         :rtype: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or list of them, or None
 
         This is a convenience method to make topological geometry retrieval easier.
@@ -2264,7 +2298,7 @@ class Feature:
         :param time: the time to extract value (defaults to present day)
         :type time: float or GeoTimeInstant
         :param property_return: whether to return exactly one property, the first property or all matching properties
-        :type property_return: PropertyReturn.exactly_one, PropertyReturn.first or PropertyReturn.all
+        :type property_return: PropertyReturn
         :rtype: PropertyValue, or list of PropertyValue, or None
 
         This method is essentially the same as :meth:`get` except it also calls :meth:`Property.get_value` on each property.
@@ -2320,7 +2354,7 @@ class Feature:
 
         :param property_query: one or more property names, property instances or predicate functions that determine which properties to remove
         :type property_query: PropertyName, or Property, or callable (accepting single Property argument), or a sequence (eg, list or tuple) of any combination of them
-        :raises: ValueError if any specified :class:`Property` is not currently a property in this feature
+        :raises ValueError: if any specified :class:`Property` is not currently a property in this feature
 
         All feature properties matching any :class:`PropertyName` or predicate callable (if any specified) will be removed. Any specified :class:`PropertyName` or predicate callable that does not match a property in this feature is ignored. However if any specified :class:`Property` is not currently a property in this feature then the ``ValueError`` exception is raised - note that the same :class:`Property` *instance* must have previously been added (in other words the property *values* are not compared - it actually looks for the same property *instance*).
 
@@ -2367,10 +2401,10 @@ class Feature:
         :param property_value: the value (or values) of the property (or properties) to set
         :type property_value: PropertyValue, or sequence (eg, list or tuple) of PropertyValue
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property set in the feature, or a ``list`` of properties set if *property_value* is a sequence of property values
         :rtype: Property, or list[Property]
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_name* does not support the number of property values in *property_value*, or if *property_value* does not have a property value type supported by *property_name*
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_name* does not support the number of property values in *property_value*, or if *property_value* does not have a property value type supported by *property_name*
 
         ::
 
@@ -2398,10 +2432,10 @@ class Feature:
         :param boolean: the boolean or booleans
         :type boolean: bool, or sequence of bool
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the boolean, or properties containing the booleans
         :rtype: Property, or list of Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_name* does not support a :class:`boolean<XsBoolean>` property value type.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_name* does not support a :class:`boolean<XsBoolean>` property value type.
 
         This is a convenience method that wraps :meth:`set` for :class:`XsBoolean` properties.
 
@@ -2421,10 +2455,10 @@ class Feature:
         :param conjugate_plate_id: the conjugate plate ID or plate IDs
         :type conjugate_plate_id: int, or sequence of int
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the conjugate plate ID, or properties containing the conjugate plate IDs
         :rtype: Property, or list of Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_ property.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_ property.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_.
@@ -2450,10 +2484,10 @@ class Feature:
         :param description: the description
         :type description: str
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the description
         :rtype: Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_.
@@ -2474,10 +2508,10 @@ class Feature:
         :param double: the float or floats
         :type double: float, or sequence of float
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the float, or properties containing the floats
         :rtype: Property, or list of Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_name* does not support a :class:`double<XsDouble>` property value type.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_name* does not support a :class:`double<XsDouble>` property value type.
 
         This is a convenience method that wraps :meth:`set` for :class:`XsDouble` properties.
 
@@ -2499,10 +2533,10 @@ class Feature:
         :param enumeration_content: the enumeration content (value of enumeration)
         :type enumeration_content: str
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the enumeration
         :rtype: Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` does not support an enumeration property named *property_name*, or *enumeration_content* is not a recognised enumeration content value for the enumeration type associated with *property_name*.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` does not support an enumeration property named *property_name*, or *enumeration_content* is not a recognised enumeration content value for the enumeration type associated with *property_name*.
 
         This is a convenience method that wraps :meth:`set` for :class:`Enumeration` properties.
 
@@ -2526,16 +2560,16 @@ class Feature:
         :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using those parameters and this feature's existing properties (eg, reconstruction plate id) - this is only required if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
         :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the geometry property or properties set in the feature (or 2-tuple of geometry property and scalars property, or list of those, if a coverage or coverages was specified for *geometry*)
         :rtype: Property, or list[Property], or tuple[Property, Property], or list[tuple[Property, Property]]
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is specified but is not a recognised property name or is not supported by this feature's :class:`type<FeatureType>`
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and multiple geometries (if specified in *geometry*) are not supported by *property_name* (or the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` if *property_name* not specified)
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and any :class:`geometry type<GeometryOnSphere>` in *geometry* is not supported for *property_name* (or the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` if *property_name* not specified)
-        :raises: InformationModelError if *property_name* is not specified and a default geometry property is not associated with this feature's :class:`type<FeatureType>` (this normally should not happen)
-        :raises: AmbiguousGeometryCoverageError if multiple coverages are specified (in *geometry*) and more than one has the same number of points (or scalar values) - the ambiguity is due to not being able to subsequently determine which coverage range property is associated with which coverage domain property
-        :raises: ValueError if *geometry* is one or more coverages where the number of points in a coverage geometry is not equal to the number of scalar values associated with it
-        :raises: ValueError if *geometry* is one or more coverages where the scalar values are incorrectly specified - see :meth:`GmlDataBlock.__init__` for details
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is specified but is not a recognised property name or is not supported by this feature's :class:`type<FeatureType>`
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and multiple geometries (if specified in *geometry*) are not supported by *property_name* (or the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` if *property_name* not specified)
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and any :class:`geometry type<GeometryOnSphere>` in *geometry* is not supported for *property_name* (or the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` if *property_name* not specified)
+        :raises InformationModelError: if *property_name* is not specified and a default geometry property is not associated with this feature's :class:`type<FeatureType>` (this normally should not happen)
+        :raises AmbiguousGeometryCoverageError: if multiple coverages are specified (in *geometry*) and more than one has the same number of points (or scalar values) - the ambiguity is due to not being able to subsequently determine which coverage range property is associated with which coverage domain property
+        :raises ValueError: if *geometry* is one or more coverages where the number of points in a coverage geometry is not equal to the number of scalar values associated with it
+        :raises ValueError: if *geometry* is one or more coverages where the scalar values are incorrectly specified - see :meth:`GmlDataBlock.__init__` for details
 
         This is a convenience method to make setting geometry easier.
 
@@ -2617,10 +2651,10 @@ class Feature:
         :param geometry_import_time: the reconstruction time that geometry was imported
         :type geometry_import_time: float or GeoTimeInstant
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the geometry import time
         :rtype: Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_ property.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_ property.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_.
@@ -2641,10 +2675,10 @@ class Feature:
         :param integer: the integer or integers
         :type integer: int, or sequence of int
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the integer, or properties containing the integers
         :rtype: Property, or list of Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_name* does not support an :class:`integer<XsInteger>` property value type.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_name* does not support an :class:`integer<XsInteger>` property value type.
 
         This is a convenience method that wraps :meth:`set` for :class:`XsInteger` properties.
 
@@ -2664,10 +2698,10 @@ class Feature:
         :param left_plate: the left plate id
         :type left_plate: int
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the left plate id
         :rtype: Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_.
@@ -2686,10 +2720,10 @@ class Feature:
         :param name: the name or names
         :type name: str, or sequence of str
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the name, or properties containing the names
         :rtype: Property, or list of Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ property.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ property.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_.
@@ -2715,10 +2749,10 @@ class Feature:
         :param reconstruction_method: the reconstruction method (see `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_)
         :type reconstruction_method: str
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the reconstruction method
         :rtype: Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support the `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_         property, or *reconstruction_method* is not a recognised reconstruction method.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support the `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_         property, or *reconstruction_method* is not a recognised reconstruction method.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_.
@@ -2737,10 +2771,10 @@ class Feature:
         :param reconstruction_plate_id: the reconstruction plate id
         :type reconstruction_plate_id: int
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the reconstruction plate id
         :rtype: Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_.
@@ -2759,10 +2793,10 @@ class Feature:
         :param relative_plate: the relative plate id
         :type relative_plate: int
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the relative plate id
         :rtype: Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_ property.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_ property.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_.
@@ -2781,10 +2815,10 @@ class Feature:
         :param right_plate: the right plate id
         :type right_plate: int
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the right plate id
         :rtype: Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_.
@@ -2805,11 +2839,11 @@ class Feature:
         :param value: the value of the shapefile attribute
         :type value: int, float or str
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing all the shapefile attributes
         :rtype: Property containing a GpmlKeyValueDictionary property value
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property (although all feature :class:`types<FeatureType>` do support it).
-        :raises: InformationModelError if a `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property name is found in this feature but the property value is not a :class:`GpmlKeyValueDictionary` (this should not normally happen).
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property (although all feature :class:`types<FeatureType>` do support it).
+        :raises InformationModelError: if a `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property name is found in this feature but the property value is not a :class:`GpmlKeyValueDictionary` (this should not normally happen).
 
         Shapefile attributes are stored in a :class:`GpmlKeyValueDictionary` property named
         `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_
@@ -2838,11 +2872,11 @@ class Feature:
         :param attribute_mapping: optional mapping of keys to values
         :type attribute_mapping: dict mapping each key (str) to a value (int, float or str),     or a sequence of (key, value) tuples, or None
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing all the shapefile attributes
         :rtype: Property containing a GpmlKeyValueDictionary property value
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property (although all feature :class:`types<FeatureType>` do support it).
-        :raises: InformationModelError if a `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property name is found in this feature but the property value is not a :class:`GpmlKeyValueDictionary` (this should not normally happen).
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property (although all feature :class:`types<FeatureType>` do support it).
+        :raises InformationModelError: if a `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property name is found in this feature but the property value is not a :class:`GpmlKeyValueDictionary` (this should not normally happen).
 
         Shapefile attributes are stored in a :class:`GpmlKeyValueDictionary` property named
         `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_
@@ -2885,10 +2919,10 @@ class Feature:
         :param string: the string or strings
         :type string: str, or sequence of str
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the string, or properties containing the strings
         :rtype: Property, or list of Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_name* does not support a :class:`string<XsString>` property value type.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not a recognised property name or is not supported by the feature type, or if *property_name* does not support a :class:`string<XsString>` property value type.
 
         This is a convenience method that wraps :meth:`set` for :class:`XsString` properties.
 
@@ -2908,11 +2942,11 @@ class Feature:
         :param times: the list of times
         :type times: sequence (eg, list or tuple) of float or GeoTimeInstant
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the list of times
         :rtype: Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_ property.
-        :raises: ValueError if the time values in *times* are not in monotonically increasing order, or there are fewer than two time values.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_ property.
+        :raises ValueError: if the time values in *times* are not in monotonically increasing order, or there are fewer than two time values.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_ used in flowlines and motion paths.
@@ -2939,13 +2973,13 @@ class Feature:
         :param property_name: the optional property name of the topological geometry property or properties to set, if not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead
         :type property_name: PropertyName
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the topological geometry property set in the feature, or a ``list`` of properties set if *topological_geometry* is a sequence
         :rtype: Property, or list[Property]
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is specified but is not a recognised property name or is not supported by this feature's :class:`type<FeatureType>`
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and multiple topological geometries (if specified in *topological_geometry*) are not supported by *property_name* (or the default geometry property name if *property_name* not specified)
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and any topological geometry type in *topological_geometry* is not supported for *property_name* (or the default geometry property name if *property_name* not specified)
-        :raises: InformationModelError if *property_name* is not specified and a default geometry property is not associated with this feature's :class:`type<FeatureType>` (this normally should not happen)
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is specified but is not a recognised property name or is not supported by this feature's :class:`type<FeatureType>`
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and multiple topological geometries (if specified in *topological_geometry*) are not supported by *property_name* (or the default geometry property name if *property_name* not specified)
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and any topological geometry type in *topological_geometry* is not supported for *property_name* (or the default geometry property name if *property_name* not specified)
+        :raises InformationModelError: if *property_name* is not specified and a default geometry property is not associated with this feature's :class:`type<FeatureType>` (this normally should not happen)
 
         This is a convenience method to make setting topological geometry easier.
 
@@ -2994,10 +3028,10 @@ class Feature:
         :param total_reconstruction_pole: the time-sequence of rotations
         :type total_reconstruction_pole: GpmlIrregularSampling of GpmlFiniteRotation
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the fixed plate id property, the moving plate id property and the total reconstruction pole property
         :rtype: tuple of three Property
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_,         `pygplates.PropertyName.gpml_moving_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame>`_ and         `pygplates.PropertyName.gpml_total_reconstruction_pole <http://www.gplates.org/docs/gpgim/#gpml:totalReconstructionPole>`_ properties.
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_,         `pygplates.PropertyName.gpml_moving_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame>`_ and         `pygplates.PropertyName.gpml_total_reconstruction_pole <http://www.gplates.org/docs/gpgim/#gpml:totalReconstructionPole>`_ properties.
 
         This is a convenience method that wraps :meth:`set` for the common properties
         `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_,
@@ -3024,11 +3058,11 @@ class Feature:
         :param end_time: the end time (time of disappearance)
         :type end_time: float or GeoTimeInstant
         :param verify_information_model: whether to check the information model before setting (default) or not
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
+        :type verify_information_model: VerifyInformationModel
         :returns: the property containing the valid time range
         :rtype: Property
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property.
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_.
@@ -3117,8 +3151,8 @@ class FeatureCollection:
 
         :param features: an optional filename, or sequence of features, or a single feature
         :type features: str, or os.PathLike, or a sequence (eg, list or tuple) of Feature, or a single Feature
-        :raises: OpenFileForReadingError if file is not readable (if filename specified)
-        :raises: FileFormatNotSupportedError if file format (identified by the filename extension) does not support reading (when filename specified)
+        :raises OpenFileForReadingError: if file is not readable (if filename specified)
+        :raises FileFormatNotSupportedError: if file format (identified by the filename extension) does not support reading (when filename specified)
 
         To create a new feature collection from a file:
         ::
@@ -3191,7 +3225,7 @@ class FeatureCollection:
         :param feature_query: the feature type, feature id or predicate function that matches the feature (or features) to get
         :type feature_query: FeatureType, or FeatureId, or callable (accepting single Feature argument)
         :param feature_return: whether to return exactly one feature, the first feature or all matching features
-        :type feature_return: FeatureReturn.exactly_one, FeatureReturn.first or FeatureReturn.all
+        :type feature_return: FeatureReturn
         :rtype: Feature, or list of Feature, or None
 
         The following table maps *feature_return* values to return values:
@@ -3228,8 +3262,8 @@ class FeatureCollection:
         :param filename: the name of the file (or files) to read
         :type filename: str, or os.PathLike, or sequence of str/os.PathLike
         :rtype: FeatureCollection, list of FeatureCollection
-        :raises: OpenFileForReadingError if any file is not readable
-        :raises: FileFormatNotSupportedError if any file format (identified by a filename extension) does not support reading
+        :raises OpenFileForReadingError: if any file is not readable
+        :raises FileFormatNotSupportedError: if any file format (identified by a filename extension) does not support reading
 
         ::
 
@@ -3255,7 +3289,7 @@ class FeatureCollection:
 
         :param feature_query: one or more feature types, feature IDs, feature instances or predicate functions that determine which features to remove
         :type feature_query: FeatureType, or FeatureId, or Feature, or callable (accepting single Feature argument), or a sequence (eg, list or tuple) of any combination of them
-        :raises: ValueError if any specified :class:`Feature` is not currently a feature in this collection
+        :raises ValueError: if any specified :class:`Feature` is not currently a feature in this collection
 
         All features matching any :class:`FeatureType`, :class:`FeatureId` or predicate callable (if any specified) will be removed. Any specified :class:`FeatureType`, :class:`FeatureId` or predicate callable that does not match a feature in this collection is ignored. However if any specified :class:`Feature` is not currently a feature in this collection then the ``ValueError`` exception is raised - note that the same :class:`Feature` *instance* must have previously been added (in other words the feature *values* are not compared - it actually looks for the same feature *instance*).
 
@@ -3296,8 +3330,8 @@ class FeatureCollection:
 
         :param filename: the name of the file to write
         :type filename: str, or os.PathLike
-        :raises: OpenFileForWritingError if the file is not writable
-        :raises: FileFormatNotSupportedError if the file format (identified by the filename extension) does not support writing
+        :raises OpenFileForWritingError: if the file is not writable
+        :raises FileFormatNotSupportedError: if the file format (identified by the filename extension) does not support writing
 
         ::
 
@@ -3387,6 +3421,18 @@ class FeatureId:
         """
 
 class FeatureReturn(int):
+    """How many matching features a query on a feature collection returns.
+
+      Accepted by :meth:`FeatureCollection.get`.
+
+      ========================= ==============
+      Value                     Description
+      ========================= ==============
+      FeatureReturn.exactly_one Return the single match only if *exactly one* feature matches the query, otherwise return ``None``.
+      FeatureReturn.first       Return the first match, or ``None`` if nothing matches. Note that a feature collection is an *unordered* collection of features, so this is only meaningful when the order does not matter.
+      FeatureReturn.all         Return a ``list`` of all matches (empty if nothing matches).
+      ========================= ==============
+    """
     exactly_one: ClassVar[FeatureReturn]
     first: ClassVar[FeatureReturn]
     all: ClassVar[FeatureReturn]
@@ -3716,8 +3762,8 @@ class FeaturesFunctionArgument:
 
         :param function_argument: A feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types
         :type function_argument: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
-        :raises: OpenFileForReadingError if any file is not readable (when filenames specified)
-        :raises: FileFormatNotSupportedError if any file format (identified by the filename extensions) does not support reading (when filenames specified)
+        :raises OpenFileForReadingError: if any file is not readable (when filenames specified)
+        :raises FileFormatNotSupportedError: if any file format (identified by the filename extensions) does not support reading (when filenames specified)
 
         The features are extracted from *function_argument*.
 
@@ -3825,7 +3871,11 @@ class FeaturesFunctionArgument:
           my_function(['file.gpml', feature_collection])
         """
 
-class FileFormatNotSupportedError(GPlatesError): ...
+class FileFormatNotSupportedError(GPlatesError):
+    """The format of a file (determined by its filename extension) is not supported for the requested read or write.
+
+      .. seealso:: :class:`FeatureCollection` for the supported file formats.
+    """
 
 class FiniteRotation:
     r"""Represents the motion of plates on the surface of the globe.
@@ -3918,8 +3968,8 @@ class FiniteRotation:
         :type pole: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param angle_radians: the rotation angle (in *radians*).
         :type angle_radians: float
-        :raises: InvalidLatLonError if *latitude* or *longitude* is invalid
-        :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude
+        :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
+        :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
 
         The following example shows a few different ways to use this method:
         ::
@@ -3942,8 +3992,8 @@ class FiniteRotation:
         :type from_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param to_point: the point to rotate *to*
         :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :raises: InvalidLatLonError if *latitude* or *longitude* is invalid
-        :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude
+        :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
+        :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
 
         If *from_point* and *to_point* are the same or antipodal (opposite sides of globe) then an arbitrary rotation axis (among the infinite possible choices) is selected.
 
@@ -4060,8 +4110,8 @@ class FiniteRotation:
         :param to_point: the point to rotate *to*
         :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :rtype: FiniteRotation
-        :raises: InvalidLatLonError if *latitude* or *longitude* is invalid
-        :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude
+        :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
+        :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
 
         If *from_point* and *to_point* are the same or antipodal (opposite sides of globe) then an arbitrary rotation axis (among the infinite possible choices) is selected.
 
@@ -4108,8 +4158,8 @@ class FiniteRotation:
         :param to_segment_end: the end point of the segment to rotate *to*
         :type to_segment_end: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :rtype: FiniteRotation
-        :raises: InvalidLatLonError if *latitude* or *longitude* is invalid
-        :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude
+        :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
+        :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
 
         This is useful if you have the same geometry but at two different positions/orientations on the globe and you want to determine the rotation that maps one onto the other. In this case you can choose two non-coincident points of the geometry (at two different positions/orientations) and pass those four points to this function. For example, you might have a geometry that's been reconstructed to two different times but you don't have those two reconstruction rotations (you only have the two reconstructed geometries) - you can then use this function to find the rotation from one reconstruction time to the other.
 
@@ -4139,8 +4189,8 @@ class FiniteRotation:
         :param to_point: the point to rotate *to*
         :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :rtype: FiniteRotation
-        :raises: InvalidLatLonError if *latitude* or *longitude* is invalid
-        :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude
+        :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
+        :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
 
         .. note:: *from_point* doesn't actually have to rotate onto *to_point*. Imagine *rotation_pole* is the North Pole, then the returned rotation will rotate such that the longitude matches but not necessarily the latitude.
 
@@ -4162,7 +4212,7 @@ class FiniteRotation:
         :type use_north_pole_for_identity: bool
         :returns: the tuple of (pole, angle_radians)
         :rtype: tuple (PointOnSphere, float)
-        :raises: IndeterminateResultError if *use_north_pole_for_identity* is ``False`` and this finite rotation represents the identity rotation
+        :raises IndeterminateResultError: if *use_north_pole_for_identity* is ``False`` and this finite rotation represents the identity rotation
 
         If :meth:`represents_identity_rotation` returns ``True`` then this method will return the north pole axis (and zero angle) if *use_north_pole_for_identity* is ``True``, otherwise *IndeterminateResultError* is raised.
 
@@ -4197,7 +4247,7 @@ class FiniteRotation:
         :type use_north_pole_for_identity: bool
         :returns: the tuple of (pole_latitude, pole_longitude, angle_degrees) all in *degrees*
         :rtype: tuple (float, float, float)
-        :raises: IndeterminateResultError if *use_north_pole_for_identity* is ``False`` and this finite rotation represents the identity rotation
+        :raises IndeterminateResultError: if *use_north_pole_for_identity* is ``False`` and this finite rotation represents the identity rotation
 
         If :meth:`represents_identity_rotation` returns ``True`` then this method will return the north pole axis (and zero angle) if *use_north_pole_for_identity* is ``True``, otherwise *IndeterminateResultError* is raised.
 
@@ -4238,7 +4288,7 @@ class FiniteRotation:
         :param target_time: the time associated with the result of the interpolation
         :type target_time: float or GeoTimeInstant
         :rtype: FiniteRotation
-        :raises: InterpolationError if any time value is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises InterpolationError: if any time value is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
 
         The finite rotations *finite_rotation1* and *finite_rotation2* are associated with times *time1* and *time2*, respectively. The result of the interpolation is associated with *target_time*. The interpolated finite rotation is generated using Spherical Linear intERPolation (SLERP) with the interpolation factor ``(target_time - time1) / (time2 - time1)``.
@@ -4264,13 +4314,39 @@ class FiniteRotation:
         """
 
 class FlattenLongitudeOverlaps(int):
+    """Whether, and how, to remove longitude overlaps between the two polylines interpolated by :meth:`PolylineOnSphere.rotation_interpolate`.
+
+      Longitudes are measured in the reference frame in which the rotation pole is the North pole. Where a point in *from_polyline* and the point at the same latitude in *to_polyline* overlap in longitude, one is copied over the other:
+
+      ================================= ==============
+      Value                             Description
+      ================================= ==============
+      FlattenLongitudeOverlaps.no       Do not flatten overlaps (the default).
+      FlattenLongitudeOverlaps.use_from Copy the *from_polyline* points over the overlapping *to_polyline* points.
+      FlattenLongitudeOverlaps.use_to   Copy the *to_polyline* points over the overlapping *from_polyline* points.
+      ================================= ==============
+
+      .. seealso:: :meth:`PolylineOnSphere.rotation_interpolate` for a diagram of longitude flattening.
+    """
     no: ClassVar[FlattenLongitudeOverlaps]
     use_from: ClassVar[FlattenLongitudeOverlaps]
     use_to: ClassVar[FlattenLongitudeOverlaps]
     names: ClassVar[dict[str, FlattenLongitudeOverlaps]]
     values: ClassVar[dict[int, FlattenLongitudeOverlaps]]
 
-class GPlatesError(Exception): ...
+class GPlatesError(Exception):
+    """The base class of all pyGPlates exceptions.
+
+      Catch this to handle any error raised by pyGPlates itself. It inherits from Python's ``Exception``,
+      so an ``except Exception`` handler also catches it.
+
+      ::
+
+        try:
+            feature_collection = pygplates.FeatureCollection('features.gpml')
+        except pygplates.GPlatesError as error:
+            print('pyGPlates could not load the file: {}'.format(error))
+    """
 
 class GeoTimeInstant:
     """Represents an instant in geological time. This class is able to represent:
@@ -4672,7 +4748,12 @@ class GeometryOnSphere:
         by its interior rings (if any).
         """
 
-class GeometryTypeError(PreconditionViolationError): ...
+class GeometryTypeError(PreconditionViolationError):
+    """A geometry is not of the required type.
+
+      For example, a :class:`PointOnSphere` was passed where a :class:`PolylineOnSphere` is required and
+      *PolylineConversion.raise_if_non_polyline* was requested.
+    """
 
 class GmlDataBlock(PropertyValue):
     """A data block that associates each scalar type with a sequence of floating-point scalar values.
@@ -4719,7 +4800,7 @@ class GmlDataBlock(PropertyValue):
 
         :param scalar_type_to_values_mapping: maps each scalar type to a sequence of scalar values
         :type scalar_type_to_values_mapping: dict mapping each ScalarType to a sequence of float, or a sequence of (ScalarType, sequence of float) tuples
-        :raises: ValueError if *scalar_type_to_values_mapping* is empty, or if each :class:`scalar type<ScalarType>` is not mapped to the same number of scalar values.
+        :raises ValueError: if *scalar_type_to_values_mapping* is empty, or if each :class:`scalar type<ScalarType>` is not mapped to the same number of scalar values.
 
         To create ``gpml:VelocityColat`` and ``gpml:VelocityLon`` scalar values:
         ::
@@ -4786,7 +4867,7 @@ class GmlDataBlock(PropertyValue):
         :type scalar_type: ScalarType
         :param scalar_values: the scalar values associated with *scalar_type*
         :type scalar_values: sequence (eg, list or tuple) of float
-        :raises: ValueError if the length of *scalar_values* does not match the length of existing scalar values for other :class:`scalar types<ScalarType>`.
+        :raises ValueError: if the length of *scalar_values* does not match the length of existing scalar values for other :class:`scalar types<ScalarType>`.
 
         To set (or replace) the scalar values associated with ``gpml:VelocityColat``:
         ::
@@ -5069,7 +5150,7 @@ class GmlTimePeriod(PropertyValue):
         :type begin_time: float or GeoTimeInstant
         :param end_time: the end time (time of disappearance)
         :type end_time: float or GeoTimeInstant
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time
 
         ::
 
@@ -5109,7 +5190,7 @@ class GmlTimePeriod(PropertyValue):
 
         :param time_position: the begin time position (time of appearance)
         :type time_position: float or GeoTimeInstant
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time
         """
 
     def set_end_time(self, time_position: float | GeoTimeInstant) -> None:
@@ -5117,10 +5198,15 @@ class GmlTimePeriod(PropertyValue):
 
         :param time_position: the end time position (time of disappearance)
         :type time_position: float or GeoTimeInstant
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time
         """
 
-class GmlTimePeriodBeginTimeLaterThanEndTimeError(PreconditionViolationError): ...
+class GmlTimePeriodBeginTimeLaterThanEndTimeError(PreconditionViolationError):
+    """The begin time of a time period is later (more recent) than its end time.
+
+      Begin times must be further in the past than end times. For example, a valid time of ``(100, 0)``
+      begins at 100 Ma and ends at present day, whereas ``(0, 100)`` raises this error.
+    """
 
 class GpmlArray(PropertyValue):
     """A sequence of property value elements.
@@ -5183,7 +5269,7 @@ class GpmlArray(PropertyValue):
 
         :param elements: A sequence of :class:`PropertyValue` elements.
         :type elements: Any sequence such as a list or a tuple
-        :raises: RuntimeError if sequence is empty
+        :raises RuntimeError: if sequence is empty
 
         Note that all elements should have the same type (such as :class:`GmlTimePeriod`).
 
@@ -5457,7 +5543,7 @@ class GpmlIrregularSampling(PropertyValue):
 
         :param time_samples: A sequence of :class:`GpmlTimeSample` elements.
         :type time_samples: Any sequence such as a list or a tuple
-        :raises: RuntimeError if time sample sequence is empty
+        :raises RuntimeError: if time sample sequence is empty
 
         .. note:: The sequence of time samples must **not** be empty (for technical implementation reasons), otherwise a *RuntimeError* exception will be thrown.
 
@@ -5561,7 +5647,7 @@ class GpmlIrregularSampling(PropertyValue):
         :param time: the time to extract value (defaults to present day)
         :type time: float or GeoTimeInstant
         :rtype: PropertyValue or None
-        :raises: InterpolationError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or     :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises InterpolationError: if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or     :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`.
 
@@ -5641,7 +5727,7 @@ class GpmlIrregularSampling(PropertyValue):
         :type is_enabled: bool or None
         :returns: the time sample that is modified, or inserted into the time sequence
         :rtype: GpmlTimeSample
-        :raises: ValueError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or     :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or     :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         If an existing :meth:`time sample<get_time_samples>` matches *time* then it will be modified,
         otherwise a new :class:`time sample<GpmlTimeSample>` will be inserted into the sequence
@@ -6067,7 +6153,7 @@ class GpmlPiecewiseAggregation(PropertyValue):
 
         :param time_windows: A sequence of :class:`GpmlTimeWindow` elements.
         :type time_windows: Any sequence such as a list or a tuple
-        :raises: RuntimeError if time window sequence is empty
+        :raises RuntimeError: if time window sequence is empty
 
         .. note:: The sequence of time windows must **not** be empty (for technical implementation reasons), otherwise a *RuntimeError* exception will be thrown.
 
@@ -6211,7 +6297,7 @@ class GpmlPiecewiseAggregation(PropertyValue):
         :type end_time: float or GeoTimeInstant
         :returns: the time window that is inserted into the time window sequence
         :rtype: GpmlTimeWindow
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time
 
         Any existing :meth:`time windows<get_time_windows>` that overlap the new time window
         (*begin_time*, *end_time*) are clipped, removed or split (depending on how they overlap) such
@@ -6309,8 +6395,8 @@ class GpmlPolarityChronId(PropertyValue):
         :param minor_region: the sequence of letters indicating the sub-region the chron is located in - the letters a-z are used for the initial sub-region, and if further polarity reversals have been discovered within that chron, a second letter is appended, and so on
         :type minor_region: str
         :param verify_information_model: whether to check the information model for valid *era*
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *era* is not a recognised era value
+        :type verify_information_model: VerifyInformationModel
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *era* is not a recognised era value
 
         ::
 
@@ -6347,8 +6433,8 @@ class GpmlPolarityChronId(PropertyValue):
         :param era: the era of the chron ('Cenozoic' or 'Mesozoic')
         :type era: str
         :param verify_information_model: whether to check the information model for valid *era*
-        :type verify_information_model: VerifyInformationModel.yes or VerifyInformationModel.no
-        :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and *era* is not a recognised era string value
+        :type verify_information_model: VerifyInformationModel
+        :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *era* is not a recognised era string value
         """
 
     def set_major_region(self, major_region: int) -> None:
@@ -6889,7 +6975,7 @@ class GpmlTimeWindow:
         :type begin_time: float or GeoTimeInstant
         :param end_time: the end time of the time window
         :type end_time: float or GeoTimeInstant
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time
 
         ::
 
@@ -6943,7 +7029,7 @@ class GpmlTimeWindow:
 
         :param time: the begin time of this time window
         :type time: float or GeoTimeInstant
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time
         """
 
     def set_end_time(self, time: float | GeoTimeInstant) -> None:
@@ -6951,7 +7037,7 @@ class GpmlTimeWindow:
 
         :param time: the end time of this time window
         :type time: float or GeoTimeInstant
-        :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
+        :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time
         """
 
     def set_value(self, property_value: PropertyValue) -> None:
@@ -7392,7 +7478,7 @@ class GpmlTopologicalSection(PropertyValue):
         :param topological_geometry_type: optional type of topological geometry that the returned section will be used for (if specified, then used to determine what type of feature geometry can be used as a section)
         :type topological_geometry_type: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or None
         :rtype: GpmlTopologicalSection (GpmlTopologicalLineSection or GpmlTopologicalPoint), or None
-        :raises: ValueError if *topological_geometry_type* is specified but is not one of the accepted types (:class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`)
+        :raises ValueError: if *topological_geometry_type* is specified but is not one of the accepted types (:class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`)
 
         If *geometry_property_name* is not specified then the default geometry property name is determined from the feature's :class:`type<FeatureType>` - see :meth:`Feature.get_geometry` for more details.
 
@@ -7676,7 +7762,7 @@ class GreatCircleArc:
         :type start_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param end_point: the end point of the arc.
         :type end_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :raises: IndeterminateResultError if points are antipodal (opposite each other)
+        :raises IndeterminateResultError: if points are antipodal (opposite each other)
 
         | An arc is specified by a start-point and an end-point:
         | If these two points are not antipodal, a unique great-circle arc (with angle-span less than PI radians) will be determined between them. If they are antipodal then *IndeterminateResultError* will be raised. Note that an error is *not* raised if the two points are coincident.
@@ -7701,8 +7787,8 @@ class GreatCircleArc:
         :type normalised_distance_from_start_point: float
         :returns: the unit-length 3D vector
         :rtype: Vector3D
-        :raises: ValueError if arc *normalised_distance_from_start_point* is not in the range [0,1]
-        :raises: IndeterminateGreatCircleArcDirectionError if arc is zero length
+        :raises ValueError: if arc *normalised_distance_from_start_point* is not in the range [0,1]
+        :raises IndeterminateGreatCircleArcDirectionError: if arc is zero length
 
         The returned direction is tangential to the Earth's surface and is aligned with the direction of the great circle arc (in the direction going from the start point towards the end point). This direction is perpendicular to the great circle normal direction (see :meth:`get_great_circle_normal`).
 
@@ -7729,7 +7815,7 @@ class GreatCircleArc:
         :param normalised_distance_from_start_point: distance from start point where zero is the start point, one is the end point and between zero and one are points along the arc
         :type normalised_distance_from_start_point: float
         :rtype: PointOnSphere
-        :raises: ValueError if arc *normalised_distance_from_start_point* is not in the range [0,1]
+        :raises ValueError: if arc *normalised_distance_from_start_point* is not in the range [0,1]
 
         The midpoint of an arc:
         ::
@@ -7750,7 +7836,7 @@ class GreatCircleArc:
 
         :returns: the unit-length 3D vector
         :rtype: Vector3D
-        :raises: IndeterminateGreatCircleArcNormalError if arc is zero length
+        :raises IndeterminateGreatCircleArcNormalError: if arc is zero length
 
         ::
 
@@ -7773,7 +7859,7 @@ class GreatCircleArc:
 
         :returns: the unit-length 3D vector (x,y,z)
         :rtype: the tuple (float, float, float)
-        :raises: IndeterminateArcRotationAxisError if arc is zero length
+        :raises IndeterminateArcRotationAxisError: if arc is zero length
 
         ::
 
@@ -7796,7 +7882,7 @@ class GreatCircleArc:
 
         :returns: the axis as (latitude, longitude)
         :rtype: the tuple (float, float)
-        :raises: IndeterminateArcRotationAxisError if arc is zero length
+        :raises IndeterminateArcRotationAxisError: if arc is zero length
 
         ::
 
@@ -7830,7 +7916,7 @@ class GreatCircleArc:
         :param tessellate_radians: maximum tessellation angle (in radians)
         :type tessellate_radians: float
         :rtype: list of PointOnSphere
-        :raises: ValueError if *tessellate_radians* is negative or zero
+        :raises ValueError: if *tessellate_radians* is negative or zero
 
         .. note:: If this great circle arc subtends an angle less than *tessellate_radians* then only its :meth:`start point <get_start_point>` and :meth:`end point <get_end_point>` are returned. For example, this applies to a :meth:`zero length <is_zero_length>` arc. Otherwise tessellated points *within* this arc are *also* returned.
 
@@ -7855,7 +7941,7 @@ class GreatCircleArc:
         :type return_segment_interpolations: bool
         :returns: list of points, or (if *return_segment_interpolations* is ``True``) a 2-tuple containing a list of points and a list of segment interpolations (where each uniform point is located, *on* this great circle arc, in the range [0,1])
         :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[float]]
-        :raises: ValueError if *point_spacing_radians* is negative or zero
+        :raises ValueError: if *point_spacing_radians* is negative or zero
 
         .. note:: The distance (along the arc) between the last uniform point and the arc's end point can be less than *point_spacing_radians* (since the length of the arc minus *first_point_spacing_radians* might not be an integer multiple of *point_spacing_radians*).
 
@@ -7886,25 +7972,65 @@ class GreatCircleArc:
         .. versionadded:: 0.47
         """
 
-class IndeterminateArcRotationAxisError(PreconditionViolationError): ...
+class IndeterminateArcRotationAxisError(PreconditionViolationError):
+    """The rotation axis of a :class:`GreatCircleArc` cannot be determined because the arc has zero length.
+    """
 
-class IndeterminateGreatCircleArcDirectionError(PreconditionViolationError): ...
+class IndeterminateGreatCircleArcDirectionError(PreconditionViolationError):
+    """The direction of a :class:`GreatCircleArc` cannot be determined because the arc has zero length.
+    """
 
-class IndeterminateGreatCircleArcNormalError(PreconditionViolationError): ...
+class IndeterminateGreatCircleArcNormalError(PreconditionViolationError):
+    """The normal of a :class:`GreatCircleArc` cannot be determined because the arc has zero length.
+    """
 
-class IndeterminateResultError(MathematicalError): ...
+class IndeterminateResultError(MathematicalError):
+    """The result of a mathematical operation is indeterminate.
 
-class InformationModelError(PreconditionViolationError): ...
+      For example, the rotation axis of an :meth:`identity rotation <FiniteRotation.represents_identity_rotation>`
+      is undefined.
+    """
 
-class InsufficientPointsForMultiPointConstructionError(PreconditionViolationError): ...
+class InformationModelError(PreconditionViolationError):
+    """A feature type, property name or property value does not conform to the GPlates Geological Information Model (GPGIM).
 
-class InterpolationError(PreconditionViolationError): ...
+      Raised when *verify_information_model* is *VerifyInformationModel.yes* (the default) and, for example,
+      a feature type is not recognised, a property name is not supported by the feature type, or a property
+      value is not of the type the property expects.
 
-class InvalidLatLonError(PreconditionViolationError): ...
+      .. seealso:: :class:`VerifyInformationModel`
+    """
 
-class InvalidPointsForPolygonConstructionError(PreconditionViolationError): ...
+class InsufficientPointsForMultiPointConstructionError(PreconditionViolationError):
+    """A :class:`MultiPointOnSphere` could not be constructed because the sequence of points is empty.
+    """
 
-class InvalidPointsForPolylineConstructionError(PreconditionViolationError): ...
+class InterpolationError(PreconditionViolationError):
+    """A rotation or a time-dependent property value could not be interpolated.
+
+      For example, one of the times involved is the :meth:`distant past <GeoTimeInstant.is_distant_past>`
+      or the :meth:`distant future <GeoTimeInstant.is_distant_future>`.
+    """
+
+class InvalidLatLonError(PreconditionViolationError):
+    """A latitude is outside the range [-90, 90] or a longitude is outside the range [-360, 360].
+
+      .. seealso:: :meth:`LatLonPoint.is_valid_latitude` and :meth:`LatLonPoint.is_valid_longitude`
+    """
+
+class InvalidPointsForPolygonConstructionError(PreconditionViolationError):
+    """A :class:`PolygonOnSphere` could not be constructed from a sequence of points.
+
+      For example, a ring has fewer than three points, or two adjacent points in a ring are antipodal
+      (on opposite sides of the globe).
+    """
+
+class InvalidPointsForPolylineConstructionError(PreconditionViolationError):
+    """A :class:`PolylineOnSphere` could not be constructed from a sequence of points.
+
+      For example, there are fewer than two points, or two adjacent points are antipodal
+      (on opposite sides of the globe).
+    """
 
 class LatLonPoint:
     """Represents a point in 2D geographic coordinates (latitude and longitude).
@@ -7941,7 +8067,7 @@ class LatLonPoint:
         :type latitude: float
         :param longitude: the longitude (in degrees)
         :type longitude: float
-        :raises: InvalidLatLonError if *latitude* or *longitude* is invalid
+        :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
 
         ::
 
@@ -8088,7 +8214,7 @@ class LocalCartesian:
         :type vectors: Any sequence of Vector3D or tuple (x,y,z)
         :returns: list of (magnitude, azimuth, inclination)
         :rtype: list[tuple[float, float, float]]
-        :raises: ValueError if the sequences *local_origins* and *vectors* have different lengths
+        :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
 
         Convert geocentric vectors to local spherical coordinates:
         ::
@@ -8156,7 +8282,7 @@ class LocalCartesian:
         :type vectors: Any sequence of Vector3D or tuple (x,y,z)
         :returns: list of local cartesian North/East/Down vectors
         :rtype: list of Vector3D
-        :raises: ValueError if the sequences *local_origins* and *vectors* have different lengths
+        :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
 
         Convert geocentric vectors to local cartesian vectors:
         ::
@@ -8224,7 +8350,7 @@ class LocalCartesian:
         :type local_coordinates: Any sequence of (float, float, float) tuples
         :returns: list of geocentric vectors
         :rtype: list of Vector3D
-        :raises: ValueError if the sequences *local_origins* and *local_coordinates* have different lengths
+        :raises ValueError: if the sequences *local_origins* and *local_coordinates* have different lengths
 
         Convert local spherical coordinates to geocentric vectors:
         ::
@@ -8292,7 +8418,7 @@ class LocalCartesian:
         :type vectors: Any sequence of Vector3D or tuple (x,y,z)
         :returns: list of geocentric vectors
         :rtype: list of Vector3D
-        :raises: ValueError if the sequences *local_origins* and *vectors* have different lengths
+        :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
 
         Convert local cartesian vectors to geocentric vectors:
         ::
@@ -8549,7 +8675,9 @@ class LocalCartesian:
           north = local_cartesian.get_north()
         """
 
-class MathematicalError(GPlatesError): ...
+class MathematicalError(GPlatesError):
+    """The base class of the exceptions raised when a mathematical operation cannot be completed.
+    """
 
 class MultiPointOnSphere(GeometryOnSphere):
     """Represents a multi-point (collection of points) on the surface of the unit length sphere. Multi-points are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``). See :class:`PointOnSphere` for an overview of equality in the presence of limited floating-point precision.
@@ -8609,9 +8737,9 @@ class MultiPointOnSphere(GeometryOnSphere):
 
         :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
         :type points: any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)
-        :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid
-        :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude
-        :raises: InsufficientPointsForMultiPointConstructionError if point sequence is empty
+        :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid
+        :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude
+        :raises InsufficientPointsForMultiPointConstructionError: if point sequence is empty
 
         .. note:: The sequence must contain at least one point, otherwise *InsufficientPointsForMultiPointConstructionError* will be raised.
 
@@ -8873,10 +9001,10 @@ class NetRotationModel:
         :param velocity_delta_time: The time delta used to calculate velocities for net rotation (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
         :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :raises: ValueError if *velocity_delta_time* is negative or zero.
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in a snapshot (:meth:`NetRotationModel.net_rotation_snapshot`) is:
 
@@ -8944,7 +9072,7 @@ class NetRotationModel:
         :param reconstruction_time: the geological time of the snapshot
         :type reconstruction_time: float or GeoTimeInstant
         :rtype: NetRotationSnapshot
-        :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
+        :raises ValueError: if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
         """
 
 class NetRotationSnapshot:
@@ -8975,10 +9103,10 @@ class NetRotationSnapshot:
         :param velocity_delta_time: The time delta used to calculate velocities for net rotation (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
         :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :raises: ValueError if *velocity_delta_time* is negative or zero.
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:
 
@@ -9039,7 +9167,7 @@ class NetRotationSnapshot:
         :type resolved_topology: ResolvedTopologicalBoundary or ResolvedTopologicalNetwork
         :returns: If *resolved_topology* is specified then returns the :class:`NetRotation` of that resolved topology boundary or network (or ``None`` if *resolved_topology* does **not contribute net rotation**). Otherwise returns a ``dict`` mapping each :class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` that **contributes net rotation** to its :class:`NetRotation`.
         :rtype: NetRotation, or dict[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork, NetRotation], or None
-        :raises: ValueError if *resolved_topology* is specified but is neither a :class:`ResolvedTopologicalBoundary` nor a :class:`ResolvedTopologicalNetwork`.
+        :raises ValueError: if *resolved_topology* is specified but is neither a :class:`ResolvedTopologicalBoundary` nor a :class:`ResolvedTopologicalNetwork`.
 
         .. note:: Any resolved boundary or network that did not intersect any sample points (see *point_distribution* in :meth:`__init__`) will **not contribute net rotation**. And if a contributing :class:`resolved boundary<ResolvedTopologicalBoundary>` does not have a :meth:`reconstruction plate ID<Feature.get_reconstruction_plate_id>` then ``0`` will be used.
 
@@ -9146,7 +9274,7 @@ class NetworkTriangulation:
             :type index: int
             :returns: the adjacent network triangle, or ``None`` if the triangle edge that is opposite the vertex at *index* is a boundary edge of the network triangulation (ie, a convex hull edge)
             :rtype: NetworkTriangulation.Triangle or None
-            :raises: ValueError if *index* is not in the range [0, 2]
+            :raises ValueError: if *index* is not in the range [0, 2]
 
             To access the three adjacent triangles of a triangle in a network triangulation:
             ::
@@ -9163,7 +9291,7 @@ class NetworkTriangulation:
             :param index: the index of this triangle's vertex (in the range [0, 2])
             :type index: int
             :rtype: NetworkTriangulation.Vertex
-            :raises: ValueError if *index* is not in the range [0, 2]
+            :raises ValueError: if *index* is not in the range [0, 2]
 
             To access the three vertices of a triangle in a network triangulation:
             ::
@@ -9230,13 +9358,13 @@ class NetworkTriangulation:
             :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).
             :type velocity_delta_time: float
             :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-            :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+            :type velocity_delta_time_type: VelocityDeltaTimeType
             :param velocity_units: whether to return velocity as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-            :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+            :type velocity_units: VelocityUnits
             :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
             :type earth_radius_in_kms: float
             :rtype: Vector3D
-            :raises: ValueError if *velocity_delta_time* is negative or zero.
+            :raises ValueError: if *velocity_delta_time* is negative or zero.
             """
 
         @property
@@ -9322,17 +9450,45 @@ class NetworkTriangulation:
         .. note:: The returned sequence is *read-only* and cannot be modified.
         """
 
-class OpenFileForReadingError(GPlatesError): ...
+class OpenFileForReadingError(GPlatesError):
+    """A file could not be opened for reading (for example, it does not exist or is not readable).
+    """
 
-class OpenFileForWritingError(GPlatesError): ...
+class OpenFileForWritingError(GPlatesError):
+    """A file could not be opened for writing (for example, its directory does not exist or is not writable).
+    """
 
 class PartitionMethod(int):
+    """How a feature is partitioned when it overlaps one or more partitioning plates.
+
+      Accepted by :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates`.
+
+      ====================================== ==============
+      Value                                  Description
+      ====================================== ==============
+      PartitionMethod.split_into_plates      Split each feature into the partitioning plates, and into unpartitioned parts that are outside all partitioning plates (if the plates do not have global coverage). For example, a feature that overlaps two plates is cloned twice, each clone getting the part of the original geometry inside its plate, and any part outside all plates becomes a third clone containing the unpartitioned geometry. The partitioned clones have properties copied from their partitioning plate features (as determined by *properties_to_copy*); the unpartitioned clone has none copied.
+      PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the length of polyline or polygon geometry inside each plate (or the number of points for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.
+      ====================================== ==============
+    """
     split_into_plates: ClassVar[PartitionMethod]
     most_overlapping_plate: ClassVar[PartitionMethod]
     names: ClassVar[dict[str, PartitionMethod]]
     values: ClassVar[dict[int, PartitionMethod]]
 
 class PartitionProperty(int):
+    """A property to copy from a partitioning plate's feature to each feature partitioned by it.
+
+      Used in the *properties_to_copy* argument of :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates`, where each entry is one of these values or a :class:`PropertyName`.
+
+      ========================================= ==============
+      Value                                     Description
+      ========================================= ==============
+      PartitionProperty.reconstruction_plate_id The reconstruction plate ID. This is an alternative to specifying the property name ``PropertyName.gpml_reconstruction_plate_id``.
+      PartitionProperty.valid_time_period       The valid time period. This is an alternative to specifying the property name ``PropertyName.gml_valid_time``.
+      PartitionProperty.valid_time_begin        Only the *begin* time of the partitioning feature's valid time period is copied (the *end* time is unchanged). If the *begin* time is later than (has a smaller value than) the *end* time then it is set to the *end* time. There is no equivalent way to specify this using a :class:`PropertyName`.
+      PartitionProperty.valid_time_end          Only the *end* time of the partitioning feature's valid time period is copied (the *begin* time is unchanged). If the *end* time is earlier than (has a larger value than) the *begin* time then it is set to the *begin* time. There is no equivalent way to specify this using a :class:`PropertyName`.
+      ========================================= ==============
+    """
     reconstruction_plate_id: ClassVar[PartitionProperty]
     valid_time_period: ClassVar[PartitionProperty]
     valid_time_begin: ClassVar[PartitionProperty]
@@ -9341,6 +9497,16 @@ class PartitionProperty(int):
     values: ClassVar[dict[int, PartitionProperty]]
 
 class PartitionReturn(int):
+    """How :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` return the partitioned and unpartitioned features.
+
+      ====================================================== ==============
+      Value                                                  Return value
+      ====================================================== ==============
+      PartitionReturn.combined_partitioned_and_unpartitioned A single ``list`` of :class:`Feature` containing both the partitioned and the unpartitioned features.
+      PartitionReturn.separate_partitioned_and_unpartitioned A 2-tuple whose first element is a ``list`` of the partitioned :class:`features <Feature>` and whose second element is a ``list`` of the unpartitioned features.
+      PartitionReturn.partitioned_groups_and_unpartitioned   A 2-tuple whose first element is a ``list`` of partitioned groups and whose second element is a ``list`` of the unpartitioned features. Each partitioned group is a 2-tuple of a :class:`partitioning plate <ReconstructionGeometry>` and a ``list`` of the features partitioned by that plate.
+      ====================================================== ==============
+    """
     combined_partitioned_and_unpartitioned: ClassVar[PartitionReturn]
     separate_partitioned_and_unpartitioned: ClassVar[PartitionReturn]
     partitioned_groups_and_unpartitioned: ClassVar[PartitionReturn]
@@ -9351,9 +9517,11 @@ class PickleBytes:
     def __init__(self, *args: Any, **kwargs: Any) -> None: ...
 
 class PlateBoundaryStatistic:
-    """Statistics at a point *on* a plate boundary.
+    r"""Statistics at a point *on* a plate boundary.
 
       .. seealso:: :ref:`pygplates_primer_plate_boundary_statistics` in the *Primer* documentation.
+
+      **Obliquity.** Every *obliquity* attribute is the angle (in radians) of a velocity vector relative to the :attr:`boundary normal <boundary_normal>`, which points towards the *left* plate (the plate on the left when following the vertices of the :attr:`shared sub-segment <shared_sub_segment>` that the boundary point is on). It is in the range :math:`[-\pi, \pi]`, with positive values representing clockwise angles (and negative values counter-clockwise). So :math:`\lvert obliquity \rvert < \frac{\pi}{2}` means the vector points towards the left plate and :math:`\lvert obliquity \rvert > \frac{\pi}{2}` means it points towards the right plate.
 
     PlateBoundaryStatistics are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).
 
@@ -9475,9 +9643,9 @@ class PlateBoundaryStatistic:
 
         .. note:: Returns zero if the :attr:`boundary velocity magnitude <boundary_velocity_magnitude>` is zero.
 
-        This is the angle of the :attr:`boundary velocity vector <boundary_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. It is in the range :math:`[-\pi, \pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).
+        This is the angle of the :attr:`boundary velocity vector <boundary_velocity>` relative to the :attr:`boundary normal <boundary_normal>` (see *Obliquity* in :class:`PlateBoundaryStatistic` for the sign convention).
 
-        Since the :attr:`boundary normal <boundary_normal>` is to the *left*, an obliquity angle satisfying :math:`\lvert obliquity \rvert < \frac{\pi}{2}` represents movement towards the *left* plate and an angle satisfying :math:`\lvert obliquity \rvert > \frac{\pi}{2}` represents movement towards *right* plate.
+        An obliquity angle satisfying :math:`\lvert obliquity \rvert < \frac{\pi}{2}` represents movement towards the *left* plate and an angle satisfying :math:`\lvert obliquity \rvert > \frac{\pi}{2}` represents movement towards *right* plate.
 
         .. seealso:: :attr:`boundary_velocity`
         """
@@ -9569,9 +9737,9 @@ class PlateBoundaryStatistic:
 
         .. note:: Returns zero if the :attr:`convergence velocity magnitude <convergence_velocity_magnitude>` is zero.
 
-        This is the angle of the :attr:`convergence velocity vector <convergence_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. It is in the range :math:`[-\pi, \pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).
+        This is the angle of the :attr:`convergence velocity vector <convergence_velocity>` relative to the :attr:`boundary normal <boundary_normal>` (see *Obliquity* in :class:`PlateBoundaryStatistic` for the sign convention).
 
-        Since the :attr:`boundary normal <boundary_normal>` is to the *left* and the :attr:`convergence velocity <convergence_velocity>` is the velocity of the *right* plate relative to the *left* plate, an obliquity angle satisfying :math:`\lvert obliquity \rvert < \frac{\pi}{2}` represents *convergence* and an angle satisfying :math:`\lvert obliquity \rvert > \frac{\pi}{2}` represents *divergence*.
+        Since the :attr:`convergence velocity <convergence_velocity>` is the velocity of the *right* plate relative to the *left* plate, an obliquity angle satisfying :math:`\lvert obliquity \rvert < \frac{\pi}{2}` represents *convergence* and an angle satisfying :math:`\lvert obliquity \rvert > \frac{\pi}{2}` represents *divergence*.
 
         .. seealso:: :attr:`convergence_velocity`
         """
@@ -9810,9 +9978,9 @@ class PlateBoundaryStatistic:
 
         .. note:: Returns zero if the :attr:`left plate velocity magnitude <left_plate_velocity_magnitude>` is zero.
 
-        This is the angle of the :attr:`left plate velocity vector <left_plate_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. It is in the range :math:`[-\pi, \pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).
+        This is the angle of the :attr:`left plate velocity vector <left_plate_velocity>` relative to the :attr:`boundary normal <boundary_normal>` (see *Obliquity* in :class:`PlateBoundaryStatistic` for the sign convention).
 
-        Since the :attr:`boundary normal <boundary_normal>` is to the *left*, an obliquity angle satisfying :math:`\lvert obliquity \rvert < \frac{\pi}{2}` represents movement of the left plate *away* from the boundary and an angle satisfying :math:`\lvert obliquity \rvert > \frac{\pi}{2}` represents movement *towards* the boundary.
+        An obliquity angle satisfying :math:`\lvert obliquity \rvert < \frac{\pi}{2}` represents movement of the left plate *away* from the boundary and an angle satisfying :math:`\lvert obliquity \rvert > \frac{\pi}{2}` represents movement *towards* the boundary.
 
         .. seealso:: :attr:`left_plate_velocity`
         """
@@ -9942,9 +10110,9 @@ class PlateBoundaryStatistic:
 
         .. note:: Returns zero if the :attr:`right plate velocity magnitude <right_plate_velocity_magnitude>` is zero.
 
-        This is the angle of the :attr:`right plate velocity vector <right_plate_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. It is in the range :math:`[-\pi, \pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).
+        This is the angle of the :attr:`right plate velocity vector <right_plate_velocity>` relative to the :attr:`boundary normal <boundary_normal>` (see *Obliquity* in :class:`PlateBoundaryStatistic` for the sign convention).
 
-        Since the :attr:`boundary normal <boundary_normal>` is to the *left*, an obliquity angle satisfying :math:`\lvert obliquity \rvert < \frac{\pi}{2}` represents movement of the right plate *towards* the boundary and an angle satisfying :math:`\lvert obliquity \rvert > \frac{\pi}{2}` represents movement *away* from the boundary.
+        An obliquity angle satisfying :math:`\lvert obliquity \rvert < \frac{\pi}{2}` represents movement of the right plate *towards* the boundary and an angle satisfying :math:`\lvert obliquity \rvert > \frac{\pi}{2}` represents movement *away* from the boundary.
 
         .. seealso:: :attr:`right_plate_velocity`
         """
@@ -10056,31 +10224,11 @@ class PlatePartitioner:
     def __init__(self, partitioning_plates: Sequence[ReconstructionGeometry], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id) -> None:
         """A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...
 
-        This table maps the values of the *sort_partitioning_plates* parameter to the sorting criteria used for the partitioning plates:
-
-        +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-        |  Value                                                   | Description                                                                          |
-        +==========================================================+======================================================================================+
-        | SortPartitioningPlates.by_partition_type                 | Group in order of resolved topological networks then resolved topological boundaries |
-        |                                                          | then reconstructed static polygons, but with no sorting within each group            |
-        |                                                          | (ordering within each group is unchanged).                                           |
-        +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-        | SortPartitioningPlates.by_partition_type_then_plate_id   | Same as *by_partition_type*, but also sort by plate ID (from highest to lowest)      |
-        |                                                          | within each partition type group.                                                    |
-        +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-        | SortPartitioningPlates.by_partition_type_then_plate_area | Same as *by_partition_type*, but also sort by plate area (from highest to lowest)    |
-        |                                                          | within each partition type group.                                                    |
-        +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-        | SortPartitioningPlates.by_plate_id                       | Sort by plate ID (from highest to lowest), but no grouping by partition type.        |
-        +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-        | SortPartitioningPlates.by_plate_area                     | Sort by plate area (from highest to lowest), but no grouping by partition type.      |
-        +----------------------------------------------------------+--------------------------------------------------------------------------------------+
+        The *sort_partitioning_plates* parameter determines the order in which the partitioning plates are searched. See :class:`SortPartitioningPlates` for the sorting criteria of each value, and why the order matters when plates overlap.
 
         .. note:: If you don't want to sort the partitioning plates (for example, if you have already sorted them) then you'll need to explicitly specify ``None`` for the *sort_partitioning_plates* parameter (eg, ``pygplates.PlatePartitioner(..., sort_partitioning_plates=None)``). This is because not specifying anything defaults to *SortPartitioningPlates.by_partition_type_then_plate_id* (since this always gives deterministic partitioning results).
 
-        If the partitioning plates overlap each other then their final ordering  determines the partitioning results. Resolved topologies do not tend to overlap, but reconstructed static polygons do overlap (for non-zero reconstruction times) and hence the sorting order becomes relevant.
-
-        Partitioning of points is more efficient if you sort by plate *area* because an arbitrary point is likely to be found sooner when testing against larger partitioning polygons first (and hence more remaining partitioning polygons can be skipped). Since resolved topologies don't tend to overlap you don't need to sort them by plate *ID* to get deterministic partitioning results. So we are free to sort by plate *area* (well, plate area is also deterministic but not as deterministic as sorting by plate *ID* since modifications to the plate geometries change their areas but not their plate IDs). Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:
+        When partitioning many *points* into topological plates and networks, sorting by plate *area* is faster (and still deterministic since resolved topologies do not tend to overlap):
         ::
 
           plate_partitioner = pygplates.PlatePartitioner(..., sort_partitioning_plates=pygplates.SortPartitioningPlates.by_partition_type_then_plate_area)
@@ -10096,8 +10244,8 @@ class PlatePartitioner:
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
         :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param sort_partitioning_plates: optional sort order of partitioning plates (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
-        :type sort_partitioning_plates: One of the values in the SortPartitioningPlates table above, or None
-        :raises: DifferentTimesInPartitioningPlatesError if all partitioning plates do not have the same :meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`
+        :type sort_partitioning_plates: SortPartitioningPlates, or None
+        :raises DifferentTimesInPartitioningPlatesError: if all partitioning plates do not have the same :meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`
 
         The *partitioning_plates* sequence can be generated by :func:`reconstructing regular geological features<reconstruct>` and/or :func:`resolving topological features<resolve_topologies>`.
         ::
@@ -10128,8 +10276,8 @@ class PlatePartitioner:
         :param reconstruction_time: the specific geological time to reconstruct/resolve the *partitioning_features* to (defaults to zero)
         :type reconstruction_time: float or GeoTimeInstant
         :param sort_partitioning_plates: optional sort order of partitioning plates (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
-        :type sort_partitioning_plates: One of the values in the SortPartitioningPlates table above, or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :type sort_partitioning_plates: SortPartitioningPlates, or None
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         The partitioning plates are generated internally by :func:`reconstructing the regular geological features<reconstruct>` and :func:`resolving the topological features<resolve_topologies>` in *partitioning_features* using the rotation model and optional reconstruction time.
 
@@ -10155,15 +10303,15 @@ class PlatePartitioner:
         :type features: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
         :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features         (defaults to just the reconstruction plate ID)
-        :type properties_to_copy: a sequence of any combination of PropertyName and         the PartitionProperty enumeration values (see table below)
+        :type properties_to_copy: sequence of any combination of PropertyName and PartitionProperty enumeration values
 
         :param partition_method: how the features are to be partitioned by the partitioning plates (defaults to *PartitionMethod.split_into_plates*)
-        :type partition_method: a PartitionMethod enumeration value (see table below)
+        :type partition_method: PartitionMethod
 
         :param partition_return: how to return the partitioned and unpartitioned features and whether to include the partitioning plates         (defaults to *PartitionReturn.combined_partitioned_and_unpartitioned*)
-        :type partition_return: a PartitionReturn enumeration value (see table below)
+        :type partition_return: PartitionReturn
 
-        :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see table below)         (**note:** new features are always returned, never the originals passed in via *features*)
+        :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features*)
         :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
 
         The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
@@ -10188,40 +10336,7 @@ class PlatePartitioner:
 
         *partition_method* specifies how the features are to be partitioned by the partitioning plates.
 
-        *partition_method* supports the following enumeration values:
-
-        +----------------------------------------------------+-------------------------------------------------------------------------------------+
-        | Value                                              | Description                                                                         |
-        +====================================================+=====================================================================================+
-        | *PartitionMethod.split_into_plates*                | Split each feature into partitioning plates and into unpartitioned parts that       |
-        |                                                    | are outside all partitioning plates (if plates don't have global coverage).         |
-        |                                                    |                                                                                     |
-        |                                                    | For example, if a feature overlaps two plates then it will get cloned twice.        |
-        |                                                    | Each clone will have its geometry set to the part of the original feature geometry  |
-        |                                                    | contained within the respective partitioning plate. Any part (or parts) of the      |
-        |                                                    | original feature geometry outside all the plates will result in a third cloned      |
-        |                                                    | feature containing the unpartitioned geometry(s).                                   |
-        |                                                    |                                                                                     |
-        |                                                    | The two partitioned cloned features will have properties copied from the            |
-        |                                                    | respective partitioned plate feature (as determined by *properties_to_copy*).       |
-        |                                                    | The unpartitioned cloned feature will not have any properties copied to it.         |
-        +----------------------------------------------------+-------------------------------------------------------------------------------------+
-        | *PartitionMethod.most_overlapping_plate*           | Don't split each feature into partitioning plates, instead use the partitioning     |
-        |                                                    | plate that most overlaps the feature's geometry.                                    |
-        |                                                    |                                                                                     |
-        |                                                    | For example, if a feature overlaps two plates then it will still only get cloned    |
-        |                                                    | once (and its geometry unmodified). Only the most overlapping partitioning plate    |
-        |                                                    | (if any) is selected. The overlap is measured based on the length of the polyline   |
-        |                                                    | or polygon geometry contained within each partitioning plate (or number of points   |
-        |                                                    | if geometry is a multipoint or point).                                              |
-        |                                                    |                                                                                     |
-        |                                                    | The cloned feature will have properties copied from the most overlapping            |
-        |                                                    | partitioned plate feature (as determined by *properties_to_copy*) if it overlaps    |
-        |                                                    | any, otherwise it will not have any properties copied to it.                        |
-        |                                                    |                                                                                     |
-        |                                                    | Note that if a feature contains multiple geometries then they are treated as one    |
-        |                                                    | composite geometry in the overlap calculation.                                      |
-        +----------------------------------------------------+-------------------------------------------------------------------------------------+
+        See :class:`PartitionMethod` for a description of each value.
 
         .. note:: VirtualGeomagneticPole features (of :class:`type<FeatureType>` ``FeatureType.gpml_virtual_geomagnetic_pole``) ignore *partition_method*
            since these features are always partitioned using the average sample site position (``PropertyName.gpml_average_sample_site_position``).
@@ -10237,33 +10352,7 @@ class PlatePartitioner:
 
         *properties_to_copy* specifies the properties to copy from the partitioning features to the features that are being partitioned.
 
-        *properties_to_copy* supports a sequence of any of the following arguments:
-
-        +----------------------------------------------------+----------------------------------------------------------------------------------+
-        | Type                                               | Description                                                                      |
-        +====================================================+==================================================================================+
-        | *PartitionProperty.reconstruction_plate_id*        | The reconstruction plate ID. This is an alternative to specifying the property   |
-        |                                                    | name ``PropertyName.gpml_reconstruction_plate_id``.                              |
-        +----------------------------------------------------+----------------------------------------------------------------------------------+
-        | *PartitionProperty.valid_time_period*              | The valid time period. This is an alternative to specifying the property name    |
-        |                                                    | ``PropertyName.gml_valid_time``.                                                 |
-        +----------------------------------------------------+----------------------------------------------------------------------------------+
-        | *PartitionProperty.valid_time_begin*               | Only the *begin* time of the valid time period of the partitioning feature is    |
-        |                                                    | copied (the *end* time remains unchanged). If the *begin* time is later than     |
-        |                                                    | (has a smaller value than) the *end* time then it is set to the *end* time.      |
-        |                                                    |                                                                                  |
-        |                                                    | Note that there is no equivalent way to specify this using a *PropertyName*.     |
-        +----------------------------------------------------+----------------------------------------------------------------------------------+
-        | *PartitionProperty.valid_time_end*                 | Only the *end* time of the valid time period of the partitioning feature is      |
-        |                                                    | copied (the *begin* time remains unchanged). If the *end* time is earlier than   |
-        |                                                    | (has a larger value) the *begin* time then it is set to the *begin* time.        |
-        |                                                    |                                                                                  |
-        |                                                    | Note that there is no equivalent way to specify this using a *PropertyName*.     |
-        +----------------------------------------------------+----------------------------------------------------------------------------------+
-        | :class:`PropertyName`                              | Any property name. If the partitioning feature has one or more properties        |
-        |                                                    | with this name then they will be copied/cloned to the feature being partitioned  |
-        |                                                    | provided its :class:`feature type<FeatureType>` supports the property name.      |
-        +----------------------------------------------------+----------------------------------------------------------------------------------+
+        *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it).
 
         .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
 
@@ -10324,24 +10413,7 @@ class PlatePartitioner:
 
         *partition_return* specifies how the features are to be partitioned by the partitioning plates. This applies regardless of the value of *partition_method*.
 
-        *partition_return* supports the following enumeration values:
-
-        +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-        | Value                                                    | Return Type                                              | Description                                                                        |
-        +==========================================================+==========================================================+====================================================================================+
-        | *PartitionReturn.combined_partitioned_and_unpartitioned* | ``list`` of :class:`Feature`                             | Return a single combined ``list`` of partitioned and unpartitioned features.       |
-        +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-        | *PartitionReturn.separate_partitioned_and_unpartitioned* | 2-tuple (                                                | Return a 2-tuple whose first element is a ``list`` of partitioned  features and    |
-        |                                                          | ``list`` of partitioned :class:`features<Feature>`,      | whose second element is a ``list`` of unpartitioned  features.                     |
-        |                                                          | ``list`` of unpartitioned :class:`features<Feature>`)    |                                                                                    |
-        +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-        | *PartitionReturn.partitioned_groups_and_unpartitioned*   | 2-tuple (                                                | Return a 2-tuple whose first element is a ``list`` of partitioned groups and       |
-        |                                                          | ``list`` of 2-tuple (                                    | whose second element is a ``list`` of unpartitioned features.                      |
-        |                                                          | :class:`partitioning plate<ReconstructionGeometry>`,     |                                                                                    |
-        |                                                          | ``list`` of partitioned :class:`features<Feature>`),     | Each partitioned group associates a partitioning plate with its partitioned        |
-        |                                                          | ``list`` of unpartitioned :class:`features<Feature>`)    | features and consists of a 2-tuple whose first element is the partitioning plate   |
-        |                                                          |                                                          | and whose second element is a ``list`` of features partitioned by that plate.      |
-        +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
+        See :class:`PartitionReturn` for the return value that each value selects.
 
         To reset the reconstruction plate ID (to zero) for all unpartitioned features (features that did not intersect any partitioning plates):
         ::
@@ -10455,8 +10527,8 @@ class PointOnSphere(GeometryOnSphere):
 
         :param point: (x,y,z) point, or (latitude,longitude) point (in degrees)
         :type point: PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)
-        :raises: InvalidLatLonError if *latitude* or *longitude* is invalid
-        :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude
+        :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
+        :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
 
         The following example shows a few different ways to use this method:
         ::
@@ -10479,7 +10551,7 @@ class PointOnSphere(GeometryOnSphere):
         :type latitude: float
         :param longitude: the longitude (in degrees)
         :type longitude: float
-        :raises: InvalidLatLonError if *latitude* or *longitude* is invalid
+        :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
 
         .. note:: *latitude* must satisfy :meth:`LatLonPoint.is_valid_latitude` and *longitude* must satisfy :meth:`LatLonPoint.is_valid_longitude`, otherwise *InvalidLatLonError* will be raised.
 
@@ -10500,8 +10572,8 @@ class PointOnSphere(GeometryOnSphere):
         :type z: float
         :param normalise: whether to normalise (to unit-length magnitude) the vector (x,y,z) - defaults to ``False``
         :type normalise: bool
-        :raises: ViolatedUnitVectorInvariantError if *normalise* is ``False`` and the resulting vector does not have unit magnitude
-        :raises: UnableToNormaliseZeroVectorError if *normalise* is ``True`` and the resulting vector is (0,0,0) (ie, has zero magnitude)
+        :raises ViolatedUnitVectorInvariantError: if *normalise* is ``False`` and the resulting vector does not have unit magnitude
+        :raises UnableToNormaliseZeroVectorError: if *normalise* is ``True`` and the resulting vector is (0,0,0) (ie, has zero magnitude)
 
         **NOTE:** If the length of the 3D vector (x,y,z) is not 1.0 then you should set *normalise* to ``True`` (to normalise the vector components such that the 3D vector has unit magnitude). Otherwise if (x,y,z) is not unit magnitude then *ViolatedUnitVectorInvariantError* is raised.
         ::
@@ -10658,12 +10730,35 @@ class PolygonOnSphere(GeometryOnSphere):
     """
 
     class Orientation(int):
+        """The orientation of a polygon ring, as viewed from above the globe.
+
+          Returned by :meth:`PolygonOnSphere.get_orientation` and accepted wherever a polygon orientation can be forced (for example :meth:`ReconstructSnapshot.export_reconstructed_geometries`). Also available as ``PolygonOnSphere.Orientation``.
+
+          ============================================ ==============
+          Value                                        Description
+          ============================================ ==============
+          PolygonOnSphereOrientation.clockwise         The ring winds clockwise.
+          PolygonOnSphereOrientation.counter_clockwise The ring winds counter-clockwise.
+          ============================================ ==============
+        """
         clockwise: ClassVar[PolygonOnSphereOrientation]
         counter_clockwise: ClassVar[PolygonOnSphereOrientation]
         names: ClassVar[dict[str, PolygonOnSphereOrientation]]
         values: ClassVar[dict[int, PolygonOnSphereOrientation]]
 
     class PartitionResult(int):
+        """The result of :meth:`partitioning <PolygonOnSphere.partition>` a geometry with a polygon.
+
+          Also available as ``PolygonOnSphere.PartitionResult``.
+
+          =========================================== ==============
+          Value                                       Description
+          =========================================== ==============
+          PolygonOnSpherePartitionResult.inside       The geometry is entirely inside the polygon.
+          PolygonOnSpherePartitionResult.outside      The geometry is entirely outside the polygon.
+          PolygonOnSpherePartitionResult.intersecting The geometry crosses the polygon boundary, so parts of it are inside and parts are outside.
+          =========================================== ==============
+        """
         inside: ClassVar[PolygonOnSpherePartitionResult]
         outside: ClassVar[PolygonOnSpherePartitionResult]
         intersecting: ClassVar[PolygonOnSpherePartitionResult]
@@ -10696,9 +10791,9 @@ class PolygonOnSphere(GeometryOnSphere):
         :type exterior_ring: any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float).
         :param interior_rings: Optional sequence of interior rings where each ring is a sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
         :type interior_rings: Any sequence of rings (where ring is any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)), or None.
-        :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid
-        :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude
-        :raises: InvalidPointsForPolygonConstructionError if any ring has less than three points or if any two points (adjacent in a ring) are antipodal to each other (on opposite sides of the globe)
+        :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid
+        :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude
+        :raises InvalidPointsForPolygonConstructionError: if any ring has less than three points or if any two points (adjacent in a ring) are antipodal to each other (on opposite sides of the globe)
 
         .. note:: Each ring must contain at least three points in order for the polygon to be valid, otherwise *InvalidPointsForPolygonConstructionError* will be raised.
 
@@ -10777,7 +10872,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :type geometry: GeometryOnSphere
         :param allow_one_or_two_points: Whether *geometry* is allowed to be a :class:`PointOnSphere` or a :class:`MultiPointOnSphere` containing only one or two points - if allowed then one of those points is duplicated since a PolygonOnSphere requires at least three points - default is ``True``.
         :type allow_one_or_two_points: bool
-        :raises: InvalidPointsForPolygonConstructionError if *geometry* is a :class:`PointOnSphere`, or a :class:`MultiPointOnSphere` with one or two points (and *allow_one_or_two_points* is ``False``), or if any two consecutive points in a :class:`MultiPointOnSphere` are antipodal to each other (on opposite sides of the globe)
+        :raises InvalidPointsForPolygonConstructionError: if *geometry* is a :class:`PointOnSphere`, or a :class:`MultiPointOnSphere` with one or two points (and *allow_one_or_two_points* is ``False``), or if any two consecutive points in a :class:`MultiPointOnSphere` are antipodal to each other (on opposite sides of the globe)
 
         If *allow_one_or_two_points* is ``True`` then *geometry* can be :class:`PointOnSphere`, :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` or :class:`PolygonOnSphere`. However if *allow_one_or_two_points* is ``False`` then *geometry* must be a :class:`PolygonOnSphere`, or a :class:`MultiPointOnSphere` or :class:`PolylineOnSphere` containing at least three points to avoid raising *InvalidPointsForPolygonConstructionError*.
 
@@ -11174,7 +11269,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :param tessellate_radians: maximum tessellation angle (in radians)
         :type tessellate_radians: float
         :rtype: PolygonOnSphere
-        :raises: ValueError if *tessellate_radians* is negative or zero
+        :raises ValueError: if *tessellate_radians* is negative or zero
 
         Adjacent points (in the returned tessellated polygon) are separated by no more than *tessellate_radians* on the globe.
 
@@ -11201,7 +11296,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :type return_segment_informations: bool
         :returns: list of points, or (if *return_segment_informations* is ``True``) a 2-tuple containing a list of points and a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, and where the point is located *on* that segment in the range [0,1])
         :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[tuple[int, float]]]
-        :raises: ValueError if *point_spacing_radians* is negative or zero
+        :raises ValueError: if *point_spacing_radians* is negative or zero
 
         .. note:: | The distance (along a polygon ring) between the last uniform point of a ring and the last vertex of the ring (also its first vertex) can be less than *point_spacing_radians* (since the length of the ring minus *first_point_spacing_radians* might not be an integer multiple of *point_spacing_radians*).
                   | And if the first uniform point of a ring was added at the ring's first vertex location (ie, *first_point_spacing_radians* is zero) and the last uniform point of the ring is at the same location (ie, the ring's first/last vertex location), due to the ring's length being an integer multiple of *point_spacing_radians*, then the last uniform point is not added.
@@ -11236,12 +11331,35 @@ class PolygonOnSphere(GeometryOnSphere):
         """
 
 class PolygonOnSphereOrientation(int):
+    """The orientation of a polygon ring, as viewed from above the globe.
+
+      Returned by :meth:`PolygonOnSphere.get_orientation` and accepted wherever a polygon orientation can be forced (for example :meth:`ReconstructSnapshot.export_reconstructed_geometries`). Also available as ``PolygonOnSphere.Orientation``.
+
+      ============================================ ==============
+      Value                                        Description
+      ============================================ ==============
+      PolygonOnSphereOrientation.clockwise         The ring winds clockwise.
+      PolygonOnSphereOrientation.counter_clockwise The ring winds counter-clockwise.
+      ============================================ ==============
+    """
     clockwise: ClassVar[PolygonOnSphereOrientation]
     counter_clockwise: ClassVar[PolygonOnSphereOrientation]
     names: ClassVar[dict[str, PolygonOnSphereOrientation]]
     values: ClassVar[dict[int, PolygonOnSphereOrientation]]
 
 class PolygonOnSpherePartitionResult(int):
+    """The result of :meth:`partitioning <PolygonOnSphere.partition>` a geometry with a polygon.
+
+      Also available as ``PolygonOnSphere.PartitionResult``.
+
+      =========================================== ==============
+      Value                                       Description
+      =========================================== ==============
+      PolygonOnSpherePartitionResult.inside       The geometry is entirely inside the polygon.
+      PolygonOnSpherePartitionResult.outside      The geometry is entirely outside the polygon.
+      PolygonOnSpherePartitionResult.intersecting The geometry crosses the polygon boundary, so parts of it are inside and parts are outside.
+      =========================================== ==============
+    """
     inside: ClassVar[PolygonOnSpherePartitionResult]
     outside: ClassVar[PolygonOnSpherePartitionResult]
     intersecting: ClassVar[PolygonOnSpherePartitionResult]
@@ -11249,6 +11367,18 @@ class PolygonOnSpherePartitionResult(int):
     values: ClassVar[dict[int, PolygonOnSpherePartitionResult]]
 
 class PolylineConversion(int):
+    """What to do with a geometry that is not a :class:`PolylineOnSphere` when a polyline is required.
+
+      Accepted by :meth:`PolylineOnSphere.join` and :meth:`PolylineOnSphere.rotation_interpolate`.
+
+      ======================================== ==============
+      Value                                    Description
+      ======================================== ==============
+      PolylineConversion.convert_to_polyline   Convert the geometry to a polyline from its points (as if by ``pygplates.PolylineOnSphere(geometry)``).
+      PolylineConversion.ignore_non_polyline   Silently ignore the geometry (the default). For :meth:`PolylineOnSphere.rotation_interpolate` this means returning ``None``.
+      PolylineConversion.raise_if_non_polyline Raise :class:`GeometryTypeError`.
+      ======================================== ==============
+    """
     convert_to_polyline: ClassVar[PolylineConversion]
     ignore_non_polyline: ClassVar[PolylineConversion]
     raise_if_non_polyline: ClassVar[PolylineConversion]
@@ -11329,9 +11459,9 @@ class PolylineOnSphere(GeometryOnSphere):
 
         :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
         :type points: any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)
-        :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid
-        :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude
-        :raises: InvalidPointsForPolylineConstructionError if sequence has less than two points or if any two points (adjacent in the *points* sequence) are antipodal to each other (on opposite sides of the globe)
+        :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid
+        :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude
+        :raises InvalidPointsForPolylineConstructionError: if sequence has less than two points or if any two points (adjacent in the *points* sequence) are antipodal to each other (on opposite sides of the globe)
 
         .. note:: The sequence must contain at least two points in order to be a valid polyline, otherwise *InvalidPointsForPolylineConstructionError* will be raised.
 
@@ -11389,7 +11519,7 @@ class PolylineOnSphere(GeometryOnSphere):
         :type geometry: GeometryOnSphere
         :param allow_one_point: Whether *geometry* is allowed to be a :class:`PointOnSphere` or a :class:`MultiPointOnSphere` containing only a single point - if allowed then that single point is duplicated since a PolylineOnSphere requires at least two points - default is ``True``.
         :type allow_one_point: bool
-        :raises: InvalidPointsForPolylineConstructionError if *geometry* is a :class:`PointOnSphere` (and *allow_one_point* is ``False``), or a :class:`MultiPointOnSphere` with one point (and *allow_one_point* is ``False``), or if any two consecutive points in a :class:`MultiPointOnSphere` are antipodal to each other (on opposite sides of the globe)
+        :raises InvalidPointsForPolylineConstructionError: if *geometry* is a :class:`PointOnSphere` (and *allow_one_point* is ``False``), or a :class:`MultiPointOnSphere` with one point (and *allow_one_point* is ``False``), or if any two consecutive points in a :class:`MultiPointOnSphere` are antipodal to each other (on opposite sides of the globe)
 
         If *allow_one_point* is ``True`` then *geometry* can be :class:`PointOnSphere`, :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` or :class:`PolygonOnSphere`. However if *allow_one_point* is ``False`` then *geometry* must be a :class:`PolylineOnSphere`, or a :class:`PolygonOnSphere`, or a :class:`MultiPointOnSphere` containing at least two points to avoid raising *InvalidPointsForPolylineConstructionError*.
 
@@ -11490,10 +11620,10 @@ class PolylineOnSphere(GeometryOnSphere):
         :param distance_threshold_radians: optional closeness distance threshold in radians for joining to occur     (if not specified then end point *equality* is used)
         :type distance_threshold_radians: float
         :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore     those geometries in *geometries* that are not :class:`PolylineOnSphere` - defaults to     *PolylineConversion.ignore_non_polyline*
-        :type polyline_conversion: PolylineConversion.convert_to_polyline, PolylineConversion.ignore_non_polyline     or PolylineConversion.raise_if_non_polyline
+        :type polyline_conversion: PolylineConversion
         :returns: a list of joined polylines
         :rtype: list of PolylineOnSphere
-        :raises: GeometryTypeError if *polyline_conversion* is *PolylineConversion.raise_if_non_polyline* and     any geometry in *geometries* is not a :class:`PolylineOnSphere`
+        :raises GeometryTypeError: if *polyline_conversion* is *PolylineConversion.raise_if_non_polyline* and     any geometry in *geometries* is not a :class:`PolylineOnSphere`
 
         All pairs of geometries are tested for joining and only those with end points closer than *distance_threshold_radians*
         radians are joined. Each joined polyline is further joined if possible until there are no more
@@ -11552,13 +11682,13 @@ class PolylineOnSphere(GeometryOnSphere):
         :type maximum_latitude_non_overlap_radians: float - defaults to zero
         :param maximum_distance_threshold_radians: maximum distance (in radians) between *from_polyline* and *to_polyline* - if specified and if exceeded then ``None`` is returned
         :type maximum_distance_threshold_radians: float - default is no threshold detection
-        :param flatten_longitude_overlaps: whether or not to ensure *from_polyline* and *to_polyline* do not overlap in longitude (in North pole reference frame of *rotation_pole*) and how to correct the overlap
-        :type flatten_longitude_overlaps: FlattenLongitudeOverlaps.no, FlattenLongitudeOverlaps.use_from or FlattenLongitudeOverlaps.use_to - defaults to FlattenLongitudeOverlaps.no
+        :param flatten_longitude_overlaps: whether or not to ensure *from_polyline* and *to_polyline* do not overlap in longitude (in North pole reference frame of *rotation_pole*) and how to correct the overlap (defaults to *FlattenLongitudeOverlaps.no*)
+        :type flatten_longitude_overlaps: FlattenLongitudeOverlaps
         :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore *from_polyline* and *to_polyline* if they are not :class:`PolylineOnSphere` (ignoring equates to returning ``None``) - defaults to *PolylineConversion.ignore_non_polyline*
-        :type polyline_conversion: PolylineConversion.convert_to_polyline, PolylineConversion.ignore_non_polyline or PolylineConversion.raise_if_non_polyline
+        :type polyline_conversion: PolylineConversion
         :returns: list of interpolated polylines - or ``None`` if polylines do not have overlapping latitude ranges or if maximum distance threshold exceeded or if either polyline is not a :class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.ignore_non_polyline*)
         :rtype: list of PolylineOnSphere or None
-        :raises: GeometryTypeError if *from_polyline* or *to_polyline* are not of type :class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)
+        :raises GeometryTypeError: if *from_polyline* or *to_polyline* are not of type :class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)
 
         If *interpolate* is a single number then it is the distance interval spacing, in radians, between *from_polyline* and *to_polyline* at which to generate interpolated polylines. Also modified versions of *from_polyline* and *to_polyline* are returned along with the interpolated polylines.
 
@@ -11698,7 +11828,7 @@ class PolylineOnSphere(GeometryOnSphere):
         :param tessellate_radians: maximum tessellation angle (in radians)
         :type tessellate_radians: float
         :rtype: PolylineOnSphere
-        :raises: ValueError if *tessellate_radians* is negative or zero
+        :raises ValueError: if *tessellate_radians* is negative or zero
 
         Adjacent points (in the returned tessellated polyline) are separated by no more than *tessellate_radians* on the globe.
 
@@ -11725,7 +11855,7 @@ class PolylineOnSphere(GeometryOnSphere):
         :type return_segment_informations: bool
         :returns: list of points, or (if *return_segment_informations* is ``True``) a 2-tuple containing a list of points and a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, and where the point is located *on* that segment in the range [0,1])
         :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[tuple[int, float]]]
-        :raises: ValueError if *point_spacing_radians* is negative or zero
+        :raises ValueError: if *point_spacing_radians* is negative or zero
 
         .. note:: The distance (along the polyline) between the last uniform point and the last vertex of the polyline can be less than *point_spacing_radians* (since the length of the polyline minus *first_point_spacing_radians* might not be an integer multiple of *point_spacing_radians*).
 
@@ -11758,9 +11888,30 @@ class PolylineOnSphere(GeometryOnSphere):
         .. versionadded:: 0.47
         """
 
-class PreconditionViolationError(GPlatesError): ...
+class PreconditionViolationError(GPlatesError):
+    """A precondition of a pyGPlates function or method was violated.
+
+      This is the base class of the exceptions raised when an argument does not satisfy the requirements
+      documented for a function or method (such as :class:`InvalidLatLonError` or :class:`InformationModelError`).
+
+      When *this* class is raised directly, rather than one of its subclasses, the precondition was violated by
+      pyGPlates itself.
+      This indicates a bug in pyGPlates rather than a mistake in your script. The error message includes the call stack trace - please report it (and the trace) to the GPlates developers.
+    """
 
 class PrincipalAngleType(int):
+    r"""How the angle of the major principal axis returned by :meth:`Strain.get_principal_strain` is measured.
+
+      ================================ ==============
+      Value                            Description
+      ================================ ==============
+      PrincipalAngleType.major_south   The major principal axis points South when the angle is zero. The angle ranges from :math:`-\pi` to :math:`\pi` radians **anti**-clockwise (observed from above the globe).
+      PrincipalAngleType.major_east    The major principal axis points East when the angle is zero. The angle ranges from :math:`-\pi` to :math:`\pi` radians **anti**-clockwise (observed from above the globe). This is equivalent to *MajorAngle* in the GPlates deformation export.
+      PrincipalAngleType.major_azimuth The major principal axis points North when the angle is zero. The angle ranges from :math:`0` to :math:`2\pi` radians **clockwise** (observed from above the globe). This is equivalent to *MajorAzimuth* in the GPlates deformation export.
+      ================================ ==============
+
+      .. note:: Regardless of the value, the direction of the *minimum* principal axis is always an **anti-clockwise** rotation of :math:`\frac{\pi}{2}` radians (90 degrees) of the *major* principal axis (observed from above the globe).
+    """
     major_south: ClassVar[PrincipalAngleType]
     major_east: ClassVar[PrincipalAngleType]
     major_azimuth: ClassVar[PrincipalAngleType]
@@ -12176,6 +12327,18 @@ class PropertyName:
         """
 
 class PropertyReturn(int):
+    """How many matching properties (or property values, or geometries) a query returns.
+
+      Accepted by :meth:`Feature.get`, :meth:`Feature.get_value`, :meth:`Feature.get_geometry` and the other :class:`Feature` methods that query properties.
+
+      ========================== ==============
+      Value                      Description
+      ========================== ==============
+      PropertyReturn.exactly_one Return the single match only if *exactly one* property matches the query, otherwise return ``None``.
+      PropertyReturn.first       Return the first match, or ``None`` if nothing matches. Note that a feature is an *unordered* collection of properties, so this is only meaningful when the order does not matter.
+      PropertyReturn.all         Return a ``list`` of all matches (empty if nothing matches).
+      ========================== ==============
+    """
     exactly_one: ClassVar[PropertyReturn]
     first: ClassVar[PropertyReturn]
     all: ClassVar[PropertyReturn]
@@ -12657,7 +12820,7 @@ class ReconstructModel:
         :param reconstruction_time: the geological time of the snapshot
         :type reconstruction_time: float or GeoTimeInstant
         :rtype: ReconstructSnapshot
-        :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
+        :raises ValueError: if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
         """
 
 class ReconstructSnapshot:
@@ -12709,18 +12872,18 @@ class ReconstructSnapshot:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def export_reconstructed_geometries(self, export_filename: str | os.PathLike, reconstruct_type: ReconstructType = ReconstructType.feature_geometry, wrap_to_dateline: bool = True, force_polygon_orientation: int = ...) -> None:
+    def export_reconstructed_geometries(self, export_filename: str | os.PathLike, reconstruct_type: ReconstructType = ReconstructType.feature_geometry, wrap_to_dateline: bool = True, force_polygon_orientation: PolygonOnSphereOrientation | None = ...) -> None:
         """Exports the reconstructed geometries of the requested type(s) to a file.
 
         :param export_filename: the name of the export file
         :type export_filename: str, or os.PathLike
         :param reconstruct_type: specifies which type of features to export - defaults to exporting only regular features (not motion paths or flowlines)
-        :type reconstruct_type: pygplates.ReconstructType.feature_geometry, pygplates.ReconstructType.motion_path or pygplates.ReconstructType.flowline
+        :type reconstruct_type: ReconstructType
         :param wrap_to_dateline: Whether to wrap/clip reconstructed geometries to the dateline (currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.
         :type wrap_to_dateline: bool
         :param force_polygon_orientation: Optionally force boundary orientation to clockwise (``PolygonOnSphere.Orientation.clockwise``) or counter-clockwise (``PolygonOnSphere.Orientation.counter_clockwise``). Only applies to reconstructed feature geometries (excludes *motion paths* and *flowlines*) that are polygons. Note that ESRI Shapefiles always use *clockwise* orientation (and so ignore this parameter).
-        :type force_polygon_orientation: int
-        :raises: ValueError if *reconstruct_type* (if specified) is not **one** of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``
+        :type force_polygon_orientation: PolygonOnSphereOrientation, or None
+        :raises ValueError: if *reconstruct_type* (if specified) is not **one** of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``
 
         .. note:: *reconstruct_type* must be a **single** reconstruct type.  This is different than :meth:`get_reconstructed_geometries` and :meth:`get_reconstructed_features` which can specify multiple types.
 
@@ -12752,7 +12915,7 @@ class ReconstructSnapshot:
         :param points: sequence of points at which to find containing reconstructed static polygons
         :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param sort_reconstructed_static_polygons: optional sort order of reconstructed static polygons (defaults to ``pygplates.SortReconstructedStaticPolygons.by_plate_id``)
-        :type sort_reconstructed_static_polygons: pygplates.SortReconstructedStaticPolygons.by_plate_id or pygplates.SortReconstructedStaticPolygons.by_plate_area or None
+        :type sort_reconstructed_static_polygons: SortReconstructedStaticPolygons, or None
         :returns: the reconstructed static polygon containing each point (``None`` for each point *outside* all reconstructed static polygons)
         :rtype: list[ReconstructedFeatureGeometry | None]
 
@@ -12760,13 +12923,7 @@ class ReconstructSnapshot:
 
         .. note:: Each point that is *outside* all reconstructed static polygons will have a point location (reconstructed static polygon) of ``None``.
 
-        Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike :class:`resolved topological plates <TopologicalSnapshot>` which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be returned for that point. However, you can change the search order of reconstructed static polygons using *sort_reconstructed_static_polygons*:
-
-        - ``pygplates.SortReconstructedStaticPolygons.by_plate_id``: Search by *plate ID* (from highest to lowest).
-        - ``pygplates.SortReconstructedStaticPolygons.by_plate_area``: Search by *plate area* (from highest to lowest).
-        - ``None``: Search using the original order. This is the order of reconstructable features (see :meth:`constructor<__init__>`), and includes the order across any reconstructable feature collections/files.
-
-        .. note:: The default search order is ``pygplates.SortReconstructedStaticPolygons.by_plate_id`` to ensure the results are the same regardless of the order of reconstructable features (specified in the :meth:`constructor<__init__>`).
+        Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike :class:`resolved topological plates <TopologicalSnapshot>` which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be returned for that point. However, you can change the search order of reconstructed static polygons using *sort_reconstructed_static_polygons* (see :class:`SortReconstructedStaticPolygons`). The default searches by plate ID, so the results do not depend on the order of the reconstructable features (specified in the :meth:`constructor<__init__>`).
 
         To associate each point with the reconstructed static polygon containing it:
         ::
@@ -12791,13 +12948,13 @@ class ReconstructSnapshot:
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :param sort_reconstructed_static_polygons: optional sort order of reconstructed static polygons (defaults to ``pygplates.SortReconstructedStaticPolygons.by_plate_id``)
-        :type sort_reconstructed_static_polygons: pygplates.SortReconstructedStaticPolygons.by_plate_id or pygplates.SortReconstructedStaticPolygons.by_plate_area or None
+        :type sort_reconstructed_static_polygons: SortReconstructedStaticPolygons, or None
         :param return_point_locations: whether to also return the reconstructed static polygon that contains each point - defaults to ``False``
         :type return_point_locations: bool
         :returns: the velocity of each point (``None`` for each point *outside* all reconstructed static polygons), and (if *return_point_locations* is ``True``) also the reconstructed static polygon containing each point (``None`` for points outside)
@@ -12807,13 +12964,7 @@ class ReconstructSnapshot:
 
         .. note:: Each point that is *outside* all reconstructed static polygons will have a velocity of ``None``, and optionally (if *return_point_locations* is ``True``) have a point location (reconstructed static polygon) of ``None``.
 
-        Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike :class:`resolved topological plates <TopologicalSnapshot>` which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be returned for that point. However, you can change the search order of reconstructed static polygons using *sort_reconstructed_static_polygons*:
-
-        - ``pygplates.SortReconstructedStaticPolygons.by_plate_id``: Search by *plate ID* (from highest to lowest).
-        - ``pygplates.SortReconstructedStaticPolygons.by_plate_area``: Search by *plate area* (from highest to lowest).
-        - ``None``: Search using the original order. This is the order of reconstructable features (see :meth:`constructor<__init__>`), and includes the order across any reconstructable feature collections/files.
-
-        .. note:: The default search order is ``pygplates.SortReconstructedStaticPolygons.by_plate_id`` to ensure the results are the same regardless of the order of reconstructable features (specified in the :meth:`constructor<__init__>`).
+        Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike :class:`resolved topological plates <TopologicalSnapshot>` which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be returned for that point. However, you can change the search order of reconstructed static polygons using *sort_reconstructed_static_polygons* (see :class:`SortReconstructedStaticPolygons`). The default searches by plate ID, so the results do not depend on the order of the reconstructable features (specified in the :meth:`constructor<__init__>`).
 
         To associate each point with its velocity and the reconstructed static polygon containing it:
         ::
@@ -12835,14 +12986,14 @@ class ReconstructSnapshot:
         .. versionadded:: 0.50
         """
 
-    def get_reconstructed_features(self, reconstruct_types: ReconstructType | int | ReconstructType = ReconstructType.feature_geometry) -> list[tuple[Feature, list[ReconstructedFeatureGeometry | ReconstructedMotionPath | ReconstructedFlowline]]]:
+    def get_reconstructed_features(self, reconstruct_types: ReconstructType | int = ReconstructType.feature_geometry) -> list[tuple[Feature, list[ReconstructedFeatureGeometry | ReconstructedMotionPath | ReconstructedFlowline]]]:
         """Returns the reconstructed geometries of the requested type(s) grouped by their feature.
 
         :param reconstruct_types: specifies which types of features to reconstruct - defaults to reconstructing only regular features (not motion paths or flowlines)
-        :type reconstruct_types: a bitwise combination of any of pygplates.ReconstructType.feature_geometry, pygplates.ReconstructType.motion_path or pygplates.ReconstructType.flowline
+        :type reconstruct_types: a bitwise combination of ReconstructType enumeration values
         :returns: a list of tuples, where each tuple contains a :class:`Feature` and a ``list`` of reconstructed geometries (each reconstructed geometry is a :class:`reconstructed feature geometry <ReconstructedFeatureGeometry>`, :class:`reconstructed motion path <ReconstructedMotionPath>` or :class:`reconstructed flowline <ReconstructedFlowline>` - depending on the optional argument *reconstruct_types*)
         :rtype: list[tuple[Feature, list[ReconstructedFeatureGeometry | ReconstructedMotionPath | ReconstructedFlowline]]]
-        :raises: ValueError if *reconstruct_types* (if specified) contains a flag that is not one of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``
+        :raises ValueError: if *reconstruct_types* (if specified) contains a flag that is not one of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``
 
         This can be useful (compared to :meth:`get_reconstructed_geometries`) when a :class:`feature <Feature>` has more than one (present day) geometry and hence more than one reconstructed geometry.
 
@@ -12862,16 +13013,16 @@ class ReconstructSnapshot:
         .. seealso:: :meth:`get_reconstructed_geometries`
         """
 
-    def get_reconstructed_geometries(self, reconstruct_types: ReconstructType | int | ReconstructType = ReconstructType.feature_geometry, same_order_as_reconstructable_features: bool = False) -> list[ReconstructedFeatureGeometry | ReconstructedMotionPath | ReconstructedFlowline]:
+    def get_reconstructed_geometries(self, reconstruct_types: ReconstructType | int = ReconstructType.feature_geometry, same_order_as_reconstructable_features: bool = False) -> list[ReconstructedFeatureGeometry | ReconstructedMotionPath | ReconstructedFlowline]:
         """Returns the reconstructed geometries of the requested type(s).
 
         :param reconstruct_types: specifies which types of features to reconstruct - defaults to reconstructing only regular features (not motion paths or flowlines)
-        :type reconstruct_types: a bitwise combination of any of pygplates.ReconstructType.feature_geometry, pygplates.ReconstructType.motion_path or pygplates.ReconstructType.flowline
+        :type reconstruct_types: a bitwise combination of ReconstructType enumeration values
         :param same_order_as_reconstructable_features: whether the returned reconstructed geometries are sorted in the order of the reconstructable features (including order across reconstructable files, if there were any) - defaults to ``False``
         :type same_order_as_reconstructable_features: bool
         :returns: the :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>`, :class:`reconstructed motion paths <ReconstructedMotionPath>` and :class:`reconstructed flowlines <ReconstructedFlowline>` (depending on the optional argument *reconstruct_types*) - by default :class:`reconstructed motion paths <ReconstructedMotionPath>` and :class:`reconstructed flowlines <ReconstructedFlowline>` are excluded
         :rtype: list[ReconstructedFeatureGeometry | ReconstructedMotionPath | ReconstructedFlowline]
-        :raises: ValueError if *reconstruct_types* (if specified) contains a flag that is not one of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``
+        :raises ValueError: if *reconstruct_types* (if specified) contains a flag that is not one of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``
 
         .. note:: If *same_order_as_reconstructable_features* is ``True`` then the returned reconstructed geometries are sorted in the order of their respective reconstructable features (see :meth:`constructor<__init__>`). This includes the order across any reconstructable feature collections/files.
 
@@ -12895,6 +13046,18 @@ class ReconstructSnapshot:
         """
 
 class ReconstructType(int):
+    """The type of reconstructed geometry that a feature produces when it is reconstructed.
+
+      Used to select which features are reconstructed, returned or exported (for example by :meth:`ReconstructSnapshot.get_reconstructed_geometries`, :meth:`ReconstructSnapshot.export_reconstructed_geometries` and :func:`reconstruct`). Where a method accepts more than one type at once, combine values with the bitwise-or operator (eg, ``pygplates.ReconstructType.feature_geometry | pygplates.ReconstructType.motion_path``).
+
+      ================================ ==============
+      Value                            Description
+      ================================ ==============
+      ReconstructType.feature_geometry Regular (non-topological) features, which reconstruct to :class:`ReconstructedFeatureGeometry` objects.
+      ReconstructType.motion_path      Motion path features, which reconstruct to :class:`ReconstructedMotionPath` objects.
+      ReconstructType.flowline         Flowline features, which reconstruct to :class:`ReconstructedFlowline` objects.
+      ================================ ==============
+    """
     feature_geometry: ClassVar[ReconstructType]
     motion_path: ClassVar[ReconstructType]
     flowline: ClassVar[ReconstructType]
@@ -12963,9 +13126,9 @@ class ReconstructedFeatureGeometry(ReconstructionGeometry):
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
@@ -13105,9 +13268,9 @@ class ReconstructedFlowline(ReconstructionGeometry):
         :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocity as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: Vector3D
@@ -13249,7 +13412,7 @@ class ReconstructedGeometryTimeSpan:
         :type return_inactive_points: bool
         :returns: list of float, or ``None`` if no points are active at *reconstruction_time*
         :rtype: list[float], or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.
 
@@ -13265,7 +13428,7 @@ class ReconstructedGeometryTimeSpan:
         :type return_inactive_points: bool
         :returns: list of float, or ``None`` if no points are active at *reconstruction_time*
         :rtype: list[float], or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.
 
@@ -13281,7 +13444,7 @@ class ReconstructedGeometryTimeSpan:
         :type return_inactive_points: bool
         :returns: list of float, or ``None`` if no points are active at *reconstruction_time*
         :rtype: list[float], or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.
 
@@ -13297,7 +13460,7 @@ class ReconstructedGeometryTimeSpan:
         :type return_inactive_points: bool
         :returns: list of :class:`PointOnSphere`, or ``None`` if no points are active at *reconstruction_time*
         :rtype: list[PointOnSphere], or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points` in the *Primer* documentation.
         """
@@ -13313,7 +13476,7 @@ class ReconstructedGeometryTimeSpan:
         :type return_inactive_points: bool
         :returns: If *scalar_type* is specified then a ``list`` of scalar values associated with *scalar_type* at *reconstruction_time* (or ``None`` if no matching scalar type), otherwise a ``dict`` mapping available scalar types with their associated scalar values ``list`` at *reconstruction_time* (or ``None`` if no scalar types are available). Returns ``None`` if no points are active at *reconstruction_time*.
         :rtype: list[float], or dict[ScalarType, list[float]], or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_scalar_values` in the *Primer* documentation.
         """
@@ -13327,7 +13490,7 @@ class ReconstructedGeometryTimeSpan:
         :type return_inactive_points: bool
         :returns: list of :class:`StrainRate`, or ``None`` if no points are active at *reconstruction_time*
         :rtype: list[StrainRate], or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_strain_rates` in the *Primer* documentation.
 
@@ -13345,7 +13508,7 @@ class ReconstructedGeometryTimeSpan:
         :type return_inactive_points: bool
         :returns: list of :class:`Strain`, or ``None`` if no points are active at *reconstruction_time*
         :rtype: list[Strain], or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_strains` in the *Primer* documentation.
 
@@ -13361,7 +13524,7 @@ class ReconstructedGeometryTimeSpan:
         :type return_inactive_points: bool
         :returns: list of float, or ``None`` if no points are active at *reconstruction_time*
         :rtype: list[float], or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence` in the *Primer* documentation.
 
@@ -13390,7 +13553,7 @@ class ReconstructedGeometryTimeSpan:
         :type return_inactive_points: bool
         :returns: list of :class:`TopologyPointLocation`, or ``None`` if no points are active at *reconstruction_time*
         :rtype: list[TopologyPointLocation], or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_topology_locations` in the *Primer* documentation.
         """
@@ -13403,17 +13566,17 @@ class ReconstructedGeometryTimeSpan:
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :param return_inactive_points: Whether to return velocities associated with inactive points. If ``True`` then each velocity corresponding to an inactive point stores ``None`` instead of a velocity and hence the size of the ``list`` of velocities is equal to the number of points in the initial geometry (which are all initially active). By default only velocities for active points are returned.
         :type return_inactive_points: bool
         :returns: list of :class:`Vector3D`, or ``None`` if no points are active at *reconstruction_time*
         :rtype: list[Vector3D], or None
-        :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
-        :raises: ValueError if *velocity_delta_time* is negative or zero.
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_velocities` in the *Primer* documentation.
 
@@ -13507,9 +13670,9 @@ class ReconstructedMotionPath(ReconstructionGeometry):
         :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocity as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: Vector3D
@@ -13680,7 +13843,7 @@ class ReconstructionTree:
         :param use_identity_for_missing_plate_ids: whether to return an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` for missing plate ids (default is to use identity rotation)
         :type use_identity_for_missing_plate_ids: bool
         :rtype: FiniteRotation, or None
-        :raises: DifferentAnchoredPlatesInReconstructionTreesError if the anchor plate of both reconstruction trees is not the same plate
+        :raises DifferentAnchoredPlatesInReconstructionTreesError: if the anchor plate of both reconstruction trees is not the same plate
 
         Get the stage rotation of plate 802 (relative to anchor plate) from 20Ma to 15Ma:
         ::
@@ -14017,7 +14180,7 @@ class ResolveTopologyParameters:
         :param max_clamped_strain_rate: Maximum :meth:`total strain rate <StrainRate.get_total_strain_rate>` (in units of :math:`second^{-1}`). This is only used if *enable_strain_rate_clamping* is true. Default value is ``5e-15`` :math:`second^{-1}`. See :attr:`max_clamped_strain_rate`.
         :type max_clamped_strain_rate: float
         :param strain_rate_smoothing: How deformation strain rates are smoothed (if at all). This can be no smoothing, barycentric smoothing or natural neighbour smoothing. Default value is ``pygplates.StrainRateSmoothing.natural_neighbour``. See :attr:`strain_rate_smoothing`.
-        :type strain_rate_smoothing: pygplates.StrainRateSmoothing.none, pygplates.StrainRateSmoothing.barycentric or pygplates.StrainRateSmoothing.natural_neighbour
+        :type strain_rate_smoothing: StrainRateSmoothing
         :param rift_exponential_stretching_constant: Controls the curvature of the exponential variation of stretching across a rift profile in a network triangulation. Default value is ``1``. See :attr:`rift_exponential_stretching_constant`.
         :type rift_exponential_stretching_constant: float
         :param rift_strain_rate_resolution: Controls how accurately the strain rate curve (across rift profile) matches exponential curve (in units of :math:`second^{-1}`). Default value is ``5e-17``. See :attr:`rift_strain_rate_resolution`.
@@ -14120,6 +14283,18 @@ class ResolveTopologyParameters:
         """
 
 class ResolveTopologyType(int):
+    """The type of a resolved topology.
+
+      Used to select which resolved topologies are returned, exported or searched (for example by :meth:`TopologicalSnapshot.get_resolved_topologies`, :meth:`TopologicalSnapshot.export_resolved_topologies`, :meth:`TopologicalSnapshot.get_point_locations` and :func:`resolve_topologies`). Combine values with the bitwise-or operator to select more than one type (eg, ``pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network``).
+
+      ============================ ==============
+      Value                        Description
+      ============================ ==============
+      ResolveTopologyType.line     Topological lines, which resolve to :class:`ResolvedTopologicalLine` objects.
+      ResolveTopologyType.boundary Topological closed plate boundaries, which resolve to :class:`ResolvedTopologicalBoundary` objects.
+      ResolveTopologyType.network  Topological deforming networks, which resolve to :class:`ResolvedTopologicalNetwork` objects.
+      ============================ ==============
+    """
     line: ClassVar[ResolveTopologyType]
     boundary: ClassVar[ResolveTopologyType]
     network: ClassVar[ResolveTopologyType]
@@ -14268,9 +14443,9 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocity as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: Vector3D or None
@@ -14366,9 +14541,9 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
@@ -14411,7 +14586,7 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the :meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>`.
         :type reconstruction_time: float or GeoTimeInstant
         :rtype: PointOnSphere or None
-        :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
+        :raises ValueError: if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
 
         If the point lies within this resolved topological boundary then it is reconstructed **from** the :meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>` **to** the specified reconstruction time, and the reconstructed point is returned (otherwise ``None`` will be returned).
 
@@ -14582,9 +14757,9 @@ class ResolvedTopologicalLine(ReconstructionGeometry):
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
@@ -14806,9 +14981,9 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocity as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: Vector3D or None
@@ -14924,9 +15099,9 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
@@ -14990,7 +15165,7 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         :param use_natural_neighbour_interpolation: If ``True`` and *point* lies within the deforming region, then the reconstructed point is the interpolation of the natural neighbour deformed triangulation vertex positions (otherwise barycentric interpolation is used). Defaults to ``True``.
         :type use_natural_neighbour_interpolation: bool
         :rtype: PointOnSphere or None
-        :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
+        :raises ValueError: if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
 
         If the point lies within this resolved topological network (which can be either its deforming region or one of its rigid blocks) then it is reconstructed **from** the :meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>` **to** the specified reconstruction time, and the reconstructed point is returned (otherwise ``None`` will be returned).
 
@@ -15349,9 +15524,9 @@ class ResolvedTopologicalSharedSubSegment:
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
@@ -15655,9 +15830,9 @@ class ResolvedTopologicalSubSegment:
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
@@ -15797,8 +15972,8 @@ class RotationModel:
         :type extend_total_reconstruction_poles_to_distant_past: bool
         :param default_anchor_plate_id: The default anchored plate id to use when :meth:`get_rotation` and :meth:`get_reconstruction_tree` are called without specifying their *anchor_plate_id* parameter. Defaults to 0.
         :type default_anchor_plate_id: int
-        :raises: OpenFileForReadingError if any file is not readable (when filenames specified)
-        :raises: FileFormatNotSupportedError if any file format (identified by the filename extensions) does not support reading (when filenames specified)
+        :raises OpenFileForReadingError: if any file is not readable (when filenames specified)
+        :raises FileFormatNotSupportedError: if any file format (identified by the filename extensions) does not support reading (when filenames specified)
 
         Note that *rotation_features* can be a rotation :class:`FeatureCollection` or a rotation filename or a rotation :class:`Feature` or a sequence of rotation :class:`features<Feature>`, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types.
 
@@ -15890,7 +16065,7 @@ class RotationModel:
         :param anchor_plate_id: The id of the anchored plate that *equivalent* rotations are calculated with respect to. If not specified then the *default* anchor plate id (specified in :meth:`constructor<__init__>`) is used.
         :type anchor_plate_id: int
         :rtype: ReconstructionTree
-        :raises: InterpolationError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises InterpolationError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         If the reconstruction tree for the specified reconstruction time and anchored plate id is currently in the internal cache then it is returned, otherwise a new reconstruction tree is created and stored in the cache (after evicting the reconstruction tree associated with the least recently requested reconstruction time and anchored plate id if necessary).
 
@@ -15914,7 +16089,7 @@ class RotationModel:
         :param use_identity_for_missing_plate_ids: whether to return an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` for missing plate ids (default is to use identity rotation)
         :type use_identity_for_missing_plate_ids: bool
         :rtype: FiniteRotation, or None
-        :raises: InterpolationError if any time value is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises InterpolationError: if any time value is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         This method conveniently handles all four combinations of total/stage and equivalent/relative rotations normally handled by:
 
@@ -16095,6 +16270,24 @@ class ScalarType:
         """
 
 class SortPartitioningPlates(int):
+    """The order in which partitioning plates are searched when partitioning.
+
+      Accepted by :meth:`PlatePartitioner.__init__` and :func:`partition_into_plates`. The order matters when partitioning plates overlap each other, because the first plate found to contain a geometry (or part of it) wins. Resolved topologies do not tend to overlap, but reconstructed static polygons do (at reconstruction times other than present day), so their order affects the result. Grouping by partition type searches resolved topological networks first, because they usually overlay the resolved topological boundaries.
+
+      ======================================================== ==============
+      Value                                                    Description
+      ======================================================== ==============
+      SortPartitioningPlates.by_partition_type                 Group in order of resolved topological networks, then resolved topological boundaries, then reconstructed static polygons, with no sorting within each group (the ordering within each group is unchanged).
+      SortPartitioningPlates.by_partition_type_then_plate_id   Same as *by_partition_type*, but also sort by plate ID (from highest to lowest) within each group. This is the default because it always gives deterministic results.
+      SortPartitioningPlates.by_partition_type_then_plate_area Same as *by_partition_type*, but also sort by plate area (from highest to lowest) within each group.
+      SortPartitioningPlates.by_plate_id                       Sort by plate ID (from highest to lowest), with no grouping by partition type.
+      SortPartitioningPlates.by_plate_area                     Sort by plate area (from highest to lowest), with no grouping by partition type.
+      ======================================================== ==============
+
+      .. note:: To leave the partitioning plates in their original order, explicitly pass ``None`` (omitting the argument selects the default).
+
+      Partitioning *points* is faster when plates are sorted by area, because a point is more likely to be found in a large plate first, letting the remaining plates be skipped. Since resolved topologies do not tend to overlap, sorting them by area (rather than by plate ID) still gives deterministic results (though less robustly, since editing a plate's geometry changes its area but not its plate ID), so *by_partition_type_then_plate_area* is a good choice when partitioning many points into topological plates and networks.
+    """
     by_partition_type: ClassVar[SortPartitioningPlates]
     by_partition_type_then_plate_id: ClassVar[SortPartitioningPlates]
     by_partition_type_then_plate_area: ClassVar[SortPartitioningPlates]
@@ -16104,6 +16297,19 @@ class SortPartitioningPlates(int):
     values: ClassVar[dict[int, SortPartitioningPlates]]
 
 class SortReconstructedStaticPolygons(int):
+    """The order in which reconstructed static polygons are searched for the polygon containing a point.
+
+      Accepted by :meth:`ReconstructSnapshot.get_point_locations` and :meth:`ReconstructSnapshot.get_point_velocities`. Reconstructed static polygons can overlap each other at reconstruction times in the past, so a point can be inside more than one polygon; the first polygon found in this order is the one returned.
+
+      ============================================= ==============
+      Value                                         Description
+      ============================================= ==============
+      SortReconstructedStaticPolygons.by_plate_id   Search by plate ID, from highest to lowest (the default, so that the result does not depend on the order of the reconstructable features).
+      SortReconstructedStaticPolygons.by_plate_area Search by plate area, from largest to smallest.
+      ============================================= ==============
+
+      .. note:: Explicitly pass ``None`` to search in the original order of the reconstructable features instead.
+    """
     by_plate_id: ClassVar[SortReconstructedStaticPolygons]
     by_plate_area: ClassVar[SortReconstructedStaticPolygons]
     names: ClassVar[dict[str, SortReconstructedStaticPolygons]]
@@ -16357,21 +16563,11 @@ class Strain:
         r"""Return the maximum and minimum strains (along principal axes), and the angle of the major principal axis.
 
         :param principal_angle_type: how the angle of the major principal axis is defined relative to the local coordinate system (defaults to *PrincipalAngleType.major_south*)
-        :type principal_angle_type: PrincipalAngleType.major_south, PrincipalAngleType.major_east or PrincipalAngleType.major_azimuth
+        :type principal_angle_type: PrincipalAngleType
         :returns: the tuple of maximum strain, minimum strain and major axis angle :math:`(e_{(1)}, e_{(2)}, \alpha)`
         :rtype: tuple (float, float, float)
 
-        *principal_angle_type* supports the following enumeration types:
-
-        ================================= ==============
-        Value                              Description
-        ================================= ==============
-        PrincipalAngleType.major_south    The major principal axis points South when the angle is zero. The angle ranges from :math:`-\pi` to :math:`\pi` radians **anti**-clockwise (observed from above the globe).
-        PrincipalAngleType.major_east     The major principal axis points East when the angle is zero. The angle ranges from :math:`-\pi` to :math:`\pi` radians **anti**-clockwise (observed from above the globe). This is equivalent to *MajorAngle* in the GPlates deformation export.
-        PrincipalAngleType.major_azimuth  The major principal axis points North when the angle is zero. The angle ranges from :math:`0` to :math:`2\pi` radians **clockwise** (observed from above the globe). This is equivalent to *MajorAzimuth* in the GPlates deformation export.
-        ================================= ==============
-
-        .. note:: Regardless of the value of *principal_angle_type*, the direction of the *minimum* principal axis is always an **anti-clockwise** rotation of :math:`\frac{\pi}{2}` radians (90 degrees) of the *major* principal axis (observed from above the globe).
+        See :class:`PrincipalAngleType` for how each value defines the angle (and the direction of the *minimum* principal axis).
 
         The principal strains are the maximum and minimum strains that occur along the principal axes (where shear strain is zero). The principal axes are the coordinate axes rotated anti-clockwise (when observed from above the globe) by an angle :math:`\alpha` which is defined in terms of the *Eulerian* deformation tensor :math:`\boldsymbol c` (see :class:`Strain`):
 
@@ -16637,6 +16833,20 @@ class StrainRate:
     zero: ClassVar[StrainRate]
 
 class StrainRateSmoothing(int):
+    """How strain rates are smoothed when queried at arbitrary locations within a deforming network.
+
+      Accepted by :class:`ResolveTopologyParameters`. Each triangle of a network triangulation has a constant strain rate, so without smoothing the strain rate is piecewise constant across the network.
+
+      ===================================== ==============
+      Value                                 Description
+      ===================================== ==============
+      StrainRateSmoothing.none              No smoothing. The strain rate is the constant strain rate of the :class:`triangle <NetworkTriangulation.Triangle>` containing the query location.
+      StrainRateSmoothing.barycentric       Linear (barycentric) interpolation of the strain rates at the three :class:`vertices <NetworkTriangulation.Vertex>` of the triangle containing the query location.
+      StrainRateSmoothing.natural_neighbour Natural neighbour interpolation of the strain rates at the triangulation vertices near the query location (the default).
+      ===================================== ==============
+
+      .. seealso:: :ref:`pygplates_primer_strain_rate_smoothing` in the *Primer* documentation.
+    """
     none: ClassVar[StrainRateSmoothing]
     barycentric: ClassVar[StrainRateSmoothing]
     natural_neighbour: ClassVar[StrainRateSmoothing]
@@ -16746,11 +16956,11 @@ class TopologicalModel:
         :param deformation_uses_natural_neighbour_interpolation: If ``True`` then any point that lies (at any time) within a deforming region of a resolved topological network will be reconstructed using natural neighbour interpolation (otherwise barycentric interpolation will be used) - see :meth:`ResolvedTopologicalNetwork.reconstruct_point`. Defaults to ``True``.
         :type deformation_uses_natural_neighbour_interpolation: bool
         :rtype: ReconstructedGeometryTimeSpan
-        :raises: ValueError if initial time, oldest time or youngest time is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
-        :raises: ValueError if oldest time is later than (or same as) youngest time.
-        :raises: ValueError if time increment is negative or zero.
-        :raises: ValueError if oldest to youngest time period is not an integer multiple of the time increment.
-        :raises: ValueError if *initial_scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` is not mapped to the same number of scalar values, or the number of scalars is not equal to the number of points in *geometry*
+        :raises ValueError: if initial time, oldest time or youngest time is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
+        :raises ValueError: if oldest time is later than (or same as) youngest time.
+        :raises ValueError: if time increment is negative or zero.
+        :raises ValueError: if oldest to youngest time period is not an integer multiple of the time increment.
+        :raises ValueError: if *initial_scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` is not mapped to the same number of scalar values, or the number of scalars is not equal to the number of points in *geometry*
 
         .. seealso:: :ref:`pygplates_primer_topologically_reconstruct_geometries` in the *Primer* documentation.
 
@@ -16770,7 +16980,7 @@ class TopologicalModel:
         :param reconstruction_time: the geological time of the snapshot
         :type reconstruction_time: float or GeoTimeInstant
         :rtype: TopologicalSnapshot
-        :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
+        :raises ValueError: if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
 
         .. seealso:: :ref:`pygplates_primer_topological_snapshot` in the *Primer* documentation.
 
@@ -16844,9 +17054,9 @@ class TopologicalSnapshot:
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: The radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``). This is only used to calculate velocities (strain rates always use ``pygplates.Earth.equatorial_radius_in_kms``).
         :type earth_radius_in_kms: float
         :param include_network_boundaries: Whether to calculate statistics along *network* boundaries that are **not** also plate boundaries (defaults to ``False``). If a deforming network shares a boundary with a plate then it'll get included regardless of this option.
@@ -16857,8 +17067,8 @@ class TopologicalSnapshot:
         :type return_shared_sub_segment_dict: bool
         :returns: list of :class:`PlateBoundaryStatistic` for all uniform points, or (if *return_shared_sub_segment_dict* is ``True``) a ``dict`` mapping each :class:`ResolvedTopologicalSharedSubSegment` to a list of :class:`PlateBoundaryStatistic`
         :rtype: list[PlateBoundaryStatistic], or dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]
-        :raises: ValueError if *uniform_point_spacing_radians* is negative or zero
-        :raises: ValueError if *velocity_delta_time* is negative or zero.
+        :raises ValueError: if *uniform_point_spacing_radians* is negative or zero
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         .. seealso:: :ref:`pygplates_primer_plate_boundary_statistics` in the *Primer* documentation.
 
@@ -16879,12 +17089,12 @@ class TopologicalSnapshot:
         :param export_filename: the name of the export file
         :type export_filename: str, or os.PathLike
         :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` (or both types) are listed in the exported resolved topological sections. Note that ``pygplates.ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. Defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>`.
-        :type resolve_topological_section_types: a bitwise combination of any of pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
+        :type resolve_topological_section_types: a bitwise combination of ResolveTopologyType enumeration values
         :param export_topological_line_sub_segments: Whether to export the individual sub-segments of each boundary segment that came from a resolved topological line (``True``) or export a single geometry per boundary segment (``False``). Defaults to ``True``.
         :type export_topological_line_sub_segments: bool
         :param wrap_to_dateline: Whether to wrap/clip resolved topological sections to the dateline (currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.
         :type wrap_to_dateline: bool
-        :raises: ValueError if *resolve_topological_section_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+        :raises ValueError: if *resolve_topological_section_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
         The following *export* file formats are currently supported:
 
@@ -16908,18 +17118,18 @@ class TopologicalSnapshot:
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
         """
 
-    def export_resolved_topologies(self, export_filename: str | os.PathLike, resolve_topology_types: ResolveTopologyType | int | ResolveTopologyType = ..., wrap_to_dateline: bool = True, force_boundary_orientation: int = ...) -> None:
+    def export_resolved_topologies(self, export_filename: str | os.PathLike, resolve_topology_types: ResolveTopologyType | int = ..., wrap_to_dateline: bool = True, force_boundary_orientation: PolygonOnSphereOrientation | None = ...) -> None:
         """Exports the resolved topologies of the requested type(s) to a file.
 
         :param export_filename: the name of the export file
         :type export_filename: str, or os.PathLike
         :param resolve_topology_types: specifies the resolved topology types to export - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>`)
-        :type resolve_topology_types: a bitwise combination of any of pygplates.ResolveTopologyType.line, pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
+        :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :param wrap_to_dateline: Whether to wrap/clip resolved topologies to the dateline (currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.
         :type wrap_to_dateline: bool
         :param force_boundary_orientation: Optionally force boundary orientation to clockwise (``PolygonOnSphere.Orientation.clockwise``) or counter-clockwise (``PolygonOnSphere.Orientation.counter_clockwise``). Only applies to resolved topological *boundaries* and *networks* (excludes *lines*). Note that ESRI Shapefiles always use *clockwise* orientation (and so ignore this parameter).
-        :type force_boundary_orientation: int
-        :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+        :type force_boundary_orientation: PolygonOnSphereOrientation, or None
+        :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
         The following *export* file formats are currently supported:
 
@@ -16952,9 +17162,9 @@ class TopologicalSnapshot:
         :param points: sequence of points at which to find containing topologies
         :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param resolve_topology_types: specifies the resolved topology types to search - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
-        :type resolve_topology_types: a bitwise combination of any of pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
+        :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :rtype: list of TopologyPointLocation
-        :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+        :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
         :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. So if a point is inside both a boundary and a network then the network location is returned.
 
@@ -16985,12 +17195,12 @@ class TopologicalSnapshot:
         :param points: sequence of points at which to calculate strain rates
         :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param resolve_topology_types: specifies the resolved topology types to use for strain rates - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
-        :type resolve_topology_types: a bitwise combination of any of pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
+        :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :param return_point_locations: whether to also return the resolved topological boundary/network that contains each point - defaults to ``False``
         :type return_point_locations: bool
         :returns: the strain rate of each point (``None`` for each point *outside* all resolved topologies searched), and (if *return_point_locations* is ``True``) also the :class:`location <TopologyPointLocation>` of each point
         :rtype: list[StrainRate | None], or tuple[list[StrainRate | None], list[TopologyPointLocation]]
-        :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+        :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
         :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. So a point that is inside a resolved topological network can generate a *non-zero* :class:`strain rate <StrainRate>`. However, a point that is inside a resolved topological boundary (but is outside all resolved topological networks searched) will generate a *zero* strain rate (``pygplates.StrainRate.zero``) since it is inside a *non-deforming* plate.
 
@@ -17024,20 +17234,20 @@ class TopologicalSnapshot:
         :param points: sequence of points at which to calculate velocities
         :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param resolve_topology_types: specifies the resolved topology types to use for calculating velocities - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
-        :type resolve_topology_types: a bitwise combination of any of pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
+        :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
-        :type velocity_delta_time_type: VelocityDeltaTimeType.t_plus_delta_t_to_t, VelocityDeltaTimeType.t_to_t_minus_delta_t or VelocityDeltaTimeType.t_plus_minus_half_delta_t
+        :type velocity_delta_time_type: VelocityDeltaTimeType
         :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-        :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+        :type velocity_units: VelocityUnits
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :param return_point_locations: whether to also return the resolved topological boundary/network that contains each point - defaults to ``False``
         :type return_point_locations: bool
         :returns: the velocity of each point (``None`` for each point *outside* all resolved topologies searched), and (if *return_point_locations* is ``True``) also the :class:`location <TopologyPointLocation>` of each point
         :rtype: list[Vector3D | None], or tuple[list[Vector3D | None], list[TopologyPointLocation]]
-        :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+        :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
         :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. So if a point is inside both a boundary and a network then the velocity of the network is returned.
 
@@ -17075,25 +17285,25 @@ class TopologicalSnapshot:
         """Returns the resolved topological sections of the requested type(s).
 
         :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` (or both types) are listed in the returned resolved topological sections. Note that ``pygplates.ResolveTopologyType.line`` cannot be specified since only topologies with boundaries are considered. Defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>`.
-        :type resolve_topological_section_types: a bitwise combination of any of pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
+        :type resolve_topological_section_types: a bitwise combination of ResolveTopologyType enumeration values
         :param same_order_as_topological_features: whether the returned resolved topological sections are sorted in the order of the topological features (including order across topological files, if there were any) - defaults to ``False``
         :type same_order_as_topological_features: bool
         :rtype: list of ResolvedTopologicalSection
-        :raises: ValueError if *resolve_topological_section_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+        :raises ValueError: if *resolve_topological_section_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
         .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topological sections are sorted in the order of their respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.
         """
 
-    def get_resolved_topologies(self, resolve_topology_types: ResolveTopologyType | int | ResolveTopologyType = ..., same_order_as_topological_features: bool = False) -> list[ResolvedTopologicalLine | ResolvedTopologicalBoundary | ResolvedTopologicalNetwork]:
+    def get_resolved_topologies(self, resolve_topology_types: ResolveTopologyType | int = ..., same_order_as_topological_features: bool = False) -> list[ResolvedTopologicalLine | ResolvedTopologicalBoundary | ResolvedTopologicalNetwork]:
         """Returns the resolved topologies of the requested type(s).
 
         :param resolve_topology_types: specifies the resolved topology types to return - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>`
-        :type resolve_topology_types: a bitwise combination of any of pygplates.ResolveTopologyType.line, pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
+        :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :param same_order_as_topological_features: whether the returned resolved topologies are sorted in the order of the topological features (including order across topological files, if there were any) - defaults to ``False``
         :type same_order_as_topological_features: bool
         :returns: the :class:`resolved topological lines<ResolvedTopologicalLine>`, :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (depending on the optional argument *resolve_topology_types*) - by default :class:`resolved topological lines<ResolvedTopologicalLine>` are excluded
         :rtype: list[ResolvedTopologicalLine | ResolvedTopologicalBoundary | ResolvedTopologicalNetwork]
-        :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+        :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
         .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topologies are sorted in the order of their respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.
         """
@@ -17114,14 +17324,14 @@ class TopologicalSnapshot:
         :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the :meth:`reconstruction time of this snapshot <get_reconstruction_time>`.
         :type reconstruction_time: float or GeoTimeInstant
         :param resolve_topology_types: specifies the resolved topology types to search - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
-        :type resolve_topology_types: a bitwise combination of any of pygplates.ResolveTopologyType.boundary or pygplates.ResolveTopologyType.network
+        :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :param use_natural_neighbour_interpolation: If ``True`` and a point lies within the deforming region of a resolved network, then the reconstructed point is the interpolation of the natural neighbour deformed triangulation vertex positions (otherwise barycentric interpolation is used). Only applies if resolved networks are specified in *resolve_topology_types*. Defaults to ``True``.
         :type use_natural_neighbour_interpolation: bool
         :param return_input_if_not_intersect: Whether to return the *input* point for each point that does *not* intersect any resolved topological boundaries/networks searched in this snapshot - if ``False`` then ``None`` is returned. Defaults to ``False``.
         :type return_input_if_not_intersect: bool
         :returns: the reconstructed points (each is ``None`` if the point does not intersect any resolved topological boundaries/networks searched and *return_input_if_not_intersect* is ``False``)
         :rtype: list[PointOnSphere | None]
-        :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+        :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
         :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. So if a point is inside both a boundary and a network then the network will reconstruct the point.
 
@@ -17234,7 +17444,9 @@ class TopologyPointLocation:
         :rtype: bool
         """
 
-class UnableToNormaliseZeroVectorError(MathematicalError): ...
+class UnableToNormaliseZeroVectorError(MathematicalError):
+    """A vector of zero magnitude cannot be normalised because it has no direction.
+    """
 
 class Vector3D:
     """Represents a vector in 3D cartesian coordinates. Vectors are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).
@@ -17367,7 +17579,7 @@ class Vector3D:
         :param vector2: the second vector
         :type vector2: Vector3D, or sequence (such as list or tuple) of (float,float,float)
         :rtype: float
-        :raises: UnableToNormaliseZeroVectorError if either *vector1* or *vector2* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
+        :raises UnableToNormaliseZeroVectorError: if either *vector1* or *vector2* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
 
         Note that the angle between a vector (``vec``) and its opposite (``-vec``) is ``math.pi`` (and not zero) even though both vectors are parallel. This is because they point in opposite directions.
 
@@ -17406,7 +17618,7 @@ class Vector3D:
         :param xyz: the vector (x,y,z) components
         :type xyz: sequence (such as list or tuple) of (float,float,float), or Vector3D
         :rtype: Vector3D
-        :raises: UnableToNormaliseZeroVectorError if *xyz* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
+        :raises UnableToNormaliseZeroVectorError: if *xyz* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
 
         ::
 
@@ -17427,7 +17639,7 @@ class Vector3D:
         :param z: the *z* component of the 3D vector
         :type z: float
         :rtype: Vector3D
-        :raises: UnableToNormaliseZeroVectorError if (x,y,z) is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
+        :raises UnableToNormaliseZeroVectorError: if (x,y,z) is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
 
         ::
 
@@ -17560,7 +17772,7 @@ class Vector3D:
         """Returns a new vector that is a normalised (unit length) version of this vector.
 
         :rtype: Vector3D
-        :raises: UnableToNormaliseZeroVectorError if this vector is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
+        :raises UnableToNormaliseZeroVectorError: if this vector is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
 
         If a vector is not :meth:`zero magnitude<is_zero_magnitude>` then it can return a normalised version of itself:
         ::
@@ -17606,6 +17818,20 @@ class Vector3D:
     zero: ClassVar[Vector3D]
 
 class VelocityDeltaTimeType(int):
+    r"""How the time interval used to calculate a velocity is positioned relative to the reconstruction time.
+
+      A velocity at reconstruction time :math:`t` is calculated from the stage rotation over a small time interval :math:`\delta t` (the *velocity_delta_time* argument, which defaults to 1 Myr). This enumeration selects where that interval lies relative to :math:`t`:
+
+      =============================================== ==============
+      Value                                           Description
+      =============================================== ==============
+      VelocityDeltaTimeType.t_plus_delta_t_to_t       From :math:`t + \delta t` to :math:`t` - the interval ends at the reconstruction time (the default).
+      VelocityDeltaTimeType.t_to_t_minus_delta_t      From :math:`t` to :math:`t - \delta t` - the interval starts at the reconstruction time.
+      VelocityDeltaTimeType.t_plus_minus_half_delta_t From :math:`t + \delta t / 2` to :math:`t - \delta t / 2` - the interval is centred on the reconstruction time.
+      =============================================== ==============
+
+      .. note:: Geological time increases into the past, so :math:`t + \delta t` is *older* than :math:`t`.
+    """
     t_plus_delta_t_to_t: ClassVar[VelocityDeltaTimeType]
     t_to_t_minus_delta_t: ClassVar[VelocityDeltaTimeType]
     t_plus_minus_half_delta_t: ClassVar[VelocityDeltaTimeType]
@@ -17613,12 +17839,38 @@ class VelocityDeltaTimeType(int):
     values: ClassVar[dict[int, VelocityDeltaTimeType]]
 
 class VelocityUnits(int):
+    """The units of a velocity.
+
+      Accepted by every function and method that calculates velocities (for example :func:`calculate_velocities`, :meth:`TopologicalSnapshot.get_point_velocities` and :meth:`ReconstructedGeometryTimeSpan.get_velocities`).
+
+      ======================== ==============
+      Value                    Description
+      ======================== ==============
+      VelocityUnits.kms_per_my Kilometres per million years (the default).
+      VelocityUnits.cms_per_yr Centimetres per year.
+      ======================== ==============
+
+      .. note:: 1 centimetre per year is 10 kilometres per million years.
+    """
     kms_per_my: ClassVar[VelocityUnits]
     cms_per_yr: ClassVar[VelocityUnits]
     names: ClassVar[dict[str, VelocityUnits]]
     values: ClassVar[dict[int, VelocityUnits]]
 
 class VerifyInformationModel(int):
+    """Whether to check feature types, property names and property values against the GPlates Geological Information Model (GPGIM).
+
+      Accepted by the :class:`Feature` methods that create or set properties (for example :meth:`Feature.__init__`, :meth:`Feature.add`, :meth:`Feature.set` and :meth:`Feature.set_geometry`) and by the ``Feature.create_*`` functions.
+
+      ========================== ==============
+      Value                      Description
+      ========================== ==============
+      VerifyInformationModel.yes Verify (the default). :class:`InformationModelError` is raised if a feature type is not recognised, a property name is not supported by the feature type, or a property value is not of the type the property expects.
+      VerifyInformationModel.no  Do not verify. Any property can then be added to any feature, but GPlates may not recognise the result.
+      ========================== ==============
+
+      .. seealso:: The `GPGIM <http://www.gplates.org/docs/gpgim/>`_ documentation for the feature types and their properties.
+    """
     yes: ClassVar[VerifyInformationModel]
     no: ClassVar[VerifyInformationModel]
     names: ClassVar[dict[str, VerifyInformationModel]]
@@ -17679,7 +17931,7 @@ class Version:
         :type patch: int
         :param release_suffix: the optional release PEP440 suffix ``[{a|b|rc}N][.postN][.devN]`` (defaults to ``None``)
         :type release_suffix: str or None
-        :raises: ValueError if *release_suffix* is specified but doesn't match pattern ``[{a|b|rc}N][.postN][.devN]``
+        :raises ValueError: if *release_suffix* is specified but doesn't match pattern ``[{a|b|rc}N][.postN][.devN]``
 
         To create version ``1.0``:
         ::
@@ -17698,7 +17950,7 @@ class Version:
 
         :param version: the version string in PEP440 format matching ``N.N[.N][{a|b|rc}N][.postN][.devN]``
         :type version: str
-        :raises: ValueError if version string doesn't match pattern ``N.N[.N][{a|b|rc}N][.postN][.devN]``
+        :raises ValueError: if version string doesn't match pattern ``N.N[.N][{a|b|rc}N][.postN][.devN]``
 
         To create the first development release of version ``1.0``:
         ::
@@ -17714,7 +17966,7 @@ class Version:
 
         :param revision: the revision number
         :type revision: int
-        :raises: RuntimeError if *revision* is greater than 33
+        :raises RuntimeError: if *revision* is greater than 33
 
         .. deprecated:: 0.34
         """
@@ -17787,12 +18039,16 @@ class Version:
 
         :returns: the minor version number
         :rtype: int
-        :raises: RuntimeError if internal version is not <= 0.33 (with zero patch number and no release)
+        :raises RuntimeError: if internal version is not <= 0.33 (with zero patch number and no release)
 
         .. deprecated:: 0.34
         """
 
-class ViolatedUnitVectorInvariantError(MathematicalError): ...
+class ViolatedUnitVectorInvariantError(MathematicalError):
+    """A vector that must have unit magnitude does not.
+
+      For example, an (x, y, z) triplet passed to :class:`PointOnSphere` does not lie on the unit sphere.
+    """
 
 class XsBoolean(PropertyValue):
     """A property value that represents a boolean value. The 'Xs' prefix is there since this type of property value is associated with the *XML Schema Instance Namespace*.
@@ -17960,7 +18216,7 @@ def calculate_velocities(domain_points: Sequence[PointOnSphere | LatLonPoint | t
     :param time_interval_in_my: the time interval (in millions of years) that the rotation angle encompasses
     :type time_interval_in_my: float
     :param velocity_units: whether to return velocities as *kilometres per million years* or *centimetres per year* (defaults to *kilometres per million years*)
-    :type velocity_units: VelocityUnits.kms_per_my or VelocityUnits.cms_per_yr
+    :type velocity_units: VelocityUnits
     :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
     :type earth_radius_in_kms: float
     :rtype: list of Vector3D
@@ -18184,21 +18440,21 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
     :type features_to_partition: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features         (defaults to just the reconstruction plate ID)
-    :type properties_to_copy: a sequence of any combination of PropertyName and         the PartitionProperty enumeration values (see table below)
+    :type properties_to_copy: sequence of any combination of PropertyName and PartitionProperty enumeration values
 
     :param reconstruction_time: the specific geological time to reconstruct/resolve the         *partitioning_features* to (defaults to zero)
     :type reconstruction_time: float or GeoTimeInstant
 
     :param partition_method: how the features are to be partitioned by the partitioning plates (defaults to *PartitionMethod.split_into_plates*)
-    :type partition_method: a PartitionMethod enumeration value (see table below)
+    :type partition_method: PartitionMethod
 
     :param partition_return: how to return the partitioned and unpartitioned features and whether to include the partitioning plates         (defaults to *PartitionReturn.combined_partitioned_and_unpartitioned*)
-    :type partition_return: a PartitionReturn enumeration value (see table below)
+    :type partition_return: PartitionReturn
 
     :param sort_partitioning_plates: optional sort order of partitioning plates         (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
-    :type sort_partitioning_plates: a SortPartitioningPlates enumeration value (see table below), or None
+    :type sort_partitioning_plates: SortPartitioningPlates, or None
 
-    :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see table below)         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
+    :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
 
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
@@ -18234,40 +18490,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
 
     *partition_method* specifies how the features are to be partitioned by the partitioning plates.
 
-    *partition_method* supports the following enumeration values:
-
-    +----------------------------------------------------+-------------------------------------------------------------------------------------+
-    | Value                                              | Description                                                                         |
-    +====================================================+=====================================================================================+
-    | *PartitionMethod.split_into_plates*                | Split each feature into partitioning plates and into unpartitioned parts that       |
-    |                                                    | are outside all partitioning plates (if plates don't have global coverage).         |
-    |                                                    |                                                                                     |
-    |                                                    | For example, if a feature overlaps two plates then it will get cloned twice.        |
-    |                                                    | Each clone will have its geometry set to the part of the original feature geometry  |
-    |                                                    | contained within the respective partitioning plate. Any part (or parts) of the      |
-    |                                                    | original feature geometry outside all the plates will result in a third cloned      |
-    |                                                    | feature containing the unpartitioned geometry(s).                                   |
-    |                                                    |                                                                                     |
-    |                                                    | The two partitioned cloned features will have properties copied from the            |
-    |                                                    | respective partitioned plate feature (as determined by *properties_to_copy*).       |
-    |                                                    | The unpartitioned cloned feature will not have any properties copied to it.         |
-    +----------------------------------------------------+-------------------------------------------------------------------------------------+
-    | *PartitionMethod.most_overlapping_plate*           | Don't split each feature into partitioning plates, instead use the partitioning     |
-    |                                                    | plate that most overlaps the feature's geometry.                                    |
-    |                                                    |                                                                                     |
-    |                                                    | For example, if a feature overlaps two plates then it will still only get cloned    |
-    |                                                    | once (and its geometry unmodified). Only the most overlapping partitioning plate    |
-    |                                                    | (if any) is selected. The overlap is measured based on the length of the polyline   |
-    |                                                    | or polygon geometry contained within each partitioning plate (or number of points   |
-    |                                                    | if geometry is a multipoint or point).                                              |
-    |                                                    |                                                                                     |
-    |                                                    | The cloned feature will have properties copied from the most overlapping            |
-    |                                                    | partitioned plate feature (as determined by *properties_to_copy*) if it overlaps    |
-    |                                                    | any, otherwise it will not have any properties copied to it.                        |
-    |                                                    |                                                                                     |
-    |                                                    | Note that if a feature contains multiple geometries then they are treated as one    |
-    |                                                    | composite geometry in the overlap calculation.                                      |
-    +----------------------------------------------------+-------------------------------------------------------------------------------------+
+    See :class:`PartitionMethod` for a description of each value.
 
     .. note:: VirtualGeomagneticPole features (of :class:`type<FeatureType>` ``FeatureType.gpml_virtual_geomagnetic_pole``) ignore *partition_method*
        since these features are always partitioned using the average sample site position (``PropertyName.gpml_average_sample_site_position``).
@@ -18284,33 +18507,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
 
     *properties_to_copy* specifies the properties to copy from the partitioning features to the features that are being partitioned.
 
-    *properties_to_copy* supports a sequence of any of the following arguments:
-
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | Type                                               | Description                                                                      |
-    +====================================================+==================================================================================+
-    | *PartitionProperty.reconstruction_plate_id*        | The reconstruction plate ID. This is an alternative to specifying the property   |
-    |                                                    | name ``PropertyName.gpml_reconstruction_plate_id``.                              |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *PartitionProperty.valid_time_period*              | The valid time period. This is an alternative to specifying the property name    |
-    |                                                    | ``PropertyName.gml_valid_time``.                                                 |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *PartitionProperty.valid_time_begin*               | Only the *begin* time of the valid time period of the partitioning feature is    |
-    |                                                    | copied (the *end* time remains unchanged). If the *begin* time is later than     |
-    |                                                    | (has a smaller value than) the *end* time then it is set to the *end* time.      |
-    |                                                    |                                                                                  |
-    |                                                    | Note that there is no equivalent way to specify this using a *PropertyName*.     |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | *PartitionProperty.valid_time_end*                 | Only the *end* time of the valid time period of the partitioning feature is      |
-    |                                                    | copied (the *begin* time remains unchanged). If the *end* time is earlier than   |
-    |                                                    | (has a larger value) the *begin* time then it is set to the *begin* time.        |
-    |                                                    |                                                                                  |
-    |                                                    | Note that there is no equivalent way to specify this using a *PropertyName*.     |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
-    | :class:`PropertyName`                              | Any property name. If the partitioning feature has one or more properties        |
-    |                                                    | with this name then they will be copied/cloned to the feature being partitioned  |
-    |                                                    | provided its :class:`feature type<FeatureType>` supports the property name.      |
-    +----------------------------------------------------+----------------------------------------------------------------------------------+
+    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it).
 
     .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
 
@@ -18374,24 +18571,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
 
     *partition_return* specifies how the features are to be partitioned by the partitioning plates. This applies regardless of the value of *partition_method*.
 
-    *partition_return* supports the following enumeration values:
-
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-    | Value                                                    | Return Type                                              | Description                                                                        |
-    +==========================================================+==========================================================+====================================================================================+
-    | *PartitionReturn.combined_partitioned_and_unpartitioned* | ``list`` of :class:`Feature`                             | Return a single combined ``list`` of partitioned and unpartitioned features.       |
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-    | *PartitionReturn.separate_partitioned_and_unpartitioned* | 2-tuple (                                                | Return a 2-tuple whose first element is a ``list`` of partitioned  features and    |
-    |                                                          | ``list`` of partitioned :class:`features<Feature>`,      | whose second element is a ``list`` of unpartitioned  features.                     |
-    |                                                          | ``list`` of unpartitioned :class:`features<Feature>`)    |                                                                                    |
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
-    | *PartitionReturn.partitioned_groups_and_unpartitioned*   | 2-tuple (                                                | Return a 2-tuple whose first element is a ``list`` of partitioned groups and       |
-    |                                                          | ``list`` of 2-tuple (                                    | whose second element is a ``list`` of unpartitioned features.                      |
-    |                                                          | :class:`partitioning plate<ReconstructionGeometry>`,     |                                                                                    |
-    |                                                          | ``list`` of partitioned :class:`features<Feature>`),     | Each partitioned group associates a partitioning plate with its partitioned        |
-    |                                                          | ``list`` of unpartitioned :class:`features<Feature>`)    | features and consists of a 2-tuple whose first element is the partitioning plate   |
-    |                                                          |                                                          | and whose second element is a ``list`` of features partitioned by that plate.      |
-    +----------------------------------------------------------+----------------------------------------------------------+------------------------------------------------------------------------------------+
+    See :class:`PartitionReturn` for the return value that each value selects.
 
     To reset the reconstruction plate ID (to zero) for all unpartitioned features (features that did not intersect any partitioning plates):
     ::
@@ -18409,25 +18589,8 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
     they are deemed to be incorrect. By resetting them to zero we ensure the unpartitioned features remain stationary
     and do not reconstruct incorrectly over geological time. Any partitioned features will get a new plate ID.
 
-    *sort_partitioning_plates* determines the sorting criteria used to order the partitioning plates:
-
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-    |  Value                                                   | Description                                                                          |
-    +==========================================================+======================================================================================+
-    | SortPartitioningPlates.by_partition_type                 | Group in order of resolved topological networks then resolved topological boundaries |
-    |                                                          | then reconstructed static polygons, but with no sorting within each group            |
-    |                                                          | (ordering within each group is unchanged).                                           |
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-    | SortPartitioningPlates.by_partition_type_then_plate_id   | Same as *by_partition_type*, but also sort by plate ID (from highest to lowest)      |
-    |                                                          | within each partition type group.                                                    |
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-    | SortPartitioningPlates.by_partition_type_then_plate_area | Same as *by_partition_type*, but also sort by plate area (from highest to lowest)    |
-    |                                                          | within each partition type group.                                                    |
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-    | SortPartitioningPlates.by_plate_id                       | Sort by plate ID (from highest to lowest), but no grouping by partition type.        |
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
-    | SortPartitioningPlates.by_plate_area                     | Sort by plate area (from highest to lowest), but no grouping by partition type.      |
-    +----------------------------------------------------------+--------------------------------------------------------------------------------------+
+    *sort_partitioning_plates* determines the order in which the partitioning plates are searched.
+    See :class:`SortPartitioningPlates` for the sorting criteria of each value (and why the order matters when plates overlap).
 
     .. note:: If you don't want to sort the partitioning plates (for example, if you have already sorted them)
       then you'll need to explicitly specify ``None`` for the *sort_partitioning_plates* parameter
@@ -18436,17 +18599,9 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
       This is because not specifying anything defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*
       (since this always gives deterministic partitioning results).
 
-    If the partitioning plates overlap each other then their final ordering determines the partitioning results.
-    Resolved topologies do not tend to overlap, but reconstructed static polygons do overlap
-    (for non-zero reconstruction times) and hence the sorting order becomes relevant.
 
-    Partitioning of points is more efficient if you sort by plate *area* because an arbitrary
-    point is likely to be found sooner when testing against larger partitioning polygons first
-    (and hence more remaining partitioning polygons can be skipped). Since resolved topologies don't tend
-    to overlap you don't need to sort them by plate *ID* to get deterministic partitioning results.
-    So we are free to sort by plate *area* (well, plate area is also deterministic but not as deterministic
-    as sorting by plate *ID* since modifications to the plate geometries change their areas but not their plate IDs).
-    Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:
+    When partitioning many *points* into topological plates and networks, sorting by plate *area* is faster
+    (and still deterministic since resolved topologies do not tend to overlap):
     ::
 
         features = pygplates.partition_into_plates(...,
@@ -18490,54 +18645,54 @@ def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike 
     :param anchor_plate_id: The anchored plate id used during reconstruction. Defaults to the default anchor plate of *rotation_model*.
     :type anchor_plate_id: int
     :param output_parameters: variable number of keyword arguments specifying output parameters (see table below)
-    :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)
-    :raises: OpenFileForWritingError if *reconstructed_geometries* is a filename and it is not writeable
-    :raises: FileFormatNotSupportedError if any input file format (identified by any reconstructable and rotation filename extensions) does not support reading (when filenames specified), or if *reconstructed_geometries* is a filename and it is not supported for writing
-    :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+    :raises OpenFileForReadingError: if any input file is not readable (when filenames specified)
+    :raises OpenFileForWritingError: if *reconstructed_geometries* is a filename and it is not writeable
+    :raises FileFormatNotSupportedError: if any input file format (identified by any reconstructable and rotation filename extensions) does not support reading (when filenames specified), or if *reconstructed_geometries* is a filename and it is not supported for writing
+    :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
     The following optional keyword arguments are supported by *output_parameters*:
 
-    +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+
-    | Name                                 | Type            | Default                          | Description                                                                      |
-    +======================================+=================+==================================+==================================================================================+
-    | reconstruct_type                     | ReconstructType | ReconstructType.feature_geometry | - *ReconstructType.feature_geometry*:                                            |
-    |                                      |                 |                                  |   only reconstruct regular features (not motion paths or                         |
-    |                                      |                 |                                  |   flowlines), this generates                                                     |
-    |                                      |                 |                                  |   :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>`        |
-    |                                      |                 |                                  | - *ReconstructType.motion_path*:                                                 |
-    |                                      |                 |                                  |   only reconstruct motion path features, this generates                          |
-    |                                      |                 |                                  |   :class:`reconstructed motion paths<ReconstructedMotionPath>`                   |
-    |                                      |                 |                                  | - *ReconstructType.flowline*:                                                    |
-    |                                      |                 |                                  |   only reconstruct flowline features, this generates                             |
-    |                                      |                 |                                  |   :class:`reconstructed flowlines<ReconstructedFlowline>`                        |
-    +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+
-    | group_with_feature                   | bool            | False                            | | Group reconstructed geometries with their feature.                             |
-    |                                      |                 |                                  | | This can be useful when a feature has more than one geometry and hence         |
-    |                                      |                 |                                  |   more than one reconstructed geometry.                                          |
-    |                                      |                 |                                  | | *reconstructed_geometries* then becomes a list of tuples where each            |
-    |                                      |                 |                                  |   tuple contains a :class:`feature<Feature>` and a ``list`` of                   |
-    |                                      |                 |                                  |   reconstructed geometries.                                                      |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | .. note:: Only applies when *reconstructed_geometries* is a ``list``             |
-    |                                      |                 |                                  |    because exported files are always grouped with feature.                       |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | .. note:: Any *ReconstructType* can be grouped.                                  |
-    +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+
-    | export_wrap_to_dateline              | bool            | True                             | | Wrap/clip reconstructed geometries to the dateline (currently                  |
-    |                                      |                 |                                  |   ignored unless exporting to an ESRI Shapefile format *file*).                  |
-    |                                      |                 |                                  | | Only applies when exporting to a file (ESRI Shapefile).                        |
-    +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+
-    | export_force_boundary_orientation    | int             | ``None`` (don't force)           | Optionally force boundary orientation (clockwise or counter-clockwise):          |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | - ``PolygonOnSphere.Orientation.clockwise``                                      |
-    |                                      |                 |                                  | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | .. note:: Only applies to reconstructed feature geometries that are *polygons*.  |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |
-    |                                      |                 |                                  |                                                                                  |
-    |                                      |                 |                                  | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |
-    +--------------------------------------+-----------------+----------------------------------+----------------------------------------------------------------------------------+
+    +--------------------------------------+----------------------------+----------------------------------+----------------------------------------------------------------------------------+
+    | Name                                 | Type                       | Default                          | Description                                                                      |
+    +======================================+============================+==================================+==================================================================================+
+    | reconstruct_type                     | ReconstructType            | ReconstructType.feature_geometry | - *ReconstructType.feature_geometry*:                                            |
+    |                                      |                            |                                  |   only reconstruct regular features (not motion paths or                         |
+    |                                      |                            |                                  |   flowlines), this generates                                                     |
+    |                                      |                            |                                  |   :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>`        |
+    |                                      |                            |                                  | - *ReconstructType.motion_path*:                                                 |
+    |                                      |                            |                                  |   only reconstruct motion path features, this generates                          |
+    |                                      |                            |                                  |   :class:`reconstructed motion paths<ReconstructedMotionPath>`                   |
+    |                                      |                            |                                  | - *ReconstructType.flowline*:                                                    |
+    |                                      |                            |                                  |   only reconstruct flowline features, this generates                             |
+    |                                      |                            |                                  |   :class:`reconstructed flowlines<ReconstructedFlowline>`                        |
+    +--------------------------------------+----------------------------+----------------------------------+----------------------------------------------------------------------------------+
+    | group_with_feature                   | bool                       | False                            | | Group reconstructed geometries with their feature.                             |
+    |                                      |                            |                                  | | This can be useful when a feature has more than one geometry and hence         |
+    |                                      |                            |                                  |   more than one reconstructed geometry.                                          |
+    |                                      |                            |                                  | | *reconstructed_geometries* then becomes a list of tuples where each            |
+    |                                      |                            |                                  |   tuple contains a :class:`feature<Feature>` and a ``list`` of                   |
+    |                                      |                            |                                  |   reconstructed geometries.                                                      |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | .. note:: Only applies when *reconstructed_geometries* is a ``list``             |
+    |                                      |                            |                                  |    because exported files are always grouped with feature.                       |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | .. note:: Any *ReconstructType* can be grouped.                                  |
+    +--------------------------------------+----------------------------+----------------------------------+----------------------------------------------------------------------------------+
+    | export_wrap_to_dateline              | bool                       | True                             | | Wrap/clip reconstructed geometries to the dateline (currently                  |
+    |                                      |                            |                                  |   ignored unless exporting to an ESRI Shapefile format *file*).                  |
+    |                                      |                            |                                  | | Only applies when exporting to a file (ESRI Shapefile).                        |
+    +--------------------------------------+----------------------------+----------------------------------+----------------------------------------------------------------------------------+
+    | export_force_boundary_orientation    | PolygonOnSphereOrientation | ``None`` (don't force)           | Optionally force boundary orientation (clockwise or counter-clockwise):          |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | - ``PolygonOnSphere.Orientation.clockwise``                                      |
+    |                                      |                            |                                  | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | .. note:: Only applies to reconstructed feature geometries that are *polygons*.  |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |
+    |                                      |                            |                                  |                                                                                  |
+    |                                      |                            |                                  | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |
+    +--------------------------------------+----------------------------+----------------------------------+----------------------------------------------------------------------------------+
 
     Only the :class:`features<Feature>`, in *reconstructable_features*, that match the optional keyword argument *reconstruct_type* (see *output_parameters* table) are reconstructed. This also determines the type of reconstructed geometries output in *reconstructed_geometries* which are either :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` (default) or :class:`reconstructed motion paths<ReconstructedMotionPath>` or :class:`reconstructed flowlines<ReconstructedFlowline>`.
 
@@ -18645,64 +18800,64 @@ def resolve_topologies(topological_features: FeatureCollection | str | os.PathLi
     :param default_resolve_topology_parameters: Default parameters used to resolve topologies. Note that these can optionally be overridden in *topological_features*. Defaults to :meth:`default-constructed ResolveTopologyParameters<ResolveTopologyParameters.__init__>`).
     :type default_resolve_topology_parameters: ResolveTopologyParameters
     :param output_parameters: Variable number of keyword arguments specifying output parameters (see table below). Default is no keyword arguments.
-    :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)
-    :raises: OpenFileForWritingError if *resolved_topologies* is a filename and it is not writeable
-    :raises: FileFormatNotSupportedError if any input file format (identified by any topological and rotation filename extensions) does not support reading (when filenames specified), or if *resolved_topologies* or *resolved_topological_sections* is a filename and it is not supported for writing
-    :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
-    :raises: ValueError if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
-    :raises: ValueError if *resolve_topological_section_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+    :raises OpenFileForReadingError: if any input file is not readable (when filenames specified)
+    :raises OpenFileForWritingError: if *resolved_topologies* is a filename and it is not writeable
+    :raises FileFormatNotSupportedError: if any input file format (identified by any topological and rotation filename extensions) does not support reading (when filenames specified), or if *resolved_topologies* or *resolved_topological_sections* is a filename and it is not supported for writing
+    :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+    :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+    :raises ValueError: if *resolve_topological_section_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
     The following optional keyword arguments are supported by *output_parameters*:
 
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
-    | Name                                 | Type | Default                                                         | Description                                                                      |
-    +======================================+======+=================================================================+==================================================================================+
-    | resolve_topology_types               | int  | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | A bitwise combination of any of the following:                                   |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | - ``ResolveTopologyType.line``:                                                  |
-    |                                      |      |                                                                 | - ``ResolveTopologyType.boundary``:                                              |
-    |                                      |      |                                                                 | - ``ResolveTopologyType.network``:                                               |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | Determines whether to output :class:`ResolvedTopologicalLine`,                   |
-    |                                      |      |                                                                 | :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.    |
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
-    | resolve_topological_section_types    | int  | Same value as *resolve_topology_types* (if specified),          | A bitwise combination of any of the following:                                   |
-    |                                      |      | otherwise its default value                                     |                                                                                  |
-    |                                      |      | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | - ``ResolveTopologyType.boundary``:                                              |
-    |                                      |      |                                                                 | - ``ResolveTopologyType.network``:                                               |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. note:: ``ResolveTopologyType.line`` is excluded since only                    |
-    |                                      |      |                                                                 |    topologies with boundaries are considered.                                    |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | Determines whether :class:`ResolvedTopologicalBoundary` or                       |
-    |                                      |      |                                                                 | :class:`ResolvedTopologicalNetwork` (or both types) are referenced in the        |
-    |                                      |      |                                                                 | :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>`     |
-    |                                      |      |                                                                 | of *resolved_topological_sections*.                                              |
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
-    | export_topological_line_sub_segments | bool | True                                                            | | Export the individual sub-segments of each boundary segment that came from a   |
-    |                                      |      |                                                                 |   resolved topological line (instead of exporting a single geometry per          |
-    |                                      |      |                                                                 |   boundary segment).                                                             |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. note:: Only applies when exporting to a file specified with                   |
-    |                                      |      |                                                                 |    *resolved_topological_sections*.                                              |
-    |                                      |      |                                                                 | .. seealso:: :meth:`TopologicalSnapshot.export_resolved_topological_sections`    |
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
-    | export_wrap_to_dateline              | bool | True                                                            | | Wrap/clip resolved topologies to the dateline (currently                       |
-    |                                      |      |                                                                 |   ignored unless exporting to an ESRI Shapefile format *file*).                  |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. note:: Only applies when exporting to a file (ESRI Shapefile).                |
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
-    | export_force_boundary_orientation    | int  | ``None`` (don't force)                                          | Optionally force boundary orientation (clockwise or counter-clockwise):          |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | - ``PolygonOnSphere.Orientation.clockwise``                                      |
-    |                                      |      |                                                                 | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. note:: Only applies to resolved topological *boundaries* and *networks*.      |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |
-    |                                      |      |                                                                 |                                                                                  |
-    |                                      |      |                                                                 | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |
-    +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | Name                                 | Type                       | Default                                                         | Description                                                                      |
+    +======================================+============================+=================================================================+==================================================================================+
+    | resolve_topology_types               | int                        | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | A bitwise combination of any of the following:                                   |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | - ``ResolveTopologyType.line``:                                                  |
+    |                                      |                            |                                                                 | - ``ResolveTopologyType.boundary``:                                              |
+    |                                      |                            |                                                                 | - ``ResolveTopologyType.network``:                                               |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | Determines whether to output :class:`ResolvedTopologicalLine`,                   |
+    |                                      |                            |                                                                 | :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.    |
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | resolve_topological_section_types    | int                        | Same value as *resolve_topology_types* (if specified),          | A bitwise combination of any of the following:                                   |
+    |                                      |                            | otherwise its default value                                     |                                                                                  |
+    |                                      |                            | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | - ``ResolveTopologyType.boundary``:                                              |
+    |                                      |                            |                                                                 | - ``ResolveTopologyType.network``:                                               |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. note:: ``ResolveTopologyType.line`` is excluded since only                    |
+    |                                      |                            |                                                                 |    topologies with boundaries are considered.                                    |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | Determines whether :class:`ResolvedTopologicalBoundary` or                       |
+    |                                      |                            |                                                                 | :class:`ResolvedTopologicalNetwork` (or both types) are referenced in the        |
+    |                                      |                            |                                                                 | :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>`     |
+    |                                      |                            |                                                                 | of *resolved_topological_sections*.                                              |
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | export_topological_line_sub_segments | bool                       | True                                                            | | Export the individual sub-segments of each boundary segment that came from a   |
+    |                                      |                            |                                                                 |   resolved topological line (instead of exporting a single geometry per          |
+    |                                      |                            |                                                                 |   boundary segment).                                                             |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. note:: Only applies when exporting to a file specified with                   |
+    |                                      |                            |                                                                 |    *resolved_topological_sections*.                                              |
+    |                                      |                            |                                                                 | .. seealso:: :meth:`TopologicalSnapshot.export_resolved_topological_sections`    |
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | export_wrap_to_dateline              | bool                       | True                                                            | | Wrap/clip resolved topologies to the dateline (currently                       |
+    |                                      |                            |                                                                 |   ignored unless exporting to an ESRI Shapefile format *file*).                  |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. note:: Only applies when exporting to a file (ESRI Shapefile).                |
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
+    | export_force_boundary_orientation    | PolygonOnSphereOrientation | ``None`` (don't force)                                          | Optionally force boundary orientation (clockwise or counter-clockwise):          |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | - ``PolygonOnSphere.Orientation.clockwise``                                      |
+    |                                      |                            |                                                                 | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. note:: Only applies to resolved topological *boundaries* and *networks*.      |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |
+    |                                      |                            |                                                                 |                                                                                  |
+    |                                      |                            |                                                                 | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |
+    +--------------------------------------+----------------------------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+
 
     | The argument *topological_features* consists of the *topological* :class:`features<Feature>` as well as the topological sections (also :class:`features<Feature>`) that are referenced by the *topological* features.
     | They can all be mixed in a single :class:`feature collection<FeatureCollection>` or file, or they can be distributed across multiple :class:`feature collections<FeatureCollection>` or files.
@@ -18816,10 +18971,10 @@ def reverse_reconstruct(reconstructable_features: FeatureCollection | str | os.P
     :type reconstruction_time: float or GeoTimeInstant
     :param anchor_plate_id: The anchored plate id used during reverse reconstruction. Defaults to the default anchor plate of *rotation_model*.
     :type anchor_plate_id: int
-    :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)
-    :raises: OpenFileForWritingError if *reconstructable_features* specifies any filename that is not writeable (if any filenames are specified)
-    :raises: FileFormatNotSupportedError if any input file format (identified by any reconstructable and rotation filename extensions) does not support reading (when filenames specified)
-    :raises: ValueError if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+    :raises OpenFileForReadingError: if any input file is not readable (when filenames specified)
+    :raises OpenFileForWritingError: if *reconstructable_features* specifies any filename that is not writeable (if any filenames are specified)
+    :raises FileFormatNotSupportedError: if any input file format (identified by any reconstructable and rotation filename extensions) does not support reading (when filenames specified)
+    :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
     The effect of this function is to replace the present day geometries in each feature in *reconstructable_features* with reverse reconstructed versions of those geometries. This assumes that the original geometries, stored in *reconstructable_features*, are not in fact present day geometries (as they normally should be) but instead the already-reconstructed geometries corresponding to geological time *reconstruction_time*. This function reverses that reconstruction process to ensure present day geometries are stored in the features.
 

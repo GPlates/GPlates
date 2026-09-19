@@ -276,11 +276,10 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
     :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore \
     those geometries in *geometries* that are not :class:`PolylineOnSphere` - defaults to \
     *PolylineConversion.ignore_non_polyline*
-    :type polyline_conversion: PolylineConversion.convert_to_polyline, PolylineConversion.ignore_non_polyline \
-    or PolylineConversion.raise_if_non_polyline
+    :type polyline_conversion: PolylineConversion
     :returns: a list of joined polylines
     :rtype: list of PolylineOnSphere
-    :raises: GeometryTypeError if *polyline_conversion* is *PolylineConversion.raise_if_non_polyline* and \
+    :raises GeometryTypeError: if *polyline_conversion* is *PolylineConversion.raise_if_non_polyline* and \
     any geometry in *geometries* is not a :class:`PolylineOnSphere`
     
     All pairs of geometries are tested for joining and only those with end points closer than *distance_threshold_radians*

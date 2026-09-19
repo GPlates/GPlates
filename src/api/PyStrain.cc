@@ -152,7 +152,19 @@ void
 export_strain()
 {
 	// An enumeration for the type of principal angle.
-	bp::enum_<GPlatesApi::PrincipalAngleType>("PrincipalAngleType")
+	bp::enum_<GPlatesApi::PrincipalAngleType>(
+			"PrincipalAngleType",
+			"How the angle of the major principal axis returned by :meth:`Strain.get_principal_strain` is measured.\n"
+			"\n"
+			"  ================================ ==============\n"
+			"  Value                            Description\n"
+			"  ================================ ==============\n"
+			"  PrincipalAngleType.major_south   The major principal axis points South when the angle is zero. The angle ranges from :math:`-\\pi` to :math:`\\pi` radians **anti**-clockwise (observed from above the globe).\n"
+			"  PrincipalAngleType.major_east    The major principal axis points East when the angle is zero. The angle ranges from :math:`-\\pi` to :math:`\\pi` radians **anti**-clockwise (observed from above the globe). This is equivalent to *MajorAngle* in the GPlates deformation export.\n"
+			"  PrincipalAngleType.major_azimuth The major principal axis points North when the angle is zero. The angle ranges from :math:`0` to :math:`2\\pi` radians **clockwise** (observed from above the globe). This is equivalent to *MajorAzimuth* in the GPlates deformation export.\n"
+			"  ================================ ==============\n"
+			"\n"
+			"  .. note:: Regardless of the value, the direction of the *minimum* principal axis is always an **anti-clockwise** rotation of :math:`\\frac{\\pi}{2}` radians (90 degrees) of the *major* principal axis (observed from above the globe).\n")
 			.value("major_south", GPlatesApi::PrincipalAngleType::MAJOR_SOUTH)
 			.value("major_east", GPlatesApi::PrincipalAngleType::MAJOR_EAST)
 			.value("major_azimuth", GPlatesApi::PrincipalAngleType::MAJOR_AZIMUTH);
@@ -622,27 +634,11 @@ export_strain()
 				"\n"
 				"  :param principal_angle_type: how the angle of the major principal axis is defined relative to the local coordinate system "
 				"(defaults to *PrincipalAngleType.major_south*)\n"
-				"  :type principal_angle_type: PrincipalAngleType.major_south, PrincipalAngleType.major_east or PrincipalAngleType.major_azimuth\n"
+				"  :type principal_angle_type: PrincipalAngleType\n"
 				"  :returns: the tuple of maximum strain, minimum strain and major axis angle :math:`(e_{(1)}, e_{(2)}, \\alpha)`\n"
 				"  :rtype: tuple (float, float, float)\n"
 				"\n"
-				"  *principal_angle_type* supports the following enumeration types:\n"
-				"\n"
-				"  ================================= ==============\n"
-				"  Value                              Description\n"
-				"  ================================= ==============\n"
-				"  PrincipalAngleType.major_south    The major principal axis points South when the angle is zero. "
-				"The angle ranges from :math:`-\\pi` to :math:`\\pi` radians **anti**-clockwise (observed from above the globe).\n"
-				"  PrincipalAngleType.major_east     The major principal axis points East when the angle is zero. "
-				"The angle ranges from :math:`-\\pi` to :math:`\\pi` radians **anti**-clockwise (observed from above the globe). "
-				"This is equivalent to *MajorAngle* in the GPlates deformation export.\n"
-				"  PrincipalAngleType.major_azimuth  The major principal axis points North when the angle is zero. "
-				"The angle ranges from :math:`0` to :math:`2\\pi` radians **clockwise** (observed from above the globe). "
-				"This is equivalent to *MajorAzimuth* in the GPlates deformation export.\n"
-				"  ================================= ==============\n"
-				"\n"
-				"  .. note:: Regardless of the value of *principal_angle_type*, the direction of the *minimum* principal axis is always an **anti-clockwise** rotation "
-				"of :math:`\\frac{\\pi}{2}` radians (90 degrees) of the *major* principal axis (observed from above the globe).\n"
+				"  See :class:`PrincipalAngleType` for how each value defines the angle (and the direction of the *minimum* principal axis).\n"
 				"\n"
 				"  The principal strains are the maximum and minimum strains that occur along the principal axes (where shear strain is zero). "
 				"The principal axes are the coordinate axes rotated anti-clockwise (when observed from above the globe) by an angle :math:`\\alpha` "
