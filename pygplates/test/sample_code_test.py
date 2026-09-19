@@ -24,18 +24,28 @@ import tempfile
 MINIMUM_EXPECTED_SAMPLES = 40
 
 
+def copy_files(source_dir, working_dir):
+    """Copy the files (not the sub-directories) of 'source_dir', if it exists, into 'working_dir'."""
+    if not os.path.isdir(source_dir):
+        return
+    for name in os.listdir(source_dir):
+        if os.path.isfile(os.path.join(source_dir, name)):
+            shutil.copy(os.path.join(source_dir, name), working_dir)
+
+
 def run_sample(sample_path, fixtures_dir):
     with tempfile.TemporaryDirectory() as working_dir:
-        for fixture in os.listdir(fixtures_dir):
-            if os.path.isfile(os.path.join(fixtures_dir, fixture)):
-                shutil.copy(os.path.join(fixtures_dir, fixture), working_dir)
-        # A script whose page shows its own input (eg, 'create_topological_features' reproduces its
-        # 'features.gpml' in full) gets that file from 'fixtures/sample-code/<script>/', over the shared ones.
-        sample_fixtures_dir = os.path.join(
-            fixtures_dir, 'sample-code', os.path.splitext(os.path.basename(sample_path))[0])
-        if os.path.isdir(sample_fixtures_dir):
-            for fixture in os.listdir(sample_fixtures_dir):
-                shutil.copy(os.path.join(sample_fixtures_dir, fixture), working_dir)
+        # Three layers, each over the one before:
+        # - the fixtures shared with the unit tests,
+        # - 'fixtures/sample-code/', for every sample (eg, a 'topologies.gpml' with ridges and subduction
+        #   zones, where the unit tests' one has only unclassified sections),
+        # - 'fixtures/sample-code/<script>/', for a script whose page shows its own input (eg,
+        #   'create_topological_features' reproduces its 'features.gpml' in full).
+        sample_code_fixtures_dir = os.path.join(fixtures_dir, 'sample-code')
+        copy_files(fixtures_dir, working_dir)
+        copy_files(sample_code_fixtures_dir, working_dir)
+        copy_files(os.path.join(sample_code_fixtures_dir, os.path.splitext(os.path.basename(sample_path))[0]),
+                   working_dir)
         return subprocess.run(
             [sys.executable, sample_path],
             cwd=working_dir,

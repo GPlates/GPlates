@@ -204,10 +204,13 @@ a few dozen real features cut from the GPlates sample data by
 `pygplates/test/fixtures/generate_sample_fixtures.py`, or synthetic geometry. The test asserts that a
 script runs; a page's "Output" block stays as captured from real geodata, so it need not match what
 the fixtures produce. When a new sample names a data file the fixtures lack, add it there (and to
-the generator if it is cut from real data) rather than special-casing the test. A script whose page
-reproduces its own input in full (`create_topological_features` shows its `features.gpml`) keeps
-that file under `fixtures/sample-code/<script>/`, which the test copies over the shared fixtures for
-that script only.
+the generator if it is cut from real data) rather than special-casing the test. The test lays two
+more directories over the shared fixtures. `fixtures/sample-code/` holds files for every sample that
+must differ from the unit tests' files of the same name: its `topologies.gpml` has a ridge that
+diverges and a trench that converges at every time the samples visit, where the unit tests' one has
+only unclassified sections on plates that do not move. `fixtures/sample-code/<script>/` holds files
+for one script, whose page reproduces its own input in full (`create_topological_features` shows its
+`features.gpml`).
 
 ## Math markup
 
