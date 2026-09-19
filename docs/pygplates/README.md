@@ -256,6 +256,12 @@ repository.
 After changing a script or a page, build the docs from scratch (`-W` catches a fragment the script
 no longer has) and run the test.
 
+The test only checks that each script exits normally, so a script that reads nothing still passes.
+pyGPlates loads no features, without an error, from a GPML file with anything before its XML
+declaration, even a blank line: a fixture with one made the topology-creation sample build empty
+topologies for as long as it was there. When adding a fixture, check that the script actually finds
+something in it.
+
 ## Math markup
 
 The narrative pages (the primer and the sample-code walkthroughs) use `:math:` roles and `.. math::`
