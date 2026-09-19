@@ -172,7 +172,8 @@ def copy_rst(source, destination):
 
 
 def populate_scratch_dir(scratch_dir):
-    """Copy the '.rst' sources, images, '_static' and '_templates' into the Sphinx source directory.
+    """Copy the '.rst' sources, sample scripts, images, '_static' and '_templates' into
+    the Sphinx source directory.
 
     'docs/pygplates/CMakeLists.txt' uses configure_file(@ONLY) for the '.rst' files, but none of
     them contain @VAR@ placeholders, so a copy plus configure_file's trailing-newline behaviour is
@@ -181,11 +182,13 @@ def populate_scratch_dir(scratch_dir):
     for rst in sorted(SOURCE_DIR.glob("*.rst")):
         copy_rst(rst, scratch_dir / rst.name)
 
+    # The sample scripts ('sample-code/*.py') go with the pages: they include the scripts' code
+    # through the 'sample-code' directive (see 'conf.py.in'), relative to the page.
     # '_templates/autosummary' holds the custom autosummary templates (see 'templates_path' in
     # 'conf.py.in'). They are Jinja rather than reST, but all copy_rst() can add is a missing
     # trailing newline, which is harmless in a template.
-    for subdir, pattern in (("primer", "*.rst"), ("sample-code", "*.rst"), ("images", "*.png"),
-                            ("_static", "*"),
+    for subdir, pattern in (("primer", "*.rst"), ("sample-code", "*.rst"), ("sample-code", "*.py"),
+                            ("images", "*.png"), ("_static", "*"),
                             ("_templates/autosummary", "*.rst")):
         source_subdir = SOURCE_DIR / subdir
         if not source_subdir.is_dir():

@@ -38,8 +38,18 @@ add_test(
 	NAME pygplates-linkage-test
 	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/check_linkage.py" "$<TARGET_FILE:pygplates>")
 
+# Add the sample-code test: every script under 'docs/pygplates/sample-code/' must run. The scripts
+# are the code of the documentation's sample pages (each page includes its script rather than
+# repeating it - see the 'sample-code' directive in 'docs/pygplates/conf.py.in'), so this is what
+# keeps the published samples runnable. Each runs in a temporary directory seeded with 'fixtures/'.
+add_test(
+	NAME pygplates-sample-code-test
+	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/sample_code_test.py"
+		"${PROJECT_SOURCE_DIR}/docs/pygplates/sample-code"
+		"${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
+
 # Set test properties.
-set_tests_properties(pygplates-test PROPERTIES
+set_tests_properties(pygplates-test pygplates-sample-code-test PROPERTIES
 	# Set the PYTHONPATH used in the test environment.
 	# PYTHONPATH should have precedence over everything including 'site-packages' (but not the directory containing "test.py").
 	#

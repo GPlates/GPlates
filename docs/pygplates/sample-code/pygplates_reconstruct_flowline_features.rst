@@ -25,60 +25,48 @@ features and export the results to a Shapefile.
 
 .. seealso:: :ref:`pygplates_create_flowline_feature` and :ref:`pygplates_query_flowline_feature`
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the left and right plates of the flowlines.
+
+``flowline_features.gpml``
+    Flowline features, each with left and right plate IDs, a list of times, a valid time period and
+    seed point geometry (see :ref:`pygplates_query_flowline_feature`).
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Load one or more rotation files into a rotation model.
-    rotation_model = pygplates.RotationModel('rotations.rot')
-
-    # Create a reconstruct model from some flowline features and the rotation model.
-    reconstruct_model = pygplates.ReconstructModel('flowline_features.gpml', rotation_model)
-
-    # Reconstruct features to this geological time.
-    reconstruction_time = 50
-    
-    # The filename of the exported reconstructed flowlines.
-    # It's a shapefile called 'flowline_output_50Ma.shp'.
-    export_filename = 'flowline_output_{0}Ma.shp'.format(reconstruction_time)
-
-    # Reconstruct the flowlines to the reconstruction time and export them to a shapefile.
-    reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(reconstruction_time)
-    reconstruct_snapshot.export_reconstructed_geometries(export_filename,
-        reconstruct_type=pygplates.ReconstructType.flowline)
+.. sample-code:: pygplates_reconstruct_flowline_features_export.py
 
 Details
 """""""
 
 The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
-::
 
-    rotation_model = pygplates.RotationModel('rotations.rot')
+.. sample-code:: pygplates_reconstruct_flowline_features_export.py
+   :fragment: load-rotations
 
 Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the flowline features and the rotation model.
-::
 
-    reconstruct_model = pygplates.ReconstructModel('flowline_features.gpml', rotation_model)
+.. sample-code:: pygplates_reconstruct_flowline_features_export.py
+   :fragment: reconstruct-model
 
 The flowline features will be reconstructed to their 50Ma positions.
-::
 
-    reconstruction_time = 50
+.. sample-code:: pygplates_reconstruct_flowline_features_export.py
+   :fragment: reconstruction-time
 
 | All flowline features are :meth:`reconstructed <pygplates.ReconstructModel.reconstruct_snapshot>` to 50Ma.
 | We then :meth:`export the reconstructed geometries <pygplates.ReconstructSnapshot.export_reconstructed_geometries>` to a file.
 | We specify we only want to reconstruct flowline features by specifying
   ``pygplates.ReconstructType.flowline`` for the *reconstruct_type* argument.
 
-::
-
-    reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(reconstruction_time)
-    reconstruct_snapshot.export_reconstructed_geometries(export_filename,
-        reconstruct_type=pygplates.ReconstructType.flowline)
+.. sample-code:: pygplates_reconstruct_flowline_features_export.py
+   :fragment: reconstruct-and-export
 
 Output
 """"""
@@ -94,92 +82,18 @@ Query a reconstructed flowline
 
 In this example we print out the point locations in a reconstructed flowline.
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for plates 201 and 701 (the left and right plates of
+    the flowline the script creates) back to 90Ma. Rotation files are in the GPlates
+    `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
-::
-
-    import pygplates
-
-
-    # Specify two (lat/lon) seed points on a present-day mid-ocean ridge between plates 201 and 701.
-    seed_points = pygplates.MultiPointOnSphere(
-        [
-            (-35.547600, -17.873000),
-            (-46.208000, -13.623000)
-        ])
-
-    # A list of times to sample flowline - from 0 to 90Ma in 5My intervals.
-    times = range(0, 91, 5)
-
-    # Create a flowline feature.
-    flowline_feature = pygplates.Feature.create_flowline(
-            seed_points,
-            times,
-            valid_time=(max(times), min(times)),
-            left_plate=201,
-            right_plate=701)
-
-    # Load one or more rotation files into a rotation model.
-    rotation_model = pygplates.RotationModel('rotations.rot')
-
-    # Create a reconstruct model from the flowline feature and the rotation model.
-    reconstruct_model = pygplates.ReconstructModel(flowline_feature, rotation_model)
-
-    # Reconstruct features to this geological time.
-    reconstruction_time = 50
-
-    # Reconstruct the flowline feature to the reconstruction time.
-    reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(reconstruction_time)
-    reconstructed_flowlines = reconstruct_snapshot.get_reconstructed_geometries(
-        reconstruct_types=pygplates.ReconstructType.flowline)
-
-    # Iterate over all reconstructed flowlines.
-    # There will be two (one for each seed point).
-    for reconstructed_flowline in reconstructed_flowlines:
-        
-        # Print the flowline left/right plate IDs.
-        print 'flowline: left %d, right %d at %fMa' % (
-            reconstructed_flowline.get_feature().get_left_plate(),
-            reconstructed_flowline.get_feature().get_right_plate(),
-            reconstruction_time)
-        
-        # Print the reconstructed seed point location.
-        print '  reconstructed seed point: lat: %f, lon: %f' % reconstructed_flowline.get_reconstructed_seed_point().to_lat_lon()
-        
-        flowline_times = reconstructed_flowline.get_feature().get_times()
-        
-        print '  left flowline:'
-        
-        # Iterate over the left points in the flowline.
-        # The first point in the path is the youngest and the last point is the oldest.
-        # So we reverse the order to start with the oldest.
-        for point_index, left_point in enumerate(reversed(reconstructed_flowline.get_left_flowline())):
-            
-            lat, lon = left_point.to_lat_lon()
-            
-            # The first point in the path is the oldest and the last point is the reconstructed seed point.
-            # So we need to start at the last time and work our way backwards.
-            time = flowline_times[-1-point_index]
-            
-            # Print the point location and the time associated with it.
-            print '    time: %f, lat: %f, lon: %f' % (time, lat, lon)
-        
-        print '  right flowline:'
-        
-        # Iterate over the right points in the flowline.
-        # The first point in the path is the youngest and the last point is the oldest.
-        # So we reverse the order to start with the oldest.
-        for point_index, right_point in enumerate(reversed(reconstructed_flowline.get_right_flowline())):
-            
-            lat, lon = right_point.to_lat_lon()
-            
-            # The first point in the path is the oldest and the last point is the reconstructed seed point.
-            # So we need to start at the last time and work our way backwards.
-            time = flowline_times[-1-point_index]
-            
-            # Print the point location and the time associated with it.
-            print '    time: %f, lat: %f, lon: %f' % (time, lat, lon)
+.. sample-code:: pygplates_reconstruct_flowline_features_query.py
 
 Details
 """""""
@@ -188,42 +102,31 @@ Details
 | It creates a flowline feature specifying the seed point locations that each flowline spreads
   from as well as a list of times to plot points in the left/right paths.
 
-::
-
-    seed_points = pygplates.MultiPointOnSphere([(-35.547600, -17.873000), (-46.208000, -13.623000)])
-    times = range(0, 91, 1)
-    flowline_feature = pygplates.Feature.create_flowline(
-            seed_points,
-            times,
-            valid_time=(max(times), min(times)),
-            left_plate=201,
-            right_plate=701)
+.. sample-code:: pygplates_reconstruct_flowline_features_query.py
+   :fragment: create-flowline
 
 The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
-::
 
-    rotation_model = pygplates.RotationModel('rotations.rot')
+.. sample-code:: pygplates_reconstruct_flowline_features_query.py
+   :fragment: load-rotations
 
 Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the flowline feature and the rotation model.
-::
 
-    reconstruct_model = pygplates.ReconstructModel(flowline_feature, rotation_model)
+.. sample-code:: pygplates_reconstruct_flowline_features_query.py
+   :fragment: reconstruct-model
 
 The flowline feature will be reconstructed to its 50Ma position.
-::
 
-    reconstruction_time = 50
+.. sample-code:: pygplates_reconstruct_flowline_features_query.py
+   :fragment: reconstruction-time
 
 | The flowline feature is :meth:`reconstructed <pygplates.ReconstructModel.reconstruct_snapshot>` to 50Ma.
 | We then :meth:`query the reconstructed geometries <pygplates.ReconstructSnapshot.get_reconstructed_geometries>`.
 | We also specify we only want to reconstruct flowline features by specifying
   ``pygplates.ReconstructType.flowline`` for the *reconstruct_types* argument.
 
-::
-
-    reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(reconstruction_time)
-    reconstructed_flowlines = reconstruct_snapshot.get_reconstructed_geometries(
-        reconstruct_types=pygplates.ReconstructType.flowline)
+.. sample-code:: pygplates_reconstruct_flowline_features_query.py
+   :fragment: reconstruct
 
 | We iterate over the points in the :meth:`reconstructed left flowline<pygplates.ReconstructedFlowline.get_left_flowline>`
   and print each point location and its associated time.
@@ -235,13 +138,12 @@ The flowline feature will be reconstructed to its 50Ma position.
   So we need to start at the last (oldest) time and work our way backwards.
   The last sample is at index ``-1`` and ``point_index`` starts at zero.
   So our time indices are ``-1``, ``-2``, etc, which means last sample, then second last sample, etc.
+| This labelling assumes the reconstruction time is one of the flowline's times (as 50Ma is here). At any
+  other time the path's youngest point is at the reconstruction time itself, but is labelled with the
+  next younger sample time.
 
-::
-
-    for point_index, left_point in enumerate(reversed(reconstructed_flowline.get_left_flowline())):
-        lat, lon = left_point.to_lat_lon()
-        time = flowline_times[-1-point_index]
-        print '    time: %f, lat: %f, lon: %f' % (time, lat, lon)
+.. sample-code:: pygplates_reconstruct_flowline_features_query.py
+   :fragment: left-flowline
 
 Then we do the same thing for the :meth:`reconstructed right flowline<pygplates.ReconstructedFlowline.get_right_flowline>`.
 
@@ -299,3 +201,12 @@ from 90Ma to 50Ma.
         time: 50.000000, lat: -50.546458, lon: -11.620705
 
 .. note:: The reconstructed seed point is the same position as the last point in the left and right flowlines.
+
+See also
+++++++++
+
+- Reference: :class:`pygplates.ReconstructModel`, :meth:`pygplates.ReconstructSnapshot.export_reconstructed_geometries`,
+  :meth:`pygplates.ReconstructSnapshot.get_reconstructed_geometries`,
+  :class:`pygplates.ReconstructedFlowline`
+- Sample code: :ref:`pygplates_create_flowline_feature`, :ref:`pygplates_query_flowline_feature`,
+  :ref:`pygplates_reconstruct_motion_path_features`, :ref:`pygplates_reconstruct_regular_features`
