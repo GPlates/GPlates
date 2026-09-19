@@ -76,8 +76,20 @@ write('isochrons.gpml', subset(r'Isochrons\Seton_etal_2020_Isochrons.gpmlz', [80
 # Mid-ocean ridges (with left/right plates and a finite time of appearance) and subduction zones.
 BOUNDARIES = r'DynamicPolygons\Zahirovic_etal_2022_Feature_Geometries.gpml'
 # Ridges carry their plates as left/right rather than a reconstruction plate ID, so select on the left plate.
+# The source's ridges are time slices that all end by 40 Ma, so a sample that creates isochrons from 40 Ma
+# to present day would find none alive: a synthetic Southeast Indian Ridge (Australia-Antarctica, drawn
+# west to east so Australia is on its left) is added, from its opening at 83 Ma to present day.
+southeast_indian_ridge = pygplates.Feature.create_tectonic_section(
+    pygplates.FeatureType.gpml_mid_ocean_ridge,
+    pygplates.PolylineOnSphere([(-50, 110), (-50.5, 120), (-51.5, 130), (-53, 140)]),
+    name='Southeast Indian Ridge (synthetic)',
+    valid_time=(83, pygplates.GeoTimeInstant.create_distant_future()),
+    left_plate=801,
+    right_plate=802,
+    reconstruction_method='HalfStageRotationVersion3')
 write('ridges.gpml', subset(BOUNDARIES, [901, 802, 701, 501], feature_type=pygplates.FeatureType.gpml_mid_ocean_ridge,
-                            per_plate=3, key=lambda f: f.get_left_plate(), accept=finite_begin_time))
+                            per_plate=3, key=lambda f: f.get_left_plate(), accept=finite_begin_time) +
+      [southeast_indian_ridge])
 write('subduction_zones.gpml', subset(BOUNDARIES, [801, 901, 911, 301, 501],
                                       feature_type=pygplates.FeatureType.gpml_subduction_zone, per_plate=2))
 

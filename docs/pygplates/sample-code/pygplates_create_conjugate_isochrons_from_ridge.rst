@@ -18,9 +18,10 @@ Data files
     reconstructed from there to present day.
 
 ``ridges.gpml``
-    Mid-ocean ridge features. Each must have left and right plate IDs, a valid time period (whose
-    begin time is the ridge's time of appearance) and geometry. A name and description are copied to
-    the isochrons if present.
+    Mid-ocean ridge features. Each must have left and right plate IDs, a half-stage reconstruction
+    method (so that the ridge moves midway between its plates), a valid time period (the ridge's times
+    of appearance and disappearance) and geometry. A name and description are copied to the isochrons
+    if present.
 
 Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
 
@@ -48,7 +49,8 @@ The plate IDs and time period are obtained using :meth:`pygplates.Feature.get_le
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: plate-ids-and-valid-time
 
-Smaller time values are closer to present day (younger).
+An isochron is created only at times when the ridge exists: after it appears and before it
+disappears. Smaller time values are closer to present day (younger).
 
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: creation-time-test

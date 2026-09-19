@@ -31,8 +31,9 @@ for ridge_feature in ridge_features:
     for isochron_creation_time in isochron_creation_times:
 
         # [fragment: creation-time-test]
-        # If creation time is later than ridge birth time then we can create an isochron.
-        if isochron_creation_time < time_of_appearance:
+        # If the ridge exists at the creation time (it has appeared and not yet disappeared)
+        # then we can create an isochron.
+        if time_of_disappearance <= isochron_creation_time < time_of_appearance:
             # [end: creation-time-test]
 
             # [fragment: reconstruct-ridge]
