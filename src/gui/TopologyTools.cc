@@ -55,8 +55,10 @@
 
 #include "ChooseCanvasToolUndoCommand.h"
 #include "FeatureFocus.h"
+#include "TopologySectionsFinder.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/GeometryTypeFinder.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructedFeatureGeometryFinder.h"
@@ -66,11 +68,6 @@
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
-
-#include "feature-visitors/GeometryTypeFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
-#include "feature-visitors/TopologySectionsFinder.h"
-#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
@@ -91,6 +88,7 @@
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
@@ -124,6 +122,7 @@
 #include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/TopologyToolsWidget.h"
+#include "qt-widgets/ViewFeatureGeometriesWidgetPopulator.h"
 #include "qt-widgets/ViewportWindow.h"
 
 #include "utils/GeometryCreationUtils.h"
@@ -1040,7 +1039,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	//
 	// The general solution to this is to use some kind of property id in the property delegate
 	// that uniquely identifies a property instead of using a property name.
-	GPlatesFeatureVisitors::GeometryTypeFinder geometry_type_finder;
+	GPlatesAppLogic::GeometryTypeFinder geometry_type_finder;
 	geometry_type_finder.visit_feature(d_feature_focus_ptr->focused_feature());
 
 // NOTE: MULTIPLE GEOM FIXME
@@ -1180,7 +1179,7 @@ GPlatesGui::TopologyTools::initialise_topological_sections_from_edit_topology_fo
 
 	// Create a new TopologySectionsFinder to fill a topology sections container
 	// table row for each topology section found.
-	GPlatesFeatureVisitors::TopologySectionsFinder topo_sections_finder;
+	GPlatesGui::TopologySectionsFinder topo_sections_finder;
 
 	// Visit the topology feature.
 	topo_sections_finder.visit_feature(edit_topology_feature_ref);
@@ -3653,7 +3652,7 @@ GPlatesGui::TopologyTools::show_numbers()
 			GPlatesModel::PropertyName::create_gml("name");
 
 		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 						d_feature_focus_ptr->focused_feature(), name_property_name);
 		if (name)
 		{

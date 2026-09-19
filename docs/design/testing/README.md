@@ -48,10 +48,28 @@ mipmapping, low-level maths and utils).
    `GPLATES_UNIT_TEST_DATA_DIR` compile definition (an absolute path baked in by CMake), so the
    test executable runs correctly from anywhere. Any *output* a test produces goes to a
    `QTemporaryDir`. A test run must leave `git status` clean.
-5. **Test runs are Release (or MinSizeRel) only.** `GPlatesGlobal::Assert` calls `std::abort()`
-   in Debug builds (`GPLATES_DEBUG`) rather than throwing, which kills any test that exercises an
-   error path. The pyGPlates tests are registered with `CONFIGURATIONS Release MinSizeRel`; the
-   C++ tests are not discovered in Debug build trees. Always run `ctest -C Release`.
+5. **Tests run in every build configuration.** A failed `GPlatesGlobal::Assert` aborts by default
+   in a Debug or RelWithDebInfo build of GPlates (`GPLATES_DEBUG`), so that a debugger stops where
+   it failed. The test main() makes it throw instead, and the pygplates module always throws (see
+   `global/GPlatesAssert.h`), so a test that expects the exception from an assertion needs no
+   build-type guard — never wrap one in `#ifndef GPLATES_DEBUG`. Set
+   `GPLATES_UNIT_TEST_ABORT_ON_ASSERT` to get the abort back while debugging a failure. With MSVC
+   every configuration builds against the release C runtime (`cmake/modules/ConfigDefault.cmake`),
+   because the conda dependencies have no debug builds. Pass `ctest -C` the configuration you
+   built.
+
+   The abort-or-throw choice is a run-time flag rather than a compile-time one so that a single
+   Debug tree serves both debugging and testing. The alternatives were weighed and rejected: a
+   CMake option (`GPLATES_ASSERT_ABORTS`, say) needs a second Debug tree to get the other
+   behaviour; making `Assert` always throw changes how GPlates is debugged, since a debugger no
+   longer stops at the failing assertion; GoogleTest death tests (`EXPECT_DEATH`) run each check
+   in a child process, are slow, behave differently on Windows, and would mean writing every
+   error-path test twice; and, under the old compile-time fork, defining `GPLATES_DEBUG`
+   differently for the `gplates-unit-test` target alone was unsound rather than merely awkward —
+   `Assert` is an inline template in a header shared with `gplates-lib`, so translation units
+   would have disagreed on its definition (an ODR violation). Compiling the throw path at every
+   call site costs a Debug build of `gplates-lib` about 1% in size and no measurable time. The CI
+   test workflows build Release only, so nothing automated exercises a Debug test run.
 6. **Failures must be diagnosable from CI logs alone.** Failure detail goes to stdout/stderr
    (never only to a log file), `--output-on-failure` is CTest's default here (via
    `CMAKE_CTEST_ARGUMENTS`), and the CI workflows upload `Testing/Temporary/` as an artifact on

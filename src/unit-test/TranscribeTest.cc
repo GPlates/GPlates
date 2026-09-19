@@ -1137,9 +1137,6 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 	// Transcribing an *untracked* pointer before transcribing object should throw an exception.
 	//
 
-	// Skip this test in debug build because GPlatesGlobal::Assert() aborts instead of
-	// throwing an exception and this test checks for exceptions...
-#ifndef GPLATES_DEBUG
 	{
 		GPlatesScribe::Scribe scribe;
 
@@ -1147,10 +1144,6 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 				scribe.transcribe(TRANSCRIBE_SOURCE, var_ptr, "var_ptr"),
 				GPlatesScribe::Exceptions::TranscribedUntrackedPointerBeforeReferencedObject);
 	}
-#endif
-	// Skip this test in debug build because GPlatesGlobal::Assert() aborts instead of
-	// throwing an exception and this test checks for exceptions...
-#ifndef GPLATES_DEBUG
 	{
 		GPlatesScribe::Scribe scribe;
 
@@ -1158,15 +1151,11 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 				scribe.transcribe(TRANSCRIBE_SOURCE, var_ptr_ptr, "var_ptr_ptr"),
 				GPlatesScribe::Exceptions::TranscribedUntrackedPointerBeforeReferencedObject);
 	}
-#endif
 
 	//
 	// Transcribing an *untracked* object that has pointers referencing it should throw an exception.
 	//
 
-	// Skip this test in debug build because GPlatesGlobal::Assert() aborts instead of
-	// throwing an exception and this test checks for exceptions...
-#ifndef GPLATES_DEBUG
 	{
 		GPlatesScribe::Scribe scribe;
 
@@ -1176,7 +1165,6 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 				scribe.transcribe(TRANSCRIBE_SOURCE, var, "var"),
 				GPlatesScribe::Exceptions::UntrackingObjectWithReferences);
 	}
-#endif
 	{
 		GPlatesScribe::Scribe scribe;
 
@@ -1188,9 +1176,6 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 		EXPECT_TRUE(
 				!scribe.is_transcription_complete(false/*emit_warnings*/));
 	}
-	// Skip this test in debug build because GPlatesGlobal::Assert() aborts instead of
-	// throwing an exception and this test checks for exceptions...
-#ifndef GPLATES_DEBUG
 	{
 		GPlatesScribe::Scribe scribe;
 
@@ -1201,7 +1186,6 @@ GPlatesUnitTest::TranscribeUntrackedTest::test_case_untracked_exception()
 				scribe.transcribe(TRANSCRIBE_SOURCE, var_ptr, "var_ptr"),
 				GPlatesScribe::Exceptions::UntrackingObjectWithReferences);
 	}
-#endif
 	{
 		GPlatesScribe::Scribe scribe;
 
@@ -3823,10 +3807,6 @@ namespace GPlatesUnitTest
 void
 GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 {
-	// Skip these tests in debug build because GPlatesGlobal::Assert() aborts instead of
-	// throwing an exception and these tests check for exceptions...
-#ifndef GPLATES_DEBUG
-
 	//
 	// Transcribing an object *reference* inside a raw subtree should throw an exception.
 	//
@@ -4002,8 +3982,6 @@ GPlatesUnitTest::TranscribeRawTest::test_case_raw_errors()
 				scribe.transcribe(TRANSCRIBE_SOURCE, after_ptr, "data", GPlatesScribe::RAW),
 				GPlatesScribe::Exceptions::RawStreamError);
 	}
-
-#endif // GPLATES_DEBUG
 }
 
 

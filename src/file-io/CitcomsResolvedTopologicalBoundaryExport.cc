@@ -50,9 +50,8 @@ DISABLE_MSVC_WARNING(4503)
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/TopologyUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GmlPoint.h"
 

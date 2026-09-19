@@ -18,11 +18,6 @@
 
 #include <boost/config.hpp>
 
-#ifdef BOOST_MSVC  // moved here to work around VC++ compiler crash
-# pragma warning(push)
-# pragma warning(disable:4284) // odd return type for operator->
-#endif
-
 #include <boost/assert.hpp>
 #include <boost/detail/workaround.hpp>
 
@@ -221,17 +216,6 @@ template<class T, class H> inline bool operator!=(T * a, non_null_intrusive_ptr<
     return a != b.get();
 }
 
-#if __GNUC__ == 2 && __GNUC_MINOR__ <= 96
-
-// Resolve the ambiguity between our op!= and the one in rel_ops
-
-template<class T, class H> inline bool operator!=(non_null_intrusive_ptr<T, H> const & a, non_null_intrusive_ptr<T, H> const & b)
-{
-    return a.get() != b.get();
-}
-
-#endif
-
 template<class T, class H> inline bool operator<(non_null_intrusive_ptr<T, H> const & a, non_null_intrusive_ptr<T, H> const & b)
 {
     return std::less<T *>()(a.get(), b.get());
@@ -272,34 +256,12 @@ template<class T, class H, class U> non_null_intrusive_ptr<T, H> dynamic_pointer
 
 // operator<<
 
-#if defined(__GNUC__) &&  (__GNUC__ < 3)
-
-template<class Y, class Z> std::ostream & operator<< (std::ostream & os, non_null_intrusive_ptr<Y, Z> const & p)
-{
-    os << p.get();
-    return os;
-}
-
-#else
-
-# if defined(BOOST_MSVC) && BOOST_WORKAROUND(BOOST_MSVC, <= 1200 && __SGI_STL_PORT)
-// MSVC6 has problems finding std::basic_ostream through the using declaration in namespace _STL
-using std::basic_ostream;
-template<class E, class T, class Y, class Z> basic_ostream<E, T> & operator<< (basic_ostream<E, T> & os, non_null_intrusive_ptr<Y, Z> const & p)
-# else
 template<class E, class T, class Y, class Z> std::basic_ostream<E, T> & operator<< (std::basic_ostream<E, T> & os, non_null_intrusive_ptr<Y, Z> const & p)
-# endif 
 {
     os << p.get();
     return os;
 }
-
-#endif
 
 } // namespace GPlatesUtils
-
-#ifdef BOOST_MSVC
-# pragma warning(pop)
-#endif  
 
 #endif  // #ifndef NON_NULL_INTRUSIVE_PTR_HPP_INCLUDED

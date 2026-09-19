@@ -10,6 +10,12 @@ Changes since 2.5:
 
 * Subduction teeth on individual subduction zone features (static or topological lines), not only on topological plate/network boundaries.
 * Upgraded to Qt 6 (Qt 5.15 is still supported when compiling from source).
+* Python is now required rather than optional.
+  * If Python fails to initialise, GPlates explains why and exits, instead of starting with Python support switched off.
+  * That dialog has been rewritten (its install instructions were written for Python 2.6 and 2.7) and no longer offers to hide itself next time, since it now only appears when GPlates is about to exit. The "Show Python Initialize Fail Dialog" preference goes with it.
+  * The cut-down colouring interface that appeared when Python was switched off has been removed. "Features > Manage Colouring", and the colouring button in the Layers panel, always open the Draw Style dialog.
+  * The "Python Home" preference under "Edit > Preferences > Python" has been removed. Nothing had read it since 2013 - GPlates uses the Python it was built against - and the dialog above no longer suggests setting it. The "System Script Dir" and "User Script Dir" keyboard shortcuts in that pane now reach their own boxes rather than the removed one.
+* Velocity arrows now follow a draw style applied to all layers (choose "All" in the Draw Style dialog's "Select Layer" list), which previously left them unchanged. They are still coloured by plate ID otherwise, as before.
 * Python console:
   * Now provides the full pyGPlates API (the same API as the standalone pygplates module).
     * `pygplates.reconstruct()` and `pygplates.reverse_reconstruct()` have new signatures; scripts passing positional arguments need updating.

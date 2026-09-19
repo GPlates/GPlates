@@ -55,15 +55,13 @@
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/FlowlineUtils.h"
+#include "app-logic/GeometrySetter.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/TopologyGeometryType.h"
 #include "app-logic/TopologyUtils.h"
-
-#include "feature-visitors/GeometrySetter.h"
-#include "feature-visitors/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -81,6 +79,7 @@
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 #include "model/types.h"
 
 #include "presentation/ViewState.h"
@@ -492,7 +491,7 @@ namespace
 			}
 
 			boost::optional<typename PropertyValueType::non_null_ptr_to_const_type> derived_property_value =
-					GPlatesFeatureVisitors::get_property_value<PropertyValueType>(*property_value.get());
+					GPlatesModel::get_property_value<PropertyValueType>(*property_value.get());
 			if (!derived_property_value)
 			{
 				continue;
@@ -1667,7 +1666,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 			if (prop_value_maybe) {
 				// We know the name (should be) an XsString.
 				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> prop_value_string =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(*prop_value_maybe.get());
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(*prop_value_maybe.get());
 				if (!prop_value_string)
 				{
 					continue;
@@ -1696,7 +1695,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 			if (prop_value_maybe) {
 				// We know the quality (should be) an Enumeration.
 				boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> prop_value_enum =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(*prop_value_maybe.get());
+						GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(*prop_value_maybe.get());
 				if (!prop_value_enum)
 				{
 					continue;
@@ -2593,7 +2592,7 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 	// Note: Cannot use '*geometry_property_iterator = ...' since dereferencing a feature
 	// properties iterator returns a temporary pointer (so assigning to it does nothing) -
 	// instead set the property via the feature.
-	GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
+	GPlatesAppLogic::GeometrySetter geometry_setter(present_day_geometry);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone =
 			(*geometry_property_iterator)->clone();
 	geometry_setter.set_geometry(geometry_property_clone.get());

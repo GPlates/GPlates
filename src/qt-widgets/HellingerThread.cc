@@ -27,10 +27,8 @@
 // parameters that you can send to a boost python function.
 #define BOOST_PYTHON_MAX_ARITY 16
 
-// Workaround for compile error in <pyport.h> for Python versions less than 2.7.13 and 3.5.3.
-// See https://bugs.python.org/issue10910
-// Workaround involves including "global/python.h" at the top of some source files
-// to ensure <Python.h> is included before <ctype.h>.
+// Python requires <Python.h> to be included before any standard header (it can define macros
+// that change how they are compiled), so include "global/python.h" first.
 #include "global/python.h"
 
 #include <QDebug>

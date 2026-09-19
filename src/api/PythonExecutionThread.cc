@@ -40,7 +40,7 @@
 
 #include "app-logic/ApplicationState.h"
 
-#include "global/python.h"  // PY_MAJOR_VERSION
+#include "global/python.h"
 
 #include "gui/PythonManager.h"
 
@@ -215,15 +215,9 @@ GPlatesApi::PythonExecutionThread::run()
 		try
 		{
 			// Python 3 renamed module 'thread' to '_thread' (and added a higher-level API 'threading' on top).
-#if PY_MAJOR_VERSION >= 3
 			PyRun_SimpleString("import _thread");
 			d_python_thread_id = extract<long>(eval("_thread.get_ident()", d_namespace, d_namespace));
 			PyRun_SimpleString("del _thread");
-#else
-			PyRun_SimpleString("import thread");
-			d_python_thread_id = extract<long>(eval("thread.get_ident()", d_namespace, d_namespace));
-			PyRun_SimpleString("del thread");
-#endif
 		}
 		catch (const error_already_set &)
 		{

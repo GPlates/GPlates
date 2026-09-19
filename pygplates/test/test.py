@@ -48,8 +48,8 @@ class HashableCase(unittest.TestCase):
         property_name_clone = pygplates.PropertyName.create_from_qualified_string(property_name.to_qualified_string())
 
         # Should be able to insert hashable types into dictionary without raising TypeError.
-        # And also retrieve them properly (this will fail if __eq__ is defined but __hash__
-        # is left to default implementation based on 'id()' - in python 2.7 anyway).
+        # And also retrieve them properly (defining __eq__ without __hash__ makes a type
+        # unhashable).
         d = {}
         
         # Insert originals.

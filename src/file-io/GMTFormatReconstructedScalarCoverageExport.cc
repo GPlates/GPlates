@@ -41,7 +41,7 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/TopologyReconstructedFeatureGeometry.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/PropertyValueFinder.h"
 
 #include "file-io/FileInfo.h"
 
@@ -204,7 +204,7 @@ namespace GPlatesFileIO
 
 				// Print the feature's name.
 				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> gml_name =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 								reconstructed_scalar_coverage.get_feature_ref(),
 								GPlatesModel::PropertyName::create_gml("name"));
 				if (gml_name)
@@ -218,7 +218,7 @@ namespace GPlatesFileIO
 
 				// Print the feature's time period.
 				boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> gml_valid_time =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 								reconstructed_scalar_coverage.get_feature_ref(),
 								GPlatesModel::PropertyName::create_gml("validTime"));
 				if (gml_valid_time)
@@ -261,7 +261,7 @@ namespace GPlatesFileIO
 
 				// Print the feature's reconstruction plate ID.
 				boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> gpml_reconstruction_plate_id =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 								reconstructed_scalar_coverage.get_feature_ref(),
 								GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
 				if (gpml_reconstruction_plate_id)

@@ -49,7 +49,7 @@
 #include "file-io/StandaloneBundle.h"
 
 #include "global/config.h"
-#include "global/python.h"  // PY_MAJOR_VERSION
+#include "global/python.h"  // PY_MINOR_VERSION
 
 #include "presentation/Application.h"
 
@@ -59,11 +59,7 @@
 #include "utils/StringUtils.h"
 
 
-#if PY_MAJOR_VERSION >= 3
 PyMODINIT_FUNC PyInit_pygplates(void);
-#else
-extern "C" void initpygplates();
-#endif 
 
 GPlatesGui::PythonManager::PythonManager() : 
 	d_python_main_thread_runner(NULL),
@@ -74,12 +70,6 @@ GPlatesGui::PythonManager::PythonManager() :
 	d_stopped_event_blackout_for_python_runner(false),
 	d_clear_python_prefix_flag(true)
 {
-	//this UserPreferences must be local.
-	//don't use global UserPreferences because it hasn't been constructed yet.
-	GPlatesAppLogic::UserPreferences user_pref(NULL);
-	d_show_python_init_fail_dlg = user_pref.get_value("python/show_python_init_fail_dialog").toBool();
-	d_python_home = user_pref.get_value("python/python_home").toString();
-
 	// Match the leading "major.minor" (eg, "3.12" from "3.12.4 (main, ...)").
 	static const QRegularExpression rx("^\\d+\\.\\d+");
 	d_python_version = rx.match(QString(Py_GetVersion())).captured();
@@ -132,9 +122,7 @@ GPlatesGui::PythonManager::check_python_capability()
 	// This was discovered because 'register_utils_scripts()' seemed to work,
 	// but the code below did not. And the only difference is 'set_python_prefix()'
 	// is called between them and that calls 'bp::import("sys")'.
-#if PY_MAJOR_VERSION >= 3
 	bp::import("sys");
-#endif
 
 	// TODO: Uncomment the 'print()' statements once stdout/stderr capture and redirection to
 	//       log window/file is properly working (in 'GPlatesQtMsgHandler').
@@ -142,7 +130,6 @@ GPlatesGui::PythonManager::check_python_capability()
 	//       Also now that we bundle the Python standard library with GPlates (and consequently disable
 	//       PYTHONHOME and PYTHONPATH) it's not so bad if we don't print the Python prefix.
 	QString test_code = QString() +
-			"from __future__ import print_function;" +
 			//"print(\'******Start testing python capability******\');" +
 			"import sys;" +
 			"import code;"  +
@@ -201,20 +188,12 @@ GPlatesGui::PythonManager::~PythonManager()
 
 
 void
-GPlatesGui::PythonManager::set_show_init_fail_dlg(
-		bool flag) 
-{
-	d_show_python_init_fail_dlg = flag;
-	GPlatesAppLogic::UserPreferences(NULL).set_value(
-			"python/show_python_init_fail_dialog",
-			flag);
-}
-
-
-void
 GPlatesGui::PythonManager::set_python_prefix(
 		const QString& str)
 {
+	// Recorded for diagnosis only - nothing reads "python/prefix" back. It is written at
+	// start-up and cleared by the destructor, so a user's settings show which Python a
+	// session used.
 	GPlatesAppLogic::UserPreferences(NULL).set_value(
 			"python/prefix",
 			str);
@@ -230,13 +209,6 @@ GPlatesGui::PythonManager::set_python_prefix()
 }
 
 
-QString
-GPlatesGui::PythonManager::get_python_prefix_from_preferences()
-{
-	return GPlatesAppLogic::UserPreferences(NULL).get_value("python/prefix").toString();
-}
-
-
 void
 GPlatesGui::PythonManager::init_python_interpreter(
 		char* argv[])
@@ -245,17 +217,12 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	using namespace GPlatesApi;
 	// Initialize the embedded Python interpreter.
 	char GPLATES_MODULE_NAME[] = "pygplates";
-#if PY_MAJOR_VERSION >= 3
 	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &PyInit_pygplates))
-#else
-    if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
-#endif
 	{
 		qWarning() << PythonUtils::get_error_message();
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
-#if PY_MAJOR_VERSION >= 3
 	// Use the PEP 587 'PyConfig' embedding API in place of the (now deprecated) Py_SetProgramName()
 	// and Py_IgnoreEnvironmentFlag.
 	//
@@ -311,23 +278,11 @@ GPlatesGui::PythonManager::init_python_interpreter(
 		qWarning() << "Failed to initialize Python interpreter:" << status.err_msg;
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
-#else
-	Py_SetProgramName(argv[0]);
-
-	// If GPlates has bundled the Python standard library then ignore all PYTHON* environment variables
-	// (eg, PYTHONPATH and PYTHONHOME).
-	if (GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory())
-	{
-		Py_IgnoreEnvironmentFlag = 1;
-	}
-
-	Py_Initialize();
-#endif
 
 	// Initialise Python threading support; this grabs the Global Interpreter Lock for this thread.
 	//
 	// Note: For Python >= 3.9 this no longer does anything (and is deprecated).
-#if (PY_MAJOR_VERSION < 3) || ((PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9))
+#if PY_MINOR_VERSION < 9
 	PyEval_InitThreads();
 #endif
 

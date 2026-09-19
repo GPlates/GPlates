@@ -239,20 +239,6 @@ void export_pure_python_api();
 // We only need to call 'import_array()' once and it should be done during our module initialisation.
 //
 #ifdef GPLATES_HAVE_NUMPY_C_API
-#	if PY_MAJOR_VERSION < 3
-	static
-	void
-	pygplates_numpy_c_api_import_array()
-	{
-		// For Python 2 the 'import_array()' macro is defined as:
-		//
-		//   if (_import_array() < 0) { ...; return; }
-		//
-		// ...so our function signature should not have a return type and therefore we don't need to
-		// return anything (even if macro condition fails).
-		import_array();
-	}
-#	else
 	static
 	void *
 	pygplates_numpy_c_api_import_array()
@@ -266,7 +252,6 @@ void export_pure_python_api();
 		// something (in case macro condition fails).
 		return nullptr;
 	}
-#	endif
 #endif
 
 namespace
@@ -403,11 +388,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	// It also means our pure python API code does not need to prefix 'pygplates.' when it calls the
 	// 'pygplates' API (whether that is, in turn, pure python or C++ bindings doesn't matter).
 	bp::scope().attr("__dict__")["__builtins__"] =
-#if PY_MAJOR_VERSION < 3
-			bp::import("__builtin__");
-#else
 			bp::import("builtins");
-#endif
 
 	// Export the part of the python API that consists of C++ python bindings (ie, not pure python).
 	export_cpp_python_api();

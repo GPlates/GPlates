@@ -54,7 +54,6 @@
 
 #include "gui/Colour.h"
 #include "gui/ColourQt.h"
-#include "gui/ColourScheme.h"
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/SimpleGlobeOrientation.h"
 #include "gui/TextOverlay.h"
@@ -364,10 +363,8 @@ GPlatesQtWidgets::GlobeCanvas::centre_of_viewport()
 }
 
 
-// Public constructor
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
-		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
 	QOpenGLWidget(parent_),
 	d_view_state(view_state),
@@ -388,68 +385,12 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
 			GPlatesGui::GlobeVisibilityTester(*this),
-			colour_scheme,
 			devicePixelRatio()),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
 				view_state.get_application_state())),
 	d_velocity_legend_overlay(
 			new GPlatesGui::VelocityLegendOverlay())
-{
-	init();
-}
-
-
-// Private constructor
-GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
-		GlobeCanvas *existing_globe_canvas,
-		GPlatesPresentation::ViewState &view_state_,
-		GPlatesMaths::PointOnSphere &virtual_mouse_pointer_pos_on_globe_,
-		bool mouse_pointer_is_on_globe_,
-		GPlatesGui::Globe &existing_globe_,
-		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
-		QWidget *parent_) :
-	QOpenGLWidget(parent_),
-	d_view_state(view_state_),
-	// OpenGL context state is shared globally via Qt::AA_ShareOpenGLContexts, so mirror that
-	// sharing at the GLContext level...
-	d_gl_context(
-			GPlatesOpenGL::GLContext::create(
-					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QOpenGLWidgetImpl(*this)),
-					*existing_globe_canvas->d_gl_context)),
-	d_initialisedGL(false),
-	d_gl_visual_layers(
-			// Attempt to share OpenGL resources across contexts.
-			// This will depend on whether the two 'GLContext's share any state.
-			GPlatesOpenGL::GLVisualLayers::create(
-					d_gl_context,
-					existing_globe_canvas->d_gl_visual_layers,
-					view_state_.get_application_state())),
-	d_virtual_mouse_pointer_pos_on_globe(virtual_mouse_pointer_pos_on_globe_),
-	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
-	d_globe(
-			existing_globe_,
-			d_gl_visual_layers,
-			GPlatesGui::GlobeVisibilityTester(*this),
-			colour_scheme_,
-			devicePixelRatio()),
-	d_text_overlay(
-			new GPlatesGui::TextOverlay(
-				d_view_state.get_application_state())),
-	d_velocity_legend_overlay(
-			new GPlatesGui::VelocityLegendOverlay())
-{
-	init();
-}
-
-
-GPlatesQtWidgets::GlobeCanvas::~GlobeCanvas()
-{  }
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::init()
 {
 	// QOpenGLWidget renders into an internal framebuffer object and composites it automatically,
 	// so there is no manual front/back buffer swapping to manage (unlike the old QGLWidget).
@@ -502,20 +443,9 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	setAttribute(Qt::WA_NoSystemBackground);
 }
 
-GPlatesQtWidgets::GlobeCanvas *
-GPlatesQtWidgets::GlobeCanvas::clone(
-		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
-		QWidget *parent_)
-{
-	return new GlobeCanvas(
-			this,
-			d_view_state,
-			d_virtual_mouse_pointer_pos_on_globe,
-			d_mouse_pointer_is_on_globe,
-			d_globe,
-			colour_scheme,
-			parent_);
-}
+
+GPlatesQtWidgets::GlobeCanvas::~GlobeCanvas()
+{  }
 
 
 double
