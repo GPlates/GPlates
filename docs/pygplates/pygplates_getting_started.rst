@@ -56,7 +56,7 @@ PyGPlates installed using ``conda`` supports:
 
 - Python:
 
-  - Version 3.9 - 3.13.
+  - The Python versions currently supported by conda-forge (3.10 - 3.14 at the time of writing).
 
 - NumPy:
 
@@ -90,20 +90,22 @@ PyGPlates installed using ``pip`` supports (via our `binary wheels <https://pypi
 - Platforms:
 
   - Windows (x86-64),
-  - macOS **10.15+** (x86-64) and macOS **11.0+** (ARM64),
+  - macOS **11.0+** (x86-64 and ARM64),
   - Linux (x86-64) and Linux (ARM64).
 
-    - Our *manylinux* wheels are compatible with Linux distros using glibc 2.17 or later.
-    - Eg, Ubuntu 13.10+, Debian 8+, Fedora 19+, CentOS/RHEL 7+.
+    - Our *manylinux* wheels are compatible with Linux distros using glibc 2.28 or later.
+    - Eg, Ubuntu 18.10+, Debian 10+, Fedora 29+, CentOS/RHEL 8+.
 
 - Python:
 
-  - Version 3.8 - 3.13.
+  - Version 3.9 - 3.14.
 
 - NumPy:
 
-  - Version 1.x (for Python 3.8):
-  - Version 2.x and 1.x (for Python 3.9 and later).
+  - Version 2.x, or a recent 1.x.
+
+    - The oldest NumPy 1.x that works depends on the Python version, and ``pip`` does not enforce it.
+      If ``import pygplates`` fails with a NumPy error, upgrade NumPy (``python -m pip install --upgrade numpy``).
 
 This section demonstrates how to install pyGPlates into the **global** Python installation.
 
@@ -191,7 +193,8 @@ Install from source code
 
 The first step is to obtain the source code for the current pyGPlates release by checking out its
 release tag in the `GPlates GitHub repository <https://github.com/GPlates/GPlates>`_.
-Or you can check out the development branch ``gplates`` (if you want the latest *unofficial* updates).
+Or you can use the development branch ``gplates`` (for the latest *unofficial* updates).
+A fresh clone checks that branch out already, so skip the ``git switch`` step below.
 
 .. note:: You'll first need to `install git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
   (if you don't already have it).
@@ -224,20 +227,20 @@ These instructions are in the root directory of the source code.
 
 Once the dependency libraries (and compilation tools) have been installed then you can compile and install pyGPlates
 by following the "Build pyGPlates" instructions in the same ``BUILD-Linux.md``, ``BUILD-macOS.md`` or ``BUILD-Windows.md``
-file (the exact ``pip install`` command depends on how the dependencies were installed).
+file (which amount to running ``python -m pip install .`` in the root directory of the source code).
 
 Now you can use pyGPlates. For example, to see the pyGPlates version:
 ::
 
   python -c "import pygplates; print(pygplates.__version__)"
 
-.. note:: | If you find that ``import pygplates`` generates shared library conflicts, then you will need to use a build script
-    in the ``pygplates/wheel/`` directory (of the source code) to build a wheel. And then install that wheel instead.
-  
-  | In fact, those build scripts are used to generate the official pyGPlates wheels that are `uploaded to PyPI <https://pypi.org/project/pygplates/#files>`_
-    (and automatically downloaded/installed when a user types ``pip install pygplates``).
-  
-  | The build scripts are more robust because they install the shared library dependencies into the wheel using ``auditwheel`` on Linux, ``delocate`` on macOS,
+.. note:: | If you find that ``import pygplates`` generates shared library conflicts, then you will need to build a wheel
+    (as described in ``pygplates/wheel/README.md`` in the source code) and install that wheel instead.
+
+  | In fact, that is how the official pyGPlates wheels that are `uploaded to PyPI <https://pypi.org/project/pygplates/#files>`_
+    are built (and automatically downloaded/installed when a user types ``pip install pygplates``).
+
+  | Building a wheel is more robust because it installs the shared library dependencies into the wheel using ``auditwheel`` on Linux, ``delocate`` on macOS,
     and ``delvewheel`` on Windows. This generates *unique* shared library names to avoid potential conflicts with other installed Python packages that have
     the same dependencies as pyGPlates (eg, the GDAL dependency). This is in contrast to installing pyGPlates directly from source code (as described above), which does **not**
     generate unique names because the dependency libraries (that you installed above) are simply copied into the Python ``site-packages`` installation without renaming them.
@@ -254,7 +257,7 @@ This section covers issues you might encounter when installing or running pyGPla
    :local:
    :depth: 1
 
-.. _pygplates_getting_started_troubleshooting_:
+.. _pygplates_getting_started_troubleshooting_libgl_glib:
 
 libGL or glib ImportError on Linux
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -326,7 +329,7 @@ An example pyGPlates function call is reconstructing coastlines to 10Ma:
   pygplates.reconstruct('coastlines.gpmlz', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
 
 .. note:: The ``pygplates.`` in front of ``reconstruct()`` means the ``reconstruct()`` function belongs to the ``pygplates`` module.
-          Also this particular function doesn't need to a return value.
+          Also this particular function doesn't return a value.
 
 All four parameters are input parameters since they only pass data *to* the function
 (even though ``'reconstructed_coastlines_10Ma.shp'`` specifies the filename to *write* the output to).
@@ -355,7 +358,7 @@ For example, a *reconstruct model* object can be created (instantiated) from the
 by giving it the features to reconstruct and the rotations used to reconstruct them:
 ::
 
-  reconstruct_coastlines_model = pyglates.ReconstructModel('coastlines.gpmlz', 'rotations.rot')
+  reconstruct_coastlines_model = pygplates.ReconstructModel('coastlines.gpmlz', 'rotations.rot')
 
 .. note:: This looks like a regular ``pygplates`` function call (such as ``pygplates.reconstruct()``)
    but this is just how you create (instantiate) an object from a class with a specific initial state.
@@ -416,7 +419,7 @@ Our introductory pyGPlates Python script will contain the following lines of sou
 
   import pygplates
   
-  reconstruct_coastlines_model = pyglates.ReconstructModel('coastlines.gpmlz', 'rotations.rot')
+  reconstruct_coastlines_model = pygplates.ReconstructModel('coastlines.gpmlz', 'rotations.rot')
 
   reconstruct_coastlines_snapshot = reconstruct_coastlines_model.reconstruct_snapshot(10)
   reconstruct_coastlines_snapshot.export_reconstructed_geometries('reconstructed_coastlines_10Ma.shp')
@@ -434,7 +437,7 @@ The first statement...
 The remaining statements...
 ::
   
-  reconstruct_coastlines_model = pyglates.ReconstructModel('coastlines.gpmlz', 'rotations.rot')
+  reconstruct_coastlines_model = pygplates.ReconstructModel('coastlines.gpmlz', 'rotations.rot')
 
   reconstruct_coastlines_snapshot = reconstruct_coastlines_model.reconstruct_snapshot(10)
   reconstruct_coastlines_snapshot.export_reconstructed_geometries('reconstructed_coastlines_10Ma.shp')
@@ -457,7 +460,7 @@ Setting up the script
 | For example, in the GPlates 2.5 geodata, the coastlines file is called ``Global_EarthByte_GPlates_PresentDay_Coastlines.gpmlz``
   and the rotations file is called ``Zahirovic_etal_2022_OptimisedMantleRef_and_NNRMantleRef.rot``.
 | Copy those files to the ``pygplates_tutorial`` directory and rename them as ``coastlines.gpmlz`` and ``rotations.rot``.
-  Alternatively the filenames (and paths) could be changed in the ``tutorials.py`` script to match the geodata.
+  Alternatively the filenames (and paths) could be changed in the ``tutorial.py`` script to match the geodata.
 
 Next open up a terminal or command window (on macOS and Ubuntu this is a *Terminal* window, and on Windows this is a *Command* window).
 
