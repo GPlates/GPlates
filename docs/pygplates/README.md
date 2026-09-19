@@ -195,7 +195,7 @@ rotation_model = pygplates.RotationModel('rotations.rot')
 
 Fragments may nest, since the ends are named. A fragment the script does not contain is a Sphinx
 warning, which `-W` turns into a failed build - so renaming a marker cannot leave a page silently
-showing nothing. Never paste code into a page's `::` block: the code exists once, in the script.
+showing nothing. So is a marker that appears twice, or a fragment without its end. Never paste code into a page's `::` block: the code exists once, in the script.
 
 The scripts are tested. `pygplates-sample-code-test` (`pygplates/test/sample_code_test.py`) runs
 each one in a temporary directory seeded with `pygplates/test/fixtures/`, where the data files the

@@ -188,6 +188,17 @@ def read_sample_code(path, fragment=None):
     with open(path, encoding='utf-8') as sample_file:
         source_lines = sample_file.read().splitlines()
 
+    # Each fragment has exactly one start and one end. Repeated or unpaired markers still render, so
+    # without this check they would go unnoticed.
+    markers = [marker.groups() for marker in map(_FRAGMENT_MARKER_RE.match, source_lines) if marker]
+    for kind, name in set(markers):
+        if markers.count((kind, name)) > 1:
+            raise ValueError("'# [%s: %s]' appears more than once in '%s'" % (kind, name, path))
+    starts = {name for kind, name in markers if kind == 'fragment'}
+    ends = {name for kind, name in markers if kind == 'end'}
+    if starts != ends:
+        raise ValueError("unpaired fragment marker(s) %s in '%s'" % (sorted(starts ^ ends), path))
+
     output = []
     inside = fragment is None
     found = fragment is None
