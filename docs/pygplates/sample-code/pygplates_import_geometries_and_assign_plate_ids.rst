@@ -33,10 +33,29 @@ This example:
 - assigns a plate ID and valid time period to each point, and
 - writes the assigned points to a GPML file ready for use in `GPlates <http://www.gplates.org>`_.
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the static polygons.
+
+``static_polygons.gpml``
+    Static polygon features, each with a reconstruction plate ID and a valid time period, which are
+    copied to the points they contain. They should cover the globe at present day, so that
+    every point is assigned a plate ID.
+
+``input_points.txt``
+    A text file with one point per line, as longitude then latitude. The
+    format is shown under :ref:`Input<pygplates_import_points_txt_input>` below.
+
+Rotation files and static polygons are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
+
+.. _pygplates_import_points_txt_input:
 
 Input
 """""
@@ -138,10 +157,29 @@ Load *points* from a GMT file and assign plate IDs
 This example is similiar to :ref:`pygplates_import_points_from_a_text_file_and_assign_plate_ids` except it
 takes advantage of the ability of pyGPlates to load a GMT file to avoid having to manually parse a text file line-by-line.
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the static polygons.
+
+``static_polygons.gpml``
+    Static polygon features, each with a reconstruction plate ID and a valid time period, which are
+    copied to the points they contain. They should cover the globe at present day, so that
+    every point is assigned a plate ID.
+
+``input_points.gmt``
+    A GMT format file of points, in longitude/latitude order. The format is shown under
+    :ref:`Input<pygplates_import_points_gmt_input>` below.
+
+Rotation files and static polygons are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_gmt.py
+
+.. _pygplates_import_points_gmt_input:
 
 Input
 """""
@@ -197,10 +235,29 @@ Import *polylines* from a text file and assign plate IDs
 This example is similiar to :ref:`pygplates_import_points_from_a_text_file_and_assign_plate_ids` except
 it imports *polylines* instead of *points*.
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the static polygons.
+
+``static_polygons.gpml``
+    Static polygon features, each with a reconstruction plate ID and a valid time period, which are
+    copied to the polylines they contain. They should cover the globe at present day, so that
+    every polyline is assigned a plate ID.
+
+``input_polylines.txt``
+    A text file with one point per line, as longitude then latitude, with a line beginning with ``>`` separating one polyline from the next. The
+    format is shown under :ref:`Input<pygplates_import_polylines_txt_input>` below.
+
+Rotation files and static polygons are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
+
+.. _pygplates_import_polylines_txt_input:
 
 Input
 """""
@@ -328,10 +385,29 @@ Load *polylines* from a GMT file and assign plate IDs
 This example is similiar to :ref:`pygplates_import_polylines_from_a_text_file_and_assign_plate_ids` except it
 takes advantage of the ability of pyGPlates to load a GMT file to avoid having to manually parse a text file line-by-line.
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the static polygons.
+
+``static_polygons.gpml``
+    Static polygon features, each with a reconstruction plate ID and a valid time period, which are
+    copied to the polylines they contain. They should cover the globe at present day, so that
+    every polyline is assigned a plate ID.
+
+``input_polylines.gmt``
+    A GMT format file of polylines, in longitude/latitude order. The format is shown under
+    :ref:`Input<pygplates_import_polylines_gmt_input>` below.
+
+Rotation files and static polygons are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_gmt.py
+
+.. _pygplates_import_polylines_gmt_input:
 
 Input
 """""
@@ -382,3 +458,11 @@ Details
 The rest of the sample code is similar to :ref:`pygplates_import_polylines_from_a_text_file_and_assign_plate_ids`.
 
 .. seealso:: :ref:`pygplates_import_polylines_from_a_text_file_and_assign_plate_ids`
+
+See also
+++++++++
+
+- Reference: :func:`pygplates.partition_into_plates`, :class:`pygplates.PlatePartitioner`,
+  :meth:`pygplates.Feature.set_geometry`, :class:`pygplates.FeatureCollection`, :meth:`pygplates.FeatureCollection.write`
+- Sample code: :ref:`pygplates_load_and_save_feature_collections`, :ref:`pygplates_create_common_feature_types`,
+  :ref:`pygplates_calculate_velocities_in_dynamic_plates`

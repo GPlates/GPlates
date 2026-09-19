@@ -15,6 +15,12 @@ The output of this example is similar to the output of the ``Total Reconstructio
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. Rotation files are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -161,3 +167,12 @@ Output
 ...where ``lat: 90.000000, lon: 0.000000:, angle:0.000000`` is the default representation that
 :meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees` returns for an
 :meth:`identity rotation<pygplates.FiniteRotation.represents_identity_rotation>` (zero rotation angle).
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_plate_reconstruction_hierarchy`, :ref:`pygplates_primer_equivalent_total_rotation`,
+  :ref:`pygplates_primer_relative_total_rotation`
+- Reference: :meth:`pygplates.RotationModel.get_reconstruction_tree`, :meth:`pygplates.ReconstructionTree.get_anchor_plate_edges`,
+  :meth:`pygplates.ReconstructionTreeEdge.get_child_edges`
+- Sample code: :ref:`pygplates_plate_circuits_to_anchored_plate`, :ref:`pygplates_modify_reconstruction_pole`

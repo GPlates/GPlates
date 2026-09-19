@@ -1,6 +1,7 @@
 import pygplates
 
 
+# [fragment: load-inputs]
 # Load one or more rotation files into a rotation model.
 rotation_model = pygplates.RotationModel('rotations.rot')
 
@@ -13,6 +14,7 @@ velocity_domain_features = pygplates.FeatureCollection('lat_lon_velocity_domain_
 
 # Calculate velocities using a delta time interval of 1My.
 delta_time = 1
+# [end: load-inputs]
 
 # Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.
 num_time_steps = 140
@@ -26,9 +28,12 @@ for time in range(num_time_steps + 1):
     all_domain_points = []
     all_velocities = []
 
+    # [fragment: plate-partitioner]
     # Partition our velocity domain features into our topological plate polygons at the current 'time'.
     plate_partitioner = pygplates.PlatePartitioner(topology_features, rotation_model, time)
+    # [end: plate-partitioner]
 
+    # [fragment: iterate-points]
     for velocity_domain_feature in velocity_domain_features:
 
         # A velocity domain feature usually has a single geometry but we'll assume it can be any number.
@@ -38,16 +43,22 @@ for time in range(num_time_steps + 1):
             for velocity_domain_point in velocity_domain_geometry.get_points():
 
                 all_domain_points.append(velocity_domain_point)
+                # [end: iterate-points]
 
+                # [fragment: partition-point]
                 partitioning_plate = plate_partitioner.partition_point(velocity_domain_point)
                 if partitioning_plate:
+                    # [end: partition-point]
 
+                    # [fragment: partitioning-plate-and-stage-rotation]
                     # We need the newly assigned plate ID to get the equivalent stage rotation of that tectonic plate.
                     partitioning_plate_id = partitioning_plate.get_feature().get_reconstruction_plate_id()
 
                     # Get the stage rotation of partitioning plate from 'time + delta_time' to 'time'.
                     equivalent_stage_rotation = rotation_model.get_rotation(time, partitioning_plate_id, time + delta_time)
+                    # [end: partitioning-plate-and-stage-rotation]
 
+                    # [fragment: calculate-velocity]
                     # Calculate velocity at the velocity domain point.
                     # This is from 'time + delta_time' to 'time' on the partitioning plate.
                     velocity_vectors = pygplates.calculate_velocities(
@@ -60,6 +71,9 @@ for time in range(num_time_steps + 1):
                             [velocity_domain_point],
                             velocity_vectors)
                     all_velocities.append(velocities[0])
+                    # [end: calculate-velocity]
 
+                # [fragment: unpartitioned-point]
                 else:
                     all_velocities.append((0,0,0))
+                # [end: unpartitioned-point]

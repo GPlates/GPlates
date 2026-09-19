@@ -14,6 +14,24 @@ This example finds the overriding plate of the nearest subducting line over time
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the features in ``features.gpml``
+    and ``topologies.gpml``.
+
+``features.gpml``
+    Regular (non-topological) features, each with a reconstruction plate ID and one or more geometries.
+    The output below was captured with spreading ridges.
+
+``topologies.gpml``
+    Topological plate polygon and/or deforming network features. Subduction zones are recognised by
+    the feature type (``gpml_subduction_zone``) of the boundary section features, and each needs a
+    subduction polarity, since that is what determines its overriding plate.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -168,3 +186,13 @@ When spreading ridges are used as the regular input features then we get output 
         distance to subducting line: 1830.700938Kms
     
     ...
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_topological_snapshot`
+- Reference: :class:`pygplates.ReconstructModel`, :class:`pygplates.TopologicalModel`,
+  :meth:`pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate`,
+  :meth:`pygplates.GeometryOnSphere.distance`
+- Sample code: :ref:`pygplates_find_nearest_feature_to_a_point`,
+  :ref:`pygplates_sample_intra-plate_strain_rates_at_subduction_zones`

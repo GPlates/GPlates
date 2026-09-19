@@ -14,6 +14,20 @@ This example calculates strain rates just inside the overriding plate along subd
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``topologies.gpml``
+    Topological plate polygon and deforming network features. Subduction zones are recognised by the
+    feature type (``gpml_subduction_zone``) of the boundary section features, and each needs a
+    subduction polarity of ``'Left'`` or ``'Right'`` (others are skipped). Strain rates are only
+    non-zero where the overriding plate is a deforming network.
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the topological features.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -134,3 +148,14 @@ Details
 
 | We can now load this file into GPlates (along with the topological model used to generate it) and
   visualise the intra-plate strain rates along subduction zones.
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_plate_boundary_statistics`, :ref:`pygplates_primer_topological_network`,
+  :ref:`pygplates_primer_strain_rates_in_triangulation`
+- Reference: :meth:`pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics`, :class:`pygplates.PlateBoundaryStatistic`,
+  :class:`pygplates.TopologyPointLocation`, :meth:`pygplates.ResolvedTopologicalNetwork.get_point_strain_rate`,
+  :class:`pygplates.StrainRate`
+- Sample code: :ref:`pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges`,
+  :ref:`pygplates_find_overriding_plate_of_closest_subducting_line`, :ref:`pygplates_reconstruct_strain_and_strain_rate`

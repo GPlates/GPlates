@@ -21,6 +21,17 @@ only be one of them (and it should be shared by two neighbouring topological bou
    :depth: 2
 
 
+Data files
+""""""""""
+
+``topologies.gpml``
+    Topological plate polygon and/or deforming network features, intended to cover the globe.
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the topological features.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -103,3 +114,13 @@ The following two screenshots show a zoomed-in view of a gap and an overlap.
 .. figure:: ../images/anomalous_sub_segments_overlap.png
 
    GPlates screenshot showing zoomed-in view of an **overlap** in dynamic polygon coverage (outlined in yellow) at 10Ma.
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_topological_snapshot`
+- Reference: :class:`pygplates.TopologicalModel`, :meth:`pygplates.TopologicalSnapshot.get_resolved_topological_sections`,
+  :meth:`pygplates.ResolvedTopologicalSection.get_shared_sub_segments`,
+  :meth:`pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies`
+- Sample code: :ref:`pygplates_find_total_ridge_and_subduction_zone_lengths`,
+  :ref:`pygplates_find_overriding_plate_of_closest_subducting_line`

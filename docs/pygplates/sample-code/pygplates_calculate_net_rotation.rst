@@ -10,6 +10,18 @@ It also calculates the individual net rotation of each topological plate polygon
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``topologies.gpml``
+    Topological plate polygon and/or deforming network features. A resolved plate polygon only
+    contributes to net rotation if it has a reconstruction plate ID.
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the topological features.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -91,3 +103,12 @@ by point samples (used to calculate net rotation). And we convert from steradian
 
 Note that the accuracy of this area depends on how many point samples were used to calculate net rotation. If you need an accurate area then
 it’s better to explicitly calculate the :meth:`polygon area<pygplates.PolygonOnSphere.get_area>` of the resolved topology.
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_topological_model`
+- Reference: :class:`pygplates.NetRotationModel`, :class:`pygplates.NetRotationSnapshot`, :class:`pygplates.NetRotation`,
+  :class:`pygplates.TopologicalModel`
+- Sample code: :ref:`pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies`,
+  :ref:`pygplates_calculate_velocities_in_dynamic_plates`

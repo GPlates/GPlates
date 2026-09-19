@@ -9,6 +9,17 @@ This example iterates over a collection of reconstructed features and finds thos
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the features in ``features.gpml``.
+
+``features.gpml``
+    Reconstructable features, each with a reconstruction plate ID and one or more geometries.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -80,3 +91,10 @@ A feature can have more than one geometry and hence will have more than one *rec
 
 .. sample-code:: pygplates_find_features_overlapping_a_polygon.py
    :fragment: write-output
+
+See also
+""""""""
+
+- Reference: :class:`pygplates.ReconstructSnapshot`, :meth:`pygplates.ReconstructSnapshot.get_reconstructed_features`,
+  :meth:`pygplates.GeometryOnSphere.distance`, :class:`pygplates.PolygonOnSphere`
+- Sample code: :ref:`pygplates_find_nearest_feature_to_a_point`, :ref:`pygplates_reconstruct_regular_features`

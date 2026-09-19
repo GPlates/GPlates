@@ -10,6 +10,18 @@ using the plate IDs of those features and a rotation model.
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the features in ``features.gpml``.
+
+``features.gpml``
+    Features of any type, each with a reconstruction plate ID and one or more geometries. The
+    velocities are calculated at the points of the geometries, reconstructed to 10Ma.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -89,3 +101,11 @@ are in present day coordinates and need to be reconstructed to their 10Ma positi
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id.py
    :fragment: append-results
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_equivalent_total_rotation`, :ref:`pygplates_primer_equivalent_stage_rotation`
+- Reference: :meth:`pygplates.RotationModel.get_rotation`, :func:`pygplates.calculate_velocities`,
+  :class:`pygplates.LocalCartesian`, :meth:`pygplates.Feature.get_geometries`
+- Sample code: :ref:`pygplates_calculate_velocities_in_dynamic_plates`, :ref:`pygplates_reconstruct_regular_features`

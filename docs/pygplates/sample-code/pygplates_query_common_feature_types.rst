@@ -5,6 +5,11 @@ Query common feature types
 
 This example shows how to query various :class:`types<pygplates.FeatureType>` of :class:`features<pygplates.Feature>`.
 
+| Each example loads a file of features of one type and prints the properties that type supports.
+| The ``get_...`` methods of :class:`pygplates.Feature` return a default value when a feature does not
+  have the property (or has more than one). Passing ``None`` as the default is how these examples
+  test whether an optional property is present.
+
 .. seealso:: :ref:`pygplates_create_common_feature_types`
 
 .. contents::
@@ -20,6 +25,14 @@ Query a *coastline* feature
 In this example we query a `coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_ feature.
 
 .. seealso:: :ref:`pygplates_create_coastline_feature`
+
+Data files
+""""""""""
+
+``coastlines.gpml``
+    Coastline features. Each has a reconstruction plate ID, a valid time period and one or more
+    polyline geometries (whose lengths are printed); a name and description are printed if present.
+    The GPlates `sample data <https://www.gplates.org/download/>`_ has such a file.
 
 Sample code
 """""""""""
@@ -97,6 +110,13 @@ Query an *isochron* feature
   `isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_ features.
 
 .. seealso:: :ref:`pygplates_create_isochron_feature`
+
+Data files
+""""""""""
+
+``isochrons.gpml``
+    Isochron features. Each has a reconstruction plate ID, a conjugate plate ID, a valid time period
+    and one or more polyline geometries. The GPlates `sample data <https://www.gplates.org/download/>`_ has such a file.
 
 Sample code
 """""""""""
@@ -176,10 +196,48 @@ In this example we query a `mid-ocean ridge <http://www.gplates.org/docs/gpgim/#
 
 .. seealso:: :ref:`pygplates_create_mid_ocean_ridge_feature`
 
+Data files
+""""""""""
+
+``ridges.gpml``
+    Mid-ocean ridge features. Each has a valid time period and one or more polyline geometries, and
+    either a reconstruction plate ID (if it reconstructs by plate ID) or left and right plate IDs (if it
+    reconstructs by half-stage rotation). The GPlates `sample data <https://www.gplates.org/download/>`_ has such a file.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_query_common_feature_types_mid_ocean_ridge.py
+
+Details
+"""""""
+
+Print the `mid-ocean ridge <http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge>`_
+:class:`pygplates.FeatureType`, :meth:`name<pygplates.Feature.get_name>` and
+:meth:`description<pygplates.Feature.get_description>` as in the :ref:`pygplates_query_coastline_feature` example.
+
+.. sample-code:: pygplates_query_common_feature_types_mid_ocean_ridge.py
+   :fragment: print-name-and-description
+
+| A mid-ocean ridge can reconstruct either by plate ID or by half-stage rotation. Which one is
+  determined by its `reconstruction method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_,
+  returned by :meth:`pygplates.Feature.get_reconstruction_method` (which defaults to ``'ByPlateId'``
+  if the feature has no reconstruction method property).
+| If it reconstructs by plate ID then we print its :meth:`plate ID<pygplates.Feature.get_reconstruction_plate_id>`
+  and, if it has one, its :meth:`conjugate plate ID<pygplates.Feature.get_conjugate_plate_id>`. Passing
+  ``None`` as the default makes :meth:`pygplates.Feature.get_conjugate_plate_id` return ``None`` when
+  the feature does not have exactly one conjugate plate ID, instead of the usual default of zero.
+| Otherwise it reconstructs by half-stage rotation, and we print its
+  :meth:`left<pygplates.Feature.get_left_plate>` and :meth:`right<pygplates.Feature.get_right_plate>` plate IDs.
+
+.. sample-code:: pygplates_query_common_feature_types_mid_ocean_ridge.py
+   :fragment: reconstruction-method
+
+Print the :meth:`length<pygplates.PolylineOnSphere.get_arc_length>` of each :meth:`geometry<pygplates.Feature.get_geometries>`
+and the :meth:`valid time period<pygplates.Feature.get_valid_time>` as in the :ref:`pygplates_query_coastline_feature` example.
+
+.. sample-code:: pygplates_query_common_feature_types_mid_ocean_ridge.py
+   :fragment: print-length-and-valid-time
 
 Output
 """"""
@@ -212,10 +270,50 @@ In this example we query a `subduction zone <http://www.gplates.org/docs/gpgim/#
 
 .. seealso:: :ref:`pygplates_create_subduction_zone_feature`
 
+Data files
+""""""""""
+
+``subduction_zones.gpml``
+    Subduction zone features. Each has a reconstruction plate ID, a valid time period and one or more
+    polyline geometries; a conjugate plate ID and a subduction polarity are printed if present.
+    The GPlates `sample data <https://www.gplates.org/download/>`_ has such a file.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_query_common_feature_types_subduction_zone.py
+
+Details
+"""""""
+
+Print the `subduction zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_
+:class:`pygplates.FeatureType`, :meth:`name<pygplates.Feature.get_name>`,
+:meth:`description<pygplates.Feature.get_description>` and :meth:`plate ID<pygplates.Feature.get_reconstruction_plate_id>`
+as in the :ref:`pygplates_query_coastline_feature` example.
+
+.. sample-code:: pygplates_query_common_feature_types_subduction_zone.py
+   :fragment: print-name-and-plate-id
+
+| A subduction zone does not necessarily have a conjugate plate ID, so we only print it if it is present.
+| Passing ``None`` as the default makes :meth:`pygplates.Feature.get_conjugate_plate_id` return ``None``
+  when the feature does not have exactly one conjugate plate ID, instead of the usual default of zero.
+
+.. sample-code:: pygplates_query_common_feature_types_subduction_zone.py
+   :fragment: conjugate-plate-id
+
+| The `subduction polarity <http://www.gplates.org/docs/gpgim/#gpml:subductionPolarity>`_ is an
+  enumeration property, so we query it with :meth:`pygplates.Feature.get_enumeration`.
+| This returns the enumeration value as a string (``'Left'``, ``'Right'`` or ``'Unknown'``) if the
+  feature has exactly one subduction polarity property, otherwise the default we pass (``'Unknown'``).
+
+.. sample-code:: pygplates_query_common_feature_types_subduction_zone.py
+   :fragment: subduction-polarity
+
+Print the :meth:`length<pygplates.PolylineOnSphere.get_arc_length>` of each :meth:`geometry<pygplates.Feature.get_geometries>`
+and the :meth:`valid time period<pygplates.Feature.get_valid_time>` as in the :ref:`pygplates_query_coastline_feature` example.
+
+.. sample-code:: pygplates_query_common_feature_types_subduction_zone.py
+   :fragment: print-length-and-valid-time
 
 Output
 """"""
@@ -269,10 +367,56 @@ In this example we query a `virtual geomagnetic pole <http://www.gplates.org/doc
 
 .. seealso:: :ref:`pygplates_create_virtual_geomagnetic_pole_feature`
 
+Data files
+""""""""""
+
+``virtual_geomagnetic_poles.gpml``
+    Virtual geomagnetic pole features. Each has a reconstruction plate ID and two point geometries:
+    the pole position and the average sample site position. The average inclination, average
+    declination, pole position uncertainty (A95) and average age are printed if present.
+    The GPlates `sample data <https://www.gplates.org/download/>`_ has such a file.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_query_common_feature_types_virtual_geomagnetic_pole.py
+
+Details
+"""""""
+
+Print the `virtual geomagnetic pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_
+:class:`pygplates.FeatureType`, :meth:`name<pygplates.Feature.get_name>`,
+:meth:`description<pygplates.Feature.get_description>` and :meth:`plate ID<pygplates.Feature.get_reconstruction_plate_id>`
+as in the :ref:`pygplates_query_coastline_feature` example.
+
+.. sample-code:: pygplates_query_common_feature_types_virtual_geomagnetic_pole.py
+   :fragment: print-name-and-plate-id
+
+| The `gpml:averageInclination <http://www.gplates.org/docs/gpgim/#gpml:averageInclination>`_,
+  `gpml:averageDeclination <http://www.gplates.org/docs/gpgim/#gpml:averageDeclination>`_,
+  `gpml:poleA95 <http://www.gplates.org/docs/gpgim/#gpml:poleA95>`_ and
+  `gpml:averageAge <http://www.gplates.org/docs/gpgim/#gpml:averageAge>`_ properties are floating-point
+  numbers, so each is queried with :meth:`pygplates.Feature.get_double`.
+| Passing ``None`` as the default makes it return ``None`` when the feature does not have exactly one
+  property of that name (instead of the usual default of ``0.0``), so each value is only printed if present.
+
+.. sample-code:: pygplates_query_common_feature_types_virtual_geomagnetic_pole.py
+   :fragment: doubles
+
+| The default geometry of a virtual geomagnetic pole feature is its
+  `pole position <http://www.gplates.org/docs/gpgim/#gpml:polePosition>`_, so
+  :meth:`pygplates.Feature.get_geometry` returns it without a property name being specified.
+| It is a :class:`pygplates.PointOnSphere`, and :meth:`pygplates.PointOnSphere.to_lat_lon` gives its latitude and longitude.
+
+.. sample-code:: pygplates_query_common_feature_types_virtual_geomagnetic_pole.py
+   :fragment: pole-position
+
+The `average sample site position <http://www.gplates.org/docs/gpgim/#gpml:averageSampleSitePosition>`_
+is not the default geometry, so its property name must be given to :meth:`pygplates.Feature.get_geometry`
+(otherwise we would get the pole position again).
+
+.. sample-code:: pygplates_query_common_feature_types_virtual_geomagnetic_pole.py
+   :fragment: average-sample-site-position
 
 Output
 """"""
@@ -319,10 +463,54 @@ In this example we query a `motion path <http://www.gplates.org/docs/gpgim/#gpml
 
 .. seealso:: :ref:`pygplates_reconstruct_motion_path_features`
 
+Data files
+""""""""""
+
+``motion_paths.gpml``
+    Motion path features. Each has a reconstruction plate ID, a relative plate ID, a list of times, a
+    valid time period and a seed point geometry (a point or multipoint). Such a file can be created as
+    in :ref:`pygplates_create_motion_path_feature`.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_query_common_feature_types_motion_path.py
+
+Details
+"""""""
+
+Print the `motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_
+:class:`pygplates.FeatureType`, :meth:`name<pygplates.Feature.get_name>` and
+:meth:`description<pygplates.Feature.get_description>` as in the :ref:`pygplates_query_coastline_feature` example.
+
+.. sample-code:: pygplates_query_common_feature_types_motion_path.py
+   :fragment: print-name-and-description
+
+| A motion path is the path of its seed points, attached to the
+  `gpml:reconstructionPlateId <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ plate,
+  relative to the `gpml:relativePlate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_ plate.
+| These are printed using :meth:`pygplates.Feature.get_reconstruction_plate_id` and
+  :meth:`pygplates.Feature.get_relative_plate`.
+
+.. sample-code:: pygplates_query_common_feature_types_motion_path.py
+   :fragment: plate-ids
+
+The times at which the path is sampled are returned as a list of floats by :meth:`pygplates.Feature.get_times`.
+
+.. sample-code:: pygplates_query_common_feature_types_motion_path.py
+   :fragment: times
+
+| The seed points are the feature's geometry, obtained with :meth:`pygplates.Feature.get_geometry`.
+| :meth:`pygplates.GeometryOnSphere.get_points` gives the points whether the geometry is a single
+  point or a multipoint, and :meth:`pygplates.PointOnSphere.to_lat_lon` gives each point's latitude and longitude.
+
+.. sample-code:: pygplates_query_common_feature_types_motion_path.py
+   :fragment: seed-points
+
+Print the :meth:`valid time period<pygplates.Feature.get_valid_time>` as in the :ref:`pygplates_query_coastline_feature` example.
+
+.. sample-code:: pygplates_query_common_feature_types_motion_path.py
+   :fragment: valid-time
 
 Output
 """"""
@@ -348,10 +536,52 @@ In this example we query a `flowline <http://www.gplates.org/docs/gpgim/#gpml:Fl
 
 .. seealso:: :ref:`pygplates_create_flowline_feature`
 
+Data files
+""""""""""
+
+``flowlines.gpml``
+    Flowline features. Each has left and right plate IDs, a list of times, a valid time period and a
+    seed point geometry (a point or multipoint). The GPlates `sample data <https://www.gplates.org/download/>`_ has such a file.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_query_common_feature_types_flowline.py
+
+Details
+"""""""
+
+Print the `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
+:class:`pygplates.FeatureType`, :meth:`name<pygplates.Feature.get_name>` and
+:meth:`description<pygplates.Feature.get_description>` as in the :ref:`pygplates_query_coastline_feature` example.
+
+.. sample-code:: pygplates_query_common_feature_types_flowline.py
+   :fragment: print-name-and-description
+
+| A flowline tracks its seed points spreading away from a mid-ocean ridge into the
+  `gpml:leftPlate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ and
+  `gpml:rightPlate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ plates.
+| These are printed using :meth:`pygplates.Feature.get_left_plate` and :meth:`pygplates.Feature.get_right_plate`.
+
+.. sample-code:: pygplates_query_common_feature_types_flowline.py
+   :fragment: plate-ids
+
+The times at which the flowline is sampled are returned as a list of floats by :meth:`pygplates.Feature.get_times`.
+
+.. sample-code:: pygplates_query_common_feature_types_flowline.py
+   :fragment: times
+
+| The seed points are the feature's geometry, obtained with :meth:`pygplates.Feature.get_geometry`.
+| :meth:`pygplates.GeometryOnSphere.get_points` gives the points whether the geometry is a single
+  point or a multipoint, and :meth:`pygplates.PointOnSphere.to_lat_lon` gives each point's latitude and longitude.
+
+.. sample-code:: pygplates_query_common_feature_types_flowline.py
+   :fragment: seed-points
+
+Print the :meth:`valid time period<pygplates.Feature.get_valid_time>` as in the :ref:`pygplates_query_coastline_feature` example.
+
+.. sample-code:: pygplates_query_common_feature_types_flowline.py
+   :fragment: valid-time
 
 Output
 """"""
@@ -379,10 +609,58 @@ In this example we query a `total reconstruction sequence <http://www.gplates.or
 
 .. seealso:: :ref:`pygplates_modify_reconstruction_pole`
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. Loading it into a :class:`pygplates.FeatureCollection` turns each sequence of
+    rotation poles in the file into a total reconstruction sequence feature. The GPlates `sample data <https://www.gplates.org/download/>`_ has such a file.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_query_common_feature_types_total_reconstruction_sequence.py
+
+Details
+"""""""
+
+| :meth:`pygplates.Feature.get_total_reconstruction_pole` returns a tuple of the fixed plate ID,
+  the moving plate ID and the :class:`time sequence<pygplates.GpmlIrregularSampling>` of finite rotations
+  (it returns ``None`` for a feature that is not a rotation feature, which cannot happen when loading a rotation file).
+| In the PLATES4 rotation format a moving plate ID of 999 marks a pole that is commented out, so
+  we skip those sequences.
+
+.. sample-code:: pygplates_query_common_feature_types_total_reconstruction_sequence.py
+   :fragment: total-reconstruction-pole
+
+Print the `total reconstruction sequence <http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence>`_
+:class:`pygplates.FeatureType`, :meth:`name<pygplates.Feature.get_name>` and
+:meth:`description<pygplates.Feature.get_description>` as in the :ref:`pygplates_query_coastline_feature` example,
+and then the moving and fixed plate IDs obtained above.
+
+.. sample-code:: pygplates_query_common_feature_types_total_reconstruction_sequence.py
+   :fragment: print-name-and-plate-ids
+
+| Not all rotation samples in a sequence are necessarily enabled, so we get only the enabled ones using
+  :meth:`pygplates.GpmlIrregularSampling.get_enabled_time_samples`.
+| The :meth:`time<pygplates.GpmlTimeSample.get_time>` of the first and last enabled samples gives the
+  time period of the sequence.
+
+.. sample-code:: pygplates_query_common_feature_types_total_reconstruction_sequence.py
+   :fragment: enabled-time-samples
+
+| Each :class:`time sample<pygplates.GpmlTimeSample>` holds a :class:`pygplates.GpmlFiniteRotation`
+  property value, returned by :meth:`pygplates.GpmlTimeSample.get_value`, from which
+  :meth:`pygplates.GpmlFiniteRotation.get_finite_rotation` gives the :class:`pygplates.FiniteRotation`.
+| The pole latitude, longitude and angle (in degrees) are obtained with
+  :meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees`.
+| The time and description of the pole come from the time sample itself, using
+  :meth:`pygplates.GpmlTimeSample.get_time` and :meth:`pygplates.GpmlTimeSample.get_description`
+  (which returns ``None`` if the sample has no description).
+| These are printed as they would appear on a line of a PLATES4 rotation file, minus the moving and fixed plate IDs.
+
+.. sample-code:: pygplates_query_common_feature_types_total_reconstruction_sequence.py
+   :fragment: time-samples
 
 Output
 """"""
@@ -430,3 +708,13 @@ Output
         200.000000  54.430000  -123.570000  -84.400000    PHS-PAC WK08-A Wessel & Kroenke 2008 extended rotation SZ2015
     
     ...
+
+See also
+++++++++
+
+- Reference: :class:`pygplates.Feature`, :class:`pygplates.FeatureCollection`, :class:`pygplates.FeatureType`,
+  :meth:`pygplates.Feature.get_geometry`, :meth:`pygplates.Feature.get_geometries`,
+  :meth:`pygplates.Feature.get_enumeration`, :meth:`pygplates.Feature.get_double`,
+  :meth:`pygplates.Feature.get_total_reconstruction_pole`
+- Sample code: :ref:`pygplates_create_common_feature_types`, :ref:`pygplates_load_and_save_feature_collections`,
+  :ref:`pygplates_modify_reconstruction_pole`

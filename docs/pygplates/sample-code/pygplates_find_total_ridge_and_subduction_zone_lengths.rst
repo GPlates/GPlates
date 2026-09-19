@@ -14,6 +14,19 @@ This example resolves topological plate polygons (and deforming networks) and de
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``topologies.gpml``
+    Topological plate polygon and/or deforming network features. Mid-ocean ridges and subduction
+    zones are recognised by the feature type (``gpml_mid_ocean_ridge`` or ``gpml_subduction_zone``)
+    of the boundary section features.
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the topological features.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -94,3 +107,13 @@ Output
     At time 6Ma, total ridge length is 102897.926344 kms and total subduction zone length is 62442.122395 kms.
     At time 7Ma, total ridge length is 102805.357344 kms and total subduction zone length is 62170.240868 kms.
     At time 8Ma, total ridge length is 104766.806279 kms and total subduction zone length is 61901.033731 kms.
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_topological_model`, :ref:`pygplates_primer_topological_snapshot`
+- Reference: :meth:`pygplates.TopologicalSnapshot.get_resolved_topological_sections`,
+  :meth:`pygplates.ResolvedTopologicalSection.get_shared_sub_segments`,
+  :meth:`pygplates.PolylineOnSphere.get_arc_length`, :class:`pygplates.Earth`
+- Sample code: :ref:`pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies`,
+  :ref:`pygplates_detect_topology_gaps_and_overlaps`

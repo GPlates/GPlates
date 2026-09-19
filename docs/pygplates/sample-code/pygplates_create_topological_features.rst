@@ -17,6 +17,14 @@ This example uses existing regular features to create the following new topologi
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``features.gpml``
+    The regular features that the new topologies reference. The script refers to them by feature ID,
+    so it needs exactly the file reproduced in the :ref:`Input<pygplates_create_topological_features_input>`
+    section below (save that listing as ``features.gpml``).
+
 Sample code
 """""""""""
 
@@ -1151,3 +1159,12 @@ The contents of the output file `topologies.gpml`. Note that the feature IDs of 
             </gpml:TopologicalNetwork>
         </gml:featureMember>
     </gpml:FeatureCollection>
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_topologies`
+- Reference: :meth:`pygplates.Feature.create_topological_feature`, :meth:`pygplates.Feature.create_topological_network_feature`,
+  :meth:`pygplates.GpmlTopologicalSection.create`, :meth:`pygplates.GpmlTopologicalSection.create_network_interior`,
+  :class:`pygplates.GpmlTopologicalLine`, :class:`pygplates.GpmlTopologicalPolygon`, :class:`pygplates.GpmlTopologicalNetwork`
+- Sample code: :ref:`pygplates_create_common_feature_types`, :ref:`pygplates_find_total_ridge_and_subduction_zone_lengths`

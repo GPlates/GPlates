@@ -9,6 +9,10 @@ Create common feature types
   except here we are more interested in creating different :class:`types<pygplates.FeatureType>` of features
   as opposed to creating the generic *unclassified* feature type (``pygplates.FeatureType.gpml_unclassified_feature``).
 
+| Each feature type is created in two ways. The sample code uses the ``create_...`` function of
+  :class:`pygplates.Feature` for that type. The alternate sample code creates an empty feature of the type
+  and sets its properties one by one.
+
 .. seealso:: :ref:`pygplates_query_common_feature_types`
 
 .. seealso:: :ref:`pygplates_create_topological_features`
@@ -32,6 +36,11 @@ Sample code
 """""""""""
 
 .. sample-code:: pygplates_create_common_feature_types_coastline.py
+
+Alternate sample code
+"""""""""""""""""""""
+
+.. sample-code:: pygplates_create_common_feature_types_coastline_alt.py
 
 Details
 """""""
@@ -90,16 +99,8 @@ We then save the coastline feature(s) to a file as described in :ref:`pygplates_
 .. sample-code:: pygplates_create_common_feature_types_coastline.py
    :fragment: write-coastlines
 
-Alternate sample code
-"""""""""""""""""""""
-
-.. sample-code:: pygplates_create_common_feature_types_coastline_alt.py
-
-Details
-"""""""
-
-Instead of using the :meth:`pygplates.Feature.create_reconstructable_feature` function, here we first
-create an empty `pygplates.FeatureType.gpml_coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_
+In the alternate sample code, instead of using the :meth:`pygplates.Feature.create_reconstructable_feature`
+function, we first create an empty `pygplates.FeatureType.gpml_coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_
 feature and then set its properties one by one.
 
 .. sample-code:: pygplates_create_common_feature_types_coastline_alt.py
@@ -118,10 +119,26 @@ geometry that represents its location at a past geological time (not present day
 
 .. seealso:: :ref:`pygplates_create_conjugate_isochrons_from_ridge`
 
+Data files
+""""""""""
+
+Both scripts read the same file:
+
+``rotations.rot``
+    A rotation file. It is used to reverse reconstruct the isochron geometry from 40.1Ma to present
+    day, so it must contain rotations for the isochron's plate (201) at that time.
+
+Rotation files are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_create_common_feature_types_isochron.py
+
+Alternate sample code
+"""""""""""""""""""""
+
+.. sample-code:: pygplates_create_common_feature_types_isochron_alt.py
 
 Details
 """""""
@@ -163,16 +180,8 @@ An alternative to the *reverse_reconstruct* parameter is to call the :func:`pygp
         conjugate_plate_id=802)
     pygplates.reverse_reconstruct(isochron_feature, rotation_model, isochron_time_of_appearance)
 
-Alternate sample code
-"""""""""""""""""""""
-
-.. sample-code:: pygplates_create_common_feature_types_isochron_alt.py
-
-Details
-"""""""
-
-Instead of using the :meth:`pygplates.Feature.create_reconstructable_feature` function, here we first
-create an empty `pygplates.FeatureType.gpml_isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_
+In the alternate sample code, instead of using the :meth:`pygplates.Feature.create_reconstructable_feature`
+function, we first create an empty `pygplates.FeatureType.gpml_isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_
 feature and then set its properties one by one.
 
 .. sample-code:: pygplates_create_common_feature_types_isochron_alt.py
@@ -198,7 +207,7 @@ An alternative is to reverse-reconstruct when :meth:`setting the geometry<pygpla
     isochron_feature.set_valid_time(isochron_time_of_appearance, pygplates.GeoTimeInstant.create_distant_future())
     isochron_feature.set_reconstruction_plate_id(201)
     isochron_feature.set_conjugate_plate_id(802)
-    
+
     isochron_feature.set_geometry(
         isochron_geometry_at_time_of_appearance,
         reverse_reconstruct=(rotation_model, isochron_time_of_appearance))
@@ -213,7 +222,7 @@ An alternative is to reverse-reconstruct when :meth:`setting the geometry<pygpla
 Create a *mid-ocean ridge* feature from geometry at a past geological time
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-This is example is similar to :ref:`pygplates_create_isochron_feature` except we are creating
+This example is similar to :ref:`pygplates_create_isochron_feature` except we are creating
 a type of `tectonic section <http://www.gplates.org/docs/gpgim/#gpml:TectonicSection>`_ known as a
 `mid-ocean ridge <http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge>`_.
 
@@ -221,10 +230,27 @@ a type of `tectonic section <http://www.gplates.org/docs/gpgim/#gpml:TectonicSec
 
 .. seealso:: :ref:`pygplates_create_isochron_feature`
 
+Data files
+""""""""""
+
+Both scripts read the same file:
+
+``rotations.rot``
+    A rotation file. It is used to reverse reconstruct the ridge geometry from 55.9Ma to present day
+    using a half-stage rotation, so it must contain rotations for the ridge's left and right plates
+    (201 and 701) at that time.
+
+Rotation files are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
 .. sample-code:: pygplates_create_common_feature_types_mid_ocean_ridge.py
+
+Alternate sample code
+"""""""""""""""""""""
+
+.. sample-code:: pygplates_create_common_feature_types_mid_ocean_ridge_alt.py
 
 Details
 """""""
@@ -240,15 +266,7 @@ Details
 .. sample-code:: pygplates_create_common_feature_types_mid_ocean_ridge.py
    :fragment: create-mid-ocean-ridge-feature
 
-Alternate sample code
-"""""""""""""""""""""
-
-.. sample-code:: pygplates_create_common_feature_types_mid_ocean_ridge_alt.py
-
-Details
-"""""""
-
-This is similar to the alternate sample code in :ref:`pygplates_create_isochron_feature`. Here we
+The alternate sample code is similar to the alternate sample code in :ref:`pygplates_create_isochron_feature`. Here we
 create an empty `pygplates.FeatureType.gpml_mid_ocean_ridge <http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge>`_
 feature and then set its properties one by one.
 
@@ -265,7 +283,7 @@ feature and then set its properties one by one.
 Create a *subduction zone* feature from present-day geometry
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-This is example is similar to :ref:`pygplates_create_coastline_feature` except we are also setting
+This example is similar to :ref:`pygplates_create_coastline_feature` except we are also setting
 an enumeration property on a `subduction zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_.
 
 .. seealso:: :ref:`pygplates_query_subduction_zone_feature`
@@ -276,6 +294,11 @@ Sample code
 """""""""""
 
 .. sample-code:: pygplates_create_common_feature_types_subduction_zone.py
+
+Alternate sample code
+"""""""""""""""""""""
+
+.. sample-code:: pygplates_create_common_feature_types_subduction_zone_alt.py
 
 Details
 """""""
@@ -293,7 +316,7 @@ Details
    convenient function like :meth:`pygplates.Feature.set_enumeration` available. For example, to
    use the *other_properties* argument would have looked like:
    ::
-   
+
        subduction_zone_feature = pygplates.Feature.create_reconstructable_feature(
            pygplates.FeatureType.gpml_subduction_zone,
            present_day_geometry,
@@ -306,16 +329,8 @@ Details
                    pygplates.EnumerationType.create_gpml('SubductionPolarityEnumeration'),
                    'Right'))])
 
-Alternate sample code
-"""""""""""""""""""""
-
-.. sample-code:: pygplates_create_common_feature_types_subduction_zone_alt.py
-
-Details
-"""""""
-
-Instead of using the :meth:`pygplates.Feature.create_reconstructable_feature` function, here we first
-create an empty `pygplates.FeatureType.gpml_subduction_zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_
+In the alternate sample code, instead of using the :meth:`pygplates.Feature.create_reconstructable_feature`
+function, we first create an empty `pygplates.FeatureType.gpml_subduction_zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_
 feature and then set its properties one by one.
 
 .. sample-code:: pygplates_create_common_feature_types_subduction_zone_alt.py
@@ -327,7 +342,7 @@ feature and then set its properties one by one.
 Create a *virtual geomagnetic pole* feature
 +++++++++++++++++++++++++++++++++++++++++++
 
-This is example is similar to :ref:`pygplates_create_coastline_feature` except we are also setting
+This example is similar to :ref:`pygplates_create_coastline_feature` except we are also setting
 some floating-point values on a `virtual geomagnetic pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_ feature.
 
 .. seealso:: :ref:`pygplates_query_virtual_geomagnetic_pole_feature`
@@ -338,6 +353,11 @@ Sample code
 """""""""""
 
 .. sample-code:: pygplates_create_common_feature_types_virtual_geomagnetic_pole.py
+
+Alternate sample code
+"""""""""""""""""""""
+
+.. sample-code:: pygplates_create_common_feature_types_virtual_geomagnetic_pole_alt.py
 
 Details
 """""""
@@ -376,31 +396,12 @@ and the other is the `average sample site position <http://www.gplates.org/docs/
 .. sample-code:: pygplates_create_common_feature_types_virtual_geomagnetic_pole.py
    :fragment: set-doubles
 
-Alternate sample code
-"""""""""""""""""""""
+In the alternate sample code, instead of using the :meth:`pygplates.Feature.create_reconstructable_feature`
+function, we first create an empty `pygplates.FeatureType.gpml_virtual_geomagnetic_pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_
+feature and then set its properties one by one.
 
 .. sample-code:: pygplates_create_common_feature_types_virtual_geomagnetic_pole_alt.py
-
-Details
-"""""""
-
-Instead of using the :meth:`pygplates.Feature.create_reconstructable_feature` function, here we first
-create an empty `pygplates.FeatureType.gpml_virtual_geomagnetic_pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_
-feature and then set its properties one by one.
-::
-
-    pole_position = pygplates.PointOnSphere(86.3, 168.02)
-    average_sample_site_position = pygplates.PointOnSphere(-2.91, -9.59)
-    
-    virtual_geomagnetic_pole_feature = pygplates.Feature(pygplates.FeatureType.gpml_virtual_geomagnetic_pole)
-    virtual_geomagnetic_pole_feature.set_name('RM:-10 -  10Ma N= 10 (Dp col.) Lat Range: 29.2 to -78.17 (Dm col.)')
-    virtual_geomagnetic_pole_feature.set_reconstruction_plate_id(701)
-    virtual_geomagnetic_pole_feature.set_double(pygplates.PropertyName.gpml_average_inclination, 180.16)
-    virtual_geomagnetic_pole_feature.set_double(pygplates.PropertyName.gpml_average_declination, 13.04)
-    virtual_geomagnetic_pole_feature.set_double(pygplates.PropertyName.gpml_pole_a95, 3.05)
-    virtual_geomagnetic_pole_feature.set_double(pygplates.PropertyName.gpml_average_age, 0)
-    virtual_geomagnetic_pole_feature.set_geometry(pole_position)
-    virtual_geomagnetic_pole_feature.set_geometry(average_sample_site_position, pygplates.PropertyName.gpml_average_sample_site_position)
+   :fragment: set-vgp-properties
 
 
 .. _pygplates_create_motion_path_feature:
@@ -419,6 +420,11 @@ Sample code
 """""""""""
 
 .. sample-code:: pygplates_create_common_feature_types_motion_path.py
+
+Alternate sample code
+"""""""""""""""""""""
+
+.. sample-code:: pygplates_create_common_feature_types_motion_path_alt.py
 
 Details
 """""""
@@ -445,16 +451,8 @@ Details
 .. sample-code:: pygplates_create_common_feature_types_motion_path.py
    :fragment: create-motion-path-feature
 
-Alternate sample code
-"""""""""""""""""""""
-
-.. sample-code:: pygplates_create_common_feature_types_motion_path_alt.py
-
-Details
-"""""""
-
-Instead of using the :meth:`pygplates.Feature.create_motion_path` function, here we first
-create an empty `pygplates.FeatureType.gpml_motion_path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_
+In the alternate sample code, instead of using the :meth:`pygplates.Feature.create_motion_path` function,
+we first create an empty `pygplates.FeatureType.gpml_motion_path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_
 feature and then set its properties one by one.
 
 .. sample-code:: pygplates_create_common_feature_types_motion_path_alt.py
@@ -475,6 +473,11 @@ Sample code
 """""""""""
 
 .. sample-code:: pygplates_create_common_feature_types_flowline.py
+
+Alternate sample code
+"""""""""""""""""""""
+
+.. sample-code:: pygplates_create_common_feature_types_flowline_alt.py
 
 Details
 """""""
@@ -501,22 +504,14 @@ Details
 .. sample-code:: pygplates_create_common_feature_types_flowline.py
    :fragment: create-flowline-feature
 
-Alternate sample code
-"""""""""""""""""""""
-
-.. sample-code:: pygplates_create_common_feature_types_flowline_alt.py
-
-Details
-"""""""
-
-Instead of using the :meth:`pygplates.Feature.create_flowline` function, here we first
-create an empty `pygplates.FeatureType.gpml_flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
+In the alternate sample code, instead of using the :meth:`pygplates.Feature.create_flowline` function,
+we first create an empty `pygplates.FeatureType.gpml_flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
 feature and then set its properties one by one.
 
 .. sample-code:: pygplates_create_common_feature_types_flowline_alt.py
    :fragment: set-flowline-properties
 
-.. note:: In the above example we needed to call :meth:`pygplates.Feature.set_reconstruction_method` to
+.. note:: In the alternate sample code we needed to call :meth:`pygplates.Feature.set_reconstruction_method` to
    set up a half-stage rotation since that is what :meth:`pygplates.Feature.create_flowline` calls internally.
 
 
@@ -537,6 +532,11 @@ Sample code
 """""""""""
 
 .. sample-code:: pygplates_create_common_feature_types_total_reconstruction_sequence.py
+
+Alternate sample code
+"""""""""""""""""""""
+
+.. sample-code:: pygplates_create_common_feature_types_total_reconstruction_sequence_alt.py
 
 Details
 """""""
@@ -580,18 +580,20 @@ Finally we can create the `total reconstruction sequence <http://www.gplates.org
 .. sample-code:: pygplates_create_common_feature_types_total_reconstruction_sequence.py
    :fragment: create-total-reconstruction-sequence
 
-Alternate sample code
-"""""""""""""""""""""
-
-.. sample-code:: pygplates_create_common_feature_types_total_reconstruction_sequence_alt.py
-
-Details
-"""""""
-
-Instead of using the :meth:`pygplates.Feature.create_total_reconstruction_sequence` function, here we first
-create an empty `pygplates.FeatureType.gpml_total_reconstruction_sequence <http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence>`_
+In the alternate sample code, instead of using the :meth:`pygplates.Feature.create_total_reconstruction_sequence` function,
+we first create an empty `pygplates.FeatureType.gpml_total_reconstruction_sequence <http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence>`_
 feature and then set its :meth:`name<pygplates.Feature.set_name>` and
 :meth:`total reconstruction pole<pygplates.Feature.set_total_reconstruction_pole>`.
 
 .. sample-code:: pygplates_create_common_feature_types_total_reconstruction_sequence_alt.py
    :fragment: set-total-reconstruction-pole
+
+See also
+++++++++
+
+- Reference: :class:`pygplates.Feature`, :meth:`pygplates.Feature.create_reconstructable_feature`,
+  :meth:`pygplates.Feature.create_tectonic_section`, :meth:`pygplates.Feature.create_motion_path`,
+  :meth:`pygplates.Feature.create_flowline`, :meth:`pygplates.Feature.create_total_reconstruction_sequence`,
+  :meth:`pygplates.Feature.set_geometry`, :func:`pygplates.reverse_reconstruct`, :class:`pygplates.FeatureType`
+- Sample code: :ref:`pygplates_query_common_feature_types`, :ref:`pygplates_create_topological_features`,
+  :ref:`pygplates_import_geometries_and_assign_plate_ids`, :ref:`pygplates_load_and_save_feature_collections`

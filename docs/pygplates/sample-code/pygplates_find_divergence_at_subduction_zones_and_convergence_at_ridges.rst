@@ -17,6 +17,19 @@ Or regions along *subduction zones* that are **not** converging as expected.
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``topologies.gpml``
+    Topological plate polygon and/or deforming network features. Mid-ocean ridges and subduction
+    zones are recognised by the feature type (``gpml_mid_ocean_ridge`` or ``gpml_subduction_zone``)
+    of the boundary section features.
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the topological features.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -110,3 +123,12 @@ Details
 | We can now load these two files into GPlates (along with the topological model used to generate them) and
   see what parts of mid-ocean ridges are unexpectedly converging and what parts of subduction zones are
   unexpectedly diverging.
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_plate_boundary_statistics`
+- Reference: :meth:`pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics`, :class:`pygplates.PlateBoundaryStatistic`,
+  :meth:`pygplates.Feature.set_geometry`
+- Sample code: :ref:`pygplates_sample_intra-plate_strain_rates_at_subduction_zones`,
+  :ref:`pygplates_find_total_ridge_and_subduction_zone_lengths`

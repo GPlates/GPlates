@@ -14,6 +14,18 @@ This example resolves topological plate polygons (and deforming networks) and de
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``topologies.gpml``
+    Topological plate polygon and/or deforming network features. Subduction zones are recognised by
+    the feature type (``gpml_subduction_zone``) of the boundary section features.
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the topological features.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -102,3 +114,12 @@ Output
     At time 5Ma, average topology area is 18890973.871916 square kms and average subduction length proportion is 0.343886.
     At time 6Ma, average topology area is 19618716.483243 square kms and average subduction length proportion is 0.330439.
     At time 7Ma, average topology area is 19618746.282826 square kms and average subduction length proportion is 0.332180.
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_topological_model`, :ref:`pygplates_primer_topological_snapshot`
+- Reference: :meth:`pygplates.TopologicalSnapshot.get_resolved_topologies`, :class:`pygplates.ResolvedTopologicalBoundary`,
+  :class:`pygplates.ResolvedTopologicalNetwork`, :class:`pygplates.ResolvedTopologicalSubSegment`,
+  :meth:`pygplates.PolygonOnSphere.get_area`
+- Sample code: :ref:`pygplates_find_total_ridge_and_subduction_zone_lengths`, :ref:`pygplates_calculate_net_rotation`

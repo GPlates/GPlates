@@ -7,12 +7,15 @@ rotation_features = pygplates.FeatureCollection('rotations.rot')
 # Iterate over the rotation features.
 for feature in rotation_features:
 
+    # [fragment: total-reconstruction-pole]
     fixed_plate_id, moving_plate_id, total_reconstruction_pole = feature.get_total_reconstruction_pole()
 
     # Ignore moving plate IDs equal to 999 since these are commented lines in the PLATES4 rotation format.
     if moving_plate_id == 999:
         continue
+    # [end: total-reconstruction-pole]
 
+    # [fragment: print-name-and-plate-ids]
     # Print the feature type (TotalReconstructionSequence) and the name of the rotation feature.
     print(f'{feature.get_feature_type().get_name()}: {feature.get_name()}')
 
@@ -24,14 +27,18 @@ for feature in rotation_features:
 
     # Print the fixed plate ID of the rotation feature.
     print(f'  fixed plate ID: {fixed_plate_id}')
+    # [end: print-name-and-plate-ids]
 
+    # [fragment: enabled-time-samples]
     # Print the time period of the rotation feature.
     # This is the times of the first and last enabled rotation time samples.
     enabled_time_samples = total_reconstruction_pole.get_enabled_time_samples()
     if enabled_time_samples:
         print(f'  enabled time period: {enabled_time_samples[0].get_time():f} -> '
               f'{enabled_time_samples[-1].get_time():f}')
+    # [end: enabled-time-samples]
 
+    # [fragment: time-samples]
     # Print the rotation pole information from the enabled rotation time samples.
     print('  time samples:')
     for time_sample in enabled_time_samples:
@@ -49,3 +56,4 @@ for feature in rotation_features:
         # Print the pole data as it would appear in a PLATES4 rotation file
         # (except without the moving and fixed plate IDs).
         print(f'    {time:f}  {pole_lat:f}  {pole_lon:f}  {pole_angle:f}  {description}')
+    # [end: time-samples]

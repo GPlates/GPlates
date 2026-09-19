@@ -19,6 +19,19 @@ alignment with the isochron's stage pole at its time of appearance.
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. For each isochron it must give the rotation of the isochron's plate relative to
+    its conjugate plate at the isochron's time of appearance and 1My before that (see the warning above).
+
+``isochrons.gpml``
+    Isochron features, each with a valid time period (whose begin time is the time of appearance), a
+    reconstruction plate ID, a conjugate plate ID and polyline geometry.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -153,3 +166,12 @@ stage pole and then getting the direction of the arc using :meth:`pygplates.Grea
 
 .. sample-code:: pygplates_split_isochron_into_ridges_and_transforms.py
    :fragment: classify-segment
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_relative_stage_rotation`, :ref:`pygplates_primer_composing_finite_rotations`
+- Reference: :meth:`pygplates.RotationModel.get_rotation`, :meth:`pygplates.FiniteRotation.get_euler_pole_and_angle`,
+  :meth:`pygplates.PolylineOnSphere.get_segments`, :class:`pygplates.GreatCircleArc`,
+  :meth:`pygplates.Vector3D.angle_between`
+- Sample code: :ref:`pygplates_create_conjugate_isochrons_from_ridge`, :ref:`pygplates_query_isochron_feature`

@@ -25,6 +25,18 @@ features and export the results to a Shapefile.
 
 .. seealso:: :ref:`pygplates_create_flowline_feature` and :ref:`pygplates_query_flowline_feature`
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the left and right plates of the flowlines.
+
+``flowline_features.gpml``
+    Flowline features, each with left and right plate IDs, a list of times, a valid time period and
+    seed point geometry (see :ref:`pygplates_query_flowline_feature`).
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -69,6 +81,14 @@ Query a reconstructed flowline
 ++++++++++++++++++++++++++++++
 
 In this example we print out the point locations in a reconstructed flowline.
+
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for plates 201 and 701 (the left and right plates of
+    the flowline the script creates) back to 90Ma. Rotation files are in the GPlates
+    `sample data <https://www.gplates.org/download/>`_.
 
 Sample code
 """""""""""
@@ -178,3 +198,12 @@ from 90Ma to 50Ma.
         time: 50.000000, lat: -50.546458, lon: -11.620705
 
 .. note:: The reconstructed seed point is the same position as the last point in the left and right flowlines.
+
+See also
+++++++++
+
+- Reference: :class:`pygplates.ReconstructModel`, :meth:`pygplates.ReconstructSnapshot.export_reconstructed_geometries`,
+  :meth:`pygplates.ReconstructSnapshot.get_reconstructed_geometries`,
+  :class:`pygplates.ReconstructedFlowline`
+- Sample code: :ref:`pygplates_create_flowline_feature`, :ref:`pygplates_query_flowline_feature`,
+  :ref:`pygplates_reconstruct_motion_path_features`, :ref:`pygplates_reconstruct_regular_features`

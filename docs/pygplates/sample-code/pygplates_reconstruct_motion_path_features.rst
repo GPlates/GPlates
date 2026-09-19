@@ -25,6 +25,18 @@ features and export the results to a Shapefile.
 
 .. seealso:: :ref:`pygplates_create_motion_path_feature` and :ref:`pygplates_query_motion_path_feature`
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the reconstruction and relative plates of the motion paths.
+
+``motion_path_features.gpml``
+    Motion path features, each with a reconstruction plate ID, a relative plate ID, a list of times, a
+    valid time period and seed point geometry (see :ref:`pygplates_query_motion_path_feature`). Such a
+    file can be created as in :ref:`pygplates_create_motion_path_feature`. Rotation files are in the
+    GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -69,6 +81,14 @@ Query a reconstructed motion path
 +++++++++++++++++++++++++++++++++
 
 In this example we print out the point locations in a reconstructed motion path.
+
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for plates 701 and 201 (the reconstruction and relative
+    plates of the motion path the script creates) back to 90Ma. Rotation files are in the GPlates
+    `sample data <https://www.gplates.org/download/>`_.
 
 Sample code
 """""""""""
@@ -214,3 +234,12 @@ from 90Ma to 50Ma.
       time: 50.000000, lat: -35.733432, lon: 7.829851
 
 .. note:: The reconstructed seed point is the same position as the last point in a motion path.
+
+See also
+++++++++
+
+- Reference: :class:`pygplates.ReconstructModel`, :meth:`pygplates.ReconstructSnapshot.export_reconstructed_geometries`,
+  :meth:`pygplates.ReconstructSnapshot.get_reconstructed_geometries`,
+  :class:`pygplates.ReconstructedMotionPath`
+- Sample code: :ref:`pygplates_create_motion_path_feature`, :ref:`pygplates_query_motion_path_feature`,
+  :ref:`pygplates_reconstruct_flowline_features`, :ref:`pygplates_reconstruct_regular_features`

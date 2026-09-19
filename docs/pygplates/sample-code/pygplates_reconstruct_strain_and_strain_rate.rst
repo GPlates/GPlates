@@ -16,6 +16,18 @@ This is the equivalent of the *deformation export* in GPlates.
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``topologies.gpml``
+    Topological plate polygon and deforming network features. Strain only accumulates, and the strain
+    rate is only non-zero, while a point is inside a deforming network.
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the topological features.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -108,3 +120,14 @@ A value of ``-1`` represents contraction (eg, pure reverse faulting), ``0`` repr
 
 .. sample-code:: pygplates_reconstruct_strain_and_strain_rate.py
    :fragment: strain-rate-style
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_using_topological_reconstruction`, :ref:`pygplates_primer_reconstructed_geometry_time_span`,
+  :ref:`pygplates_primer_reconstructed_geometry_time_span_strain_rates`,
+  :ref:`pygplates_primer_reconstructed_geometry_time_span_strains`, :ref:`pygplates_primer_deformation`
+- Reference: :meth:`pygplates.TopologicalModel.reconstruct_geometry`, :class:`pygplates.ReconstructedGeometryTimeSpan`,
+  :class:`pygplates.Strain`, :class:`pygplates.StrainRate`
+- Sample code: :ref:`pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence`,
+  :ref:`pygplates_sample_intra-plate_strain_rates_at_subduction_zones`

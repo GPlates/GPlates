@@ -9,6 +9,17 @@ This example iterates over a collection of reconstructed features and finds the 
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the features in ``features.gpml``.
+
+``features.gpml``
+    Reconstructable features, each with a reconstruction plate ID and one or more geometries.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -117,3 +128,11 @@ If we also want to find the nearest position on the nearest feature then we can 
   by the :meth:`distance<pygplates.GeometryOnSphere.distance>` function.
 | We ignore it because it's the closest distance to the test point which is just the test point itself.
   And we are only interested in the closest point on the feature's geometry.
+
+See also
+""""""""
+
+- Reference: :class:`pygplates.ReconstructSnapshot`, :meth:`pygplates.ReconstructSnapshot.get_reconstructed_features`,
+  :meth:`pygplates.GeometryOnSphere.distance`, :class:`pygplates.PointOnSphere`
+- Sample code: :ref:`pygplates_find_features_overlapping_a_polygon`,
+  :ref:`pygplates_find_overriding_plate_of_closest_subducting_line`

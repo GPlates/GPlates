@@ -16,6 +16,20 @@ Reconstruct regular features
    :local:
    :depth: 2
 
+Data files
+++++++++++
+
+Both scripts read the same files:
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the features in ``features.gpml``.
+
+``features.gpml``
+    Regular features, each with a reconstruction plate ID and one or more geometries. The output
+    below was captured with coastlines.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 
 .. _pygplates_export_reconstructed_features_to_a_file:
 
@@ -158,3 +172,13 @@ Output
       distance reconstructed: 643.521413 kms
     
     ...
+
+See also
+++++++++
+
+- Reference: :class:`pygplates.ReconstructModel`, :meth:`pygplates.ReconstructModel.reconstruct_snapshot`,
+  :meth:`pygplates.ReconstructSnapshot.export_reconstructed_geometries`,
+  :meth:`pygplates.ReconstructSnapshot.get_reconstructed_geometries`, :class:`pygplates.ReconstructedFeatureGeometry`,
+  :meth:`pygplates.GeometryOnSphere.distance`
+- Sample code: :ref:`pygplates_reconstruct_motion_path_features`, :ref:`pygplates_reconstruct_flowline_features`,
+  :ref:`pygplates_find_nearest_feature_to_a_point`, :ref:`pygplates_calculate_velocities_by_plate_id`

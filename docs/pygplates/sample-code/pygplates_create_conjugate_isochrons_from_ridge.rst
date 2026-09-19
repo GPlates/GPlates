@@ -9,6 +9,21 @@ This example creates a conjugate pair of isochrons from a mid-ocean ridge at eac
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the left and right plates of the ridges, since
+    each ridge is reconstructed to each isochron creation time and the isochrons are reverse
+    reconstructed from there to present day.
+
+``ridges.gpml``
+    Mid-ocean ridge features. Each must have left and right plate IDs, a valid time period (whose
+    begin time is the ridge's time of appearance) and geometry. A name and description are copied to
+    the isochrons if present.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -115,3 +130,12 @@ By specifying ``None`` in:
 | If we didn't specify ``None`` then a default value would be returned if a property
   was missing. For ``get_left_plate()`` and ``get_right_plate()`` this is plate ID 0 and for
   ``get_valid_time()`` this is a time period from *distant past* to *distant future*.
+
+See also
+""""""""
+
+- Reference: :meth:`pygplates.Feature.create_reconstructable_feature`, :class:`pygplates.ReconstructSnapshot`,
+  :meth:`pygplates.Feature.get_left_plate`, :meth:`pygplates.Feature.get_right_plate`,
+  :meth:`pygplates.Feature.get_valid_time`, :meth:`pygplates.FeatureCollection.write`
+- Sample code: :ref:`pygplates_create_isochron_feature`, :ref:`pygplates_query_mid_ocean_ridge_feature`,
+  :ref:`pygplates_split_isochron_into_ridges_and_transforms`

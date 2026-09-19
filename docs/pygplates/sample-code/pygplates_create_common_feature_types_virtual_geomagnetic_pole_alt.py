@@ -5,6 +5,7 @@ import pygplates
 pole_position = pygplates.PointOnSphere(86.3, 168.02)
 average_sample_site_position = pygplates.PointOnSphere(-2.91, -9.59)
 
+# [fragment: set-vgp-properties]
 # Create the virtual geomagnetic pole feature.
 virtual_geomagnetic_pole_feature = pygplates.Feature(pygplates.FeatureType.gpml_virtual_geomagnetic_pole)
 
@@ -34,3 +35,4 @@ virtual_geomagnetic_pole_feature.set_geometry(
     average_sample_site_position,
     # We need to specify its property name otherwise it defaults to the pole position and overwrites it...
     pygplates.PropertyName.gpml_average_sample_site_position)
+# [end: set-vgp-properties]

@@ -14,6 +14,18 @@ the following quantities over a time period spanning a past geological time to p
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``topologies.gpml``
+    Topological plate polygon and/or deforming network features. The crustal stretching factor and
+    tectonic subsidence of a point only change while it is inside a deforming network.
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the topological features.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -63,3 +75,13 @@ Also note that these builtin scalar types are always available (even when no ini
 
 .. sample-code:: pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.py
    :fragment: scalar-values
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_using_topological_reconstruction`, :ref:`pygplates_primer_reconstructed_geometry_time_span_scalar_values`,
+  :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`,
+  :ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence`
+- Reference: :meth:`pygplates.TopologicalModel.reconstruct_geometry`, :class:`pygplates.ReconstructedGeometryTimeSpan`,
+  :meth:`pygplates.ReconstructedGeometryTimeSpan.get_scalar_values`, :class:`pygplates.ScalarType`
+- Sample code: :ref:`pygplates_reconstruct_strain_and_strain_rate`

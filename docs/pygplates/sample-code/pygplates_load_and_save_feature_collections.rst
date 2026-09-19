@@ -20,6 +20,13 @@ Create a file containing a subset of features from another file
 
 In this example we make a new GPML file containing only the coastlines that have a plate ID of 801 (Australia).
 
+Data files
+""""""""""
+
+``coastlines.gpml``
+    Coastline features, each with a reconstruction plate ID. Those on plate 801 are written to the new file.
+    The GPlates `sample data <https://www.gplates.org/download/>`_ has such a file.
+
 Sample code
 """""""""""
 
@@ -78,6 +85,13 @@ Create a file containing features from multiple files
 
 In this example we make a new GPML file containing ridges from one file and isochrons from another.
 
+Data files
+""""""""""
+
+``ridges.gpml``, ``isochrons.gpml``
+    Any two files of features. Nothing in them is queried; their features are simply merged into one file.
+    The GPlates `sample data <https://www.gplates.org/download/>`_ has files of mid-ocean ridges and isochrons.
+
 Sample code
 """""""""""
 
@@ -103,3 +117,11 @@ Write the merged feature collection to a new file using :class:`pygplates.Featur
 
 .. sample-code:: pygplates_load_and_save_feature_collections_merge.py
    :fragment: write-merged
+
+See also
+++++++++
+
+- Reference: :class:`pygplates.FeatureCollection`, :meth:`pygplates.FeatureCollection.read`,
+  :meth:`pygplates.FeatureCollection.write`, :meth:`pygplates.Feature.get_reconstruction_plate_id`
+- Sample code: :ref:`pygplates_import_geometries_and_assign_plate_ids`, :ref:`pygplates_query_common_feature_types`,
+  :ref:`pygplates_create_common_feature_types`

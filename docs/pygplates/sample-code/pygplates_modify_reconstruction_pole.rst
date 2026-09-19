@@ -21,6 +21,16 @@ in `GPlates <http://www.gplates.org>`_.
    :local:
    :depth: 2
 
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It is read, modified and then written back to the same file, so keep a copy.
+    It must contain a total reconstruction sequence whose moving plate is 801 (the plate of the point
+    being adjusted) with enabled rotation samples spanning 60Ma, and rotations for that sequence's
+    fixed plate at 60Ma. Crossover tags (``@xo_...``) in the pole comments are used if present.
+    Rotation files are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
 Sample code
 """""""""""
 
@@ -232,3 +242,14 @@ Output
     Reconstructed lat/lon position before adjustment (-45.962028, 131.398490)
     Desired reconstructed lat/lon position (-45.000000, 130.000000)
     Reconstructed lat/lon position after adjustment (-45.000000, 130.000000)
+
+See also
+""""""""
+
+- Primer: :ref:`pygplates_primer_equivalent_total_rotation`, :ref:`pygplates_primer_composing_finite_rotations`,
+  :ref:`pygplates_primer_plate_circuit_paths`
+- Reference: :class:`pygplates.FeaturesFunctionArgument`, :meth:`pygplates.Feature.get_total_reconstruction_pole`,
+  :meth:`pygplates.GpmlIrregularSampling.get_value`, :meth:`pygplates.GpmlIrregularSampling.set_value`,
+  :func:`pygplates.synchronise_crossovers`, :class:`pygplates.ReconstructSnapshot`
+- Sample code: :ref:`pygplates_create_total_reconstruction_sequence_feature`,
+  :ref:`pygplates_query_total_reconstruction_sequence_feature`, :ref:`pygplates_plate_rotation_hierarchy`
