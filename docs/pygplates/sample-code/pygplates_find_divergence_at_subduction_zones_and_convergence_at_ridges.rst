@@ -88,8 +88,8 @@ Details
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: skip-nan
 
-| Next we detect if the convergence velocity is above a threshold (if we're looking for converging locations) or
-  if the divergence velocity is below a threshold (if we're looking for diverging locations).
+| Next we detect if the convergence velocity is above the threshold (if we're looking for converging locations) or
+  below minus the threshold, that is, diverging faster than the threshold (if we're looking for diverging locations).
   If found then these points and associated convergence velocities are added to the output.
 | Note that ``stat.convergence_velocity_signed_magnitude`` is a *signed* magnitude, and so it's positive if the plates
   are converging and negative if they’re diverging.

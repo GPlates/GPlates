@@ -61,7 +61,7 @@ for time in range(num_time_steps + 1):
             # See if current point is converging (if 'find_converging_points' is True) or
             # diverging (if 'find_converging_points' is False).
             if ((find_converging_points and stat.convergence_velocity_signed_magnitude > divergence_convergence_threshold_cms_per_yr) or
-                (not find_converging_points and stat.convergence_velocity_signed_magnitude < divergence_convergence_threshold_cms_per_yr)):
+                (not find_converging_points and stat.convergence_velocity_signed_magnitude < -divergence_convergence_threshold_cms_per_yr)):
                 points.append(stat.boundary_point)
                 convergence_velocities.append(stat.convergence_velocity_signed_magnitude)
             # [end: test-threshold]
