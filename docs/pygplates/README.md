@@ -175,7 +175,7 @@ first.
 A docstring documents one member: what it does, its parameters, return value and exceptions, and
 a short example. Anything a reader needs *before* they can use the member - a derivation, an
 algorithm, a sign or ordering convention, or a workflow that spans several classes - belongs in
-the Primer (`pygplates_primer.rst`), and the docstring points at it:
+the Primer (a page in `primer/`), and the docstring points at it:
 
 ```
   .. seealso:: :ref:`pygplates_primer_equivalent_stage_rotation` in the *Primer* documentation.

@@ -184,7 +184,8 @@ def populate_scratch_dir(scratch_dir):
     # '_templates/autosummary' holds the custom autosummary templates (see 'templates_path' in
     # 'conf.py.in'). They are Jinja rather than reST, but all copy_rst() can add is a missing
     # trailing newline, which is harmless in a template.
-    for subdir, pattern in (("sample-code", "*.rst"), ("images", "*.png"), ("_static", "*"),
+    for subdir, pattern in (("primer", "*.rst"), ("sample-code", "*.rst"), ("images", "*.png"),
+                            ("_static", "*"),
                             ("_templates/autosummary", "*.rst")):
         source_subdir = SOURCE_DIR / subdir
         if not source_subdir.is_dir():
