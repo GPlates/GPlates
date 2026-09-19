@@ -19,5 +19,5 @@ flowline_feature.set_times(times)
 flowline_feature.set_valid_time(max(times), min(times))
 flowline_feature.set_left_plate(201)
 flowline_feature.set_right_plate(701)
-flowline_feature.set_reconstruction_method('HalfStageRotationVersion2')
+flowline_feature.set_reconstruction_method('HalfStageRotationVersion3')
 # [end: set-flowline-properties]

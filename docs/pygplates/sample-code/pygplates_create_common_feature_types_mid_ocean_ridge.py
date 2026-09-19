@@ -22,7 +22,7 @@ mid_ocean_ridge_feature = pygplates.Feature.create_tectonic_section(
     valid_time=(time_of_appearance, time_of_disappearance),
     left_plate=201,
     right_plate=701,
-    reconstruction_method='HalfStageRotationVersion2',
+    reconstruction_method='HalfStageRotationVersion3',
     # The specified geometry is not present day so it needs to be reverse-reconstructed to present day...
     reverse_reconstruct=(rotation_model, time_of_appearance))
 # [end: create-mid-ocean-ridge-feature]

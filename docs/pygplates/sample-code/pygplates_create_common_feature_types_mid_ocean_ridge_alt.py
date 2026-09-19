@@ -22,7 +22,7 @@ mid_ocean_ridge_feature.set_name('SOUTH ATLANTIC, SOUTH AMERICA-AFRICA')
 mid_ocean_ridge_feature.set_valid_time(time_of_appearance, time_of_disappearance)
 mid_ocean_ridge_feature.set_left_plate(201)
 mid_ocean_ridge_feature.set_right_plate(701)
-mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion2')
+mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion3')
 
 # The specified geometry is not present day so it needs to be reverse-reconstructed to present day.
 pygplates.reverse_reconstruct(mid_ocean_ridge_feature, rotation_model, time_of_appearance)
