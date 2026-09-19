@@ -46,9 +46,7 @@ add_test(
 	NAME pygplates-sample-code-test
 	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/sample_code_test.py"
 		"${PROJECT_SOURCE_DIR}/docs/pygplates/sample-code"
-		"${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
-	# Match the other pygplates tests (see the note on 'pygplates-test' above).
-	CONFIGURATIONS Release MinSizeRel)
+		"${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
 
 # Set test properties.
 set_tests_properties(pygplates-test pygplates-sample-code-test PROPERTIES
