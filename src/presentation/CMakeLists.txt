@@ -60,5 +60,5 @@ if (TARGET gplates-lib)
     # Add the source files to the gplates static library.
     # (The pygplates module compiles nothing from this directory - see
     # "cmake/pygplates_source_closure.py".)
-    target_sources_util(gplates-lib PRIVATE ${srcs})
+    target_sources(gplates-lib PRIVATE ${srcs})
 endif()

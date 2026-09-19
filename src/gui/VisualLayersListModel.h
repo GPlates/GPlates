@@ -26,6 +26,11 @@
 #ifndef GPLATES_GUI_VISUALLAYERSLISTMODEL_H
 #define GPLATES_GUI_VISUALLAYERSLISTMODEL_H
 
+// 'size_t' rather than 'std::size_t' below: the slots are connected with the string-based
+// SIGNAL()/SLOT() macros, which match the signature textually, so qualifying the spelling
+// here without changing every macro would break those connections silently at run time.
+#include <cstddef>
+
 #include <QAbstractListModel>
 #include <QObject>
 #include <QString>

@@ -222,6 +222,8 @@ set(srcs
     ScalarField3DFileFormat.h
     ScalarField3DFileFormatReader.cc
     ScalarField3DFileFormatReader.h
+    ShapefileAttributeFinder.cc
+    ShapefileAttributeFinder.h
     ShapefileXmlReader.cc
     ShapefileXmlReader.h
     ShapefileXmlWriter.cc
@@ -322,4 +324,4 @@ if (NOT TARGET gplates-lib)
 endif()
 
 # Add the source files to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})
+target_sources(${SOURCE_TARGET} PRIVATE ${srcs})

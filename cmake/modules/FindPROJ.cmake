@@ -24,7 +24,8 @@
 # ::
 # 
 #   PROJ_INCLUDE_DIRS   - where to find proj.h, etc.
-#   PROJ_BINARY_DIRS    - where to find projinfo, etc.
+#   PROJ_BINARY_DIRS    - where to find projinfo, etc. Only defined if the 'proj' executable was
+#                         found, which is not required - see the note on PROJ_EXE below.
 #   PROJ_LIBRARY_DIRS   - where to find proj.lib, etc.
 #   PROJ_LIBRARIES      - List of libraries when using PROJ.
 #   PROJ_FOUND          - True if PROJ found.
@@ -75,7 +76,7 @@ if (PROJ4_FOUND)
   else()
     # There was a CONFIG package but it defined a 'proj' target instead of a 'PROJ4::proj' target.
     # So make 'PROJ::proj' alias 'proj'.
-    # But before we can do this we first need to promote 'proj' to global visibility (requires CMake 3.11 or above).
+    # But before we can do this we first need to promote 'proj' to global visibility.
     set_target_properties(proj PROPERTIES IMPORTED_GLOBAL TRUE)
     # Also it seems that, while the 'proj' target has set the library import location, it doesn't set the location of the include directories.
     set_target_properties(proj PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${PROJ4_INCLUDE_DIRS}")
@@ -118,13 +119,21 @@ find_library(PROJ_LIBRARY
   NAMES proj proj_i
   NAMES_PER_DIR)
 
-# Find the 'proj' executable.
+# Find the 'proj' executable (optional - see below).
 find_program(PROJ_EXE
     NAMES proj
     NAMES_PER_DIR)
 
 # Make sure we found the PROJ include header location and library.
-find_package_handle_standard_args(PROJ REQUIRED_VARS PROJ_LIBRARY PROJ_INCLUDE_DIR PROJ_EXE)
+#
+# Note: PROJ_EXE is deliberately *not* required. Nothing uses it directly; it only seeds
+#       PROJ_BINARY_DIRS, which 'Install.cmake' searches for 'projinfo' when building a standalone
+#       bundle - and that check is reported at *install* time precisely so that it does not turn
+#       away someone who only wants to compile and run from their build tree. Requiring it here did
+#       exactly that: distributions package the PROJ command-line tools separately (on Ubuntu,
+#       'proj-bin', which arrives only as a Recommends of 'libgdal30'), and a PROJ without them
+#       stopped at "Could NOT find PROJ (missing: PROJ_EXE)".
+find_package_handle_standard_args(PROJ REQUIRED_VARS PROJ_LIBRARY PROJ_INCLUDE_DIR)
 
 mark_as_advanced(PROJ_INCLUDE_DIR PROJ_LIBRARY PROJ_EXE)
 
@@ -132,7 +141,9 @@ mark_as_advanced(PROJ_INCLUDE_DIR PROJ_LIBRARY PROJ_EXE)
 set(PROJ_INCLUDE_DIRS ${PROJ_INCLUDE_DIR})
 set(PROJ_LIBRARIES ${PROJ_LIBRARY})
 get_filename_component(PROJ_LIBRARY_DIRS ${PROJ_LIBRARY} DIRECTORY)
-get_filename_component(PROJ_BINARY_DIRS ${PROJ_EXE} DIRECTORY)
+if (PROJ_EXE)
+  get_filename_component(PROJ_BINARY_DIRS ${PROJ_EXE} DIRECTORY)
+endif()
 
 if (PROJ_VERBOSE)
   message(STATUS "FindPROJ: located PROJ_INCLUDE_DIRS: ${PROJ_INCLUDE_DIRS}")

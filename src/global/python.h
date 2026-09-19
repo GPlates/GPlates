@@ -64,10 +64,10 @@
 #		endif
 #	endif
 
-// Avoid linker error on Windows where cannot find the debug library "python27_d.lib" in Debug build.
-// This happens because the Windows Python installer only has a release build library and, furthermore,
-// "pyconfig.h" forces linking to "python27_d.lib" in Debug build (via #pragma comment())
-// whether it exists or not.
+// Avoid linker error on Windows where cannot find the debug library "python3X_d.lib" in Debug build.
+// This happens because Python distributions (including conda's) only have a release build library and,
+// furthermore, "pyconfig.h" forces linking to "python3X_d.lib" when _DEBUG is defined
+// (via #pragma comment()) whether it exists or not.
 //
 // So we use the same workaround provided by Boost (in "boost/python/detail/wrap_python.hpp") below.
 // Note that we can't just include "boost/python/detail/wrap_python.hpp" (via <boost/python.hpp>)
@@ -100,15 +100,13 @@
 #				include <math.h>
 #				include <time.h>
 #			endif
-#			undef _DEBUG // Avoids 'pragma comment(lib,"python27_d.lib")' in 'pyconfig.h'.
+#			undef _DEBUG // Avoids 'pragma comment(lib,"python3X_d.lib")' in 'pyconfig.h'.
 #			define DEBUG_UNDEFINED_FROM_GLOBAL_PYTHON_H
 #		endif
 #	endif
 
-// Partial workaround for compile error in <pyport.h> for Python versions less than 2.7.13 and 3.5.3.
-// See https://bugs.python.org/issue10910
-// The rest of the workaround involves including "global/python.h" at the top of some source files
-// to ensure <Python.h> is included before <ctype.h>.
+// Python requires <Python.h> to be included before any standard header, which is why some source
+// files include "global/python.h" first.
 //
 // Note: This should be included after the above HAVE_DIRECT_H definition to avoid compile error on Windows.
 #	include <Python.h>

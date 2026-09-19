@@ -34,7 +34,7 @@
       <string>Step backwards one frame  Ctrl+Shift+I</string>
      </property>
      <property name="icon" >
-      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_backward_22.png</iconset>
+      <iconset resource="../qt-resources/qt_resources.qrc" >:/gnome_seek_backward_22.png</iconset>
      </property>
      <property name="iconSize" >
       <size>
@@ -56,7 +56,7 @@
       <string>Step forwards one frame  Ctrl+I</string>
      </property>
      <property name="icon" >
-      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_seek_forward_22.png</iconset>
+      <iconset resource="../qt-resources/qt_resources.qrc" >:/gnome_seek_forward_22.png</iconset>
      </property>
      <property name="iconSize" >
       <size>
@@ -127,7 +127,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_resources.qrc" />
  </resources>
  <connections/>
 </ui>

@@ -34,13 +34,15 @@
 #include "data-mining/DataSelector.h"
 
 #include "model/ModelUtils.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "opengl/GLRasterCoRegistration.h"
 
+#include "property-values/GmlTimePeriod.h"
+
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionTreeCreator.h"
-
-#include "utils/FeatureUtils.h"
 
 GPlatesAppLogic::CoRegistrationLayerProxy::CoRegistrationLayerProxy() :
 	d_current_reconstruction_time(0)
@@ -151,20 +153,27 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 	using namespace GPlatesModel;
 	//First, find the birth time for the feature.
 	FeatureHandle::weak_ref feature = ModelUtils::find_feature(feature_id);
-	boost::optional<GPlatesMaths::Real> begin_time = 
-		GPlatesUtils::get_begin_time(feature.handle_ptr());
+
+	static const GPlatesModel::PropertyName GML_VALID_TIME = GPlatesModel::PropertyName::create_gml("validTime");
+	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> gml_valid_time =
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					feature,
+					GML_VALID_TIME);
 	//If this is no "begin time" in this feature, the attribute data at birth age is not liable.
 	//Instead of guessing the birth age and returning questionable result, 
 	//we just print warning message and return. No result is better than wrong result.
-	if(!begin_time)
+	if (!gml_valid_time)
 	{
 		qWarning() << "In CoRegistrationLayerProxy::get_birth_attribute_data() function, " 
 				   << "Could not get 'begin time' for the feature: " << feature_id.get().qstring();
 		return boost::none;
 	}
 
+	// Note that begin time can be finite, or positive/negative infinity.
+	const double begin_time = gml_valid_time.get()->begin()->get_time_position().value();
+
 	//Set the reconstruction time as the birth time of the seed feature.
-	double reconstruction_time = (*begin_time).dval();
+	const double reconstruction_time = begin_time;
 
 	//Reconstruct the seed feature.
 	//The approach is not ideal because it assumes that each seed layer uses the same rotation tree layer - 

@@ -190,10 +190,8 @@ jobs:
           key: sccache-gplates-${{ matrix.name }}-${{ github.sha }}
 
       - name: Test
-        # '-C Release' matches the pygplates workflow. The unit tests are discovered by
-        # gtest_discover_tests() (which cannot attach CONFIGURATIONS), so unlike the pygplates tests
-        # they are not configuration-gated - but the tests are only registered for non-Debug builds
-        # (see src/CMakeLists.txt), and this build tree is Release.
+        # '-C Release' names the configuration this tree was built with, matching the pygplates
+        # workflow. The unit tests are registered in every configuration (see src/CMakeLists.txt).
         # QT_QPA_PLATFORM defaults to 'offscreen' inside the test executable itself.
         run: ctest --test-dir build-gplates -C Release --output-on-failure
 

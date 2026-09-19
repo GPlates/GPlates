@@ -1,11 +1,7 @@
 # Add the test of the pygplates module.
 add_test(
 	NAME pygplates-test
-	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/test.py"
-	# We only test non-debug builds because GPlatesGlobal::Assert<> statements in C++ code throw an exception in
-	# non-debug builds but abort in debug builds. These exceptions get translated to their equivalent in Python.
-	# Some of our tests purposefully check that these exceptions are raised (and that will only happen in non-debug builds).
-	CONFIGURATIONS Release MinSizeRel)
+	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/test.py")
 
 # Add the source-closure test: the pygplates module must compile exactly the include closure
 # of the pyGPlates API (see "cmake/pygplates_source_closure.py" and
@@ -18,9 +14,7 @@ add_test(
 	NAME pygplates-source-closure-test
 	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/pygplates_source_closure.py"
 		--check-sources "${PROJECT_BINARY_DIR}/pygplates_sources.txt"
-		--check-doc "${PROJECT_SOURCE_DIR}/docs/design/architecture/dependency-matrix.md"
-	# Match the other pygplates tests (see the note on 'pygplates-test' above).
-	CONFIGURATIONS Release MinSizeRel)
+		--check-doc "${PROJECT_SOURCE_DIR}/docs/design/architecture/dependency-matrix.md")
 
 # Add the linkage test: the built module's *direct* shared-library dependencies must not
 # include any of GPlates' GUI/rendering libraries (Qt Widgets, Qt Svg, the Qt OpenGL
@@ -42,9 +36,7 @@ add_test(
 # wheel to check at CTest time.
 add_test(
 	NAME pygplates-linkage-test
-	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/check_linkage.py" "$<TARGET_FILE:pygplates>"
-	# Match the other pygplates tests (see the note on 'pygplates-test' above).
-	CONFIGURATIONS Release MinSizeRel)
+	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/check_linkage.py" "$<TARGET_FILE:pygplates>")
 
 # Set test properties.
 set_tests_properties(pygplates-test PROPERTIES

@@ -44,9 +44,8 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructionTree.h"
-
-#include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
-#include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
+#include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
+#include "app-logic/TotalReconstructionSequenceTimePeriodFinder.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -190,8 +189,8 @@ namespace
 	examine_trs(
 			std::vector<GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> &
 					sequence_choices,
-			GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
-			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
+			GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
+			GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
 			const double &reconstruction_time,
 			GPlatesModel::FeatureCollectionHandle::iterator &current_feature)
@@ -293,8 +292,8 @@ namespace
 	void
 	find_trses(
 			std::vector<GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> &sequence_choices,
-			GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
-			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
+			GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
+			GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
 			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 			const GPlatesAppLogic::Reconstruction &reconstruction)
@@ -634,8 +633,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::apply()
 	// Now find all the TRSes (total reconstruction sequences) whose fixed or moving ref-frame
 	// plate ID matches our plate ID of interest.
 	std::vector<ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> sequence_choices;
-	GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder trs_plate_id_finder;
-	GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
+	GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder trs_plate_id_finder;
+	GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
 
 	find_trses(
 			sequence_choices,

@@ -31,7 +31,6 @@
 #include <functional>
 #include <boost/optional.hpp>
 
-#include "ApplicationState.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryUtils.h"
 
@@ -43,11 +42,11 @@
 
 #include "property-values/GeoTimeInstant.h"
 
-#include "utils/FeatureUtils.h"
-
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
+
 	template<typename Adaptee, typename ReturnType>
 	class PropertyExtractorAdapter
 	{
@@ -94,10 +93,6 @@ namespace GPlatesAppLogic
 
 		const boost::optional<return_type>
 		operator()(
-				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
-	
-		const boost::optional<return_type>
-		operator()(
 				const GPlatesModel::FeatureHandle& feature) const;
 	};
 
@@ -118,17 +113,8 @@ namespace GPlatesAppLogic
 
 		const boost::optional<return_type>
 		operator()(
-				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
+				const GPlatesModel::FeatureHandle& feature) const;
 
-		const boost::optional<return_type>
-		operator()(
-				const GPlatesModel::FeatureHandle& feature) const
-		{
-			return GPlatesUtils::get_age(
-					&feature, 
-					d_application_state.get_current_reconstruction_time());
-		}
-	
 	private:
 		ApplicationState &d_application_state;
 	};

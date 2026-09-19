@@ -97,9 +97,9 @@ GPlatesApi::ConsoleReader::readline()
 	try
 	{
 		// Use the registered QString conversion (see PyStrings.cc), which returns a
-		// Python 'str' in both Python 2 (encoded as UTF-8) and Python 3 (Unicode).
+		// Python 'str'.
 		//
-		// Note that Python 3 must not be given 'bytes' here, because that silently
+		// Note that Python must not be given 'bytes' here, because that silently
 		// breaks callers that compare the line against 'str' literals. In particular
 		// the interactive 'help()' utility could then never be exited, since pydoc's
 		// test for "q"/"quit" never matched, and this left its modal readline dialog

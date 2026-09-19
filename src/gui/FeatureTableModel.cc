@@ -39,12 +39,10 @@
 #include "FeatureFocus.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/ReconstructGraph.h"
+#include "app-logic/GeometryFinder.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructGraph.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
-
-#include "feature-visitors/GeometryFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
@@ -52,8 +50,9 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
-#include "model/types.h"
 #include "model/FeatureHandle.h"
+#include "model/PropertyValueFinder.h"
+#include "model/types.h"
 
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
@@ -128,7 +127,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature, plate_id_property_name);
 		if (recon_plate_id)
 		{
@@ -214,7 +213,7 @@ namespace
 		if (weak_ref)
 		{
 			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 							*weak_ref, valid_time_property_name);
 			if (time_period)
 			{
@@ -241,7 +240,7 @@ namespace
 		if (weak_ref)
 		{
 			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 							*weak_ref, valid_time_property_name);
 			if (time_period)
 			{
@@ -269,7 +268,7 @@ namespace
 		if (weak_ref)
 		{
 			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 							*weak_ref, name_property_name);
 			if (name)
 			{
@@ -294,7 +293,7 @@ namespace
 		if (weak_ref)
 		{
 			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> description =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 							*weak_ref, description_property_name);
 			if (description)
 			{
@@ -479,7 +478,7 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::iterator> property =
 				get_geometry_property_if_valid(geometry);
 		if (property) {
-			GPlatesFeatureVisitors::GeometryFinder geometry_finder;
+			GPlatesAppLogic::GeometryFinder geometry_finder;
 			(**property)->accept_visitor(geometry_finder);
 			if (geometry_finder.has_found_geometries()) {
 				GeometryOnSphereSummaryAsStringVisitor geometry_visitor;

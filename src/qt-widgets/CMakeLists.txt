@@ -68,9 +68,6 @@ set(srcs
     ChooseFontButton.h
     ChoosePropertyWidget.cc
     ChoosePropertyWidget.h
-    ColouringDialog.cc
-    ColouringDialog.h
-    ColouringDialogUi.ui
     ColourScaleButton.cc
     ColourScaleButton.h
     ColourScaleWidget.cc
@@ -457,6 +454,8 @@ set(srcs
     QtWidgetUtils.h
     QueryFeaturePropertiesWidget.cc
     QueryFeaturePropertiesWidget.h
+    QueryFeaturePropertiesWidgetPopulator.cc
+    QueryFeaturePropertiesWidgetPopulator.h
     QueryFeaturePropertiesWidgetUi.ui
     RasterBandPage.cc
     RasterBandPage.h
@@ -596,6 +595,8 @@ set(srcs
     VelocityMethodWidgetUi.ui
     ViewFeatureGeometriesWidget.cc
     ViewFeatureGeometriesWidget.h
+    ViewFeatureGeometriesWidgetPopulator.cc
+    ViewFeatureGeometriesWidgetPopulator.h
     ViewFeatureGeometriesWidgetUi.ui
     ViewportWindow.cc
     ViewportWindow.h
@@ -626,5 +627,5 @@ if (TARGET gplates-lib)
     # Add the source files to the gplates static library.
     # (The pygplates module compiles nothing from this directory - see
     # "cmake/pygplates_source_closure.py".)
-    target_sources_util(gplates-lib PRIVATE ${srcs})
+    target_sources(gplates-lib PRIVATE ${srcs})
 endif()

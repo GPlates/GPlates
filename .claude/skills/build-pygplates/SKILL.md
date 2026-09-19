@@ -52,11 +52,14 @@ cmake --build build-pygplates
 ctest --test-dir build-pygplates -C Release --output-on-failure
 ```
 
-**`-C Release` is mandatory.** The tests are registered `CONFIGURATIONS Release MinSizeRel`, so
-without it CTest matches nothing and exits successfully having run zero tests. If the output says
-"No tests were found" or reports 0 tests, treat that as a failure of the command, not a pass.
+Pass `-C` with the tree's configuration: it is required for the multi-config generators
+(Visual Studio, Xcode), and harmless on a single-config tree. The tests are registered in every
+configuration — the pygplates module always throws on a failed assertion, so a Debug tree runs
+them too.
 
-Two tests should run: `pygplates-test` and `pygplates-stub-test`.
+Five tests should run: `version-resolver-test`, `pygplates-test`, `pygplates-source-closure-test`,
+`pygplates-linkage-test` and `pygplates-stub-test`. If the output says "No tests were found" or
+reports fewer, treat that as a failure of the command, not a pass.
 
 ## 5. Report
 

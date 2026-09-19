@@ -34,6 +34,7 @@
 
 #include "PartitionFeatureUtils.h"
 
+#include "GeometrySetter.h"
 #include "GeometryUtils.h"
 #include "PartitionFeatureTask.h"
 #include "ReconstructionFeatureProperties.h"
@@ -41,9 +42,6 @@
 #include "ReconstructionTree.h"
 #include "ReconstructMethodRegistry.h"
 #include "ScalarCoverageFeatureProperties.h"
-
-#include "feature-visitors/GeometrySetter.h"
-#include "feature-visitors/PropertyValueFinder.h"
 
 #include "maths/AngularExtent.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
@@ -55,6 +53,7 @@
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 #include "model/TopLevelPropertyInline.h"
 
 #include "property-values/GpmlConstantValue.h"
@@ -1025,7 +1024,7 @@ GPlatesAppLogic::PartitionFeatureUtils::add_unpartitioned_geometry_to_feature(
 				reverse_reconstruct(reconstructed_geometry.get(), feature, reconstruct_method_context, reconstruction_time);
 
 		// Store the present day geometry back in the cloned property.
-		GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
+		GPlatesAppLogic::GeometrySetter geometry_setter(present_day_geometry);
 		geometry_setter.set_geometry(property_clone.domain.get());
 
 		// Set the cloned geometry domain property (and optional cloned range property) on the feature.
@@ -1148,7 +1147,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_reconstruction_plate_id_from_feature
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
 	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 					feature_ref,
 					get_reconstruction_plate_id_property_name());
 	if (!recon_plate_id)
@@ -1195,7 +1194,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_conjugate_plate_id_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
 	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> conjugate_plate_id =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 					feature_ref,
 					get_conjugate_plate_id_property_name());
 	if (!conjugate_plate_id)
@@ -1242,7 +1241,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_valid_time_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
 	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 					feature_ref,
 					get_valid_time_property_name());
 	if (!time_period)

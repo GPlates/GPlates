@@ -27,10 +27,10 @@ so treat it as mandatory.
 
 - **GoogleTest only.** It is the framework for all new C++ tests, replacing Boost.Test. Do not
   mix frameworks within an executable.
-- **Release only.** `GPlatesGlobal::Assert` calls `std::abort()` in Debug rather than throwing,
-  which kills any test exercising an error path. C++ tests are not discovered in Debug build
-  trees at all, so always run `ctest -C Release`. A run that reports zero tests is a broken
-  invocation, not a pass.
+- **Every build configuration.** A failed `GPlatesGlobal::Assert` aborts by default in a debug
+  build of GPlates, but the test `main()` makes it throw, so a test that expects that exception
+  passes in Debug and RelWithDebInfo too. Never guard a test with `#ifndef GPLATES_DEBUG`. A run
+  that reports zero tests is a broken invocation, not a pass.
 - **Headless.** The test `main()` defaults `QT_QPA_PLATFORM` to `offscreen` and provides a
   `QApplication`, so `QSettings`-dependent code (`ApplicationState`, `UserPreferences`) and
   widget-level code *are* testable — but nothing may require a real display, a GPU, or user

@@ -34,7 +34,6 @@
 #include "GenericColourScheme.h"
 #include "HTMLColourNames.h"
 #include "PlateIdColourPalettes.h"
-#include "SingleColourScheme.h"
 
 #include "utils/ConfigBundle.h"
 

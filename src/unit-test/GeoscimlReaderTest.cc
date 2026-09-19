@@ -29,8 +29,7 @@
 #include <QString>
 #include <gtest/gtest.h>
 
-#include "feature-visitors/GeometryFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "app-logic/GeometryFinder.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
@@ -47,6 +46,7 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/XsDouble.h"
@@ -115,7 +115,7 @@ namespace
 			const GPlatesModel::PropertyName &property_name)
 	{
 		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> value =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 						feature, property_name);
 		return value ? value.get()->get_value().get().qstring() : QString();
 	}
@@ -126,7 +126,7 @@ namespace
 			const GPlatesModel::PropertyName &property_name)
 	{
 		boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> value =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsDouble>(
 						feature, property_name);
 		if (!value)
 		{
@@ -154,7 +154,7 @@ namespace
 	only_geometry(
 			const GPlatesModel::FeatureHandle::weak_ref &feature)
 	{
-		GPlatesFeatureVisitors::GeometryFinder finder;
+		GPlatesAppLogic::GeometryFinder finder;
 		finder.visit_feature(feature);
 		EXPECT_EQ(1, std::distance(finder.found_geometries_begin(), finder.found_geometries_end()));
 		return *finder.found_geometries_begin();
@@ -216,7 +216,7 @@ TEST_F(GeoscimlReaderTest, line_string_swaps_pos_list_to_lat_lon)
 	expect_lat_lon(30, 20, *--polyline->vertex_end());
 
 	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> valid_time =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 					line, GPlatesModel::PropertyName::create_gml("validTime"));
 	ASSERT_TRUE(valid_time);
 	EXPECT_EQ(100, valid_time.get()->begin()->get_time_position().value());
@@ -256,7 +256,7 @@ TEST_F(GeoscimlReaderTest, polygon_and_repeated_properties)
 
 	// A feature with two gml:name elements gets two gml:name properties.
 	const std::vector<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> names =
-			GPlatesFeatureVisitors::get_property_values<GPlatesPropertyValues::XsString>(
+			GPlatesModel::get_property_values<GPlatesPropertyValues::XsString>(
 					polygon_feature, GPlatesModel::PropertyName::create_gml("name"));
 	ASSERT_EQ(2u, names.size());
 	EXPECT_EQ("Polygon feature", names[0]->get_value().get().qstring());
@@ -315,7 +315,7 @@ TEST_F(GeoscimlReaderTest, malformed_point_is_not_read_as_the_origin)
 	// The member is abandoned part-built rather than removed, so it still counts - but it
 	// carries no geometry, which is the point.
 	ASSERT_EQ(2u, features.size());
-	GPlatesFeatureVisitors::GeometryFinder finder;
+	GPlatesAppLogic::GeometryFinder finder;
 	finder.visit_feature(features[0]);
 	EXPECT_EQ(0, std::distance(finder.found_geometries_begin(), finder.found_geometries_end()));
 
@@ -348,7 +348,7 @@ TEST_F(GeoscimlReaderTest, point_by_coordinates_and_the_malformed_case)
 
 	// The member with one coordinate where two were needed is abandoned part-built, carrying
 	// no geometry.
-	GPlatesFeatureVisitors::GeometryFinder finder;
+	GPlatesAppLogic::GeometryFinder finder;
 	finder.visit_feature(features[1]);
 	EXPECT_EQ(0, std::distance(finder.found_geometries_begin(), finder.found_geometries_end()));
 }

@@ -32,15 +32,6 @@
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
-//Due to a gcc bug, 
-//gcc 4.6 reports uninitialized variable warning falsely.
-//disable the uninitialized warning for gcc 4.6 here
-// The warning occurs in 'calculate_interpolate_point_rotations()'.
-#include "global/CompilerWarnings.h"
-#if (__GNUC__ == 4 && __GNUC_MINOR__ == 6)
-DISABLE_GCC_WARNING("-Wuninitialized")
-#endif 
-
 #include "GeometryInterpolation.h"
 
 #include "AngularDistance.h"

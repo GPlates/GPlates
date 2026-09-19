@@ -31,10 +31,9 @@
 #include "PartitionFeatureUtils.h"
 #include "ReconstructionGeometryUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GmlPoint.h"
 
@@ -74,7 +73,7 @@ GPlatesAppLogic::VgpPartitionFeatureTask::partition_feature(
 	static const GPlatesModel::PropertyName sample_site_property_name =
 			GPlatesModel::PropertyName::create_gpml("averageSampleSitePosition");
 	boost::optional<GPlatesPropertyValues::GmlPoint::non_null_ptr_to_const_type> sample_site_gml_point =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlPoint>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlPoint>(
 					feature_ref,
 					sample_site_property_name);
 	if (!sample_site_gml_point)

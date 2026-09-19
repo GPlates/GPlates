@@ -40,8 +40,6 @@
 #include "GeometryUtils.h"
 #include "ReconstructionGeometryVisitor.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/NotYetImplementedException.h"
@@ -49,6 +47,7 @@
 #include "maths/AzimuthalEqualAreaProjection.h"
 
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 #include "model/WeakObserverVisitor.h"
 
 #include "property-values/XsString.h"

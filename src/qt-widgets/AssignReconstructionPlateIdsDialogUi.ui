@@ -67,7 +67,7 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../qt-resources/qt_widgets.qrc">
+               <iconset resource="../qt-resources/qt_resources.qrc">
                 <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
@@ -193,7 +193,7 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../qt-resources/qt_widgets.qrc">
+               <iconset resource="../qt-resources/qt_resources.qrc">
                 <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
@@ -322,7 +322,7 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../qt-resources/qt_widgets.qrc">
+               <iconset resource="../qt-resources/qt_resources.qrc">
                 <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
@@ -497,7 +497,7 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../qt-resources/qt_widgets.qrc">
+               <iconset resource="../qt-resources/qt_resources.qrc">
                 <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
@@ -558,7 +558,7 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../qt-resources/qt_widgets.qrc">
+               <iconset resource="../qt-resources/qt_resources.qrc">
                 <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
@@ -605,7 +605,7 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../qt-resources/qt_widgets.qrc">
+               <iconset resource="../qt-resources/qt_resources.qrc">
                 <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
@@ -636,7 +636,7 @@
                   <string/>
                  </property>
                  <property name="pixmap">
-                  <pixmap resource="../qt-resources/qt_widgets.qrc">:/gnome_dialog_warning_16.png</pixmap>
+                  <pixmap resource="../qt-resources/qt_resources.qrc">:/gnome_dialog_warning_16.png</pixmap>
                  </property>
                 </widget>
                </item>
@@ -758,7 +758,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>
