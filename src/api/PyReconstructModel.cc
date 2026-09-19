@@ -473,7 +473,7 @@ export_reconstruct_model()
 				"  :param reconstruction_time: the geological time of the snapshot\n"
 				"  :type reconstruction_time: float or GeoTimeInstant\n"
 				"  :rtype: ReconstructSnapshot\n"
-				"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n")
+				"  :raises ValueError: if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n")
 		.def("get_rotation_model",
 				&GPlatesApi::ReconstructModel::get_rotation_model,
 				"get_rotation_model()\n"

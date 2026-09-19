@@ -784,7 +784,7 @@ export_reconstruction_tree()
 				"for missing plate ids (default is to use identity rotation)\n"
 				"  :type use_identity_for_missing_plate_ids: bool\n"
 				"  :rtype: FiniteRotation, or None\n"
-				"  :raises: DifferentAnchoredPlatesInReconstructionTreesError if the anchor plate of "
+				"  :raises DifferentAnchoredPlatesInReconstructionTreesError: if the anchor plate of "
 				"both reconstruction trees is not the same plate\n"
 				"\n"
 				"  Get the stage rotation of plate 802 (relative to anchor plate) from 20Ma to 15Ma:\n"

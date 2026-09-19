@@ -147,7 +147,21 @@ void
 export_resolve_topology_parameters()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesAppLogic::TopologyNetworkParams::StrainRateSmoothing>("StrainRateSmoothing")
+	bp::enum_<GPlatesAppLogic::TopologyNetworkParams::StrainRateSmoothing>(
+			"StrainRateSmoothing",
+			"How strain rates are smoothed when queried at arbitrary locations within a deforming network.\n"
+			"\n"
+			"  Accepted by :class:`ResolveTopologyParameters`. Each triangle of a network triangulation has a constant strain rate, so without smoothing the strain rate is piecewise constant across the network.\n"
+			"\n"
+			"  ===================================== ==============\n"
+			"  Value                                 Description\n"
+			"  ===================================== ==============\n"
+			"  StrainRateSmoothing.none              No smoothing. The strain rate is the constant strain rate of the :class:`triangle <NetworkTriangulation.Triangle>` containing the query location.\n"
+			"  StrainRateSmoothing.barycentric       Linear (barycentric) interpolation of the strain rates at the three :class:`vertices <NetworkTriangulation.Vertex>` of the triangle containing the query location.\n"
+			"  StrainRateSmoothing.natural_neighbour Natural neighbour interpolation of the strain rates at the triangulation vertices near the query location (the default).\n"
+			"  ===================================== ==============\n"
+			"\n"
+			"  .. seealso:: :ref:`pygplates_primer_strain_rate_smoothing` in the *Primer* documentation.\n")
 			.value("none", GPlatesAppLogic::TopologyNetworkParams::NO_SMOOTHING)
 			.value("barycentric", GPlatesAppLogic::TopologyNetworkParams::BARYCENTRIC_SMOOTHING)
 			.value("natural_neighbour", GPlatesAppLogic::TopologyNetworkParams::NATURAL_NEIGHBOUR_SMOOTHING);
@@ -189,8 +203,7 @@ export_resolve_topology_parameters()
 			"  :param strain_rate_smoothing: How deformation strain rates are smoothed (if at all). "
 			"This can be no smoothing, barycentric smoothing or natural neighbour smoothing. Default value is ``"
 			<< default_strain_rate_smoothing_string << "``. See :attr:`strain_rate_smoothing`.\n"
-			"  :type strain_rate_smoothing: pygplates.StrainRateSmoothing.none, "
-			"pygplates.StrainRateSmoothing.barycentric or pygplates.StrainRateSmoothing.natural_neighbour\n"
+			"  :type strain_rate_smoothing: StrainRateSmoothing\n"
 			"  :param rift_exponential_stretching_constant: Controls the curvature of the exponential variation of stretching across a rift profile in a network triangulation. "
 			"Default value is ``"
 			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_rift_params().exponential_stretching_constant

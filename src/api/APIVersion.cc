@@ -757,7 +757,7 @@ export_version()
 				"  :type patch: int\n"
 				"  :param release_suffix: the optional release PEP440 suffix ``[{a|b|rc}N][.postN][.devN]`` (defaults to ``None``)\n"
 				"  :type release_suffix: str or None\n"
-				"  :raises: ValueError if *release_suffix* is specified but doesn't match pattern ``[{a|b|rc}N][.postN][.devN]``\n"
+				"  :raises ValueError: if *release_suffix* is specified but doesn't match pattern ``[{a|b|rc}N][.postN][.devN]``\n"
 				"\n"
 				"  To create version ``1.0``:\n"
 				"  ::\n"
@@ -776,7 +776,7 @@ export_version()
 				"\n"
 				"  :param version: the version string in PEP440 format matching ``N.N[.N][{a|b|rc}N][.postN][.devN]``\n"
 				"  :type version: str\n"
-				"  :raises: ValueError if version string doesn't match pattern ``N.N[.N][{a|b|rc}N][.postN][.devN]``\n"
+				"  :raises ValueError: if version string doesn't match pattern ``N.N[.N][{a|b|rc}N][.postN][.devN]``\n"
 				"\n"
 				"  To create the first development release of version ``1.0``:\n"
 				"  ::\n"
@@ -797,7 +797,7 @@ export_version()
 				"\n"
 				"  :param revision: the revision number\n"
 				"  :type revision: int\n"
-				"  :raises: RuntimeError if *revision* is greater than 33\n"
+				"  :raises RuntimeError: if *revision* is greater than 33\n"
 				"\n"
 				"  .. deprecated:: 0.34\n")
 		// Pickle support...
@@ -874,7 +874,7 @@ export_version()
 				"\n"
 				"  :returns: the minor version number\n"
 				"  :rtype: int\n"
-				"  :raises: RuntimeError if internal version is not <= 0.33 (with zero patch number and no release)\n"
+				"  :raises RuntimeError: if internal version is not <= 0.33 (with zero patch number and no release)\n"
 				"\n"
 				"  .. deprecated:: 0.34\n")
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.

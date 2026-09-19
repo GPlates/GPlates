@@ -178,7 +178,7 @@ def gpml_piecewise_aggregation_set_value(gpml_piecewise_aggregation, property_va
     :type end_time: float or GeoTimeInstant
     :returns: the time window that is inserted into the time window sequence
     :rtype: GpmlTimeWindow
-    :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
+    :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time
 
     Any existing :meth:`time windows<get_time_windows>` that overlap the new time window
     (*begin_time*, *end_time*) are clipped, removed or split (depending on how they overlap) such
@@ -296,7 +296,7 @@ def gpml_irregular_sampling_get_value(gpml_irregular_sampling, time=0):
     :param time: the time to extract value (defaults to present day)
     :type time: float or GeoTimeInstant
     :rtype: PropertyValue or None
-    :raises: InterpolationError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
+    :raises InterpolationError: if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
     :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
     Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`.
@@ -353,7 +353,7 @@ def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, t
     :type is_enabled: bool or None
     :returns: the time sample that is modified, or inserted into the time sequence
     :rtype: GpmlTimeSample
-    :raises: ValueError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
+    :raises ValueError: if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
     :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
     If an existing :meth:`time sample<get_time_samples>` matches *time* then it will be modified,

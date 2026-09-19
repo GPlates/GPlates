@@ -172,6 +172,11 @@ def setup(app):
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['@SPHINX_STATIC_DIR@']
 
+# Custom autosummary templates. Only '_templates/autosummary/enum.rst' exists: it is selected by the
+# ':template:' option of the Enumerations block in 'pygplates_reference.rst', because the default
+# class template lists every method and attribute a Boost.Python enum inherits from 'int'.
+templates_path = ['_templates']
+
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
 #html_last_updated_fmt = '%b %d, %Y'
