@@ -99,6 +99,21 @@ def import_pygplates(package_dir):
     """Import pygplates *flat* from 'package_dir' and return the module."""
     if "pygplates" in sys.modules:
         raise SystemExit("error: pygplates was already imported before sys.path was set up.")
+
+    # The flat import bypasses the package's '__init__.py', so anything it does before importing the
+    # extension must be repeated here. A Windows wheel's '__init__.py' starts with a patch inserted
+    # by delvewheel when it repaired the wheel: it adds the sibling 'pygplates.libs' directory (the
+    # bundled, renamed dependency DLLs) to the DLL search path. Without it the import fails with
+    # "DLL load failed". Nothing else needs this. A 'pip install .' copies the dependency DLLs into
+    # the package directory beside the extension, where Windows looks first however the extension
+    # is imported. A build tree or a conda install finds them in the environment. And
+    # auditwheel/delocate record library locations in the binary itself. The only other thing
+    # '__init__.py' does is call '_post_import()' with the package location, which the
+    # documentation does not need.
+    delvewheel_libs_dir = package_dir.parent / "pygplates.libs"
+    if hasattr(os, "add_dll_directory") and delvewheel_libs_dir.is_dir():
+        os.add_dll_directory(str(delvewheel_libs_dir))
+
     sys.path.insert(0, str(package_dir))
     import pygplates  # noqa: E402  (deliberately after the sys.path insert)
 
