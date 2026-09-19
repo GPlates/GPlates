@@ -47,7 +47,7 @@ There are two ways to interact with GPlates functionality:
      import pygplates
      
      # Load the coastline features and rotation file(s) into a reconstruct model.
-     reconstruct_coastlines_model = pyglates.ReconstructModel('coastlines.gpml', 'rotations.rot')
+     reconstruct_coastlines_model = pygplates.ReconstructModel('coastlines.gpml', 'rotations.rot')
 
      # Iterate from 200Ma to 0Ma inclusive in steps of 10My.
      for reconstruction_time in range(200,-1,-10):
@@ -77,7 +77,7 @@ For example, :class:`pygplates.ReconstructModel` and :class:`pygplates.Reconstru
 classes that can reconstruct geological data to a past geological time (such as 10 Ma):
 ::
 
-  reconstruct_coastlines_model = pyglates.ReconstructModel('coastlines.gpml', 'rotations.rot')
+  reconstruct_coastlines_model = pygplates.ReconstructModel('coastlines.gpml', 'rotations.rot')
   reconstruct_coastlines_snapshot = reconstruct_coastlines_model.reconstruct_snapshot(10)
   reconstruct_coastlines_snapshot.export_reconstructed_geometries('reconstructed_coastlines_10Ma.shp')
 
@@ -99,7 +99,7 @@ There are two ways to run Python source code that uses pyGPlates.
 You can run it in either:
 
 * an *external* Python interpreter, or
-* a Python interpreter *embedded* within the GPlates desktop application (**NOTE: this option is not yet available**).
+* a Python interpreter *embedded* within the GPlates desktop application.
 
 .. note:: A Python **interpreter** executes source code written in the Python programming language.
 
@@ -137,14 +137,16 @@ the ``my_python_script.py`` script.
 Using pyGPlates with the GPlates *embedded* Python interpreter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. warning:: This option is **not** yet available.
-
 In this scenario you are running Python source code using a Python interpreter that is embedded inside
 the GPlates desktop application.
 
-In this case you have started the GPlates desktop application and are loading a python script in the
-GPlates Python console (accessed via the :guilabel:`Open Python Console` menu item) or interactively
-entering Python source code in that console.
+In this case you have started the GPlates desktop application and opened its Python console
+(:menuselection:`Utilities --> Open Python Console`, or :kbd:`F12`). There you can interactively enter
+Python source code, or run a Python script with the :guilabel:`Run Script...` button.
+Anything your code prints appears in the console.
 
 .. note:: You do not need to ``import pygplates`` here since it has already been imported/embedded
    into GPlates (when GPlates started up).
+
+.. note:: This does **not** require :ref:`installing <pygplates_getting_started_installation>` pyGPlates,
+   since the GPlates desktop application contains its own pyGPlates.
