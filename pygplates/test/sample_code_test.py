@@ -55,8 +55,9 @@ def run_sample(sample_path, fixtures_dir):
 
 
 def main():
-    sample_code_dir = sys.argv[1]
-    fixtures_dir = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(__file__), 'fixtures')
+    # Absolute, since each script runs with a temporary directory as its working directory.
+    sample_code_dir = os.path.abspath(sys.argv[1])
+    fixtures_dir = os.path.abspath(sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(__file__), 'fixtures'))
 
     samples = sorted(name for name in os.listdir(sample_code_dir) if name.endswith('.py'))
     if len(samples) < MINIMUM_EXPECTED_SAMPLES:

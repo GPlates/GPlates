@@ -102,7 +102,8 @@ with open(input_polylines_filename, 'r') as input_polylines_file:
 
     # If we have any points leftover then generate the last polyline feature.
     # This happens if last line does not start with '>'.
-    add_polyline_feature_from_points(polyline_features, polyline_points, line_number)
+    if polyline_points:
+        add_polyline_feature_from_points(polyline_features, polyline_points, line_number)
 
 # [fragment: partition-into-plates]
 # Use the static polygons to assign plate IDs and valid time periods.
