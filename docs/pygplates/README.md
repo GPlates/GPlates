@@ -196,7 +196,9 @@ rotation_model = pygplates.RotationModel('rotations.rot')
 Fragments may nest, since the ends are named. A fragment the script does not contain is a Sphinx
 warning, which `-W` turns into a failed build - so renaming a marker cannot leave a page silently
 showing nothing. So is a marker that appears twice, or a fragment without its end. Never paste code
-into a page's `::` block: the code exists once, in the script.
+into a page's `::` block: the code exists once, in the script. A `::` block may still show a shortened
+excerpt, marked with `...` (a long list of coordinates cut down, or a branch reduced to its shape), as
+long as every line it does show matches the script.
 
 The directive is not `literalinclude` with `:start-after:`/`:end-before:` because the whole-script
 listing must lose its markers too, which `literalinclude` can only do by hard-coded line numbers.
