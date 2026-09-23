@@ -1,7 +1,8 @@
 # Architecture diagrams for GPlates / pyGPlates
 
 Status: agreed 2026-09-24, on the long-lived branch `feature/architecture-diagrams` (worktree
-`architecture-diagrams`). Next: stage 1, the survey.
+`architecture-diagrams`). Stage 1 (the survey, `survey.md`) is done; next: the developer approves its
+areas, priority and layer groups, then the pilot pull request.
 
 ## Goal
 
@@ -217,9 +218,21 @@ distils what it completed, and the last one deletes this plan.
    - the reconstruction area page.
 
    After it, you judge the level of detail before we go on.
-3. **One pull request per area** after that (or two small areas together), in the order the
-   survey gives and upcoming refactors need.
-4. **`model-system/`** moved and retrofitted once `feature/pygplates-model-revisions` merges.
+3. **The priority area pages**, one pull request per area (or two small areas together), in
+   the survey's order: reconstruction (the pilot), GPGIM, feature file I/O, topologies, layers,
+   colouring, scene rendering, OpenGL.
+4. **Layout design** for the source reorganisation (umbrella plan:
+   `gplates-planning/plans/source-reorganisation.md`, private). From the areas and their
+   file-level boundaries: the proposed directory tree and its names, the namespace policy
+   (namespacing by area, a common root, or coarser; say first what namespaces are for), where
+   the pyGPlates / GPlates split sits in the tree, and the design of the migration script. Its
+   output is a design document, approved before anything moves. The Fable agent writing pages
+   notes layout evidence as it goes (files that belong to another area, directories with no
+   single subject), so this stage starts from collected evidence rather than a fresh survey.
+5. **After the move:** paths updated in the pages already written, and the stable areas'
+   pages (export, sessions, canvas tools, auxiliary tools) written against the new tree.
+6. **`model-system/`** moved and retrofitted once `feature/pygplates-model-revisions` merges
+   (before the move, which waits for it).
 
 ## Feature requests
 
