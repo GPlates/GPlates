@@ -15,6 +15,10 @@ Changes since 1.0.0:
   * Pickles written by pyGPlates 1.0 can still be loaded, but pickles written by 1.1 cannot be loaded by 1.0.
   * Fixed pickling an object that had extra attributes added to it from Python (previously raised "Incomplete pickle support").
 * Added `TopologicalSnapshot.reconstruct_points()` to incrementally reconstruct points (lying within the snapshot's resolved plates and networks) to another time.
+* Documentation sample code:
+  * Every sample is now a Python 3 script that the test suite runs, so it can be copied and run as shown (many samples previously used Python 2 `print` statements).
+  * Samples use `ReconstructSnapshot` and `PlatePartitioner` instead of `reconstruct()` and `partition_into_plates()` (except where a one-off partition is clearer).
+  * Each sample page lists the data files it needs and where to get them, and links to related Primer sections, Reference entries and samples.
 * Installation:
   * The pip wheels and the conda package no longer depend on Qt GUI or OpenGL libraries.
     * So pyGPlates imports on a minimal Linux system (no `libGL` or `glib` packages needed) and the packages are smaller.

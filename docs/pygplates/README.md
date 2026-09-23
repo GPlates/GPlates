@@ -199,6 +199,98 @@ Pure-Python API files (`src/qt-resources/python/api/*.py`) are exec'd into the `
 module namespace, so every module-level name they define becomes a public attribute of
 `pygplates`. Alias imports with a leading underscore (`import itertools as _itertools`).
 
+## Sample code
+
+Every page under `sample-code/` gets its code from a script beside it, `sample-code/<page>.py` (one
+per "Sample code" block, so a page with several sub-examples has `<page>_<slug>.py` files). The
+page includes the script through the `sample-code` directive defined in `conf.py.in`: the whole
+file for the listing, and named fragments for the "Details" walkthrough:
+
+```
+.. sample-code:: pygplates_plate_rotation_hierarchy.py
+
+.. sample-code:: pygplates_plate_rotation_hierarchy.py
+   :fragment: load-rotations
+```
+
+Fragments are delimited in the script by comment markers, which the directive strips from every
+listing (and it dedents a fragment shown on its own):
+
+```
+# [fragment: load-rotations]
+rotation_model = pygplates.RotationModel('rotations.rot')
+# [end: load-rotations]
+```
+
+Fragments may nest, since the ends are named. A fragment the script does not contain is a Sphinx
+warning, which `-W` turns into a failed build - so renaming a marker cannot leave a page silently
+showing nothing. So is a marker that appears twice, or a fragment without its end. Never paste code
+into a page's `::` block: the code exists once, in the script. A `::` block may still show a shortened
+excerpt, marked with `...` (a long list of coordinates cut down, or a branch reduced to its shape), as
+long as every line it does show matches the script.
+
+The directive is not `literalinclude` with `:start-after:`/`:end-before:` because the whole-script
+listing must lose its markers too, which `literalinclude` can only do by hard-coded line numbers.
+It is defined in `conf.py.in` rather than in an extension module of its own because
+`build_docs.py` builds from a scratch copy of the sources it knows about, and `conf.py.in` is
+already one of them.
+
+### Page template
+
+Each page - or each sub-example, on a page with several under a `.. contents::` - has, in order:
+
+- **Data files**: every file the script reads, what it must contain for the script to work (which
+  properties, which plate IDs) and where to get such data, normally the GPlates sample data. A
+  script that creates its features from scratch has no Data files section.
+- **Sample code**: the whole script.
+- **Details**: the walkthrough, quoting the script by fragment.
+- **Output**, only where the page has one: what the script printed on real geodata, kept as
+  captured. It is never the fixtures' output.
+- **See also**: a bullet each for Primer, Reference and Sample code. Link only to Primer sections
+  that exist: pages on features, geometries, reconstruction, partitioning and velocities have no
+  Primer bullet until those sections are written.
+
+The samples use the model classes (`ReconstructSnapshot`, `PlatePartitioner`, `TopologicalModel`,
+...) rather than `reconstruct()` and `partition_into_plates()`. The one page that calls
+`partition_into_plates()` - the import page, which partitions once - does so on purpose and says
+why.
+
+**Never rename a page.** `sample-code/<page>.rst` is the page's URL, so renaming it breaks every
+existing link to it. The index (`pygplates_sample_code.rst`) can be regrouped freely; the pages stay
+where they are.
+
+### Testing
+
+The scripts are tested. `pygplates-sample-code-test` (`pygplates/test/sample_code_test.py`) runs
+each one in a temporary directory seeded with `pygplates/test/fixtures/`, where the data files the
+samples name (`rotations.rot`, `coastlines.gpml`, `static_polygons.gpml`, ...) are small stand-ins:
+a few dozen real features cut from the GPlates sample data by
+`pygplates/test/fixtures/generate_sample_fixtures.py`, or synthetic geometry. The test asserts that a
+script runs; a page's "Output" block stays as captured from real geodata, so it need not match what
+the fixtures produce. When a new sample names a data file the fixtures lack, add it there (and to
+the generator if it is cut from real data) rather than special-casing the test.
+
+The test lays two more directories over the shared fixtures. `fixtures/sample-code/` holds files for
+every sample that must differ from the unit tests' files of the same name: its `topologies.gpml` has
+a ridge that diverges and a trench that converges at every time the samples visit, where the unit
+tests' one has only unclassified sections on plates that do not move. `fixtures/sample-code/<script>/`
+holds files for one script, whose page reproduces its own input in full
+(`create_topological_features` shows its `features.gpml`).
+
+To run a sample by hand, run it in a copy of the layered fixtures, not in `fixtures/` itself: the
+scripts write their output files into the working directory, and pyGPlates writes a
+`<name>.gmt.gplates.xml` sidecar beside every `.gmt` file it reads. Neither belongs in the
+repository.
+
+After changing a script or a page, build the docs from scratch (`-W` catches a fragment the script
+no longer has) and run the test.
+
+The test only checks that each script exits normally, so a script that reads nothing still passes.
+pyGPlates loads no features, without an error, from a GPML file with anything before its XML
+declaration, even a blank line: a fixture with one made the topology-creation sample build empty
+topologies for as long as it was there. When adding a fixture, check that the script actually finds
+something in it.
+
 ## Math markup
 
 The narrative pages (the primer and the sample-code walkthroughs) use `:math:` roles and `.. math::`

@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0339" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+    <gml:featureMember>
+        <gpml:Isochron>
+            <gpml:identity>GPlates-67d1165a-d2e3-4156-8f32-aa59ae9b91bd</gpml:identity>
+            <gpml:revision>GPlates-966cccfd-6ba8-47a8-9258-917c5884167d</gpml:revision>
+            <gml:name>SEIR CROZET AND CIB, ANTARCTICA-CENTRAL INDIAN BASIN ANOMALY 18</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">40.100000000000001</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>802</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:conjugatePlateId>801</gpml:conjugatePlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-31.972248612649835 60.850975166479984 -32.296300000000031 61.095599999999997 -33.642600000000009 62.110399999999998 -33.852500000000013 61.800600000000003 -35.751400000000011 63.882599999999996 -35.563900000000011 64.164699999999996 -36.167400000000015 64.908199999999994 -36.587700000000019 64.455200000000019 -37.547700000000013 65.188199999999995 -38.098400000000012 64.632599999999996 -39.401500000000006 65.635099999999994 -39.686600000000013 65.322900000000004 -41.147600000000011 66.596400000000003 -41.690200000000019 66.051400000000001 -42.807400000000023 68.074799999999996 -43.529800000000016 67.486500000000007 -44.128300000000024 68.530199999999994 -45.079500000000039 67.566699999999997 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+        </gpml:Isochron>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Isochron>
+            <gpml:identity>GPlates-97562080-5f57-45ca-8daf-5899206bad05</gpml:identity>
+            <gpml:revision>GPlates-237862f2-01ed-49fd-8eb8-6648224381d0</gpml:revision>
+            <gml:name>Australia-Antarctic Ridge, Anomlay 34, digitised MS 2015 based on Whittaker et al. 2013 static polygons</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">83</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>802</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:conjugatePlateId>801</gpml:conjugatePlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-59.964329884577261 94.076058638105309 -61.601950373020721 97.986593686422609 -61.737532278267203 101.27154287005933 -62.109745618580078 101.71524771570276 -62.087123793983423 104.03370049730462 -63.037363389466151 106.49911629817333 -63.305525189767003 110.62373878779155 -63.305365424771779 113.63213432046912 -63.143564950222654 117.50421397732065 -62.978800817848978 122.05339336434322 -62.901716820545637 125.34006537027467 -62.837263758572448 128.32416685682156 -62.818821259494364 132.1099601762858 -62.718101899483344 134.63860396008329 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+        </gpml:Isochron>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Isochron>
+            <gpml:identity>GPlates-fde9168e-c35d-46a2-b596-4a9bcb940b82</gpml:identity>
+            <gpml:revision>GPlates-edb637d0-c3e9-4a39-8feb-f13a8e0230ce</gpml:revision>
+            <gml:name>Australia-Antarctic Ridge, Anomlay 31, digitised MS 2015 based on Whittaker et al. 2013 static polygons</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">67.700000000000003</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>802</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:conjugatePlateId>801</gpml:conjugatePlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-62.201976837515417 141.07803721351078 -62.248987115293581 139.07002738919138 -62.273660379002393 136.54595931315473 -62.2843570258878 133.57004438539741 -62.210677929679683 130.66624951835564 -62.105766416225009 127.61900077690571 -62.113778923396147 124.25741674578391 -62.110788514383657 122.3689646171661 -62.385435239205229 117.174471201938 -62.225540774624264 113.90292865990625 -62.217712798850435 112.74599594590508 -62.219093505743636 111.80160944907858 -62.491175177347671 107.73770287122217 -62.505841901431431 105.11883715993767 -61.984127460252971 103.9809925795242 -61.973206502793523 102.80152305123698 -61.549887157291458 101.75628764821801 -61.243806001403506 96.925771293130779 -60.510889564994883 95.909168662706264 -58.83820001790162 91.758717064805253 -57.795336589148619 89.021435483909201 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+        </gpml:Isochron>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Isochron>
+            <gpml:identity>GPlates-236ea76c-c2b2-4c79-a7b6-ce82d760dc57</gpml:identity>
+            <gpml:revision>GPlates-2d2d56f7-64d1-4889-afda-b41689bd9260</gpml:revision>
+            <gml:name>Australia-Antarctic Ridge, Anomlay 26, digitised MS 2015 based on Whittaker et al. 2013 static polygons</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">55.899999999999999</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>802</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:conjugatePlateId>801</gpml:conjugatePlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-61.846295853074267 141.03790909452181 -61.951089966209146 138.6036873074633 -61.960701010858756 136.50966510978486 -62.018090528371467 133.86460958732988 -62.013605038712505 131.58205436411595 -61.999925152191977 129.31165214686115 -61.979664112982569 127.35636873742794 -61.954707188288559 125.79949189621445 -61.976949199783419 123.2113387813021 -61.945677910445248 121.03133015269555 -62.081414751280917 119.07148709165251 -62.142624078524733 117.31671629703658 -62.173234023567481 116.03629040817378 -61.9542820181602 112.24488951403326 -62.03804501577256 110.7763730610872 -62.133870138491133 109.53835589514685 -62.264449135679975 108.23028222989849 -62.320719585308723 104.73915367133021 -61.762630307637238 103.65890822545931 -61.683009298211104 102.25156061819889 -61.26707237545731 101.14558810894241 -61.072027772310399 96.711978375990697 -60.130727296700101 95.349007288740808 -57.625661185514701 88.875133188666865 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+        </gpml:Isochron>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Isochron>
+            <gpml:identity>GPlates-b926324f-15a4-4ec0-942d-1ed808843996</gpml:identity>
+            <gpml:revision>GPlates-5e0ab45e-c947-47f9-9f34-e05493330d29</gpml:revision>
+            <gml:name>AUSTRALIA-ANTARCTIC RIDGE, AUSTRALIA-ANTARCTICA ANOMALY 6 ISOCHR</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">20.100000000000001</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>801</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:conjugatePlateId>802</gpml:conjugatePlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-44.381500000000003 139.1354 -44.406300000000002 139.316 -46.559199999999997 139.4118 -46.578600000000002 140.3853 -48.022599999999997 140.58300000000003 -47.91389999999997 142.81360000000001 -48.824199999999998 143.00450000000001 -48.693200000000004 145.3049 -51.889000000000003 146.352 -51.840600000000002 147.10570000000001 -54.822600000000001 148.36850000000001 -54.622599999999998 151.16640000000001 -57.234999999999992 152.3511 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+        </gpml:Isochron>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Isochron>
+            <gpml:identity>GPlates-f17245c5-0014-4dff-a10e-080aecf628f4</gpml:identity>
+            <gpml:revision>GPlates-a5a8c74f-b002-4da8-b7a7-14c9ab6c4523</gpml:revision>
+            <gml:name>Australia-Antarctic Ridge, c13y isochron NW15</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">33.100000000000001</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>801</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:conjugatePlateId>802</gpml:conjugatePlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-39.079442584629348 109.00524717057677 -39.715312889484544 111.47681878129835 -38.768988532219709 111.84258519778652 -40.162333778440548 118.07850662643895 -39.90107768835118 118.14698265283504 -40.190069652440371 119.70802898436271 -39.789036675817798 119.79955842917325 -39.934327490748224 120.8995263517731 -39.590689594759006 121.01124065755145 -39.959615390730242 123.34834750932058 -39.22889068177733 123.52118666416601 -39.366361586461018 124.93484292882725 -39.489838974194477 126.86635553847093 -39.55589698086844 128.58162012473952 -39.610699333840643 130.3298336614989 -39.668381957138628 131.87299054613067 -39.770818788244476 133.32265783845497 -39.816056596098704 134.64234362157941 -39.944759445823166 137.75950524614649 -40.0467360653127 139.35260276859776 -42.019754499289292 139.55675810570312 -42.01517253947889 140.24460518210611 -43.507522326972868 140.55230637233345 -43.443362136892347 142.29021340334748 -44.228313571358612 142.48154078424045 -44.12632103681058 144.28874593662894 -51.517041966627403 146.4569224808603 -51.026665029175639 150.28620961207736 -53.493673523866669 151.20106334090323 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+        </gpml:Isochron>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Isochron>
+            <gpml:identity>GPlates-6365132a-ae73-4db6-afd6-d62694778b29</gpml:identity>
+            <gpml:revision>GPlates-ccb7a23b-d4f4-4e62-9b71-2bbb9b8c5361</gpml:revision>
+            <gml:name>AUSTRALIA-ANTARCTIC RIDGE, AUSTRALIA-ANTARCTICA ANOMALY 18 ISOCH</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">40.100000000000001</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>801</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:conjugatePlateId>802</gpml:conjugatePlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-38.566600000000001 138.99510000000001 -40.151699999999998 139.2551 -40.077300000000001 139.75700000000001 -41.640599999999992 140.2458 -41.398099999999999 141.80009999999999 -42.422699999999999 142.14089999999999 -42.273900000000005 143.05279999999999 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+        </gpml:Isochron>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Isochron>
+            <gpml:identity>GPlates-293c716b-3d7f-4355-8f18-9d3167e460c0</gpml:identity>
+            <gpml:revision>GPlates-a2ec2363-09f5-4222-bdd2-ce8936b28d6e</gpml:revision>
+            <gml:name>Conjugate of Australia-Antarctic Ridge, Anomlay 21, digitised MS 2015 based on Whittaker et al. 2013 static polygons</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">47.899999999999999</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>801</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:conjugatePlateId>802</gpml:conjugatePlateId>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-37.77098154121807 138.24325778936034 -37.696942162002941 136.28436272943762 -37.667585202726279 135.31386976039374 -37.617651118993344 134.59373591711451 -37.739106134278785 133.09590704334187 -37.733472324631656 132.42552697851821 -37.623903796082168 130.94424268527359 -37.505211462738075 130.05692657902657 -37.43295156154911 128.92934061023516 -37.335467930548425 127.43835280983276 -37.547685105672002 125.08878040751856 -37.74593823072987 123.67570368791154 -37.589528447638173 122.06533452529898 -37.788470096314924 120.84645903949425 -38.154280570734052 118.88055330057095 -38.403818968321239 116.81952587630064 -38.008063278992616 116.34664377557576 -38.063198392118956 115.03620385744166 -37.734486272579616 114.41822888775667 -37.959610130495918 111.91969704345996 -37.21751102828236 110.57575637906261 -36.431796882314963 108.28087002754624 -35.882129576133515 106.50880746363973 -35.129853560815917 103.79411481595193 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+        </gpml:Isochron>
+    </gml:featureMember>
+</gpml:FeatureCollection>
