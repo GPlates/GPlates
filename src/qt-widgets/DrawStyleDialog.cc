@@ -28,6 +28,8 @@
 #include <QFileDialog>
 #include <QColorDialog>
 #include <QHeaderView>
+#include <QLinearGradient>
+#include <QPainter>
 
 #include "SceneView.h"
 #include "ReconstructionViewWidget.h"
@@ -61,6 +63,136 @@
 #include "MapView.h"
 
 
+GPlatesQtWidgets::DrawStyleGradientBar::DrawStyleGradientBar(
+		QWidget *parent_) :
+	QWidget(parent_),
+	d_steps(0)
+{
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleGradientBar::set_gradient(
+		const QList<QColor> &colours,
+		const QStringList &labels,
+		int steps)
+{
+	d_colours = colours;
+	// Labels are positional, so an unexpected number of them cannot be placed and is dropped
+	// rather than guessed at.
+	d_labels = (labels.size() == colours.size()) ? labels : QStringList();
+	d_steps = steps;
+	update();
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleGradientBar::clear_gradient()
+{
+	set_gradient(QList<QColor>(), QStringList(), 0);
+}
+
+
+QSize
+GPlatesQtWidgets::DrawStyleGradientBar::sizeHint() const
+{
+	// Always reserve the label row, whether or not this ramp has labels, so that the panel below
+	// does not shift as the selection moves between styles.
+	return QSize(120, BAR_HEIGHT + LABEL_SPACING + fontMetrics().height());
+}
+
+
+QColor
+GPlatesQtWidgets::DrawStyleGradientBar::colour_at(
+		double position) const
+{
+	if (d_colours.isEmpty())
+	{
+		return QColor();
+	}
+	if (d_colours.size() == 1)
+	{
+		return d_colours.front();
+	}
+
+	const int last = static_cast<int>(d_colours.size()) - 1;
+	const double scaled = qBound(0.0, position, 1.0) * last;
+	const int lower = qMin(static_cast<int>(scaled), last - 1);
+	const double fraction = scaled - lower;
+
+	const QColor &from = d_colours.at(lower);
+	const QColor &to = d_colours.at(lower + 1);
+
+	return QColor::fromRgbF(
+			from.redF() + (to.redF() - from.redF()) * fraction,
+			from.greenF() + (to.greenF() - from.greenF()) * fraction,
+			from.blueF() + (to.blueF() - from.blueF()) * fraction,
+			from.alphaF() + (to.alphaF() - from.alphaF()) * fraction);
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleGradientBar::paintEvent(
+		QPaintEvent *)
+{
+	QPainter painter(this);
+
+	const QRect bar_rect(0, 0, width() - 1, BAR_HEIGHT - 1);
+	const QRect fill_rect = bar_rect.adjusted(1, 1, 0, 0);
+
+	if (d_colours.size() == 1)
+	{
+		painter.fillRect(fill_rect, d_colours.front());
+	}
+	else if (d_colours.size() > 1 && d_steps >= 2)
+	{
+		// Quantised, and quantised the way the colouring scripts do it: each band is centred on
+		// the colour it stands for, which leaves the two end bands half width.
+		for (int step = 0; step < d_steps; ++step)
+		{
+			const double band_start = qMax(0.0, (step - 0.5) / (d_steps - 1));
+			const double band_end = qMin(1.0, (step + 0.5) / (d_steps - 1));
+
+			const int left = fill_rect.left() + qRound(band_start * fill_rect.width());
+			const int right = fill_rect.left() + qRound(band_end * fill_rect.width());
+
+			painter.fillRect(
+					QRect(left, fill_rect.top(), right - left, fill_rect.height()),
+					colour_at(step / static_cast<double>(d_steps - 1)));
+		}
+	}
+	else if (d_colours.size() > 1)
+	{
+		QLinearGradient gradient(fill_rect.topLeft(), fill_rect.topRight());
+		for (int i = 0; i < d_colours.size(); ++i)
+		{
+			gradient.setColorAt(i / static_cast<double>(d_colours.size() - 1), d_colours.at(i));
+		}
+		painter.fillRect(fill_rect, gradient);
+	}
+
+	painter.setPen(palette().color(QPalette::Mid));
+	painter.drawRect(bar_rect);
+
+	if (!d_labels.isEmpty())
+	{
+		const QRect label_rect(
+				0,
+				BAR_HEIGHT + LABEL_SPACING,
+				width(),
+				fontMetrics().height());
+
+		painter.setPen(palette().color(QPalette::WindowText));
+		painter.drawText(label_rect, Qt::AlignLeft, d_labels.front());
+		if (d_labels.size() > 1)
+		{
+			painter.drawText(label_rect, Qt::AlignRight, d_labels.back());
+		}
+	}
+}
+
+
 GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget* parent_) :
@@ -70,6 +202,7 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 	d_globe_and_map_widget_ptr(NULL),
 	d_view_state(view_state),
 	d_combo_box(NULL),
+	d_gradient_bar(NULL),
 	d_style_of_all(NULL)
 {
 	init_dlg();
@@ -540,6 +673,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_configuration_changed()
 	current_style->set_dirty_flag(true);
 	set_style(current_style);
 	refresh_current_icon();
+	update_gradient_bar(current_style);
 }
 
 
@@ -650,6 +784,12 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	splitter->setStretchFactor(splitter->indexOf(categories_table),1);
 	splitter->setStretchFactor(splitter->indexOf(right_side_frame),4);
 
+	d_gradient_bar = new DrawStyleGradientBar(this);
+	QtWidgetUtils::add_widget_to_placeholder(d_gradient_bar, gradient_bar_placeholder);
+	// Nothing is selected yet, so there is neither a ramp to show nor advice to give.
+	d_gradient_bar->hide();
+	style_hint_label->clear();
+
 	d_combo_box = new LayerGroupComboBox(
 			d_view_state.get_visual_layers(),
 			d_view_state.get_visual_layer_registry(),
@@ -752,14 +892,16 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 
 		const Configuration& cfg = current_style->configuration();
 		build_config_panel(cfg);
-		
+		update_gradient_bar(current_style);
+		update_style_hint(current_style);
+
 		if(!mgr->is_built_in_style(*current_style))
 		{
 			if(mgr->get_ref_number(*current_style) == 1 && mgr->can_be_removed(*current_style))
 				remove_button->setEnabled(true);
 			else
 				remove_button->setEnabled(false);
-			
+
 			enable_config_panel(true);
 		}
 		else
@@ -767,6 +909,101 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 			remove_button->setEnabled(false);
 			enable_config_panel(false);
 		}
+	}
+	else
+	{
+		update_gradient_bar(NULL);
+		update_style_hint(NULL);
+	}
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::update_gradient_bar(
+		const GPlatesGui::StyleAdapter* style_)
+{
+	if(!d_gradient_bar)
+		return;
+
+	QList<QColor> colours;
+	QStringList times;
+	int steps = 0;
+
+	if(style_)
+	{
+		// A configuration is keyed by name, so its items already arrive in the order the config
+		// panel lays them out ("Endpoint 1 ..." ahead of "Endpoint 2 ..."). Take the colours in
+		// that order as the stops of the ramp, and the times as the labels for its ends. A style
+		// that has no colours to interpolate - a palette-driven one, say - describes no ramp,
+		// and the bar stays hidden for it.
+		const GPlatesGui::Configuration& cfg = style_->configuration();
+
+		BOOST_FOREACH(const QString& item_name, cfg.all_cfg_item_names())
+		{
+			const GPlatesGui::PythonCfgItem* item =
+					dynamic_cast<const GPlatesGui::PythonCfgItem*>(cfg.get(item_name));
+			if(!item)
+				continue;
+
+			if(dynamic_cast<const GPlatesGui::PythonCfgColor*>(item))
+			{
+				const QColor colour(item->get_value());
+				if(colour.isValid())
+					colours.append(colour);
+			}
+			else if(item_name.startsWith("Steps", Qt::CaseInsensitive))
+			{
+				// Anything that is not a number - "smooth", most often - leaves the ramp
+				// unquantised.
+				bool is_a_number = false;
+				const int value = item->get_value().trimmed().toInt(&is_a_number);
+				steps = is_a_number ? value : 0;
+			}
+			else if(item_name.contains("time", Qt::CaseInsensitive))
+			{
+				QString label = item->get_value().trimmed();
+
+				// Carry over the unit the setting was named with - "Endpoint 1 time (Ma)" -
+				// so that the number under the ramp says what it is.
+				const qsizetype unit_start = item_name.indexOf('(');
+				const qsizetype unit_end = item_name.indexOf(')', unit_start + 1);
+				if(!label.isEmpty() && unit_start >= 0 && unit_end > unit_start + 1)
+				{
+					label += " " + item_name.mid(unit_start + 1, unit_end - unit_start - 1);
+				}
+
+				times.append(label);
+			}
+		}
+	}
+
+	d_gradient_bar->set_gradient(colours, times, steps);
+	d_gradient_bar->setVisible(!colours.isEmpty());
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::update_style_hint(
+		const GPlatesGui::StyleAdapter* style_)
+{
+	if(!style_)
+	{
+		style_hint_label->clear();
+		return;
+	}
+
+	if(GPlatesGui::DrawStyleManager::is_built_in_style(*style_))
+	{
+		// The supplied styles cannot be edited in place, and a disabled panel on its own does
+		// not say what to do about that.
+		style_hint_label->setText(
+				tr("This is a supplied example, so its settings are read-only."
+					" Click New to use this feature."));
+	}
+	else
+	{
+		style_hint_label->setText(
+				tr("This is your own style. Edit its settings above and the view follows."));
 	}
 }
 
@@ -851,13 +1088,25 @@ GPlatesQtWidgets::DrawStyleDialog::handle_add_button_clicked(bool )
 	StyleCategory* current_cata = get_catagory(*cur_cata_item);
 	if(current_cata)
 	{
-		const StyleAdapter* style_temp = d_style_mgr->get_template_style(*current_cata);
-		if(style_temp)
+		// Copy whatever is selected, so that the supplied examples are usable as starting
+		// points: picking one and clicking New gives an editable style that already looks like
+		// it, rather than a bare template the settings then have to be typed back into.
+		const StyleAdapter* source_style = get_current_style();
+		if(!source_style)
 		{
-			StyleAdapter* new_style = style_temp->deep_clone();
+			source_style = d_style_mgr->get_template_style(*current_cata);
+		}
+
+		if(source_style)
+		{
+			StyleAdapter* new_style = source_style->deep_clone();
 			if(new_style)
 			{
-				QString new_name("Unnamed");
+				QString new_name = source_style->name();
+				if(new_name.isEmpty())
+				{
+					new_name = "Unnamed";
+				}
 				if(!is_style_name_valid(*current_cata,new_name))
 				{
 					new_name = generate_new_valid_style_name(*current_cata,new_name);
