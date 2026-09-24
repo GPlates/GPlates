@@ -5,8 +5,10 @@ Status: agreed 2026-09-24, on the long-lived branch `feature/architecture-diagra
 layer proposal A (survey section 4) were approved 2026-09-25. Stage 2 (the pilot pull request) is
 written: the generated diagrams, the README, the scribe move, the `AGENTS.md` pointer, and the
 reconstruction page (written by the architecture-writer agent, reviewed against the code; its
-evidence and layout findings are in `reconstruction-notes.md`). Next: the developer reviews the
-pilot and judges the level of detail, then the pull request is opened.
+evidence and layout findings are in `reconstruction-notes.md`). Next: the reconstruction refactor
+assessment (see *Pilot area*), then the claim check (`claim-check-prompt.md`) and
+`/code-review high`, then the developer reviews the pilot and judges the level of detail, then
+the pull request is opened.
 
 Found while porting the prototype: in a `flowchart BT` the including node is drawn *below* the
 included one, so the layers came out upside down; the generator uses `TD`. And the layout ranks
@@ -146,7 +148,8 @@ removes a red edge.
 - The groups are provisional. The Fable agent writing the area pages proposes regroupings as it
   learns the code; you approve them.
 - Deferred: making the test fail when a *new* upward edge appears (a ratchet). Not until the
-  groups have settled.
+  groups have settled, which is after the move and its enabling refactors: the ratchet is turned
+  on at the start of the area refactors (piece 8 of the umbrella plan).
 
 ## Area pages
 
@@ -161,6 +164,21 @@ Each page, in this order:
    not allow progress.
 7. Entry points: the files to open first.
 8. The commit it was last checked against.
+
+Beside the page, the agent also writes:
+
+- **Layout evidence**, in the area's notes file in this plan directory (`<area>-notes.md`,
+  never in `docs/design/`): files that belong to another area, directories with no single
+  subject, and upward includes caused by code sitting in the wrong file. Input to stage 4.
+- **A refactor assessment**, in the private planning repository, as
+  `plans/area-refactors/<area>.md` (umbrella plan, *Refactoring*): each part of the area rated
+  *fine*, *touch-up*, *restructure* or *rewrite*, with the reason and where in the code, and
+  what upcoming work the area must be shaped for, taken from the topic plans there whose
+  `Areas:` line names the area ("none known" if none). It is judgement for planning, not a
+  description, so it stays off the page, which states only the weaknesses behind it, as facts.
+  It is kept out of this directory because these notes become public with this plan's pull
+  requests and are deleted with it, while the assessment is needed until the area's refactor
+  (after the move), and becomes that refactor's plan. The notes here never cite it.
 
 ### Which areas
 
@@ -187,6 +205,11 @@ binding machinery (export registration, conversions, wrapper types) rather than 
 does. It is also the area the unmerged Docs E branch is editing. It stays on the area list.
 
 The model area is out while `feature/pygplates-model-revisions` is unmerged.
+
+The pilot page was written before the refactor assessment was added to the template. Its
+assessment is written separately, by the `architecture-writer` agent, into
+`plans/area-refactors/reconstruction.md` in the planning repository, before the claim check
+runs, so the check covers it too.
 
 ### Branches
 
@@ -236,9 +259,17 @@ distils what it completed, and the last one deletes this plan.
    file-level boundaries: the proposed directory tree and its names, the namespace policy
    (namespacing by area, a common root, or coarser; say first what namespaces are for), where
    the pyGPlates / GPlates split sits in the tree, and the design of the migration script. Its
-   output is a design document, approved before anything moves. The Fable agent writing pages
-   notes layout evidence as it goes (files that belong to another area, directories with no
-   single subject), so this stage starts from collected evidence rather than a fresh survey.
+   output is a design document, approved before anything moves. It also lists:
+   - the **enabling refactors** (umbrella piece 4a): the files that must be split, and the code
+     that must move between files, before the script can place every file in one area. They
+     land on `gplates` before the move, as small behaviour-preserving pull requests;
+   - the **target sub-structure** of an area whose refactor would reshape it, but only if the
+     chosen namespace policy puts namespaces at sub-directory level. With namespaces per area,
+     a move inside an area rewrites only `#include` paths, so each refactor (piece 8) shapes
+     its own area's inside when it starts, with its plan in hand.
+
+   The Fable agent writing pages notes layout evidence and a refactor assessment as it goes (see
+   *Area pages*), so this stage starts from collected evidence rather than a fresh survey.
 5. **After the move:** paths updated in the pages already written, and the stable areas'
    pages (export, sessions, canvas tools, auxiliary tools) written against the new tree.
 6. **`model-system/`** moved and retrofitted once `feature/pygplates-model-revisions` merges
