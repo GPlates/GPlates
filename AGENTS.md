@@ -118,6 +118,15 @@ Use GoogleTest for all new C++ tests; do not mix frameworks. Conventions (headle
 working-directory independent, `GPLATES_UNIT_TEST_DATA_DIR`, `QTemporaryDir`, and leaving
 `git status` clean) are in `docs/design/testing/README.md`.
 
+## Architecture pages
+
+`docs/design/architecture/` maps the code by *area* (a subject such as reconstruction, not a
+directory). Its `README.md` is the overview and lists the areas; each area with a page has its
+own directory there. **Before changing an area, read its page. A pull request that changes an
+area's structure updates its page in the same pull request.** The layer diagrams in
+`dependency-matrix.md` are generated; the layer groups they measure against are `LAYERS` in
+`cmake/pygplates_source_closure.py`, described in the README.
+
 ## The pyGPlates module boundary
 
 The pygplates module compiles only the **include closure of the pyGPlates API** — not the
