@@ -1,8 +1,18 @@
 # Architecture diagrams for GPlates / pyGPlates
 
 Status: agreed 2026-09-24, on the long-lived branch `feature/architecture-diagrams` (worktree
-`architecture-diagrams`). Stage 1 (the survey, `survey.md`) is done; next: the developer approves its
-areas, priority and layer groups, then the pilot pull request.
+`architecture-diagrams`). Stage 1 (the survey, `survey.md`) is done, and its areas, priority and
+layer proposal A (survey section 4) were approved 2026-09-25. Stage 2 (the pilot pull request) is
+written: the generated diagrams, the README, the scribe move, the `AGENTS.md` pointer, and the
+reconstruction page (written by the architecture-writer agent, reviewed against the code; its
+evidence and layout findings are in `reconstruction-notes.md`). Next: the developer reviews the
+pilot and judges the level of detail, then the pull request is opened.
+
+Found while porting the prototype: in a `flowchart BT` the including node is drawn *below* the
+included one, so the layers came out upside down; the generator uses `TD`. And the layout ranks
+by every edge, so an upward edge declared as `a -.-> b` pulls the layers out of order; it is
+declared `b <-.-|n| a` instead (the comment at the code says so). Mermaid was checked by rendering
+with `minlag/mermaid-cli` in Docker, since there is no Node on this machine.
 
 ## Goal
 
