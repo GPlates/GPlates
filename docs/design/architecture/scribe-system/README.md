@@ -40,6 +40,47 @@ Everything in the system flows through the same two stages:
    to/from a stream. Three formats exist (binary, text, XML); all production paths use the
    **binary** format except the deprecated GPlates 1.5 session format, which uses text.
 
+## Components
+
+```mermaid
+flowchart TD
+  CLIENT["Client: sessions and projects, or pyGPlates pickling"]
+  subgraph stage1 ["Stage 1: object graph and Transcription"]
+    SCRIBE["Scribe<br/>tracking, pointers, raw lane"]
+    TYPES["Transcribe-aware types<br/>transcribe() members"]
+    EXPORT["ExportRegistry<br/>singleton"]
+    VOID["VoidCastRegistry<br/>one per Scribe"]
+    TSC["TranscriptionScribeContext"]
+    TRANS["Transcription"]
+  end
+  subgraph stage2 ["Stage 2: Transcription and bytes"]
+    AW["ArchiveWriter<br/>write_transcription"]
+    AR["ArchiveReader<br/>read_transcription"]
+    IMPL["Binary archive<br/>Text and XML archives, GPlates only"]
+  end
+  REG["src/ScribeExport*.cc<br/>one per program or library"]
+  CLIENT -->|"save or load objects"| SCRIBE
+  CLIENT -->|"write or read the Transcription"| stage2
+  SCRIBE -->|"calls transcribe()"| TYPES
+  SCRIBE --> EXPORT
+  SCRIBE --> VOID
+  SCRIBE --> TSC --> TRANS
+  REG -->|"registers class names"| EXPORT
+  AW --> TRANS
+  AR --> TRANS
+  IMPL -.->|implements| AW
+  IMPL -.->|implements| AR
+```
+
+A client constructs a `Scribe` and an archive separately. Saving transcribes objects into the
+`Scribe`'s `Transcription` and then hands that to an `ArchiveWriter`. Loading reads a
+`Transcription` with an `ArchiveReader` and constructs the `Scribe` from it. The clients are
+`presentation/TranscribeSession` and the session classes, and `api/PythonPickle` (see
+[Who uses it](#who-uses-it)). The export registry is filled by one `SCRIBE_EXPORT_REGISTRATION`
+per program or library: `src/ScribeExportGPlates.cc`, `src/ScribeExportPyGPlates.cc`, and
+`src/ScribeExportGPlatesUnitTest.cc` for the unit tests. The text and XML archives are in
+`gplates_only_srcs` in `src/scribe/CMakeLists.txt`.
+
 ## Chapters
 
 | Chapter | Contents |
@@ -81,3 +122,16 @@ See [usage.md](usage.md) for the full inventory.
 - A failed load is reported through a **`TranscribeResult`** return code (recoverable — supply a
   default or skip), while programmer errors and corrupt archives throw **exceptions** (abort the
   whole transcribe).
+
+## Entry points
+
+- `src/scribe/Scribe.h`: the `Scribe` class and its public API.
+- `src/scribe/Transcribe.h`: the client customisation points (`transcribe()`,
+  `transcribe_construct_data()`, `relocated()`).
+- `src/scribe/ScribeExportRegistration.h`: how polymorphic classes are registered, and why each
+  program or library has its own list.
+- `src/scribe/Transcription.h`: the intermediate representation.
+- `src/presentation/TranscribeSession.cc`: the largest client, GPlates sessions and projects.
+- `src/api/PythonPickle.h`: the pickle bridge, and its coarse version gate.
+
+Last checked against: `553ec966e` (the `gplates` branch).
