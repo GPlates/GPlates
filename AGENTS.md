@@ -323,7 +323,11 @@ requires updating both `[tool.cibuildwheel].build` in `pyproject.toml` and `PYTH
 
 ## Working agreements
 
-- Propose a plan and get agreement before multi-file refactors or changes to CMake or CI.
+- Propose a plan and get agreement before multi-file refactors, and before changing build logic
+  or CI: `find_package` calls, options, targets, install and packaging, version resolution, or
+  workflow files. A plan the developer has already agreed covers the changes it describes.
+  Adding or removing a file in a source list, or the fix a test's failure message prescribes,
+  needs no plan.
 - `pyproject.toml` is heavily commented and is the authoritative reference for the
   scikit-build-core and cibuildwheel configuration; read those comments before changing it. Note
   that its per-platform `config-settings` tables *override* rather than merge with the base table.
