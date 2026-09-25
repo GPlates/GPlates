@@ -52,7 +52,7 @@ diagrams.
 docs/design/architecture/
   README.md               overview (level 1), layer groups in prose, directory rules, area index
   dependency-matrix.md    generated: layer diagrams + the matrix + the module subset
-  <area>/README.md        one directory per area (level 2), more pages beside it as needed
+  <area>/README.md        one directory per area (level 2), named by the area's short name
   scribe-system/          moved here from docs/design/
   model-system/           moved here when feature/pygplates-model-revisions merges
 ```
@@ -88,8 +88,8 @@ existing `pygplates-source-closure` drift check keeps them current for free.
 Prototype: [`prototype/mermaid_proto.py`](prototype/mermaid_proto.py) prints the Mermaid
 (`--pygplates` for the module-only diagram, and the upward edges on stderr), and
 [`prototype/scc.py`](prototype/scc.py) prints the cycles. Both import the closure script. To be
-ported into it, not copied: they go when this plan is deleted. Version 2 is rendered as a
-private artifact at https://claude.ai/artifact/HSs3U2rgkb7UTWNH8gkodv.
+ported into it, not copied: they go when this plan is deleted. Version 2's output was rendered
+and checked by eye.
 
 **How it works:**
 
@@ -130,11 +130,10 @@ merges them into one group.
 - GPlates-only: `opengl -> gui` (8), `file-io -> gui` (5), `opengl -> view-operations` (3),
   `data-mining -> gui` (1).
 
-These overlap with the survey in the pending **Directory layering** item
-(`feature/directory-layering`), which already names the files behind most of them (for example
-all 7 `model -> app-logic` includes are in `WeakObserverVisitor.cc`). The two pieces of work fit
-together: the layer groups say what directory-layering fixes against, and each fix it makes
-removes a red edge.
+`survey.md` section 4 names the files behind most of them (for example all 7
+`model -> app-logic` includes are in `WeakObserverVisitor.cc`). The source reorganisation removes
+them: the small enabling refactors before its move, and the area refactors after it (stage 4
+below).
 
 **Decisions:**
 
@@ -242,7 +241,8 @@ The branch is long-lived, but its work reaches `gplates` in several pull request
 distils what it completed, and the last one deletes this plan.
 
 1. **Survey** (Fable): the proposed area list and boundaries, the areas that matter most, and
-   proposed changes to the layer groups. It goes into this plan, not the repository.
+   proposed changes to the layer groups. It goes into this plan directory (`survey.md`), not
+   into `docs/design/`, and is deleted with the plan.
 2. **Pilot pull request**:
    - the generated diagrams in `cmake/pygplates_source_closure.py` and `dependency-matrix.md`;
    - the README reworked: overview, layer groups in prose, area index, ASCII diagram removed;
@@ -254,15 +254,28 @@ distils what it completed, and the last one deletes this plan.
 3. **The priority area pages**, one pull request per area (or two small areas together), in
    the survey's order: reconstruction (the pilot), GPGIM, feature file I/O, topologies, layers,
    colouring, scene rendering, OpenGL.
-4. **Layout design** for the source reorganisation (umbrella plan:
-   `gplates-planning/plans/source-reorganisation.md`, private). From the areas and their
-   file-level boundaries: the proposed directory tree and its names, the namespace policy
-   (namespacing by area, a common root, or coarser; say first what namespaces are for), where
-   the pyGPlates / GPlates split sits in the tree, and the design of the migration script. Its
-   output is a design document, approved before anything moves. It also lists:
+4. **Layout design** for the source reorganisation (its umbrella plan is private; the public
+   announcement will be an issue linked from #72). From the areas and their file-level
+   boundaries: the proposed directory tree and its names, the namespace policy (namespacing by
+   area, a common root, or coarser; say first what namespaces are for, and how deep they go),
+   where the pyGPlates / GPlates split sits in the tree, and the design of the migration script.
+   Its output is `layout.md` in this plan directory, public, since the announcement points the
+   fork at it, and approved before anything moves; after the move it is folded into
+   `docs/design/architecture/README.md` (*What goes in which directory*). It also gives:
+   - the **placement of every file** in `src/`. For an area with a page, from the page's
+     boundary; for an area whose page comes after the move, a file list made here and checked
+     against the code the way a page is. Those lists are where the later pages start;
    - the **enabling refactors** (umbrella piece 4a): the files that must be split, and the code
      that must move between files, before the script can place every file in one area. They
-     land on `gplates` before the move, as small behaviour-preserving pull requests;
+     land on `gplates` before the move, as small behaviour-preserving pull requests. Rendering-side
+     files move whole (a split there waits for 3.0, since the Vulkan branch rewrites them), and
+     model-side splits land after `feature/pygplates-model-revisions` merges;
+   - the **downstream procedure**: a tree other than `gplates` (the Vulkan branch, the fork)
+     merges `gplates` up to the commit before the move, runs the script, then merges the move.
+     The script fails on a file its map doesn't list, and a branch extends the map for its own
+     files;
+   - what else follows the directory today: the closure tracer's layer groups (an area's
+     sub-directories count as the area), the include-guard convention, and the product split;
    - the **target sub-structure** of an area whose refactor would reshape it, but only if the
      chosen namespace policy puts namespaces at sub-directory level. With namespaces per area,
      a move inside an area rewrites only `#include` paths, so each refactor (piece 8) shapes
@@ -270,43 +283,24 @@ distils what it completed, and the last one deletes this plan.
 
    The Fable agent writing pages notes layout evidence and a refactor assessment as it goes (see
    *Area pages*), so this stage starts from collected evidence rather than a fresh survey.
-5. **After the move:** paths updated in the pages already written, and the stable areas'
-   pages (export, sessions, canvas tools, auxiliary tools) written against the new tree.
+5. **After the move:** paths updated in the pages already written, and the remaining areas'
+   pages (Python bindings, feature editing, application shell, rasters, export, sessions, canvas
+   tools, auxiliary tools) written against the new tree, starting from the layout design's file
+   lists. Until then, requests in those areas are triaged from the code.
 6. **`model-system/`** moved and retrofitted once `feature/pygplates-model-revisions` merges
    (before the move, which waits for it).
 
 ## Feature requests
 
-The list of requests is its own plan. This is how it uses the area pages.
+Feature requests are collected and triaged in a private list, kept outside this repository
+because it records who asked for what. What matters for the pages:
 
-1. **Collect.** Each request becomes a short record: what the user wants, and who asked.
-2. **Triage against the pages.** For each request, answer from the area pages first: which areas
-   it touches, and whether the current design can take it. Three outcomes:
-   - *fits*: the design already has a place for it (a new property value, another reader);
-   - *extends*: it needs an extension point the area lacks;
-   - *restructures*: it needs a structural change.
-
-   An agent can do the first pass by reading only the pages, then check its answer against the
-   code. If a request can't be triaged from a page, the page is missing something, so fix the
-   page.
-3. **Cluster.** Requests that need the same structural change justify that change as an
-   enabling refactor. This is where priorities come from: "lighter GPGIM" or "rule-based
-   symbology" is worth doing because of the requests it unblocks, and the cluster says which
-   ones.
-4. **Record in two places.** The request list holds the triage: areas, outcome, and enabling
-   change. The area page's *Known weaknesses and deferred work* gets the structural limitation,
-   stated as a limitation of the design. The request itself stays out of the design docs: it
-   describes what's wanted, not what is.
-
-   The list is **private**, and the pages are public, so the links run one way: the list
-   links to the page, and the page never links to the list (a public reader would find a dead
-   link). A page links to a request only once it has become a public issue, which happens when
-   it is triaged, clustered and given a milestone. Until then the limitation stands on its own.
-5. **Implement.** The work's plan starts from the area pages. The pull request updates them, and
-   the list marks the request done. When a refactor removes a limitation, that entry leaves the
-   page.
-
-## Open questions
-
-- Where the private request list lives, and how requests are collected. (For the
-  feature-request plan, not this one.)
+- Each request is triaged against the area pages: *fits* (the design already has a place for
+  it), *extends* (it needs an extension point the area lacks) or *restructures* (it needs a
+  structural change). If a request can't be triaged from a page, the page is missing something,
+  so fix the page.
+- The area page's *Known weaknesses and deferred work* gets the structural limitation, stated as
+  a limitation of the design, never the request.
+- Links run one way: a page never links to the private list. A page links to a request only once
+  it is a public issue, and commits and pull requests cite that issue.
+- When a refactor removes a limitation, that entry leaves the page.

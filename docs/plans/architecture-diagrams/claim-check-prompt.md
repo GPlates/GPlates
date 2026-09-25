@@ -16,9 +16,10 @@ code correctly. You are a reviewer, not an author: don't rewrite anything, repor
 ## Where to work
 
 Worktree `C:/gplates/src/architecture-diagrams`, branch `feature/architecture-diagrams`. Its `src/`
-is the `gplates` development branch at `553ec966e`; the documents are the commits
-`4f2835215..ca0b6d19b` (`git log 553ec966e..HEAD` to see them; `c6da19d58` and earlier are plan
-commits and out of scope). Read `AGENTS.md` first for how the repository is laid out.
+is the `gplates` development branch at `553ec966e`; the documents are the commits from
+`4f2835215` to `HEAD` (`git log 553ec966e..HEAD` to see them; `c6da19d58` and earlier, and
+commits touching only `docs/plans/`, are plan commits and out of scope). Check the documents as
+they are at `HEAD`. Read `AGENTS.md` first for how the repository is laid out.
 
 ## What to check
 

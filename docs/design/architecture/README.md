@@ -22,6 +22,10 @@ boundary is marked within it rather than described separately.
 Before changing an area, read its page. A pull request that changes an area's structure updates
 its page in the same pull request.
 
+A page describes the code as it is: known weaknesses are stated as facts about the current
+design, never as proposals, plans or progress. It links only to material a public reader can
+open (other pages, source files, public issues).
+
 ## Overview
 
 An arrow means that one area's results feed the other. The shared core is compiled into both
@@ -97,29 +101,30 @@ feature-editing dialogs; it is not drawn as edges.
 
 An area is a subject, not a directory: several span directories, and `app-logic/`, `gui/`,
 `presentation/`, `view-operations/` and `qt-widgets/` are each split across several areas. An
-area without a link has no page yet.
+area without a link has no page yet. The short name is the area's page directory, and how other
+documents refer to the area.
 
-| area | what it covers | products |
-| --- | --- | --- |
-| [Reconstruction](reconstruction/README.md) | rotation features to reconstruction trees; reconstruct methods; reconstructed feature geometries and velocities | both |
-| GPGIM and feature schema | the `Gpgim` registry of feature classes, properties and structural types; GPML version upgrades | both |
-| Feature file I/O | the file-format registry; GPML, PLATES4, rotation and OGR readers and writers; the loaded-file state | both |
-| Topologies and deformation | resolved lines, boundaries and networks; triangulation; deformation and strain; plate partitioning | both |
-| Layers | `ReconstructGraph`, layer tasks and proxies, and the visual layers that mirror them | GPlates |
-| Colouring and draw styles | colours and palettes; the Python draw styles and their C++ adapters; symbols | GPlates (colour value types: both) |
-| Scene rendering | rendered geometries, the globe and map painters, view parameters, the canvases | GPlates |
-| OpenGL framework | `opengl/`: the renderer, contexts, raster pyramids, scalar fields, filled polygons | GPlates |
-| Python bindings and embedded Python | the `export_*()` bindings; the interpreter embedded in GPlates, and its scripts | both (embedding: GPlates) |
-| Feature editing GUI | the dialogs that create and edit features property by property | GPlates |
-| Application shell | start-up; `Application`, `ApplicationState`, `ViewState`, `ViewportWindow`; the command line | GPlates |
-| Rasters and 3D scalar fields | proxied raster property values, raster readers and caches, raster layers | GPlates (values and readers: both) |
-| Export | the export-animation registry and strategies, and the writers of reconstructed data | GPlates (writers: both) |
-| Canvas tools and geometry editing | canvas-tool workflows, the geometry builder and its operations, undo | GPlates |
-| Sessions, projects and preferences | saving and restoring the loaded files and layer state; user preferences | GPlates |
-| Model | feature handles, revisions, property values, feature visitors | both |
-| [Scribe](scribe-system/README.md) | serialisation for sessions, projects and pickling | both |
-| Auxiliary analysis tools | co-registration, Hellinger fitting, kinematic graphs, age models, velocity domains | GPlates |
-| Foundation | `maths/` (geometry on the sphere, rotations), `utils/`, `global/` | both |
+| area | short name | what it covers | products |
+| --- | --- | --- | --- |
+| [Reconstruction](reconstruction/README.md) | `reconstruction` | rotation features to reconstruction trees; reconstruct methods; reconstructed feature geometries and velocities | both |
+| GPGIM and feature schema | `gpgim` | the `Gpgim` registry of feature classes, properties and structural types; GPML version upgrades | both |
+| Feature file I/O | `file-io` | the file-format registry; GPML, PLATES4, rotation and OGR readers and writers; the loaded-file state | both |
+| Topologies and deformation | `topologies` | resolved lines, boundaries and networks; triangulation; deformation and strain; plate partitioning | both |
+| Layers | `layers` | `ReconstructGraph`, layer tasks and proxies, and the visual layers that mirror them | GPlates |
+| Colouring and draw styles | `colouring` | colours and palettes; the Python draw styles and their C++ adapters; symbols | GPlates (colour value types: both) |
+| Scene rendering | `scene-rendering` | rendered geometries, the globe and map painters, view parameters, the canvases | GPlates |
+| OpenGL framework | `opengl` | `opengl/`: the renderer, contexts, raster pyramids, scalar fields, filled polygons | GPlates |
+| Python bindings and embedded Python | `python-bindings` | the `export_*()` bindings; the interpreter embedded in GPlates, and its scripts | both (embedding: GPlates) |
+| Feature editing GUI | `feature-editing` | the dialogs that create and edit features property by property | GPlates |
+| Application shell | `app-shell` | start-up; `Application`, `ApplicationState`, `ViewState`, `ViewportWindow`; the command line | GPlates |
+| Rasters and 3D scalar fields | `rasters` | proxied raster property values, raster readers and caches, raster layers | GPlates (values and readers: both) |
+| Export | `export` | the export-animation registry and strategies, and the writers of reconstructed data | GPlates (writers: both) |
+| Canvas tools and geometry editing | `canvas-tools` | canvas-tool workflows, the geometry builder and its operations, undo | GPlates |
+| Sessions, projects and preferences | `sessions` | saving and restoring the loaded files and layer state; user preferences | GPlates |
+| Model | `model` | feature handles, revisions, property values, feature visitors | both |
+| [Scribe](scribe-system/README.md) | `scribe-system` | serialisation for sessions, projects and pickling | both |
+| Auxiliary analysis tools | `auxiliary-tools` | co-registration, Hellinger fitting, kinematic graphs, age models, velocity domains | GPlates |
+| Foundation | `foundation` | `maths/` (geometry on the sphere, rotations), `utils/`, `global/` | both |
 
 ## The layer groups
 
