@@ -41,7 +41,9 @@
 #
 #   # Also diff the committed dependency-matrix doc against what would be generated. The doc
 #   # holds the layer diagrams (the include graph measured against LAYERS below), the include
-#   # matrix and the module subset; this also fails if a directory part is not in LAYERS.
+#   # matrix and the module subset. This also fails if LAYERS is out of step with the tree (a
+#   # directory part in no group, a part in two, or an entry with no files); "--output-doc" then
+#   # refuses to write too, and prints why.
 #   python cmake/pygplates_source_closure.py --check-doc
 #
 #   # Rewrite the dependency-matrix doc (the only mode that writes anything).
@@ -89,11 +91,12 @@ FORBIDDEN_DIRS = frozenset([
 #
 # The entries are directory *parts*. "<dir>" is the part of a directory that the pyGPlates module
 # compiles, or the whole of a FORBIDDEN_DIRS directory; "<dir>+" is the GPlates-only rest of a
-# directory the module compiles only some of. Parts in one group are peers and may include each
+# directory the module compiles only some of, or the whole of a directory the module reaches none
+# of that is not in FORBIDDEN_DIRS. Parts in one group are peers and may include each
 # other. An include from a lower group into a higher one is an upward edge, drawn in red.
 #
-# Every part must be placed, and every entry must still have files, or "--check-doc" fails: a new
-# directory (or a directory the module starts or stops reaching) can't go unplaced.
+# Every part must be placed exactly once, and every entry must still have files, or "--check-doc"
+# fails: a new directory (or a directory the module starts or stops reaching) can't go unplaced.
 LAYERS = [
     ('Foundation', ['global', 'utils']),
     ('Maths + serialisation', ['maths', 'scribe']),
@@ -411,7 +414,7 @@ class LayerGraph(object):
 
     def part_of(self, rel):
         d = top_dir(rel)
-        if '/' not in rel or d in UNLAYERED_DIRS:
+        if d == '(src root)' or d in UNLAYERED_DIRS:
             return None
         return d if rel in self.reached or d in FORBIDDEN_DIRS else d + '+'
 
@@ -430,6 +433,10 @@ class LayerGraph(object):
 
     def errors(self):
         errors = []
+        listed = [part for _, parts in LAYERS for part in parts]
+        for part in sorted(set(p for p in listed if listed.count(p) > 1)):
+            errors.append('LAYERS lists %s in more than one group: keep it in one, in '
+                          'cmake/pygplates_source_closure.py' % part)
         for part in sorted(set(self.sizes) - set(self.layer_of)):
             errors.append('directory part %s is in no layer group: add it to LAYERS in '
                           'cmake/pygplates_source_closure.py (and describe it in '
@@ -460,8 +467,11 @@ class LayerGraph(object):
                      if e[0] in parts and e[1] in parts)
         down = set(e for e in edges if self.direction(e) == 'down')
 
-        # Transitive reduction, removing the weakest edges first. Peer edges are not drawn, so
-        # they must not count as paths.
+        # Transitive reduction. Every downward edge goes to a strictly lower group, so the
+        # downward graph has no cycles and its reduction is unique: an edge is dropped whenever
+        # a longer path also connects its ends, however many includes it carries. (The sort only
+        # makes the order of the loop deterministic.) Peer edges are not drawn, so they must not
+        # count as paths.
         def reachable(src, dst, kept):
             adjacent = {}
             for a, b in kept:
@@ -477,7 +487,7 @@ class LayerGraph(object):
             return False
 
         kept = set(down)
-        for e in sorted(down, key=lambda e: (edges[e], e)):
+        for e in sorted(down):
             if reachable(e[0], e[1], kept - set([e])):
                 kept.discard(e)
 
@@ -499,7 +509,6 @@ class LayerGraph(object):
             if not present:
                 continue
             out.append('  subgraph L%d ["%s"]' % (i, title))
-            out.append('    direction LR')
             for p in present:
                 out.append('    %s["%s"]:::%s' % (node_id(p), label(p),
                                                   'module' if self.is_module_part(p) else 'gplates'))
@@ -513,11 +522,14 @@ class LayerGraph(object):
                             ('cross-cutting', 'stroke:#b7791f,stroke-dasharray:4 4,color:#b7791f')):
             for e in sorted((e for e in edges if self.direction(e) == kind),
                             key=lambda e: (-edges[e], e)):
-                # Declared from the included (higher) part, with the arrowhead at its start: the
-                # layout ranks an edge's source above its target, so an upward edge declared the
-                # other way round would pull the layers out of order.
-                out.append('  %s <-.-|%d| %s' % (node_id(e[1]), edges[e], node_id(e[0])))
-                styles.append(style)
+                # Declared from the included (higher) part: the layout ranks an edge's source
+                # above its target, so an upward edge declared the other way round pulls the
+                # layers out of order (invisible '~~~' links between the groups don't hold them
+                # either; tried). Mermaid has no arrowhead at the start alone ('<-.-' draws
+                # none), so the edge is two-headed and its style hides the end one, leaving the
+                # head on the included part.
+                out.append('  %s <-.->|%d| %s' % (node_id(e[1]), edges[e], node_id(e[0])))
+                styles.append(style + ',marker-end:none')
         out.append('  classDef module fill:#dbeafe,stroke:#1d4ed8,color:#111')
         out.append('  classDef gplates fill:#f3f4f6,stroke:#6b7280,color:#111')
         for style in sorted(set(styles)):

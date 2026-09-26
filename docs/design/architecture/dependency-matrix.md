@@ -25,32 +25,26 @@ in `src/` itself and `unit-test/` are left out.
 ```mermaid
 flowchart TD
   subgraph L0 ["Foundation"]
-    direction LR
     global["global<br/>module: 24 of 32 files"]:::module
     utils["utils<br/>module: 45 of 75 files"]:::module
   end
   subgraph L1 ["Maths + serialisation"]
-    direction LR
     maths["maths<br/>module: 100 of 133 files"]:::module
     scribe["scribe<br/>module: 56 of 64 files"]:::module
   end
   subgraph L2 ["Model + value types"]
-    direction LR
     model["model<br/>97 files"]:::module
     property_values["property-values<br/>module: 127 of 128 files"]:::module
     gui["gui<br/>module: 12 of 249 files"]:::module
   end
   subgraph L3 ["Shared core"]
-    direction LR
     file_io["file-io<br/>module: 173 of 235 files"]:::module
     app_logic["app-logic<br/>module: 151 of 285 files"]:::module
   end
   subgraph L4 ["pyGPlates bindings"]
-    direction LR
     api["api<br/>module: 77 of 110 files"]:::module
   end
   subgraph L5 ["GPlates engine"]
-    direction LR
     app_logic_gp["app-logic<br/>GPlates-only: 134 of 285 files"]:::gplates
     file_io_gp["file-io<br/>GPlates-only: 62 of 235 files"]:::gplates
     scribe_gp["scribe<br/>GPlates-only: 8 of 64 files"]:::gplates
@@ -62,11 +56,9 @@ flowchart TD
     cli["cli<br/>20 files"]:::gplates
   end
   subgraph L6 ["OpenGL rendering"]
-    direction LR
     opengl["opengl<br/>158 files"]:::gplates
   end
   subgraph L7 ["GPlates user interface"]
-    direction LR
     gui_gp["gui<br/>GPlates-only: 237 of 249 files"]:::gplates
     presentation["presentation<br/>48 files"]:::gplates
     view_operations["view-operations<br/>82 files"]:::gplates
@@ -124,24 +116,24 @@ flowchart TD
   view_operations --> app_logic_gp
   view_operations --> maths_gp
   view_operations --> utils_gp
-  opengl <-.-|12| app_logic_gp
-  file_io <-.-|11| property_values
-  gui_gp <-.-|8| opengl
-  app_logic <-.-|7| model
-  gui_gp <-.-|5| file_io_gp
-  view_operations <-.-|3| opengl
-  file_io <-.-|2| model
-  gui_gp <-.-|1| data_mining
-  opengl <-.-|1| data_mining
-  maths <-.-|7| utils
-  scribe <-.-|3| utils
-  model <-.-|1| utils
-  api_gp <-.-|1| utils_gp
+  opengl <-.->|12| app_logic_gp
+  file_io <-.->|11| property_values
+  gui_gp <-.->|8| opengl
+  app_logic <-.->|7| model
+  gui_gp <-.->|5| file_io_gp
+  view_operations <-.->|3| opengl
+  file_io <-.->|2| model
+  gui_gp <-.->|1| data_mining
+  opengl <-.->|1| data_mining
+  maths <-.->|7| utils
+  scribe <-.->|3| utils
+  model <-.->|1| utils
+  api_gp <-.->|1| utils_gp
   classDef module fill:#dbeafe,stroke:#1d4ed8,color:#111
   classDef gplates fill:#f3f4f6,stroke:#6b7280,color:#111
   linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49 stroke:#888
-  linkStyle 59,60,61,62 stroke:#b7791f,stroke-dasharray:4 4,color:#b7791f
-  linkStyle 50,51,52,53,54,55,56,57,58 stroke:#d33,stroke-width:2px,color:#d33
+  linkStyle 59,60,61,62 stroke:#b7791f,stroke-dasharray:4 4,color:#b7791f,marker-end:none
+  linkStyle 50,51,52,53,54,55,56,57,58 stroke:#d33,stroke-width:2px,color:#d33,marker-end:none
 ```
 
 ## The pyGPlates module on its own
@@ -149,28 +141,23 @@ flowchart TD
 ```mermaid
 flowchart TD
   subgraph L0 ["Foundation"]
-    direction LR
     global["global<br/>module: 24 of 32 files"]:::module
     utils["utils<br/>module: 45 of 75 files"]:::module
   end
   subgraph L1 ["Maths + serialisation"]
-    direction LR
     maths["maths<br/>module: 100 of 133 files"]:::module
     scribe["scribe<br/>module: 56 of 64 files"]:::module
   end
   subgraph L2 ["Model + value types"]
-    direction LR
     model["model<br/>97 files"]:::module
     property_values["property-values<br/>module: 127 of 128 files"]:::module
     gui["gui<br/>module: 12 of 249 files"]:::module
   end
   subgraph L3 ["Shared core"]
-    direction LR
     file_io["file-io<br/>module: 173 of 235 files"]:::module
     app_logic["app-logic<br/>module: 151 of 285 files"]:::module
   end
   subgraph L4 ["pyGPlates bindings"]
-    direction LR
     api["api<br/>module: 77 of 110 files"]:::module
   end
   maths --> global
@@ -190,17 +177,17 @@ flowchart TD
   file_io ==> property_values
   api ==> app_logic
   api --> file_io
-  file_io <-.-|11| property_values
-  app_logic <-.-|7| model
-  file_io <-.-|2| model
-  maths <-.-|7| utils
-  scribe <-.-|3| utils
-  model <-.-|1| utils
+  file_io <-.->|11| property_values
+  app_logic <-.->|7| model
+  file_io <-.->|2| model
+  maths <-.->|7| utils
+  scribe <-.->|3| utils
+  model <-.->|1| utils
   classDef module fill:#dbeafe,stroke:#1d4ed8,color:#111
   classDef gplates fill:#f3f4f6,stroke:#6b7280,color:#111
   linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 stroke:#888
-  linkStyle 20,21,22 stroke:#b7791f,stroke-dasharray:4 4,color:#b7791f
-  linkStyle 17,18,19 stroke:#d33,stroke-width:2px,color:#d33
+  linkStyle 20,21,22 stroke:#b7791f,stroke-dasharray:4 4,color:#b7791f,marker-end:none
+  linkStyle 17,18,19 stroke:#d33,stroke-width:2px,color:#d33,marker-end:none
 ```
 
 ## Upward includes
