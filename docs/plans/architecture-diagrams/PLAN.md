@@ -5,10 +5,10 @@ Status: agreed 2026-09-24, on the long-lived branch `feature/architecture-diagra
 layer proposal A (survey section 4) were approved 2026-09-25. Stage 2 (the pilot pull request) is
 written: the generated diagrams, the README, the scribe move, the `AGENTS.md` pointer, and the
 reconstruction page (written by the architecture-writer agent, reviewed against the code; its
-evidence and layout findings are in `reconstruction-notes.md`). Next: the reconstruction refactor
-assessment (see *Pilot area*), then the claim check (`claim-check-prompt.md`) and
-`/code-review high`, then the developer reviews the pilot and judges the level of detail, then
-the pull request is opened.
+evidence and layout findings are in `reconstruction-notes.md`). Next: the developer judges the
+pilot's level of detail (more is likely wanted, so the page may be revised first), and the
+reconstruction refactor assessment is written (see *Pilot area*); then the claim check
+(`claim-check-prompt.md`) and `/code-review high`, then the pull request is opened.
 
 Found while porting the prototype: in a `flowchart BT` the including node is drawn *below* the
 included one, so the layers came out upside down; the generator uses `TD`. And the layout ranks
@@ -171,10 +171,14 @@ Beside the page, the agent also writes:
   subject, and upward includes caused by code sitting in the wrong file. Input to stage 4.
 - **A refactor assessment**, in the private planning repository, as
   `plans/area-refactors/<area>.md` (umbrella plan, *Refactoring*): each part of the area rated
-  *fine*, *touch-up*, *restructure* or *rewrite*, with the reason and where in the code, and
-  what upcoming work the area must be shaped for, taken from the topic plans there whose
-  `Areas:` line names the area ("none known" if none). It is judgement for planning, not a
-  description, so it stays off the page, which states only the weaknesses behind it, as facts.
+  *fine*, *touch-up*, *restructure* or *rewrite*, with the reason and where in the code. It
+  rates the code against what it does today, not against planned upgrades (decided 2026-09-27:
+  shaping ratings for upcoming work tied the refactors to design notes and request triage that
+  won't exist for months, and most of its benefit comes from ordinary good design; the refactor
+  plan written later reads the area's plans instead). In the rendering areas it also marks each
+  part renderer-independent or renderer-coupled (see *Branches*). It is judgement for planning,
+  not a description, so it stays off the page, which states only the weaknesses behind it, as
+  facts.
   It is kept out of this directory because these notes become public with this plan's pull
   requests and are deleted with it, while the assessment is needed until the area's refactor
   (after the move), and becomes that refactor's plan. The notes here never cite it.
@@ -218,6 +222,13 @@ nothing renders on `feature/diligent-migration` yet), and a lot of work will lan
 before it merges. That branch updates pages as it changes the areas, and its pages will diverge.
 When 3.0 merges, its versions win for rendering and symbology.
 
+Because that branch will be long-lived, work continues on `gplates` in the areas it rewrites
+(scene rendering, OpenGL, colouring, rasters). A page for one of those areas says, as a fact
+about the code, which parts depend on `opengl/` and which don't: the independent parts are
+refactored on `gplates` and reach the branch through its syncs, the coupled parts are replaced
+by 3.0. Feature requests aimed at 3.0 are triaged against the branch's own plan documents, not
+these pages, until the branch has pages of its own for those areas.
+
 ### During refactors
 
 An area page describes the code **as it is**. The target design for a refactor (for example the
@@ -251,9 +262,15 @@ distils what it completed, and the last one deletes this plan.
    - the reconstruction area page.
 
    After it, you judge the level of detail before we go on.
-3. **The priority area pages**, one pull request per area (or two small areas together), in
-   the survey's order: reconstruction (the pilot), GPGIM, feature file I/O, topologies, layers,
-   colouring, scene rendering, OpenGL.
+3. **Every area's page**, each with its refactor assessment, one pull request per area (or two
+   small areas together), in the survey's order: reconstruction (the pilot), GPGIM, feature file
+   I/O, topologies, layers, colouring, scene rendering, OpenGL, then Python bindings, feature
+   editing, application shell, rasters, export, canvas tools, sessions, auxiliary tools and
+   foundation. The model's comes with stage 6. Decided 2026-09-27; it was the eight priority
+   areas, with the rest after the move. All before the layout design, since it needs every
+   area's file-level boundary, and triage of feature requests can start as the pages land. The
+   migration script rewrites the pages' paths with the code, so writing them before the move
+   costs little.
 4. **Layout design** for the source reorganisation (its umbrella plan is private; the public
    announcement will be an issue linked from #72). From the areas and their file-level
    boundaries: the proposed directory tree and its names, the namespace policy (namespacing by
@@ -262,9 +279,8 @@ distils what it completed, and the last one deletes this plan.
    Its output is `layout.md` in this plan directory, public, since the announcement points the
    fork at it, and approved before anything moves; after the move it is folded into
    `docs/design/architecture/README.md` (*What goes in which directory*). It also gives:
-   - the **placement of every file** in `src/`. For an area with a page, from the page's
-     boundary; for an area whose page comes after the move, a file list made here and checked
-     against the code the way a page is. Those lists are where the later pages start;
+   - the **placement of every file** in `src/`, from the pages' boundaries. A file no page
+     claims is placed here, and checked against the code the way a page is;
    - the **enabling refactors** (umbrella piece 4a): the files that must be split, and the code
      that must move between files, before the script can place every file in one area. They
      land on `gplates` before the move, as small behaviour-preserving pull requests. Rendering-side
@@ -279,14 +295,12 @@ distils what it completed, and the last one deletes this plan.
    - the **target sub-structure** of an area whose refactor would reshape it, but only if the
      chosen namespace policy puts namespaces at sub-directory level. With namespaces per area,
      a move inside an area rewrites only `#include` paths, so each refactor (piece 8) shapes
-     its own area's inside when it starts, with its plan in hand.
+     its own area's inside when it starts, with its plan in hand. The developer's leaning
+     (2026-09-27) is namespaces per area, with sub-directories inheriting their area's.
 
    The Fable agent writing pages notes layout evidence and a refactor assessment as it goes (see
    *Area pages*), so this stage starts from collected evidence rather than a fresh survey.
-5. **After the move:** paths updated in the pages already written, and the remaining areas'
-   pages (Python bindings, feature editing, application shell, rasters, export, sessions, canvas
-   tools, auxiliary tools) written against the new tree, starting from the layout design's file
-   lists. Until then, requests in those areas are triaged from the code.
+5. **After the move:** check the pages' paths, which the migration script rewrote.
 6. **`model-system/`** moved and retrofitted once `feature/pygplates-model-revisions` merges
    (before the move, which waits for it).
 
