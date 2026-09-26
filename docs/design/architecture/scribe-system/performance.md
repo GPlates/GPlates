@@ -78,8 +78,8 @@ It bought ~1.3× on save / ~1.2× on load (measured below) — real, but far fro
 order-of-magnitude goal, and with one unresolved pathological case — so on 2026-07-13 it was
 parked: renamed to `backup/pickle-perf-rewritten` (local branch), with this branch
 (`feature/pickle-fast-path`) started fresh from `feature/conda-deps` to pursue the fast path
-instead. It is unmerged; the remote `private/feature/improve-pickle-performance` still holds its
-superseded pre-rewrite history.
+instead. It is unmerged; the branch `feature/improve-pickle-performance`, which is not on the
+public repository, still holds its superseded pre-rewrite history.
 
 ### What it contains
 

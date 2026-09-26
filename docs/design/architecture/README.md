@@ -2,57 +2,199 @@
 
 GPlates (the Qt desktop application) and pyGPlates (the Boost.Python extension module) are
 built from this one source tree, selected by the CMake option `GPLATES_BUILD_GPLATES`
-(see `AGENTS.md` at the repository root for the build mechanics). This document describes the
-intended layering of `src/` and the boundary between what the two products compile.
+(see `AGENTS.md` at the repository root for the build mechanics). This document is the overview
+of `src/`: its areas, its intended layering, and the boundary between what the two products
+compile.
 
 There is one architecture doc for all of `src/` — GPlates is the superset, and the pyGPlates
 boundary is marked within it rather than described separately.
 
-## The layering
+## What is here
 
+- This README: the overview of the areas and how data flows between them, the layer groups, which
+  directory a new file belongs in, and how the pyGPlates boundary is enforced.
+- [dependency-matrix.md](dependency-matrix.md), generated from the `#include` lines: the layer
+  diagrams (the code measured against the layer groups below), the include matrix, and the files
+  the pyGPlates module compiles.
+- One directory per area, listed under [Areas](#areas): what the area is for, its component
+  diagram and, where it has them, sequence diagrams of its key operations, how it works, its
+  traps and known weaknesses, and where to start reading.
+
+Before changing an area, read its page. A pull request that changes an area's structure updates
+its page in the same pull request.
+
+A page describes the code as it is: known weaknesses are stated as facts about the current
+design, never as proposals, plans or progress. It links only to material a public reader can
+open (other pages, source files, public issues).
+
+## Overview
+
+An arrow means that one area's results feed the other; a double-headed arrow means each feeds the
+other, as when one area both writes and reads through another. The shared core is compiled into
+both products, and so are the pyGPlates bindings (blue): GPlates' embedded interpreter imports the
+same module.
+
+```mermaid
+flowchart LR
+  subgraph shared ["Shared core (both products)"]
+    FIO["Feature file I/O"]
+    MODEL["Model + GPGIM"]
+    RECON["Reconstruction"]
+    TOPO["Topologies + deformation"]
+    RASTER["Rasters + scalar fields"]
+    SCRIBE["Scribe"]
+  end
+  API["pyGPlates bindings"]:::py
+  subgraph gplates ["GPlates only"]
+    LAYERS["Layers: ReconstructGraph + VisualLayers"]
+    SCENE["Scene rendering"]
+    COLOUR["Colouring + draw styles"]
+    GL["OpenGL framework"]
+    TOOLS["Canvas tools + feature editing"]
+    EXPORT["Export"]
+    SESSION["Sessions + preferences"]
+    SHELL["Application shell + embedded Python"]
+  end
+  FIO <--> MODEL
+  MODEL --> RECON
+  RECON <--> TOPO
+  RECON --> LAYERS
+  TOPO --> LAYERS
+  RASTER --> LAYERS
+  LAYERS -->|ReconstructionGeometry| SCENE
+  COLOUR --> SCENE
+  SCENE --> GL
+  RASTER --> GL
+  TOOLS --> MODEL
+  TOOLS --> SCENE
+  LAYERS --> EXPORT
+  EXPORT --> FIO
+  SESSION <--> SCRIBE
+  SESSION --> LAYERS
+  SHELL --> LAYERS
+  SHELL --> SESSION
+  SHELL --> COLOUR
+  API --> FIO
+  API --> RECON
+  API --> TOPO
+  API <--> SCRIBE
+  classDef py fill:#dbeafe,stroke:#1d4ed8,color:#111
 ```
-    GPlates only                                  .----------------------------------.
-    .-----------------------------------------.   |  embedded interpreter runtime    |
-    |  qt-widgets   canvas-tools              |   |  (api/Python*, api/Console*,     |
-    |  view-operations   presentation   cli   |   |   api/Sleeper, api/PyOldFeature*)|
-    |  gui (controllers)   data-mining        |   '----------------------------------'
-    |  opengl                                 |
-    |  app-logic (layers machinery: Layer*,   |
-    |   *LayerProxy/Task/Params, Reconstruct- |
-    |   Graph*, ApplicationState, Feature-    |
-    |   CollectionFileState/IO, UserPrefs)    |
-    '-----------------------------------------'
-                        |
-                        v   (GPlates layers on top of the core; the core never
-                             includes upward into this GPlates-only layer)
-    Shared core (what the pygplates module compiles, and GPlates builds on)
-    .-----------------------------------------------------------------------.
-    |  api (the pyGPlates bindings: Py*.cc exporters + helpers)             |
-    |  app-logic (reconstruction core: ReconstructMethod*, Reconstruct-     |
-    |   Context, ReconstructionTree*, topology resolvers, ...)              |
-    |  file-io (core readers/writers: GPML, PLATES, OGR, rasters, ...)      |
-    |  gui (value types only: Colour, palettes, Mipmapper)                  |
-    |  scribe (binary archives + transcribing; text/XML archives are        |
-    |   GPlates-only)                                                       |
-    '-----------------------------------------------------------------------'
-    |  model   property-values   maths   utils   global   qt-resources      |
-    |  (gpgim.qrc + python.qrc shared; opengl.qrc + qt_resources.qrc are    |
-    |   GPlates-only)                                                       |
-    '-----------------------------------------------------------------------'
-```
 
-pyGPlates drives reconstruction through `ReconstructMethodRegistry` / `ReconstructContext` /
-`ReconstructionTreeCreator` directly and never builds a `ReconstructGraph`, which is why the
-whole layers machinery (and everything only it reaches, e.g. `data-mining`) is GPlates-only.
+The nodes are the areas of the table below, except that *Model + GPGIM* is `model` and `gpgim`,
+*Canvas tools + feature editing* is `canvas-tools` and `feature-editing`, the embedded
+interpreter of `python-bindings` is drawn with the shell, and `auxiliary-tools` and `foundation`
+have no node.
 
-The per-directory numbers, the full include matrix between directories, and the exact list of
-files the module takes from each partially-included directory are in the generated
-[dependency-matrix.md](dependency-matrix.md).
+Files come in through feature file I/O into the model. The model feeds reconstruction, and
+reconstruction and topologies feed each other: resolving a topology needs the reconstructed
+geometries of its sections, and a reconstruction by plate ID can go through a
+`TopologyReconstruct` to move geometries through resolved plates and deforming networks.
+
+The two products drive that core through different doors. pyGPlates calls it directly
+(`RotationModel`, `ReconstructModel` and `TopologicalModel` hold core objects and never see a
+layer), and pickles through Scribe. GPlates wraps it in *layers*: `ReconstructGraph` holds the
+loaded files and a graph of layer tasks, and each layer's proxy pulls from its inputs on demand
+and caches. The layer outputs (`ReconstructionGeometry` objects) are turned into rendered
+geometries, coloured by the draw-style system, and painted through the OpenGL framework. Rasters
+partly bypass the scene: their GL objects are owned by the raster layer proxy and drawn by
+`GLVisualLayers`. Canvas tools edit the model and draw into the same scene. Export reads the layer
+outputs and writes with file I/O back ends. Sessions save the layer graph with Scribe. The
+application shell owns all of it, and the embedded Python interpreter is where the colouring
+scripts run. The GPGIM (the feature schema) is consulted by file I/O, the bindings and the
+feature-editing dialogs; it is not drawn as edges.
+
+## Areas
+
+An area is a subject, not a directory: several span directories, and `app-logic/`, `gui/`,
+`presentation/`, `view-operations/` and `qt-widgets/` are each split across several areas. An
+area without a link has no page yet. The short name is the area's page directory, and how other
+documents refer to the area.
+
+| area | short name | what it covers | products |
+| --- | --- | --- | --- |
+| [Reconstruction](reconstruction/README.md) | `reconstruction` | rotation features to reconstruction trees; reconstruct methods; reconstructed feature geometries and velocities | both |
+| GPGIM and feature schema | `gpgim` | the `Gpgim` registry of feature classes, properties and structural types; GPML version upgrades | both |
+| Feature file I/O | `file-io` | the file-format registry; GPML, PLATES4, rotation and OGR readers and writers; the loaded-file state | both |
+| Topologies and deformation | `topologies` | resolved lines, boundaries and networks; triangulation; deformation and strain; plate partitioning | both |
+| Layers | `layers` | `ReconstructGraph`, layer tasks and proxies, and the visual layers that mirror them | GPlates |
+| Colouring and draw styles | `colouring` | colours and palettes; the Python draw styles and their C++ adapters; symbols | GPlates (colour value types: both) |
+| Scene rendering | `scene-rendering` | rendered geometries, the globe and map painters, view parameters, the canvases | GPlates |
+| OpenGL framework | `opengl` | `opengl/`: the renderer, contexts, raster pyramids, scalar fields, filled polygons | GPlates |
+| Python bindings and embedded Python | `python-bindings` | the `export_*()` bindings; the interpreter embedded in GPlates, and its scripts | both (embedding: GPlates) |
+| Feature editing GUI | `feature-editing` | the dialogs that create and edit features property by property | GPlates |
+| Application shell | `app-shell` | start-up; `Application`, `ApplicationState`, `ViewState`, `ViewportWindow`; the command line | GPlates |
+| Rasters and 3D scalar fields | `rasters` | proxied raster property values, raster readers and caches, raster layers | GPlates (values and readers: both) |
+| Export | `export` | the export-animation registry and strategies, and the writers of reconstructed data | GPlates (writers: both) |
+| Canvas tools and geometry editing | `canvas-tools` | canvas-tool workflows, the geometry builder and its operations, undo | GPlates |
+| Sessions, projects and preferences | `sessions` | saving and restoring the loaded files and layer state; user preferences | GPlates |
+| Model | `model` | feature handles, revisions, property values, feature visitors | both |
+| [Scribe](scribe-system/README.md) | `scribe-system` | serialisation for sessions, projects and pickling | both |
+| Auxiliary analysis tools | `auxiliary-tools` | co-registration, Hellinger fitting, kinematic graphs, age models, velocity domains | GPlates |
+| Foundation | `foundation` | `maths/` (geometry on the sphere, rotations), `utils/`, `global/` | both |
+
+## The layer groups
+
+The layering of `src/` is a statement of intent, not a description of the code. Measured as it
+is, the code has almost no layers: counting every include, the shared core is one include cycle
+and the GPlates-only half is another (the *Include cycles* table in
+[dependency-matrix.md](dependency-matrix.md)). The groups below say what each part of the tree
+may include. The generated diagrams draw every include that goes *up* them in red, and those red
+edges are the distance between the code and the intent.
+
+A group holds directory *parts*. A directory the pyGPlates module compiles only some of has two
+parts: the module part (`app-logic`) and the GPlates-only rest (`app-logic+`). Anything in a group
+may include anything else in it, or in a group below. Lowest first:
+
+1. **Foundation** (`global`, `utils`): assertions, the exception classes and the version, and
+   general utilities (smart pointers, strings, configuration). `utils` holds utilities for many
+   directories, so it is *cross-cutting*: its upward includes are drawn
+   in amber, and some of them are fine.
+2. **Maths and serialisation** (`maths`, `scribe`): geometry on the sphere and rotations, and the
+   Scribe serialisation framework. They include each other: the maths value types are
+   transcribable, and `Transcription.cc` uses `Real`.
+3. **Model and value types** (`model`, `property-values`, `gui`): the feature model and its
+   property values. `gui` here is only its module part, the colour and palette value types, and
+   the mipmapper, that the raster property values use; it and `property-values` include each
+   other.
+4. **Shared core** (`file-io`, `app-logic`): feature and raster readers and writers, and the
+   reconstruction and topology code both products run. They include each other heavily in both
+   directions.
+5. **pyGPlates bindings** (`api`): the `export_*()` functions and the wrapper classes.
+6. **GPlates engine** (`app-logic+`, `file-io+`, `scribe+`, `maths+`, `property-values+`,
+   `global+`, `utils+`, `data-mining`, `cli`): the GPlates-only application logic, above all the
+   layers machinery (`ReconstructGraph`, layer tasks and proxies, `ApplicationState`), plus the
+   text and XML Scribe archives, co-registration, and the command-line tools. `cli` includes
+   nothing from the user interface.
+7. **OpenGL rendering** (`opengl`): a group of its own so that the includes into it from the
+   engine are drawn. The raster and reconstruct layer proxies own OpenGL objects, and the
+   co-registration proxy runs on one, which is why the Vulkan port has to change `app-logic`.
+8. **GPlates user interface** (`gui+`, `presentation`, `view-operations`, `canvas-tools`,
+   `qt-widgets`, `api+`): the rest of `gui` (painters, canvas-tool workflows, export strategies,
+   menus, `PythonManager`), the presentation state and renderers, rendered geometries and geometry
+   editing, the canvas tools and widgets, and the embedded-interpreter half of `api`. It is one
+   group because its directories include each other heavily: `gui` and `qt-widgets` do so in
+   both directions, in large numbers (the matrix has the counts).
+
+Of `qt-resources/`, `gpgim.qrc` (the GPGIM XML) and `python.qrc` (the pure-Python API and
+scripts) are compiled into both products; `opengl.qrc` (shaders) and `qt_resources.qrc` (images)
+are GPlates-only.
+
+The groups live in `LAYERS` in `cmake/pygplates_source_closure.py`. Change the list and this
+section together. The drift check fails if a directory part is in no group, so a new directory
+can't go unplaced.
+
+**An upward include** is a lower group reaching into a higher one, so the lower code can't be
+built or understood without the higher. Some are misplaced files (a value type living in the
+directory of its main user), which a move fixes. Some are real design problems, such as the model
+naming the application-logic classes that observe features, or raster property values reading
+files. The generated *Upward includes* table lists each one with the files making it.
 
 ## What goes in which directory
 
-The layering above says which directories the module compiles. It does not say which directory a
-new class belongs in, and two rules here were learned by getting them wrong.
+The layer groups say what may include what, and the module boundary says what the module
+compiles. Neither says which directory a new class belongs in, and two rules here were learned by
+getting them wrong.
 
 **A directory is a subject, not a shape of code.** `src/feature-visitors/` grouped classes solely
 because they inherited `FeatureVisitor` or `ConstFeatureVisitor`. That put a `QTreeWidget`

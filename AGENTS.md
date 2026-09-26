@@ -118,6 +118,15 @@ Use GoogleTest for all new C++ tests; do not mix frameworks. Conventions (headle
 working-directory independent, `GPLATES_UNIT_TEST_DATA_DIR`, `QTemporaryDir`, and leaving
 `git status` clean) are in `docs/design/testing/README.md`.
 
+## Architecture pages
+
+`docs/design/architecture/` maps the code by *area* (a subject such as reconstruction, not a
+directory). Its `README.md` is the overview and lists the areas; each area with a page has its
+own directory there. **Before changing an area, read its page. A pull request that changes an
+area's structure updates its page in the same pull request.** The layer diagrams in
+`dependency-matrix.md` are generated; the layer groups they measure against are `LAYERS` in
+`cmake/pygplates_source_closure.py`, described in the README.
+
 ## The pyGPlates module boundary
 
 The pygplates module compiles only the **include closure of the pyGPlates API** — not the
@@ -314,7 +323,11 @@ requires updating both `[tool.cibuildwheel].build` in `pyproject.toml` and `PYTH
 
 ## Working agreements
 
-- Propose a plan and get agreement before multi-file refactors or changes to CMake or CI.
+- Propose a plan and get agreement before multi-file refactors, and before changing build logic
+  or CI: `find_package` calls, options, targets, install and packaging, version resolution, or
+  workflow files. A plan the developer has already agreed covers the changes it describes.
+  Adding or removing a file in a source list, or the fix a test's failure message prescribes,
+  needs no plan.
 - `pyproject.toml` is heavily commented and is the authoritative reference for the
   scikit-build-core and cibuildwheel configuration; read those comments before changing it. Note
   that its per-platform `config-settings` tables *override* rather than merge with the base table.

@@ -39,7 +39,11 @@
 #   # file(GENERATE) in "src/CMakeLists.txt"); fail on over- AND under-inclusion.
 #   python cmake/pygplates_source_closure.py --check-sources build-pygplates/pygplates_sources.txt
 #
-#   # Also diff the committed dependency-matrix doc against what would be generated.
+#   # Also diff the committed dependency-matrix doc against what would be generated. The doc
+#   # holds the layer diagrams (the include graph measured against LAYERS below), the include
+#   # matrix and the module subset. This also fails if LAYERS is out of step with the tree (a
+#   # directory part in no group, a part in two, or an entry with no files); "--output-doc" then
+#   # refuses to write too, and prints why.
 #   python cmake/pygplates_source_closure.py --check-doc
 #
 #   # Rewrite the dependency-matrix doc (the only mode that writes anything).
@@ -80,6 +84,38 @@ FORBIDDEN_DIRS = frozenset([
     'unit-test',
     'view-operations',
 ])
+
+# The intended layering of "src/", lowest group first, which the layer diagrams in the
+# dependency-matrix doc measure the code against. "docs/design/architecture/README.md" says what
+# each group is for: change the two together.
+#
+# The entries are directory *parts*. "<dir>" is the part of a directory that the pyGPlates module
+# compiles, or the whole of a FORBIDDEN_DIRS directory; "<dir>+" is the GPlates-only rest of a
+# directory the module compiles only some of, or the whole of a directory the module reaches none
+# of that is not in FORBIDDEN_DIRS. Parts in one group are peers and may include each
+# other. An include from a lower group into a higher one is an upward edge, drawn in red.
+#
+# Every part must be placed exactly once, and every entry must still have files, or "--check-doc"
+# fails: a new directory (or a directory the module starts or stops reaching) can't go unplaced.
+LAYERS = [
+    ('Foundation', ['global', 'utils']),
+    ('Maths + serialisation', ['maths', 'scribe']),
+    ('Model + value types', ['model', 'property-values', 'gui']),
+    ('Shared core', ['file-io', 'app-logic']),
+    ('pyGPlates bindings', ['api']),
+    ('GPlates engine', ['app-logic+', 'file-io+', 'scribe+', 'data-mining', 'maths+',
+                        'property-values+', 'global+', 'utils+', 'cli']),
+    ('OpenGL rendering', ['opengl']),
+    ('GPlates user interface', ['gui+', 'presentation', 'view-operations', 'canvas-tools', 'api+',
+                                'qt-widgets']),
+]
+
+# Directories holding utilities for many others. Their upward includes are still drawn, but in
+# amber rather than red: some of them are fine.
+CROSS_CUTTING_DIRS = frozenset(['utils'])
+
+# Directories outside both products' layering (the layer diagrams leave them out).
+UNLAYERED_DIRS = frozenset(['unit-test'])
 
 # The only "gui/" files the module may reach: plain value types (colours, palettes and the
 # mipmapper needed by the raster property values), with no Qt Widgets and no GL. Anything
@@ -363,17 +399,260 @@ def all_source_files():
     return sorted(files)
 
 
+class LayerGraph(object):
+    """The include graph between directory parts (see LAYERS), measured against LAYERS."""
+
+    def __init__(self, reached):
+        self.reached = reached
+        self.sizes = {}  # part -> number of files
+        self.weight = {}  # (from part, to part) -> number of include lines
+        self.includers = {}  # (from part, to part) -> {including file: number of include lines}
+        self.layer_of = {}
+        for i, (_, parts) in enumerate(LAYERS):
+            for part in parts:
+                self.layer_of[part] = i
+
+    def part_of(self, rel):
+        d = top_dir(rel)
+        if d == '(src root)' or d in UNLAYERED_DIRS:
+            return None
+        return d if rel in self.reached or d in FORBIDDEN_DIRS else d + '+'
+
+    def add_file(self, rel):
+        part = self.part_of(rel)
+        if part is not None:
+            self.sizes[part] = self.sizes.get(part, 0) + 1
+
+    def add_include(self, rel, resolved):
+        u, v = self.part_of(rel), self.part_of(resolved)
+        if u is None or v is None or u == v:
+            return
+        self.weight[(u, v)] = self.weight.get((u, v), 0) + 1
+        per_file = self.includers.setdefault((u, v), {})
+        per_file[rel] = per_file.get(rel, 0) + 1
+
+    def errors(self):
+        errors = []
+        listed = [part for _, parts in LAYERS for part in parts]
+        for part in sorted(set(p for p in listed if listed.count(p) > 1)):
+            errors.append('LAYERS lists %s in more than one group: keep it in one, in '
+                          'cmake/pygplates_source_closure.py' % part)
+        for part in sorted(set(self.sizes) - set(self.layer_of)):
+            errors.append('directory part %s is in no layer group: add it to LAYERS in '
+                          'cmake/pygplates_source_closure.py (and describe it in '
+                          'docs/design/architecture/README.md)' % part)
+        for part in sorted(set(self.layer_of) - set(self.sizes)):
+            errors.append('LAYERS lists %s, which has no files: remove it from LAYERS in '
+                          'cmake/pygplates_source_closure.py' % part)
+        return errors
+
+    @staticmethod
+    def is_module_part(part):
+        return not part.endswith('+') and part not in FORBIDDEN_DIRS
+
+    def direction(self, edge):
+        """'down', 'peer', 'cross-cutting' (upward from a CROSS_CUTTING_DIRS part) or 'up'."""
+        a, b = self.layer_of[edge[0]], self.layer_of[edge[1]]
+        if a > b:
+            return 'down'
+        if a == b:
+            return 'peer'
+        return 'cross-cutting' if edge[0].rstrip('+') in CROSS_CUTTING_DIRS else 'up'
+
+    def mermaid(self, module_only):
+        """A Mermaid flowchart of the layer groups: downward edges transitively reduced (peer
+        edges are not drawn), upward edges all drawn with their include counts."""
+        parts = set(p for p in self.sizes if self.is_module_part(p) or not module_only)
+        edges = dict((e, n) for e, n in self.weight.items()
+                     if e[0] in parts and e[1] in parts)
+        down = set(e for e in edges if self.direction(e) == 'down')
+
+        # Transitive reduction. Every downward edge goes to a strictly lower group, so the
+        # downward graph has no cycles and its reduction is unique: an edge is dropped whenever
+        # a longer path also connects its ends, however many includes it carries. (The sort only
+        # makes the order of the loop deterministic.) Peer edges are not drawn, so they must not
+        # count as paths.
+        def reachable(src, dst, kept):
+            adjacent = {}
+            for a, b in kept:
+                adjacent.setdefault(a, []).append(b)
+            seen, stack = set([src]), [src]
+            while stack:
+                for b in adjacent.get(stack.pop(), []):
+                    if b == dst:
+                        return True
+                    if b not in seen:
+                        seen.add(b)
+                        stack.append(b)
+            return False
+
+        kept = set(down)
+        for e in sorted(down):
+            if reachable(e[0], e[1], kept - set([e])):
+                kept.discard(e)
+
+        def node_id(part):
+            return part.replace('-', '_').replace('+', '_gp')
+
+        def label(part):
+            d = part.rstrip('+')
+            total = sum(n for p, n in self.sizes.items() if p.rstrip('+') == d)
+            if total == self.sizes[part]:
+                return '%s<br/>%d files' % (d, total)
+            if part.endswith('+'):
+                return '%s<br/>GPlates-only: %d of %d files' % (d, self.sizes[part], total)
+            return '%s<br/>module: %d of %d files' % (d, self.sizes[part], total)
+
+        out = ['```mermaid', 'flowchart TD']
+        for i, (title, layer_parts) in enumerate(LAYERS):
+            present = [p for p in layer_parts if p in parts]
+            if not present:
+                continue
+            out.append('  subgraph L%d ["%s"]' % (i, title))
+            for p in present:
+                out.append('    %s["%s"]:::%s' % (node_id(p), label(p),
+                                                  'module' if self.is_module_part(p) else 'gplates'))
+            out.append('  end')
+        styles = []
+        for e in sorted(kept, key=lambda e: (self.layer_of[e[0]], e)):
+            out.append('  %s %s %s' % (node_id(e[0]), '==>' if edges[e] >= 100 else '-->',
+                                       node_id(e[1])))
+            styles.append('stroke:#888')
+        for kind, style in (('up', 'stroke:#d33,stroke-width:2px,color:#d33'),
+                            ('cross-cutting', 'stroke:#b7791f,stroke-dasharray:4 4,color:#b7791f')):
+            for e in sorted((e for e in edges if self.direction(e) == kind),
+                            key=lambda e: (-edges[e], e)):
+                # Declared from the included (higher) part: the layout ranks an edge's source
+                # above its target, so an upward edge declared the other way round pulls the
+                # layers out of order (invisible '~~~' links between the groups don't hold them
+                # either; tried). Mermaid has no arrowhead at the start alone ('<-.-' draws
+                # none), so the edge is two-headed and its style hides the end one, leaving the
+                # head on the included part.
+                out.append('  %s <-.->|%d| %s' % (node_id(e[1]), edges[e], node_id(e[0])))
+                styles.append(style + ',marker-end:none')
+        out.append('  classDef module fill:#dbeafe,stroke:#1d4ed8,color:#111')
+        out.append('  classDef gplates fill:#f3f4f6,stroke:#6b7280,color:#111')
+        for style in sorted(set(styles)):
+            out.append('  linkStyle %s %s'
+                       % (','.join(str(i) for i, s in enumerate(styles) if s == style), style))
+        out.append('```')
+        return out
+
+    def cycles(self, min_weight):
+        """The strongly connected components (of more than one part) of the edges carrying at
+        least 'min_weight' includes, each sorted, in sorted order."""
+        adjacent = {}
+        for (a, b), n in self.weight.items():
+            if n >= min_weight:
+                adjacent.setdefault(a, []).append(b)
+        # Kosaraju: finishing order on the graph, then components on the reversed graph.
+        order, seen = [], set()
+        for start in sorted(self.sizes):
+            if start in seen:
+                continue
+            seen.add(start)
+            stack = [(start, iter(sorted(adjacent.get(start, []))))]
+            while stack:
+                node, children = stack[-1]
+                child = next(children, None)
+                if child is None:
+                    stack.pop()
+                    order.append(node)
+                elif child not in seen:
+                    seen.add(child)
+                    stack.append((child, iter(sorted(adjacent.get(child, [])))))
+        reverse = {}
+        for a, targets in adjacent.items():
+            for b in targets:
+                reverse.setdefault(b, []).append(a)
+        components, assigned = [], set()
+        for start in reversed(order):
+            if start in assigned:
+                continue
+            component, stack = [], [start]
+            assigned.add(start)
+            while stack:
+                node = stack.pop()
+                component.append(node)
+                for b in reverse.get(node, []):
+                    if b not in assigned:
+                        assigned.add(b)
+                        stack.append(b)
+            if len(component) > 1:
+                components.append(sorted(component))
+        return sorted(components)
+
+
+def layer_doc_lines(graph):
+    """The layer-diagram sections of the dependency-matrix doc."""
+    lines = []
+    lines.append('# Layer diagrams')
+    lines.append('')
+    lines.append('Each node is a directory *part*: the part of a directory that the pyGPlates module')
+    lines.append('compiles (blue), or the GPlates-only part (grey). Directories the module never')
+    lines.append('reaches are wholly grey. The groups are the intended layering, `LAYERS` in')
+    lines.append('`cmake/pygplates_source_closure.py`, lowest at the bottom; [README.md](README.md)')
+    lines.append('says what each group is for. An arrow means *includes*. Downward arrows are')
+    lines.append('transitively reduced (thick: 100 or more includes), and includes between parts in')
+    lines.append('one group are not drawn. **Red** dotted arrows go *up* the layering, with their')
+    lines.append('include counts; **amber** ones go up from `utils`, which is cross-cutting. The files')
+    lines.append('in `src/` itself and `unit-test/` are left out.')
+    lines.append('')
+    lines.append('## Both products')
+    lines.append('')
+    lines.extend(graph.mermaid(module_only=False))
+    lines.append('')
+    lines.append('## The pyGPlates module on its own')
+    lines.append('')
+    lines.extend(graph.mermaid(module_only=True))
+    lines.append('')
+    lines.append('## Upward includes')
+    lines.append('')
+    lines.append('Every include that goes up the layering, and the files making it (`M` marks an edge')
+    lines.append('inside the pyGPlates module).')
+    lines.append('')
+    lines.append('| from | to | includes | files (includes) |')
+    lines.append('| --- | --- | ---: | --- |')
+    upward = [e for e in graph.weight if graph.direction(e) in ('up', 'cross-cutting')]
+    for e in sorted(upward, key=lambda e: (graph.direction(e) == 'cross-cutting',
+                                           -graph.weight[e], e)):
+        per_file = graph.includers[e]
+        files = ', '.join('`%s` (%d)' % (rel, per_file[rel])
+                          for rel in sorted(per_file, key=lambda r: (-per_file[r], r)))
+        module = ' M' if graph.is_module_part(e[0]) and graph.is_module_part(e[1]) else ''
+        lines.append('| `%s` | `%s` | %d%s | %s |' % (e[0], e[1], graph.weight[e], module, files))
+    lines.append('')
+    lines.append('## Include cycles')
+    lines.append('')
+    lines.append('The layering the code actually has, before any intent is applied: the groups of')
+    lines.append('parts that include each other in a cycle (strongly connected components), counting')
+    lines.append('only the edges that carry at least a given number of includes.')
+    lines.append('')
+    lines.append('| edges counted | parts in one cycle |')
+    lines.append('| --- | --- |')
+    for min_weight in (1, 3, 10):
+        cycles = graph.cycles(min_weight)
+        lines.append('| %s | %s |' % (
+            'every include' if min_weight == 1 else '%d or more includes' % min_weight,
+            '; '.join(', '.join('`%s`' % p for p in c) for c in cycles) or 'none'))
+    lines.append('')
+    return lines
+
+
 def generate_doc(closure):
     """The dependency-matrix doc: one doc for all of 'src/' (GPlates is the superset), with
-    the pyGPlates boundary marked by the module-subset section."""
+    the pyGPlates boundary marked by the module-subset section. Returns (lines, errors)."""
     files = all_source_files()
     file_set = set(files)
     resolver = Closure.__new__(Closure)  # reuse _resolve without tracing
     resolver._resolve_cache = {}
+    reached = set(closure.files())
+    graph = LayerGraph(reached)
 
     # Count resolved quoted-include lines between top-level directories.
     matrix = {}
     for rel in files:
+        graph.add_file(rel)
         includer_dir = os.path.dirname(rel)
         row = top_dir(rel)
         for include in _QUOTED_INCLUDE_RE.findall(read_stripped(os.path.join(SRC_DIR, rel))):
@@ -382,10 +661,14 @@ def generate_doc(closure):
                 continue
             col = top_dir(resolved)
             matrix[(row, col)] = matrix.get((row, col), 0) + 1
+            graph.add_include(rel, resolved)
+
+    errors = graph.errors()
+    if errors:
+        return [], errors
 
     dirs = sorted(set(d for pair in matrix for d in pair))
 
-    reached = set(closure.files())
     per_dir_total = {}
     per_dir_reached = {}
     for rel in files:
@@ -400,12 +683,18 @@ def generate_doc(closure):
                  'docs/design/architecture/dependency-matrix.md')
     lines.append('     The pygplates-source-closure test fails if this file is stale. -->')
     lines.append('')
-    lines.append('# `src/` dependency matrix')
+    lines.append('# `src/` dependencies')
+    lines.append('')
+    lines.append('Generated from the `#include` lines in `src/`: the layer diagrams (the intended')
+    lines.append('layering, and where the code departs from it), the include matrix between')
+    lines.append('directories, and the files the pyGPlates module compiles.')
+    lines.append('')
+    lines.extend(layer_doc_lines(graph))
+    lines.append('# Dependency matrix')
     lines.append('')
     lines.append('Counts of resolved quoted `#include` lines from files in the *row* directory to files')
     lines.append('in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirectories.')
-    lines.append('`(src root)` is the files directly in `src/`. The intended layering these numbers')
-    lines.append('should respect is described in [README.md](README.md).')
+    lines.append('`(src root)` is the files directly in `src/`.')
     lines.append('')
     header = ['includes ->'] + dirs
     lines.append('| ' + ' | '.join(header) + ' |')
@@ -446,7 +735,7 @@ def generate_doc(closure):
         for rel in per_dir_reached[d]:
             lines.append('- `%s`' % rel)
     lines.append('')
-    return lines
+    return lines, []
 
 
 def check_doc(doc_lines, doc_path):
@@ -492,10 +781,11 @@ def main():
     if args.check_sources:
         errors.extend(check_sources(closure, args.check_sources))
     if args.check_doc or args.output_doc:
-        doc_lines = generate_doc(closure)
-        if args.check_doc:
+        doc_lines, doc_errors = generate_doc(closure)
+        errors.extend(doc_errors)
+        if args.check_doc and not doc_errors:
             errors.extend(check_doc(doc_lines, args.check_doc))
-        if args.output_doc:
+        if args.output_doc and not doc_errors:
             with open(args.output_doc, 'w', encoding='utf-8', newline='\n') as f:
                 f.write('\n'.join(doc_lines) + '\n')
             print('wrote %s' % args.output_doc)

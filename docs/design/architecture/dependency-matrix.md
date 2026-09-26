@@ -2,12 +2,232 @@
      Regenerate: python cmake/pygplates_source_closure.py --output-doc docs/design/architecture/dependency-matrix.md
      The pygplates-source-closure test fails if this file is stale. -->
 
-# `src/` dependency matrix
+# `src/` dependencies
+
+Generated from the `#include` lines in `src/`: the layer diagrams (the intended
+layering, and where the code departs from it), the include matrix between
+directories, and the files the pyGPlates module compiles.
+
+# Layer diagrams
+
+Each node is a directory *part*: the part of a directory that the pyGPlates module
+compiles (blue), or the GPlates-only part (grey). Directories the module never
+reaches are wholly grey. The groups are the intended layering, `LAYERS` in
+`cmake/pygplates_source_closure.py`, lowest at the bottom; [README.md](README.md)
+says what each group is for. An arrow means *includes*. Downward arrows are
+transitively reduced (thick: 100 or more includes), and includes between parts in
+one group are not drawn. **Red** dotted arrows go *up* the layering, with their
+include counts; **amber** ones go up from `utils`, which is cross-cutting. The files
+in `src/` itself and `unit-test/` are left out.
+
+## Both products
+
+```mermaid
+flowchart TD
+  subgraph L0 ["Foundation"]
+    global["global<br/>module: 24 of 32 files"]:::module
+    utils["utils<br/>module: 45 of 75 files"]:::module
+  end
+  subgraph L1 ["Maths + serialisation"]
+    maths["maths<br/>module: 100 of 133 files"]:::module
+    scribe["scribe<br/>module: 56 of 64 files"]:::module
+  end
+  subgraph L2 ["Model + value types"]
+    model["model<br/>97 files"]:::module
+    property_values["property-values<br/>module: 127 of 128 files"]:::module
+    gui["gui<br/>module: 12 of 249 files"]:::module
+  end
+  subgraph L3 ["Shared core"]
+    file_io["file-io<br/>module: 173 of 235 files"]:::module
+    app_logic["app-logic<br/>module: 151 of 285 files"]:::module
+  end
+  subgraph L4 ["pyGPlates bindings"]
+    api["api<br/>module: 77 of 110 files"]:::module
+  end
+  subgraph L5 ["GPlates engine"]
+    app_logic_gp["app-logic<br/>GPlates-only: 134 of 285 files"]:::gplates
+    file_io_gp["file-io<br/>GPlates-only: 62 of 235 files"]:::gplates
+    scribe_gp["scribe<br/>GPlates-only: 8 of 64 files"]:::gplates
+    data_mining["data-mining<br/>42 files"]:::gplates
+    maths_gp["maths<br/>GPlates-only: 33 of 133 files"]:::gplates
+    property_values_gp["property-values<br/>GPlates-only: 1 of 128 files"]:::gplates
+    global_gp["global<br/>GPlates-only: 8 of 32 files"]:::gplates
+    utils_gp["utils<br/>GPlates-only: 30 of 75 files"]:::gplates
+    cli["cli<br/>20 files"]:::gplates
+  end
+  subgraph L6 ["OpenGL rendering"]
+    opengl["opengl<br/>158 files"]:::gplates
+  end
+  subgraph L7 ["GPlates user interface"]
+    gui_gp["gui<br/>GPlates-only: 237 of 249 files"]:::gplates
+    presentation["presentation<br/>48 files"]:::gplates
+    view_operations["view-operations<br/>82 files"]:::gplates
+    canvas_tools["canvas-tools<br/>51 files"]:::gplates
+    api_gp["api<br/>GPlates-only: 33 of 110 files"]:::gplates
+    qt_widgets["qt-widgets<br/>441 files"]:::gplates
+  end
+  maths --> global
+  maths --> utils
+  scribe --> global
+  scribe --> utils
+  gui --> maths
+  gui --> scribe
+  model --> maths
+  model --> scribe
+  property_values --> maths
+  property_values ==> scribe
+  app_logic ==> model
+  app_logic ==> property_values
+  file_io --> gui
+  file_io ==> model
+  file_io ==> property_values
+  api ==> app_logic
+  api --> file_io
+  app_logic_gp ==> app_logic
+  app_logic_gp --> file_io
+  cli --> app_logic
+  cli --> file_io
+  data_mining --> app_logic
+  data_mining --> file_io
+  file_io_gp --> app_logic
+  file_io_gp --> file_io
+  global_gp --> global
+  maths_gp --> model
+  scribe_gp --> maths
+  scribe_gp --> scribe
+  utils_gp --> file_io
+  opengl --> app_logic_gp
+  opengl --> file_io_gp
+  opengl --> maths_gp
+  opengl --> utils_gp
+  api_gp --> data_mining
+  api_gp --> opengl
+  canvas_tools --> app_logic_gp
+  canvas_tools --> global_gp
+  gui_gp --> data_mining
+  gui_gp --> global_gp
+  gui_gp ==> opengl
+  presentation --> data_mining
+  presentation --> opengl
+  presentation --> scribe_gp
+  qt_widgets --> data_mining
+  qt_widgets --> global_gp
+  qt_widgets --> opengl
+  view_operations --> app_logic_gp
+  view_operations --> maths_gp
+  view_operations --> utils_gp
+  opengl <-.->|12| app_logic_gp
+  file_io <-.->|11| property_values
+  gui_gp <-.->|8| opengl
+  app_logic <-.->|7| model
+  gui_gp <-.->|5| file_io_gp
+  view_operations <-.->|3| opengl
+  file_io <-.->|2| model
+  gui_gp <-.->|1| data_mining
+  opengl <-.->|1| data_mining
+  maths <-.->|7| utils
+  scribe <-.->|3| utils
+  model <-.->|1| utils
+  api_gp <-.->|1| utils_gp
+  classDef module fill:#dbeafe,stroke:#1d4ed8,color:#111
+  classDef gplates fill:#f3f4f6,stroke:#6b7280,color:#111
+  linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49 stroke:#888
+  linkStyle 59,60,61,62 stroke:#b7791f,stroke-dasharray:4 4,color:#b7791f,marker-end:none
+  linkStyle 50,51,52,53,54,55,56,57,58 stroke:#d33,stroke-width:2px,color:#d33,marker-end:none
+```
+
+## The pyGPlates module on its own
+
+```mermaid
+flowchart TD
+  subgraph L0 ["Foundation"]
+    global["global<br/>module: 24 of 32 files"]:::module
+    utils["utils<br/>module: 45 of 75 files"]:::module
+  end
+  subgraph L1 ["Maths + serialisation"]
+    maths["maths<br/>module: 100 of 133 files"]:::module
+    scribe["scribe<br/>module: 56 of 64 files"]:::module
+  end
+  subgraph L2 ["Model + value types"]
+    model["model<br/>97 files"]:::module
+    property_values["property-values<br/>module: 127 of 128 files"]:::module
+    gui["gui<br/>module: 12 of 249 files"]:::module
+  end
+  subgraph L3 ["Shared core"]
+    file_io["file-io<br/>module: 173 of 235 files"]:::module
+    app_logic["app-logic<br/>module: 151 of 285 files"]:::module
+  end
+  subgraph L4 ["pyGPlates bindings"]
+    api["api<br/>module: 77 of 110 files"]:::module
+  end
+  maths --> global
+  maths --> utils
+  scribe --> global
+  scribe --> utils
+  gui --> maths
+  gui --> scribe
+  model --> maths
+  model --> scribe
+  property_values --> maths
+  property_values ==> scribe
+  app_logic ==> model
+  app_logic ==> property_values
+  file_io --> gui
+  file_io ==> model
+  file_io ==> property_values
+  api ==> app_logic
+  api --> file_io
+  file_io <-.->|11| property_values
+  app_logic <-.->|7| model
+  file_io <-.->|2| model
+  maths <-.->|7| utils
+  scribe <-.->|3| utils
+  model <-.->|1| utils
+  classDef module fill:#dbeafe,stroke:#1d4ed8,color:#111
+  classDef gplates fill:#f3f4f6,stroke:#6b7280,color:#111
+  linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 stroke:#888
+  linkStyle 20,21,22 stroke:#b7791f,stroke-dasharray:4 4,color:#b7791f,marker-end:none
+  linkStyle 17,18,19 stroke:#d33,stroke-width:2px,color:#d33,marker-end:none
+```
+
+## Upward includes
+
+Every include that goes up the layering, and the files making it (`M` marks an edge
+inside the pyGPlates module).
+
+| from | to | includes | files (includes) |
+| --- | --- | ---: | --- |
+| `app-logic+` | `opengl` | 12 | `app-logic/RasterLayerProxy.h` (10), `app-logic/CoRegistrationLayerProxy.cc` (1), `app-logic/ReconstructLayerProxy.h` (1) |
+| `property-values` | `file-io` | 11 M | `property-values/ProxiedRasterResolver.h` (6), `property-values/GmlFile.h` (1), `property-values/GpmlMetadata.h` (1), `property-values/ProxiedRasterCache.cc` (1), `property-values/ProxiedRasterCache.h` (1), `property-values/RawRaster.h` (1) |
+| `opengl` | `gui+` | 8 | `opengl/GLLight.h` (2), `opengl/GLVisualLayers.h` (2), `opengl/GLMapCubeMeshGenerator.h` (1), `opengl/GLMultiResolutionMapCubeMesh.h` (1), `opengl/GLMultiResolutionStaticPolygonReconstructedRaster.h` (1), `opengl/GLText.cc` (1) |
+| `model` | `app-logic` | 7 M | `model/WeakObserverVisitor.cc` (7) |
+| `file-io+` | `gui+` | 5 | `file-io/CptReader.cc` (2), `file-io/CptReader.h` (1), `file-io/SymbolFileReader.cc` (1), `file-io/SymbolFileReader.h` (1) |
+| `opengl` | `view-operations` | 3 | `opengl/GLVisualLayers.h` (2), `opengl/GLScalarField3D.h` (1) |
+| `model` | `file-io` | 2 M | `model/Gpgim.cc` (1), `model/Metadata.h` (1) |
+| `data-mining` | `gui+` | 1 | `data-mining/DataTable.cc` (1) |
+| `data-mining` | `opengl` | 1 | `data-mining/DataSelector.cc` (1) |
+| `utils` | `maths` | 7 M | `utils/GeometryCreationUtils.h` (6), `utils/StringFormattingUtils.h` (1) |
+| `utils` | `scribe` | 3 M | `utils/UnicodeString.cc` (2), `utils/UnicodeString.h` (1) |
+| `utils` | `model` | 1 M | `utils/XmlNamespaces.cc` (1) |
+| `utils+` | `api+` | 1 | `utils/GetPropertyAsPythonObjVisitor.h` (1) |
+
+## Include cycles
+
+The layering the code actually has, before any intent is applied: the groups of
+parts that include each other in a cycle (strongly connected components), counting
+only the edges that carry at least a given number of includes.
+
+| edges counted | parts in one cycle |
+| --- | --- |
+| every include | `api+`, `app-logic+`, `canvas-tools`, `data-mining`, `file-io+`, `gui+`, `opengl`, `presentation`, `qt-widgets`, `utils+`, `view-operations`; `app-logic`, `file-io`, `global`, `gui`, `maths`, `model`, `property-values`, `scribe`, `utils` |
+| 3 or more includes | `api+`, `app-logic+`, `canvas-tools`, `data-mining`, `file-io+`, `gui+`, `opengl`, `presentation`, `qt-widgets`, `view-operations`; `app-logic`, `file-io`, `gui`, `model`, `property-values`; `global`, `maths`, `scribe`, `utils` |
+| 10 or more includes | `api+`, `canvas-tools`, `gui+`, `presentation`, `qt-widgets`, `view-operations`; `app-logic`, `file-io`, `model`, `property-values`; `app-logic+`, `opengl` |
+
+# Dependency matrix
 
 Counts of resolved quoted `#include` lines from files in the *row* directory to files
 in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirectories.
-`(src root)` is the files directly in `src/`. The intended layering these numbers
-should respect is described in [README.md](README.md).
+`(src root)` is the files directly in `src/`.
 
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
