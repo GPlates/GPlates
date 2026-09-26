@@ -5,10 +5,11 @@ Status: agreed 2026-09-24, on the long-lived branch `feature/architecture-diagra
 layer proposal A (survey section 4) were approved 2026-09-25. Stage 2 (the pilot pull request) is
 written: the generated diagrams, the README, the scribe move, the `AGENTS.md` pointer, and the
 reconstruction page (written by the architecture-writer agent, reviewed against the code; its
-evidence and layout findings are in `reconstruction-notes.md`). Next: the developer judges the
-pilot's level of detail (more is likely wanted, so the page may be revised first), and the
-reconstruction refactor assessment is written (see *Pilot area*); then the claim check
-(`claim-check-prompt.md`) and `/code-review high`, then the pull request is opened.
+evidence and layout findings are in `reconstruction-notes.md`). The developer judged the level
+of detail right (2026-09-27); the reconstruction refactor assessment is written; an independent
+Fable claim check (30 findings, all applied) and `/code-review high` of the generator (upward
+edges had no arrowheads; fixed) are done. Next: push, check the diagrams render on GitHub, and
+open the pull request.
 
 Found while porting the prototype: in a `flowchart BT` the including node is drawn *below* the
 included one, so the layers came out upside down; the generator uses `TD`. And the layout ranks

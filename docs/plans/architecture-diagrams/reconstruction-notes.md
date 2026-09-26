@@ -70,10 +70,15 @@ line numbers from the tree at `553ec966e`. Terse by design; this file goes with 
   transform), `ReconstructionTreeCreator.cc:257-263,373-385,334-346` (cache lookups).
   `ReconstructUtils::reconstruct` callers by grep: `cli/CliReconstructCommand.cc:234`,
   `app-logic/GeometryCookieCutter.cc`, `app-logic/CoRegistrationLayerProxy.cc`, `api/CoReg.cc`.
-  `ReconstructUtils::reconstruct_geometry` callers: `api/PyFeature.cc:951` (from
+  `ReconstructUtils::reconstruct_geometry` callers (grep of
+  `ReconstructUtils::reconstruct_geometry(` over `src/`): `api/PyFeature.cc:951` (from
   `reverse_reconstruct_geometry`, used by `feature_handle_set_geometry`, `.def("set_geometry"`
-  at `:5217`), `api/PyReconstruct.cc` (`reverse_reconstruct`), `PartitionFeatureUtils.cc`,
-  `qt-widgets/CreateFeatureDialog.cc`, `view-operations/FocusedFeatureGeometryManipulator.cc`.
+  at `:5217`), `PartitionFeatureUtils.cc:1135`, `qt-widgets/CreateFeatureDialog.cc:2574,2581`,
+  `view-operations/FocusedFeatureGeometryManipulator.cc:455,470`. `pygplates.reverse_reconstruct`
+  (`api/PyReconstruct.cc:430-545`) does *not* use it: it builds its own registry (`:460`), calls
+  `create_reconstruct_method_or_default` (`:503`) and the method's
+  `reconstruct_geometry(..., true)` (`:523`), after setting `gpml:geometryImportTime` on each
+  feature (`:487-498`), and writes the file back (`:538-543`).
 - (b) `ApplicationState.cc:170-212` (`reconstruct` → `update_layer_tasks` → emit
   `reconstructed`), `ReconstructGraph.cc:316-397` (`Reconstruction::create`, then
   `LayerTask::update` per active layer), `ReconstructionLayerTask.cc:112-125`,
@@ -95,11 +100,18 @@ line numbers from the tree at `553ec966e`. Terse by design; this file goes with 
   plates on demand `ReconstructionGraphBuilder.cc:51-95`, multiple edges per pair `:97-108`,
   pole copies into pools `:110-123`, `push_front` `:138-139`, fresh graph after build
   `:151-160`, distant-past extension `:164-253`.
-- "Last inserted wins": `push_front` at `ReconstructionGraphBuilder.cc:138-139,250-251`; the
-  tree takes the first edge that fits `ReconstructionTree.cc:318-339,345-361`; first reversed
-  edge only (`break` at `:337`); moving plate already present or equal to anchor is skipped
-  `:392-414`; visiting order `ReconstructionTreeCreator.cc:104-120` (`visit_feature_collections`)
-  and `AppLogicUtils.h:127,150`. The tree comment's own words about order:
+- Tie-breaking: `push_front` at `ReconstructionGraphBuilder.cc:138-139,250-251`; the builder's
+  comment says the order "is not currently important ... even at crossovers" and records the
+  order-incoming-edges-by-time idea (`:125-137`). The tree walks a plate's incoming edges in
+  list order and takes the first that fits (`ReconstructionTree.cc:318-339`, `break` at
+  `:337`), then every outgoing edge in list order (`:345-361`), and
+  `create_sub_tree_from_graph_edge` recurses into the moving plate before the next edge is
+  tried (`:439-443`), so the walk is depth-first; a moving plate already in `d_all_edges` or
+  equal to the anchor is skipped (`:392-414`). So two sequences with the same fixed plate are
+  decided by that plate's list (last inserted first), and two with different fixed plates by
+  which fixed plate the walk reaches first, i.e. list order higher up. Visiting order
+  `ReconstructionTreeCreator.cc:104-120` (`visit_feature_collections`) and
+  `AppLogicUtils.h:127,150`. The tree comment's own words about order:
   `ReconstructionTree.cc:220-223,249-253,298-303`.
 - Tree cutting rules: `ReconstructionTree.cc:160-175` (missing anchor → empty tree),
   `:306-361` (reverse only from anchor or when parent is reversed; one incoming edge),
@@ -124,9 +136,10 @@ line numbers from the tree at `553ec966e`. Terse by design; this file goes with 
   `...Version2`, `...Version3`); small circle `gpml:SmallCircle` and VGP
   `gpml:VirtualGeomagneticPole` by feature type (their `CanReconstructFeature` classes);
   flowline `gpml:Flowline` `FlowlineUtils.h:84`; motion path `gpml:MotionPath`
-  `MotionPathUtils.h:84`. One registry in `ApplicationState.cc:90`; temporaries in
-  `api/PyReconstructSnapshot.cc:460`, `api/PyReconstruct.cc:460`, `ReconstructUtils.cc:294,388`,
-  `ReconstructUtils.h:108,135`.
+  `MotionPathUtils.h:84`. One registry in `ApplicationState.cc:90`; `api/PyTopologicalModel.h:368`
+  keeps one as a member (with a `ReconstructContext`, `:374`); temporaries in
+  `api/PyReconstructSnapshot.cc:460`, `api/PyReconstruct.cc:460`,
+  `api/PyTopologicalSnapshot.cc:1299`, `ReconstructUtils.cc:294,388`, `ReconstructUtils.h:108,135`.
 - Method instances are context-bound: `ReconstructMethodInterface.h:107-121` (NOTE), caches in
   `ReconstructMethodByPlateId.h:170-181`, `.cc:355-373,663-712,715-777`.
 - `ReconstructContext`: `set_features` `ReconstructContext.cc:141-190` (drops features no
@@ -140,6 +153,22 @@ line numbers from the tree at `553ec966e`. Terse by design; this file goes with 
 - `ReconstructHandle`: `ReconstructHandle.h:44,46-51,65-75`; `utils/Counter64.h` comment on
   wraparound. Use by finders `ReconstructedFeatureGeometryFinder.h:36-110`,
   `ReconstructionGeometryFinder.h` class comment.
+- Handle not stored by three methods: `ReconstructMethodFlowline.cc:151-154`,
+  `...MotionPath.cc:139-142`, `...SmallCircle.cc:179-182` construct their populators without
+  it; `FlowlineGeometryPopulator.cc:368,458`, `MotionPathGeometryPopulator.cc:158,241,326` and
+  `SmallCircleGeometryPopulator.cc:79` call `create` without it; `ReconstructedFlowline.h`,
+  `ReconstructedMotionPath.h` and `ReconstructedSmallCircle.h` contain no `reconstruct_handle`
+  (grep); the VGP method passes it (`ReconstructMethodVirtualGeomagneticPole.cc:274`,
+  `ReconstructedVirtualGeomagneticPole.h:106`). Vector fields store it in every path
+  (`MultiPointVectorField.h:221`, `ReconstructMethodInterface.cc:104,117`,
+  `ReconstructMethodFlowline.cc:268`). Finders reject a handle-less RG when a filter is given:
+  `ReconstructedFeatureGeometryFinder.cc:87-91`, `ReconstructionGeometryFinder.cc:75-79`.
+  Callers that always pass a handle filter: `LayerProxyUtils.cc:310-313`;
+  `TopologyGeometryResolverLayerProxy.cc:1249-1296`,
+  `TopologyNetworkResolverLayerProxy.cc:783-847`, `api/PyTopologicalSnapshot.cc:1313-1344`,
+  through `TopologyInternalUtils.cc:1174,1207`; the not-found branch is in
+  `TopologyGeometryResolver::record_topological_section_reconstructed_geometry`
+  (`TopologyGeometryResolver.cc:377-390`, "outside the age range" comment).
 - RFG: bases and subscription `ReconstructedFeatureGeometry.h:58-60`, `.cc:42-62,53`;
   `WeakObserver.h:128-136` (constructor subscribes), `WeakObserverPublisher.h:36-42` (linked
   list per publisher); `is_valid`/`get_feature_ref` `.h:281-319`, `.cc:113-121`; members
@@ -154,9 +183,12 @@ line numbers from the tree at `553ec966e`. Terse by design; this file goes with 
   `VelocityDeltaTime.h` enum; by-plate-ID with topologies `ReconstructMethodByPlateId.cc:472-620`;
   `RFG::reconstructed_geometry_point_velocities` `ReconstructedFeatureGeometry.cc:156-187`,
   `ResolvedVertexSourceInfo.cc:95-160` (by plate ID or half-stage from the RFG's method type).
-- Half-stage: `RotationUtils.h` (`DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION = 10.0`,
-  `get_half_stage_rotation` overloads), `RotationUtils.cc:191-300` (version 1 formula, version
-  2 asymmetry, version 3 spreading start time = geometry import time). Flowlines:
+- Half-stage: `RotationUtils.cc:263-275` hard-codes `half_stage_rotation_interval = 10.0` in
+  the version-2/3 path, with the comment that it must not change without a new
+  `gpml:ReconstructionMethod` enumeration; `DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION`
+  (`RotationUtils.h:58`) is only the default argument of the generic overload (`:85-92`).
+  `RotationUtils.cc:191-300` (version 1 formula, version 2 asymmetry, version 3 spreading start
+  time = geometry import time). Flowlines:
   `FlowlineGeometryPopulator.cc:120-215` (tree per time, `get_stage_pole`, halved).
 - Topology seam: `ReconstructMethodByPlateId.cc:383-421` (emit
   `TopologyReconstructedFeatureGeometry` when `is_valid(time)`), `:715-777`

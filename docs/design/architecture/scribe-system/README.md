@@ -134,4 +134,5 @@ See [usage.md](usage.md) for the full inventory.
 - `src/presentation/TranscribeSession.cc`: the largest client, GPlates sessions and projects.
 - `src/api/PythonPickle.h`: the pickle bridge, and its coarse version gate.
 
-Last checked against: `553ec966e` (the `gplates` branch).
+Last checked against: `553ec966e` (the `gplates` branch) for *Components* and *Entry points*;
+the chapters were written earlier and have not been re-checked against that commit.

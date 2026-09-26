@@ -16,8 +16,9 @@ boundary is marked within it rather than described separately.
 - [dependency-matrix.md](dependency-matrix.md), generated from the `#include` lines: the layer
   diagrams (the code measured against the layer groups below), the include matrix, and the files
   the pyGPlates module compiles.
-- One directory per area, listed under [Areas](#areas): what the area is for, its component and
-  sequence diagrams, how it works, its traps and known weaknesses, and where to start reading.
+- One directory per area, listed under [Areas](#areas): what the area is for, its component
+  diagram and, where it has them, sequence diagrams of its key operations, how it works, its
+  traps and known weaknesses, and where to start reading.
 
 Before changing an area, read its page. A pull request that changes an area's structure updates
 its page in the same pull request.
@@ -28,9 +29,10 @@ open (other pages, source files, public issues).
 
 ## Overview
 
-An arrow means that one area's results feed the other. The shared core is compiled into both
-products, and so are the pyGPlates bindings (blue): GPlates' embedded interpreter imports the same
-module.
+An arrow means that one area's results feed the other; a double-headed arrow means each feeds the
+other, as when one area both writes and reads through another. The shared core is compiled into
+both products, and so are the pyGPlates bindings (blue): GPlates' embedded interpreter imports the
+same module.
 
 ```mermaid
 flowchart LR
@@ -75,9 +77,14 @@ flowchart LR
   API --> FIO
   API --> RECON
   API --> TOPO
-  API --> SCRIBE
+  API <--> SCRIBE
   classDef py fill:#dbeafe,stroke:#1d4ed8,color:#111
 ```
+
+The nodes are the areas of the table below, except that *Model + GPGIM* is `model` and `gpgim`,
+*Canvas tools + feature editing* is `canvas-tools` and `feature-editing`, the embedded
+interpreter of `python-bindings` is drawn with the shell, and `auxiliary-tools` and `foundation`
+have no node.
 
 Files come in through feature file I/O into the model. The model feeds reconstruction, and
 reconstruction and topologies feed each other: resolving a topology needs the reconstructed
@@ -147,8 +154,9 @@ may include anything else in it, or in a group below. Lowest first:
    Scribe serialisation framework. They include each other: the maths value types are
    transcribable, and `Transcription.cc` uses `Real`.
 3. **Model and value types** (`model`, `property-values`, `gui`): the feature model and its
-   property values. `gui` here is only its module part, the colour and palette value types that
-   the raster property values use; it and `property-values` include each other.
+   property values. `gui` here is only its module part, the colour and palette value types, and
+   the mipmapper, that the raster property values use; it and `property-values` include each
+   other.
 4. **Shared core** (`file-io`, `app-logic`): feature and raster readers and writers, and the
    reconstruction and topology code both products run. They include each other heavily in both
    directions.
@@ -165,8 +173,8 @@ may include anything else in it, or in a group below. Lowest first:
    `qt-widgets`, `api+`): the rest of `gui` (painters, canvas-tool workflows, export strategies,
    menus, `PythonManager`), the presentation state and renderers, rendered geometries and geometry
    editing, the canvas tools and widgets, and the embedded-interpreter half of `api`. It is one
-   group because its directories include each other heavily: `gui` and `qt-widgets` include each
-   other hundreds of times in both directions.
+   group because its directories include each other heavily: `gui` and `qt-widgets` do so in
+   both directions, in large numbers (the matrix has the counts).
 
 Of `qt-resources/`, `gpgim.qrc` (the GPGIM XML) and `python.qrc` (the pure-Python API and
 scripts) are compiled into both products; `opengl.qrc` (shaders) and `qt_resources.qrc` (images)

@@ -98,7 +98,9 @@ flowchart TD
   PYROT -->|"owns"| CACHED
 ```
 
-Arrows labelled *is a* or *are* point from a subclass to its base. Files:
+Arrows labelled *is a* or *are* point from a subclass to its base. Other arrows point from the
+object that supplies data, or an object, to the one that uses or holds it, whichever side makes
+the call. Files:
 `src/app-logic/ReconstructionGraph.h`, `ReconstructionGraphBuilder.h`,
 `ReconstructionGraphPopulator.h`, `ReconstructionTree.h`, `ReconstructionTreeCreator.h`,
 `ReconstructionLayerProxy.h`, `src/api/PyRotationModel.h`.
@@ -134,7 +136,7 @@ flowchart TD
   RCTX -->|"creates"| STATE
   STATE -->|"holds"| CONTEXT
   RCTX -->|"returns"| RECON
-  RECON --> RFG
+  RECON -->|"holds"| RFG
   METHOD -->|"reconstruct_feature_geometries"| RFG
   METHOD -->|"reconstruct_feature_velocities"| MPVF
   RFGSUB -->|"are"| RFG
@@ -155,9 +157,10 @@ area). Files: `src/app-logic/ReconstructMethodInterface.h`, `ReconstructMethodRe
 ### `pygplates.reconstruct()`
 
 `ReconstructSnapshot` reconstructs one time. `ReconstructModel` caches snapshots by time in a
-`KeyValueCache`. `pygplates.reverse_reconstruct()` and `Feature.set_geometry(...,
-reverse_reconstruct=...)` go through `ReconstructUtils::reconstruct_geometry` instead (not
-shown).
+`KeyValueCache`. `Feature.set_geometry(..., reverse_reconstruct=...)` goes through
+`ReconstructUtils::reconstruct_geometry` instead, and `pygplates.reverse_reconstruct()` is a
+third registry-direct loop, in `api/PyReconstruct.cc`, that calls each method's
+`reconstruct_geometry` itself (neither is shown).
 
 ```mermaid
 sequenceDiagram
@@ -197,7 +200,8 @@ sequenceDiagram
 Note what is absent: `ReconstructContext`. The Python snapshot talks to the registry itself, one
 method instance per feature, and sorts motion paths and flowlines into their own lists by method
 type. The snapshot always wraps the caller's `RotationModel` in a one-entry adaptor whose default
-anchor is the requested one, so the caller's model keeps its own anchor and its 150-tree cache.
+anchor is the requested one, or the model's own if none was requested, so the caller's model
+keeps its own anchor and its 150-tree cache.
 `ReconstructUtils::reconstruct` (which does use `ReconstructContext`) is the door used by
 `cli/CliReconstructCommand`, `GeometryCookieCutter`, `CoRegistrationLayerProxy` and
 `api/CoReg.cc`.
@@ -230,7 +234,7 @@ sequenceDiagram
   alt no ReconstructionInfo cached for (time, params)
     LP->>LP: get_or_create_reconstruct_context(params)
     LP->>RC: create_context_state(Context) if none for these params
-    LP->>RC: get_reconstructed_features(features, context state, time)
+    LP->>RC: get_reconstructed_features(out, context state, time)
     loop each feature
       RC->>M: reconstruct_feature_geometries(rfgs, handle, context, time)
       M->>RLP: get_reconstruction_tree(time, anchor) via delegate creator
@@ -242,9 +246,11 @@ sequenceDiagram
   LP-->>Vis: spatial partition of RFGs
 ```
 
-The rotation layer proxy hands out a *delegate* creator, not its internal cached one, so a
-client that keeps a `ReconstructionTreeCreator` sees later changes to the anchor, the rotation
-files and the cache size (`ReconstructionLayerProxy.cc`, `get_reconstruction_tree_creator`).
+The features are not passed per call: `set_features` gave them to the context when the layer's
+files changed, so each call names only its output, a context state and the time. The rotation
+layer proxy hands out a *delegate* creator, not its internal cached one, so a client that keeps
+a `ReconstructionTreeCreator` sees later changes to the anchor, the rotation files and the cache
+size (`ReconstructionLayerProxy.cc`, `get_reconstruction_tree_creator`).
 
 ## How it works
 
@@ -262,10 +268,17 @@ rotation features do not reach trees made from it. `build_graph` returns the gra
 empty one.
 
 Edges are pushed to the *front* of a plate's incoming and outgoing lists, so within a plate the
-most recently inserted sequence is visited first. The populator visits collections and features
-in order, so at a crossover time, or where two edges of one plate pair overlap, the sequence
-that appears *last* in the last rotation file wins. The tree code's comment describes this as
-"whichever graph edge happens to come first".
+most recently inserted sequence is tried first, and the populator visits collections and
+features in order. The tree is cut depth-first from the anchor (next section), and the first tree
+edge to reach a moving plate wins. So where two sequences of the *same* plate pair overlap in
+time, the one that comes later in file order wins (the last file, and the last sequence in it).
+At a crossover, where sequences from two different fixed plates cover the moving plate at the
+same time, the winner is whichever fixed plate the depth-first walk reaches first, which is
+decided by list order higher up the graph, not by which of the two sequences was inserted last.
+When the crossover is synchronised the two routes give the same rotation, which is what the tree
+code's comment means by "it just depends on which graph edge happens to come first (which
+depends on the order in the rotation file)", and why the builder's comment says the order is
+not currently important.
 
 With `extend_total_reconstruction_poles_to_distant_past`, `build_graph` adds, for each moving
 plate whose oldest incoming edge does not already reach the distant past, an extra edge from that
@@ -307,9 +320,10 @@ generator fills a miss with `ReconstructionTree::create` from its graph, the ada
 another creator. `real_t` compares with `GPlatesMaths::EPSILON`, so two times closer than that
 share a cache entry. Cache sizes in use: `create_cached_reconstruction_tree_creator` defaults to 1;
 `RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE` is 150, and a `RotationModel` made from
-another one is an adaptor over it; `ReconstructionLayerProxy` uses 512, and its header explains
-why (flowlines request a tree per time sample); `ReconstructLayerProxy` asks for the number of
-time slots plus one when reconstructing with topologies.
+another one is an adaptor over it; `ReconstructionLayerProxy` uses
+`DEFAULT_MAX_NUM_RECONSTRUCTION_TREES_IN_CACHE` (512), and its header explains why (flowlines
+request a tree per time sample); `ReconstructLayerProxy` asks for the number of time slots plus
+one when reconstructing with topologies.
 
 The rotation layer proxy builds its `CachedReconstructionTreeGeneratorImpl` lazily on the first
 tree request, with the current anchor as the default anchor, and throws it away (`invalidate`)
@@ -327,8 +341,8 @@ function and a `create` function. Queries walk the map in *reverse* enum order, 
 and right plate IDs and a geometry), and finally `BY_PLATE_ID`, which accepts any feature with
 a non-topological geometry, plate ID or not (a missing plate ID means plate 0). Registration
 order does not matter. Topological features match nothing, which is how `ReconstructContext`
-excludes them. GPlates owns one registry in `ApplicationState`; pyGPlates and the utilities build a
-temporary one per call.
+excludes them. GPlates owns one registry in `ApplicationState`; pyGPlates builds one per snapshot
+or per call (`TopologicalModel` keeps one as a member), and the utilities build a temporary one.
 
 A method instance is bound to one feature and constructed with a
 `ReconstructMethodInterface::Context` (`ReconstructParams`, a `ReconstructionTreeCreator`, and an
@@ -346,8 +360,11 @@ recorded feature for that context; the caller owns the returned `shared_ptr<Cont
 the context keeps only a weak reference, reusing expired slots. Calling `set_features` again
 rebuilds the methods inside every live state, so their caches start over.
 
-Every `get_*` call takes the next `ReconstructHandle`, stores it in each RFG or vector field it
-creates, and returns it. The outputs differ in shape: a flat RFG list; `Reconstruction` objects,
+Every `get_*` call takes the next `ReconstructHandle`, passes it to every method and returns it.
+Each vector field stores it, and so does each RFG that `ReconstructMethodByPlateId`,
+`...HalfStageRotation` and `...VirtualGeomagneticPole` create; the flowline, motion-path and
+small-circle methods do not pass it on to their populators, so their RFGs carry no handle (see
+*Constraints and traps*). The outputs differ in shape: a flat RFG list; `Reconstruction` objects,
 each an RFG paired with a *geometry property handle*; `ReconstructedFeature` objects grouped by
 feature (a feature inactive at the time is still present, with no reconstructions); the same two
 over a `TimeSpanUtils::TimeRange`; the subset of features named in a set of feature IDs
@@ -369,7 +386,7 @@ feature's observer list, and destroying the feature leaves `is_valid()` false ra
 dangling pointer. `ReconstructedFeatureGeometryFinder` and `ReconstructionGeometryFinder` are
 `WeakObserverVisitor`s that walk that list, optionally filtered by reconstruction tree, reconstruct
 handles or property name; this is how a topology resolver finds the section RFGs of *its* pass
-among all the RFGs a feature currently has.
+among all the RFGs a feature currently has. An RFG with no handle never matches a handle filter.
 
 An RFG holds the tree it was made with, a tree creator for the same rotation setup, the geometry
 property iterator, the method type, the plate ID and the time of formation (the last two are
@@ -408,8 +425,11 @@ RFG's method type and uses the RFG's own tree creator.
 ### Half-stage rotations, flowlines, motion paths
 
 `RotationUtils::get_half_stage_rotation` divides the interval from the spreading start time to
-the reconstruction time into 10 My steps (`DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION`) and applies
-spreading asymmetry; the version enumeration in the feature selects the older behaviours
+the reconstruction time into 10 My steps and applies spreading asymmetry. The 10 is hard-coded in
+the version-2/3 path, under a comment that it cannot change without a new
+`gpml:reconstructionMethod` version, because present-day geometries were reverse-reconstructed
+with it; the same 10 is `DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION`, the default argument of the
+generic overload only. The version enumeration in the feature selects the older behaviours
 (version 1 symmetric from present day, version 2 with intervals and asymmetry, version 3 with a
 spreading start time equal to the geometry import time). `FlowlineGeometryPopulator` walks the
 flowline's time list from the reconstruction time back, fetching a tree per time and halving each
@@ -419,8 +439,9 @@ left-right stage pole (`RotationUtils::get_stage_pole`), which is why it needs a
 
 When `Context::topology_reconstruct` is set, `ReconstructMethodByPlateId` asks it for a
 `GeometryTimeSpan` per geometry property (`create_geometry_time_span`, with the lifetime-detection,
-tessellation and interpolation settings taken from `ReconstructParams`) and emits
-`TopologyReconstructedFeatureGeometry` objects for time slots where the geometry still exists.
+tessellation and interpolation settings taken from `ReconstructParams`) and emits one
+`TopologyReconstructedFeatureGeometry` per geometry property at the requested time, if the time
+span says the geometry still exists then.
 `ReconstructUtils::reconstruct_geometry` deliberately clears `topology_reconstruct` from the
 context it is given, so reverse-reconstructing an edited geometry is always rigid.
 `TopologyReconstruct::create` is called only from `ReconstructLayerProxy` (combining the
@@ -429,8 +450,9 @@ boundary and network time spans of every topology layer) and `api/PyTopologicalM
 ### The GPlates driver
 
 `ReconstructLayerProxy` owns one `ReconstructContext` and a `KeyValueCache` of
-`ReconstructionInfo` keyed by `(time, ReconstructParams)`, at most 4 entries, reduced to 1 while
-reconstructing with topologies because each entry pins a time span of resolved topologies. Each
+`ReconstructionInfo` keyed by `(time, ReconstructParams)`, at most
+`MAX_NUM_RECONSTRUCTIONS_IN_CACHE` (4) entries, reduced to 1 while reconstructing with topologies
+because each entry pins a time span of resolved topologies. Each
 entry holds a strong reference to its context state; the proxy also keeps a map from
 `ReconstructParams` to a *weak* context state so that a new time with unchanged params reuses the
 state (and its deformation tables) instead of creating one. `set_features` is called when the
@@ -446,8 +468,6 @@ caller passes params whose `reconstruct_using_topologies` differs from the layer
   handle. They share nothing but the name.
 - **`ReconstructionGraph` versus `ReconstructGraph`.** The first is the rotation hierarchy in this
   area. The second (GPlates-only, `ReconstructGraph.h`) is the layer graph of the layers area.
-  `ReconstructionGraphPopulator.h` still carries the include guard
-  `GPLATES_APP_LOGIC_RECONSTRUCTIONTREEPOPULATOR_H` from its previous name.
 - **Trees are a snapshot.** The graph copies pole values out of the model when built. In GPlates
   the rotation layer proxy rebuilds on a model change; in pyGPlates a `RotationModel` never sees
   edits to its features made after construction, and the deprecated
@@ -456,8 +476,18 @@ caller passes params whose `reconstruct_using_topologies` differs from the layer
 - **Silent identities.** A missing anchor plate gives an empty tree; a plate absent from the tree
   gives the identity from `get_composed_absolute_rotation`; a feature with no plate ID is
   reconstructed by plate 0. None of these raise. Use the `_or_none` accessor when absence matters.
-- **File order decides ties.** At a crossover time, or where two sequences of the same plate
-  pair overlap, the last-inserted sequence wins, because the builder pushes edges to the front.
+- **File order decides ties, but not simply.** Where two sequences of the same plate pair
+  overlap, the last-inserted one wins, because the builder pushes edges to the front. At a
+  crossover the winner is the fixed plate the depth-first walk from the anchor reaches first,
+  which list order decides higher up the graph; a synchronised crossover gives the same
+  rotation either way.
+- **Three RFG kinds carry no handle.** `ReconstructedFlowline`, `ReconstructedMotionPath` and
+  `ReconstructedSmallCircle`, and the seed-point RFGs the flowline and motion-path populators
+  make, are created without a reconstruct handle: the three methods drop the handle on the way
+  to their populators, and the three `create` functions have no parameter for it. Both finders
+  reject a handle-less RFG when given a handle filter, so the lookups that filter by handle, the
+  topology resolvers' section lookups (both products pass handles) and GPlates'
+  `LayerProxyUtils::find_reconstructed_feature_geometries_of_feature`, never return these RFGs.
 - **Epsilon cache keys.** Tree caches key on `real_t`, so requests for times within
   `GPlatesMaths::EPSILON` return the same tree.
 - **`ReconstructHandle` is a process-wide static counter** and its header says it is not
@@ -470,16 +500,21 @@ caller passes params whose `reconstruct_using_topologies` differs from the layer
 - **`BY_PLATE_ID` is lenient by design**, so anything with a regular geometry is "reconstructed",
   standing still if it has no plate ID. Features that must not go through this framework
   (topological ones) are excluded only because no method accepts them.
-- **pyGPlates has its own loop.** `ReconstructSnapshot` calls the registry directly, so it does not
-  get `Reconstruction`/geometry-property-handle pairing, and a change to `ReconstructContext`
-  does not reach `pygplates.reconstruct()`.
+- **pyGPlates has its own loops.** `ReconstructSnapshot` (`api/PyReconstructSnapshot.cc`) and
+  `pygplates.reverse_reconstruct()` (`api/PyReconstruct.cc`) call the registry directly, so the
+  snapshot does not get `Reconstruction`/geometry-property-handle pairing, and a change to
+  `ReconstructContext` reaches neither.
 
 ## Known weaknesses and deferred work
 
-- Two code paths produce RFGs from a set of features: `ReconstructContext` (GPlates layers,
-  `ReconstructUtils`, topology resolvers, co-registration) and the registry-direct loop in
-  `api/PyReconstructSnapshot.cc`. `PyReconstructSnapshot.cc` includes `ReconstructContext.h`
-  without using it.
+- The per-feature loop over the registry is written three times: `ReconstructContext` (GPlates
+  layers, `ReconstructUtils`, topology resolvers, co-registration), `ReconstructSnapshot` in
+  `api/PyReconstructSnapshot.cc` and `reverse_reconstruct` in `api/PyReconstruct.cc`.
+  `PyReconstructSnapshot.cc` includes `ReconstructContext.h` without using it.
+- Flowline, motion-path and small-circle RFGs carry no reconstruct handle, so every
+  handle-filtered lookup misses them: a feature of one of those types used as a topological
+  section is dropped from the topology as if it were outside its age range, and GPlates'
+  feature-to-RFG lookup in `LayerProxyUtils` finds nothing for it.
 - `ReconstructMethodInterface::get_present_day_feature_geometries` must return a geometry for
   every reconstructable property whether or not it is active at present day (the header marks
   this "May need to revisit"), and the resolved-at-time variant is disabled with `#if 0` in both
@@ -490,16 +525,15 @@ caller passes params whose `reconstruct_using_topologies` differs from the layer
 - Every RFG carries a `ReconstructionTree` pointer and a `ReconstructionTreeCreator`; equivalence
   of trees has to be tested with `created_from_same_graph_with_same_parameters` because caches
   evict.
-- Which sequence wins at a crossover is a property of list order, not an explicit rule. The
-  builder comment records that ordering incoming edges by time was considered and not done.
+- Which sequence wins at a crossover is a property of list order along the depth-first walk
+  from the anchor, not an explicit rule. The builder comment records that ordering incoming
+  edges by time was considered and not done.
 - `ReconstructUtils::reconstruct_geometry` strips topology reconstruction from its context with
   a comment calling the approach hacky.
 - `ReconstructLayerProxy` cannot serve a request whose `reconstruct_using_topologies` differs
   from its current params (it asserts `NotYetImplementedException`).
 - The model's `WeakObserverVisitor` names this area's RFG types, one of the upward includes in
   [`../dependency-matrix.md`](../dependency-matrix.md).
-- Comments in `api/PyReconstructionTree.cc` refer to `ReconstructUtils::get_stage_pole()`, which
-  lives in `RotationUtils`.
 
 ## Entry points
 
@@ -512,7 +546,8 @@ caller passes params whose `reconstruct_using_topologies` differs from the layer
 - `src/app-logic/ReconstructionTree.cc`: the tree-cutting rules, with the worked crossover
   examples in the comment.
 - `src/app-logic/ReconstructionTreeCreator.h`: the creator wrapper and its cached
-  implementations, and where every default cache size comes from.
+  implementations, and the default cache size of 1; the other sizes are set by the owners
+  listed under *Tree creators and caching*.
 - `src/app-logic/ReconstructLayerProxy.cc`: how GPlates caches reconstructions, reuses context
   states and builds the `TopologyReconstruct` seam.
 
