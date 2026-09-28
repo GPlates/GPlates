@@ -49,6 +49,13 @@ The rules that follow from it:
   tag exists (section 7), so the candidate is prepared *before* the cut. A branch cut ahead of
   need is an empty branch. As of 2026-09-12 none has been cut yet; the first will be
   `release/pygplates-1.1`.
+- **A series branch releases one product and freezes the other.** The same first commit replaces
+  the other product's target with the version it resolved to at the cut, which is then used as
+  it is (section 7.4). The pyGPlates publishing run refuses a release tag without it.
+- **After a candidate, the next commit either sets the next candidate or is the release**, and
+  the release is that candidate unchanged apart from its target and changelog heading. The
+  resolver refuses the release's target on any commit not tagged as it, and the publishing run
+  refuses a release that is not its last candidate unchanged (sections 7.2 and 7.5).
 - **Series branches are never deleted.** GDAL keeps 29 and QGIS 71 (section 4); a branch ref
   costs nothing, and deleting one loses the "check out the latest 2.6.x" contract for that series.
 - The development branch keeps the name `gplates` for now and will be renamed `main` in a
@@ -271,15 +278,16 @@ from the same base both take the next number, and whichever merges second is wro
 here — `7c6c6243f` jumped dev7 to dev9 because `c967acd21` had taken dev8 on another line the same
 day — and the two products' counters had drifted apart. Git already knows the merge order.
 
-Everything else is a fallback for builds with no repository, in this order: an existing CMake
-variable (`-D…`), an environment variable of the same name, git, `PKG-INFO` (the pyGPlates
-sdist), `cmake/modules/VersionRecorded.cmake` (written into the sdist by `cmake/version.py`),
-then a fatal error. A shallow clone is refused outright rather than allowed to produce a smaller,
-plausible number.
+Everything else is a fallback for builds with no repository, or an exception to counting, in
+this order: an existing CMake variable (`-D…`), an environment variable of the same name, a
+frozen version (the other product's, on a release series branch — section 7.4), git, `PKG-INFO`
+(the pyGPlates sdist), `cmake/modules/VersionRecorded.cmake` (written into the sdist by
+`cmake/version.py`), then a fatal error. A shallow clone is refused outright rather than allowed
+to produce a smaller, plausible number.
 
 ### 7.2 The guards
 
-Four checks abort the configure rather than let a bad version reach a package:
+Six checks abort the configure rather than let a bad version reach a package:
 
 1. **Standing on a release tag whose base is not the target.** Tagging `PyGPlates-1.1.0` while the
    target still says `1.0.0` is a fatal error naming what to set the target to. This is what makes
@@ -303,14 +311,15 @@ Four checks abort the configure rather than let a bad version reach a package:
    | reference | allowed targets | rejected |
    |---|---|---|
    | `1.0.0` (a release) | `1.0.1`, `1.1.0`, `2.0.0`, and candidates of those (`1.0.1rc1`, …) | `1.0.2`, `1.2.0`, `3.0.0`, `1.0.0rc2` |
-   | `1.0.0rc1` (a candidate on this line) | `1.0.0rc2`, `1.0.0` | `1.0.1`, `1.1.0` |
+   | `1.0.0rc1` (a candidate on this line) | `1.0.0rc2`; `1.0.0` only on the commit tagged as it (check 5) | `1.0.1`, `1.1.0` |
    | `1.0.0rc1` (a candidate on another branch) | `1.0.1`, `1.1.0`, `2.0.0`, and candidates of those | `1.0.0`, `1.0.0rc2`, `1.0.2`, `1.2.0` |
 
    A candidate binds only the line it is on. Whether the reference tag is on HEAD's first-parent
    line is decided by walking back `HEAD~n`, with `n` the reference's distance: `~` follows first
    parents, so that commit is the tag's own if the tag is on the line, and otherwise the commit
    the series branch was cut from. On the line — the series branch, or a patch branch off it —
-   only the candidate's own head may follow, as another candidate or as the release. Off the
+   only the candidate's own head may follow, as another candidate or as the release (check 5
+   restricts the release further). Off the
    line — the development branch once the series branch cut from it has its first candidate, or
    a feature branch cut before then — the candidate's head counts as released, and *staying* on
    it is refused: the `1.1.0` line has moved to the series branch, which is minting
@@ -333,6 +342,31 @@ Four checks abort the configure rather than let a bad version reach a package:
    its patch, until 1.0.0 declared the product mature; and the big early pyGPlates jumps used the
    SVN revision as the minor version). A side benefit: a fork cannot quietly jump to `2.8.0` while
    upstream is on `2.6` (section 9).
+5. **The release's target on a commit not tagged as it, after a candidate on the line.** A
+   series branch standing after `PyGPlates-1.1.0rc1` with the target `1.1.0` would resolve to
+   `1.1.0.devN`, and under PEP 440 a development release of `1.1.0` sorts *below* its candidates
+   (GPlates has the same problem: `2.6.0-5` sorts below `2.6.0-rc.1` under SemVer). Such a
+   commit is either the release before its tag exists, or a commit added on top of it: a late fix
+   cherry-picked after the target was set, say. A dispatch of `build-wheels.yml` builds wheels
+   from either, and they lose to the candidate whenever pip chooses, and fail a dependent's
+   `pygplates>=1.1.0rc1` outright. So the release's target is accepted only on the commit tagged as
+   it, where the guards other than check 1 are not consulted at all. The advice depends on where
+   the commit is. Directly on the candidate it may be the release awaiting its tag, so the
+   refusal offers both ways forward: tag it (a local tag publishes nothing, so tag, check, then
+   push), or set the next candidate, `1.1.0rc2`, after which fixes resolve to `1.1.0rc2.devN`.
+   Further on, the commit has changes the candidate was never tested with, so only the next
+   candidate is offered: tagging it would release them untested, and the publishing run would
+   refuse the tag anyway. It is a correctness check — the version would sort wrongly whenever and
+   wherever it was built — which is why it lives in the resolver; the related policy, that the
+   release *is* its last candidate unchanged, does not (section 7.5).
+
+   A commit that a release tag already has in its history is only warned about, not refused.
+   It can exist legitimately: the release commit on a patch branch whose merge commit was
+   tagged, or one with a fix tagged on top of it under the publishing run's override. Either
+   way it is history, not a build anyone will publish, and refusing it would leave it
+   unbuildable for good, `git bisect` included.
+6. **A frozen product standing on its own release tag.** A frozen version (section 7.4) marks
+   the product as not released from this branch, so a release tag of it here is refused.
 
 **Which release is "the nearest release"** for checks 3 and 4 is a separate question from which
 tag supplies the count, and is computed separately:
@@ -366,10 +400,19 @@ candidate; the release itself is tagged only once a candidate has passed. Prepar
 series branch before its first tag is possible, but every commit of it lengthens the wait on the
 development branch.
 
-The pure parts of the resolver — splitting, joining, ordering and the target checks — are tested
-by `cmake/modules/VersionFromGitTest.cmake`, registered with CTest as `version-resolver-test` in
-both build trees, and runnable directly with `cmake -P`. It ends by running the whole resolver
-once against the repository it is in, so the git path gets exercised and a mistake in
+Judging by the tags that exist now had a worse consequence too, found before the first series
+branch was cut: a release of one product on its own series branch stopped every configure on an
+*older* series branch of the other product, its own release tags included. Section 7.4 has it,
+and the frozen versions that fix it.
+
+The pure parts of the resolver — splitting, joining, ordering, the target checks, the
+untagged-release check and the frozen version check — are tested by
+`cmake/modules/VersionFromGitTest.cmake`, registered with CTest as `version-resolver-test` in both
+build trees, and runnable directly with `cmake -P`. So are the history-shaped cases, on a
+synthetic repository with a release series branch per product, cut one after the other: the
+shape section 7.4's failure needs, and the release commit that guard 5 only warns about once a
+later tag has it in its history. It ends by running the whole
+resolver once against the repository it is in, so the git path gets exercised and a mistake in
 `VersionRelease.cmake` fails a test as well as the configure. (An earlier version wrote the
 expected nearest releases down as literals, `2.5.0` and `1.0.0`, which would have gone red at the
 first release after it was written; the resolver finds them itself.)
@@ -387,16 +430,139 @@ pyGPlates unless stated; `T` is the target in `VersionRelease.cmake`.
 | same, target moved on | `1.2.0` | `PyGPlates-1.1.0rc1`, distance 2 | `1.2.0.dev2` |
 | a feature branch cut before the series branch, not yet merged with the development branch | `1.1.0` | `PyGPlates-1.1.0rc1`, off the line | **fatal** — merge the development branch in |
 | two commits later, a second candidate decided | `1.1.0rc2` | `PyGPlates-1.1.0rc1`, distance 2 | `1.1.0rc2.dev2` |
+| series branch after `rc1`, the release's target set but the commit not yet tagged | `1.1.0` | `PyGPlates-1.1.0rc1`, distance 1, on the line | **fatal** — tag it `PyGPlates-1.1.0`, or set T to `1.1.0rc2` |
+| same, with a fix cherry-picked on top | `1.1.0` | `PyGPlates-1.1.0rc1`, distance 2, on the line | **fatal** — set T to `1.1.0rc2` (not directly on the candidate, so tagging is not offered) |
+| the release commit, after a fix on top of it was tagged `PyGPlates-1.1.0` anyway | `1.1.0` | `PyGPlates-1.1.0rc1`, distance 1, on the line | `1.1.0.dev1`, with a warning: already in the release's history |
 | standing on the release tag `PyGPlates-1.1.0` | `1.1.0` | at HEAD, dev 0, base = T | `1.1.0` |
 | … but the target was never moved off `1.0.0` | `1.0.0` | at HEAD, base ≠ T | **fatal** — set T to `1.1.0` |
 | series branch, 3 commits after the release, target not bumped | `1.1.0` | `PyGPlates-1.1.0`, distance 3, base = T | **fatal** — already released |
 | same, after bumping the target for the patch line | `1.1.1` | `PyGPlates-1.1.0`, distance 3 | `1.1.1.dev3` |
 | development branch after the release, target bumped | `1.2.0` | `PyGPlates-1.1.0`, distance 5 | `1.2.0.dev5` |
+| GPlates on `release/pygplates-1.1`, frozen at the cut | frozen `2.6.0-150` | not consulted | `2.6.0-150` |
+| same, after `GPlates-2.6.0` is tagged on `release/gplates-2.6`, cut later | frozen `2.6.0-150` | not consulted | `2.6.0-150` (counted from git with the target `2.6.0`: **fatal**, section 7.4) |
+| GPlates on `release/pygplates-1.1`, a `GPlates-2.6.0` tag put there by mistake | frozen `2.6.0-150` | at HEAD | **fatal** — not released from this branch |
 | development branch, target left at `0.9.0` | `0.9.0` | `PyGPlates-1.0.0` | **fatal** — sorts below the release |
 | development branch, target set to `1.3.0` | `1.3.0` | `PyGPlates-1.0.0` | **fatal** — skips 1.1 and 1.2 |
 | fork standing on its own anchor `GPlates-2.6.0-2000` | `2.6.0` | at HEAD, dev 2000 | `2.6.0-2000` |
 | fork, 5 commits past that anchor | `2.6.0` | the anchor, dev 2000, distance 5 | `2.6.0-2005` |
 | `git bisect` at a commit below every tag | `1.1.0` | tags HEAD is an ancestor of are skipped | counts from the nearest tag *behind* |
+
+### 7.4 The other product on a release series branch
+
+Both versions are always resolved, whichever product is built, so a series branch of one product
+resolves the other product's version too. Counted from git, that version failed in a way that
+was found by reading the resolver before the first series branch was cut, and then reproduced on
+a synthetic repository:
+
+1. `release/pygplates-1.1` is cut from the development branch at commit P. Its GPlates target is
+   whatever the development branch had there: `2.6.0`.
+2. Later, `release/gplates-2.6` is cut from the development branch at a commit G after P, and
+   tagged `GPlates-2.6.0-rc.1` (or `GPlates-2.6.0`).
+3. From `release/pygplates-1.1`, that tag is off the line, with its distance counted from P, and
+   it is the nearest GPlates release. The GPlates target `2.6.0` is then "being released on
+   another branch" (check 4) or "already released" (check 2), and the configure fails.
+
+It fails on every commit of the pyGPlates series branch, and that includes its release tags:
+checking out `PyGPlates-1.1.0` and building it stopped working the moment GPlates 2.6 was tagged.
+The mirror image holds too, since `GPlates-2.6.0` stops building once `PyGPlates-1.2.0rc1` is
+tagged on a series branch cut after G. So it would have struck at every release of either
+product. Moving the stale target on in a new commit on the series branch (the first remedy
+considered) helps only the commits after it: a tag and a `git bisect` step are fixed points, and
+cannot be edited.
+
+**Why the resolver cannot tell from the history.** Section 8.1's rule, that an off-line release
+tag counts from the branch point, is right when HEAD is on the development branch and the tag's
+series branch was cut from it. Here the two lines leave the same commit P: one runs through the
+development branch's P..G and then the GPlates series, the other is the pyGPlates series. Git
+records nothing that says which of the two is the development branch. Both sides are commits
+whose first parent is P, and seen from each line, the other looks like a series branch cut from
+it. The asymmetries that do exist are conventions: whether a series branch's first commit is
+tagged, whether pull request merge commits appear. Correctness should not rest on them.
+
+**So a series branch says it, in `VersionRelease.cmake`.** The commit that cuts it replaces the
+other product's target with a frozen version:
+
+```
+set(GPLATES_FROZEN_VERSION 2.6.0-150)
+```
+
+That is what `cmake -P cmake/modules/VersionFromGit.cmake gplates` gives on the commit the branch
+is cut from. The resolver uses a frozen version as it is, after `-D` and the environment and
+before git (section 7.1), with no counting and none of the guards, so a tag made later elsewhere
+cannot change it or refuse it. Guard 6 is the one guard it gets: the frozen product must not be
+released from this branch. Setting both a target and a frozen version for one product is refused,
+and so is freezing both products. The value itself must be a development version in full
+(`X.Y.Z` with a development number), which is all the development branch ever resolves to: a
+frozen `2.6.0` would claim to be a release, and a two-component `2.6-150` would be used as it is,
+unnormalised, and fail only later in `Version.cmake`'s grammar check.
+
+**Forgetting the freeze is caught at publish time.** The resolver cannot tell that a branch
+should have frozen something, which is the whole problem, and a forgotten freeze does no harm
+until the other product releases, by which time this branch's tags are fixed. So the pyGPlates
+publishing run refuses a release tag whose `VersionRelease.cmake` does not freeze GPlates
+(`pygplates/wheel/check_release_commit.py`), candidates included. GPlates has no publishing
+workflow yet, so a GPlates series branch has only its procedure to rely on.
+
+The frozen version is also the *right* version, not just a harmless one. GPlates is not developed
+on a pyGPlates series branch. Counted from git, it continued the development branch's count
+from P, so the series branch and the development branch issued the same numbers to different
+commits. Frozen, it names the GPlates state the branch was cut from. Cherry-picked fixes to
+shared code do reach GPlates' sources there, but no GPlates is built from that branch to carry
+them.
+
+Alternatives considered:
+
+- **Document it, and bump the other product's target on the series branch when needed.** It
+  cannot repair tags or old commits, as above, and would be needed again at every release.
+- **Count only on-line tags for the other product, and skip its guards.** That still needs a
+  declaration that the branch is a series branch of one product. And the number jumps at the cut:
+  the development branch counted from the nearest off-line release tag, and the series branch
+  would count from something much older.
+- **Infer that HEAD is on a series branch** from the tag conventions above. Rejected as fragile,
+  for the reason given.
+
+### 7.5 Where a check belongs: the resolver or the publishing run
+
+The guards above refuse a *configure*. `build-wheels.yml` has checks of its own, which refuse a
+*publish*: the tag must match the resolved version, the version must not be a development one,
+and — added with the frozen versions, in `pygplates/wheel/check_release_commit.py` — GPlates
+must be frozen, and a final release must be its last candidate unchanged. Which kind a new rule
+becomes was argued out on the last of those, and the distinctions are worth keeping.
+
+**Not "CI versus local" as such.** The publishing run configures the tagged commit, since it
+resolves the version in its first minute. So a resolver rule that refuses a commit also stops it
+being published, and a release cannot reach PyPI in breach of one. And a resolver rule that
+looks only at the commit and its parent gives the same answer for good, so it would not strand a
+published tag either. The difference lies elsewhere.
+
+**When a check runs, and whether its inputs can change afterwards.** A resolver rule runs at
+every configure of the commit, forever: local builds, CI, `git bisect`, a packager building from
+a checkout. If its answer depends on tags that can appear later, a commit that configured fine can
+stop configuring, and section 7.4's failure is exactly that. Section 7.2's honest limit is a
+milder form of it. So a resolver rule that does depend on later tags should only ever loosen as
+they appear, never tighten: guard 5 refuses a commit until a release tag has it in its history,
+and only warns after. A publishing check runs once, on the push, and never again for that tag,
+so what it depends on can change afterwards without consequence.
+
+**Correctness versus policy.** The resolver's job is a correct, orderable version. Guard 5
+belongs there because the version it refuses would sort wrongly whenever and wherever it was
+built. "The release is the last candidate, unchanged" is different. A release commit that also
+carries a fix gets a perfectly good version, and the rule is about how releases are made. It
+belongs with the release workflow.
+
+**Overriding.** A rule sometimes has a deliberate exception: releasing a trivial change without
+another candidate, say. A publishing check can be overridden for one run (a repository variable
+here, `PYGPLATES_RELEASE_ALLOW_CHANGES_SINCE_CANDIDATE`). A resolver rule needs a code edit on the
+branch, and that edit stays in its history.
+
+**What the resolver promises at a tag.** Today it has one rule on a release tag: a tag matching
+the target always configures. Policy checks kept out of the resolver leave that rule simple.
+
+**A refusal is only as strong as its enforcement.** The `release-wheel` skill tells the agent
+running it to confirm each step with the developer. That is an instruction, not a gate, and a
+release made by hand never sees it. The `pypi` environment's required reviewer is a real gate, but
+it is a bare approval that shows nothing about the commit's history. The publishing checks are
+the only things that enforce the freeze and the candidate rule.
 
 ## 8. Three things that look like bugs and are not
 

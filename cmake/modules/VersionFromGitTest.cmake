@@ -9,13 +9,15 @@
 #
 # or as the CTest test 'version-resolver-test', which the root 'CMakeLists.txt' registers.
 #
-# This covers only the parts of 'VersionFromGit.cmake' that are pure functions of their
+# This covers mainly the parts of 'VersionFromGit.cmake' that are pure functions of their
 # arguments - splitting and joining a version, ordering two of them, checking the hand-edited
-# release target against the nearest release, and checking an anchor tag against the release
-# target at its own commit. The parts that consult git are not
-# covered case by case: they would need a synthetic repository per case, and what they compute
-# is a commit count rather than a decision. The whole resolver is run once, at the end, against
-# the repository this file is in.
+# release target against the nearest release, checking an anchor tag against the release target
+# at its own commit, and checking a frozen version. The parts that consult git are not covered
+# case by case: what they compute is mostly a commit count rather than a decision. The
+# exception is a set of scenarios on one synthetic repository, with a release series branch per
+# product, for failures that come from the shape of the history rather than from any one
+# decision. The whole resolver is then run once, at the end, against the repository this file
+# is in.
 #
 # That split is deliberate rather than a shortcut. The decisions this file tests are the ones
 # that abort a configure, and each is a rule somebody has to be able to change with confidence
@@ -176,6 +178,67 @@ function(expect_anchor_rejected product prefix version release_file expected_tag
 	set(_failures ${_failures} PARENT_SCOPE)
 endfunction()
 
+# The release's target on a commit not tagged as it. An empty 'expected_phrase' means the target
+# is expected to be accepted.
+function(_expect_untagged product prefix target reference distance on_line expected_phrase)
+	gplates_check_untagged_release(${product} "${prefix}" "${target}" "${reference}"
+			"${prefix}${reference}" ${distance} ${on_line} _error)
+	set(_seen "${product} target '${target}', ${distance} commit(s) after '${reference}'")
+	if (expected_phrase STREQUAL "")
+		if (NOT _error STREQUAL "")
+			_fail("${_seen}, untagged: expected it to be accepted, but got:\n  ${_error}")
+		endif()
+	elseif (_error STREQUAL "")
+		_fail("${_seen}, untagged: expected it to be rejected, but it was accepted.")
+	elseif (NOT _error MATCHES "${expected_phrase}")
+		_fail("${_seen}, untagged: rejected, but for the wrong reason - expected a message "
+				"matching '${expected_phrase}', got:\n  ${_error}")
+	endif()
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+function(expect_untagged_ok product prefix target reference distance on_line)
+	_expect_untagged(${product} "${prefix}" "${target}" "${reference}" ${distance} ${on_line} "")
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+function(expect_untagged_rejected product prefix target reference distance on_line
+		expected_phrase)
+	_expect_untagged(${product} "${prefix}" "${target}" "${reference}" ${distance} ${on_line}
+			"${expected_phrase}")
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+# 'tags_at_head' stands in for the tags on the commit being built. An empty 'expected_phrase'
+# means the frozen version is expected to be accepted.
+function(_expect_frozen product prefix version tags_at_head expected_phrase)
+	gplates_check_frozen_version(${product} "${prefix}" "${version}" "${tags_at_head}" _error)
+	if (expected_phrase STREQUAL "")
+		if (NOT _error STREQUAL "")
+			_fail("${product} frozen at '${version}', tags '${tags_at_head}': expected it to be "
+					"accepted, but got:\n  ${_error}")
+		endif()
+	elseif (_error STREQUAL "")
+		_fail("${product} frozen at '${version}', tags '${tags_at_head}': expected it to be "
+				"rejected, but it was accepted.")
+	elseif (NOT _error MATCHES "${expected_phrase}")
+		_fail("${product} frozen at '${version}', tags '${tags_at_head}': rejected, but for "
+				"the wrong reason - expected a message matching '${expected_phrase}', got:\n"
+				"  ${_error}")
+	endif()
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+function(expect_frozen_ok product prefix version tags_at_head)
+	_expect_frozen(${product} "${prefix}" "${version}" "${tags_at_head}" "")
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+function(expect_frozen_rejected product prefix version tags_at_head expected_phrase)
+	_expect_frozen(${product} "${prefix}" "${version}" "${tags_at_head}" "${expected_phrase}")
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
 
 #
 # Splitting.
@@ -254,7 +317,8 @@ expect_target_rejected(pygplates "3.0.0" "1.0.0" "skips past")
 
 # After a candidate on this line - the release series branch - only the same release line may
 # follow: another candidate, or the release it was a candidate for. This is the step that must
-# not fire during a real release.
+# not fire during a real release. (Where the release's target may stand is a separate check,
+# gplates_check_untagged_release, tested below.)
 expect_target_ok(pygplates "1.1.0rc2" "1.1.0rc1")
 expect_target_ok(pygplates "1.1.0" "1.1.0rc1")
 expect_target_rejected(pygplates "1.1.0rc1" "1.1.0rc1" "already been released")
@@ -303,6 +367,27 @@ expect_target_rejected(gplates "2.6.1" "2.6.0-rc.1" "not been finished")
 expect_target_rejected(pygplates "0.9.0" "1.0.0" "sorts below")
 
 #
+# The release's target on a commit not tagged as it, after a candidate on this line: anywhere but
+# its tag, '1.1.0' mints '1.1.0.devN', which sorts below '1.1.0rc1'. Directly on the candidate the
+# commit may be the release awaiting its tag; further on it has changes the candidate lacked, and
+# only the next candidate is suggested. The suggestion keeps each product's own spelling.
+#
+expect_untagged_rejected(pygplates "PyGPlates-" "1.1.0" "1.1.0rc1" 1 TRUE
+		"not tagged 'PyGPlates-1.1.0'.*tag it 'PyGPlates-1.1.0'.*'1.1.0rc2'")
+expect_untagged_rejected(pygplates "PyGPlates-" "1.1.0" "1.1.0rc1" 2 TRUE
+		"not directly on the candidate.*'1.1.0rc2'")
+expect_untagged_rejected(pygplates "PyGPlates-" "1.1.0.post1" "1.1.0rc1" 1 TRUE "not tagged")
+expect_untagged_rejected(pygplates "PyGPlates-" "1.1.0" "1.1.0b2" 1 TRUE "'1.1.0b3'")
+expect_untagged_rejected(gplates "GPlates-" "2.6.0" "2.6.0-rc.1" 1 TRUE
+		"not tagged 'GPlates-2.6.0'.*'2.6.0-rc.2'")
+expect_untagged_rejected(gplates "GPlates-" "2.6.0" "2.6.0-rc.9" 3 TRUE "'2.6.0-rc.10'")
+# Another candidate is fine, and so is anything not following a candidate on this line.
+expect_untagged_ok(pygplates "PyGPlates-" "1.1.0rc2" "1.1.0rc1" 1 TRUE)
+expect_untagged_ok(pygplates "PyGPlates-" "1.1.1" "1.1.0" 1 TRUE)
+expect_untagged_ok(pygplates "PyGPlates-" "1.2.0" "1.1.0rc1" 1 FALSE)
+expect_untagged_ok(pygplates "PyGPlates-" "1.1.0" "1.0.0" 1 TRUE)
+
+#
 # An anchor tag's base must be the release target at its commit - the version that commit
 # resolves to - so that the tag reads as a version rather than as a label. The message names
 # the tag to use instead, which keeps the number and so changes nothing else.
@@ -336,6 +421,230 @@ expect_anchor_rejected(pygplates "PyGPlates-" "1.2.0.dev5"
 expect_anchor_ok(gplates "GPlates-" "2.5.0" "${_release_file}")
 expect_anchor_ok(gplates "GPlates-" "2.5.0-2000" "set(PYGPLATES_RELEASE_VERSION 1.1.0)\n")
 expect_anchor_ok(gplates "GPlates-" "2.5.0-2000" "")
+
+#
+# A frozen version - the other product's, on a release series branch - is used as it is. It must
+# be a development version in full, since that is what the development branch resolves to, and
+# the commit must not be tagged as a release of the frozen product; a development tag recording
+# it is harmless, and a tag of the other product is not this check's business.
+#
+expect_frozen_ok(gplates "GPlates-" "2.6.0-150" "")
+expect_frozen_ok(gplates "GPlates-" "2.7.0-rc.1.4" "")
+expect_frozen_ok(pygplates "PyGPlates-" "1.2.0.dev30" "PyGPlates-1.2.0.dev30")
+expect_frozen_ok(gplates "GPlates-" "2.6.0-150" "GPlates-2.6.0-150;GPlates-1.5+hellinger-testing")
+expect_frozen_rejected(gplates "GPlates-" "2.6.0-150" "GPlates-2.6.0" "not released from")
+expect_frozen_rejected(pygplates "PyGPlates-" "1.2.0.dev3" "PyGPlates-1.2.0rc1" "not released from")
+expect_frozen_rejected(gplates "GPlates-" "2.6.0.dev150" "" "not a development version")
+# A release is not a frozen development version, and a two-component version would be used as it
+# is, unnormalised.
+expect_frozen_rejected(gplates "GPlates-" "2.6.0" "" "not a development version")
+expect_frozen_rejected(gplates "GPlates-" "2.6.0-rc.1" "" "not a development version")
+expect_frozen_rejected(pygplates "PyGPlates-" "1.2.0" "" "not a development version")
+expect_frozen_rejected(gplates "GPlates-" "2.6-150" "" "not a development version")
+
+#
+# Scenarios on a synthetic repository: two release series branches, one per product, cut from the
+# development branch one after the other. They are here because what they check is not a pure
+# function: before versions were frozen, every commit on the older series branch - its own release
+# tags included - stopped configuring the moment the other product was tagged on the newer one.
+# That depends on the shape of the history, not on any one decision.
+#
+# Skipped without git (the resolver itself then falls back to the recorded version, below), and
+# without a temporary directory: the source tree is no place for a scratch repository, which a
+# run that fails part way would leave behind.
+#
+find_program(_scenario_git_executable NAMES git)
+# The loop variable is restored when the loop ends, hence the copy.
+set(_temporary_dir "")
+foreach (_candidate IN ITEMS "$ENV{TMPDIR}" "$ENV{TEMP}" "$ENV{TMP}" "/tmp")
+	if (NOT _candidate STREQUAL "" AND IS_DIRECTORY "${_candidate}")
+		set(_temporary_dir "${_candidate}")
+		break()
+	endif()
+endforeach()
+if (NOT _scenario_git_executable)
+	message(STATUS "git not found: skipping the scenarios on a synthetic repository.")
+elseif (_temporary_dir STREQUAL "")
+	message(STATUS "No temporary directory: skipping the scenarios on a synthetic repository.")
+else()
+	string(RANDOM LENGTH 8 _random)
+	set(_scenario_dir "${_temporary_dir}/version-resolver-test-${_random}")
+	file(MAKE_DIRECTORY "${_scenario_dir}")
+	message(STATUS "Scenarios in ${_scenario_dir}")
+
+	# Every git and resolver process below runs without the variables that point git at a
+	# repository. Git sets them for a hook it runs (GIT_DIR in a linked worktree, GIT_INDEX_FILE for
+	# pre-commit), so a test run from a hook would otherwise commit these files into the real one.
+	# And without the version variables that short-cut the resolver (the Linux build container sets
+	# them).
+	set(_scenario_env "${CMAKE_COMMAND}" -E env
+			--unset=GIT_DIR --unset=GIT_WORK_TREE --unset=GIT_INDEX_FILE --unset=GIT_COMMON_DIR
+			--unset=GIT_OBJECT_DIRECTORY --unset=GIT_ALTERNATE_OBJECT_DIRECTORIES
+			--unset=GIT_NAMESPACE --unset=GPLATES_SEMANTIC_VERSION --unset=PYGPLATES_PEP440_VERSION)
+
+	# Runs git in the synthetic repository, independent of the user's configuration: no identity
+	# needed, no signing, no hooks, no line-ending conversion.
+	function(_scenario_git)
+		execute_process(
+				COMMAND ${_scenario_env} "${_scenario_git_executable}" -C "${_scenario_dir}"
+					-c user.name=version-resolver-test -c user.email=test@invalid
+					-c commit.gpgsign=false -c tag.gpgsign=false -c core.autocrlf=false
+					-c core.hooksPath=no-hooks ${ARGN}
+				RESULT_VARIABLE _result
+				OUTPUT_VARIABLE _output
+				ERROR_VARIABLE _error)
+		if (NOT _result EQUAL 0)
+			message(FATAL_ERROR
+					"Setting up the scenario repository: 'git ${ARGN}' failed:\n${_error}")
+		endif()
+	endfunction()
+
+	# A commit whose 'VersionRelease.cmake' holds the two given lines.
+	set(_scenario_count 0)
+	function(_scenario_commit message gplates_line pygplates_line)
+		math(EXPR _n "${_scenario_count} + 1")
+		set(_scenario_count ${_n} PARENT_SCOPE)
+		file(WRITE "${_scenario_dir}/cmake/modules/VersionRelease.cmake"
+				"${gplates_line}\n${pygplates_line}\n")
+		file(WRITE "${_scenario_dir}/file" "${_n}\n")
+		_scenario_git(add -A)
+		_scenario_git(commit -q -m "${message}")
+	endfunction()
+
+	# The version the resolver gives here, or 'FATAL:<phrase>' for a refusal mentioning the phrase.
+	# An optional fourth argument is a phrase a warning must mention. Run as a separate process,
+	# as the build workflows run it.
+	function(_scenario_expect label product expected)
+		execute_process(
+				COMMAND ${_scenario_env}
+					"${CMAKE_COMMAND}" -P "${_scenario_dir}/cmake/modules/VersionFromGit.cmake"
+					${product}
+				RESULT_VARIABLE _result
+				OUTPUT_VARIABLE _output
+				ERROR_VARIABLE _error
+				OUTPUT_STRIP_TRAILING_WHITESPACE)
+		# CMake wraps a message at spaces, so compare with the whitespace collapsed.
+		string(REGEX REPLACE "[ \t\r\n]+" " " _error "${_error}")
+		if (expected MATCHES "^FATAL:(.*)$")
+			set(_phrase "${CMAKE_MATCH_1}")
+			if (_result EQUAL 0)
+				_fail("${label}: expected ${product} to be refused (\"${_phrase}\"), but it "
+						"resolved to '${_output}'.")
+			elseif (NOT _error MATCHES "${_phrase}")
+				_fail("${label}: ${product} was refused, but not with \"${_phrase}\":\n  ${_error}")
+			endif()
+		elseif (NOT _result EQUAL 0)
+			_fail("${label}: expected ${product} '${expected}', but it was refused:\n  ${_error}")
+		elseif (NOT _output STREQUAL expected)
+			_fail("${label}: expected ${product} '${expected}', got '${_output}'.")
+		elseif (ARGC GREATER 3 AND NOT _error MATCHES "${ARGV3}")
+			_fail("${label}: expected a warning mentioning \"${ARGV3}\", got:\n  ${_error}")
+		endif()
+		set(_failures ${_failures} PARENT_SCOPE)
+	endfunction()
+
+	_scenario_git(init -q)
+	_scenario_git(symbolic-ref HEAD refs/heads/main)
+	# From here on, every path is the one git reports, so that it and the resolver agree on where
+	# the repository is (a temporary directory can be reached by more than one spelling).
+	execute_process(
+			COMMAND ${_scenario_env}
+				"${_scenario_git_executable}" -C "${_scenario_dir}" rev-parse --show-toplevel
+			OUTPUT_VARIABLE _scenario_dir OUTPUT_STRIP_TRAILING_WHITESPACE)
+	file(COPY "${CMAKE_CURRENT_LIST_DIR}/VersionFromGit.cmake"
+			DESTINATION "${_scenario_dir}/cmake/modules")
+
+	set(_g "set(GPLATES_RELEASE_VERSION")
+	set(_p "set(PYGPLATES_RELEASE_VERSION")
+
+	# The development branch, two commits past the last releases of both products.
+	_scenario_commit("base" "${_g} 2.5.0)" "${_p} 1.0.0)")
+	_scenario_git(tag GPlates-2.5)
+	_scenario_git(tag PyGPlates-1.0.0)
+	_scenario_commit("m1" "${_g} 2.6.0)" "${_p} 1.1.0)")
+	_scenario_commit("m2" "${_g} 2.6.0)" "${_p} 1.1.0)")
+	_scenario_expect("development branch" gplates "2.6.0-2")
+	_scenario_expect("development branch" pygplates "1.1.0.dev2")
+
+	# 'release/pygplates-1.1' cut, freezing GPlates at what the development branch gave, and its
+	# first commit tagged as the first candidate. The development branch moves its target on.
+	_scenario_git(switch -q -c release/pygplates-1.1)
+	_scenario_commit("pyg cut" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.0rc1)")
+	_scenario_git(tag PyGPlates-1.1.0rc1)
+	_scenario_expect("on PyGPlates-1.1.0rc1" gplates "2.6.0-2")
+	_scenario_expect("on PyGPlates-1.1.0rc1" pygplates "1.1.0rc1")
+	_scenario_git(switch -q main)
+	_scenario_commit("bump 1.2" "${_g} 2.6.0)" "${_p} 1.2.0)")
+	_scenario_commit("m3" "${_g} 2.6.0)" "${_p} 1.2.0)")
+	_scenario_expect("development branch after the pyGPlates cut" gplates "2.6.0-4")
+	_scenario_expect("development branch after the pyGPlates cut" pygplates "1.2.0.dev2")
+
+	# 'release/gplates-2.6' cut later, freezing pyGPlates, and tagged as the first GPlates
+	# candidate. This is the tag that used to stop every configure on 'release/pygplates-1.1'.
+	_scenario_git(switch -q -c release/gplates-2.6)
+	_scenario_commit("gpl cut" "${_g} 2.6.0-rc.1)" "set(PYGPLATES_FROZEN_VERSION 1.2.0.dev2)")
+	_scenario_git(tag GPlates-2.6.0-rc.1)
+	_scenario_expect("on GPlates-2.6.0-rc.1" gplates "2.6.0-rc.1")
+	_scenario_expect("on GPlates-2.6.0-rc.1" pygplates "1.2.0.dev2")
+	_scenario_git(switch -q main)
+	_scenario_commit("bump 2.7" "${_g} 2.7.0)" "${_p} 1.2.0)")
+	_scenario_commit("m4" "${_g} 2.7.0)" "${_p} 1.2.0)")
+	_scenario_expect("development branch after both cuts" gplates "2.7.0-2")
+	_scenario_expect("development branch after both cuts" pygplates "1.2.0.dev4")
+
+	# Back on 'release/pygplates-1.1': the release. Its target is refused until the commit is
+	# tagged, since '1.1.0.dev1' would sort below the candidate; then it is exactly '1.1.0'. The
+	# GPlates candidate on the other series branch does not touch the frozen GPlates version.
+	_scenario_git(switch -q release/pygplates-1.1)
+	_scenario_commit("pyg release" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.0)")
+	_scenario_expect("release commit, untagged" pygplates
+			"FATAL:not tagged 'PyGPlates-1.1.0'.*tag it 'PyGPlates-1.1.0'")
+	_scenario_expect("release commit, untagged" gplates "2.6.0-2")
+	_scenario_git(tag PyGPlates-1.1.0)
+	_scenario_expect("on PyGPlates-1.1.0" pygplates "1.1.0")
+	_scenario_expect("on PyGPlates-1.1.0" gplates "2.6.0-2")
+	_scenario_commit("pyg bump 1.1.1" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.1)")
+	_scenario_commit("pyg fix" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.1)")
+	_scenario_expect("pyGPlates series, patch line" pygplates "1.1.1.dev2")
+	_scenario_expect("pyGPlates series, patch line" gplates "2.6.0-2")
+
+	# GPlates is not released from a pyGPlates series branch.
+	_scenario_git(tag GPlates-2.6.5)
+	_scenario_expect("GPlates release tag on a pyGPlates series" gplates "FATAL:not released from")
+	_scenario_git(tag -d GPlates-2.6.5)
+
+	# The mirror image: a later pyGPlates series leaves the GPlates candidate's tag buildable.
+	_scenario_git(switch -q main)
+	_scenario_git(switch -q -c release/pygplates-1.2)
+	_scenario_commit("pyg 1.2 cut" "set(GPLATES_FROZEN_VERSION 2.7.0-2)" "${_p} 1.2.0rc1)")
+	_scenario_git(tag PyGPlates-1.2.0rc1)
+	_scenario_git(switch -q main)
+	_scenario_commit("bump 1.3" "${_g} 2.7.0)" "${_p} 1.3.0)")
+	_scenario_expect("development branch after the second pyGPlates cut" pygplates "1.3.0.dev1")
+	_scenario_git(switch -q --detach GPlates-2.6.0-rc.1)
+	_scenario_expect("on GPlates-2.6.0-rc.1, later" gplates "2.6.0-rc.1")
+	_scenario_expect("on GPlates-2.6.0-rc.1, later" pygplates "1.2.0.dev2")
+	_scenario_git(switch -q --detach PyGPlates-1.1.0)
+	_scenario_expect("on PyGPlates-1.1.0, later" pygplates "1.1.0")
+	_scenario_expect("on PyGPlates-1.1.0, later" gplates "2.6.0-2")
+
+	# A release commit with a fix on top, the fix then tagged as the release (as the publishing
+	# run's override allows). Before the tag, the fix is refused, with only the next candidate
+	# offered. After it, the release commit below it is history: warned about, not refused, so
+	# that it stays buildable.
+	_scenario_git(switch -q release/gplates-2.6)
+	_scenario_commit("gpl release" "${_g} 2.6.0)" "set(PYGPLATES_FROZEN_VERSION 1.2.0.dev2)")
+	_scenario_commit("gpl late fix" "${_g} 2.6.0)" "set(PYGPLATES_FROZEN_VERSION 1.2.0.dev2)")
+	_scenario_expect("late fix on the release commit, untagged" gplates
+			"FATAL:not directly on the candidate.*'2.6.0-rc.2'")
+	_scenario_git(tag GPlates-2.6.0)
+	_scenario_expect("late fix, tagged as the release" gplates "2.6.0")
+	_scenario_git(switch -q --detach HEAD~1)
+	_scenario_expect("release commit below a later release tag" gplates "2.6.0-1"
+			"already in the history of 'GPlates-2.6.0'")
+
+	file(REMOVE_RECURSE "${_scenario_dir}")
+endif()
 
 #
 # The whole resolver, once, against the repository this file is in: the targets in

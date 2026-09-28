@@ -402,15 +402,30 @@ OIDC tokens GitHub mints for this specific workflow file.
 The flow, end to end:
 
 1. Set the release version in `cmake/modules/VersionRelease.cmake` (`PYGPLATES_RELEASE_VERSION`),
-   and commit. Development versions are counted from git, so this is the only version anyone
-   writes; on the release tag itself the counted part vanishes and the version is exactly what
-   was set here. For a first pass at a release, use an `rc` version (eg, `1.1.0rc1`): pip ignores
-   release candidates by default, so it exercises this whole pipeline - the tag check, the
+   and commit. Development versions are counted from git, so this is the only pyGPlates version
+   anyone writes; on the release tag itself the counted part vanishes and the version is exactly
+   what was set here. For a first pass at a release, use an `rc` version (eg, `1.1.0rc1`): pip
+   ignores release candidates by default, so it exercises this whole pipeline - the tag check, the
    rehearsal, the approval gate, a real PyPI upload - with low stakes. A second candidate just
    means setting the target to `1.1.0rc2`; commits on the release branch then count up from the
-   `rc1` tag as `1.1.0rc2.devN`.
-2. Tag that commit `PyGPlates-<version>` (exactly the version string - the run fails in its
-   first minute if the two disagree, or if the version is a `.dev` one) and push the tag. A
+   `rc1` tag as `1.1.0rc2.devN`. The release itself is its last candidate plus this one commit,
+   which changes only the target and the changelog heading: a fix found in a candidate makes
+   another candidate. Until that commit is tagged the resolver refuses it, since `1.1.0.devN`
+   would sort below the candidate (once a release tag has it in its history, the refusal becomes
+   a warning, so that the commit stays buildable).
+
+   The commit that cuts the release series branch also freezes GPlates there: it replaces
+   `GPLATES_RELEASE_VERSION` with `GPLATES_FROZEN_VERSION`, set to what
+   `cmake -P cmake/modules/VersionFromGit.cmake gplates` gives on the commit the branch is cut
+   from. GPlates is not released from a pyGPlates series branch, and without the freeze a later
+   GPlates release on its own series branch would stop every configure here, this branch's
+   release tags included (`VersionRelease.cmake` has the details).
+2. Tag that commit `PyGPlates-<version>` (exactly the version string), check that
+   `cmake -P cmake/modules/VersionFromGit.cmake pygplates` now gives exactly `<version>`, and
+   push the tag. A local tag starts nothing; the push does. The run fails in its first minute if
+   the tag and the version disagree, if the version is a `.dev` one, if GPlates is not frozen,
+   or if a final release is not its last candidate unchanged (`check_release_commit.py`, which
+   says how to override the last of those). A
    release is tagged on the release series branch `release/pygplates-<major>.<minor>`, and so is
    every release candidate before it and every patch release after it - release tags belong on
    the series branches and nowhere else. The root `README.md` has the branching model.

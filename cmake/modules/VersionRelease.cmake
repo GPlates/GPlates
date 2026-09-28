@@ -5,9 +5,11 @@
 #
 # The release each develop line is heading towards.
 #
-# THIS IS THE ONLY HAND-EDITED PART OF THE VERSION. The development number that turns it into a
-# full version (eg, '2.6.0' -> '2.6.0-47', '1.1.0' -> '1.1.0.dev46') is counted from git by
-# 'VersionFromGit.cmake' - see the comments there, and 'Version.cmake' for the version grammars.
+# THIS IS THE ONLY HAND-EDITED PART OF THE VERSION (with, on a release series branch, the frozen
+# version of the product it does not release - see 2 below). The development number that turns
+# it into a full version (eg, '2.6.0' -> '2.6.0-47', '1.1.0' -> '1.1.0.dev46') is counted from
+# git by 'VersionFromGit.cmake' - see the comments there, and 'Version.cmake' for the version
+# grammars.
 #
 # There are exactly two times to edit this file:
 #
@@ -32,7 +34,23 @@
 # 2. On a release series branch ('release/pygplates-<major>.<minor>' etc), to name the release being
 #    prepared - eg, set the target to '1.1.0rc1' on cutting the branch, to '1.1.0rc2' if a
 #    second candidate is needed, and to '1.1.0' for the release itself. Development commits on
-#    the release branch then carry '1.1.0rc1.dev3' and so on.
+#    the release branch then carry '1.1.0rc2.dev3' and so on. The release's own target ('1.1.0'
+#    after a candidate) goes only on the commit tagged as it: on any other commit it would give
+#    '1.1.0.devN', which sorts below the candidate, and the resolver refuses that.
+#
+#    The same first commit, on cutting the branch, freezes the *other* product, which is not
+#    released from it: it replaces that product's target with the version it resolves to on the
+#    development branch at the cut. On 'release/pygplates-1.1', say, the GPlates line becomes
+#
+#        set(GPLATES_FROZEN_VERSION 2.6.0-150)
+#
+#    with the value from 'cmake -P cmake/modules/VersionFromGit.cmake gplates' run on the commit
+#    the branch is cut from. A frozen version is used as it is, never counted or checked against
+#    tags - otherwise a GPlates release, made later on its own series branch, would stop every
+#    configure here, this branch's own release tags included ('gplates_check_frozen_version' in
+#    'VersionFromGit.cmake' says why). It is set once and never edited again. Nothing in the
+#    resolver can notice a freeze that was forgotten, so the pyGPlates publishing run refuses a
+#    release tag without one ('pygplates/wheel/check_release_commit.py').
 #
 #    Nothing detects the branch by name: a target is a decision ("there will be another release
 #    candidate"), and branch-name detection is unreliable anyway under detached HEAD, pull
