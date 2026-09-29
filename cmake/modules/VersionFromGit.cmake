@@ -65,6 +65,12 @@
 # counts from the anchors (a release tag scores 0 there and is skipped, see below). Never delete
 # either.
 #
+# FROZEN VERSIONS: a release series branch releases one product, and the other product's version
+# is frozen there - set in 'VersionRelease.cmake' when the branch is cut, and used as it is, with
+# none of the above. Counted from git, it would be judged against the other product's releases,
+# and once one of those is made on a series branch cut later, every configure here would fail
+# (gplates_check_frozen_version says why).
+#
 
 if (CMAKE_SCRIPT_MODE_FILE)
 	# Only when run as 'cmake -P'; when included, the project has already set this.
@@ -327,6 +333,7 @@ endfunction()
 #   - On the line (a release series branch, or a patch branch off one): only the same numeric
 #     head may follow a candidate, so '1.1.0rc1' can be followed by '1.1.0rc2' or '1.1.0' but
 #     not by '1.1.1'. There is no such thing as skipping past a release that never happened.
+#     (And '1.1.0' only on the commit tagged as it - gplates_check_untagged_release.)
 #   - Off the line (the development branch, once the series branch cut from it has its first
 #     candidate; or a feature branch cut before then): the candidate's head counts as released
 #     for the no-skip rule, and *staying* on that head is refused. The 1.1.0 line has moved to
@@ -394,6 +401,8 @@ function(gplates_check_release_target product target reference reference_tag dis
 		# The reference is a candidate.
 		if (on_line)
 			if (_target_head VERSION_EQUAL _ref_head)
+				# Another candidate, or the release itself (gplates_check_untagged_release has
+				# more to say about the release).
 				return()
 			endif()
 			string(CONCAT _msg
@@ -452,6 +461,79 @@ function(gplates_check_release_target product target reference reference_tag dis
 		)
 		set(${error_var} "${_msg}" PARENT_SCOPE)
 	endif()
+endfunction()
+
+
+#
+# Check a release's target on a commit that is not tagged as that release, setting <error_var> to
+# a message to abort with, or to the empty string if the target is acceptable. The arguments are
+# gplates_check_release_target's, plus the product's tag prefix; the caller does not ask about a
+# commit standing on a release tag.
+#
+# After a candidate on this line, the target '1.1.0' would mint '1.1.0.devN', and a development
+# release of '1.1.0' sorts *below* its candidates under PEP 440 ('2.6.0-5' sorts below
+# '2.6.0-rc.1' under SemVer, likewise). Wheels built from such a commit - by a dispatch of
+# 'build-wheels.yml', say - lose to the candidate whenever pip chooses between them. So the
+# release's target belongs only on the commit tagged as it, and the commit after a candidate
+# either sets the next candidate or is the release, tagged as soon as it is made. This is a
+# correctness check, unlike the rule that the release is its last candidate unchanged, which the
+# publishing run checks instead ('pygplates/wheel/check_release_commit.py').
+#
+# The advice depends on where the commit is. Directly on the candidate, it may be the release
+# before its tag exists. Further on, it has something the candidate did not, and tagging it would
+# release that untested - the publishing run refuses it - so the way forward is the next candidate.
+#
+function(gplates_check_untagged_release product tag_prefix target reference reference_tag distance
+		on_line error_var)
+	set(${error_var} "" PARENT_SCOPE)
+
+	if (NOT on_line)
+		return()
+	endif()
+	gplates_split_version(${product} "${target}" _ok _target_base _target_dev)
+	if (NOT _ok)
+		return()
+	endif()
+	_gplates_version_base_rank(${product} "${_target_base}"
+			_ok_t _target_head _target_rank _t_n _t_post)
+	_gplates_version_base_rank(${product} "${reference}" _ok_r _ref_head _ref_rank _r_n _r_post)
+	if (NOT _ok_t OR NOT _ok_r)
+		return()
+	endif()
+	# Only a release (not another candidate) following a candidate for the same version.
+	if (_ref_rank EQUAL 4 OR _target_rank LESS 4 OR NOT _target_head VERSION_EQUAL _ref_head)
+		return()
+	endif()
+
+	# The next candidate is the reference with its candidate number incremented, which keeps
+	# each product's own spelling ('1.1.0rc2', '2.6.0-rc.2') without restating it here.
+	string(REGEX REPLACE "[0-9]+(\\.post[0-9]+)?$" "" _stem "${reference}")
+	math(EXPR _next_n "${_r_n} + 1")
+	set(_next_candidate "${_stem}${_next_n}")
+
+	set(_where "'cmake/modules/VersionRelease.cmake'")
+	string(CONCAT _msg
+			"The ${product} release target is '${target}', but this commit is not tagged "
+			"'${tag_prefix}${target}'. It follows the candidate '${reference_tag}' (${distance} "
+			"commit(s) back), so it would resolve to a development version of '${target}', which "
+			"sorts below that candidate. Only the commit released as '${target}' may carry that "
+			"target. "
+	)
+	if (distance EQUAL 1)
+		string(APPEND _msg
+				"If this commit is the release - the candidate plus only the change of target "
+				"and changelog heading - tag it '${tag_prefix}${target}' (a tag publishes "
+				"nothing until it is pushed). Otherwise set the target in ${_where} to the next "
+				"candidate, '${_next_candidate}'."
+		)
+	else()
+		string(APPEND _msg
+				"This commit is not directly on the candidate, so it has changes the candidate was "
+				"never tested with: set the target in ${_where} to the next candidate, "
+				"'${_next_candidate}'."
+		)
+	endif()
+	set(${error_var} "${_msg}" PARENT_SCOPE)
 endfunction()
 
 
@@ -516,6 +598,61 @@ function(gplates_check_anchor_tag product tag_prefix anchor_version release_file
 			"Or just delete it, if it was not meant as an anchor."
 	)
 	set(${error_var} "${_msg}" PARENT_SCOPE)
+endfunction()
+
+
+#
+# Check a frozen version (see 'VersionRelease.cmake'), setting <error_var> to a message to abort
+# with, or to the empty string if it is acceptable.
+#
+# A release series branch releases one product. The other product's version is frozen there, at
+# what it resolved to on the development branch when the series branch was cut. It is not counted
+# from git, and not checked against the tags, which is the point: a release of that product made
+# later, on its own series branch, is off this line, and seen from here it is indistinguishable
+# from a series branch cut from this one (both lines leave the same commit, and nothing in git
+# says which of them is the development branch). Counted as one, it made the target on this
+# branch look stale, and every configure here - this branch's own release tags included - failed
+# from the moment it was tagged.
+#
+# The frozen version is what the development branch resolved to, so it is a full development
+# version: 'X.Y.Z' spelt out (it is used as it is, and not normalised the way a tag is), with a
+# development number. The development branch never resolves to development number 0 - release
+# tags are never on it - and a frozen '2.6.0' would claim to be a release this branch does not
+# make.
+#
+# 'tags_at_head' lists the tags with this product's prefix on the commit being built. None of them
+# may be a release: a product whose version is frozen is not released from this branch.
+#
+function(gplates_check_frozen_version product tag_prefix frozen_version tags_at_head error_var)
+	set(${error_var} "" PARENT_SCOPE)
+
+	gplates_split_version(${product} "${frozen_version}" _ok _base _dev)
+	if (NOT _ok OR NOT frozen_version MATCHES [[^[0-9]+\.[0-9]+\.[0-9]+]] OR _dev EQUAL 0)
+		string(CONCAT _msg
+				"The frozen ${product} version '${frozen_version}' is not a development version "
+				"in full ('X.Y.Z' with a development number, such as '2.6.0-150' or "
+				"'1.2.0.dev30'). Set it to what 'cmake -P cmake/modules/VersionFromGit.cmake "
+				"${product}' gives on the development branch commit this branch was cut from."
+		)
+		set(${error_var} "${_msg}" PARENT_SCOPE)
+		return()
+	endif()
+
+	foreach (_tag IN LISTS tags_at_head)
+		string(REGEX REPLACE "^${tag_prefix}" "" _tag_version "${_tag}")
+		gplates_split_version(${product} "${_tag_version}" _ok _tag_base _tag_dev)
+		if (_ok AND _tag_dev EQUAL 0)
+			string(CONCAT _msg
+					"This commit is tagged '${_tag}', but the ${product} version is frozen on "
+					"this branch at '${frozen_version}' ('cmake/modules/VersionRelease.cmake'): "
+					"this is a release series branch of the other product, and ${product} is not "
+					"released from it. Delete the tag, and tag the release on a ${product} release "
+					"series branch."
+			)
+			set(${error_var} "${_msg}" PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
 endfunction()
 
 
@@ -599,11 +736,11 @@ endfunction()
 
 
 #
-# Derive the version from git, or leave <out_var> empty if this source tree has no usable
-# repository (an unpacked sdist, an exported tarball, or a build container without git).
+# Set <ok_var> TRUE if git can be run on this source tree's own repository, and FALSE if there is
+# no usable one (an unpacked sdist, an exported tarball, or a build container without git).
 #
-function(_gplates_version_from_git product tag_prefix target out_var)
-	set(${out_var} "" PARENT_SCOPE)
+function(_gplates_version_repository ok_var)
+	set(${ok_var} FALSE PARENT_SCOPE)
 
 	find_program(GPLATES_VERSION_GIT_EXECUTABLE NAMES git DOC "git, used to derive the version")
 	mark_as_advanced(GPLATES_VERSION_GIT_EXECUTABLE)
@@ -628,6 +765,50 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 			return()
 		endif()
 	endif()
+
+	set(${ok_var} TRUE PARENT_SCOPE)
+endfunction()
+
+
+#
+# Check a frozen version against the commit being built (gplates_check_frozen_version), aborting
+# the configure if it is unacceptable. The tags are consulted only if there is a usable
+# repository; without one, the version is still checked. HEAD is watched as on the counted path,
+# so that the check is made again when HEAD moves - onto a commit carrying a release tag, say.
+#
+function(_gplates_version_check_frozen product tag_prefix frozen_version)
+	set(_tags_at_head "")
+	_gplates_version_repository(_have_repository)
+	if (_have_repository)
+		_gplates_version_watch_head()
+		_gplates_version_git(_result _tags_at_head tag --points-at HEAD --list "${tag_prefix}*")
+		if (NOT _result EQUAL 0)
+			set(_tags_at_head "")
+		endif()
+		string(REGEX REPLACE "\r?\n" ";" _tags_at_head "${_tags_at_head}")
+	endif()
+	gplates_check_frozen_version(${product} "${tag_prefix}" "${frozen_version}"
+			"${_tags_at_head}" _error)
+	if (NOT _error STREQUAL "")
+		message(FATAL_ERROR "${_error}")
+	endif()
+endfunction()
+
+
+#
+# Derive the version from git, or leave <out_var> empty if this source tree has no usable
+# repository (an unpacked sdist, an exported tarball, or a build container without git).
+#
+function(_gplates_version_from_git product tag_prefix target out_var)
+	set(${out_var} "" PARENT_SCOPE)
+
+	_gplates_version_repository(_have_repository)
+	if (NOT _have_repository)
+		return()
+	endif()
+	# Watched from here rather than at the end, which a commit standing on a tag never reached:
+	# a tree configured on a tag did not reconfigure when HEAD moved off it.
+	_gplates_version_watch_head()
 
 	# A shallow clone truncates the history at its graft point, so 'rev-list --count' returns a
 	# smaller number that still looks perfectly plausible. Refuse rather than emit a wrong
@@ -829,6 +1010,26 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 		if (NOT _target_error STREQUAL "")
 			message(FATAL_ERROR "${_target_error}")
 		endif()
+
+		gplates_check_untagged_release(${product} "${tag_prefix}" "${target}" "${_ref_base}"
+				"${_ref_tag}" ${_ref_distance} ${_ref_on_line} _untagged_error)
+		if (NOT _untagged_error STREQUAL "")
+			# A commit already in the history of that release is history, not a build anyone
+			# will publish: the release commit of a patch branch whose merge was tagged, say, or
+			# one with a fix tagged on top of it under the publishing run's override. Refusing
+			# it would leave it unbuildable for good, 'git bisect' included, so it is only warned
+			# about.
+			_gplates_version_git(_result _later_release
+					tag --list "${tag_prefix}${target}" --contains HEAD)
+			if (_result EQUAL 0 AND NOT _later_release STREQUAL "")
+				message(WARNING
+						"${_untagged_error}\nAllowed, because this commit is already in the "
+						"history of '${_later_release}': building it is looking back, not "
+						"preparing a release.")
+			else()
+				message(FATAL_ERROR "${_untagged_error}")
+			endif()
+		endif()
 	endif()
 
 	# Standing on a tag.
@@ -855,7 +1056,6 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 	math(EXPR _dev_number "${_best_offset} + ${_best_distance}")
 	gplates_join_version(${product} "${target}" ${_dev_number} _version)
 	set(${out_var} "${_version}" PARENT_SCOPE)
-	_gplates_version_watch_head()
 endfunction()
 
 
@@ -868,10 +1068,12 @@ endfunction()
 #   2. The environment variable of the same name. This is how the version reaches a build that
 #      cannot run git: cibuildwheel copies the project into a Linux container that has no git
 #      (and a shallow checkout anyway), and conda-build sets it from the recipe version.
-#   3. Derived from git, as described at the top of this file.
-#   4. 'Version:' from a PKG-INFO beside this source tree - an unpacked pyGPlates sdist, whose
+#   3. The frozen version, on a release series branch of the other product (see
+#      'VersionRelease.cmake' and gplates_check_frozen_version).
+#   4. Derived from git, as described at the top of this file.
+#   5. 'Version:' from a PKG-INFO beside this source tree - an unpacked pyGPlates sdist, whose
 #      version was resolved when the sdist was built.
-#   5. 'cmake/modules/VersionRecorded.cmake', for a source archive made without a repository.
+#   6. 'cmake/modules/VersionRecorded.cmake', for a source archive made without a repository.
 #
 # Git is tried ahead of the file fallbacks so that a stale recorded file can never win in a
 # working checkout.
@@ -880,10 +1082,14 @@ function(gplates_resolve_version product out_var)
 	if (product STREQUAL "gplates")
 		set(_variable_name GPLATES_SEMANTIC_VERSION)
 		set(_target "${GPLATES_RELEASE_VERSION}")
+		set(_frozen_name GPLATES_FROZEN_VERSION)
+		set(_other_frozen_name PYGPLATES_FROZEN_VERSION)
 		set(_tag_prefix "GPlates-")
 	elseif (product STREQUAL "pygplates")
 		set(_variable_name PYGPLATES_PEP440_VERSION)
 		set(_target "${PYGPLATES_RELEASE_VERSION}")
+		set(_frozen_name PYGPLATES_FROZEN_VERSION)
+		set(_other_frozen_name GPLATES_FROZEN_VERSION)
 		set(_tag_prefix "PyGPlates-")
 	else()
 		message(FATAL_ERROR "Unknown product '${product}' - expected 'gplates' or 'pygplates'.")
@@ -902,6 +1108,25 @@ function(gplates_resolve_version product out_var)
 		return()
 	endif()
 
+	# 3. Frozen.
+	if (DEFINED ${_frozen_name})
+		if (NOT _target STREQUAL "")
+			message(FATAL_ERROR
+					"'cmake/modules/VersionRelease.cmake' sets both a release target and a frozen "
+					"version for ${product}. A release series branch of the other product replaces "
+					"the ${product} target with the frozen version; set one or the other.")
+		endif()
+		if (DEFINED ${_other_frozen_name})
+			message(FATAL_ERROR
+					"'cmake/modules/VersionRelease.cmake' freezes the versions of both products, "
+					"so nothing could be released from this branch. A release series branch "
+					"freezes only the product it does not release.")
+		endif()
+		_gplates_version_check_frozen(${product} "${_tag_prefix}" "${${_frozen_name}}")
+		set(${out_var} "${${_frozen_name}}" PARENT_SCOPE)
+		return()
+	endif()
+
 	# The release target has to be a target, not a full version - the development number is what
 	# gets counted, so a target carrying one would be doubled.
 	if (_target STREQUAL "")
@@ -917,14 +1142,14 @@ function(gplates_resolve_version product out_var)
 				"is counted from git - set the target to '${_target_base}' instead.")
 	endif()
 
-	# 3. Git.
+	# 4. Git.
 	_gplates_version_from_git(${product} "${_tag_prefix}" "${_target}" _version)
 	if (NOT _version STREQUAL "")
 		set(${out_var} "${_version}" PARENT_SCOPE)
 		return()
 	endif()
 
-	# 4. An unpacked sdist (pyGPlates only - GPlates has no sdist, and a PKG-INFO found beside it
+	# 5. An unpacked sdist (pyGPlates only - GPlates has no sdist, and a PKG-INFO found beside it
 	#    would be describing something else).
 	if (product STREQUAL "pygplates" AND EXISTS "${GPLATES_VERSION_SOURCE_DIR}/PKG-INFO")
 		file(READ "${GPLATES_VERSION_SOURCE_DIR}/PKG-INFO" _pkg_info)
@@ -941,7 +1166,7 @@ function(gplates_resolve_version product out_var)
 		endif()
 	endif()
 
-	# 5. A recorded version, for a source archive made without a repository.
+	# 6. A recorded version, for a source archive made without a repository.
 	if (EXISTS "${GPLATES_VERSION_SOURCE_DIR}/cmake/modules/VersionRecorded.cmake")
 		include("${GPLATES_VERSION_SOURCE_DIR}/cmake/modules/VersionRecorded.cmake")
 		if (DEFINED ${_variable_name})

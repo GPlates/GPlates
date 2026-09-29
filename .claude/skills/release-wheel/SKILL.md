@@ -32,17 +32,31 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
 
 1. **Set the release target.** Set `PYGPLATES_RELEASE_VERSION` in
    `cmake/modules/VersionRelease.cmake` to the target version, and commit. Development versions
-   are counted from git and cannot be released — the run rejects a `.dev` version. Check what
-   the commit resolves to with `cmake -P cmake/modules/VersionFromGit.cmake pygplates`.
+   are counted from git and cannot be released — the run rejects a `.dev` version.
    For the release itself (not a candidate), rename `pyGPlates <X.Y> (unreleased)` in
    `CHANGELOG-pyGPlates.md` to the release version in the same commit. Read the section through
-   with the user first: it is the release notes, built up one pull request at a time.
-2. **Tag exactly `PyGPlates-<version>`, on the release commit.** That is the commit on the
-   `release/pygplates-<major>.<minor>` branch that sets the target, whether it is a candidate, the
-   release itself or a later patch. The tag's version string must match
-   `PYGPLATES_RELEASE_VERSION` character for character; the run fails in its first minute if they
-   disagree, and so does any local build standing on the tag. Push the tag to the GitHub remote.
-   Ask which remote if there is more than one.
+   with the user first: it is the release notes, built up one pull request at a time. After a
+   candidate, this commit must change nothing else: the release is the last candidate unchanged,
+   and a fix makes another candidate instead (the run refuses a final release that is not its
+   last candidate plus this one commit).
+   - **When this commit cuts the series branch** (the first release in the series), it also
+     freezes GPlates, which is not released from a pyGPlates series branch. First run
+     `cmake -P cmake/modules/VersionFromGit.cmake gplates` on the `gplates` commit being cut
+     from, then replace the `set(GPLATES_RELEASE_VERSION …)` line with
+     `set(GPLATES_FROZEN_VERSION <that version>)`. Without it, the first GPlates release made on
+     its own series branch would stop every configure on this one, its release tags included,
+     so the run refuses a release tag whose commit does not freeze GPlates.
+2. **Tag exactly `PyGPlates-<version>`, on the release commit, then check it.** That is the
+   commit on the `release/pygplates-<major>.<minor>` branch being released, whose target is the
+   version: a candidate, the release itself or a later patch. Tag it locally first — a local tag
+   starts nothing — and check that `cmake -P cmake/modules/VersionFromGit.cmake pygplates` gives
+   exactly `<version>`, which is what the run checks in its first minute. Check at the tag, not
+   before it: the release after a candidate is refused on an untagged commit, since
+   `<version>.devN` would sort below the candidate. Then run
+   `python pygplates/wheel/check_release_commit.py <version>`, the run's own check of the freeze
+   and (for a release after a candidate) of the candidate being released unchanged. If either
+   check disagrees, delete the local tag and fix the commit. Then push the tag to the GitHub
+   remote. Ask which remote if there is more than one.
 3. **Wait for the build.** `build-wheels.yml` builds the sdist and the full matrix — roughly
    2.5 hours warm, 4.5 cold — then uploads the sdist plus one platform's wheels to TestPyPI as a
    rehearsal.
@@ -57,8 +71,8 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
    the resolver refuses to configure until `VersionRelease.cmake` says so:
    - on the series branch, after the *release*, set the target to the next patch (`1.1.1` after
      `1.1.0`) so later fixes there configure. After a candidate, nothing: the next commit on the
-     branch prepares the next candidate or the release, and nothing else is accepted there until
-     the release is final.
+     branch either sets the next candidate (and fixes follow it) or is the release, tagged as
+     soon as it is made.
    - on `gplates`, if this was the *first* tag in the series (the first candidate, or the
      release when there was none), set the target to the next minor (`1.2.0`). The development
      branch's count restarts at that moment, so left on `1.1.0` it would re-issue versions it

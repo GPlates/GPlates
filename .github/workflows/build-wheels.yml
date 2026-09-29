@@ -142,6 +142,18 @@ jobs:
               exit 1
           esac
 
+      - name: Check the release commit
+        # GPlates must be frozen on the release series branch, or a later GPlates release stops
+        # every configure there, this tag included. And a final release whose history holds a
+        # candidate for it must be that candidate plus one commit changing only the target and the
+        # changelog headings - what was tested is what is released. Checked here, once, rather
+        # than in the version resolver, which would apply them to every configure of the commit
+        # for good; the script's header says why.
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        env:
+          PYGPLATES_RELEASE_ALLOW_CHANGES_SINCE_CANDIDATE: ${{ vars.PYGPLATES_RELEASE_ALLOW_CHANGES_SINCE_CANDIDATE }}
+        run: python3 pygplates/wheel/check_release_commit.py '${{ steps.versions.outputs.pygplates-version }}'
+
       - name: Check the Python version lists agree
         # A mismatch means Linux wheel builds fail much later with a Boost linker error - the
         # script's header has the full story. Checked here, in the job every run starts with
