@@ -148,8 +148,9 @@ enable_testing()
 # Print test output when test fails - when running tests with 'make test' or building 'RUN_TESTS' (in Visual Studio).
 list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
-# Test the version resolver's pure helper functions - splitting and ordering versions, and
-# checking the hand-edited release target against the nearest release ('VersionFromGit.cmake').
+# Test the version resolver ('VersionFromGit.cmake'): its pure helper functions - splitting and
+# ordering versions, and checking the hand-edited release target against the nearest release -
+# then scenarios on a synthetic repository, then the whole resolver against this one.
 #
 # Registered here rather than under 'pygplates/test/' because it belongs to neither product: it
 # runs a CMake script, needs nothing built, and both products resolve both versions.

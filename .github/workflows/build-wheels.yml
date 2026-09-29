@@ -118,41 +118,23 @@ jobs:
           echo "pyGPlates version: ${pygplates_version}"
           echo "GPlates version: ${gplates_version}"
 
-      - name: Check the tag matches the version
-        # A release tag must be 'PyGPlates-' plus the resolved version. A mismatch means the
-        # release target in 'cmake/modules/VersionRelease.cmake' was not set for this release
-        # - far better caught here, in the run's first minute, than noticed in what the
-        # publish jobs upload five hours later. (The resolver rejects most such tags itself,
-        # but this also catches a tag naming a different version of the same commit.)
-        # Development versions are rejected outright: pip never installs them by default, and
-        # publishing one would permanently reserve its filenames on PyPI for nothing.
+      - name: Check the release tag
         # Only a *pushed* tag, because only a pushed tag can publish: a manual dispatch may be
         # started from a tag as well - a development tag, to build that commit's wheels for
         # someone to try - and nothing it builds goes further than the run's artifacts.
-        if: github.event_name == 'push' && github.ref_type == 'tag'
-        run: |
-          pygplates_version='${{ steps.versions.outputs.pygplates-version }}'
-          if [ "${GITHUB_REF_NAME}" != "PyGPlates-${pygplates_version}" ]; then
-              echo "Tag '${GITHUB_REF_NAME}' does not match 'PyGPlates-${pygplates_version}'" \
-                   "(resolved from cmake/modules/VersionRelease.cmake and the repository tags)." >&2
-              exit 1
-          fi
-          case ${pygplates_version} in *.dev*)
-              echo "'${pygplates_version}' is a development version - not something to tag and release." >&2
-              exit 1
-          esac
-
-      - name: Check the release commit
-        # GPlates must be frozen on the release series branch, or a later GPlates release stops
-        # every configure there, this tag included. And a final release whose history holds a
-        # candidate for it must be that candidate plus one commit changing only the target and the
-        # changelog headings - what was tested is what is released. Checked here, once, rather
-        # than in the version resolver, which would apply them to every configure of the commit
-        # for good; the script's header says why.
+        #
+        # Checked here, in the run's first minute, rather than noticed in what the publish jobs
+        # upload hours later: the tag must name the resolved version, and a release rather than
+        # a development version; the release must sort above every earlier one in its history;
+        # and a final release whose history holds a candidate for it must be that candidate plus
+        # one commit changing only the target and the changelog headings - what was tested is
+        # what is released. In a script, so that it can be run locally before the tag is pushed
+        # (the 'release-wheel' skill does), and tested ('pygplates-release-commit-test'). Its
+        # header says why these are not in the version resolver.
         if: github.event_name == 'push' && github.ref_type == 'tag'
         env:
           PYGPLATES_RELEASE_ALLOW_CHANGES_SINCE_CANDIDATE: ${{ vars.PYGPLATES_RELEASE_ALLOW_CHANGES_SINCE_CANDIDATE }}
-        run: python3 pygplates/wheel/check_release_commit.py '${{ steps.versions.outputs.pygplates-version }}'
+        run: python3 pygplates/wheel/check_release_commit.py "${GITHUB_REF_NAME}" '${{ steps.versions.outputs.pygplates-version }}'
 
       - name: Check the Python version lists agree
         # A mismatch means Linux wheel builds fail much later with a Boost linker error - the

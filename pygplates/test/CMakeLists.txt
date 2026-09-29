@@ -48,6 +48,14 @@ add_test(
 		"${PROJECT_SOURCE_DIR}/docs/pygplates/sample-code"
 		"${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
 
+# Add the release-commit test: 'pygplates/wheel/check_release_commit.py' is what refuses a bad
+# release tag, but the wheel workflow runs it only on a pushed tag, so a mistake in it would
+# otherwise be found at a release. It runs on synthetic repositories, with a copy of the real
+# changelog.
+add_test(
+	NAME pygplates-release-commit-test
+	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/pygplates/wheel/check_release_commit_test.py")
+
 # Set test properties.
 set_tests_properties(pygplates-test pygplates-sample-code-test PROPERTIES
 	# Set the PYTHONPATH used in the test environment.
