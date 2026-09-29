@@ -135,13 +135,13 @@ take everything.
 
 ## CI notes
 
-- Both workflows run on every push to `gplates` and on every pull request based on it, so each
+- Both workflows run on every push to `main` and on every pull request based on it, so each
   push builds and tests both products. Until the two develop branches were unified (2026-09)
   each workflow ran only on its own branch and built only its own product, and a change to the
   shared sources could break the other product undetected until the next sync merge — see
   `docs/design/versioning/README.md`.
 - sccache cache keys are namespaced per product (`sccache-gplates-*` and `sccache-pygplates-*`):
-  `gplates` is the repository's *default* branch, so its caches are visible to every ref, and the
+  `main` is the repository's *default* branch, so its caches are visible to every ref, and the
   two build configurations share no cache entries (every common translation unit differs in
   `-fPIC` and the `GPLATES_PYTHON_EMBEDDING` define). All caches share the repository's 10 GB
   Actions budget, which `prune-caches.yml` sweeps nightly — see its header for what it deletes and

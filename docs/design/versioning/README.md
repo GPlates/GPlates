@@ -21,7 +21,7 @@ pygplates  ────────────┘  near-identical  release-pygp
 After (one permanent branch, plus one per release series):
 
 ```
-gplates                    permanent, the default: both products are developed here
+main                       permanent, the default: both products are developed here
 release/gplates-2.6        permanent, carries 2.6.0, 2.6.1, …
 release/pygplates-1.1      permanent, carries 1.1.0rc1, 1.1.0, 1.1.1, …
 feature/<name>, fix/<name>     temporary, off the development branch
@@ -58,8 +58,8 @@ The rules that follow from it:
   refuses a release that is not its last candidate unchanged (sections 7.2 and 7.5).
 - **Series branches are never deleted.** GDAL keeps 29 and QGIS 71 (section 4); a branch ref
   costs nothing, and deleting one loses the "check out the latest 2.6.x" contract for that series.
-- The development branch keeps the name `gplates` for now and will be renamed `main` in a
-  separate change (section 12).
+- The development branch was called `gplates` until it was renamed `main` on 2026-09-30
+  (section 12).
 
 This is the trunk-plus-release-series model that QGIS, GDAL, CGAL, LLVM and CPython use. It is no
 longer gitflow, and section 3 says why.
@@ -714,7 +714,7 @@ afterwards.
 runs back through the 2013 `python-api` branch with no newer GPlates release tag on it, so without
 the anchor the count ran from 2013 and gave `2.6.0-1206`. `GPlates-2.6.0-56` is on the merge that
 unified the development branches (section 11): that merge was made on the old `pygplates` line,
-which is the line `gplates` follows now, so the older anchor is off it and, under step 5, does not
+which is the line `main` follows now, so the older anchor is off it and, under step 5, does not
 count for it — the merge's own number, re-anchored where the line is, which left every number as
 it was. Each is load-bearing for its stretch: the older for the old `gplates` commits a
 `git bisect` walks (the old tip, two commits past it, resolves to `2.6.0-49`), the newer for
@@ -821,10 +821,10 @@ the branch:
 
 ```
 # pyGPlates 1.1.0.dev48, counting from PyGPlates-1.0.0 (development number 0)
-git rev-list --first-parent --reverse PyGPlates-1.0.0..gplates | sed -n '48p'
+git rev-list --first-parent --reverse PyGPlates-1.0.0..main | sed -n '48p'
 
 # GPlates 2.6.0-58, counting from the anchor GPlates-2.6.0-56 (development number 56): 58 - 56 = 2
-git rev-list --first-parent --reverse GPlates-2.6.0-56..gplates | sed -n '2p'
+git rev-list --first-parent --reverse GPlates-2.6.0-56..main | sed -n '2p'
 ```
 
 The first returns `1b699ffe8`, the unification merge, which is also the commit the GPlates anchor
@@ -832,8 +832,8 @@ names, so `2.6.0-56` is the tag itself and the second returns the commit two aft
 along the branch the build came from — the
 development branch, or a release series branch — because of section 8.3: the same string can name
 different commits on different lines. Concretely, `1.1.0.dev42` was the `gplates` tip at
-`79fa87d8d` on 2026-09-11, and counting 42 along today's `gplates` lands on `255dceb25`, because
-the unification made the old `pygplates` line the one `gplates` follows. A version minted before
+`79fa87d8d` on 2026-09-11, and counting 42 along today's `main` lands on `255dceb25`, because
+the unification made the old `pygplates` line the one `main` follows. A version minted before
 the unification cannot be found by counting at all.
 
 **So tag any development build that is handed to someone**, and the commit is findable by name.
@@ -916,17 +916,17 @@ resolved to.
 Then the one open pull request based on `pygplates` was retargeted to `gplates` (deleting the
 base branch of an open PR closes it), and `pygplates` was deleted from both remotes.
 
-## 12. Follow-up: rename the development branch to `main`
+## 12. Renaming the development branch to `main`
 
 `main` is the right name once there is a single development branch — `develop` was the
 alternative, but with `release-gplates` / `release-pygplates` gone there is no "main release
 branch" for `main` to collide with, which was the only argument against it.
 
-It is a separate change so the forks get notice first. GitHub redirects web URLs, moves branch
-protection rules, retargets open PRs and shows contributors a banner; it does **not** redirect raw
-file URLs, does **not** make Actions workflows follow the rename (the five workflow files that
-name `gplates` must be edited again), and does **not** redirect `git pull` of the old name. Forks
-keep their own branch called `gplates`, and GitHub's "Sync fork" matches branches *by name*, so
-afterwards it has nothing to sync against until the fork renames too. The redirect also survives
+It was a separate change so the forks got notice first (issue #72). GitHub redirects web URLs, moves
+branch protection rules, retargets open PRs and shows contributors how to update their clones; it
+does **not** redirect raw file URLs, does **not** change workflow files (their branch filters named
+`gplates` literally, and had to be edited), and does **not** redirect `git pull` of the old name.
+Forks keep their own branch called `gplates`, and GitHub's "Sync fork" matches branches *by name*,
+so afterwards it has nothing to sync against until the fork renames too. The redirect also survives
 only while the old name is unoccupied, so a stale clone pushing `gplates` would silently reoccupy
 it; a ruleset blocking creation of that name is worth considering.

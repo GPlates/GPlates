@@ -60,7 +60,7 @@
 # back through the 2013 'python-api' branch with no newer GPlates release tag on it - so without
 # the anchor the count ran from 2013 and gave 2.6.0-1206 instead of 2.6.0-47. 'GPlates-2.6.0-56'
 # is on the merge that unified the development branches: that merge was made on the old
-# pygplates line, which is the line gplates follows now, so the older anchor is off it and does
+# pygplates line, which is the line main follows now, so the older anchor is off it and does
 # not count for it - the merge's own number, re-anchored where the line is. Each is load-bearing
 # for its stretch: the older for the old gplates commits a 'git bisect' walks, the newer for
 # everything since. Once 'release/gplates-2.6' is cut and 'GPlates-2.6.0' tagged on it, the tip
