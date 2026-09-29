@@ -182,7 +182,7 @@ jobs:
           # reachable too, and whoever adds one has no reason to know this file exists.
           #
           # Grouping by ref as well as prefix is not optional: caches are ref-scoped, and dropping
-          # the newest 'refs/pull/<n>/merge' entry because a newer 'refs/heads/gplates' one
+          # the newest 'refs/pull/<n>/merge' entry because a newer 'refs/heads/main' one
           # happened to share its prefix would cost that pull request a cold build.
           #
           # Keeping exactly one per group is not a heuristic - it is the reachable set. It also

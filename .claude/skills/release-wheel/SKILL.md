@@ -20,7 +20,7 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
 - Confirm the working tree is clean and up to date with the GitHub remote. Name that remote
   explicitly rather than assuming `origin` — not every checkout has one.
 - Know which branch the release is being cut on. A release is prepared on the permanent release
-  series branch `release/pygplates-<major>.<minor>`, cut from `gplates` when the first release in
+  series branch `release/pygplates-<major>.<minor>`, cut from `main` when the first release in
   that series is prepared, and tagged **there** — release tags belong on the series branches and
   nowhere else (the root `README.md` has the branching model). Candidates and later patch
   releases are tagged on the same branch, each a further commit on it.
@@ -41,7 +41,7 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
    last candidate plus this one commit).
    - **When this commit cuts the series branch** (the first release in the series), it also
      freezes GPlates, which is not released from a pyGPlates series branch. First run
-     `cmake -P cmake/modules/VersionFromGit.cmake gplates` on the `gplates` commit being cut
+     `cmake -P cmake/modules/VersionFromGit.cmake gplates` on the `main` commit being cut
      from, then replace the `set(GPLATES_RELEASE_VERSION …)` line with
      `set(GPLATES_FROZEN_VERSION <that version>)`. Without it, the first GPlates release made on
      its own series branch would stop every configure on this one, its release tags included,
@@ -74,12 +74,12 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
      `1.1.0`) so later fixes there configure. After a candidate, nothing: the next commit on the
      branch either sets the next candidate (and fixes follow it) or is the release, tagged as
      soon as it is made.
-   - on `gplates`, if this was the *first* tag in the series (the first candidate, or the
+   - on `main`, if this was the *first* tag in the series (the first candidate, or the
      release when there was none), set the target to the next minor (`1.2.0`). The development
      branch's count restarts at that moment, so left on `1.1.0` it would re-issue versions it
      has already used. In the same commit, open a `pyGPlates <next minor> (unreleased)` section
      above the series' section in `CHANGELOG-pyGPlates.md`. Later tags in the series need nothing
-     on `gplates`, except that once the release (or a patch release) is final its changelog
+     on `main`, except that once the release (or a patch release) is final its changelog
      section there should match the series branch's.
    Commit each on its own branch. The rules are in `docs/design/versioning/README.md` (7.2).
 

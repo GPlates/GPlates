@@ -30,7 +30,7 @@ name: pygplates wheel images
 
 on:
   push:
-    branches: [ "gplates" ]
+    branches: [ "main" ]
     paths:
       - pygplates/wheel/manylinux_2_28.dockerfile
       - pygplates/wheel/versions.sh

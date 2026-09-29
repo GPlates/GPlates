@@ -193,7 +193,7 @@ Install from source code
 
 The first step is to obtain the source code for the current pyGPlates release by checking out its
 release tag in the `GPlates GitHub repository <https://github.com/GPlates/GPlates>`_.
-Or you can use the development branch ``gplates`` (for the latest *unofficial* updates).
+Or you can use the development branch ``main`` (for the latest *unofficial* updates).
 A fresh clone checks that branch out already, so skip the ``git switch`` step below.
 
 .. note:: You'll first need to `install git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_

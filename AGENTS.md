@@ -9,7 +9,7 @@ same sources, selected by the CMake option `GPLATES_BUILD_GPLATES`. It is declar
 `cmake/modules/Version.cmake` (not `ConfigDefault.cmake`) and **defaults to `TRUE`**, so a
 pyGPlates build that omits `-DGPLATES_BUILD_GPLATES=FALSE` silently builds GPlates instead.
 
-There is one development branch, `gplates`, and both products are developed on it. Building
+There is one development branch, `main`, and both products are developed on it. Building
 either one from the same worktree is normal; keep them in separate build trees
 (`build-pygplates/`, `build-gplates/`) so neither reconfigure invalidates the other.
 
@@ -244,22 +244,25 @@ Where this guidance and a specific file disagree, match the file you are editing
 This is **no longer** gitflow — it is the trunk-plus-release-series model, described in `README.md`
 and argued for in `docs/design/versioning/README.md`.
 
-- **`gplates`** is the single development branch and the repository's default. Both products are
-  developed on it; there is no per-product branch. (It will be renamed `main` in a later change.)
+- **`main`** is the single development branch and the repository's default. Both products are
+  developed on it; there is no per-product branch.
 - **release series** branches — `release/gplates-<X.Y>`, `release/pygplates-<X.Y>` — are
-  permanent, cut from `gplates` when the first release in the series is prepared. **Release tags
-  live only here**, never on `gplates`: candidates, the release, and each later patch release are
+  permanent, cut from `main` when the first release in the series is prepared. **Release tags
+  live only here**, never on `main`: candidates, the release, and each later patch release are
   successive commits on the one branch, so the tip is always the newest X.Y.z. There is no
   `hotfix/` concept and no permanent 'production' branch.
-- **short-lived** branches: `feature/<name>` and `fix/<name>` off `gplates` (a fix rather than a
+- **short-lived** branches: `feature/<name>` and `fix/<name>` off `main` (a fix rather than a
   feature, but otherwise identical), and patch branches off a release series branch.
-- **fixes move between `gplates` and a series branch by `git cherry-pick -x`**, in either
-  direction — never by merging a series branch into `gplates`. Such a merge conflicts on
+- **fixes move between `main` and a series branch by `git cherry-pick -x`**, in either
+  direction — never by merging a series branch into `main`. Such a merge conflicts on
   `VersionRelease.cmake` every time (each side has moved its release target), and when it does
-  not conflict it silently hands `gplates` the series branch's target.
+  not conflict it silently hands `main` the series branch's target.
+- GitHub rulesets refuse force pushes to `main` and `release/*`, deleting either, and moving or
+  deleting a release or anchor tag: the version count depends on that history. See section 13 of
+  `docs/design/versioning/README.md`.
 
-**Base pull requests on `gplates`, never on a release series branch.** CI enforces this: both
-`build-test-gplates.yml` and `build-test-pygplates.yml` run only on `gplates`. Building **both**
+**Base pull requests on `main`, never on a release series branch.** CI enforces this: both
+`build-test-gplates.yml` and `build-test-pygplates.yml` run only on `main`. Building **both**
 products on every push is deliberate — it is what closes the coverage gap that two develop
 branches used to leave open (see *The pyGPlates module boundary*).
 
@@ -296,7 +299,7 @@ people may have fetched it.
 The GitHub remote is `https://github.com/GPlates/GPlates.git`, usually named `origin`. Some
 checkouts give it another name and have no `origin` at all, so **name the remote explicitly** in
 push and fetch commands rather than assuming. There is an active downstream fork tracking the
-`gplates` branch, so changes merged there warrant extra care.
+development branch, so changes merged there warrant extra care.
 
 ## Releases (pyGPlates wheels)
 
@@ -316,7 +319,7 @@ stays findable — and a dispatch can never publish. Standing on the release tag
 version *is* the release target (no development number), which is what makes the two agree.
 Afterwards move the targets on, on both branches: the series branch to the next patch after a
 release (nothing after a candidate — the next commit there sets the next candidate or is the
-release), and `gplates` to the next minor when the series gets its *first* tag. Left behind,
+release), and `main` to the next minor when the series gets its *first* tag. Left behind,
 the following commit resolves to a version sorting below the one just released, or re-issues
 numbers the development branch has already used — a hard error rather than a bad package. The
 resolver also refuses a target that sorts below the nearest release or skips a version;
@@ -381,7 +384,7 @@ Where the plan lives depends on the branch:
     the code describes a moving target, and has to be rewritten.
   - Before the branch merges, check every design statement against the code, then delete
     `docs/plans/<name>/`.
-  - If the work reaches `gplates` in several pull requests, the plan merges with them: each pull
+  - If the work reaches `main` in several pull requests, the plan merges with them: each pull
     request distils what it completed, and the last one deletes the plan.
 
 Whether a branch is long-lived is the developer's decision; an agent does not promote a branch on

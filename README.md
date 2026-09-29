@@ -105,7 +105,7 @@ GPlates and pyGPlates are [free software](https://www.gnu.org/philosophy/free-sw
 
 There is one permanent __development__ branch, plus one permanent branch per __release series__:
 
-- `gplates` is the __development__ branch (and the _default_ branch). Both GPlates and pyGPlates
+- `main` is the __development__ branch (and the _default_ branch). Both GPlates and pyGPlates
   are developed here. Check it out to compile the latest __development snapshot__ of either
   product.
 - `release/gplates-<major>.<minor>` and `release/pygplates-<major>.<minor>` (eg,
@@ -132,8 +132,6 @@ merged back:
 > separate 'production' branch and no `hotfix` branch (a patch release is simply a further commit
 > on the release series branch). The reasoning, and what was considered instead, is in
 > [docs/design/versioning/README.md](docs/design/versioning/README.md).
-
-> __Note:__ The development branch will be renamed `main` in a later change.
 
 #### Versioning
 
