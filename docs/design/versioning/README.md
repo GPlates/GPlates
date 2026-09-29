@@ -51,7 +51,7 @@ The rules that follow from it:
   `release/pygplates-1.1`.
 - **A series branch releases one product and freezes the other.** The same first commit replaces
   the other product's target with the version it resolved to at the cut, which is then used as
-  it is (section 7.4). The pyGPlates publishing run refuses a release tag without it.
+  it is (section 7.4). The resolver refuses a release tag of either product without it.
 - **After a candidate, the next commit either sets the next candidate or is the release**, and
   the release is that candidate unchanged apart from its target and changelog heading. The
   resolver refuses the release's target on any commit not tagged as it, and the publishing run
@@ -280,14 +280,20 @@ day — and the two products' counters had drifted apart. Git already knows the 
 
 Everything else is a fallback for builds with no repository, or an exception to counting, in
 this order: an existing CMake variable (`-D…`), an environment variable of the same name, a
-frozen version (the other product's, on a release series branch — section 7.4), git, `PKG-INFO`
-(the pyGPlates sdist), `cmake/modules/VersionRecorded.cmake` (written into the sdist by
-`cmake/version.py`), then a fatal error. A shallow clone is refused outright rather than allowed
-to produce a smaller, plausible number.
+frozen version (the other product's, on a release series branch — section 7.4), git,
+`cmake/modules/VersionRecorded.cmake` (written into the pyGPlates sdist by `cmake/version.py`),
+then a fatal error. A shallow clone is refused outright rather than allowed to produce a
+smaller, plausible number, and so is a repository with none of the product's tags (section 9):
+passing it on to the recorded file would let a stale one win, since that file is gitignored and
+every `pip install .` writes one into the source tree. The sdist's `PKG-INFO` is not a fallback
+of its own: it records only the pyGPlates version, and a build needs both. It serves only to
+mark a tree as an unpacked sdist.
 
 ### 7.2 The guards
 
-Six checks abort the configure rather than let a bad version reach a package:
+Seven guards abort the configure rather than let a bad version reach a package. (Besides them,
+the resolver refuses a shallow clone, a repository without the product's tags, a malformed frozen
+version, and an anchor tag whose base is not the target at its commit — section 9.)
 
 1. **Standing on a release tag whose base is not the target.** Tagging `PyGPlates-1.1.0` while the
    target still says `1.0.0` is a fatal error naming what to set the target to. This is what makes
@@ -350,15 +356,16 @@ Six checks abort the configure rather than let a bad version reach a package:
    cherry-picked after the target was set, say. A dispatch of `build-wheels.yml` builds wheels
    from either, and they lose to the candidate whenever pip chooses, and fail a dependent's
    `pygplates>=1.1.0rc1` outright. So the release's target is accepted only on the commit tagged as
-   it, where the guards other than check 1 are not consulted at all. The advice depends on where
-   the commit is. Directly on the candidate it may be the release awaiting its tag, so the
-   refusal offers both ways forward: tag it (a local tag publishes nothing, so tag, check, then
-   push), or set the next candidate, `1.1.0rc2`, after which fixes resolve to `1.1.0rc2.devN`.
-   Further on, the commit has changes the candidate was never tested with, so only the next
-   candidate is offered: tagging it would release them untested, and the publishing run would
-   refuse the tag anyway. It is a correctness check — the version would sort wrongly whenever and
-   wherever it was built — which is why it lives in the resolver; the related policy, that the
-   release *is* its last candidate unchanged, does not (section 7.5).
+   it, where of these guards only checks 1 and 7 apply: the ordering checks are not consulted
+   there at all (the release script checks the order instead, once — section 7.5). The advice
+   depends on where the commit is. Directly on the candidate it may be the release awaiting its
+   tag, so the refusal offers both ways forward: tag it (a local tag publishes nothing, so tag,
+   check, then push), or set the next candidate, `1.1.0rc2`, after which fixes resolve to
+   `1.1.0rc2.devN`. Further on, the commit has changes the candidate was never tested with, so
+   only the next candidate is offered: tagging it would release them untested, and the
+   publishing run would refuse the tag anyway. It is a correctness check — the version would
+   sort wrongly whenever and wherever it was built — which is why it lives in the resolver; the
+   related policy, that the release *is* its last candidate unchanged, does not (section 7.5).
 
    A commit that a release tag already has in its history is only warned about, not refused.
    It can exist legitimately: the release commit on a patch branch whose merge commit was
@@ -367,6 +374,9 @@ Six checks abort the configure rather than let a bad version reach a package:
    unbuildable for good, `git bisect` included.
 6. **A frozen product standing on its own release tag.** A frozen version (section 7.4) marks
    the product as not released from this branch, so a release tag of it here is refused.
+7. **A release tag on a commit that does not freeze the other product.** The mirror of check 6:
+   a release is made on a series branch of its own product, which freezes the other (section
+   7.4 has why, and why this check is safe in the resolver).
 
 **Which release is "the nearest release"** for checks 3 and 4 is a separate question from which
 tag supplies the count, and is computed separately:
@@ -441,6 +451,8 @@ pyGPlates unless stated; `T` is the target in `VersionRelease.cmake`.
 | GPlates on `release/pygplates-1.1`, frozen at the cut | frozen `2.6.0-150` | not consulted | `2.6.0-150` |
 | same, after `GPlates-2.6.0` is tagged on `release/gplates-2.6`, cut later | frozen `2.6.0-150` | not consulted | `2.6.0-150` (counted from git with the target `2.6.0`: **fatal**, section 7.4) |
 | GPlates on `release/pygplates-1.1`, a `GPlates-2.6.0` tag put there by mistake | frozen `2.6.0-150` | at HEAD | **fatal** — not released from this branch |
+| standing on `PyGPlates-1.1.0rc1`, on a commit that does not freeze GPlates | `1.1.0rc1` | at HEAD | **fatal** — freeze GPlates in a new commit, and tag that |
+| development branch, a candidate tagged on it by mistake, the next commit | `1.2.0` | `PyGPlates-1.1.0rc1`, distance 1, on the line | **fatal** — not finished, or the tag is the mistake (the tagged commit itself is refused too: it freezes nothing) |
 | development branch, target left at `0.9.0` | `0.9.0` | `PyGPlates-1.0.0` | **fatal** — sorts below the release |
 | development branch, target set to `1.3.0` | `1.3.0` | `PyGPlates-1.0.0` | **fatal** — skips 1.1 and 1.2 |
 | fork standing on its own anchor `GPlates-2.6.0-2000` | `2.6.0` | at HEAD, dev 2000 | `2.6.0-2000` |
@@ -496,12 +508,15 @@ and so is freezing both products. The value itself must be a development version
 frozen `2.6.0` would claim to be a release, and a two-component `2.6-150` would be used as it is,
 unnormalised, and fail only later in `Version.cmake`'s grammar check.
 
-**Forgetting the freeze is caught at publish time.** The resolver cannot tell that a branch
-should have frozen something, which is the whole problem, and a forgotten freeze does no harm
-until the other product releases, by which time this branch's tags are fixed. So the pyGPlates
-publishing run refuses a release tag whose `VersionRelease.cmake` does not freeze GPlates
-(`pygplates/wheel/check_release_commit.py`), candidates included. GPlates has no publishing
-workflow yet, so a GPlates series branch has only its procedure to rely on.
+**Forgetting the freeze is caught at the first release tag** (guard 7). The resolver cannot tell
+that a branch should have frozen something, which is the whole problem, and a forgotten freeze
+does no harm until the other product releases, by which time this branch's tags are fixed. But a
+*release tag* says the branch is a series branch, so the resolver refuses a release tag of either
+product, candidates included, on a commit that does not freeze the other. That is safe in the
+resolver, although it refuses a configure for good (section 7.5): the answer depends only on the
+commit and its own tag, so no later tag can change it, and a commit that fails it would stop
+configuring anyway at the other product's next release. It was first a check in the pyGPlates
+publishing run, which left GPlates, with no publishing workflow, relying on procedure alone.
 
 The frozen version is also the *right* version, not just a harmless one. GPlates is not developed
 on a pyGPlates series branch. Counted from git, it continued the development branch's count
@@ -524,15 +539,17 @@ Alternatives considered:
 ### 7.5 Where a check belongs: the resolver or the publishing run
 
 The guards above refuse a *configure*. `build-wheels.yml` has checks of its own, which refuse a
-*publish*: the tag must match the resolved version, the version must not be a development one,
-and — added with the frozen versions, in `pygplates/wheel/check_release_commit.py` — GPlates
-must be frozen, and a final release must be its last candidate unchanged. Which kind a new rule
-becomes was argued out on the last of those, and the distinctions are worth keeping.
+*publish*, all in `pygplates/wheel/check_release_commit.py` so that they can be run before the tag
+is pushed, and tested (`pygplates-release-commit-test`): the tag must name the resolved version,
+the version must not be a development one, it must sort above every earlier release in its
+history, and a final release must be its last candidate unchanged. Which kind a new rule becomes
+was argued out on the last of those, and the distinctions are worth keeping.
 
 **Not "CI versus local" as such.** The publishing run configures the tagged commit, since it
 resolves the version in its first minute. So a resolver rule that refuses a commit also stops it
-being published, and a release cannot reach PyPI in breach of one. And a resolver rule that
-looks only at the commit and its parent gives the same answer for good, so it would not strand a
+being published. (Only the guards that apply at a release tag, though: the ordering guards do
+not, which is why the publishing run checks the order itself.) And a resolver rule that looks
+only at the commit and its parent gives the same answer for good, so it would not strand a
 published tag either. The difference lies elsewhere.
 
 **When a check runs, and whether its inputs can change afterwards.** A resolver rule runs at
@@ -543,6 +560,15 @@ milder form of it. So a resolver rule that does depend on later tags should only
 they appear, never tighten: guard 5 refuses a commit until a release tag has it in its history,
 and only warns after. A publishing check runs once, on the push, and never again for that tag,
 so what it depends on can change afterwards without consequence.
+
+That is why the order of a release is checked at publish time rather than by the ordering guards
+at the tag. At a tag, leaving the tag's own release out, the nearest release can be one tagged
+later on another branch: a GPlates 2.6.0 tagged with no candidate would see a later series'
+`GPlates-2.7.0`, and would stop configuring the day that was tagged. The publishing run instead
+compares with the releases in the tagged commit's own history, which later tags cannot change,
+and does it once. Its limit: a new series' first tag has no release of its own series in its
+history, so the check there catches little. A target set backwards on that commit is caught by
+configuring it before tagging, where the ordering guards do apply.
 
 **Correctness versus policy.** The resolver's job is a correct, orderable version. Guard 5
 belongs there because the version it refuses would sort wrongly whenever and wherever it was
@@ -555,14 +581,16 @@ another candidate, say. A publishing check can be overridden for one run (a repo
 here, `PYGPLATES_RELEASE_ALLOW_CHANGES_SINCE_CANDIDATE`). A resolver rule needs a code edit on the
 branch, and that edit stays in its history.
 
-**What the resolver promises at a tag.** Today it has one rule on a release tag: a tag matching
-the target always configures. Policy checks kept out of the resolver leave that rule simple.
+**What the resolver promises at a tag.** A tag matching the target configures, on a commit that
+freezes the other product (guard 7) — and a commit that did not would stop configuring at the
+other product's next release anyway. Policy checks kept out of the resolver leave that rule
+simple.
 
 **A refusal is only as strong as its enforcement.** The `release-wheel` skill tells the agent
 running it to confirm each step with the developer. That is an instruction, not a gate, and a
 release made by hand never sees it. The `pypi` environment's required reviewer is a real gate, but
 it is a bare approval that shows nothing about the commit's history. The publishing checks are
-the only things that enforce the freeze and the candidate rule.
+the only things that enforce the order at a tag and the candidate rule.
 
 ## 8. Three things that look like bugs and are not
 
@@ -575,7 +603,10 @@ line. (Series branches are not merged back — a fix wanted on both lines lands 
 branch and is cherry-picked to the series, which is what GDAL's and QGIS's backport bots do — and
 a merge would carry the series branch's release target with it. Were one ever merged, it would
 have to be with `--no-ff`: a fast-forward puts the tags on the line and hands the development
-branch the series' target, with no guard firing.) That sounds like a problem and is not: the
+branch the series' target, with no guard firing. A release tag put on the development branch by
+mistake is refused at the tag, which freezes nothing (guard 7); the commits after it are refused
+too, as "not finished", since git cannot tell that line from a series branch — and that message
+says the tag may be the mistake.) That sounds like a problem and is not: the
 count from such a tag equals
 the count from the commit the series branch was **cut from**. Everything reachable from the tag,
 including the branch point and all history before it, is excluded, and the series branch's own
@@ -740,9 +771,10 @@ three active forks hold one tag between them, and it is the fork's own — and a
 branch brings only the tags on it, while release tags live on the series branches. With no
 `GPlates-*` or `PyGPlates-*` tags the resolver has nothing to count from, and it stops there,
 saying so and naming the remedy, rather than falling through to the fallbacks for a tree with
-no repository and blaming the wrong thing (unless the tree carries the sdist's `PKG-INFO` or a
-`VersionRecorded.cmake`, as an sdist imported into a packaging repository does — that is not a
-fork, and those files supply its version):
+no repository and blaming the wrong thing, or taking a stale `VersionRecorded.cmake` left by an
+earlier `pip install .` (unless the tree carries the sdist's `PKG-INFO`, as an sdist imported
+into a packaging repository does — that is not a fork, and its recorded file supplies its
+version):
 
 ```
 git fetch --tags <upstream>

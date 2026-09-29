@@ -31,7 +31,10 @@
 # are not merged back: a fix wanted on both lines goes to the develop branch and is cherry-picked
 # to the series, and a merge would carry the series branch's release target with it. Were one
 # ever merged, it would have to be with '--no-ff' - a fast-forward puts the tags on the line and
-# hands the develop branch the series' target, with no guard firing.)
+# hands the develop branch the series' target, with no guard firing. A release tag put on the
+# develop branch by mistake does fire one, and a misleading one: git cannot tell the lines apart,
+# so a candidate there binds the develop branch as it would its series branch, and the next
+# target is refused as "not finished".)
 # 'rev-list --count --first-parent <tag>..HEAD' needs no such ancestry - it counts the
 # first-parent commits of HEAD that are not reachable from the tag - so the tags work unchanged.
 # Counting from a tag on a series branch gives the number of commits since that series was cut,
@@ -409,7 +412,9 @@ function(gplates_check_release_target product target reference reference_tag dis
 					"The ${product} release target is '${target}', but the release line it follows has "
 					"not been finished: '${reference_tag}' is a candidate for '${_ref_head}', "
 					"${distance} commit(s) back. Set the target in ${_where} to another candidate for "
-					"'${_ref_head}', or to '${_ref_head}' itself."
+					"'${_ref_head}', or to '${_ref_head}' itself. (Unless this is the development "
+					"branch, and the tag was put on it by mistake: release tags belong on release "
+					"series branches. Then delete the tag, locally and wherever it was pushed.)"
 			)
 			set(${error_var} "${_msg}" PARENT_SCOPE)
 			return()
@@ -827,15 +832,16 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 		return()
 	endif()
 	if (_tags STREQUAL "")
-		# A source tree that carries the sdist's PKG-INFO, or a recorded version, is an archive
-		# somebody has put under git - an sdist imported into a packaging repository, say - and
-		# those files answer for it (see gplates_resolve_version). Otherwise a working repository
-		# with none of the tags is almost always a fork: GitHub copies no tags into a fork, and
-		# fetching a single branch brings only the tags on it, while release tags live on the
-		# release series branches. Falling through to the file fallbacks would then end in a
-		# message blaming the missing repository, which is the wrong diagnosis.
-		if (EXISTS "${GPLATES_VERSION_SOURCE_DIR}/PKG-INFO"
-				OR EXISTS "${GPLATES_VERSION_SOURCE_DIR}/cmake/modules/VersionRecorded.cmake")
+		# A source tree that carries the sdist's PKG-INFO is an sdist somebody has put under git -
+		# imported into a packaging repository, say - and its recorded version answers for it
+		# (see gplates_resolve_version). Otherwise a working repository with none of the tags is
+		# almost always a fork: GitHub copies no tags into a fork, and fetching a single branch
+		# brings only the tags on it, while release tags live on the release series branches.
+		# Falling through to the file fallbacks would then end in a message blaming the missing
+		# repository, which is the wrong diagnosis - or, worse, in a stale recorded version.
+		# The recorded file itself is no sign of an sdist: it is gitignored, and every
+		# 'pip install .' writes one into the source tree.
+		if (EXISTS "${GPLATES_VERSION_SOURCE_DIR}/PKG-INFO")
 			return()
 		endif()
 		message(FATAL_ERROR
@@ -891,10 +897,14 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 		endif()
 		if (_tag_commit STREQUAL _head_commit)
 			# More than one tag can name this commit (a release tag and an anchor tag, say). One
-			# matching the release target always wins; otherwise the first listed does, which keeps
-			# the choice deterministic ('git tag --list' sorts its output).
+			# matching the release target always wins. Otherwise the rule is the one below for
+			# tags at the same distance, so that the tag giving this commit its number is the tag
+			# the commits after it count from: a release beats an anchor, and among anchors the
+			# largest number wins.
 			gplates_join_version(${product} "${_base}" ${_dev} _this_tag_version)
-			if (_at_tag_base STREQUAL "" OR _this_tag_version STREQUAL target)
+			if (_at_tag_base STREQUAL "" OR _this_tag_version STREQUAL target
+					OR (NOT _at_tag_base STREQUAL target AND NOT _at_tag_dev EQUAL 0
+						AND (_dev EQUAL 0 OR _dev GREATER _at_tag_dev)))
 				set(_at_tag_base "${_this_tag_version}")
 				set(_at_tag_name "${_tag}")
 				set(_at_tag_dev ${_dev})
@@ -1049,6 +1059,31 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 					"'${target}'. Set the target in 'cmake/modules/VersionRelease.cmake' to "
 					"'${_at_tag_base}', or tag the release to match the target.")
 		endif()
+		# A release is tagged on a release series branch of its product, which freezes the other
+		# product's version. Forgotten, nothing goes wrong until the other product is released on
+		# a series branch cut later, and from then on this commit stops configuring anyway
+		# (gplates_check_frozen_version says why) - by which time its tag cannot be repaired. So
+		# refusing it now loses nothing. The answer depends only on this commit and its own tag,
+		# so it can never change afterwards.
+		if (product STREQUAL "gplates")
+			set(_other pygplates)
+		else()
+			set(_other gplates)
+		endif()
+		string(TOUPPER "${_other}" _other_upper)
+		if (NOT DEFINED ${_other_upper}_FROZEN_VERSION)
+			message(FATAL_ERROR
+					"This commit is tagged '${_at_tag_name}', but 'cmake/modules/VersionRelease.cmake' "
+					"does not freeze the ${_other} version. A ${product} release is tagged on a "
+					"${product} release series branch, and the commit that cuts it replaces "
+					"'set(${_other_upper}_RELEASE_VERSION ...)' with "
+					"'set(${_other_upper}_FROZEN_VERSION <version>)', the version that "
+					"'cmake -P cmake/modules/VersionFromGit.cmake ${_other}' gives on the "
+					"development branch commit the series branch was cut from. Without it, the first "
+					"${_other} release made on a series branch cut later stops every configure here, "
+					"this tag included. Delete the tag, freeze ${_other} in a new commit, and tag "
+					"that.")
+		endif()
 		set(${out_var} "${target}" PARENT_SCOPE)
 		return()
 	endif()
@@ -1071,12 +1106,13 @@ endfunction()
 #   3. The frozen version, on a release series branch of the other product (see
 #      'VersionRelease.cmake' and gplates_check_frozen_version).
 #   4. Derived from git, as described at the top of this file.
-#   5. 'Version:' from a PKG-INFO beside this source tree - an unpacked pyGPlates sdist, whose
-#      version was resolved when the sdist was built.
-#   6. 'cmake/modules/VersionRecorded.cmake', for a source archive made without a repository.
+#   5. 'cmake/modules/VersionRecorded.cmake', which 'cmake/version.py' writes into the pyGPlates
+#      sdist: an unpacked sdist, or the conda-forge feedstock building from one. (The sdist's
+#      PKG-INFO has only the pyGPlates version, and both are needed.)
 #
-# Git is tried ahead of the file fallbacks so that a stale recorded file can never win in a
-# working checkout.
+# Git is tried ahead of the recorded file, and a repository with none of the product's tags is
+# refused rather than passed on to it, so that a stale recorded file does not win in a working
+# checkout: the file is gitignored, but every 'pip install .' writes one into the source tree.
 #
 function(gplates_resolve_version product out_var)
 	if (product STREQUAL "gplates")
@@ -1149,24 +1185,7 @@ function(gplates_resolve_version product out_var)
 		return()
 	endif()
 
-	# 5. An unpacked sdist (pyGPlates only - GPlates has no sdist, and a PKG-INFO found beside it
-	#    would be describing something else).
-	if (product STREQUAL "pygplates" AND EXISTS "${GPLATES_VERSION_SOURCE_DIR}/PKG-INFO")
-		file(READ "${GPLATES_VERSION_SOURCE_DIR}/PKG-INFO" _pkg_info)
-		# A leading newline, then required, so this matches the 'Version:' header rather than the
-		# tail of 'Metadata-Version:' - which is the first header in the file. CMake's regex engine
-		# has no multiline '^' to anchor with.
-		string(PREPEND _pkg_info "\n")
-		if (_pkg_info MATCHES "[\r\n]Version:[ \t]*([^\r\n]+)")
-			string(STRIP "${CMAKE_MATCH_1}" _version)
-			if (NOT _version STREQUAL "")
-				set(${out_var} "${_version}" PARENT_SCOPE)
-				return()
-			endif()
-		endif()
-	endif()
-
-	# 6. A recorded version, for a source archive made without a repository.
+	# 5. The recorded version, for an unpacked sdist.
 	if (EXISTS "${GPLATES_VERSION_SOURCE_DIR}/cmake/modules/VersionRecorded.cmake")
 		include("${GPLATES_VERSION_SOURCE_DIR}/cmake/modules/VersionRecorded.cmake")
 		if (DEFINED ${_variable_name})
@@ -1175,15 +1194,25 @@ function(gplates_resolve_version product out_var)
 		endif()
 	endif()
 
+	# A development version of the target, spelt for the product, for the message.
+	if (product STREQUAL "pygplates")
+		set(_example "${_target}.dev<n>")
+	elseif (_target MATCHES [[^[0-9]+\.[0-9]+\.[0-9]+$]])
+		set(_example "${_target}-<n>")
+	else()
+		set(_example "${_target}.<n>")
+	endif()
 	message(FATAL_ERROR
 			"Cannot determine the ${product} version.\n"
 			"It is normally counted from this repository's git tags, but there is no usable git "
 			"repository here (no git executable, no '.git', or a source tree extracted from an "
 			"archive).\n"
 			"Set it explicitly, either as a CMake define:\n"
-			"    -D${_variable_name}=${_target}-<n>\n"
-			"or as an environment variable of the same name. A packager building from an archive "
-			"should use the version that archive was made from.")
+			"    -D${_variable_name}=${_example}\n"
+			"or as an environment variable of the same name - and likewise the other product's "
+			"version (GPLATES_SEMANTIC_VERSION or PYGPLATES_PEP440_VERSION), since a build of "
+			"either product resolves both. A packager building from an archive of a release "
+			"should use that release's version.")
 endfunction()
 
 

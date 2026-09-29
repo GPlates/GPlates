@@ -33,10 +33,11 @@
 #
 # 2. On a release series branch ('release/pygplates-<major>.<minor>' etc), to name the release being
 #    prepared - eg, set the target to '1.1.0rc1' on cutting the branch, to '1.1.0rc2' if a
-#    second candidate is needed, and to '1.1.0' for the release itself. Development commits on
-#    the release branch then carry '1.1.0rc2.dev3' and so on. The release's own target ('1.1.0'
-#    after a candidate) goes only on the commit tagged as it: on any other commit it would give
-#    '1.1.0.devN', which sorts below the candidate, and the resolver refuses that.
+#    second candidate is needed, and to '1.1.0' for the release itself - and, straight after the
+#    release, to the next patch ('1.1.1'), so that later fixes there configure. Development
+#    commits on the release branch then carry '1.1.0rc2.dev3' and so on. The release's own
+#    target ('1.1.0' after a candidate) goes only on the commit tagged as it: on any other commit
+#    it would give '1.1.0.devN', which sorts below the candidate, and the resolver refuses that.
 #
 #    The same first commit, on cutting the branch, freezes the *other* product, which is not
 #    released from it: it replaces that product's target with the version it resolves to on the
@@ -48,9 +49,9 @@
 #    the branch is cut from. A frozen version is used as it is, never counted or checked against
 #    tags - otherwise a GPlates release, made later on its own series branch, would stop every
 #    configure here, this branch's own release tags included ('gplates_check_frozen_version' in
-#    'VersionFromGit.cmake' says why). It is set once and never edited again. Nothing in the
-#    resolver can notice a freeze that was forgotten, so the pyGPlates publishing run refuses a
-#    release tag without one ('pygplates/wheel/check_release_commit.py').
+#    'VersionFromGit.cmake' says why). It is set once and never edited again. A forgotten freeze
+#    shows only when a release is tagged: the resolver refuses a release tag of either product
+#    on a commit that does not freeze the other.
 #
 #    Nothing detects the branch by name: a target is a decision ("there will be another release
 #    candidate"), and branch-name detection is unreliable anyway under detached HEAD, pull

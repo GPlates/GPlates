@@ -559,6 +559,15 @@ else()
 
 	# The development branch, two commits past the last releases of both products.
 	_scenario_commit("base" "${_g} 2.5.0)" "${_p} 1.0.0)")
+
+	# No tags yet, as in a fork made on GitHub: refused, naming the tags, even with a stale
+	# recorded version in the tree (every 'pip install .' writes one, and it is gitignored).
+	_scenario_expect("no tags" gplates "FATAL:has no 'GPlates-")
+	file(WRITE "${_scenario_dir}/cmake/modules/VersionRecorded.cmake"
+			"set(GPLATES_SEMANTIC_VERSION 2.6.0-999)\nset(PYGPLATES_PEP440_VERSION 1.0.0.dev999)\n")
+	_scenario_expect("no tags, a stale recorded version" gplates "FATAL:has no 'GPlates-")
+	file(REMOVE "${_scenario_dir}/cmake/modules/VersionRecorded.cmake")
+
 	_scenario_git(tag GPlates-2.5)
 	_scenario_git(tag PyGPlates-1.0.0)
 	_scenario_commit("m1" "${_g} 2.6.0)" "${_p} 1.1.0)")
@@ -642,6 +651,37 @@ else()
 	_scenario_git(switch -q --detach HEAD~1)
 	_scenario_expect("release commit below a later release tag" gplates "2.6.0-1"
 			"already in the history of 'GPlates-2.6.0'")
+
+	# A release tagged on a branch that does not freeze the other product: refused at the tag,
+	# since the first release of the other product on a series branch cut later would stop it
+	# configuring anyway, by which time the tag could not be repaired.
+	_scenario_git(switch -q -c release/gplates-2.7 main)
+	_scenario_commit("gpl 2.7 cut, unfrozen" "${_g} 2.7.0-rc.1)" "${_p} 1.3.0)")
+	_scenario_git(tag GPlates-2.7.0-rc.1)
+	_scenario_expect("GPlates release tag, pyGPlates not frozen" gplates
+			"FATAL:does not freeze the pygplates version")
+	_scenario_git(tag -d GPlates-2.7.0-rc.1)
+
+	# A candidate tagged on the development branch by mistake. Refused at the tag (it freezes
+	# nothing), and the commit after it is bound to that release as a series branch would be, since
+	# git cannot tell the lines apart - so that refusal says the tag may be the mistake.
+	_scenario_git(switch -q main)
+	_scenario_commit("pyg candidate on main" "${_g} 2.7.0)" "${_p} 1.3.0rc1)")
+	_scenario_git(tag PyGPlates-1.3.0rc1)
+	_scenario_expect("pyGPlates candidate on the development branch" pygplates
+			"FATAL:does not freeze the gplates version")
+	_scenario_commit("bump 1.4" "${_g} 2.7.0)" "${_p} 1.4.0)")
+	_scenario_expect("after a candidate on the development branch" pygplates
+			"FATAL:not been finished.*put on it by mistake")
+	_scenario_git(tag -d PyGPlates-1.3.0rc1)
+
+	# Two anchors on one commit: the larger number wins, on the commit and after it, so the count
+	# does not go backwards between the two.
+	_scenario_git(tag GPlates-2.7.0-100)
+	_scenario_git(tag GPlates-2.7.0-2000)
+	_scenario_expect("two anchors on HEAD" gplates "2.7.0-2000")
+	_scenario_commit("after two anchors" "${_g} 2.7.0)" "${_p} 1.3.0)")
+	_scenario_expect("one commit after two anchors" gplates "2.7.0-2001")
 
 	file(REMOVE_RECURSE "${_scenario_dir}")
 endif()

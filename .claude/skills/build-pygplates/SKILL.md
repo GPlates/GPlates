@@ -57,9 +57,10 @@ Pass `-C` with the tree's configuration: it is required for the multi-config gen
 configuration — the pygplates module always throws on a failed assertion, so a Debug tree runs
 them too.
 
-Five tests should run: `version-resolver-test`, `pygplates-test`, `pygplates-source-closure-test`,
-`pygplates-linkage-test` and `pygplates-stub-test`. If the output says "No tests were found" or
-reports fewer, treat that as a failure of the command, not a pass.
+Seven tests should run: `version-resolver-test`, `pygplates-test`,
+`pygplates-source-closure-test`, `pygplates-linkage-test`, `pygplates-sample-code-test`,
+`pygplates-release-commit-test` and `pygplates-stub-test`. If the output says "No tests were
+found" or reports fewer, treat that as a failure of the command, not a pass.
 
 ## 5. Report
 

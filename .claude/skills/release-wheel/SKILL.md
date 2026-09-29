@@ -45,18 +45,19 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
      from, then replace the `set(GPLATES_RELEASE_VERSION …)` line with
      `set(GPLATES_FROZEN_VERSION <that version>)`. Without it, the first GPlates release made on
      its own series branch would stop every configure on this one, its release tags included,
-     so the run refuses a release tag whose commit does not freeze GPlates.
+     so the resolver refuses a release tag whose commit does not freeze GPlates.
 2. **Tag exactly `PyGPlates-<version>`, on the release commit, then check it.** That is the
    commit on the `release/pygplates-<major>.<minor>` branch being released, whose target is the
    version: a candidate, the release itself or a later patch. Tag it locally first — a local tag
    starts nothing — and check that `cmake -P cmake/modules/VersionFromGit.cmake pygplates` gives
-   exactly `<version>`, which is what the run checks in its first minute. Check at the tag, not
+   exactly `<version>` (it also refuses a release tag without the freeze). Check at the tag, not
    before it: the release after a candidate is refused on an untagged commit, since
    `<version>.devN` would sort below the candidate. Then run
-   `python pygplates/wheel/check_release_commit.py <version>`, the run's own check of the freeze
-   and (for a release after a candidate) of the candidate being released unchanged. If either
-   check disagrees, delete the local tag and fix the commit. Then push the tag to the GitHub
-   remote. Ask which remote if there is more than one.
+   `python pygplates/wheel/check_release_commit.py PyGPlates-<version> <version>`, the run's own
+   check of the tag: that it names the version, that the version sorts above every earlier
+   release in its history, and (for a release after a candidate) that the candidate is released
+   unchanged. If either check disagrees, delete the local tag and fix the commit. Then push the
+   tag to the GitHub remote. Ask which remote if there is more than one.
 3. **Wait for the build.** `build-wheels.yml` builds the sdist and the full matrix — roughly
    2.5 hours warm, 4.5 cold — then uploads the sdist plus one platform's wheels to TestPyPI as a
    rehearsal.
