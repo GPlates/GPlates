@@ -257,6 +257,9 @@ and argued for in `docs/design/versioning/README.md`.
   direction — never by merging a series branch into `main`. Such a merge conflicts on
   `VersionRelease.cmake` every time (each side has moved its release target), and when it does
   not conflict it silently hands `main` the series branch's target.
+- GitHub rulesets refuse force pushes to `main` and `release/*`, deleting either, and moving or
+  deleting a release or anchor tag: the version count depends on that history. See section 13 of
+  `docs/design/versioning/README.md`.
 
 **Base pull requests on `main`, never on a release series branch.** CI enforces this: both
 `build-test-gplates.yml` and `build-test-pygplates.yml` run only on `main`. Building **both**

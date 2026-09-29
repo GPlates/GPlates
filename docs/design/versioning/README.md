@@ -846,9 +846,9 @@ and `build-wheels.yml`
 excludes `PyGPlates-*.dev*` from its publish trigger, so such a tag cannot start a release run
 (a manual dispatch builds a development version, but cannot publish it — see below). The
 distinction worth keeping is between a tag that merely *records* a build, which is freely
-deletable, and an anchor that *re-bases* the count, which is not while it is load-bearing. It is
-a distinction of intent: the resolver treats every tag carrying a development number alike
-(section 9).
+deletable (upstream, only a pyGPlates one: section 13), and an anchor that *re-bases* the count,
+which is not while it is load-bearing. It is a distinction of intent: the resolver treats every
+tag carrying a development number alike (section 9).
 
 **Wheels for a development version** come from a manual dispatch of `build-wheels.yml`, and the
 tag just described is the handle for it: tag the commit with the version it resolves to, push
@@ -927,6 +927,53 @@ branch protection rules, retargets open PRs and shows contributors how to update
 does **not** redirect raw file URLs, does **not** change workflow files (their branch filters named
 `gplates` literally, and had to be edited), and does **not** redirect `git pull` of the old name.
 Forks keep their own branch called `gplates`, and GitHub's "Sync fork" matches branches *by name*,
-so afterwards it has nothing to sync against until the fork renames too. The redirect also survives
-only while the old name is unoccupied, so a stale clone pushing `gplates` would silently reoccupy
-it; a ruleset blocking creation of that name is worth considering.
+so afterwards it has nothing to sync against until the fork renames too. GitHub's documentation
+doesn't say what happens if the old name is created again, but a URL naming a branch that exists
+can't also redirect, so a stale clone pushing `gplates` would silently reoccupy it, and a fork that
+kept the name would then sync against it. A ruleset blocks that (section 13).
+
+## 13. Repository rulesets
+
+The versioning depends on history that nothing in the repository can protect: a clone, a script
+or an agent can rewrite a branch or move a tag. GitHub's rulesets (*Settings → Rules →
+Rulesets*) are enforced on the server whatever the client does, so three protect what sections
+7 to 12 rely on:
+
+| ruleset | targets | blocks |
+|---|---|---|
+| Release and anchor tags | tags `GPlates-*` and `PyGPlates-*`, except `PyGPlates-*.dev*` | moving and deleting |
+| Permanent branches | `main` and `release/*` | force pushes and deletion |
+| Retired branch name | `gplates` | creation |
+
+- **The count assumes history is never rewritten.** A version is a first-parent distance from the
+  nearest release tag (7.1), so a force push to `main` or a series branch changes what development
+  versions already handed out resolve to, and moving or deleting a release tag changes what a
+  published release resolves to. The load-bearing anchors `GPlates-2.6.0-47` and `-56` (section 9)
+  matter in the same way. Series branches are never deleted either (section 1). The pattern
+  `release/*` matches any branch named `release/<name>`, so a patch branch needs a name outside it,
+  or it could never be deleted.
+- **`PyGPlates-*.dev*` is excluded** so that the tag recording a dispatched development build can be
+  deleted again; such a tag is a numerical no-op (section 10). The exclusion goes by shape, and the
+  resolver treats a recording tag and an anchor alike, which has two consequences. A pyGPlates
+  anchor that re-bases the count, if upstream ever needs one, is unprotected, and adding it to this
+  ruleset would not help, since an exclusion beats an inclusion: it needs a ruleset of its own that
+  names it. And every GPlates development tag (`GPlates-X.Y.Z-N`) is protected like an anchor, so
+  once pushed here it is permanent. One that only records a build can't be deleted, and a mis-based
+  anchor, which the resolver's error says to delete, can be deleted only with the ruleset disabled.
+  The only development tags upstream has are the two GPlates anchors.
+- **Branch and tag rulesets apply to this repository only**, never to its forks, so a fork's own
+  `gplates` or its own tags are unaffected. (GitHub's push rulesets, which restrict file paths and
+  sizes, do reach forks; none is used here.)
+- **There is no bypass list.** Everyone with write access is an administrator, so an
+  administrator bypass would exempt everyone. For a rare legitimate exception, disable the
+  ruleset, act, and enable it again.
+
+Rules considered and not adopted:
+
+- **Required approvals.** GitHub doesn't let an author approve their own pull request, and most
+  pull requests are merged by their author.
+- **Required status checks.** Both build workflows skip documentation-only changes
+  (`paths-ignore`), and GitHub leaves a skipped required check pending, which blocks the merge
+  for good. It would first need a job that always runs and reports on the others.
+- **Require a pull request on `main`.** Small commits are still occasionally pushed directly.
+- **Linear history** conflicts with merging pull requests by merge commit.
