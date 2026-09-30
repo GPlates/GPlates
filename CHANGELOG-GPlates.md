@@ -45,6 +45,10 @@ Changes since 2.5:
     * Fixed an empty progress dialog appearing in the Connect WFS dialog (and crashing when cancelled).
   * Read Errors dialog now says "OGR" rather than "Shapefile" (other OGR formats, such as GeoJSON, are read the same way).
   * Errors that previously crashed GPlates without any message are now reported in a dialog and written to the log.
+  * GROT (".grot") rotation files:
+    * Fixed disabled poles being written so that they load as enabled poles of plate 999, when saving rotations not loaded from a GROT file (eg, a ".rot" file saved as ".grot").
+    * Fixed loading a file never finishing when a multi-line (`"""`) attribute is not closed.
+    * Fixed a `"""` attribute that opens and closes on one line swallowing the line after it (often a pole).
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.
   * So installing a newer build replaces the previous one instead of adding another program directory (and another "Apps & features" entry on Windows).

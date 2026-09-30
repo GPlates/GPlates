@@ -763,7 +763,7 @@ namespace GPlatesFileIO
 		explicit
 		GrotWriterWithCfg(
 				File::Reference &file_ref) : 
-			PlatesRotationFormatWriter(file_ref.get_file_info()),
+			PlatesRotationFormatWriter(file_ref.get_file_info(), true/*grot_format*/),
 			d_file_ref(file_ref)
 		{ }
 			
@@ -807,7 +807,7 @@ namespace GPlatesFileIO
 		explicit
 		GrotWriterWithoutCfg(
 				File::Reference &file_ref) : 
-			PlatesRotationFormatWriter(file_ref.get_file_info()),
+			PlatesRotationFormatWriter(file_ref.get_file_info(), true/*grot_format*/),
 			d_file_ref(file_ref),
 			d_mprs_id(0)
 		{ }

@@ -6,6 +6,7 @@ import math
 import os
 import sys
 import pickle
+import tempfile
 import unittest
 import pygplates
 
@@ -783,6 +784,140 @@ class FeatureCollectionCase(unittest.TestCase):
             feature_collection_from_path = pygplates.FeatureCollection.read(Path(tmp_filename))
             self.assertTrue(len(feature_collection_from_path) == self.feature_count)
             os.remove(tmp_filename)
+
+    @staticmethod
+    def _get_poles(feature_collection):
+        # Each pole as (fixed plate, moving plate, time, enabled), in file order.
+        poles = []
+        for feature in feature_collection:
+            total_reconstruction_pole = feature.get_total_reconstruction_pole()
+            if total_reconstruction_pole is None:  # eg, the '.grot' header's metadata feature
+                continue
+            fixed_plate_id, moving_plate_id, rotation_sampling = total_reconstruction_pole
+            for time_sample in rotation_sampling:
+                poles.append((fixed_plate_id, moving_plate_id, time_sample.get_time(), time_sample.is_enabled()))
+        return poles
+
+    def test_grot_round_trip(self):
+        # A '.grot' written by pyGPlates must read back with the same poles: it once used the '.rot'
+        # syntax for disabled poles ('999' plate IDs and '!' markers), which the '.grot' reader takes
+        # as enabled poles of plate 999 (and whose multi-line attributes made it read forever).
+        grot_text = (
+                '@GPLATESROTATIONFILE:version"1.0"\n'
+                '@DC:namespace"http://purl.org/dc/elements/1.1/"\n'
+                '\n'
+                '> @MPRS:pid"801" @MPRS:code"AUS" @MPRS:name"Australia"\n'
+                '801  0.0   90.0    0.0    0.0  000 @C"present day"\n'
+                '801 10.0   10.0   20.0    5.0  000 @C"one"\n'
+                '@REF"""a multi-line\n'
+                'reference"""\n'
+                '801 20.0   11.0   21.0    9.0  000 @C"two"\n'
+                '#801 30.0  12.0   22.0   13.0  000 @C"disabled"\n'
+                '@REF"""opened and closed on one line"""\n'
+                '801 40.0   13.0   23.0   17.0  000\n')
+        expected_poles = [
+                (0, 801, 0.0, True),
+                (0, 801, 10.0, True),
+                (0, 801, 20.0, True),
+                (0, 801, 30.0, False),
+                # Not swallowed by the one-line triple-quoted attribute before it.
+                (0, 801, 40.0, True)]
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            grot_filename = os.path.join(tmp_dir, 'rotations.grot')
+            with open(grot_filename, 'w') as grot_file:
+                grot_file.write(grot_text)
+            self.assertEqual(self._get_poles(pygplates.FeatureCollection(grot_filename)), expected_poles)
+
+            written_filename = os.path.join(tmp_dir, 'written.grot')
+            pygplates.FeatureCollection(grot_filename).write(written_filename)
+            self.assertEqual(self._get_poles(pygplates.FeatureCollection(written_filename)), expected_poles)
+            with open(written_filename) as written_file:
+                written_text = written_file.read()
+            self.assertNotIn(' !', written_text)
+            self.assertNotIn('999', written_text)
+            self.assertIn('#801 ', written_text)
+            self.assertIn('\n@REF"""a multi-line\nreference"""\n', written_text)
+
+            # Writing what was read back gives the same file.
+            rewritten_filename = os.path.join(tmp_dir, 'rewritten.grot')
+            pygplates.FeatureCollection(written_filename).write(rewritten_filename)
+            with open(rewritten_filename) as rewritten_file:
+                self.assertEqual(rewritten_file.read(), written_text)
+
+    def test_grot_unclosed_multi_line_attribute(self):
+        # An unclosed triple-quoted attribute on a pole line once made the reader loop forever.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            grot_filename = os.path.join(tmp_dir, 'rotations.grot')
+            with open(grot_filename, 'w') as grot_file:
+                grot_file.write(
+                        '801  0.0   90.0    0.0    0.0  000\n'
+                        '801 10.0   10.0   20.0    5.0  000 @REF"""never closed\n'
+                        '801 20.0   11.0   21.0    9.0  000\n')
+            self.assertEqual(
+                    self._get_poles(pygplates.FeatureCollection(grot_filename)),
+                    [(0, 801, 0.0, True), (0, 801, 10.0, True), (0, 801, 20.0, True)])
+
+            # On a line of its own, it must not take the rest of the file (and its poles) with it.
+            with open(grot_filename, 'w') as grot_file:
+                grot_file.write(
+                        '801  0.0   90.0    0.0    0.0  000\n'
+                        '@REF"""never closed\n'
+                        '801 10.0   10.0   20.0    5.0  000\n'
+                        '801 20.0   11.0   21.0    9.0  000\n')
+            self.assertEqual(
+                    self._get_poles(pygplates.FeatureCollection(grot_filename)),
+                    [(0, 801, 0.0, True), (0, 801, 10.0, True), (0, 801, 20.0, True)])
+
+    def test_grot_line_closing_and_opening_attributes(self):
+        # A line can close one multi-line attribute and open another; the reader must not stop there.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            grot_filename = os.path.join(tmp_dir, 'rotations.grot')
+            with open(grot_filename, 'w') as grot_file:
+                grot_file.write(
+                        '801  0.0   90.0    0.0    0.0  000\n'
+                        '@A"""a1\n'
+                        'a2""" @B"""b1\n'
+                        'b2"""\n'
+                        '801 10.0   10.0   20.0    5.0  000\n')
+            self.assertEqual(
+                    self._get_poles(pygplates.FeatureCollection(grot_filename)),
+                    [(0, 801, 0.0, True), (0, 801, 10.0, True)])
+            # Both attributes are kept, with their content (pole metadata isn't in the pyGPlates API).
+            written_filename = os.path.join(tmp_dir, 'written.grot')
+            pygplates.FeatureCollection(grot_filename).write(written_filename)
+            with open(written_filename) as written_file:
+                written_text = written_file.read()
+            self.assertIn('@A"""a1\na2"""\n', written_text)
+            self.assertIn('@B"""b1\nb2"""\n', written_text)
+
+    def test_rot_to_grot(self):
+        # A '.rot' comment is written to '.grot' as a 'C' attribute. Written bare after the fixed
+        # plate ID, a comment starting with digits would read back as part of that plate ID.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            rot_filename = os.path.join(tmp_dir, 'rotations.rot')
+            with open(rot_filename, 'w') as rot_file:
+                rot_file.write(
+                        '801  0.0 90.0  0.0  0.0 000 !present day\n'
+                        '801 10.0 10.0 20.0  5.0 000 !123 starts with digits\n'
+                        '999 20.0 11.0 21.0  9.0 000 !disabled\n'
+                        '801 30.0 12.0 22.0 13.0 000 !a "quoted" word\n')
+            expected_poles = [
+                    (0, 801, 0.0, True),
+                    (0, 801, 10.0, True),
+                    (0, 801, 20.0, False),
+                    (0, 801, 30.0, True)]
+            rotations = pygplates.FeatureCollection(rot_filename)
+            self.assertEqual(self._get_poles(rotations), expected_poles)
+
+            grot_filename = os.path.join(tmp_dir, 'rotations.grot')
+            rotations.write(grot_filename)
+            self.assertEqual(self._get_poles(pygplates.FeatureCollection(grot_filename)), expected_poles)
+            with open(grot_filename) as grot_file:
+                grot_text = grot_file.read()
+            self.assertIn(' @C"123 starts with digits"', grot_text)
+            # An attribute value can't hold a double quote.
+            self.assertIn(' @C"a \'quoted\' word"', grot_text)
 
     def test_construct(self):
         # Create new empty feature collection.

@@ -34,6 +34,11 @@ Changes since 1.0.0:
   * A malformed `gml:pos` or `gml:coordinates` in a GPML file is now dropped as a read error instead of silently loading as a point at (0, 0).
   * Fixed crustal thinning factors in GPML files written before GPlates 1.6.338 not being upgraded when loaded.
   * Fixed saving rotation files in GROT format under paths containing non-ASCII characters on Windows.
+  * GROT (`.grot`) rotation files:
+    * Fixed disabled poles in a written file being read back as enabled poles of plate 999.
+    * Fixed reading a file never finishing when a multi-line (`"""`) attribute is not closed (as written for disabled poles with multi-line metadata).
+    * Fixed a `"""` attribute that opens and closes on one line swallowing the line after it (often a pole).
+    * Fixed multi-line pole metadata gaining blank lines each time it is written.
 
 pyGPlates 1.0.0
 ===============
