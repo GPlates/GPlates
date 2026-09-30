@@ -191,7 +191,7 @@ Create a topological section for each referenced feature
 
 This function wraps each referenced feature in a :class:`topological section<pygplates.GpmlTopologicalSection>` by calling :meth:`pygplates.GpmlTopologicalSection.create`.
 A topological section will be a :class:`pygplates.GpmlTopologicalPoint` if the referenced geometry is a point or a :class:`pygplates.GpmlTopologicalLineSection`
-if the referenced geometry is a polyline (or a topological line, provided it's being added to a topological polygon or network as determined by `topological_geometry_type`).
+if the referenced geometry is a polyline or a polygon (or a topological line, provided it's being added to a topological polygon or network as determined by `topological_geometry_type`).
    
 .. note:: We are not specifying a geometry property name when calling :meth:`pygplates.GpmlTopologicalSection.create`. This means the *default* geometry property name
   (for the referenced feature *type*) is used. However it is sometimes possible for geometry to be placed in two different properties (with different property names).
