@@ -1026,7 +1026,11 @@ GPlatesGui::FileIOFeedback::save_file(
 	//
 	// Setting the file info will cause the filenames (ManageFeatureCollectionsDialog) to get re-populated.
 	// TODO: Find a better way to do this.
-	file.set_file_info(file.get_file().get_file_info());
+	//
+	// Pass the file configuration back too, or it's cleared (it defaults to none) and the next save
+	// loses it (eg, an OGR file's dateline wrapping and spatial reference system, or the '.grot'
+	// configuration). The OGR attribute mapping isn't in it: that is kept on the feature collection.
+	file.set_file_info(file.get_file().get_file_info(), file.get_file().get_file_configuration());
 
 	return true;
 }

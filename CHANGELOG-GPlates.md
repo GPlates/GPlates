@@ -46,6 +46,7 @@ Changes since 2.5:
   * Read Errors dialog now says "OGR" rather than "Shapefile" (other OGR formats, such as GeoJSON, are read the same way).
   * Errors that previously crashed GPlates without any message are now reported in a dialog and written to the log.
   * Saving files:
+    * Fixed "Save All Changes" and "Save Selected" (Manage Feature Collections dialog) discarding a file's save options, so that the next save was written without them: for a Shapefile, its dateline wrapping option and its spatial reference system.
     * Saving in a format that can only be read (typing a ".vgp" or ".gsml" filename) now reports an error, instead of writing nothing and marking the file as saved.
     * Saving a Shapefile, GeoJSON, GeoPackage or OGR GMT file that would contain no geometries (eg, only topological features) now reports an error, instead of writing nothing (and deleting any existing file of that name).
   * GROT (".grot") rotation files:
