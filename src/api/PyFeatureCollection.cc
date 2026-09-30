@@ -950,6 +950,8 @@ export_feature_collection()
 				"  :raises OpenFileForWritingError: if the file is not writable\n"
 				"  :raises FileFormatNotSupportedError: if the file format (identified by the filename "
 				"extension) does not support writing\n"
+				"  :raises GPlatesError: if the file format can store none of the features' geometries "
+				"(for example, a Shapefile or GeoJSON file of only topological features, or of no features)\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -961,7 +963,8 @@ export_feature_collection()
 				"\n"
 				"  .. versionchanged:: 1.1\n"
 				"     Raises :class:`FileFormatNotSupportedError` for a format that is read only (such as ``.vgp``), "
-				"rather than writing no file.\n")
+				"and :class:`GPlatesError` when there are no geometries to write to a Shapefile, GeoJSON, "
+				"GeoPackage or OGR GMT file. Both used to write no file and raise nothing.\n")
 		.def("clone",
 				&GPlatesApi::feature_collection_handle_clone,
 				"clone()\n"

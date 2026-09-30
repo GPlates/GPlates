@@ -3338,6 +3338,7 @@ class FeatureCollection:
         :type filename: str, or os.PathLike
         :raises OpenFileForWritingError: if the file is not writable
         :raises FileFormatNotSupportedError: if the file format (identified by the filename extension) does not support writing
+        :raises GPlatesError: if the file format can store none of the features' geometries (for example, a Shapefile or GeoJSON file of only topological features, or of no features)
 
         ::
 
@@ -3347,7 +3348,7 @@ class FeatureCollection:
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
 
         .. versionchanged:: 1.1
-           Raises :class:`FileFormatNotSupportedError` for a format that is read only (such as ``.vgp``), rather than writing no file.
+           Raises :class:`FileFormatNotSupportedError` for a format that is read only (such as ``.vgp``), and :class:`GPlatesError` when there are no geometries to write to a Shapefile, GeoJSON, GeoPackage or OGR GMT file. Both used to write no file and raise nothing.
         """
 
 class FeatureCollectionFileFormatRegistry:

@@ -919,6 +919,29 @@ class FeatureCollectionCase(unittest.TestCase):
             # An attribute value can't hold a double quote.
             self.assertIn(' @C"a \'quoted\' word"', grot_text)
 
+    def test_write_no_geometries_to_ogr(self):
+        # With nothing an OGR format can hold, writing raises rather than creating no file.
+        topologies = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
+        topological_features = pygplates.FeatureCollection([
+                feature for feature in topologies
+                if feature.get_feature_type().get_name().startswith('Topological')])
+        self.assertTrue(len(topological_features) > 0)
+        self.assertTrue(len(topological_features) < len(topologies))  # the fixture also has plain geometries
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            for feature_collection in (topological_features, pygplates.FeatureCollection()):
+                for basename in ('tmp.shp', 'tmp.geojson', 'tmp.gpkg', 'tmp.gmt'):
+                    self.assertRaises(pygplates.GPlatesError, feature_collection.write, os.path.join(tmp_dir, basename))
+            # Not even the '.gplates.xml' attribute mapping file.
+            self.assertEqual(os.listdir(tmp_dir), [])
+
+            # And an existing file of that name is left as it was.
+            existing_filename = os.path.join(tmp_dir, 'existing.shp')
+            existing_features = pygplates.FeatureCollection(self.volcanoes_filename)
+            existing_features.write(existing_filename)
+            self.assertRaises(pygplates.GPlatesError, topological_features.write, existing_filename)
+            self.assertEqual(len(pygplates.FeatureCollection(existing_filename)), len(existing_features))
+
     def test_construct(self):
         # Create new empty feature collection.
         new_feature_collection = pygplates.FeatureCollection()

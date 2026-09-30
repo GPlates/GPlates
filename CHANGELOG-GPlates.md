@@ -47,6 +47,7 @@ Changes since 2.5:
   * Errors that previously crashed GPlates without any message are now reported in a dialog and written to the log.
   * Saving files:
     * Saving in a format that can only be read (typing a ".vgp" or ".gsml" filename) now reports an error, instead of writing nothing and marking the file as saved.
+    * Saving a Shapefile, GeoJSON, GeoPackage or OGR GMT file that would contain no geometries (eg, only topological features) now reports an error, instead of writing nothing (and deleting any existing file of that name).
   * GROT (".grot") rotation files:
     * Fixed disabled poles being written so that they load as enabled poles of plate 999, when saving rotations not loaded from a GROT file (eg, a ".rot" file saved as ".grot").
     * Fixed loading a file never finishing when a multi-line (`"""`) attribute is not closed.

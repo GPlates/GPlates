@@ -48,6 +48,9 @@ namespace GPlatesFileIO
 	 * to the GUI level which then reports the error.
 	 * The downside of this is the entire file write gets aborted - the GUI level
 	 * will also remove the file in case it was (most likely) partially written.
+	 *
+	 * So the thrower says whether it had already opened the file for writing. If it hadn't, the file
+	 * on disk is the user's previous file, untouched, and removing it would lose it.
 	 */
 	class ErrorWritingFeatureCollectionToFileFormatException :
 			public GPlatesGlobal::Exception
@@ -57,13 +60,27 @@ namespace GPlatesFileIO
 		/**
 		 * @param msg is a description of the conditions
 		 * in which the problem occurs.
+		 * @param file_written_to is whether the file had already been opened for writing (and so
+		 * truncated, or partly written) when the error was found.
 		 */
 		ErrorWritingFeatureCollectionToFileFormatException(
 				const GPlatesUtils::CallStack::Trace &exception_source,
-				const char *msg) :
+				const char *msg,
+				bool file_written_to) :
 			GPlatesGlobal::Exception(exception_source),
-			d_msg(msg)
+			d_msg(msg),
+			d_file_written_to(file_written_to)
 		{  }
+
+		/**
+		 * Whether the file had already been opened for writing, so that what is on disk is no
+		 * longer the previous file.
+		 */
+		bool
+		was_file_written_to() const
+		{
+			return d_file_written_to;
+		}
 
 		~ErrorWritingFeatureCollectionToFileFormatException() throw() { }
 
@@ -87,6 +104,7 @@ namespace GPlatesFileIO
 	private:
 
 		std::string d_msg;
+		bool d_file_written_to;
 
 	};
 }

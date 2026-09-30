@@ -1122,8 +1122,12 @@ GPlatesGui::FileIOFeedback::save_file(
 	}
 	catch (GPlatesFileIO::ErrorWritingFeatureCollectionToFileFormatException &exc)
 	{
-		// Remove the file on disk in case it was partially written.
-		QFile(file_ref.get_file_info().get_qfileinfo().filePath()).remove();
+		// Remove the file on disk in case it was partially written. But not if the writer never
+		// opened it: then it is the user's previous file, untouched.
+		if (exc.was_file_written_to())
+		{
+			QFile(file_ref.get_file_info().get_qfileinfo().filePath()).remove();
+		}
 
 		QString message;
 		QTextStream(&message)
