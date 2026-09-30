@@ -1175,6 +1175,21 @@ GPlatesGui::FileIOFeedback::save_files(
 			continue;
 		}
 
+		// Skip a file without changes in a format that can't be written (eg, '.vgp'): saving it
+		// would only report an error (eg, for each such row in Save Selected). With changes, the
+		// error is reported, so that the user knows to save them with Save As.
+		if (!feature_collection_ref->contains_unsaved_changes())
+		{
+			const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format =
+					d_file_format_registry_ptr->get_file_format(
+							file.get_file().get_file_info().get_qfileinfo());
+			if (file_format &&
+				!d_file_format_registry_ptr->does_file_format_support_writing(file_format.get()))
+			{
+				continue;
+			}
+		}
+
 		// Previously we only saved the file if there were unsaved changes.
 		// However we now save regardless to ensure that the GPGIM version written to the file
 		// is the current GPGIM version. It's possible the user loaded an old GPGIM-version file

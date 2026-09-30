@@ -1235,6 +1235,32 @@ class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
                 self.file_format_registry.read,
                 "this_file_format_is.unknown")
 
+    def test_format_without_reader_or_writer(self):
+        # A recognised format that can't be read, or can't be written, raises (rather than reading an
+        # empty collection, or writing nothing).
+        volcanoes = self.file_format_registry.read(self.volcanoes_filename)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            xy_filename = os.path.join(tmp_dir, 'volcanoes.xy')  # GMT xy is write only
+            volcanoes.write(xy_filename)
+            self.assertTrue(os.path.isfile(xy_filename))
+            self.assertRaises(pygplates.FileFormatNotSupportedError, pygplates.FeatureCollection, xy_filename)
+            self.assertRaises(pygplates.FileFormatNotSupportedError, self.file_format_registry.read, xy_filename)
+            # reverse_reconstruct() writes its input files back: it once read this one as empty and
+            # wrote it back empty.
+            with open(xy_filename) as xy_file:
+                xy_text = xy_file.read()
+            self.assertRaises(
+                    pygplates.FileFormatNotSupportedError,
+                    pygplates.reverse_reconstruct, xy_filename, pygplates.RotationModel([]), 10)
+            with open(xy_filename) as xy_file:
+                self.assertEqual(xy_file.read(), xy_text)
+
+            for basename in ('volcanoes.vgp', 'volcanoes.gsml'):  # read only
+                filename = os.path.join(tmp_dir, basename)
+                self.assertRaises(pygplates.FileFormatNotSupportedError, volcanoes.write, filename)
+                self.assertRaises(pygplates.FileFormatNotSupportedError, self.file_format_registry.write, volcanoes, filename)
+                self.assertFalse(os.path.exists(filename))
+
     def test_unable_to_open_for_read(self):
         # Unable to open file for reading exception (using a supported file format).
         self.assertRaises(

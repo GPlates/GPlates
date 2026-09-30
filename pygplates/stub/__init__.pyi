@@ -3189,6 +3189,9 @@ class FeatureCollection:
 
         .. versionchanged:: 0.44
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
+
+        .. versionchanged:: 1.1
+           Raises :class:`FileFormatNotSupportedError` for a format that is write only (such as ``.xy``), rather than returning an empty feature collection.
         """
 
     def __iter__(self) -> Any: ...
@@ -3282,6 +3285,9 @@ class FeatureCollection:
 
         .. versionchanged:: 0.44
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
+
+        .. versionchanged:: 1.1
+           Raises :class:`FileFormatNotSupportedError` for a format that is write only (such as ``.xy``), rather than returning an empty feature collection.
         """
 
     def remove(self, feature_query: FeatureType | FeatureId | Feature | Callable[[Feature], Any] | Sequence[FeatureType | FeatureId | Feature | Callable[[Feature], Any]]) -> None:
@@ -3339,6 +3345,9 @@ class FeatureCollection:
 
         .. versionchanged:: 0.44
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
+
+        .. versionchanged:: 1.1
+           Raises :class:`FileFormatNotSupportedError` for a format that is read only (such as ``.vgp``), rather than writing no file.
         """
 
 class FeatureCollectionFileFormatRegistry:
@@ -18973,7 +18982,8 @@ def reverse_reconstruct(reconstructable_features: FeatureCollection | str | os.P
     :type anchor_plate_id: int
     :raises OpenFileForReadingError: if any input file is not readable (when filenames specified)
     :raises OpenFileForWritingError: if *reconstructable_features* specifies any filename that is not writeable (if any filenames are specified)
-    :raises FileFormatNotSupportedError: if any input file format (identified by any reconstructable and rotation filename extensions) does not support reading (when filenames specified)
+    :raises FileFormatNotSupportedError: if any input file format (identified by any reconstructable and rotation filename extensions) does not support reading, or any reconstructable file format does not support writing (when filenames specified)
+    :raises GPlatesError: if a reconstructable file can't be written back in its format (for example, a Shapefile with no features)
     :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
     The effect of this function is to replace the present day geometries in each feature in *reconstructable_features* with reverse reconstructed versions of those geometries. This assumes that the original geometries, stored in *reconstructable_features*, are not in fact present day geometries (as they normally should be) but instead the already-reconstructed geometries corresponding to geological time *reconstruction_time*. This function reverses that reconstruction process to ensure present day geometries are stored in the features.
@@ -19009,6 +19019,9 @@ def reverse_reconstruct(reconstructable_features: FeatureCollection | str | os.P
 
     .. versionchanged:: 0.44
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
+
+    .. versionchanged:: 1.1
+       Raises :class:`FileFormatNotSupportedError` for a reconstructable file that can't be written back (such as ``.vgp``), which was left unchanged, or can't be read (such as ``.xy``), which was read as empty and written back empty.
     """
 
 def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], crossover_filter: Callable[[Crossover], Any] | Sequence[Crossover] | None = None, crossover_threshold_degrees: float | None = None, crossover_type_function: Callable[..., Any] | CrossoverType | None = ..., crossover_results: list[tuple[Crossover, int]] | None = None) -> bool:

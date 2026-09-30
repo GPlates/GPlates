@@ -892,7 +892,11 @@ export_feature_collection()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Raises :class:`FileFormatNotSupportedError` for a format that is write only (such as ``.xy``), "
+				"rather than returning an empty feature collection.\n")
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -929,7 +933,11 @@ export_feature_collection()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Raises :class:`FileFormatNotSupportedError` for a format that is write only (such as ``.xy``), "
+				"rather than returning an empty feature collection.\n")
 		.staticmethod("read")
 		.def("write",
 				&GPlatesApi::feature_collection_handle_write,
@@ -949,7 +957,11 @@ export_feature_collection()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Raises :class:`FileFormatNotSupportedError` for a format that is read only (such as ``.vgp``), "
+				"rather than writing no file.\n")
 		.def("clone",
 				&GPlatesApi::feature_collection_handle_clone,
 				"clone()\n"

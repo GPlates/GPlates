@@ -585,13 +585,22 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 
 	const FileFormatInfo &file_format_info = get_file_format_info(file_format.get());
 
-	// If there's no reader then don't read anything.
+	// A format with no reader (eg, '.xy') is an error, not an empty collection. The GPlates open
+	// dialog only offers readable formats, but a filename can come from anywhere (eg, pyGPlates).
 	if (!file_format_info.read_feature_collection_function)
 	{
-		// We shouldn't really get here since the caller should have checked 'does_file_format_support_reading()'.
-		qWarning() << "Reading feature collections from file's with extension '."
-			<< file_format_info.filename_extensions.front() << "' is not currently supported.";
-		return;
+		read_errors.d_failures_to_begin.push_back(
+				make_read_error_occurrence(
+					file_ref.get_file_info().get_qfileinfo().filePath(),
+					DataFormats::Unspecified,
+					0/*line_num*/,
+					ReadErrors::FileFormatNotSupported,
+					ReadErrors::FileNotLoaded));
+
+		throw FileFormatNotSupportedException(
+				GPLATES_EXCEPTION_SOURCE,
+				("Reading is not supported for this file format: " +
+					file_ref.get_file_info().get_display_name(true)).toStdString().c_str());
 	}
 	const read_feature_collection_function_type &read_feature_collection_function =
 			file_format_info.read_feature_collection_function.get();
@@ -678,13 +687,14 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::write_feature_collection(
 
 	const FileFormatInfo &file_format_info = get_file_format_info(file_format.get());
 
-	// If there's no writer then don't write anything.
+	// A format with no writer (eg, '.vgp') is an error. Returning quietly would let the caller
+	// believe the file was saved (GPlates would clear its unsaved changes).
 	if (!file_format_info.create_feature_collection_writer_function)
 	{
-		// We shouldn't really get here since the caller should have checked 'does_file_format_support_writing()'.
-		qWarning() << "Writing feature collections to file's with extension '."
-			<< file_format_info.filename_extensions.front() << "' is not currently supported.";
-		return;
+		throw FileFormatNotSupportedException(
+				GPLATES_EXCEPTION_SOURCE,
+				("Writing is not supported for this file format: " +
+					file_ref.get_file_info().get_display_name(true)).toStdString().c_str());
 	}
 	const create_feature_collection_writer_function_type &create_feature_collection_writer_function =
 			file_format_info.create_feature_collection_writer_function.get();
