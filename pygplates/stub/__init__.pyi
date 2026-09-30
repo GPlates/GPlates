@@ -7466,7 +7466,7 @@ class GpmlTopologicalSection(PropertyValue):
         """
 
     @staticmethod
-    def create(feature: Feature, geometry_property_name: PropertyName | None = ..., reverse_order: bool = ..., topological_geometry_type: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | None = ...) -> GpmlTopologicalSection | None:
+    def create(feature: Feature, geometry_property_name: PropertyName | None = ..., reverse_order: bool = ..., topological_geometry_type: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | None = ..., property_return: PropertyReturn = PropertyReturn.exactly_one) -> GpmlTopologicalSection | None:
         """Create a topological section referencing a feature geometry.
 
         :param feature: the feature referenced by the returned topological section
@@ -7477,20 +7477,24 @@ class GpmlTopologicalSection(PropertyValue):
         :type reverse_order: bool
         :param topological_geometry_type: optional type of topological geometry that the returned section will be used for (if specified, then used to determine what type of feature geometry can be used as a section)
         :type topological_geometry_type: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or None
+        :param property_return: whether *feature* must have exactly one geometry property named *geometry_property_name* (or default), or whether the first one found is used - ``PropertyReturn.all`` is not supported (see note below)
+        :type property_return: PropertyReturn
         :rtype: GpmlTopologicalSection (GpmlTopologicalLineSection or GpmlTopologicalPoint), or None
-        :raises ValueError: if *topological_geometry_type* is specified but is not one of the accepted types (:class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`)
+        :raises ValueError: if *topological_geometry_type* is specified but is not one of the accepted types (:class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`), or if *property_return* is ``PropertyReturn.all``
 
         If *geometry_property_name* is not specified then the default geometry property name is determined from the feature's :class:`type<FeatureType>` - see :meth:`Feature.get_geometry` for more details.
 
-        A regular polyline or point can be referenced by any topological geometry (topological line, polygon or network). However a topological *line* can only be referenced by a topological polygon or network.
+        A regular point, polyline or polygon can be referenced by any topological geometry (topological line, polygon or network). However a topological *line* can only be referenced by a topological polygon or network. A regular polygon is referenced as a *line* section (a :class:`GpmlTopologicalLineSection`), as it is by the topology building tools in GPlates.
+
+        .. note:: A topological section refers to its geometry only by the feature ID and *geometry_property_name*, so if *feature* has more than one geometry property with that name then the section cannot say which one it means, and resolving the topology uses the first one found. For this reason *property_return* defaults to ``PropertyReturn.exactly_one``, and ``PropertyReturn.first`` has to be asked for. ``PropertyReturn.first`` also uses the first geometry found to decide the type of section returned (line or point), and so it may not match the geometry used when resolving if the geometries differ in type. ``PropertyReturn.all`` is not supported since each section returned would be the same reference.
 
         .. note:: It's fine to ignore *reverse_order* (leave it as the default) since it is not used when resolving the topological geometry provided it intersects both its neighbouring topological sections (in the topological geometry) - which applies only to line sections (not points). When a line section does not intersect both neighbouring sections then its reverse flag determines its orientation when rubber-banding the topology geometry.
 
         Returns ``None`` if:
 
-        * there is not exactly one geometry (topological or non-topological) property named *geometry_property_name* (or default) in *feature*, or
-        * it's a regular geometry but it's not a point or polyline, or
-        * it's a regular point/polyline and *topological_geometry_type* is a topological network but *feature* is not reconstructable by plate ID or half-stage rotation (the only supported reconstructable types inside the deforming network Delaunay triangulation), or
+        * there is not exactly one geometry (topological or non-topological) property named *geometry_property_name* (or default) in *feature* (or, if *property_return* is ``PropertyReturn.first``, there is none), or
+        * it's a regular geometry but it's not a point, polyline or polygon, or
+        * it's a regular point, polyline or polygon and *topological_geometry_type* is a topological network but *feature* is not reconstructable by plate ID or half-stage rotation (the only supported reconstructable types inside the deforming network Delaunay triangulation), or
         * it's a topological polygon or network, or
         * it's a topological line but *topological_geometry_type* is also a topological line (or not specified)
 
@@ -7513,17 +7517,23 @@ class GpmlTopologicalSection(PropertyValue):
         .. seealso:: :meth:`GpmlTopologicalLine.get_sections`, :meth:`GpmlTopologicalPolygon.get_boundary_sections` and :meth:`GpmlTopologicalNetwork.get_boundary_sections`
 
         .. versionadded:: 0.24
+
+        .. versionchanged:: 1.1
+           A regular polygon can be referenced (as a line section), and added the *property_return* argument.
         """
 
     @staticmethod
-    def create_network_interior(feature: Feature, geometry_property_name: PropertyName | None = ...) -> GpmlPropertyDelegate | None:
+    def create_network_interior(feature: Feature, geometry_property_name: PropertyName | None = ..., property_return: PropertyReturn = PropertyReturn.exactly_one) -> GpmlPropertyDelegate | None:
         """Create a topological network interior referencing a feature geometry.
 
         :param feature: the feature referenced by the returned network interior
         :type feature: Feature
         :param geometry_property_name: the optional geometry property name used to find the geometry (topological or non-topological), if not specified then the default geometry property name associated with the feature's :class:`type<FeatureType>` is used instead
         :type geometry_property_name: PropertyName, or None
+        :param property_return: whether *feature* must have exactly one geometry property named *geometry_property_name* (or default), or whether the first one found is used - ``PropertyReturn.all`` is not supported (see the note in :meth:`create`)
+        :type property_return: PropertyReturn
         :rtype: GpmlPropertyDelegate, or None
+        :raises ValueError: if *property_return* is ``PropertyReturn.all``
 
         If *geometry_property_name* is not specified then the default geometry property name is determined from the feature's :class:`type<FeatureType>` - see :meth:`Feature.get_geometry` for more details.
 
@@ -7533,7 +7543,7 @@ class GpmlTopologicalSection(PropertyValue):
 
         Returns ``None`` if:
 
-        * there is not exactly one geometry (topological or non-topological) property named *geometry_property_name* (or default) in *feature*, or
+        * there is not exactly one geometry (topological or non-topological) property named *geometry_property_name* (or default) in *feature* (or, if *property_return* is ``PropertyReturn.first``, there is none), or
         * it's a regular geometry but *feature* is not reconstructable by plate ID or half-stage rotation (the only supported reconstructable types inside the deforming network Delaunay triangulation), or
         * it's a topological polygon or network
 
@@ -7563,6 +7573,9 @@ class GpmlTopologicalSection(PropertyValue):
         .. seealso:: :meth:`GpmlTopologicalNetwork.get_interiors`
 
         .. versionadded:: 0.24
+
+        .. versionchanged:: 1.1
+           Added the *property_return* argument.
         """
 
     def get_property_delegate(self) -> GpmlPropertyDelegate:
