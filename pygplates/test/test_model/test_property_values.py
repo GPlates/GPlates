@@ -1129,6 +1129,24 @@ class GpmlTopologicalSectionCase(unittest.TestCase):
         self.assertTrue(isinstance(two_topological_lines_section, pygplates.GpmlTopologicalLineSection))
         self.assertTrue(two_topological_lines_section.get_property_delegate().get_property_type() == pygplates.GpmlTopologicalLine)
 
+        # A feature type that's not in the information model has no default geometry property name,
+        # so (without a geometry property name) there is nothing to reference, even though it has a geometry.
+        unknown_type_feature = pygplates.Feature(
+            pygplates.FeatureType.create_gpml('NotAFeatureType'),
+            verify_information_model=pygplates.VerifyInformationModel.no)
+        unknown_type_feature.add(
+            pygplates.PropertyName.create_gpml('notAGeometryProperty'),
+            pygplates.GmlLineString(pygplates.PolylineOnSphere([(0, 20), (10, 20)])),
+            verify_information_model=pygplates.VerifyInformationModel.no)
+        self.assertTrue(unknown_type_feature.get_geometry() is not None)
+        self.assertTrue(pygplates.GpmlTopologicalSection.create(unknown_type_feature) is None)
+        self.assertTrue(pygplates.GpmlTopologicalSection.create_network_interior(unknown_type_feature) is None)
+        # ...but it can be referenced by its geometry property name.
+        self.assertTrue(isinstance(
+            pygplates.GpmlTopologicalSection.create(
+                unknown_type_feature, pygplates.PropertyName.create_gpml('notAGeometryProperty')),
+            pygplates.GpmlTopologicalLineSection))
+
         # Create a topological network interior that references a point.
         network_point_interior = pygplates.GpmlTopologicalSection.create_network_interior(referenced_point_feature)
         self.assertTrue(isinstance(network_point_interior, pygplates.GpmlPropertyDelegate))

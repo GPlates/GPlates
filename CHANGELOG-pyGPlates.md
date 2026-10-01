@@ -17,6 +17,8 @@ Changes since 1.0.0:
 * Added `TopologicalSnapshot.reconstruct_points()` to incrementally reconstruct points (lying within the snapshot's resolved plates and networks) to another time.
 * `GpmlTopologicalSection.create()` accepts a feature whose geometry is a polygon (returning a line section), as the topology building tools in GPlates do.
 * `GpmlTopologicalSection.create()` and `create_network_interior()` take a `property_return` argument: with `PropertyReturn.first` they reference a feature that has more than one geometry with the same property name, instead of returning `None`.
+* Fixed `Feature.get_geometry()` and `Feature.get_topological_geometry()` with `PropertyReturn.first` when nothing matches: they now always return `None` as documented (previously undefined behaviour, which could crash on some platforms).
+* Fixed `GpmlTopologicalSection.create()` and `create_network_interior()`, without a geometry property name, for a feature whose type has no default geometry property name (not in the information model): they now return `None` (previously undefined behaviour).
 * Documentation sample code:
   * Every sample is now a Python 3 script that the test suite runs, so it can be copied and run as shown (many samples previously used Python 2 `print` statements).
   * Samples use `ReconstructSnapshot` and `PlatePartitioner` instead of `reconstruct()` and `partition_into_plates()` (except where a one-off partition is clearer).
