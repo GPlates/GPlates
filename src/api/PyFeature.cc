@@ -2432,8 +2432,10 @@ namespace GPlatesApi
 			}
 			else if (property_return == PropertyReturn::FIRST)
 			{
-				// Return the first geometry.
-				geometry_object = bp::object(geometries.front());
+				// Return the first geometry (or None if there are none).
+				geometry_object = geometries.empty()
+						? bp::object()/*Py_None*/
+						: bp::object(geometries.front());
 			}
 			else if (property_return == PropertyReturn::ALL)
 			{
@@ -2513,13 +2515,21 @@ namespace GPlatesApi
 		}
 		else if (property_return == PropertyReturn::FIRST)
 		{
-			// Return the first coverage (domain, range) object.
-			const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = coverages.front();
-			geometry_object = bp::make_tuple(
-					bp::object(coverage.domain),
-					create_dict_from_gml_data_block_coordinate_lists(
-							coverage.range.begin(),
-							coverage.range.end()));
+			if (coverages.empty())
+			{
+				// There's no matching coverage.
+				geometry_object = bp::object()/*Py_None*/;
+			}
+			else
+			{
+				// Return the first coverage (domain, range) object.
+				const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = coverages.front();
+				geometry_object = bp::make_tuple(
+						bp::object(coverage.domain),
+						create_dict_from_gml_data_block_coordinate_lists(
+								coverage.range.begin(),
+								coverage.range.end()));
+			}
 		}
 		else if (property_return == PropertyReturn::ALL)
 		{
@@ -2868,8 +2878,10 @@ namespace GPlatesApi
 		}
 		else if (property_return == PropertyReturn::FIRST)
 		{
-			// Return the first topological geometry.
-			topological_geometry_object = bp::object(topological_geometries.front());
+			// Return the first topological geometry (or None if there are none).
+			topological_geometry_object = topological_geometries.empty()
+					? bp::object()/*Py_None*/
+					: bp::object(topological_geometries.front());
 		}
 		else if (property_return == PropertyReturn::ALL)
 		{

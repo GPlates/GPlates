@@ -4374,13 +4374,22 @@ namespace GPlatesApi
 		if (!geometry_property_name)
 		{
 			geometry_property_name = get_default_geometry_property_name(feature_handle->feature_type());
+
+			// The feature's type is not in the GPGIM, so it has no default geometry property name.
+			//
+			// Note: Passing none to 'Feature.get_geometry()' would search *all* properties, and could
+			//       find a geometry that we then have no property name to reference.
+			if (!geometry_property_name)
+			{
+				return boost::none;
+			}
 		}
 
 		bp::object feature_object(feature_handle);
 
 		// Find the geometry associated with the property name.
 		//
-		// Call python since Feature.get_geometry is implemented in python code...
+		// Call 'Feature.get_geometry()' through its Python binding (its C++ implementation is internal to 'PyFeature.cc')...
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> feature_geometry =
 				bp::extract< boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> >(
 						feature_object.attr("get_geometry")(geometry_property_name, property_return));
@@ -4442,7 +4451,7 @@ namespace GPlatesApi
 		{
 			// Find the topological geometry associated with the property name.
 			//
-			// Call python since Feature.get_topological_geometry is implemented in python code...
+			// Call 'Feature.get_topological_geometry()' through its Python binding (its C++ implementation is internal to 'PyFeature.cc')...
 			boost::optional<topological_geometry_property_value_type> feature_topological_geometry =
 					bp::extract< boost::optional<topological_geometry_property_value_type> >(
 							feature_object.attr("get_topological_geometry")(geometry_property_name, property_return));
@@ -4489,13 +4498,22 @@ namespace GPlatesApi
 		if (!geometry_property_name)
 		{
 			geometry_property_name = get_default_geometry_property_name(feature_handle->feature_type());
+
+			// The feature's type is not in the GPGIM, so it has no default geometry property name.
+			//
+			// Note: Passing none to 'Feature.get_geometry()' would search *all* properties, and could
+			//       find a geometry that we then have no property name to reference.
+			if (!geometry_property_name)
+			{
+				return boost::none;
+			}
 		}
 
 		bp::object feature_object(feature_handle);
 
 		// Find the geometry associated with the property name.
 		//
-		// Call python since Feature.get_geometry is implemented in python code...
+		// Call 'Feature.get_geometry()' through its Python binding (its C++ implementation is internal to 'PyFeature.cc')...
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> feature_geometry =
 				bp::extract< boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> >(
 						feature_object.attr("get_geometry")(geometry_property_name, property_return));
@@ -4550,7 +4568,7 @@ namespace GPlatesApi
 		{
 			// Find the topological geometry associated with the property name.
 			//
-			// Call python since Feature.get_topological_geometry is implemented in python code...
+			// Call 'Feature.get_topological_geometry()' through its Python binding (its C++ implementation is internal to 'PyFeature.cc')...
 			boost::optional<topological_geometry_property_value_type> feature_topological_geometry =
 					bp::extract< boost::optional<topological_geometry_property_value_type> >(
 							feature_object.attr("get_topological_geometry")(geometry_property_name, property_return));
@@ -4659,6 +4677,9 @@ export_gpml_topological_section()
 			"``PropertyReturn.exactly_one``, and ``PropertyReturn.first`` has to be asked for. "
 			"``PropertyReturn.first`` also uses the first geometry found to decide the type of section returned "
 			"(line or point), and so it may not match the geometry used when resolving if the geometries differ in type. "
+			"It looks at regular geometries before topological ones (a topological line is used only if no regular "
+			"geometry has the name), so for a feature with both under that name this is not necessarily the first "
+			"in the feature. "
 			"``PropertyReturn.all`` is not supported since each section returned would be the same reference.\n"
 			"\n"
 			"  .. note:: It's fine to ignore *reverse_order* (leave it as the default) since it is not used when resolving the topological geometry "
@@ -4667,6 +4688,7 @@ export_gpml_topological_section()
 			"\n"
 			"  Returns ``None`` if:\n"
 			"\n"
+			"  * *geometry_property_name* is not specified and the feature's :class:`type<FeatureType>` has no default geometry property name, or\n"
 			"  * there is not exactly one geometry (topological or non-topological) property named *geometry_property_name* (or default) in *feature* "
 			"(or, if *property_return* is ``PropertyReturn.first``, there is none), or\n"
 			"  * it's a regular geometry but it's not a point, polyline or polygon, or\n"
@@ -4731,6 +4753,7 @@ export_gpml_topological_section()
 			"\n"
 			"  Returns ``None`` if:\n"
 			"\n"
+			"  * *geometry_property_name* is not specified and the feature's :class:`type<FeatureType>` has no default geometry property name, or\n"
 			"  * there is not exactly one geometry (topological or non-topological) property named *geometry_property_name* (or default) in *feature* "
 			"(or, if *property_return* is ``PropertyReturn.first``, there is none), or\n"
 			"  * it's a regular geometry but *feature* is not reconstructable by plate ID or half-stage rotation "

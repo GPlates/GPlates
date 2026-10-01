@@ -216,7 +216,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         # There are now no *default* geometries.
         default_geometry_property_name = self.feature.get_feature_type().get_default_geometry_property_name()
         self.assertFalse(self.feature.get_geometry(default_geometry_property_name, property_return=pygplates.PropertyReturn.all))  # empty list
-        self.assertFalse(self.feature.get_geometry(default_geometry_property_name, property_return=pygplates.PropertyReturn.first))
+        self.assertTrue(self.feature.get_geometry(default_geometry_property_name, property_return=pygplates.PropertyReturn.first) is None)
         self.assertFalse(self.feature.get_geometry(default_geometry_property_name))
         # However there is still a non-default geometry 'gpml:position' and the original 'gpml:centerLineOf'.
         self.assertTrue(len(self.feature.get_geometries()) == 2)  # won't find default geometry so will return all non-default geometries
@@ -232,6 +232,11 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 property_return=pygplates.PropertyReturn.all, coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
         self.assertTrue(coverages == self.feature.get_geometries(coverage_return=pygplates.CoverageReturn.geometry_and_scalars))
         self.assertTrue(not coverages)
+        # No coverage with the property name: 'first' returns None.
+        self.assertTrue(self.feature.get_geometry(
+                pygplates.PropertyName.create_gpml('noSuchGeometry'),
+                pygplates.PropertyReturn.first,
+                pygplates.CoverageReturn.geometry_and_scalars) is None)
         
         # Add a coverage range (scalar values) with number of scalars matching points in geometry (ie, one).
         velocity_colat_type = pygplates.ScalarType.create_gpml('VelocityColat')
@@ -392,6 +397,9 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(isinstance(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary), pygplates.GpmlTopologicalPolygon))
         self.assertTrue(isinstance(self.feature.get_topological_geometry(
             pygplates.PropertyName.gpml_boundary, property_return=pygplates.PropertyReturn.first), pygplates.GpmlTopologicalPolygon))
+        # No topological geometry with the property name: 'first' returns None.
+        self.assertTrue(self.feature.get_topological_geometry(
+            pygplates.PropertyName.create_gpml('noSuchTopology'), property_return=pygplates.PropertyReturn.first) is None)
         self.assertTrue(list(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary).get_boundary_sections()) == self.topological_sections)
         self.assertTrue(list(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary).get_exterior_sections()) == self.topological_sections)
         self.assertTrue(len(self.feature.get_topological_geometry(lambda property: True, pygplates.PropertyReturn.all)) == 3) # There are three topological geometries in total.

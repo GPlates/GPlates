@@ -7486,12 +7486,13 @@ class GpmlTopologicalSection(PropertyValue):
 
         A regular point, polyline or polygon can be referenced by any topological geometry (topological line, polygon or network). However a topological *line* can only be referenced by a topological polygon or network. A regular polygon is referenced as a *line* section (a :class:`GpmlTopologicalLineSection`), as it is by the topology building tools in GPlates.
 
-        .. note:: A topological section refers to its geometry only by the feature ID and *geometry_property_name*, so if *feature* has more than one geometry property with that name then the section cannot say which one it means, and resolving the topology uses the first one found. For this reason *property_return* defaults to ``PropertyReturn.exactly_one``, and ``PropertyReturn.first`` has to be asked for. ``PropertyReturn.first`` also uses the first geometry found to decide the type of section returned (line or point), and so it may not match the geometry used when resolving if the geometries differ in type. ``PropertyReturn.all`` is not supported since each section returned would be the same reference.
+        .. note:: A topological section refers to its geometry only by the feature ID and *geometry_property_name*, so if *feature* has more than one geometry property with that name then the section cannot say which one it means, and resolving the topology uses the first one found. For this reason *property_return* defaults to ``PropertyReturn.exactly_one``, and ``PropertyReturn.first`` has to be asked for. ``PropertyReturn.first`` also uses the first geometry found to decide the type of section returned (line or point), and so it may not match the geometry used when resolving if the geometries differ in type. It looks at regular geometries before topological ones (a topological line is used only if no regular geometry has the name), so for a feature with both under that name this is not necessarily the first in the feature. ``PropertyReturn.all`` is not supported since each section returned would be the same reference.
 
         .. note:: It's fine to ignore *reverse_order* (leave it as the default) since it is not used when resolving the topological geometry provided it intersects both its neighbouring topological sections (in the topological geometry) - which applies only to line sections (not points). When a line section does not intersect both neighbouring sections then its reverse flag determines its orientation when rubber-banding the topology geometry.
 
         Returns ``None`` if:
 
+        * *geometry_property_name* is not specified and the feature's :class:`type<FeatureType>` has no default geometry property name, or
         * there is not exactly one geometry (topological or non-topological) property named *geometry_property_name* (or default) in *feature* (or, if *property_return* is ``PropertyReturn.first``, there is none), or
         * it's a regular geometry but it's not a point, polyline or polygon, or
         * it's a regular point, polyline or polygon and *topological_geometry_type* is a topological network but *feature* is not reconstructable by plate ID or half-stage rotation (the only supported reconstructable types inside the deforming network Delaunay triangulation), or
@@ -7543,6 +7544,7 @@ class GpmlTopologicalSection(PropertyValue):
 
         Returns ``None`` if:
 
+        * *geometry_property_name* is not specified and the feature's :class:`type<FeatureType>` has no default geometry property name, or
         * there is not exactly one geometry (topological or non-topological) property named *geometry_property_name* (or default) in *feature* (or, if *property_return* is ``PropertyReturn.first``, there is none), or
         * it's a regular geometry but *feature* is not reconstructable by plate ID or half-stage rotation (the only supported reconstructable types inside the deforming network Delaunay triangulation), or
         * it's a topological polygon or network
