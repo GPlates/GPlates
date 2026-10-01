@@ -942,6 +942,76 @@ class FeatureCollectionCase(unittest.TestCase):
             self.assertRaises(pygplates.GPlatesError, topological_features.write, existing_filename)
             self.assertEqual(len(pygplates.FeatureCollection(existing_filename)), len(existing_features))
 
+    def test_write_points_and_multi_points_to_ogr(self):
+        # Multi-points go in a file of their own, not a second layer of the points' file: GeoJSON and
+        # OGR GMT can't hold a second layer (writing raised), and only a file's first layer is read
+        # (the multi-points in a GeoPackage were lost).
+        def create_feature(geometry):
+            return pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature, geometry, reconstruction_plate_id=801)
+        features = [
+                create_feature(pygplates.PointOnSphere(10, 20)),
+                create_feature(pygplates.MultiPointOnSphere([(0, 0), (5, 5)])),
+                create_feature(pygplates.PolylineOnSphere([(0, 0), (10, 10)]))]
+
+        def read_back_files(tmp_dir, extension):
+            # Each geometry type is in its own file, in a sub-directory named after the file.
+            return {filename: pygplates.FeatureCollection(os.path.join(tmp_dir, 'tmp', filename))
+                    for filename in os.listdir(os.path.join(tmp_dir, 'tmp'))
+                    if filename.endswith('.' + extension)}
+
+        for extension in ('shp', 'geojson', 'gpkg', 'gmt'):
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                pygplates.FeatureCollection(features).write(os.path.join(tmp_dir, 'tmp.' + extension))
+                read_back = read_back_files(tmp_dir, extension)
+                self.assertEqual(
+                        sorted(read_back),
+                        ['tmp_multi_point.' + extension, 'tmp_point.' + extension, 'tmp_polyline.' + extension])
+                self.assertEqual(len(read_back['tmp_point.' + extension]), 1)
+                self.assertEqual(len(read_back['tmp_polyline.' + extension]), 1)
+                # GDAL reads an OGR GMT multi-point back with no points, so pyGPlates gets no feature.
+                if extension != 'gmt':
+                    self.assertEqual(len(read_back['tmp_multi_point.' + extension]), 1)
+                    self.assertEqual(
+                            read_back['tmp_multi_point.' + extension][0].get_geometry(),
+                            pygplates.MultiPointOnSphere([(0, 0), (5, 5)]))
+
+            # Exporting reconstructed geometries uses the same writer (but has no GeoPackage export).
+            if extension == 'gpkg':
+                continue
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                snapshot = pygplates.ReconstructSnapshot(features, pygplates.RotationModel([]), 0)
+                snapshot.export_reconstructed_geometries(os.path.join(tmp_dir, 'tmp.' + extension))
+                self.assertEqual(
+                        sorted(read_back_files(tmp_dir, extension)),
+                        ['tmp_multi_point.' + extension, 'tmp_point.' + extension, 'tmp_polyline.' + extension])
+
+            # Points and multi-points only. The export counts geometry types by visiting the
+            # reconstructed geometries, and that once missed multi-points, so this looked like one
+            # geometry type, and both went to the one file.
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                snapshot = pygplates.ReconstructSnapshot(features[:2], pygplates.RotationModel([]), 0)
+                snapshot.export_reconstructed_geometries(os.path.join(tmp_dir, 'tmp.' + extension))
+                self.assertEqual(
+                        sorted(read_back_files(tmp_dir, extension)),
+                        ['tmp_multi_point.' + extension, 'tmp_point.' + extension])
+
+            # Points only, but the export writes a feature's two points as one multi-point, so a
+            # multi-point arrives where only points were expected. It goes in a file beside the
+            # points' file (there is no sub-directory, since the export saw one geometry type).
+            two_point_feature = create_feature(pygplates.PointOnSphere(30, 40))
+            two_point_feature.set_geometry([pygplates.PointOnSphere(30, 40), pygplates.PointOnSphere(35, 45)])
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                snapshot = pygplates.ReconstructSnapshot(
+                        [features[0], two_point_feature], pygplates.RotationModel([]), 0)
+                snapshot.export_reconstructed_geometries(os.path.join(tmp_dir, 'tmp.' + extension))
+                exported = sorted(filename for filename in os.listdir(tmp_dir) if filename.endswith('.' + extension))
+                self.assertEqual(exported, ['tmp.' + extension, 'tmp_multi_point.' + extension])
+                self.assertEqual(len(pygplates.FeatureCollection(os.path.join(tmp_dir, 'tmp.' + extension))), 1)
+                if extension != 'gmt':  # GDAL reads OGR GMT multi-points back empty (see above)
+                    self.assertEqual(
+                            len(pygplates.FeatureCollection(os.path.join(tmp_dir, 'tmp_multi_point.' + extension))), 1)
+
     def test_construct(self):
         # Create new empty feature collection.
         new_feature_collection = pygplates.FeatureCollection()

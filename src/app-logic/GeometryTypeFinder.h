@@ -60,56 +60,50 @@ namespace GPlatesAppLogic
 
 	protected:
 
-		virtual
+		// 'override' on every override, so that a misspelt name fails to compile: as
+		// 'visit_multipoint_on_sphere' it never overrode, and multi-points went uncounted when
+		// visiting geometries (rather than properties).
+
 		void
 		visit_gml_line_string(
-				const GPlatesPropertyValues::GmlLineString &gml_line_string);
+				const GPlatesPropertyValues::GmlLineString &gml_line_string) override;
 
-		virtual
 		void
 		visit_gml_multi_point(
-				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point) override;
 
-		virtual
 		void
 		visit_gml_orientable_curve(
-				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
+				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve) override;
 
-		virtual
 		void
 		visit_gml_point(
-				const GPlatesPropertyValues::GmlPoint &gml_point);
+				const GPlatesPropertyValues::GmlPoint &gml_point) override;
 
-		virtual
 		void
 		visit_gml_polygon(
-				const GPlatesPropertyValues::GmlPolygon &gml_polygon);
+				const GPlatesPropertyValues::GmlPolygon &gml_polygon) override;
 
-		virtual
 		void
 		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value) override;
 
 
-		virtual
 		void
-		visit_multipoint_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere);
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere) override;
 
-		virtual
 		void
 		visit_point_on_sphere(
-				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere);
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere) override;
 
-		virtual
 		void
 		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere);
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere) override;
 
-		virtual
 		void
 		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere) override;
 
 	public:
 

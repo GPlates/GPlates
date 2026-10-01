@@ -42,6 +42,11 @@ Changes since 1.0.0:
   * Reading a file in a format that can only be written (`.xy`) now raises `FileFormatNotSupportedError`, instead of returning an empty feature collection. Likewise writing a format that can only be read (`.vgp`, `.gsml`), which wrote nothing.
   * Fixed `reverse_reconstruct()` emptying a `.xy` file given as a filename (it read the file as empty, then wrote that back). It now raises `FileFormatNotSupportedError` for a file it can't read, or can't write back (`.vgp`, `.gsml`).
   * Writing a Shapefile, GeoJSON, GeoPackage or OGR GMT file that would contain no geometries (eg, only topological features) now raises `GPlatesError`, instead of writing no file (and deleting any existing file of that name).
+  * Writing points and multi-points together to OGR formats (also when exporting reconstructed geometries):
+    * Fixed GeoJSON and OGR GMT raising "Error creating OGR layer" (and leaving some files written).
+    * Fixed the multi-points of a GeoPackage file being lost when read back.
+    * Multi-points written with other geometry types now always go in their own `<name>_multi_point` file (previously `<name>_point` when there were no points).
+    * An export of points and multi-points goes in a `<name>` folder, like any other export of several geometry types (previously a Shapefile export put `<name>.shp` and `<name>_multi_point.shp` side by side).
 
 pyGPlates 1.0.0
 ===============
