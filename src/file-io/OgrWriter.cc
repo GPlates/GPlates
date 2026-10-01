@@ -506,7 +506,7 @@ namespace{
 				QString full_name = folder.absoluteFilePath(filename);
 				if (file_type_does_not_support_layer_deletion(extension))
 				{
-					QFile::remove(filename);
+					QFile::remove(full_name);
 				}
 				else
 				{

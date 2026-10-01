@@ -1012,6 +1012,27 @@ class FeatureCollectionCase(unittest.TestCase):
                     self.assertEqual(
                             len(pygplates.FeatureCollection(os.path.join(tmp_dir, 'tmp_multi_point.' + extension))), 1)
 
+    def test_rewrite_ogr_gmt_keeps_files_in_current_directory(self):
+        # Rewriting an OGR GMT file of several geometry types removes the old files in its
+        # sub-directory. It once removed files of those names in the current directory instead.
+        features = pygplates.FeatureCollection([
+                pygplates.Feature.create_reconstructable_feature(
+                        pygplates.FeatureType.gpml_unclassified_feature, geometry, reconstruction_plate_id=801)
+                for geometry in (pygplates.PointOnSphere(10, 20), pygplates.PolylineOnSphere([(0, 0), (10, 10)]))])
+        original_working_dir = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            os.chdir(tmp_dir)
+            try:
+                unrelated_filename = os.path.join(tmp_dir, 'tmp_point.gmt')
+                with open(unrelated_filename, 'w') as unrelated_file:
+                    unrelated_file.write('not written by this test')
+                features.write(os.path.join(tmp_dir, 'tmp.gmt'))
+                features.write(os.path.join(tmp_dir, 'tmp.gmt'))  # the second write removes the old files
+                self.assertTrue(os.path.isfile(unrelated_filename))
+                self.assertEqual(len(pygplates.FeatureCollection(os.path.join(tmp_dir, 'tmp', 'tmp_point.gmt'))), 1)
+            finally:
+                os.chdir(original_working_dir)
+
     def test_construct(self):
         # Create new empty feature collection.
         new_feature_collection = pygplates.FeatureCollection()

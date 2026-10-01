@@ -47,6 +47,7 @@ Changes since 1.0.0:
     * Fixed the multi-points of a GeoPackage file being lost when read back.
     * Multi-points written with other geometry types now always go in their own `<name>_multi_point` file (previously `<name>_point` when there were no points).
     * An export of points and multi-points goes in a `<name>` folder, like any other export of several geometry types (previously a Shapefile export put `<name>.shp` and `<name>_multi_point.shp` side by side).
+  * Fixed rewriting an OGR GMT file of several geometry types deleting files of the same names (eg, `<name>_point.gmt`) in the current working directory.
 
 pyGPlates 1.0.0
 ===============
