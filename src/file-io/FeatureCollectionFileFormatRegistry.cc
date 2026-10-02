@@ -323,17 +323,26 @@ namespace GPlatesFileIO
 						boost::dynamic_pointer_cast<const RotationFileConfiguration>(*cfg);
 					boost::shared_ptr<RotationFileConfiguration> rotation_cfg = 
 						boost::const_pointer_cast<RotationFileConfiguration>(rotation_cfg_const);
-					if(rotation_cfg)
+					// The configuration holds the file's line-by-line copy, which keeps its layout
+					// and comments. Save that copy only while it holds the same poles as the model:
+					// it follows only the edits made through the rotation dialogs, so after any
+					// other edit it would silently lose that edit. Then the model is written instead.
+					if (rotation_cfg)
 					{
-						boost::shared_ptr<GrotWriterWithCfg> writer = 
-							rotation_cfg->get_rotation_file_proxy().create_file_writer(file_ref);
-						if(writer)
+						PlatesRotationFileProxy &proxy = rotation_cfg->get_rotation_file_proxy();
+						if (proxy.matches_model(*file_ref.get_feature_collection()))
 						{
-							return boost::dynamic_pointer_cast<GPlatesModel::ConstFeatureVisitor>(writer);
+							proxy.save_file(file_ref);
+
+							// Written, so there is nothing to visit. (The copy is written here rather
+							// than by a visitor: a visitor has no step after the last feature, and a
+							// destructor can't report a failure.)
+							return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
+									new GPlatesModel::ConstFeatureVisitor());
 						}
 					}
 				}
-				
+
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 						new GrotWriterWithoutCfg(file_ref));
 			}
