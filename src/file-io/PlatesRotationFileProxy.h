@@ -549,7 +549,8 @@ namespace GPlatesFileIO
 		explicit
 		PopulateReconstructionFeatureCollection(
 				GPlatesModel::FeatureCollectionHandle::weak_ref fc):
-			d_fc(fc)
+			d_fc(fc),
+			d_current_pole_accepted(false)
 		{	}
 
 		void
@@ -610,6 +611,15 @@ namespace GPlatesFileIO
 		std::map<QString,QString> DCMeta;
 		boost::optional<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type> d_current_sampling;
 		boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> d_current_sample;
+
+		/**
+		 * Whether the pole of the current pole line was accepted (see @a validate_pole).
+		 *
+		 * A rejected pole line must not add @a d_current_sample, which is still the previous
+		 * pole's.
+		 */
+		bool d_current_pole_accepted;
+
 		RotationPoleData d_last_pole;
 		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> d_mprs_attrs, d_last_mprs;
 		std::vector<AttributeSegment> d_attrs;
