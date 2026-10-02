@@ -869,6 +869,21 @@ class FeatureCollectionCase(unittest.TestCase):
                     self._get_poles(pygplates.FeatureCollection(grot_filename)),
                     [(0, 801, 0.0, True), (0, 801, 10.0, True), (0, 801, 20.0, True)])
 
+    def test_grot_rejected_pole_line(self):
+        # A pole line the reader rejects (here moving plate equals fixed plate, as in a '999 ... 999'
+        # comment line) once added the previous pole again, with the rejected line's attributes.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            grot_filename = os.path.join(tmp_dir, 'rotations.grot')
+            with open(grot_filename, 'w') as grot_file:
+                grot_file.write(
+                        '801  0.0   90.0    0.0    0.0  000\n'
+                        '801 10.0   10.0   20.0    5.0  000\n'
+                        '999  0.0    0.0    0.0    0.0  999 @C"a comment line"\n'
+                        '801 20.0   11.0   21.0    9.0  000\n')
+            self.assertEqual(
+                    self._get_poles(pygplates.FeatureCollection(grot_filename)),
+                    [(0, 801, 0.0, True), (0, 801, 10.0, True), (0, 801, 20.0, True)])
+
     def test_grot_line_closing_and_opening_attributes(self):
         # A line can close one multi-line attribute and open another; the reader must not stop there.
         with tempfile.TemporaryDirectory() as tmp_dir:

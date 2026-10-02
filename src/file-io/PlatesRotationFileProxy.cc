@@ -710,7 +710,8 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 {
 	const RotationPoleData& data = seg.data();
 	//qDebug() << seg.to_qstring();
-	if(!validate_pole(data))
+	d_current_pole_accepted = validate_pole(data);
+	if(!d_current_pole_accepted)
 	{
 		return;
 	}
@@ -734,6 +735,14 @@ void
 GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 		RotationPoleLine& seg)
 {
+	// A rejected pole line adds nothing: 'd_current_sample' is still the previous pole's, and the
+	// line's attributes are the rejected pole's.
+	if(!d_current_pole_accepted)
+	{
+		d_attrs.clear();
+		return;
+	}
+
 	if(d_current_sample)
 	{
 		GPlatesPropertyValues::GpmlFiniteRotation* trp = 
