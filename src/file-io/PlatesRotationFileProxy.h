@@ -431,19 +431,6 @@ namespace GPlatesFileIO
 			return d_data;
 		}
 
-		GPlatesModel::PropertyValue*
-		finite_rotation() const
-		{
-			return d_associated_finite_rotation;
-		}
-
-		void
-		set_finite_rotation(
-				GPlatesModel::PropertyValue* fr)
-		{
-			d_associated_finite_rotation = fr;
-		}
-
 	protected:
 		QString
 		pad_string(
@@ -466,7 +453,6 @@ namespace GPlatesFileIO
 		
 		RotationPoleData d_data;
 		int d_plate_id_len, d_double_precision;
-		GPlatesModel::PropertyValue *d_associated_finite_rotation;
 	};
 
 	
@@ -764,51 +750,6 @@ namespace GPlatesFileIO
     }
 
 
-	class GrotWriterWithCfg : 
-		public PlatesRotationFormatWriter
-
-	{
-	public:
-		explicit
-		GrotWriterWithCfg(
-				File::Reference &file_ref) : 
-			PlatesRotationFormatWriter(file_ref.get_file_info(), true/*grot_format*/),
-			d_file_ref(file_ref)
-		{ }
-			
-		bool
-		initialise_pre_feature_properties(
-				const GPlatesModel::FeatureHandle &feature_handle)
-		{
-			static const GPlatesModel::FeatureType
-				gpmlTotalReconstructionSequence = 
-				GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence"),
-				gpmlAbsoluteReferenceFrame =
-				GPlatesModel::FeatureType::create_gpml("AbsoluteReferenceFrame"),
-				metadata =
-				GPlatesModel::FeatureType::create_gpml("FeatureCollectionMetadata");
-
-			if ((feature_handle.feature_type() != gpmlTotalReconstructionSequence)
-				&& (feature_handle.feature_type() != gpmlAbsoluteReferenceFrame) 
-				&&(feature_handle.feature_type() != metadata)) {
-					// These are not the features you're looking for.
-					return false;
-			}
-
-			// Reset the accumulator.
-			d_accum = PlatesRotationFormatAccumulator();
-
-			return true;
-		}
-
-		void
-		finalise_post_feature_properties(
-				const GPlatesModel::FeatureHandle &feature_handle);
-	private:
-		File::Reference& d_file_ref;
-	};
-
-
 	class GrotWriterWithoutCfg : 
 		public PlatesRotationFormatWriter
 	{
@@ -852,9 +793,8 @@ namespace GPlatesFileIO
 		};
 
 	public:
-		PlatesRotationFileProxy() : 
+		PlatesRotationFileProxy() :
 			d_init(false),
-			d_feature_count(0),
 			d_version(TWO)
 		{	
 			
@@ -887,42 +827,30 @@ namespace GPlatesFileIO
 		}
 
 
-		boost::shared_ptr<GrotWriterWithCfg>
-		create_file_writer(
-				File::Reference &file_ref)
-		{
-			//qWarning() << "TODO: create writer according to the file version.";
-			return boost::shared_ptr<GrotWriterWithCfg>(new GrotWriterWithCfg(file_ref));
-		}
+		/**
+		 * Whether the poles of this line-by-line copy of the file are those of the rotation features
+		 * in @a feature_collection: same plate IDs, times, disabled flags and rotations (to well within
+		 * the four decimal places a pole is written with), regardless of order.
+		 *
+		 * The copy follows only the edits made through the Total Reconstruction Sequences dialog,
+		 * the Metadata dialog and the Modify Reconstruction Pole tool. Any other edit to the
+		 * rotations (Edit Feature Properties, the Python console, deleting a feature, ...) reaches
+		 * only the model, so the copy must not be saved then: it would silently lose that edit.
+		 * Metadata is not compared (the Metadata dialog, which edits it, updates this copy too), so a
+		 * metadata edit made any other way is still lost when this copy is saved.
+		 */
+		bool
+		matches_model(
+				const GPlatesModel::FeatureCollectionHandle &feature_collection);
 
+		/**
+		 * Write this line-by-line copy of the file to @a file_ref's file (only if @a matches_model).
+		 *
+		 * @throws ErrorOpeningFileForWritingException if the file can't be opened for writing.
+		 */
 		void
 		save_file(
-				File::Reference &file_ref)
-		{
-			QFile rot_file(file_ref.get_file_info().get_qfileinfo().absoluteFilePath());
-
-			if (!rot_file.open(QFile::WriteOnly | QFile::Text))
-			{
-				qWarning() << "Failed to open file for writing -- " + d_file_info.get_qfileinfo().absoluteFilePath();
-			}
-			BOOST_FOREACH(boost::shared_ptr<RotationFileSegment> seg, get_segments())
-			{
-				rot_file.write(seg->to_qstring().toUtf8());
-			}
-		}
-
-		void
-		save_feature(
-				const GPlatesModel::FeatureHandle &feature_handle,
-				File::Reference &file_ref)
-		{
-			d_feature_count++;
-			if(static_cast<std::size_t>(d_feature_count) == d_feature_collection->size())
-			{
-				save_file(file_ref);
-				d_feature_count = 0;
-			}
-		}
+				File::Reference &file_ref);
 
 		/*
 		void
@@ -1027,11 +955,9 @@ namespace GPlatesFileIO
 		}
 		
 		boost::shared_ptr<RotationFileReader> d_reader_ptr;
-		boost::shared_ptr<GrotWriterWithCfg> d_writer_ptr;
 		
 	private:
 		bool d_init;
-		int d_feature_count;
 		ROTATION_FORMAT_VERSION d_version;
 		
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_feature_collection;
