@@ -388,15 +388,35 @@ GPlatesFileIO::RotationFileReaderV2::process_attribute_line(
 {
 	QString buf = file.readLine();
 	
-	//if the attribute is multi-line, read until reach the second separator.
-	if(-1 != buf.indexOf(ATTR_LONG_VALUE_SEPARATOR))
+	// If a multi-line attribute is left open on this line, read until the line that closes it.
+	//
+	// Count the separators, over all the lines read, rather than look for one: an attribute that
+	// opens and closes on one line must not swallow the next line (which may be a pole), and a line
+	// can close one attribute and open another.
+	//
+	// And stop at the end of the input: 'file' can be a buffer holding only the rest of a pole line,
+	// and 'readLine()' returns an empty string forever at the end, so an unclosed attribute would
+	// never stop reading. Nor can it take the rest of the input with it (every pole after it would
+	// be lost), so it is kept to its own line, which then reads as plain text.
+	if (buf.count(ATTR_LONG_VALUE_SEPARATOR) % 2 == 1)
 	{
-		QString line = file.readLine();
-		buf += line;
-		while(-1 == line.indexOf(ATTR_LONG_VALUE_SEPARATOR))
+		const qint64 end_of_first_line = file.pos();
+
+		QString lines = buf;
+		while (lines.count(ATTR_LONG_VALUE_SEPARATOR) % 2 == 1 && !file.atEnd())
 		{
-			line = file.readLine();
-			buf += line;
+			lines += file.readLine();
+		}
+
+		if (lines.count(ATTR_LONG_VALUE_SEPARATOR) % 2 == 0)
+		{
+			buf = lines;
+		}
+		else
+		{
+			qWarning() << "A multi-line attribute in a rotation file is not closed with"
+					<< ATTR_LONG_VALUE_SEPARATOR << ":" << buf.trimmed();
+			file.seek(end_of_first_line);
 		}
 	}
 

@@ -95,7 +95,7 @@ GPlatesAppLogic::GeometryTypeFinder::visit_gpml_constant_value(
 
 
 void
-GPlatesAppLogic::GeometryTypeFinder::visit_multipoint_on_sphere(
+GPlatesAppLogic::GeometryTypeFinder::visit_multi_point_on_sphere(
 	const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 {
 	++d_num_multi_point_geometries_found;

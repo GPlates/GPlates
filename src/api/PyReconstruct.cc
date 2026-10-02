@@ -790,8 +790,10 @@ export_reconstruct()
 			"  :raises OpenFileForWritingError: if *reconstructable_features* specifies any filename that "
 			"is not writeable (if any filenames are specified)\n"
 			"  :raises FileFormatNotSupportedError: if any input file format (identified by any "
-			"reconstructable and rotation filename extensions) does not support reading "
-			"(when filenames specified)\n"
+			"reconstructable and rotation filename extensions) does not support reading, or any "
+			"reconstructable file format does not support writing (when filenames specified)\n"
+			"  :raises GPlatesError: if a reconstructable file can't be written back in its format "
+			"(for example, a Shapefile with no features)\n"
 			"  :raises ValueError: if *reconstruction_time* is "
 			":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 			":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
@@ -844,5 +846,10 @@ export_reconstruct()
 			"\n"
 			"  .. versionchanged:: 0.44\n"
 			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n");
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+			"\n"
+			"  .. versionchanged:: 1.1\n"
+			"     Raises :class:`FileFormatNotSupportedError` for a reconstructable file that can't be "
+			"written back (such as ``.vgp``), which was left unchanged, or can't be read (such as ``.xy``), "
+			"which was read as empty and written back empty.\n");
 }

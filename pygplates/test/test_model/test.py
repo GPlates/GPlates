@@ -6,6 +6,7 @@ import math
 import os
 import sys
 import pickle
+import tempfile
 import unittest
 import pygplates
 
@@ -784,6 +785,254 @@ class FeatureCollectionCase(unittest.TestCase):
             self.assertTrue(len(feature_collection_from_path) == self.feature_count)
             os.remove(tmp_filename)
 
+    @staticmethod
+    def _get_poles(feature_collection):
+        # Each pole as (fixed plate, moving plate, time, enabled), in file order.
+        poles = []
+        for feature in feature_collection:
+            total_reconstruction_pole = feature.get_total_reconstruction_pole()
+            if total_reconstruction_pole is None:  # eg, the '.grot' header's metadata feature
+                continue
+            fixed_plate_id, moving_plate_id, rotation_sampling = total_reconstruction_pole
+            for time_sample in rotation_sampling:
+                poles.append((fixed_plate_id, moving_plate_id, time_sample.get_time(), time_sample.is_enabled()))
+        return poles
+
+    def test_grot_round_trip(self):
+        # A '.grot' written by pyGPlates must read back with the same poles: it once used the '.rot'
+        # syntax for disabled poles ('999' plate IDs and '!' markers), which the '.grot' reader takes
+        # as enabled poles of plate 999 (and whose multi-line attributes made it read forever).
+        grot_text = (
+                '@GPLATESROTATIONFILE:version"1.0"\n'
+                '@DC:namespace"http://purl.org/dc/elements/1.1/"\n'
+                '\n'
+                '> @MPRS:pid"801" @MPRS:code"AUS" @MPRS:name"Australia"\n'
+                '801  0.0   90.0    0.0    0.0  000 @C"present day"\n'
+                '801 10.0   10.0   20.0    5.0  000 @C"one"\n'
+                '@REF"""a multi-line\n'
+                'reference"""\n'
+                '801 20.0   11.0   21.0    9.0  000 @C"two"\n'
+                '#801 30.0  12.0   22.0   13.0  000 @C"disabled"\n'
+                '@REF"""opened and closed on one line"""\n'
+                '801 40.0   13.0   23.0   17.0  000\n')
+        expected_poles = [
+                (0, 801, 0.0, True),
+                (0, 801, 10.0, True),
+                (0, 801, 20.0, True),
+                (0, 801, 30.0, False),
+                # Not swallowed by the one-line triple-quoted attribute before it.
+                (0, 801, 40.0, True)]
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            grot_filename = os.path.join(tmp_dir, 'rotations.grot')
+            with open(grot_filename, 'w') as grot_file:
+                grot_file.write(grot_text)
+            self.assertEqual(self._get_poles(pygplates.FeatureCollection(grot_filename)), expected_poles)
+
+            written_filename = os.path.join(tmp_dir, 'written.grot')
+            pygplates.FeatureCollection(grot_filename).write(written_filename)
+            self.assertEqual(self._get_poles(pygplates.FeatureCollection(written_filename)), expected_poles)
+            with open(written_filename) as written_file:
+                written_text = written_file.read()
+            self.assertNotIn(' !', written_text)
+            self.assertNotIn('999', written_text)
+            self.assertIn('#801 ', written_text)
+            self.assertIn('\n@REF"""a multi-line\nreference"""\n', written_text)
+
+            # Writing what was read back gives the same file.
+            rewritten_filename = os.path.join(tmp_dir, 'rewritten.grot')
+            pygplates.FeatureCollection(written_filename).write(rewritten_filename)
+            with open(rewritten_filename) as rewritten_file:
+                self.assertEqual(rewritten_file.read(), written_text)
+
+    def test_grot_unclosed_multi_line_attribute(self):
+        # An unclosed triple-quoted attribute on a pole line once made the reader loop forever.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            grot_filename = os.path.join(tmp_dir, 'rotations.grot')
+            with open(grot_filename, 'w') as grot_file:
+                grot_file.write(
+                        '801  0.0   90.0    0.0    0.0  000\n'
+                        '801 10.0   10.0   20.0    5.0  000 @REF"""never closed\n'
+                        '801 20.0   11.0   21.0    9.0  000\n')
+            self.assertEqual(
+                    self._get_poles(pygplates.FeatureCollection(grot_filename)),
+                    [(0, 801, 0.0, True), (0, 801, 10.0, True), (0, 801, 20.0, True)])
+
+            # On a line of its own, it must not take the rest of the file (and its poles) with it.
+            with open(grot_filename, 'w') as grot_file:
+                grot_file.write(
+                        '801  0.0   90.0    0.0    0.0  000\n'
+                        '@REF"""never closed\n'
+                        '801 10.0   10.0   20.0    5.0  000\n'
+                        '801 20.0   11.0   21.0    9.0  000\n')
+            self.assertEqual(
+                    self._get_poles(pygplates.FeatureCollection(grot_filename)),
+                    [(0, 801, 0.0, True), (0, 801, 10.0, True), (0, 801, 20.0, True)])
+
+    def test_grot_line_closing_and_opening_attributes(self):
+        # A line can close one multi-line attribute and open another; the reader must not stop there.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            grot_filename = os.path.join(tmp_dir, 'rotations.grot')
+            with open(grot_filename, 'w') as grot_file:
+                grot_file.write(
+                        '801  0.0   90.0    0.0    0.0  000\n'
+                        '@A"""a1\n'
+                        'a2""" @B"""b1\n'
+                        'b2"""\n'
+                        '801 10.0   10.0   20.0    5.0  000\n')
+            self.assertEqual(
+                    self._get_poles(pygplates.FeatureCollection(grot_filename)),
+                    [(0, 801, 0.0, True), (0, 801, 10.0, True)])
+            # Both attributes are kept, with their content (pole metadata isn't in the pyGPlates API).
+            written_filename = os.path.join(tmp_dir, 'written.grot')
+            pygplates.FeatureCollection(grot_filename).write(written_filename)
+            with open(written_filename) as written_file:
+                written_text = written_file.read()
+            self.assertIn('@A"""a1\na2"""\n', written_text)
+            self.assertIn('@B"""b1\nb2"""\n', written_text)
+
+    def test_rot_to_grot(self):
+        # A '.rot' comment is written to '.grot' as a 'C' attribute. Written bare after the fixed
+        # plate ID, a comment starting with digits would read back as part of that plate ID.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            rot_filename = os.path.join(tmp_dir, 'rotations.rot')
+            with open(rot_filename, 'w') as rot_file:
+                rot_file.write(
+                        '801  0.0 90.0  0.0  0.0 000 !present day\n'
+                        '801 10.0 10.0 20.0  5.0 000 !123 starts with digits\n'
+                        '999 20.0 11.0 21.0  9.0 000 !disabled\n'
+                        '801 30.0 12.0 22.0 13.0 000 !a "quoted" word\n')
+            expected_poles = [
+                    (0, 801, 0.0, True),
+                    (0, 801, 10.0, True),
+                    (0, 801, 20.0, False),
+                    (0, 801, 30.0, True)]
+            rotations = pygplates.FeatureCollection(rot_filename)
+            self.assertEqual(self._get_poles(rotations), expected_poles)
+
+            grot_filename = os.path.join(tmp_dir, 'rotations.grot')
+            rotations.write(grot_filename)
+            self.assertEqual(self._get_poles(pygplates.FeatureCollection(grot_filename)), expected_poles)
+            with open(grot_filename) as grot_file:
+                grot_text = grot_file.read()
+            self.assertIn(' @C"123 starts with digits"', grot_text)
+            # An attribute value can't hold a double quote.
+            self.assertIn(' @C"a \'quoted\' word"', grot_text)
+
+    def test_write_no_geometries_to_ogr(self):
+        # With nothing an OGR format can hold, writing raises rather than creating no file.
+        topologies = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
+        topological_features = pygplates.FeatureCollection([
+                feature for feature in topologies
+                if feature.get_feature_type().get_name().startswith('Topological')])
+        self.assertTrue(len(topological_features) > 0)
+        self.assertTrue(len(topological_features) < len(topologies))  # the fixture also has plain geometries
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            for feature_collection in (topological_features, pygplates.FeatureCollection()):
+                for basename in ('tmp.shp', 'tmp.geojson', 'tmp.gpkg', 'tmp.gmt'):
+                    self.assertRaises(pygplates.GPlatesError, feature_collection.write, os.path.join(tmp_dir, basename))
+            # Not even the '.gplates.xml' attribute mapping file.
+            self.assertEqual(os.listdir(tmp_dir), [])
+
+            # And an existing file of that name is left as it was.
+            existing_filename = os.path.join(tmp_dir, 'existing.shp')
+            existing_features = pygplates.FeatureCollection(self.volcanoes_filename)
+            existing_features.write(existing_filename)
+            self.assertRaises(pygplates.GPlatesError, topological_features.write, existing_filename)
+            self.assertEqual(len(pygplates.FeatureCollection(existing_filename)), len(existing_features))
+
+    def test_write_points_and_multi_points_to_ogr(self):
+        # Multi-points go in a file of their own, not a second layer of the points' file: GeoJSON and
+        # OGR GMT can't hold a second layer (writing raised), and only a file's first layer is read
+        # (the multi-points in a GeoPackage were lost).
+        def create_feature(geometry):
+            return pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature, geometry, reconstruction_plate_id=801)
+        features = [
+                create_feature(pygplates.PointOnSphere(10, 20)),
+                create_feature(pygplates.MultiPointOnSphere([(0, 0), (5, 5)])),
+                create_feature(pygplates.PolylineOnSphere([(0, 0), (10, 10)]))]
+
+        def read_back_files(tmp_dir, extension):
+            # Each geometry type is in its own file, in a sub-directory named after the file.
+            return {filename: pygplates.FeatureCollection(os.path.join(tmp_dir, 'tmp', filename))
+                    for filename in os.listdir(os.path.join(tmp_dir, 'tmp'))
+                    if filename.endswith('.' + extension)}
+
+        for extension in ('shp', 'geojson', 'gpkg', 'gmt'):
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                pygplates.FeatureCollection(features).write(os.path.join(tmp_dir, 'tmp.' + extension))
+                read_back = read_back_files(tmp_dir, extension)
+                self.assertEqual(
+                        sorted(read_back),
+                        ['tmp_multi_point.' + extension, 'tmp_point.' + extension, 'tmp_polyline.' + extension])
+                self.assertEqual(len(read_back['tmp_point.' + extension]), 1)
+                self.assertEqual(len(read_back['tmp_polyline.' + extension]), 1)
+                # GDAL reads an OGR GMT multi-point back with no points, so pyGPlates gets no feature.
+                if extension != 'gmt':
+                    self.assertEqual(len(read_back['tmp_multi_point.' + extension]), 1)
+                    self.assertEqual(
+                            read_back['tmp_multi_point.' + extension][0].get_geometry(),
+                            pygplates.MultiPointOnSphere([(0, 0), (5, 5)]))
+
+            # Exporting reconstructed geometries uses the same writer (but has no GeoPackage export).
+            if extension == 'gpkg':
+                continue
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                snapshot = pygplates.ReconstructSnapshot(features, pygplates.RotationModel([]), 0)
+                snapshot.export_reconstructed_geometries(os.path.join(tmp_dir, 'tmp.' + extension))
+                self.assertEqual(
+                        sorted(read_back_files(tmp_dir, extension)),
+                        ['tmp_multi_point.' + extension, 'tmp_point.' + extension, 'tmp_polyline.' + extension])
+
+            # Points and multi-points only. The export counts geometry types by visiting the
+            # reconstructed geometries, and that once missed multi-points, so this looked like one
+            # geometry type, and both went to the one file.
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                snapshot = pygplates.ReconstructSnapshot(features[:2], pygplates.RotationModel([]), 0)
+                snapshot.export_reconstructed_geometries(os.path.join(tmp_dir, 'tmp.' + extension))
+                self.assertEqual(
+                        sorted(read_back_files(tmp_dir, extension)),
+                        ['tmp_multi_point.' + extension, 'tmp_point.' + extension])
+
+            # Points only, but the export writes a feature's two points as one multi-point, so a
+            # multi-point arrives where only points were expected. It goes in a file beside the
+            # points' file (there is no sub-directory, since the export saw one geometry type).
+            two_point_feature = create_feature(pygplates.PointOnSphere(30, 40))
+            two_point_feature.set_geometry([pygplates.PointOnSphere(30, 40), pygplates.PointOnSphere(35, 45)])
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                snapshot = pygplates.ReconstructSnapshot(
+                        [features[0], two_point_feature], pygplates.RotationModel([]), 0)
+                snapshot.export_reconstructed_geometries(os.path.join(tmp_dir, 'tmp.' + extension))
+                exported = sorted(filename for filename in os.listdir(tmp_dir) if filename.endswith('.' + extension))
+                self.assertEqual(exported, ['tmp.' + extension, 'tmp_multi_point.' + extension])
+                self.assertEqual(len(pygplates.FeatureCollection(os.path.join(tmp_dir, 'tmp.' + extension))), 1)
+                if extension != 'gmt':  # GDAL reads OGR GMT multi-points back empty (see above)
+                    self.assertEqual(
+                            len(pygplates.FeatureCollection(os.path.join(tmp_dir, 'tmp_multi_point.' + extension))), 1)
+
+    def test_rewrite_ogr_gmt_keeps_files_in_current_directory(self):
+        # Rewriting an OGR GMT file of several geometry types removes the old files in its
+        # sub-directory. It once removed files of those names in the current directory instead.
+        features = pygplates.FeatureCollection([
+                pygplates.Feature.create_reconstructable_feature(
+                        pygplates.FeatureType.gpml_unclassified_feature, geometry, reconstruction_plate_id=801)
+                for geometry in (pygplates.PointOnSphere(10, 20), pygplates.PolylineOnSphere([(0, 0), (10, 10)]))])
+        original_working_dir = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            os.chdir(tmp_dir)
+            try:
+                unrelated_filename = os.path.join(tmp_dir, 'tmp_point.gmt')
+                with open(unrelated_filename, 'w') as unrelated_file:
+                    unrelated_file.write('not written by this test')
+                features.write(os.path.join(tmp_dir, 'tmp.gmt'))
+                features.write(os.path.join(tmp_dir, 'tmp.gmt'))  # the second write removes the old files
+                self.assertTrue(os.path.isfile(unrelated_filename))
+                self.assertEqual(len(pygplates.FeatureCollection(os.path.join(tmp_dir, 'tmp', 'tmp_point.gmt'))), 1)
+            finally:
+                os.chdir(original_working_dir)
+
     def test_construct(self):
         # Create new empty feature collection.
         new_feature_collection = pygplates.FeatureCollection()
@@ -1099,6 +1348,32 @@ class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
                 pygplates.FileFormatNotSupportedError,
                 self.file_format_registry.read,
                 "this_file_format_is.unknown")
+
+    def test_format_without_reader_or_writer(self):
+        # A recognised format that can't be read, or can't be written, raises (rather than reading an
+        # empty collection, or writing nothing).
+        volcanoes = self.file_format_registry.read(self.volcanoes_filename)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            xy_filename = os.path.join(tmp_dir, 'volcanoes.xy')  # GMT xy is write only
+            volcanoes.write(xy_filename)
+            self.assertTrue(os.path.isfile(xy_filename))
+            self.assertRaises(pygplates.FileFormatNotSupportedError, pygplates.FeatureCollection, xy_filename)
+            self.assertRaises(pygplates.FileFormatNotSupportedError, self.file_format_registry.read, xy_filename)
+            # reverse_reconstruct() writes its input files back: it once read this one as empty and
+            # wrote it back empty.
+            with open(xy_filename) as xy_file:
+                xy_text = xy_file.read()
+            self.assertRaises(
+                    pygplates.FileFormatNotSupportedError,
+                    pygplates.reverse_reconstruct, xy_filename, pygplates.RotationModel([]), 10)
+            with open(xy_filename) as xy_file:
+                self.assertEqual(xy_file.read(), xy_text)
+
+            for basename in ('volcanoes.vgp', 'volcanoes.gsml'):  # read only
+                filename = os.path.join(tmp_dir, basename)
+                self.assertRaises(pygplates.FileFormatNotSupportedError, volcanoes.write, filename)
+                self.assertRaises(pygplates.FileFormatNotSupportedError, self.file_format_registry.write, volcanoes, filename)
+                self.assertFalse(os.path.exists(filename))
 
     def test_unable_to_open_for_read(self):
         # Unable to open file for reading exception (using a supported file format).

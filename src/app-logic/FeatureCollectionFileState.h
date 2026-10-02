@@ -152,12 +152,15 @@ namespace GPlatesAppLogic
 			 *
 			 * @a FeatureCollectionFileState emits signals @a file_state_file_info_changed and
 			 * @a file_state_changed after setting the file info.
+			 *
+			 * There is deliberately no default for @a new_file_configuration: one of boost::none
+			 * silently dropped the configuration of a caller that only meant to change the file info.
 			 */
 			void
 			set_file_info(
 					const GPlatesFileIO::FileInfo &new_file_info,
 					boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
-							new_file_configuration = boost::none)
+							new_file_configuration)
 			{
 				d_file_state->set_file_info(d_file_handle, new_file_info, new_file_configuration);
 			}

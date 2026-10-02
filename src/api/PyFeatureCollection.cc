@@ -892,7 +892,11 @@ export_feature_collection()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Raises :class:`FileFormatNotSupportedError` for a format that is write only (such as ``.xy``), "
+				"rather than returning an empty feature collection.\n")
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -929,7 +933,11 @@ export_feature_collection()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Raises :class:`FileFormatNotSupportedError` for a format that is write only (such as ``.xy``), "
+				"rather than returning an empty feature collection.\n")
 		.staticmethod("read")
 		.def("write",
 				&GPlatesApi::feature_collection_handle_write,
@@ -942,6 +950,8 @@ export_feature_collection()
 				"  :raises OpenFileForWritingError: if the file is not writable\n"
 				"  :raises FileFormatNotSupportedError: if the file format (identified by the filename "
 				"extension) does not support writing\n"
+				"  :raises GPlatesError: if the file format can store none of the features' geometries "
+				"(for example, a Shapefile or GeoJSON file of only topological features, or of no features)\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -949,7 +959,12 @@ export_feature_collection()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Raises :class:`FileFormatNotSupportedError` for a format that is read only (such as ``.vgp``), "
+				"and :class:`GPlatesError` when there are no geometries to write to a Shapefile, GeoJSON, "
+				"GeoPackage or OGR GMT file. Both used to write no file and raise nothing.\n")
 		.def("clone",
 				&GPlatesApi::feature_collection_handle_clone,
 				"clone()\n"

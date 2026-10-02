@@ -38,6 +38,20 @@ Changes since 1.0.0:
   * A malformed `gml:pos` or `gml:coordinates` in a GPML file is now dropped as a read error instead of silently loading as a point at (0, 0).
   * Fixed crustal thinning factors in GPML files written before GPlates 1.6.338 not being upgraded when loaded.
   * Fixed saving rotation files in GROT format under paths containing non-ASCII characters on Windows.
+  * GROT (`.grot`) rotation files:
+    * Fixed disabled poles in a written file being read back as enabled poles of plate 999.
+    * Fixed reading a file never finishing when a multi-line (`"""`) attribute is not closed (as written for disabled poles with multi-line metadata).
+    * Fixed a `"""` attribute that opens and closes on one line swallowing the line after it (often a pole).
+    * Fixed multi-line pole metadata gaining blank lines each time it is written.
+  * Reading a file in a format that can only be written (`.xy`) now raises `FileFormatNotSupportedError`, instead of returning an empty feature collection. Likewise writing a format that can only be read (`.vgp`, `.gsml`), which wrote nothing.
+  * Fixed `reverse_reconstruct()` emptying a `.xy` file given as a filename (it read the file as empty, then wrote that back). It now raises `FileFormatNotSupportedError` for a file it can't read, or can't write back (`.vgp`, `.gsml`).
+  * Writing a Shapefile, GeoJSON, GeoPackage or OGR GMT file that would contain no geometries (eg, only topological features) now raises `GPlatesError`, instead of writing no file (and deleting any existing file of that name).
+  * Writing points and multi-points together to OGR formats (also when exporting reconstructed geometries):
+    * Fixed GeoJSON and OGR GMT raising "Error creating OGR layer" (and leaving some files written).
+    * Fixed the multi-points of a GeoPackage file being lost when read back.
+    * Multi-points written with other geometry types now always go in their own `<name>_multi_point` file (previously `<name>_point` when there were no points).
+    * An export of points and multi-points goes in a `<name>` folder, like any other export of several geometry types (previously a Shapefile export put `<name>.shp` and `<name>_multi_point.shp` side by side).
+  * Fixed rewriting an OGR GMT file of several geometry types deleting files of the same names (eg, `<name>_point.gmt`) in the current working directory.
 
 pyGPlates 1.0.0
 ===============

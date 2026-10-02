@@ -53,6 +53,7 @@
 
 
 const QString POINT_SUFFIX("_point");
+const QString MULTI_POINT_SUFFIX("_multi_point");
 const QString POLYLINE_SUFFIX("_polyline");
 const QString POLYGON_SUFFIX("_polygon");
 
@@ -486,11 +487,12 @@ namespace{
 	{
 
 		QString point_name = basename + POINT_SUFFIX + "." + extension;
+		QString multi_point_name = basename + MULTI_POINT_SUFFIX + "." + extension;
 		QString polygon_name = basename + POLYGON_SUFFIX + "." + extension;
 		QString polyline_name = basename + POLYLINE_SUFFIX + "." + extension;
 
 		QStringList filenames;
-		filenames << point_name << polygon_name << polyline_name;
+		filenames << point_name << multi_point_name << polygon_name << polyline_name;
 		QDir folder(folder_name);
 		if (!folder.exists())
 		{
@@ -504,7 +506,7 @@ namespace{
 				QString full_name = folder.absoluteFilePath(filename);
 				if (file_type_does_not_support_layer_deletion(extension))
 				{
-					QFile::remove(filename);
+					QFile::remove(full_name);
 				}
 				else
 				{
@@ -906,6 +908,7 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	d_wrap_to_dateline(wrap_to_dateline),
 	d_ogr_data_source_ptr(0),
 	d_ogr_point_data_source_ptr(0),
+	d_ogr_multi_point_data_source_ptr(0),
 	d_ogr_line_data_source_ptr(0),
 	d_ogr_polygon_data_source_ptr(0),
 	d_dateline_wrapper(GPlatesMaths::DateLineWrapper::create()),
@@ -1024,6 +1027,7 @@ GPlatesFileIO::OgrWriter::~OgrWriter()
 {
 	destroy_ogr_data_source(d_ogr_data_source_ptr);
 	destroy_ogr_data_source(d_ogr_point_data_source_ptr);
+	destroy_ogr_data_source(d_ogr_multi_point_data_source_ptr);
 	destroy_ogr_data_source(d_ogr_line_data_source_ptr);
 	destroy_ogr_data_source(d_ogr_polygon_data_source_ptr);
 
@@ -1039,7 +1043,10 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 	if (d_ogr_point_data_source_ptr == NULL)
 	{
 		QString data_source_name = d_filename;
-		if (d_multiple_geometry_types)
+		// Also when the caller said there is one geometry type but multi-points came first (eg, an
+		// exporter writes a feature's several points as a multi-point): the file name is taken.
+		if (d_multiple_geometry_types ||
+			d_ogr_multi_point_data_source_ptr != NULL)
 		{
 			data_source_name.append(POINT_SUFFIX);
 		}
@@ -1104,21 +1111,24 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 		return;
 	}
 #endif
-	// Create point data source if it doesn't already exist.
-	if (d_ogr_point_data_source_ptr == NULL)
+	// Create multi-point data source if it doesn't already exist.
+	if (d_ogr_multi_point_data_source_ptr == NULL)
 	{
 		QString data_source_name = d_filename;
-		if (d_multiple_geometry_types)
+		// Also when the caller said there is one geometry type but points came first (eg, an
+		// exporter writes a feature's several points as a multi-point): the file name is taken.
+		if (d_multiple_geometry_types ||
+			d_ogr_point_data_source_ptr != NULL)
 		{
-			data_source_name.append(POINT_SUFFIX);
+			data_source_name.append(MULTI_POINT_SUFFIX);
 		}
 		data_source_name.append(".").append(d_extension);
 
-		create_data_source(d_ogr_driver_ptr, d_ogr_point_data_source_ptr, data_source_name);
+		create_data_source(d_ogr_driver_ptr, d_ogr_multi_point_data_source_ptr, data_source_name);
 	}
 
 	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_point_data_source_ptr,
+	setup_layer(d_ogr_multi_point_data_source_ptr,
 				d_ogr_multi_point_layer,
 				wkbMultiPoint,
 				QString(d_layer_basename + "_multi_point"),

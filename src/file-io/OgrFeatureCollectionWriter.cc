@@ -34,6 +34,7 @@
 #include <QMap>
 #include <QString>
 
+#include "ErrorWritingFeatureCollectionToFileFormatException.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileInfo.h"
 #include "OgrException.h"
@@ -1584,6 +1585,18 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	for ( ; iter != end ; ++iter)
 	{
 		finder.visit_feature(iter);
+	}
+
+	// With no geometry to write (eg, an empty collection, or only topological features) no file is
+	// created, so say so rather than returning as if the file had been written. Throw before
+	// creating the OgrWriter, which would otherwise remove an existing file of the same name.
+	if (!finder.has_found_geometries())
+	{
+		throw ErrorWritingFeatureCollectionToFileFormatException(
+				GPLATES_EXCEPTION_SOURCE,
+				"There are no point, multi-point, polyline or polygon geometries to write "
+				"(topological geometries are not written to this file format).",
+				false/*file_written_to*/);
 	}
 
 	// Set up an appropriate OgrWriter.

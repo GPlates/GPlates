@@ -45,6 +45,16 @@ Changes since 2.5:
     * Fixed an empty progress dialog appearing in the Connect WFS dialog (and crashing when cancelled).
   * Read Errors dialog now says "OGR" rather than "Shapefile" (other OGR formats, such as GeoJSON, are read the same way).
   * Errors that previously crashed GPlates without any message are now reported in a dialog and written to the log.
+  * Saving files:
+    * Fixed "Save All Changes" and "Save Selected" (Manage Feature Collections dialog) discarding a file's save options, so that the next save was written without them: for a Shapefile, its dateline wrapping option and its spatial reference system.
+    * Saving in a format that can only be read (typing a ".vgp" or ".gsml" filename) now reports an error, instead of writing nothing and marking the file as saved.
+    * Saving a Shapefile, GeoJSON, GeoPackage or OGR GMT file that would contain no geometries (eg, only topological features) now reports an error, instead of writing nothing (and deleting any existing file of that name).
+    * Fixed saving or exporting points and multi-points together as GeoJSON or OGR GMT failing with "Error creating OGR layer", and the multi-points of such a GeoPackage file being lost when it is loaded. Multi-points saved with other geometry types now always go in their own "<name>_multi_point" file (previously "<name>_point" when there were no points), and an export of points and multi-points goes in a "<name>" folder like any other export of several geometry types (previously a Shapefile export put "<name>.shp" and "<name>_multi_point.shp" side by side).
+    * Fixed saving over an OGR GMT file of several geometry types deleting files of the same names (eg, "<name>_point.gmt") in the current working directory.
+  * GROT (".grot") rotation files:
+    * Fixed disabled poles being written so that they load as enabled poles of plate 999, when saving rotations not loaded from a GROT file (eg, a ".rot" file saved as ".grot").
+    * Fixed loading a file never finishing when a multi-line (`"""`) attribute is not closed.
+    * Fixed a `"""` attribute that opens and closes on one line swallowing the line after it (often a pole).
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.
   * So installing a newer build replaces the previous one instead of adding another program directory (and another "Apps & features" entry on Windows).
