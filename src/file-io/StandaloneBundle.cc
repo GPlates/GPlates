@@ -181,6 +181,25 @@ GPlatesFileIO::StandaloneBundle::initialise(
 
 		CPLSetConfigOption("GDAL_DRIVER_PATH", bundle_gdal_plugins_dir.c_str());
 	}
+	else if (bundle_gdal_data_directory &&
+		QDir(bundle_gdal_data_directory.get()).exists())
+	{
+		// The bundle carries its own GDAL (an installed bundle always has GDAL's data) but no plugins
+		// for it (eg, the pyGPlates wheels). So load no plugins at all, rather than let a
+		// 'GDAL_DRIVER_PATH' set by the environment (eg, an active conda environment, OSGeo4W or QGIS)
+		// load plugins built against another GDAL - which can crash (eg, reading a shapefile after
+		// 'import pygmt').
+		//
+		// A build tree has no GDAL data directory, so a development build still uses the plugins of
+		// the GDAL it was built against (eg, the conda environment's netCDF plugin).
+		//
+		// This assumes a bundle with GDAL's data also carries its own GDAL: true of a repaired wheel,
+		// and of an install that copied its dependencies. A pip build with
+		// GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES off that is installed without the
+		// repair step uses the environment's GDAL, and so loses that environment's (matching)
+		// plugins. Such a build is only meant as the input to a repair.
+		CPLSetConfigOption("GDAL_DRIVER_PATH", "disable");
+	}
 
 #endif // GPLATES_INSTALL_STANDALONE
 }
