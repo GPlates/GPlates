@@ -57,6 +57,8 @@ Changes since 2.5:
     * Fixed a `"""` attribute that opens and closes on one line swallowing the line after it (often a pole).
     * Fixed saving a GROT file loaded from disk leaving it empty when its feature collection also held other kinds of features.
     * Fixed saving a GROT file losing rotation edits made other than in the Total Reconstruction Sequences dialog, the Metadata dialog or with the Modify Reconstruction Pole tool (eg, in Edit Feature Properties, in the Python console, or by deleting a rotation feature). Such a save now writes the rotations afresh, in GPlates' standard layout, so the file's own free-text comments and spacing are not kept.
+    * Fixed saving a GROT file losing an edit in the Total Reconstruction Sequences dialog smaller than four significant figures (eg, 45.123 to 45.124), or a comment typed there for a pole with no comment or other attributes in the file.
+    * Fixed editing a pole in the Total Reconstruction Sequences dialog, at a time where the same moving plate has a pole in another sequence (a crossover), changing that other pole when the GROT file is saved.
     * Fixed a pole line that is ignored when loading (eg, "999 0.0 0.0 0.0 0.0 999") adding the pole before it a second time.
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.

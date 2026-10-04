@@ -1843,9 +1843,12 @@ GPlatesFileIO::PlatesRotationFileProxy::update_pole(
 
 			if(pole_line_ptr)
 			{
-				if(old_pole.moving_plate_id == pole_line_ptr->get_rotation_pole_data().moving_plate_id)
+				// The fixed plate too (as 'delete_pole' does): at a crossover, two sequences of one
+				// moving plate have a pole at the same time.
+				if(old_pole.moving_plate_id == pole_line_ptr->get_rotation_pole_data().moving_plate_id &&
+					old_pole.fix_plate_id == pole_line_ptr->get_rotation_pole_data().fix_plate_id)
 				{
-					if(std::fabs(pole_line_ptr->get_rotation_pole_data().time - old_pole.time) 
+					if(std::fabs(pole_line_ptr->get_rotation_pole_data().time - old_pole.time)
 						< ROTATION_EPSILON)
 					{
 						pole_line_ptr->get_rotation_pole_data() = new_pole;
