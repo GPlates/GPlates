@@ -1738,10 +1738,11 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_current_sequence(
             }
             if(std::fabs(iter_new->time - iter_old->time) < std::numeric_limits<double>::epsilon())
             {
-                if(!((*iter_old) == (*iter_new)))
-                {
-                    proxy->update_pole(*iter_old, *iter_new);
-                }
+                // Update every pole, not only those that compare unequal: RotationPoleData's
+                // operator== compares to four significant figures, so a smaller edit (45.123 to
+                // 45.124) would leave the file's copy stale, and the save would rewrite the file
+                // from the model, losing its layout. Updating an unchanged pole changes nothing.
+                proxy->update_pole(*iter_old, *iter_new);
                 iter_new++; iter_old++;
             }
             else if(iter_new->time > iter_old->time)

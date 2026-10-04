@@ -43,6 +43,7 @@ Changes since 1.0.0:
     * Fixed reading a file never finishing when a multi-line (`"""`) attribute is not closed (as written for disabled poles with multi-line metadata).
     * Fixed a `"""` attribute that opens and closes on one line swallowing the line after it (often a pole).
     * Fixed multi-line pole metadata gaining blank lines each time it is written.
+    * Fixed a pole line that is ignored when reading (eg, `999 0.0 0.0 0.0 0.0 999`) adding the pole before it a second time.
   * Reading a file in a format that can only be written (`.xy`) now raises `FileFormatNotSupportedError`, instead of returning an empty feature collection. Likewise writing a format that can only be read (`.vgp`, `.gsml`), which wrote nothing.
   * Fixed `reverse_reconstruct()` emptying a `.xy` file given as a filename (it read the file as empty, then wrote that back). It now raises `FileFormatNotSupportedError` for a file it can't read, or can't write back (`.vgp`, `.gsml`).
   * Writing a Shapefile, GeoJSON, GeoPackage or OGR GMT file that would contain no geometries (eg, only topological features) now raises `GPlatesError`, instead of writing no file (and deleting any existing file of that name).
