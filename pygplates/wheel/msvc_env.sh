@@ -53,9 +53,11 @@ if [ -z "${VCINSTALLDIR:-}" ]; then
         echo "error: ${_vswhere} not found - is Visual Studio (or Build Tools) installed?" >&2
         return 1
     fi
+    # ('|| true' because callers may run under 'set -e -o pipefail': a failing vswhere should reach
+    # the message below, not end the script silently.)
     _vs_install=$("${_vswhere}" -latest -products '*' \
         -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 \
-        -property installationPath | tr -d '\r')
+        -property installationPath | tr -d '\r' || true)
     if [ -z "${_vs_install}" ]; then
         echo "error: no Visual Studio installation with the C++ x64 toolset was found" >&2
         return 1
