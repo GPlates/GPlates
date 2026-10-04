@@ -86,7 +86,10 @@ requirements:
     # links is libz/zlib1, which ships in 'libzlib', and host 'zlib' exports a pin on that. Naming
     # 'zlib' here adds a second, unpinned dependency on the development package instead.
     - python
-    - numpy
+    # The floor is NPY_TARGET_VERSION in 'src/global/python.h' (as is 'numpy>=' in 'pyproject.toml').
+    # NumPy's run_export carries a floor of its own, from its headers' default target, which need
+    # not be the same as ours; conda installs a version that satisfies both.
+    - numpy >=1.19
     - qt6-main
     - libgdal
     - proj
