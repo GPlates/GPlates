@@ -80,6 +80,56 @@ GPlatesAppLogic::VelocityDeltaTime::get_time_range(
 }
 
 
+boost::optional<std::pair<double, double>>
+GPlatesAppLogic::VelocityDeltaTime::get_time_range_with_rotations(
+		Type delta_time_type,
+		const double &time,
+		const double &delta_time,
+		const std::function<bool (const double &)> &has_rotation_at_time)
+{
+	const std::pair<double, double> time_range = get_time_range(delta_time_type, time, delta_time);
+
+	const bool has_young_rotation = has_rotation_at_time(time_range.second/*young*/);
+	const bool has_old_rotation = has_rotation_at_time(time_range.first/*old*/);
+
+	if (has_young_rotation && has_old_rotation)
+	{
+		return time_range;
+	}
+
+	// The younger end is in the future (and has no rotation), so move the range to end at present
+	// day.
+	if (!has_young_rotation &&
+		has_old_rotation &&
+		time_range.second/*young*/ < 0 &&
+		time_range.first/*old*/ >= 0)
+	{
+		if (has_rotation_at_time(0) &&
+			has_rotation_at_time(delta_time))
+		{
+			return std::make_pair(delta_time, 0.0);
+		}
+	}
+
+	// The older end is older than the rotations, so move the range to start at 'time'.
+	if (delta_time_type != T_TO_T_MINUS_DELTA_T &&
+		has_young_rotation &&
+		!has_old_rotation)
+	{
+		const std::pair<double, double> moved_time_range =
+				get_time_range(T_TO_T_MINUS_DELTA_T, time, delta_time);
+
+		if (has_rotation_at_time(moved_time_range.second/*young*/) &&
+			has_rotation_at_time(moved_time_range.first/*old*/))
+		{
+			return moved_time_range;
+		}
+	}
+
+	return boost::none;
+}
+
+
 GPlatesScribe::TranscribeResult
 GPlatesAppLogic::VelocityDeltaTime::transcribe(
 		GPlatesScribe::Scribe &scribe,

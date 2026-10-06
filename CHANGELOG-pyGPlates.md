@@ -55,9 +55,11 @@ Changes since 1.0.0:
     * An export of points and multi-points goes in a `<name>` folder, like any other export of several geometry types (previously a Shapefile export put `<name>.shp` and `<name>_multi_point.shp` side by side).
   * Fixed rewriting an OGR GMT file of several geometry types deleting files of the same names (eg, `<name>_point.gmt`) in the current working directory.
   * Fixed the macOS pip wheels crashing (segmentation fault) whenever pyGPlates logged a warning or debug message, eg when writing a `.grot` file, or reading a rotation file with an invalid pole.
-  * Net rotation:
+  * Velocities and net rotation:
     * `NetRotationModel()` can be created without `velocity_delta_time` and `velocity_delta_time_type`, which default to 1 Myr and `VelocityDeltaTimeType.t_plus_delta_t_to_t` as documented (previously raised `ArgumentError`).
     * An empty `point_distribution` sequence now raises `ValueError` (previously `PreconditionViolationError`).
+    * Fixed the net rotation of a rigid plate being far too large at the oldest rotation of its plate ID (eg, about 100 times too large for a plate whose rotations end at 100 Ma). The velocity time interval now moves where a plate has no rotation at one end of it, as it already did for the velocities of plates: so at present day, `t_to_t_minus_delta_t` and `t_plus_minus_half_delta_t` also give the net rotation of rigid plates (previously none, or half).
+    * Fixed the velocities of mid-ocean ridges, flowlines and other geometries reconstructed by half-stage rotation in the same way: they were zero at present day with `t_to_t_minus_delta_t`, half as large with `t_plus_minus_half_delta_t`, and far too large at the oldest rotation of either plate.
   * Fixed the pip wheels loading the GDAL plugins named by a `GDAL_DRIVER_PATH` environment variable (eg, set by an active conda environment with GDAL, or by OSGeo4W or QGIS). Those plugins are built for another GDAL, and reading a file could crash (eg, a Shapefile after `import pygmt`).
 
 pyGPlates 1.0.0

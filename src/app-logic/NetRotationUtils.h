@@ -468,7 +468,6 @@ namespace GPlatesAppLogic
 			double d_time;
 			double d_velocity_delta_time;
 			VelocityDeltaTime::Type d_velocity_delta_time_type;
-			std::pair<double/*older*/, double/*younger*/> d_velocity_time_period;
 			//! How the points, to calculate net rotation, are distributed across the globe.
 			point_distribution_type d_point_distribution;
 			GPlatesModel::integer_plate_id_type d_anchor_plate_id;

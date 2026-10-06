@@ -413,9 +413,14 @@ RFG for the geometry, purely so that colouring code has a reconstruction geometr
 `calculate_stage_rotation` turns `VelocityDeltaTime::Type` (`T_PLUS_DELTA_T_TO_T`,
 `T_TO_T_MINUS_DELTA_T`, `T_PLUS_MINUS_HALF_DELTA_T`) and the delta into an old and a young time,
 asks the creator for a tree at each and uses `get_composed_absolute_rotation_or_none`. If the plate
-is missing at one end it retries: a negative young time with the old time present shifts to
-`[dt, 0]`; a missing old time shifts to `[t, t - dt]`. If still missing it returns the identity,
-so the velocity is zero rather than an error. `ReconstructMethodByPlateId` overrides the default
+is missing at one end the interval moves (`VelocityDeltaTime::get_time_range_with_rotations`): a
+negative young time with the old time present shifts to `[dt, 0]`; a missing old time shifts to
+`[t, t - dt]`. If still missing it returns the identity, so the velocity is zero rather than an
+error. The same rule moves the interval of a half-stage velocity
+(`PlateVelocityUtils::get_half_stage_rotation_velocity_time_range`, testing both plates), which
+falls back to the unmoved interval instead of the identity, since some mid-ocean ridges rely on a
+missing plate counting as the identity rotation; and of a rigid plate's stage pole in net
+rotation (`NetRotationUtils`). `ReconstructMethodByPlateId` overrides the default
 only when topologies are present, taking the velocities from each `GeometryTimeSpan` and tagging
 points by whether they fell in a network's deforming region, a rigid block, or none.
 `ReconstructedFeatureGeometry::reconstructed_geometry_point_velocities` computes velocities from

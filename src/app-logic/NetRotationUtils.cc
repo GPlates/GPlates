@@ -27,6 +27,7 @@
 
 #include "NetRotationUtils.h"
 #include "ReconstructionTree.h"
+#include "ReconstructionTreeCreator.h"
 #include "RotationUtils.h"
 
 #include "global/GPlatesAssert.h"
@@ -396,7 +397,6 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::NetRotationCalculator(
 	d_time(time),
 	d_velocity_delta_time(velocity_delta_time),
 	d_velocity_delta_time_type(velocity_delta_time_type),
-	d_velocity_time_period(VelocityDeltaTime::get_time_range(velocity_delta_time_type, time, velocity_delta_time)),
 	d_point_distribution(num_samples_along_meridian),
 	d_anchor_plate_id(anchor_plate_id)
 {
@@ -416,7 +416,6 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::NetRotationCalculator(
 	d_time(time),
 	d_velocity_delta_time(velocity_delta_time),
 	d_velocity_delta_time_type(velocity_delta_time_type),
-	d_velocity_time_period(VelocityDeltaTime::get_time_range(velocity_delta_time_type, time, velocity_delta_time)),
 	d_point_distribution(arbitrary_points),
 	d_anchor_plate_id(anchor_plate_id)
 {
@@ -437,7 +436,6 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::NetRotationCalculator(
 	d_time(time),
 	d_velocity_delta_time(velocity_delta_time),
 	d_velocity_delta_time_type(velocity_delta_time_type),
-	d_velocity_time_period(VelocityDeltaTime::get_time_range(velocity_delta_time_type, time, velocity_delta_time)),
 	d_point_distribution(point_distribution),
 	d_anchor_plate_id(anchor_plate_id)
 {
@@ -617,18 +615,42 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::get_resolved_boundary_
 		return it->second;
 	}
 
-	// Get the stage pole for the plate ID.
-	const ReconstructionTree::non_null_ptr_to_const_type tree_older =
-			resolved_topological_boundary->get_reconstruction_tree_creator().get_reconstruction_tree(
-					d_velocity_time_period.first/*older*/);
+	const ReconstructionTreeCreator reconstruction_tree_creator =
+			resolved_topological_boundary->get_reconstruction_tree_creator();
 
-	const ReconstructionTree::non_null_ptr_to_const_type tree_younger =
-			resolved_topological_boundary->get_reconstruction_tree_creator().get_reconstruction_tree(
-					d_velocity_time_period.second/*younger*/);
+	// Move the time range if the plate (relative to the anchor plate) has no rotation at one end
+	// of it, as velocities do (see PlateVelocityUtils::calculate_stage_rotation). Otherwise, at the
+	// oldest rotation of a plate, the missing older rotation counts as the identity rotation and
+	// the stage pole becomes the plate's entire total rotation.
+	const auto has_rotation_at_time =
+			[&](const double &time)
+			{
+				const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+						reconstruction_tree_creator.get_reconstruction_tree(time);
 
-	const GPlatesMaths::FiniteRotation stage_pole = RotationUtils::get_stage_pole(
-			*tree_older, *tree_younger,
-			boundary_plate_id.get(), d_anchor_plate_id);
+				return reconstruction_tree->get_composed_absolute_rotation_or_none(
+								boundary_plate_id.get()) &&
+						reconstruction_tree->get_composed_absolute_rotation_or_none(
+								d_anchor_plate_id);
+			};
+	const boost::optional<std::pair<double, double>> velocity_time_range =
+			VelocityDeltaTime::get_time_range_with_rotations(
+					d_velocity_delta_time_type,
+					d_time,
+					d_velocity_delta_time,
+					has_rotation_at_time);
+
+	// Get the stage pole for the plate ID (or the identity rotation if there's no time range to
+	// get it over).
+	const GPlatesMaths::FiniteRotation stage_pole = velocity_time_range
+			? RotationUtils::get_stage_pole(
+					*reconstruction_tree_creator.get_reconstruction_tree(
+							velocity_time_range->first/*older*/),
+					*reconstruction_tree_creator.get_reconstruction_tree(
+							velocity_time_range->second/*younger*/),
+					boundary_plate_id.get(),
+					d_anchor_plate_id)
+			: GPlatesMaths::FiniteRotation::create_identity_rotation();
 
 	// Insert the stage pole into the plate ID map.
 	auto insert_result = d_resolved_boundary_stage_pole_map.insert(stage_pole_map_type::value_type(boundary_plate_id.get(), stage_pole));

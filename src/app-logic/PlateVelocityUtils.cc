@@ -1112,84 +1112,128 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type)
 {
-	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
+	// The plate's rotation at each time looked at, so that each tree is only fetched once.
+	std::map<double, boost::optional<GPlatesMaths::FiniteRotation>> rotations;
+	const auto get_rotation =
+			[&](const double &time) -> const boost::optional<GPlatesMaths::FiniteRotation> &
+			{
+				auto rotation_iter = rotations.find(time);
+				if (rotation_iter == rotations.end())
+				{
+					rotation_iter = rotations.emplace(
+							time,
+							reconstruction_tree_creator.get_reconstruction_tree(time)
+									->get_composed_absolute_rotation_or_none(
+											reconstruction_plate_id)).first;
+				}
+				return rotation_iter->second;
+			};
+	const auto has_rotation_at_time =
+			[&](const double &time)
+			{
+				return static_cast<bool>(get_rotation(time));
+			};
+
+	// Move the time range if the plate has no rotation at one end of it.
+	const boost::optional<std::pair<double, double>> time_range =
+			VelocityDeltaTime::get_time_range_with_rotations(
+					velocity_delta_time_type,
+					reconstruction_time,
+					velocity_delta_time,
+					has_rotation_at_time);
+	if (!time_range)
+	{
+		// Unable to calculate stage rotation - return identity rotation. This avoids extraneously
+		// large velocities when the plate ID is found at one time but not the other.
+		return GPlatesMaths::FiniteRotation::create_identity_rotation();
+	}
+
+	return GPlatesMaths::calculate_stage_rotation(
+			get_rotation(time_range->second/*young*/).get(),
+			get_rotation(time_range->first/*old*/).get());
+}
+
+
+std::pair<double, double>
+GPlatesAppLogic::PlateVelocityUtils::get_half_stage_rotation_velocity_time_range(
+		const GPlatesModel::integer_plate_id_type &left_plate_id,
+		const GPlatesModel::integer_plate_id_type &right_plate_id,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type)
+{
+	const std::pair<double, double> unmoved_time_range = VelocityDeltaTime::get_time_range(
 			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
 
-	// Get the finite rotation results for the plate id.
-	boost::optional<GPlatesMaths::FiniteRotation> fr_young =
-			reconstruction_tree_creator.get_reconstruction_tree(time_range.second/*young*/)
-					->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
-	boost::optional<GPlatesMaths::FiniteRotation> fr_old =
-			reconstruction_tree_creator.get_reconstruction_tree(time_range.first/*old*/)
-					->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
+	const auto has_plate_rotation_at_time =
+			[&](const GPlatesModel::integer_plate_id_type &plate_id, const double &time)
+			{
+				return static_cast<bool>(
+						reconstruction_tree_creator.get_reconstruction_tree(time)
+								->get_composed_absolute_rotation_or_none(plate_id));
+			};
 
-	// If both times found then calculate velocity as normal.
-	if (fr_young && fr_old)
-	{
-		// Calculate the stage rotation.
-		return GPlatesMaths::calculate_stage_rotation(fr_young.get(), fr_old.get());
-	}
-
-	// If the youngest time in the delta time interval is negative *and* the oldest time
-	// is non-negative *and* the oldest time found a plate ID match.
-	// This happens when the reconstruction time is non-negative but happens samples a negative time
-	// when calculating the velocity - if only the negative time matches no plate ID then we will
-	// shift the delta time interval to (velocity_delta_time, 0) and try again.
-	// This enables rare users to support negative (future) times in rotation files if they wish
-	// but also supports most users having only non-negative rotations yet still supplying a valid
-	// velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
-	if (!fr_young &&
-		fr_old &&
-		time_range.second/*young*/ < 0 &&
-		time_range.first/*old*/ >= 0)
-	{
-		// Shift velocity calculation such that the time interval [velocity_delta_time, 0] is non-negative.
-		boost::optional<GPlatesMaths::FiniteRotation> fr_zero =
-				reconstruction_tree_creator.get_reconstruction_tree(0)
-						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
-		boost::optional<GPlatesMaths::FiniteRotation> fr_delta =
-				reconstruction_tree_creator.get_reconstruction_tree(velocity_delta_time)
-						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
-
-		// If both times found then calculate velocity.
-		if (fr_zero && fr_delta)
-		{
-			// Calculate the stage rotation.
-			return GPlatesMaths::calculate_stage_rotation(fr_zero.get(), fr_delta.get());
-		}
-	}
-
-	// A valid finite rotation might not be defined for times older than 'reconstruction_time' since
-	// a feature might not exist at that time and hence the rotation file may not include that time
-	// in its rotation sequence (for the plate ID).
+	// Which plates must have a rotation at both ends of the time range?
 	//
-	// If not then we will try a time range of [reconstruction_time, reconstruction_time - velocity_delta_time].
-	if (velocity_delta_time_type != VelocityDeltaTime::T_TO_T_MINUS_DELTA_T &&
-		fr_young &&
-		!fr_old)
+	// The velocity is the stage rotation H(young) * inverse[H(old)], where H(t) is the half-stage
+	// rotation at time 't'. RotationUtils::get_stage_pole (which H uses) counts a plate that is not
+	// in the reconstruction tree at a time as the identity rotation, ie, as if it were the anchor
+	// plate. Some mid-ocean ridges rely on that, with a plate that is missing from the rotation
+	// model entirely.
+	//
+	// A plate missing at *both* ends of the time range does no harm: H(young) and H(old) both use
+	// the identity for it, so the substitution is consistent and their difference is only the
+	// motion of the plates that are present. The harm comes from a plate present at one end and
+	// missing at the other: one H then has the plate's real rotation and the other the identity,
+	// so their difference becomes the plate's total rotation rather than its motion over the
+	// time range (eg, at the oldest rotation of a plate). So a plate missing at both ends of the
+	// unmoved range is ignored, and only the other plates decide whether to move the range.
+	//
+	// Only the ends of the range are checked, not the times in between. For versions 2 and 3,
+	// H(t) = R(0->t,A->L) * S(t), where S(t) composes the half-stage steps from the spreading start
+	// time to 't' (in 10 My intervals). When 'young' and 'old' are in the same interval, starting
+	// at time 'b', then S(young) = h(b->young) * P and S(old) = h(b->old) * P, where 'P' is the
+	// composition of all the earlier steps. 'P' cancels in H(young) * inverse[H(old)], so whether
+	// a plate is present at those earlier times makes no difference to the velocity. Time 'b'
+	// itself does not cancel exactly (half of a rotation does not distribute over composition),
+	// but that only matters for a plate whose rotations start or stop at 'b'.
+	std::vector<GPlatesModel::integer_plate_id_type> plate_ids;
+	for (const GPlatesModel::integer_plate_id_type plate_id : { left_plate_id, right_plate_id })
 	{
-		// Next try shifting the velocity calculation such that the time interval is now
-		// [reconstruction_time, reconstruction_time - velocity_delta_time].
-		const std::pair<double, double> new_time_range = VelocityDeltaTime::get_time_range(
-				VelocityDeltaTime::T_TO_T_MINUS_DELTA_T, reconstruction_time, velocity_delta_time);
-
-		boost::optional<GPlatesMaths::FiniteRotation> fr_new_young =
-				reconstruction_tree_creator.get_reconstruction_tree(new_time_range.second/*young*/)
-						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
-		boost::optional<GPlatesMaths::FiniteRotation> fr_new_old =
-				reconstruction_tree_creator.get_reconstruction_tree(new_time_range.first/*old*/)
-						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
-
-		// If both times found then calculate velocity.
-		if (fr_new_young && fr_new_old)
+		if (has_plate_rotation_at_time(plate_id, unmoved_time_range.second/*young*/) ||
+			has_plate_rotation_at_time(plate_id, unmoved_time_range.first/*old*/))
 		{
-			// Calculate the stage rotation.
-			return GPlatesMaths::calculate_stage_rotation(fr_new_young.get(), fr_new_old.get());
+			plate_ids.push_back(plate_id);
 		}
 	}
 
-	// Unable to calculate stage rotation - return identity rotation.
-	return GPlatesMaths::FiniteRotation::create_identity_rotation();
+	const auto has_rotation_at_time =
+			[&](const double &time)
+			{
+				for (const GPlatesModel::integer_plate_id_type plate_id : plate_ids)
+				{
+					if (!has_plate_rotation_at_time(plate_id, time))
+					{
+						return false;
+					}
+				}
+				return true;
+			};
+
+	// Move the time range if a plate has no rotation at one end of it.
+	const boost::optional<std::pair<double, double>> time_range =
+			VelocityDeltaTime::get_time_range_with_rotations(
+					velocity_delta_time_type,
+					reconstruction_time,
+					velocity_delta_time,
+					has_rotation_at_time);
+	if (!time_range)
+	{
+		return unmoved_time_range;
+	}
+
+	return time_range.get();
 }
 
 

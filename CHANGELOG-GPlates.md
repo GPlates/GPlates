@@ -60,6 +60,9 @@ Changes since 2.5:
     * Fixed saving a GROT file losing an edit in the Total Reconstruction Sequences dialog smaller than four significant figures (eg, 45.123 to 45.124), or a comment typed there for a pole with no comment or other attributes in the file.
     * Fixed editing a pole in the Total Reconstruction Sequences dialog, at a time where the same moving plate has a pole in another sequence (a crossover), changing that other pole when the GROT file is saved.
     * Fixed a pole line that is ignored when loading (eg, "999 0.0 0.0 0.0 0.0 999") adding the pole before it a second time.
+  * Velocities and net rotation:
+    * Fixed the net rotation export giving a rigid plate far too large a net rotation at the oldest rotation of its plate ID (eg, about 100 times too large for a plate whose rotations end at 100 Ma). The velocity time interval now moves to start at the reconstruction time there, as it already did for the velocities of plates.
+    * Fixed the velocities of mid-ocean ridges and flowlines (geometries reconstructed by half-stage rotation) in the same way: they were far too large at the oldest rotation of either plate, and at present day they were zero with the "(T, T-dt)" velocity time step and half as large with "(T+dt/2, T-dt/2)".
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.
   * So installing a newer build replaces the previous one instead of adding another program directory (and another "Apps & features" entry on Windows).

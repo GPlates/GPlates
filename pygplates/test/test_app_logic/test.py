@@ -1070,6 +1070,68 @@ class NetRotationTestCase(unittest.TestCase):
             self.assertRaises(ValueError, pygplates.NetRotationSnapshot, topological_snapshot, point_distribution=point_distribution)
 
 
+class VelocityTimeIntervalTestCase(unittest.TestCase):
+    # The time interval of a velocity is moved when a plate has no rotation at one end of it
+    # (in the future at present day, or older than the oldest rotation of the plate).
+    def setUp(self):
+        # Plate 1 rotates about the North pole at 1 degree per Myr, with rotations from 0 to 100 Ma.
+        rotation_feature = pygplates.Feature.create_total_reconstruction_sequence(
+            0, 1, pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((90, 0), math.radians(time))), time)
+                for time in (0, 100)]))
+        self.rotation_model = pygplates.RotationModel(rotation_feature)
+        self.velocity_delta_time_types = (
+            pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
+            pygplates.VelocityDeltaTimeType.t_to_t_minus_delta_t,
+            pygplates.VelocityDeltaTimeType.t_plus_minus_half_delta_t)
+
+    def test_half_stage_rotation_velocities(self):
+        # A mid-ocean ridge on the equator, between plate 1 and the anchor plate, moves at half the
+        # rate of plate 1. So does one whose right plate (999) is missing from the rotation model,
+        # since a missing plate counts as the identity rotation (like the anchor plate).
+        expected_speed = 0.5 * math.radians(1) * pygplates.Earth.mean_radius_in_kms
+        for right_plate in (0, 999):
+            mid_ocean_ridge_feature = pygplates.Feature.create_tectonic_section(
+                pygplates.FeatureType.gpml_mid_ocean_ridge,
+                pygplates.PolylineOnSphere([(0, 0), (0, 10)]),
+                left_plate=1,
+                right_plate=right_plate,
+                reconstruction_method='HalfStageRotationVersion3')
+            # Present day, and the oldest rotation of plate 1, are the two ends of its rotations.
+            for reconstruction_time in (0, 50, 100):
+                reconstructed_feature_geometries = pygplates.ReconstructSnapshot(
+                    mid_ocean_ridge_feature, self.rotation_model, reconstruction_time).get_reconstructed_geometries()
+                self.assertEqual(len(reconstructed_feature_geometries), 1)
+                for velocity_delta_time_type in self.velocity_delta_time_types:
+                    velocities = reconstructed_feature_geometries[0].get_reconstructed_geometry_point_velocities(
+                        velocity_delta_time_type=velocity_delta_time_type)
+                    for velocity in velocities:
+                        self.assertAlmostEqual(velocity.get_magnitude(), expected_speed, places=6)
+
+    def test_net_rotation(self):
+        # A rigid plate (plate 1) covering the northern hemisphere, from a single polygon section.
+        polygon_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PolygonOnSphere([(0, -180), (0, -90), (0, 0), (0, 90)]),
+            reconstruction_plate_id=1)
+        topological_feature = pygplates.Feature.create_topological_feature(
+            pygplates.FeatureType.gpml_topological_closed_plate_boundary,
+            pygplates.GpmlTopologicalPolygon([
+                pygplates.GpmlTopologicalSection.create(polygon_feature, topological_geometry_type=pygplates.GpmlTopologicalPolygon)]))
+        topological_feature.set_reconstruction_plate_id(1)
+        topological_model = pygplates.TopologicalModel([topological_feature, polygon_feature], self.rotation_model)
+        # The plate rotates at the same rate at all times, so its net rotation has the same angle
+        # (to within the sampling of the plate, which moves relative to the sample points).
+        expected_angle = pygplates.NetRotationModel(topological_model).net_rotation_snapshot(50) \
+            .get_total_net_rotation().get_finite_rotation().get_euler_pole_and_angle()[1]
+        self.assertGreater(expected_angle, 0)
+        for velocity_delta_time_type in self.velocity_delta_time_types:
+            net_rotation_model = pygplates.NetRotationModel(topological_model, velocity_delta_time_type=velocity_delta_time_type)
+            for reconstruction_time in (0, 50, 100):
+                total_net_rotation = net_rotation_model.net_rotation_snapshot(reconstruction_time).get_total_net_rotation()
+                self.assertAlmostEqual(total_net_rotation.get_finite_rotation().get_euler_pole_and_angle()[1], expected_angle, delta=1e-2 * expected_angle)
+
+
 class PlatePartitionerTestCase(unittest.TestCase):
     def setUp(self):
         self.topological_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
@@ -3830,7 +3892,8 @@ def suite():
             RotationModelTestCase,
             StrainTestCase,
             TopologicalModelTestCase,
-            TopologicalSnapshotTestCase
+            TopologicalSnapshotTestCase,
+            VelocityTimeIntervalTestCase
         ]
 
     for test_case in test_cases:
