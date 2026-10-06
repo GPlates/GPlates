@@ -102,10 +102,9 @@ PyGPlates installed using ``pip`` supports (via our `binary wheels <https://pypi
 
 - NumPy:
 
-  - Version 2.x, or a recent 1.x.
+  - Version 1.19 or later (including 2.x).
 
-    - The oldest NumPy 1.x that works depends on the Python version, and ``pip`` does not enforce it.
-      If ``import pygplates`` fails with a NumPy error, upgrade NumPy (``python -m pip install --upgrade numpy``).
+    - Installing pyGPlates with ``pip`` upgrades an older NumPy.
 
 This section demonstrates how to install pyGPlates into the **global** Python installation.
 

@@ -134,6 +134,18 @@
 #	undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
 //
+// NumPy header configuration. It has to come before *every* NumPy header, or NumPy silently uses
+// its defaults instead - so it sits above all the NumPy-related includes below.
+//
+//      Avoid deprecation warnings.
+#	define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+//      The oldest NumPy the module works with at run time, whichever NumPy 2.x it is built against
+//      (each header version has its own default, and NumPy raises it as it drops old Pythons).
+//      1.19 is the oldest NumPy for Python 3.9, the oldest Python pyGPlates supports.
+//      Keep the 'numpy>=' floor in 'pyproject.toml' and 'pygplates/conda/meta.yaml' the same.
+#	define NPY_TARGET_VERSION NPY_1_19_API_VERSION
+
+//
 // boost::python::numpy
 //
 // Only available for Boost >= 1.63, and if boost.python.numpy installed since it's currently optional
@@ -157,9 +169,7 @@
 #		endif // PYGPLATES_IMPORT_NUMPY_ARRAY_API
 //      This just needs to be something unique (that doesn't clash with boost::python::numpy for example).
 #		define PY_ARRAY_UNIQUE_SYMBOL PYGPLATES_NUMPY_ARRAY_API
-//      Avoid deprecation warnings.
-#		define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-//      Include the numpy C-API header.
+//      Include the numpy C-API header (configured above).
 #		include <numpy/arrayobject.h>
 #	endif // GPLATES_HAVE_NUMPY_C_API
 

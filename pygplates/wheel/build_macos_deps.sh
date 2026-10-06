@@ -30,7 +30,7 @@
 #       It must match the deployment target of the wheel builds - cibuildwheel sets it
 #       (in 'pyproject.toml') for this script and the wheel builds alike.
 
-set -e -u
+set -e -u -o pipefail
 
 PYGPLATES_DEPS=${PYGPLATES_DEPS:-$HOME/pygplates-wheel-deps}
 export MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-11.0}
@@ -45,6 +45,23 @@ NPROC=$(getconf _NPROCESSORS_ONLN)
 # The dependency versions - shared with the Linux image ('versions.sh' is the single source
 # of truth for both platforms).
 . "$(dirname "$0")/versions.sh"
+
+# Download an archive and extract it into the current directory: the URL, then the tar options
+# (eg, 'xz --strip-components=1'). One transient outage on any download host would otherwise fail
+# a long job (ftp.gnu.org timed out twice). The archive goes to a file, not straight into tar,
+# because a retry after a partial transfer would feed tar the start of the archive a second time;
+# and '--fail' so that an HTTP error page is an error rather than something for tar to choke on.
+# Plain '--retry' covers timeouts and HTTP 408/429/500/502-504, and '--retry-connrefused' adds
+# refused connections ('--retry-all-errors' would cover more, but needs curl 7.71).
+# A fixed path, so a failed download is overwritten by the next run rather than left behind; and
+# tar reads it from stdin, since GNU tar takes a 'C:/...' archive name for a remote host.
+download_and_extract() {
+    local archive="${PYGPLATES_DEPS}/src/download.tmp"
+    curl -fsSL --retry 5 --retry-connrefused --retry-delay 10 -o "${archive}" "$1"
+    shift
+    tar "$@" -f - < "${archive}"
+    rm -f "${archive}"
+}
 
 mkdir -p "${PYGPLATES_DEPS}/src" "${PYGPLATES_DEPS}/stamps" "${PYGPLATES_DEPS}/bin"
 cd "${PYGPLATES_DEPS}/src"
@@ -61,7 +78,7 @@ cd "${PYGPLATES_DEPS}/src"
 if [ ! -f "${PYGPLATES_DEPS}/stamps/sccache-${SCCACHE_VERSION}" ]; then
     # sccache names the architecture 'aarch64', uname names it 'arm64'.
     sccache_arch=$([ "${ARCH}" = arm64 ] && echo aarch64 || echo "${ARCH}")
-    curl -sSL https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-${sccache_arch}-apple-darwin.tar.gz | tar xz
+    download_and_extract https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-${sccache_arch}-apple-darwin.tar.gz xz
     install -m 755 sccache-v${SCCACHE_VERSION}-${sccache_arch}-apple-darwin/sccache "${PYGPLATES_DEPS}/bin/sccache"
     rm -rf sccache-v${SCCACHE_VERSION}-${sccache_arch}-apple-darwin
     touch "${PYGPLATES_DEPS}/stamps/sccache-${SCCACHE_VERSION}"
@@ -117,7 +134,7 @@ if [ ! -f "${PYGPLATES_DEPS}/stamps/boost-${BOOST_VERSION}" ]; then
     # local one; in CI the version is part of the cache key) would link a Boost.Python from the
     # old Boost against the new Boost's headers.
     rm -f "${PYGPLATES_DEPS}"/lib/libboost_python*
-    curl -sSL https://archives.boost.io/release/${BOOST_VERSION}/source/boost_$(echo ${BOOST_VERSION} | tr . _).tar.bz2 | tar xj
+    download_and_extract https://archives.boost.io/release/${BOOST_VERSION}/source/boost_$(echo ${BOOST_VERSION} | tr . _).tar.bz2 xj
     cd boost_$(echo ${BOOST_VERSION} | tr . _)
     ./bootstrap.sh
     ./b2 -j ${NPROC} linkflags=-Wl,-rpath,"${PYGPLATES_DEPS}/lib" \
@@ -134,7 +151,7 @@ fi
 # reference is an @rpath one).
 if [ ! -f "${PYGPLATES_DEPS}/stamps/proj-${PROJ_VERSION}" ]; then
     rm -rf proj && mkdir proj && cd proj
-    curl -sSL https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz | tar xz --strip-components=1
+    download_and_extract https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz xz --strip-components=1
     mkdir build && cd build
     cmake \
         -DCMAKE_BUILD_TYPE=Release \
@@ -161,7 +178,7 @@ fi
 # driver set of the Linux wheels (eg, GeoPackage needs SQLite).
 if [ ! -f "${PYGPLATES_DEPS}/stamps/gdal-${GDAL_VERSION}" ]; then
     rm -rf gdal && mkdir gdal && cd gdal
-    curl -sSL https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz | tar xz --strip-components=1
+    download_and_extract https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz xz --strip-components=1
     mkdir build && cd build
     cmake \
         -DCMAKE_BUILD_TYPE=Release \
@@ -182,7 +199,7 @@ fi
 # delocate needs).
 if [ ! -f "${PYGPLATES_DEPS}/stamps/gmp-${GMP_VERSION}" ]; then
     rm -rf gmp && mkdir gmp && cd gmp
-    curl -sSL https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.xz | tar xJ --strip-components=1
+    download_and_extract https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.xz xJ --strip-components=1
     ./configure --prefix="${PYGPLATES_DEPS}" --enable-cxx
     make -j ${NPROC}
     make install
@@ -191,7 +208,7 @@ if [ ! -f "${PYGPLATES_DEPS}/stamps/gmp-${GMP_VERSION}" ]; then
 fi
 if [ ! -f "${PYGPLATES_DEPS}/stamps/mpfr-${MPFR_VERSION}" ]; then
     rm -rf mpfr && mkdir mpfr && cd mpfr
-    curl -sSL https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.xz | tar xJ --strip-components=1
+    download_and_extract https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.xz xJ --strip-components=1
     ./configure --prefix="${PYGPLATES_DEPS}" --with-gmp="${PYGPLATES_DEPS}"
     make -j ${NPROC}
     make install
@@ -202,7 +219,7 @@ fi
 # CGAL (header-only since CGAL 5 - this just installs the headers and CMake config).
 if [ ! -f "${PYGPLATES_DEPS}/stamps/cgal-${CGAL_VERSION}" ]; then
     rm -rf cgal && mkdir cgal && cd cgal
-    curl -sSL https://github.com/CGAL/cgal/releases/download/v${CGAL_VERSION}/CGAL-${CGAL_VERSION}.tar.xz | tar xJ --strip-components=1
+    download_and_extract https://github.com/CGAL/cgal/releases/download/v${CGAL_VERSION}/CGAL-${CGAL_VERSION}.tar.xz xJ --strip-components=1
     cmake -DCMAKE_INSTALL_PREFIX="${PYGPLATES_DEPS}" .
     make install
     cd .. && rm -rf cgal
@@ -225,7 +242,12 @@ test -d "${PYGPLATES_DEPS}/include/CGAL"
 # failure here is diagnosable from the log. ('/usr/local/opt' and '/usr/local/Cellar' are
 # the Homebrew prefixes on Intel, '/opt/homebrew' on Apple Silicon.)
 otool -L "${PYGPLATES_DEPS}"/lib/libproj.*.dylib "${PYGPLATES_DEPS}"/lib/libgdal.*.dylib
-! otool -L "${PYGPLATES_DEPS}"/lib/libproj.*.dylib "${PYGPLATES_DEPS}"/lib/libgdal.*.dylib | grep -E '/opt/homebrew/|/usr/local/opt/|/usr/local/Cellar/'
+# An 'if' rather than '! otool ... | grep ...': 'set -e' ignores a pipeline negated with '!', so
+# that form never stopped the script.
+if otool -L "${PYGPLATES_DEPS}"/lib/libproj.*.dylib "${PYGPLATES_DEPS}"/lib/libgdal.*.dylib | grep -E '/opt/homebrew/|/usr/local/opt/|/usr/local/Cellar/'; then
+    echo "error: PROJ or GDAL links a Homebrew library (listed above)" >&2
+    exit 1
+fi
 
 # Mark the whole prefix built and checked. The CI cache-save step skips re-saving a prefix
 # that already carried this stamp when restored (see '.github/workflows/build-wheels.yml').

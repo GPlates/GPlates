@@ -28,6 +28,7 @@ Changes since 1.0.0:
     * So pyGPlates imports on a minimal Linux system (no `libGL` or `glib` packages needed) and the packages are smaller.
   * Linux wheels require glibc 2.28 or later (manylinux_2_28), instead of glibc 2.17 (manylinux2014).
   * Wheels on all platforms bundle the same PROJ (9.8.1) and GDAL (3.12.4) versions.
+  * Requires NumPy 1.19 or later, and `pip` now enforces it: installing pyGPlates upgrades an older NumPy (previously the oldest NumPy that worked depended on the Python version, and an older one failed `import pygplates`).
 * Documentation: corrected the supported Python versions and platforms in *Getting started*, fixed the introductory examples (which raised `NameError`), and documented the Python console in GPlates.
 * Documentation: the *Primer* is split into one page per topic (rotations, topologies and deformation). Links to sections of the old single-page Primer still work, redirecting to the section on its new page.
 * Removed the undocumented classes `Colour`, `Palette`, `PaletteKey`, `OldFeature` and `OldFeatureCollection` (they were only meaningful inside GPlates).
@@ -53,6 +54,8 @@ Changes since 1.0.0:
     * Multi-points written with other geometry types now always go in their own `<name>_multi_point` file (previously `<name>_point` when there were no points).
     * An export of points and multi-points goes in a `<name>` folder, like any other export of several geometry types (previously a Shapefile export put `<name>.shp` and `<name>_multi_point.shp` side by side).
   * Fixed rewriting an OGR GMT file of several geometry types deleting files of the same names (eg, `<name>_point.gmt`) in the current working directory.
+  * Fixed the macOS pip wheels crashing (segmentation fault) whenever pyGPlates logged a warning or debug message, eg when writing a `.grot` file, or reading a rotation file with an invalid pole.
+  * Fixed the pip wheels loading the GDAL plugins named by a `GDAL_DRIVER_PATH` environment variable (eg, set by an active conda environment with GDAL, or by OSGeo4W or QGIS). Those plugins are built for another GDAL, and reading a file could crash (eg, a Shapefile after `import pygmt`).
 
 pyGPlates 1.0.0
 ===============

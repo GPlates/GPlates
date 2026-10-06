@@ -87,13 +87,7 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # For Windows and macOS this just means Qt 6.4 (or above) should be installed if you want to deploy.
     #
-    # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
-    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
-    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
-    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
-    #         However, fortunately pyGPlates doesn't need the Qt plugins, so we'll leave them out (until/if this changes in the future).
-    #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
-    #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which uses 'qt.conf' (via QCoreApplication) to find the plugins.
+    # Only GPlates installs Qt plugins (see "Install Qt plugins" below for why pyGPlates does not).
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
         install(
                 CODE "
@@ -720,13 +714,11 @@ if (GPLATES_INSTALL_STANDALONE)
 
     # The "qt.conf" file currently only specifies location of Qt plugins.
     #
-    # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
-    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
-    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
-    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
-    #         However, fortunately pyGPlates doesn't need the Qt plugins, so we'll leave them out (until/if this changes in the future).
-    #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
-    #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which is required to parse 'qt.conf' (via QCoreApplication).
+    # It is installed for GPlates only. pyGPlates installs no Qt plugins (see below), and a 'qt.conf'
+    # installed beside the module would not be found anyway: Qt looks for one compiled in as a
+    # resource, then (on macOS) in the main bundle, then beside the executable - and for pyGPlates
+    # the main bundle and the executable are Python's. The macOS wheels do need a 'qt.conf', for a
+    # different reason, and compile one in (see 'src/qt-resources/CMakeLists.txt').
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
         # Install the "qt.conf" file for gplates.
         if (APPLE)
@@ -810,13 +802,10 @@ if (GPLATES_INSTALL_STANDALONE)
     # And each installed path has ${CMAKE_INSTALL_PREFIX} in it (to be evaluated at install time).
     # Later we will pass QT_PLUGINS_INSTALLED to file(GET_RUNTIME_DEPENDENCIES) to find its dependencies and install them also.
     #
-    # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
-    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
-    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
-    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
-    #         However, fortunately pyGPlates doesn't need the Qt plugins, so we'll leave them out (until/if this changes in the future).
-    #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
-    #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which uses 'qt.conf' (via QCoreApplication) to find the plugins.
+    # Qt plugins are installed for GPlates only. pyGPlates uses only Qt Core, so it has none to load.
+    # Shipping any in the wheels would also mean handling them by hand: the wheel-repair tools
+    # (auditwheel/delocate/delvewheel) follow the module's links to its dependencies, and nothing
+    # links to a plugin, so they would not bring one along.
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
         # This works on Qt5.
         # But only works on Qt6 for versions 6.4 and above (according to https://bugreports.qt.io/browse/QTBUG-94066).

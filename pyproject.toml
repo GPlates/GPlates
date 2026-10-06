@@ -33,7 +33,9 @@ requires = [
     # PyGPlates accesses the NumPy C API.
     #
     # Note: We must *build* against NumPy 2.x in order to support both NumPy 1.x and 2.x at *runtime*.
-    #       However the NumPy *runtime* requirement (in 'dependencies' below) needs no version restriction.
+    #       The oldest NumPy a wheel then works with is set by NPY_TARGET_VERSION (in
+    #       'src/global/python.h'), not by the NumPy it was built against, and the runtime
+    #       requirement in 'dependencies' below must match it.
     'numpy>=2.0'
 ]
 
@@ -46,7 +48,9 @@ description = "Python library for fine-grained access to GPlates functionality."
 dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = ["numpy"]
+# The NumPy floor must match NPY_TARGET_VERSION in 'src/global/python.h' (an older NumPy fails
+# 'import pygplates'), and the run requirement in 'pygplates/conda/meta.yaml'.
+dependencies = ["numpy>=1.19"]
 # A PEP 639 SPDX license expression (metadata 2.4) - the 'License:' header becomes a short
 # 'License-Expression:' instead of an inlined license text (see [build-system] above for how
 # that once went wrong). The full text still ships in the wheel, via 'license-files', at
