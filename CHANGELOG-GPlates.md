@@ -24,6 +24,11 @@ Changes since 2.5:
     * The dialog now shows its prompt and has Cancel and close buttons, and `q`/`quit` exits help.
   * Fixed the cancel button of the "Running Python code..." dialog not interrupting the running code.
   * Script filenames now appear correctly in tracebacks (instead of as `b'...'`).
+* The net rotation export calculates net rotation differently, so its results differ from GPlates 2.5:
+  * Each sample point now has the same weight in the net rotation of its plate, instead of a weight proportional to cos²(latitude). The total net rotation of the globe is unaffected, but equatorial plates now have a higher net rotation and plates near the poles a lower one.
+  * Stationary plates now count towards the area that the total net rotation is normalised by, which lowers the total when some plates do not move. This also fixes an error exporting net rotation when there are stationary plates.
+  * A topological plate without a plate ID is now included, using plate ID 0 (it was left out).
+  * Samples are taken at the centres of a 1-degree latitude-longitude grid, instead of at its corners (which sampled the North and South poles 361 times each, and longitude 180 twice). This changes results slightly.
 * Hellinger tool: fixed "Calculate Uncertainties" failing with a Python error (with NumPy 1.12 or later).
 * Non-ASCII (eg, Chinese or accented) file paths on Windows:
   * Fixed saving rotation files (GROT format) and reading data-mining configuration files.
