@@ -314,6 +314,13 @@ namespace GPlatesApi
 			boost::optional<SortReconstructedStaticPolygons::Value> sort_reconstructed_static_polygons,
 			bool return_point_locations)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list point_velocities_list;
 
 		boost::optional<bp::list> point_locations_list;
@@ -1325,6 +1332,7 @@ export_reconstruct_snapshot()
 				"(if *return_point_locations* is ``True``) also the reconstructed static polygon containing each point "
 				"(``None`` for points outside)\n"
 				"  :rtype: list[Vector3D | None], or tuple[list[Vector3D | None], list[ReconstructedFeatureGeometry | None]]\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  Reconstructed static polygons are :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>` that have "
 				":class:`polygon <PolygonOnSphere>` geometries (other geometry types are ignored since only polygons can contain points). "

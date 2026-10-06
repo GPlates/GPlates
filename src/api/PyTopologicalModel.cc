@@ -638,7 +638,7 @@ namespace GPlatesApi
 		}
 
 		// Velocity delta time must be positive.
-		if (velocity_delta_time <= 0)
+		if (!(velocity_delta_time > 0))
 		{
 			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
 			bp::throw_error_already_set();

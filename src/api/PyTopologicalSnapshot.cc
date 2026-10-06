@@ -248,7 +248,7 @@ namespace GPlatesApi
 		}
 
 		// Velocity delta time must be positive.
-		if (velocity_delta_time <= 0)
+		if (!(velocity_delta_time > 0))
 		{
 			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
 			bp::throw_error_already_set();
@@ -653,6 +653,13 @@ namespace GPlatesApi
 			const double &earth_radius_in_kms,
 			bool return_point_locations)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list point_velocities_list;
 
 		boost::optional<bp::list> point_locations_list;
@@ -3127,6 +3134,7 @@ export_topological_snapshot()
 				"  :rtype: list[Vector3D | None], or tuple[list[Vector3D | None], list[TopologyPointLocation]]\n"
 				"  :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that "
 				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than "
 				":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. "

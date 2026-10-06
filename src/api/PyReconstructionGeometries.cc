@@ -614,6 +614,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list reconstructed_geometry_point_velocities_list;
 
 		GPlatesAppLogic::ReconstructedFeatureGeometry::velocity_seq_type reconstructed_geometry_point_velocities_;
@@ -727,6 +734,7 @@ export_reconstructed_feature_geometry()
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a reconstructed feature geometry):\n"
 				"  ::\n"
@@ -824,6 +832,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		return reconstructed_motion_path.reconstructed_seed_point_velocity(
 				velocity_delta_time,
 				velocity_delta_time_type,
@@ -934,6 +949,7 @@ export_reconstructed_motion_path()
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
 		.def("get_motion_path",
@@ -1034,6 +1050,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		return reconstructed_flowline.reconstructed_seed_point_velocity(
 				velocity_delta_time,
 				velocity_delta_time_type,
@@ -1144,6 +1167,7 @@ export_reconstructed_flowline()
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
 		.def("get_left_flowline",
@@ -1269,6 +1293,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list resolved_geometry_point_velocities_list;
 
 		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
@@ -1484,6 +1515,7 @@ export_resolved_topological_line()
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a resolved topological line):\n"
 				"  ::\n"
@@ -1662,6 +1694,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list resolved_geometry_point_velocities_list;
 
 		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
@@ -1813,6 +1852,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		// See if point is inside the resolved topological boundary.
 		if (!resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
 		{
@@ -2023,6 +2069,7 @@ export_resolved_topological_boundary()
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a resolved topological boundary):\n"
 				"  ::\n"
@@ -2183,6 +2230,7 @@ export_resolved_topological_boundary()
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: Vector3D or None\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  If the point lies within this resolved topological boundary then a velocity vector will be returned, otherwise ``None`` will be returned.\n"
 				"\n"
@@ -2376,6 +2424,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list resolved_geometry_point_velocities_list;
 
 		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
@@ -2484,6 +2539,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		boost::optional< std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
 				velocity = resolved_topological_network->get_triangulation_network().calculate_velocity(
 						point,
@@ -2763,6 +2825,7 @@ export_resolved_topological_network()
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a resolved topological network):\n"
 				"  ::\n"
@@ -2971,6 +3034,7 @@ export_resolved_topological_network()
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: Vector3D or None\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  If the point lies within this resolved topological network (which can be either its deforming region or one of its rigid blocks) "
 				"then a velocity vector will be returned, otherwise ``None`` will be returned.\n"
@@ -3200,6 +3264,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list resolved_geometry_point_velocities_list;
 
 		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
@@ -3445,6 +3516,7 @@ export_resolved_topological_geometry_sub_segment()
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a sub-segment):\n"
 				"  ::\n"
@@ -3647,6 +3719,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list resolved_geometry_point_velocities_list;
 
 		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
@@ -3975,6 +4054,7 @@ export_resolved_topological_shared_sub_segment()
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a sub-segment):\n"
 				"  ::\n"

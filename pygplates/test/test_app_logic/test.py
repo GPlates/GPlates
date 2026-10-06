@@ -1061,7 +1061,7 @@ class NetRotationTestCase(unittest.TestCase):
 
     def test_invalid_arguments(self):
         topological_snapshot = self.topological_model.topological_snapshot(10)
-        for velocity_delta_time in (0, -1):
+        for velocity_delta_time in (0, -1, float('nan')):
             self.assertRaises(ValueError, pygplates.NetRotationModel, self.topological_model, velocity_delta_time)
             self.assertRaises(ValueError, pygplates.NetRotationSnapshot, topological_snapshot, velocity_delta_time)
         # A point distribution with no points.
@@ -1130,6 +1130,60 @@ class VelocityTimeIntervalTestCase(unittest.TestCase):
             for reconstruction_time in (0, 50, 100):
                 total_net_rotation = net_rotation_model.net_rotation_snapshot(reconstruction_time).get_total_net_rotation()
                 self.assertAlmostEqual(total_net_rotation.get_finite_rotation().get_euler_pole_and_angle()[1], expected_angle, delta=1e-2 * expected_angle)
+
+    def test_invalid_velocity_delta_time(self):
+        # Every function and method that calculates velocities needs a positive time interval.
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        topological_snapshot = pygplates.TopologicalSnapshot(os.path.join(FIXTURES, 'topologies.gpml'), rotation_model, 10)
+        point = pygplates.PointOnSphere(0, 0)
+        reconstructed_feature_geometry = pygplates.ReconstructSnapshot(
+            pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature, point, reconstruction_plate_id=801),
+            rotation_model, 10).get_reconstructed_geometries()[0]
+        reconstructed_flowline = pygplates.ReconstructSnapshot(
+            pygplates.Feature.create_flowline(point, [0, 10, 20], left_plate=201, right_plate=801),
+            rotation_model, 10).get_reconstructed_geometries(pygplates.ReconstructType.flowline)[0]
+        reconstructed_motion_path = pygplates.ReconstructSnapshot(
+            pygplates.Feature.create_motion_path(point, [0, 10, 20], relative_plate=201, reconstruction_plate_id=801),
+            rotation_model, 10).get_reconstructed_geometries(pygplates.ReconstructType.motion_path)[0]
+
+        velocity_functions = [
+            lambda velocity_delta_time: pygplates.calculate_velocities([point], pygplates.FiniteRotation((90, 0), 0.01), velocity_delta_time),
+            lambda velocity_delta_time: pygplates.ReconstructSnapshot(reconstructed_feature_geometry.get_feature(), rotation_model, 10)
+                .get_point_velocities([point], velocity_delta_time=velocity_delta_time),
+            lambda velocity_delta_time: topological_snapshot.get_point_velocities([point], velocity_delta_time=velocity_delta_time),
+            lambda velocity_delta_time: reconstructed_feature_geometry.get_reconstructed_geometry_point_velocities(velocity_delta_time=velocity_delta_time),
+            lambda velocity_delta_time: reconstructed_flowline.get_reconstructed_seed_point_velocity(velocity_delta_time=velocity_delta_time),
+            lambda velocity_delta_time: reconstructed_motion_path.get_reconstructed_seed_point_velocity(velocity_delta_time=velocity_delta_time),
+        ]
+        resolved_topology_types = set()
+        for resolved_topology in topological_snapshot.get_resolved_topologies(
+                pygplates.ResolveTopologyType.line | pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network):
+            resolved_topology_types.add(type(resolved_topology))
+            velocity_functions.append(
+                lambda velocity_delta_time, resolved_topology=resolved_topology:
+                    resolved_topology.get_resolved_geometry_point_velocities(velocity_delta_time=velocity_delta_time))
+            if not isinstance(resolved_topology, pygplates.ResolvedTopologicalLine):
+                velocity_functions.append(
+                    lambda velocity_delta_time, resolved_topology=resolved_topology:
+                        resolved_topology.get_point_velocity(point, velocity_delta_time=velocity_delta_time))
+            for sub_segment in resolved_topology.get_geometry_sub_segments() if isinstance(resolved_topology, pygplates.ResolvedTopologicalLine) \
+                    else resolved_topology.get_boundary_sub_segments():
+                velocity_functions.append(
+                    lambda velocity_delta_time, sub_segment=sub_segment:
+                        sub_segment.get_resolved_geometry_point_velocities(velocity_delta_time=velocity_delta_time))
+        self.assertEqual(resolved_topology_types,
+                         {pygplates.ResolvedTopologicalLine, pygplates.ResolvedTopologicalBoundary, pygplates.ResolvedTopologicalNetwork})
+        for resolved_topological_section in topological_snapshot.get_resolved_topological_sections():
+            for shared_sub_segment in resolved_topological_section.get_shared_sub_segments():
+                velocity_functions.append(
+                    lambda velocity_delta_time, shared_sub_segment=shared_sub_segment:
+                        shared_sub_segment.get_resolved_geometry_point_velocities(velocity_delta_time=velocity_delta_time))
+
+        for velocity_function in velocity_functions:
+            velocity_function(1.0)  # a positive interval is fine
+            for velocity_delta_time in (0, -1, float('nan')):
+                self.assertRaises(ValueError, velocity_function, velocity_delta_time)
 
 
 class PlatePartitionerTestCase(unittest.TestCase):
