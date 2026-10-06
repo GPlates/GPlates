@@ -74,15 +74,11 @@ namespace GPlatesAppLogic
 	const double VELOCITY_DELTA_TIME = 1.0;
 	const double INV_VELOCITY_DELTA_TIME = 1.0 / VELOCITY_DELTA_TIME;
 
-	// Scale velocity values from kms/my to m/s.
-	//const double VELOCITY_SCALE_KMS_MY_TO_M_S =
-	//		1e-1/* kms/my -> cm/yr */ *
-	//		(1.0 / 3.1536e+9)/* cm/yr to m/s */;
-
 	// Scale 1/my -> 1/s.
+	// A year is 365.25 days, as when strain is accumulated over time (see TopologyReconstruct).
 	const double SCALE_PER_MY_TO_PER_SECOND =
 			1e-6/* 1/my -> 1/yr */ *
-			(1.0 / 3.1536e+7)/* 1/yr to 1/s */;
+			(1.0 / (365.25 * 24 * 3600))/* 1/yr to 1/s */;
 
 
 	//

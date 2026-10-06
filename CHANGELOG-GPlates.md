@@ -63,6 +63,7 @@ Changes since 2.5:
   * Velocities and net rotation:
     * Fixed the net rotation export giving a rigid plate far too large a net rotation at the oldest rotation of its plate ID (eg, about 100 times too large for a plate whose rotations end at 100 Ma). The velocity time interval now moves to start at the reconstruction time there, as it already did for the velocities of plates.
     * Fixed the velocities of mid-ocean ridges and flowlines (geometries reconstructed by half-stage rotation) in the same way: they were far too large at the oldest rotation of either plate, and at present day they were zero with the "(T, T-dt)" velocity time step and half as large with "(T+dt/2, T-dt/2)".
+    * Strain rates in deforming networks use a year of 365.25 days, like the strain accumulated from them (previously 365 days). So strain rates are about 0.07% smaller, and accumulated strains are no longer about 0.07% too large.
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.
   * So installing a newer build replaces the previous one instead of adding another program directory (and another "Apps & features" entry on Windows).

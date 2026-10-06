@@ -16529,7 +16529,7 @@ class Strain:
         To accumulate strain from an initial undeformed state at 100Ma to its final deformed strain at present day:
         ::
 
-          time_increment_1myr_in_seconds = 1e6 * 365 * 24 * 60 * 60
+          time_increment_1myr_in_seconds = 1e6 * 365.25 * 24 * 60 * 60
           previous_strain = pygplates.Strain.identity
           previous_strain_rate = pygplates.StrainRate.zero
 
