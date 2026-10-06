@@ -486,8 +486,8 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 				time,
 				velocity_delta_time,
 				velocity_delta_time_type,
-				d_anchor_plate_id,
-				180/*num_samples_along_meridian*/);  // use 180 x 360 uniform lat-lon samples
+				180/*num_samples_along_meridian*/,  // use 180 x 360 uniform lat-lon samples
+				d_anchor_plate_id);
 
 		// Go through the rotations plate-by-plate.
 		for (const auto &net_rotation_plate_id_and_contribution : net_rotation.get_plate_id_net_rotation_map())
