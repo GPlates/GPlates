@@ -339,6 +339,7 @@ endif()
 #
 # When GPLATES_INSTALL_STANDALONE is true then we install code to fix up GPlates (or pyGPlates) for deployment to another machine
 # (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
+# A pyGPlates wheel leaves that copying to its repair tool (GPLATES_INSTALL_FOR_WHEEL_REPAIR; see 'ConfigDefault.cmake').
 # When this is false then we don't install dependencies, instead only installing the GPlates executable (or pyGPlates library) and a few non-dependency items.
 #
 if (GPLATES_INSTALL_STANDALONE)
@@ -857,8 +858,8 @@ if (GPLATES_INSTALL_STANDALONE)
     ###################################################
     # Install dynamically linked dependency libraries #
     ###################################################
-    # Only install shared library dependencies if requested.
-    if (GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES)
+    # Unless a wheel-repair tool will copy them into the wheel instead (see GPLATES_INSTALL_FOR_WHEEL_REPAIR).
+    if (NOT GPLATES_INSTALL_FOR_WHEEL_REPAIR)
         include(InstallSharedLibraryDependencies)
     endif()
 
