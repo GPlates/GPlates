@@ -282,7 +282,7 @@ endif()
 
 # Install geodata if requested (but only for the gplates target).
 #
-# The variables GPLATES_INSTALL_GEO_DATA and GPLATES_INSTALL_GEO_DATA_DIR are cache variables that the user can set to control this.
+# The variables GPLATES_INSTALL_GEO_DATA and GPLATES_INSTALL_GEO_DATA_SOURCE_DIR are cache variables that the user can set to control this.
 #
 if (GPLATES_BUILD_GPLATES)  # GPlates ...
     if (GPLATES_INSTALL_GEO_DATA)
@@ -292,7 +292,7 @@ if (GPLATES_BUILD_GPLATES)  # GPlates ...
         #   "The last component of each directory name is appended to the destination directory but
         #    a trailing slash may be used to avoid this because it leaves the last component empty"
         #
-        string(REGEX REPLACE "/+$" "" _SOURCE_GEO_DATA_DIR "${GPLATES_INSTALL_GEO_DATA_DIR}")
+        string(REGEX REPLACE "/+$" "" _SOURCE_GEO_DATA_DIR "${GPLATES_INSTALL_GEO_DATA_SOURCE_DIR}")
 
         #
         # Note: Depending on the installation location ${CMAKE_INSTALL_PREFIX} a path length limit might be

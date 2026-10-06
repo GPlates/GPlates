@@ -230,27 +230,41 @@ if (GPLATES_BUILD_GPLATES) # GPlates ...
 	# Developers may want to turn this on, using the cmake command-line or cmake GUI, even when not releasing a public build.
 	option(GPLATES_INSTALL_GEO_DATA "Install geodata (eg, in the binary installer)." false)
 
-	# The directory location of the geodata.
+	# The directory the geodata is copied *from* (its install destination is fixed; see 'Install.cmake').
 	# The geodata is only included in the binary installer if 'GPLATES_INSTALL_GEO_DATA' is true.
 	# Paths must be full paths (eg, '~/geodata' is ok but '../geodata' is not).
-	set(GPLATES_INSTALL_GEO_DATA_DIR "" CACHE PATH "Location of geodata (use absolute path).")
+	set(_GEO_DATA_SOURCE_DIR_DOC "Directory to copy the geodata from (use absolute path).")
+	set(GPLATES_INSTALL_GEO_DATA_SOURCE_DIR "" CACHE PATH "${_GEO_DATA_SOURCE_DIR_DOC}")
+	# GPLATES_INSTALL_GEO_DATA_DIR is this variable's old name, which read like an install destination. An empty one is
+	# just its old default (eg, in an existing build tree's cache), so is dropped without a warning. A non-empty one
+	# overrides: its entry is removed on every configure, so one that is there was just passed (eg, by a release routine).
+	if (DEFINED CACHE{GPLATES_INSTALL_GEO_DATA_DIR})
+		if (GPLATES_INSTALL_GEO_DATA_DIR)
+			message(DEPRECATION "GPLATES_INSTALL_GEO_DATA_DIR is deprecated: use GPLATES_INSTALL_GEO_DATA_SOURCE_DIR instead "
+				"(set to '${GPLATES_INSTALL_GEO_DATA_DIR}' from it).")
+			set(GPLATES_INSTALL_GEO_DATA_SOURCE_DIR "${GPLATES_INSTALL_GEO_DATA_DIR}" CACHE PATH "${_GEO_DATA_SOURCE_DIR_DOC}" FORCE)
+		endif()
+		unset(GPLATES_INSTALL_GEO_DATA_DIR CACHE)
+	endif()
+	unset(_GEO_DATA_SOURCE_DIR_DOC)
 	#
 	# If we're installing geodata then make sure the source geodata directory has been specified, is an absolute path and exists.
 	if (GPLATES_INSTALL_GEO_DATA)
-		if (NOT GPLATES_INSTALL_GEO_DATA_DIR)
-			message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
+		if (NOT GPLATES_INSTALL_GEO_DATA_SOURCE_DIR)
+			message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_SOURCE_DIR when you enable GPLATES_INSTALL_GEO_DATA")
 		endif()
-		if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_DIR}")
-			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR should be an absolute path (not a relative path)")
+		if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_SOURCE_DIR}")
+			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_SOURCE_DIR should be an absolute path (not a relative path)")
 		endif()
-		if (NOT EXISTS "${GPLATES_INSTALL_GEO_DATA_DIR}")
-			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR does not exist: ${GPLATES_INSTALL_GEO_DATA_DIR}")
+		if (NOT EXISTS "${GPLATES_INSTALL_GEO_DATA_SOURCE_DIR}")
+			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_SOURCE_DIR does not exist: ${GPLATES_INSTALL_GEO_DATA_SOURCE_DIR}")
 		endif()
-		file(TO_CMAKE_PATH ${GPLATES_INSTALL_GEO_DATA_DIR} GPLATES_INSTALL_GEO_DATA_DIR) # Convert '\' to '/' in paths.
+		file(TO_CMAKE_PATH ${GPLATES_INSTALL_GEO_DATA_SOURCE_DIR} GPLATES_INSTALL_GEO_DATA_SOURCE_DIR) # Convert '\' to '/' in paths.
 	endif()
 else() # pyGPlates ...
 	# Remove cache variables (eg, leftover if switching from a GPlates build to pyGPlates by disabling GPLATES_BUILD_GPLATES).
 	unset(GPLATES_INSTALL_GEO_DATA CACHE)
+	unset(GPLATES_INSTALL_GEO_DATA_SOURCE_DIR CACHE)
 	unset(GPLATES_INSTALL_GEO_DATA_DIR CACHE)
 endif()
 
