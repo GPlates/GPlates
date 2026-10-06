@@ -966,6 +966,12 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 									velocity_delta_time,
 									velocity_delta_time_type)));
 
+	// Each vertex velocity is tangential to the globe at its vertex, so their interpolation is not
+	// quite tangential at the point. Remove its radial component.
+	interpolated_velocity = interpolated_velocity -
+			dot(interpolated_velocity, point.position_vector()) *
+					GPlatesMaths::Vector3D(point.position_vector());
+
 	// Velocity has units cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
 	//
 	// Convert to kms/myr if requested.

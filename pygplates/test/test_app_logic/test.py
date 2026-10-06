@@ -3588,7 +3588,36 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         # Both velocities and strain rates are zero.
         self.assertTrue(point_velocities == [pygplates.Vector3D.zero] * len(points))
         self.assertTrue(point_strain_rates == [pygplates.StrainRate.zero] * len(points))
-    
+
+    def test_network_velocities_are_tangential(self):
+        # A network whose boundary is fixed (plate 0) and whose interior point (plate 1) rotates about
+        # the North pole, so velocities are interpolated between vertices with different velocities.
+        rotation_model = pygplates.RotationModel(pygplates.Feature.create_total_reconstruction_sequence(
+            0, 1, pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((90, 0), math.radians(time))), time)
+                for time in (0, 100)])))
+        boundary_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PolygonOnSphere([(0, 0), (0, 20), (20, 20), (20, 0)]),
+            reconstruction_plate_id=0)
+        interior_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PointOnSphere(10, 10),
+            reconstruction_plate_id=1)
+        network_feature = pygplates.Feature.create_topological_feature(
+            pygplates.FeatureType.gpml_topological_network,
+            pygplates.GpmlTopologicalNetwork(
+                [pygplates.GpmlTopologicalSection.create(boundary_feature, topological_geometry_type=pygplates.GpmlTopologicalNetwork)],
+                [pygplates.GpmlTopologicalSection.create_network_interior(interior_feature)]))
+        snapshot = pygplates.TopologicalSnapshot([network_feature, boundary_feature, interior_feature], rotation_model, 10)
+        points = [pygplates.PointOnSphere(lat, lon) for lat in (3, 8, 15) for lon in (4, 9, 17)]
+        point_velocities = snapshot.get_point_velocities(points)
+        for point, velocity in zip(points, point_velocities):
+            self.assertTrue(velocity is not None)
+            self.assertGreater(velocity.get_magnitude(), 0)
+            radial_velocity = pygplates.Vector3D.dot(velocity, pygplates.Vector3D(point.to_xyz()))
+            self.assertAlmostEqual(radial_velocity / velocity.get_magnitude(), 0, places=12)
+
     def test_reconstruct_points(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),
