@@ -55,6 +55,9 @@ Changes since 1.0.0:
     * An export of points and multi-points goes in a `<name>` folder, like any other export of several geometry types (previously a Shapefile export put `<name>.shp` and `<name>_multi_point.shp` side by side).
   * Fixed rewriting an OGR GMT file of several geometry types deleting files of the same names (eg, `<name>_point.gmt`) in the current working directory.
   * Fixed the macOS pip wheels crashing (segmentation fault) whenever pyGPlates logged a warning or debug message, eg when writing a `.grot` file, or reading a rotation file with an invalid pole.
+  * Net rotation:
+    * `NetRotationModel()` can be created without `velocity_delta_time` and `velocity_delta_time_type`, which default to 1 Myr and `VelocityDeltaTimeType.t_plus_delta_t_to_t` as documented (previously raised `ArgumentError`).
+    * An empty `point_distribution` sequence now raises `ValueError` (previously `PreconditionViolationError`).
   * Fixed the pip wheels loading the GDAL plugins named by a `GDAL_DRIVER_PATH` environment variable (eg, set by an active conda environment with GDAL, or by OSGeo4W or QGIS). Those plugins are built for another GDAL, and reading a file could crash (eg, a Shapefile after `import pygmt`).
 
 pyGPlates 1.0.0

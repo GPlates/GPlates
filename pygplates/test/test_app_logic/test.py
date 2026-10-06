@@ -1050,6 +1050,25 @@ class NetRotationTestCase(unittest.TestCase):
         self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
         self.assertAlmostEqual(total_angle_degrees, 0.014637, places=6)
 
+    def test_default_arguments(self):
+        # The velocity delta time and its type default to 1 Myr and [t+dt, t].
+        net_rotation_model = pygplates.NetRotationModel(self.topological_model)
+        self.assertTrue(net_rotation_model.net_rotation_snapshot(10).get_total_net_rotation().get_finite_rotation() ==
+                        self.net_rotation_model.net_rotation_snapshot(10).get_total_net_rotation().get_finite_rotation())
+        net_rotation_snapshot = pygplates.NetRotationSnapshot(self.topological_model.topological_snapshot(10))
+        self.assertTrue(net_rotation_snapshot.get_total_net_rotation().get_finite_rotation() ==
+                        self.net_rotation_model.net_rotation_snapshot(10).get_total_net_rotation().get_finite_rotation())
+
+    def test_invalid_arguments(self):
+        topological_snapshot = self.topological_model.topological_snapshot(10)
+        for velocity_delta_time in (0, -1):
+            self.assertRaises(ValueError, pygplates.NetRotationModel, self.topological_model, velocity_delta_time)
+            self.assertRaises(ValueError, pygplates.NetRotationSnapshot, topological_snapshot, velocity_delta_time)
+        # A point distribution with no points.
+        for point_distribution in (0, []):
+            self.assertRaises(ValueError, pygplates.NetRotationModel, self.topological_model, point_distribution=point_distribution)
+            self.assertRaises(ValueError, pygplates.NetRotationSnapshot, topological_snapshot, point_distribution=point_distribution)
+
 
 class PlatePartitionerTestCase(unittest.TestCase):
     def setUp(self):

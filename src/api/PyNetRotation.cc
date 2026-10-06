@@ -197,6 +197,13 @@ namespace GPlatesApi
 			arbitrary_point_distribution.push_back(
 					extract_arbitrary_point_and_sample_area(arbitrary_point_and_sample_area, type_error_string));
 		}
+
+		// With no points there is nothing to sample net rotation at.
+		if (arbitrary_point_distribution.empty())
+		{
+			PyErr_SetString(PyExc_ValueError, "Point distribution must not be empty.");
+			bp::throw_error_already_set();
+		}
 	}
 
 	const unsigned int NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN = 180;
@@ -906,7 +913,7 @@ export_net_rotation()
 			"` uniformly spaced latitude-longitude points.\n"
 			"  :type point_distribution: int, or sequence of tuple (point, float) where point is a "
 			"PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-			"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
+			"  :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or an empty sequence.\n"
 			"\n"
 			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:\n"
 			"\n"
@@ -1124,7 +1131,7 @@ export_net_rotation()
 			"` uniformly spaced latitude-longitude points.\n"
 			"  :type point_distribution: int, or sequence of tuple (point, float) where point is a "
 			"PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-			"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
+			"  :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or an empty sequence.\n"
 			"\n"
 			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in a snapshot (:meth:`NetRotationModel.net_rotation_snapshot`) is:\n"
 			"\n"
@@ -1210,8 +1217,8 @@ export_net_rotation()
 						&GPlatesApi::net_rotation_model_create,
 						bp::default_call_policies(),
 						(bp::arg("topological_model"),
-							bp::arg("velocity_delta_time"),
-							bp::arg("velocity_delta_time_type"),
+							bp::arg("velocity_delta_time") = 1.0,
+							bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 							bp::arg("point_distribution") = GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN)),
 				net_rotation_model_create_docstring_stream.str().c_str())
 		// Pickle support...
