@@ -5646,7 +5646,8 @@ class GpmlIrregularSampling(PropertyValue):
         :rtype: tuple[GpmlTimeSample, GpmlTimeSample], or None
 
         Returns ``None`` if *time* is outside the range of times (later than the most recent time sample
-        or earlier than the least recent time sample).
+        or earlier than the least recent time sample). If there is only one time sample then *time* must
+        equal its time, and that sample is returned as both samples.
 
         *Note:* The returned time samples are ordered forward in time (the first sample is further in the past than the second sample).
         This is opposite the typical ordering of time samples in a :class:`GpmlIrregularSampling` (which are progressively further
