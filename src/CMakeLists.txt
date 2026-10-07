@@ -591,8 +591,28 @@ else()  # pygplates ...
 	# (which diffs it against the include closure of the pyGPlates API - the module must compile
 	# exactly that closure; see 'cmake/pygplates_source_closure.py').
 	#
-	file(GENERATE OUTPUT "${PROJECT_BINARY_DIR}/pygplates_sources.txt"
+	# Note: a multi-config generator (eg, Visual Studio) evaluates 'file(GENERATE)' once per
+	#       configuration, and the lists differ (AUTOMOC/AUTORCC name their generated sources
+	#       after the configuration, eg 'mocs_compilation_Release.cpp'), so writing them all to
+	#       one file is an error. So write one file per configuration. They differ only in
+	#       generated sources, which the test ignores.
+	#
+	# The test ('pygplates/test/CMakeLists.txt') reads the file name from the global property
+	# GPLATES_PYGPLATES_SOURCES_FILE, so that it is decided only here. For a multi-config
+	# generator, it contains '$<CONFIG>' (which 'add_test()' evaluates for the configuration
+	# being tested).
+	#
+	get_property(_generator_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+	if (_generator_is_multi_config)  # multi-config generator (eg, Visual Studio, Xcode) ...
+		set(_pygplates_sources_file "${PROJECT_BINARY_DIR}/pygplates_sources_$<CONFIG>.txt")
+	else()  # single-config generator (eg, Ninja, Unix Makefiles) ...
+		set(_pygplates_sources_file "${PROJECT_BINARY_DIR}/pygplates_sources.txt")
+	endif()
+	file(GENERATE OUTPUT "${_pygplates_sources_file}"
 		CONTENT "$<JOIN:$<TARGET_PROPERTY:pygplates,SOURCES>,\n>")
+	set_property(GLOBAL PROPERTY GPLATES_PYGPLATES_SOURCES_FILE "${_pygplates_sources_file}")
+	unset(_pygplates_sources_file)
+	unset(_generator_is_multi_config)
 
 endif()
 

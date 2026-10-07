@@ -9,12 +9,19 @@ add_test(
 # in a shared translation unit, silently re-fattening the module - and what keeps the
 # committed dependency matrix honest ("--check-doc" fails if it is stale, the way
 # pygplates-stub-test fails on a stale type stub). "pygplates_sources.txt" is written at
-# generate time by the pygplates target in 'src/CMakeLists.txt'.
+# generate time by the pygplates target in 'src/CMakeLists.txt' - one file per configuration,
+# "pygplates_sources_<config>.txt", for a multi-config generator (eg, Visual Studio). That is
+# where the file name is decided, and it passes it here in a global property.
+get_property(_pygplates_sources_file GLOBAL PROPERTY GPLATES_PYGPLATES_SOURCES_FILE)
+if (NOT _pygplates_sources_file)
+	message(FATAL_ERROR "GPLATES_PYGPLATES_SOURCES_FILE is not set (by the pygplates target in 'src/CMakeLists.txt').")
+endif()
 add_test(
 	NAME pygplates-source-closure-test
 	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/pygplates_source_closure.py"
-		--check-sources "${PROJECT_BINARY_DIR}/pygplates_sources.txt"
+		--check-sources "${_pygplates_sources_file}"
 		--check-doc "${PROJECT_SOURCE_DIR}/docs/design/architecture/dependency-matrix.md")
+unset(_pygplates_sources_file)
 
 # Add the linkage test: the built module's *direct* shared-library dependencies must not
 # include any of GPlates' GUI/rendering libraries (Qt Widgets, Qt Svg, the Qt OpenGL
