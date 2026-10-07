@@ -709,7 +709,7 @@ export_strain()
 				"  To accumulate strain from an initial undeformed state at 100Ma to its final deformed strain at present day:\n"
 				"  ::\n"
 				"\n"
-				"    time_increment_1myr_in_seconds = 1e6 * 365 * 24 * 60 * 60\n"
+				"    time_increment_1myr_in_seconds = 1e6 * 365.25 * 24 * 60 * 60\n"
 				"    previous_strain = pygplates.Strain.identity\n"
 				"    previous_strain_rate = pygplates.StrainRate.zero\n"
 				"\n"

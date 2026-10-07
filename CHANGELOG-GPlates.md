@@ -24,6 +24,11 @@ Changes since 2.5:
     * The dialog now shows its prompt and has Cancel and close buttons, and `q`/`quit` exits help.
   * Fixed the cancel button of the "Running Python code..." dialog not interrupting the running code.
   * Script filenames now appear correctly in tracebacks (instead of as `b'...'`).
+* The net rotation export calculates net rotation differently, so its results differ from GPlates 2.5:
+  * Each sample point now has the same weight in the net rotation of its plate, instead of a weight proportional to cos²(latitude). The total net rotation of the globe is unaffected, but equatorial plates now have a higher net rotation and plates near the poles a lower one.
+  * Stationary plates now count towards the area that the total net rotation is normalised by, which lowers the total when some plates do not move. This also fixes an error exporting net rotation when there are stationary plates.
+  * A topological plate without a plate ID is now included, using plate ID 0 (it was left out).
+  * Samples are taken at the centres of a 1-degree latitude-longitude grid, instead of at its corners (which sampled the North and South poles 361 times each, and longitude 180 twice). This changes results slightly.
 * Hellinger tool: fixed "Calculate Uncertainties" failing with a Python error (with NumPy 1.12 or later).
 * Non-ASCII (eg, Chinese or accented) file paths on Windows:
   * Fixed saving rotation files (GROT format) and reading data-mining configuration files.
@@ -60,6 +65,12 @@ Changes since 2.5:
     * Fixed saving a GROT file losing an edit in the Total Reconstruction Sequences dialog smaller than four significant figures (eg, 45.123 to 45.124), or a comment typed there for a pole with no comment or other attributes in the file.
     * Fixed editing a pole in the Total Reconstruction Sequences dialog, at a time where the same moving plate has a pole in another sequence (a crossover), changing that other pole when the GROT file is saved.
     * Fixed a pole line that is ignored when loading (eg, "999 0.0 0.0 0.0 0.0 999") adding the pole before it a second time.
+  * Velocities and net rotation:
+    * Fixed the net rotation export giving a rigid plate far too large a net rotation at the oldest rotation of its plate ID (eg, about 100 times too large for a plate whose rotations end at 100 Ma). The velocity time interval now moves to start at the reconstruction time there, as it already did for the velocities of plates.
+    * The net rotation export no longer skips times whose velocity time step reaches into the future. With the default "T to (T - dt)" method and a 10 My step, it skipped every time younger than 10 Ma.
+    * Fixed the velocities of mid-ocean ridges and flowlines (geometries reconstructed by half-stage rotation) in the same way: they were far too large at the oldest rotation of either plate, and at present day they were zero with the "(T, T-dt)" velocity time step and half as large with "(T+dt/2, T-dt/2)".
+    * Strain rates in deforming networks use a year of 365.25 days, like the strain accumulated from them (previously 365 days). So strain rates are about 0.07% smaller, and accumulated strains are no longer about 0.07% too large.
+    * Fixed velocities in the deforming region of a network pointing into or out of the globe: they are now tangential to it. The radial part is mostly well under 1% of the velocity (in the Müller et al. 2019 model), but is larger where network vertices are far apart. This also corrects the exported velocity magnitudes, and can change which points are deactivated as they cross between a network and a rigid plate.
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.
   * So installing a newer build replaces the previous one instead of adding another program directory (and another "Apps & features" entry on Windows).

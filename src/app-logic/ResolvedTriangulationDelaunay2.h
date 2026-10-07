@@ -1030,7 +1030,10 @@ namespace GPlatesAppLogic
 			theta3 = GPlatesMaths::convert_deg_to_rad( theta3 );
 
 			// Scale velocity values from cm/yr to m/s.
-			const double inv_velocity_scale = 1.0 / 3.1536e09;
+			// A year is 365.25 days, as when strain is accumulated over time (see
+			// TopologyReconstruct).
+			const double inv_velocity_scale =
+					1.0 / (100/* cm -> m */ * 365.25 * 24 * 3600/* yr -> s */);
 
 			uphi_centroid = uphi_centroid * inv_velocity_scale;
 			uphi1 = uphi1 * inv_velocity_scale;

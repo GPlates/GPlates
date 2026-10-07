@@ -158,10 +158,18 @@ GPlatesMaths::FiniteRotation
 GPlatesAppLogic::ResolvedVertexSourceInfo::CalcStageRotationVisitor::operator()(
 		const HalfStageRotationProperties &source) const
 {
-	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
-			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
-
 	const ReconstructionFeatureProperties &source_reconstruction_params = source.get_reconstruction_params();
+
+	// If we can't get left/right plate IDs then use plate ID zero, since that's what
+	// RotationUtils::get_half_stage_rotation() (below) does.
+	const std::pair<double, double> time_range =
+			PlateVelocityUtils::get_half_stage_rotation_velocity_time_range(
+					source_reconstruction_params.get_left_plate_id().get_value_or(0),
+					source_reconstruction_params.get_right_plate_id().get_value_or(0),
+					source.reconstruction_tree_creator,
+					reconstruction_time,
+					velocity_delta_time,
+					velocity_delta_time_type);
 
 	return GPlatesMaths::calculate_stage_rotation(
 			RotationUtils::get_half_stage_rotation(

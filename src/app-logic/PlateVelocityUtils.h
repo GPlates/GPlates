@@ -191,21 +191,11 @@ namespace GPlatesAppLogic
 		/**
 		 * Calculates the stage rotation at @a point by using the rotation between two nearby reconstruction times.
 		 *
-		 * If the plate ID is not found in a reconstruction tree at either time then the zero vector is returned.
-		 * This avoids extraneously large velocities when plate ID is found at one time but not the other.
-		 *
-		 * Except if the younger time is negative (and the older time non-negative) and the plate ID is *not*
-		 * found at the younger time (but is found at the older time) then the velocity delta time interval is
-		 * moved to (old_time - young_time, 0) and retried.
-		 * This enables rare users to support negative (future) times in rotation files if they wish
-		 * but also supports most users having only non-negative rotations yet still supplying a valid
-		 * velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
-		 *
-		 * Another exception is when the plate ID is found for the younger time but *not* for the older time,
-		 * in which case the velocity delta time interval is moved to
-		 * [reconstruction_time, reconstruction_time - velocity_delta_time] and retried.
-		 * This handles the case where the rotation file contains a finite rotation sequence (for the plate ID)
-		 * with the oldest time at the younger time (and hence the older time is not in the sequence).
+		 * If the plate ID is not found in the reconstruction tree at one end of the time interval
+		 * then the interval is moved (see VelocityDeltaTime::get_time_range_with_rotations). And if
+		 * it is not found at one end of the moved interval either then the identity rotation is
+		 * returned. This avoids extraneously large velocities when plate ID is found at one time
+		 * but not the other.
 		 *
 		 * Note that the stage rotation is also going forward in time (most old to young).
 		 */
@@ -215,6 +205,28 @@ namespace GPlatesAppLogic
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double& reconstruction_time,
 				const double& velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type);
+
+		/**
+		 * Returns the time range of a velocity of a geometry reconstructed by half-stage
+		 * rotation between @a left_plate_id and @a right_plate_id (such as a mid-ocean ridge or a
+		 * flowline).
+		 *
+		 * The time range is moved, as in @a calculate_stage_rotation, if either plate ID is not
+		 * found in the reconstruction tree at one end of it. But if either plate ID is not found at
+		 * one end of the moved range either then the unmoved range is returned (rather than no
+		 * velocity). A half-stage rotation counts a missing plate as the identity rotation, and
+		 * some mid-ocean ridges depend on that (see RotationUtils::get_stage_pole). So a plate ID
+		 * found at neither end of the unmoved range is ignored: it is the identity rotation at both
+		 * ends.
+		 */
+		std::pair<double, double>
+		get_half_stage_rotation_velocity_time_range(
+				const GPlatesModel::integer_plate_id_type &left_plate_id,
+				const GPlatesModel::integer_plate_id_type &right_plate_id,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
 				VelocityDeltaTime::Type velocity_delta_time_type);
 
 		/**

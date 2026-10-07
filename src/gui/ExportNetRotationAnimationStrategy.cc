@@ -72,40 +72,23 @@ namespace
 			GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS * GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS;
 
 	/**
-	 * @brief get_older_and_younger_times - on return @time_older and @time_younger will hold
-	 * the appropriate times for the velocity calculation at the @current_time.
+	 * Returns the velocity delta time type of the velocity method chosen in the export options.
 	 */
 	// TODO: unify this with method in KinematicGraphsDialog
-	void
-	get_older_and_younger_times(
-			const GPlatesQtWidgets::VelocityMethodWidget::VelocityMethod &velocity_method,
-			const double &delta_time,
-			const double &current_time,
-			double &time_older,
-			double &time_younger,
-			GPlatesAppLogic::VelocityDeltaTime::Type &velocity_delta_time_type)
+	GPlatesAppLogic::VelocityDeltaTime::Type
+	get_velocity_delta_time_type(
+			const GPlatesQtWidgets::VelocityMethodWidget::VelocityMethod &velocity_method)
 	{
 		switch(velocity_method)
 		{
 		case GPlatesQtWidgets::VelocityMethodWidget::T_TO_T_MINUS_DT:
-			time_older = current_time;
-			time_younger = current_time - delta_time;
-			velocity_delta_time_type = GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T;
-			break;
+			return GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T;
 		case GPlatesQtWidgets::VelocityMethodWidget::T_PLUS_DT_TO_T:
-			time_older = current_time + delta_time;
-			time_younger = current_time;
-			velocity_delta_time_type = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T;
-			break;
+			return GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T;
 		case GPlatesQtWidgets::VelocityMethodWidget::T_PLUS_MINUS_HALF_DT:
-			time_older = current_time + delta_time/2.;
-			time_younger = current_time - delta_time/2.;
-			velocity_delta_time_type = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T;
-			break;
+			return GPlatesAppLogic::VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T;
 		default:
-			time_older = current_time;
-			time_younger = current_time - delta_time;
-			velocity_delta_time_type = GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T;
+			return GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T;
 		}
 	}
 
@@ -396,27 +379,14 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 	double time = d_export_animation_context_ptr->view_time();
 	d_anchor_plate_id = application_state.get_current_reconstruction().get_anchor_plate_id();
 
-	double t_older;
-	double t_younger;
-	GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type;
-
-	// Check the time settings required by the user through the configuration widget.
-	get_older_and_younger_times(
-				d_configuration->d_options.velocity_method,
-				d_configuration->d_options.delta_time,
-				time,
-				t_older,
-				t_younger,
-				velocity_delta_time_type);
-	const double velocity_delta_time = t_older - t_younger;
-
-	// Skip times if if we get beyond the present day.
-	if (t_younger < 0.)
-	{
-		d_export_animation_context_ptr->update_status_message(
-					QObject::tr("Skipping net rotation file \"%1\": uses calculation time (\"%2\" Ma) younger than present day.").arg(full_filename).arg(t_younger));
-		return true;
-	}
+	// The time settings required by the user through the configuration widget.
+	//
+	// There's no need to skip a time whose velocity time interval reaches into the future (at
+	// present day, say): where a plate has no rotation at one end of the interval, the net
+	// rotation calculation moves the interval (see VelocityDeltaTime::get_time_range_with_rotations).
+	const double velocity_delta_time = d_configuration->d_options.delta_time;
+	const GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type =
+			get_velocity_delta_time_type(d_configuration->d_options.velocity_method);
 
 	try
 	{
@@ -486,8 +456,8 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 				time,
 				velocity_delta_time,
 				velocity_delta_time_type,
-				d_anchor_plate_id,
-				180/*num_samples_along_meridian*/);  // use 180 x 360 uniform lat-lon samples
+				180/*num_samples_along_meridian*/,  // use 180 x 360 uniform lat-lon samples
+				d_anchor_plate_id);
 
 		// Go through the rotations plate-by-plate.
 		for (const auto &net_rotation_plate_id_and_contribution : net_rotation.get_plate_id_net_rotation_map())

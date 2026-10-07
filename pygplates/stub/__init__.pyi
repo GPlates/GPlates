@@ -9029,7 +9029,7 @@ class NetRotationModel:
         :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
         :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :raises ValueError: if *velocity_delta_time* is negative or zero.
+        :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or an empty sequence.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in a snapshot (:meth:`NetRotationModel.net_rotation_snapshot`) is:
 
@@ -9131,7 +9131,7 @@ class NetRotationSnapshot:
         :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
         :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :raises ValueError: if *velocity_delta_time* is negative or zero.
+        :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or an empty sequence.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:
 
@@ -12984,6 +12984,7 @@ class ReconstructSnapshot:
         :type return_point_locations: bool
         :returns: the velocity of each point (``None`` for each point *outside* all reconstructed static polygons), and (if *return_point_locations* is ``True``) also the reconstructed static polygon containing each point (``None`` for points outside)
         :rtype: list[Vector3D | None], or tuple[list[Vector3D | None], list[ReconstructedFeatureGeometry | None]]
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         Reconstructed static polygons are :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>` that have :class:`polygon <PolygonOnSphere>` geometries (other geometry types are ignored since only polygons can contain points). The reconstructed feature geometries are obtained from :meth:`get_reconstructed_geometries` with ``reconstruct_types=pygplates.ReconstructType.feature_geometry`` and ``same_order_as_reconstructable_features=True``.
 
@@ -13157,6 +13158,7 @@ class ReconstructedFeatureGeometry(ReconstructionGeometry):
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         To associate each velocity with its point (in a reconstructed feature geometry):
         ::
@@ -13299,6 +13301,7 @@ class ReconstructedFlowline(ReconstructionGeometry):
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: Vector3D
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         .. versionadded:: 0.50
         """
@@ -13701,6 +13704,7 @@ class ReconstructedMotionPath(ReconstructionGeometry):
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: Vector3D
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         .. versionadded:: 0.50
         """
@@ -14474,6 +14478,7 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: Vector3D or None
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         If the point lies within this resolved topological boundary then a velocity vector will be returned, otherwise ``None`` will be returned.
 
@@ -14572,6 +14577,7 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         To associate each velocity with its point (in a resolved topological boundary):
         ::
@@ -14788,6 +14794,7 @@ class ResolvedTopologicalLine(ReconstructionGeometry):
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         To associate each velocity with its point (in a resolved topological line):
         ::
@@ -15012,6 +15019,7 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: Vector3D or None
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         If the point lies within this resolved topological network (which can be either its deforming region or one of its rigid blocks) then a velocity vector will be returned, otherwise ``None`` will be returned.
 
@@ -15130,6 +15138,7 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         To associate each velocity with its point (in a resolved topological network):
         ::
@@ -15555,6 +15564,7 @@ class ResolvedTopologicalSharedSubSegment:
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         To associate each velocity with its point (in a sub-segment):
         ::
@@ -15861,6 +15871,7 @@ class ResolvedTopologicalSubSegment:
         :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
         :type earth_radius_in_kms: float
         :rtype: list of Vector3D
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         To associate each velocity with its point (in a sub-segment):
         ::
@@ -16518,7 +16529,7 @@ class Strain:
         To accumulate strain from an initial undeformed state at 100Ma to its final deformed strain at present day:
         ::
 
-          time_increment_1myr_in_seconds = 1e6 * 365 * 24 * 60 * 60
+          time_increment_1myr_in_seconds = 1e6 * 365.25 * 24 * 60 * 60
           previous_strain = pygplates.Strain.identity
           previous_strain_rate = pygplates.StrainRate.zero
 
@@ -17273,6 +17284,7 @@ class TopologicalSnapshot:
         :returns: the velocity of each point (``None`` for each point *outside* all resolved topologies searched), and (if *return_point_locations* is ``True``) also the :class:`location <TopologyPointLocation>` of each point
         :rtype: list[Vector3D | None], or tuple[list[Vector3D | None], list[TopologyPointLocation]]
         :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
+        :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         :class:`Resolved topological networks<ResolvedTopologicalNetwork>` have a higher priority than :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` since networks typically *overlay* rigid plates. So if a point is inside both a boundary and a network then the velocity of the network is returned.
 
@@ -18245,6 +18257,7 @@ def calculate_velocities(domain_points: Sequence[PointOnSphere | LatLonPoint | t
     :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)
     :type earth_radius_in_kms: float
     :rtype: list of Vector3D
+    :raises ValueError: if *time_interval_in_my* is negative or zero.
 
     Calculating velocities (in cms/yr) of all points in a :class:`ReconstructedFeatureGeometry` (generated by :class:`ReconstructModel`, :class:`ReconstructSnapshot` or :func:`reconstruct`):
     ::

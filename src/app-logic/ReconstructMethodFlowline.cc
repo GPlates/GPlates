@@ -31,6 +31,7 @@
 #include "GeometryUtils.h"
 #include "FlowlineGeometryPopulator.h"
 #include "FlowlineUtils.h"
+#include "PlateVelocityUtils.h"
 #include "RotationUtils.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -195,8 +196,14 @@ GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_velocities(
 		right_plate_id = flowline_property_finder.get_right_plate().get();
 	}
 
-	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
-			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+	const std::pair<double, double> time_range =
+			PlateVelocityUtils::get_half_stage_rotation_velocity_time_range(
+					left_plate_id,
+					right_plate_id,
+					context.reconstruction_tree_creator,
+					reconstruction_time,
+					velocity_delta_time,
+					velocity_delta_time_type);
 
 	// Iterate over the feature's present day geometries and rotate each one.
 	std::vector<Geometry> present_day_geometries;
