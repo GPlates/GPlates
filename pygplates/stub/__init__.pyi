@@ -5337,6 +5337,8 @@ class GpmlArray(PropertyValue):
     def insert(self, i: int, x: PropertyValue) -> None:
         """Insert element *x* at index *i*.
 
+        Like ``list.insert()``, an index *i* past either end of the sequence inserts at that end (rather than raising ``IndexError``).
+
         :param i: the index to insert at
         :type i: int
         :param x: the element to insert
@@ -5698,6 +5700,8 @@ class GpmlIrregularSampling(PropertyValue):
 
     def insert(self, i: int, x: GpmlTimeSample) -> None:
         """Insert element *x* at index *i*.
+
+        Like ``list.insert()``, an index *i* past either end of the sequence inserts at that end (rather than raising ``IndexError``).
 
         :param i: the index to insert at
         :type i: int
@@ -6271,6 +6275,8 @@ class GpmlPiecewiseAggregation(PropertyValue):
     def insert(self, i: int, x: GpmlTimeWindow) -> None:
         """Insert element *x* at index *i*.
 
+        Like ``list.insert()``, an index *i* past either end of the sequence inserts at that end (rather than raising ``IndexError``).
+
         :param i: the index to insert at
         :type i: int
         :param x: the element to insert
@@ -6635,6 +6641,8 @@ class GpmlPropertyDelegateList:
     def insert(self, i: int, x: GpmlPropertyDelegate) -> None:
         """Insert element *x* at index *i*.
 
+        Like ``list.insert()``, an index *i* past either end of the sequence inserts at that end (rather than raising ``IndexError``).
+
         :param i: the index to insert at
         :type i: int
         :param x: the element to insert
@@ -6919,6 +6927,8 @@ class GpmlTimeSampleList:
     def insert(self, i: int, x: GpmlTimeSample) -> None:
         """Insert element *x* at index *i*.
 
+        Like ``list.insert()``, an index *i* past either end of the sequence inserts at that end (rather than raising ``IndexError``).
+
         :param i: the index to insert at
         :type i: int
         :param x: the element to insert
@@ -7177,6 +7187,8 @@ class GpmlTimeWindowList:
 
     def insert(self, i: int, x: GpmlTimeWindow) -> None:
         """Insert element *x* at index *i*.
+
+        Like ``list.insert()``, an index *i* past either end of the sequence inserts at that end (rather than raising ``IndexError``).
 
         :param i: the index to insert at
         :type i: int
@@ -7722,6 +7734,8 @@ class GpmlTopologicalSectionList:
 
     def insert(self, i: int, x: GpmlTopologicalSection) -> None:
         """Insert element *x* at index *i*.
+
+        Like ``list.insert()``, an index *i* past either end of the sequence inserts at that end (rather than raising ``IndexError``).
 
         :param i: the index to insert at
         :type i: int

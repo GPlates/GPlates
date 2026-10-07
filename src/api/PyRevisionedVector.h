@@ -164,6 +164,9 @@ namespace GPlatesApi
 					"insert(i,x)\n"
 					"  Insert element *x* at index *i*.\n"
 					"\n"
+					"  Like ``list.insert()``, an index *i* past either end of the sequence "
+					"inserts at that end (rather than raising ``IndexError``).\n"
+					"\n"
 					"  :param i: the index to insert at\n"
 					"  :type i: int\n"
 					"  :param x: the element to insert\n"
@@ -1053,8 +1056,22 @@ namespace GPlatesApi
 				long index,
 				const element_type &element)
 		{
+			// Like 'list.insert()', an out-of-range index is clamped rather than raising IndexError
+			// (inserting at 'i' is 's[i:i] = [x]'). So unlike 'get_index()', there is no IndexError.
 			// It's OK to use an 'end' iterator when inserting.
-			index = get_index(revisioned_vector, index, true/*allow_index_to_last_element_plus_one*/);
+			const long size = revisioned_vector->size();
+			if (index < 0)
+			{
+				index += size;
+				if (index < 0)
+				{
+					index = 0;
+				}
+			}
+			else if (index > size)
+			{
+				index = size;
+			}
 
 			// Create an iterator referencing the 'index'th element.
 			iterator_type iter = revisioned_vector->begin();
