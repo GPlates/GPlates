@@ -69,6 +69,7 @@ Changes since 1.0.0:
   * `insert()` on the list-like classes (eg, `GpmlIrregularSampling`, `GpmlTimeSampleList`) clamps an out-of-range index to the start or end, like `list.insert()` (previously raised `IndexError`).
   * Fixed `GpmlIrregularSampling.get_value()` returning `None` at the time of the only enabled time sample, and (for an `XsDouble`) where two time samples have the same time. Likewise `get_time_samples_bounding_time()` now returns the only enabled time sample (as both samples) at its time. Times are compared with a small tolerance (eg, a time sample at 0.3 is found at 0.1 + 0.2).
   * Fixed `InformationModelError` giving the wrong one of two messages: adding a property the information model recognises, but not for the feature type, said the property name was not recognised (and adding an unknown property name said it was not valid for the feature type).
+  * `synchronise_crossovers()` writes the rotation files it was given only if it synchronised a crossover (previously it always rewrote them, changing their layout even when no rotation changed).
   * Fixed the pip wheels loading the GDAL plugins named by a `GDAL_DRIVER_PATH` environment variable (eg, set by an active conda environment with GDAL, or by OSGeo4W or QGIS). Those plugins are built for another GDAL, and reading a file could crash (eg, a Shapefile after `import pygmt`).
 
 pyGPlates 1.0.0

@@ -567,7 +567,8 @@ def synchronise_crossovers(
     Synchronising crossovers results in modifications to *rotation_features*.
     The modified rotation features can then be used to create a new :class:`RotationModel` with updated rotations.
     If any filenames are specified in *rotation_features* then the modified feature collection(s) (containing synchronised crossovers)
-    that are associated with those files are written back out to those same files.
+    that are associated with those files are written back out to those same files. They are written only if at least one
+    crossover was synchronised (otherwise the files are left untouched).
     :class:`FeatureCollection` is used internally to read/write feature collections from/to those files.
     
     *crossover_filter* can optionally be used to limit (or specify) the crossovers to synchronise. It can either be a predicate function
@@ -881,6 +882,7 @@ def synchronise_crossovers(
     # Perform up to a maximum number of iterations over all the crossovers until there are no remaining
     # crossovers to synchronise. If this is exceeded then it's likely there was an infinite cycle.
     iteration = 0
+    synchronised_any_crossovers = False
     while iteration < _MAX_CROSSOVER_ITERATIONS:
         synchronised_crossovers_in_current_iteration = False
         for crossover_info in crossover_infos:
@@ -935,6 +937,7 @@ def synchronise_crossovers(
             
             # Record that the crossover was synchronised.
             synchronised_crossovers_in_current_iteration = True
+            synchronised_any_crossovers = True
             if crossover_results is not None:
                 crossover_results[crossover_results_first_index + crossover_info.crossover_index] = (
                     crossover_info.crossover, CrossoverResult.synchronised)
@@ -996,10 +999,12 @@ def synchronise_crossovers(
         success = False
     
     # If any rotation features came from files then write those feature collections back out to the same files.
+    # But only if a crossover was synchronised (the rotation features are unchanged otherwise, and writing
+    # would still re-lay-out the files).
     #
     # Only interested in those feature collections that came from files (have filenames).
     rotation_files = rotation_features.get_files()
-    if rotation_files:
+    if synchronised_any_crossovers and rotation_files:
         for feature_collection, filename in rotation_files:
             # This can raise OpenFileForWritingError if file is not writable.
             feature_collection.write(filename)

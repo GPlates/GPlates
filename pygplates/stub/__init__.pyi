@@ -19152,7 +19152,8 @@ def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathL
     Synchronising crossovers results in modifications to *rotation_features*.
     The modified rotation features can then be used to create a new :class:`RotationModel` with updated rotations.
     If any filenames are specified in *rotation_features* then the modified feature collection(s) (containing synchronised crossovers)
-    that are associated with those files are written back out to those same files.
+    that are associated with those files are written back out to those same files. They are written only if at least one
+    crossover was synchronised (otherwise the files are left untouched).
     :class:`FeatureCollection` is used internally to read/write feature collections from/to those files.
 
     *crossover_filter* can optionally be used to limit (or specify) the crossovers to synchronise. It can either be a predicate function
