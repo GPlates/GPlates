@@ -350,9 +350,9 @@ GPlatesModel::ModelUtils::get_gpgim_property(
 			// the property name wasn't a name recognised for *any* feature type - we give
 			// preference to that error message (if that's the case here).
 			*error_code = gpgim.get_property(property_name)
-					? TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED
 					// Property name was recognised, but not supported by the feature type...
-					: TopLevelPropertyError::PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE;
+					? TopLevelPropertyError::PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE
+					: TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED;
 		}
 		else
 		{
