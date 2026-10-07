@@ -168,10 +168,11 @@ else() # pyGPlates ...
 endif()
 
 
-# GPLATES_INSTALL_STANDALONE - Whether to install GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
+# GPLATES_INSTALL_STANDALONE - Whether to install GPlates (or pyGPlates) as a standalone (self-contained) bundle.
 #
-# When this is true then we install code to fix up GPlates (or pyGPlates) for deployment to another machine
-# (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
+# When this is true the install bundles what GPlates (or pyGPlates) needs on another machine: the dependency libraries
+# (unless a wheel-repair tool copies them instead - see GPLATES_INSTALL_FOR_WHEEL_REPAIR below), the GDAL and PROJ data,
+# and (for GPlates) the Qt and GDAL plugins. It is also compiled in, so that the code looks for that bundled data at run time.
 # When this is false then we don't install dependencies, instead only installing the GPlates executable (or pyGPlates library) and a few non-dependency items.
 #
 if (SKBUILD)
@@ -208,17 +209,54 @@ endif()
 # Make GPLATES_INSTALL_STANDALONE a cache variable, using the "option()" command, so that the user can change it (eg, via command-line, ccmake or cmake-gui).
 option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle." ${_INSTALL_STANDALONE})
 unset(_INSTALL_STANDALONE)
+#
+# GPLATES_INSTALL_FOR_WHEEL_REPAIR - pyGPlates only: the install is for a wheel that a repair tool (auditwheel on Linux,
+# delocate on macOS, delvewheel on Windows) then fixes up. The repair tool copies the dependency libraries into the wheel
+# (renaming them so they cannot clash with another copy in the same process), so the install does not copy them itself.
+# Everything else about the standalone bundle is unchanged. 'pyproject.toml' turns it on for the cibuildwheel builds.
+#
+# Such an install is only meant as the input to a repair: installed as it is, the module would use the environment's
+# libraries while also carrying the wheel-only measures (see 'src/qt-resources/CMakeLists.txt' and 'StandaloneBundle.cc').
+#
+# Each FATAL_ERROR below first removes the entry it rejects: CMake saves the cache even when configure fails, so an entry
+# left there would fail every later configure too, until removed by hand.
+set(_FOR_WHEEL_REPAIR_DOC "pyGPlates only: install for a wheel that auditwheel/delocate/delvewheel will repair (they copy the dependency libraries, not the install).")
 if (GPLATES_INSTALL_STANDALONE)
-	# We're installing standalone, so install shared library dependencies (unless specifically requested not to).
-	#
-	# An example where we explicitly request not to install dependency libraries is when creating a Python wheel for pyGPlates that will be
-	# post-processed using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows) which handles copying dependency libraries into the wheel.
-	option(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES "Copy dependency libraries into the GPlates (or pyGPlates) standalone bundle" true)
-	mark_as_advanced(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES)
+	option(GPLATES_INSTALL_FOR_WHEEL_REPAIR "${_FOR_WHEEL_REPAIR_DOC}" false)
+	mark_as_advanced(GPLATES_INSTALL_FOR_WHEEL_REPAIR)
+	# GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES is the option this replaced, with the opposite sense (off meant
+	# what GPLATES_INSTALL_FOR_WHEEL_REPAIR on means). Only an 'off' is honoured: an 'on' was its default, so one in an
+	# existing build tree's cache can be a leftover, and must not override GPLATES_INSTALL_FOR_WHEEL_REPAIR.
+	if (DEFINED CACHE{GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES})
+		if (NOT GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES)
+			unset(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES CACHE)
+			if (GPLATES_BUILD_GPLATES)
+				message(FATAL_ERROR "GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=FALSE is no longer supported for GPlates (a standalone GPlates always copies its dependency libraries).")
+			endif()
+			message(DEPRECATION "GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=FALSE is deprecated: use GPLATES_INSTALL_FOR_WHEEL_REPAIR=TRUE instead.")
+			set(GPLATES_INSTALL_FOR_WHEEL_REPAIR true CACHE BOOL "${_FOR_WHEEL_REPAIR_DOC}" FORCE)
+		elseif (GPLATES_INSTALL_FOR_WHEEL_REPAIR)
+			# Either a leftover, or passed to undo an earlier 'off' (which the user should hear has not happened).
+			message(WARNING "GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=TRUE was ignored (it is deprecated, and may be "
+				"this build tree's old default). GPLATES_INSTALL_FOR_WHEEL_REPAIR is TRUE, so the install does not copy the "
+				"dependency libraries: set it to FALSE to copy them.")
+		endif()
+		unset(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES CACHE)
+	endif()
+	if (GPLATES_INSTALL_FOR_WHEEL_REPAIR AND GPLATES_BUILD_GPLATES)
+		unset(GPLATES_INSTALL_FOR_WHEEL_REPAIR CACHE)
+		message(FATAL_ERROR "GPLATES_INSTALL_FOR_WHEEL_REPAIR is for pyGPlates wheels only, not GPlates.")
+	endif()
 else()
-	# We're not installing standalone, so remove option to install shared library dependencies.
+	if (GPLATES_INSTALL_FOR_WHEEL_REPAIR)
+		unset(GPLATES_INSTALL_FOR_WHEEL_REPAIR CACHE)
+		message(FATAL_ERROR "GPLATES_INSTALL_FOR_WHEEL_REPAIR needs GPLATES_INSTALL_STANDALONE (a wheel is a standalone bundle whose libraries a repair tool copies).")
+	endif()
+	# Not installing standalone, so remove the option (and its predecessor, if left in the cache).
+	unset(GPLATES_INSTALL_FOR_WHEEL_REPAIR CACHE)
 	unset(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES CACHE)
 endif()
+unset(_FOR_WHEEL_REPAIR_DOC)
 
 
 # Only GPlates has option to install geodata (we don't distribute it with pyGPlates).
@@ -230,27 +268,41 @@ if (GPLATES_BUILD_GPLATES) # GPlates ...
 	# Developers may want to turn this on, using the cmake command-line or cmake GUI, even when not releasing a public build.
 	option(GPLATES_INSTALL_GEO_DATA "Install geodata (eg, in the binary installer)." false)
 
-	# The directory location of the geodata.
+	# The directory the geodata is copied *from* (its install destination is fixed; see 'Install.cmake').
 	# The geodata is only included in the binary installer if 'GPLATES_INSTALL_GEO_DATA' is true.
 	# Paths must be full paths (eg, '~/geodata' is ok but '../geodata' is not).
-	set(GPLATES_INSTALL_GEO_DATA_DIR "" CACHE PATH "Location of geodata (use absolute path).")
+	set(_GEO_DATA_SOURCE_DIR_DOC "Directory to copy the geodata from (use absolute path).")
+	set(GPLATES_INSTALL_GEO_DATA_SOURCE_DIR "" CACHE PATH "${_GEO_DATA_SOURCE_DIR_DOC}")
+	# GPLATES_INSTALL_GEO_DATA_DIR is this variable's old name, which read like an install destination. An empty one is
+	# just its old default (eg, in an existing build tree's cache), so is dropped without a warning. A non-empty one
+	# overrides: its entry is removed on every configure, so one that is there was just passed (eg, by a release routine).
+	if (DEFINED CACHE{GPLATES_INSTALL_GEO_DATA_DIR})
+		if (GPLATES_INSTALL_GEO_DATA_DIR)
+			message(DEPRECATION "GPLATES_INSTALL_GEO_DATA_DIR is deprecated: use GPLATES_INSTALL_GEO_DATA_SOURCE_DIR instead "
+				"(set to '${GPLATES_INSTALL_GEO_DATA_DIR}' from it).")
+			set(GPLATES_INSTALL_GEO_DATA_SOURCE_DIR "${GPLATES_INSTALL_GEO_DATA_DIR}" CACHE PATH "${_GEO_DATA_SOURCE_DIR_DOC}" FORCE)
+		endif()
+		unset(GPLATES_INSTALL_GEO_DATA_DIR CACHE)
+	endif()
+	unset(_GEO_DATA_SOURCE_DIR_DOC)
 	#
 	# If we're installing geodata then make sure the source geodata directory has been specified, is an absolute path and exists.
 	if (GPLATES_INSTALL_GEO_DATA)
-		if (NOT GPLATES_INSTALL_GEO_DATA_DIR)
-			message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
+		if (NOT GPLATES_INSTALL_GEO_DATA_SOURCE_DIR)
+			message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_SOURCE_DIR when you enable GPLATES_INSTALL_GEO_DATA")
 		endif()
-		if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_DIR}")
-			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR should be an absolute path (not a relative path)")
+		if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_SOURCE_DIR}")
+			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_SOURCE_DIR should be an absolute path (not a relative path)")
 		endif()
-		if (NOT EXISTS "${GPLATES_INSTALL_GEO_DATA_DIR}")
-			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR does not exist: ${GPLATES_INSTALL_GEO_DATA_DIR}")
+		if (NOT EXISTS "${GPLATES_INSTALL_GEO_DATA_SOURCE_DIR}")
+			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_SOURCE_DIR does not exist: ${GPLATES_INSTALL_GEO_DATA_SOURCE_DIR}")
 		endif()
-		file(TO_CMAKE_PATH ${GPLATES_INSTALL_GEO_DATA_DIR} GPLATES_INSTALL_GEO_DATA_DIR) # Convert '\' to '/' in paths.
+		file(TO_CMAKE_PATH ${GPLATES_INSTALL_GEO_DATA_SOURCE_DIR} GPLATES_INSTALL_GEO_DATA_SOURCE_DIR) # Convert '\' to '/' in paths.
 	endif()
 else() # pyGPlates ...
 	# Remove cache variables (eg, leftover if switching from a GPlates build to pyGPlates by disabling GPLATES_BUILD_GPLATES).
 	unset(GPLATES_INSTALL_GEO_DATA CACHE)
+	unset(GPLATES_INSTALL_GEO_DATA_SOURCE_DIR CACHE)
 	unset(GPLATES_INSTALL_GEO_DATA_DIR CACHE)
 endif()
 

@@ -30,20 +30,18 @@ if (NOT TARGET gplates-lib)
     # translations to find there. (A relative one would resolve against the working directory.)
     #
     # Only a build whose dependencies a repair tool (delocate) will vendor needs it, ie with
-    # 'GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES' off. Otherwise our own install copies
-    # each framework whole ('InstallSharedLibraryDependencies.cmake'), and conda builds never move
-    # Qt. Installed *without* that repair, the module would link the environment's QtCore, and this
-    # resource would then set the prefix of a Qt that other modules in the process (eg, PyQt) may
-    # share. Such a build is only meant as the input to a repair. GPlates keeps its frameworks
-    # whole too, and has its own 'qt.conf' ('Install.cmake').
+    # 'GPLATES_INSTALL_FOR_WHEEL_REPAIR' on (an option of standalone pyGPlates builds only; see
+    # 'cmake/modules/ConfigDefault.cmake'). Otherwise our own install copies each framework whole
+    # ('InstallSharedLibraryDependencies.cmake'), and conda builds never move Qt. Installed
+    # *without* that repair, the module would link the environment's QtCore, and this resource
+    # would then set the prefix of a Qt that other modules in the process (eg, PyQt) may share.
+    # Such a build is only meant as the input to a repair. GPlates keeps its frameworks whole too,
+    # and has its own 'qt.conf' ('Install.cmake').
     #
     # Both files are generated into the build tree, side by side (a '.qrc' names its files relative
     # to itself). 'file(CONFIGURE)' rewrites a file only when its content changes, so a reconfigure
     # does not rerun rcc.
-    # ('GPLATES_INSTALL_STANDALONE' too, since the option above is unset when it is off - and a
-    # non-standalone build links the environment's Qt in place, so must not get the resource.)
-    if (APPLE AND SKBUILD AND NOT GPLATES_CONDA_BUILD AND GPLATES_INSTALL_STANDALONE AND
-        NOT GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES)
+    if (APPLE AND GPLATES_INSTALL_FOR_WHEEL_REPAIR)
         set(_qt_conf_dir "${CMAKE_CURRENT_BINARY_DIR}/pygplates_wheel")
         file(CONFIGURE OUTPUT "${_qt_conf_dir}/qt.conf"
             CONTENT "[Paths]\nPrefix = /nonexistent\n")

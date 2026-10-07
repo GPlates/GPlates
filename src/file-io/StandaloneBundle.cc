@@ -195,9 +195,9 @@ GPlatesFileIO::StandaloneBundle::initialise(
 		//
 		// This assumes a bundle with GDAL's data also carries its own GDAL: true of a repaired wheel,
 		// and of an install that copied its dependencies. A pip build with
-		// GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES off that is installed without the
-		// repair step uses the environment's GDAL, and so loses that environment's (matching)
-		// plugins. Such a build is only meant as the input to a repair.
+		// GPLATES_INSTALL_FOR_WHEEL_REPAIR on that is installed without the repair step uses the
+		// environment's GDAL, and so loses that environment's (matching) plugins. Such a build is
+		// only meant as the input to a repair.
 		CPLSetConfigOption("GDAL_DRIVER_PATH", "disable");
 	}
 

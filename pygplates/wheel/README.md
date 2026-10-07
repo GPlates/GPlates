@@ -208,14 +208,24 @@ which is the one thing a local build has to arrange for itself.
 These are the reasons behind the non-obvious `[tool.cibuildwheel]` settings in
 `pyproject.toml` (learned the hard way with the pre-cibuildwheel wheel scripts).
 
-### `GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=FALSE`
+### `GPLATES_INSTALL_FOR_WHEEL_REPAIR=TRUE`
 
-We set the CMake variable `GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES` to `FALSE`
-since we don't want to install shared library dependencies into the wheel - they will get
-installed (copied into the wheel) when `auditwheel` (or `delocate`/`delvewheel`) is
-subsequently run to repair our wheel. Note that this variable is only used if
-`GPLATES_INSTALL_STANDALONE` is `TRUE`, which it is by default when building using
-scikit-build-core (eg, `pip wheel ...`) outside of conda.
+The wheel is a standalone bundle like any other `GPLATES_INSTALL_STANDALONE` install (the
+default when building with scikit-build-core outside conda): it carries the GDAL and PROJ data,
+and the module looks for them there. What differs is who copies the dependency libraries in:
+`auditwheel` (or `delocate`/`delvewheel`), which runs afterwards to repair the wheel and gives
+them unique names, rather than the install. So the install must not copy them itself.
+
+Two measures assume the repair has happened. On macOS the option compiles in a `qt.conf` (see
+`src/qt-resources/CMakeLists.txt`). And at run time, any standalone bundle with GDAL's data but
+no GDAL plugins ignores a host's `GDAL_DRIVER_PATH` (`src/file-io/StandaloneBundle.cc`), which
+is right only if the bundle carries its own GDAL. So a wheel built with the option is only meant
+as the input to a repair: installed unrepaired, it would use the environment's libraries.
+
+It replaced `GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES`, which said the same thing
+the other way round (`FALSE` for a wheel). A pyGPlates build still accepts the old `FALSE`, with
+a deprecation warning, but ignores the old `TRUE` (its default, so possibly a leftover in a build
+tree's cache), with a warning if that leaves the new option on.
 
 ### `OpenGL_GL_PREFERENCE=LEGACY` (Linux) - retired
 

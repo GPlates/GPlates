@@ -175,7 +175,7 @@ GPLATES_BUILD_GPLATES = "FALSE"
 
 
 # Optionally determine whether to install binary shared library dependencies of pyGPlates
-# (using the GPLATES_INSTALL_STANDALONE and GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES variables).
+# (using the GPLATES_INSTALL_STANDALONE and GPLATES_INSTALL_FOR_WHEEL_REPAIR variables).
 #
 # By default, dependency shared libraries ARE installed when running 'pip wheel ...' or 'pip install ...' directly, but
 # NOT installed when running 'conda install ...' (note that conda uses 'pip install ...' and so also uses scikit-build-core).
@@ -188,9 +188,10 @@ GPLATES_BUILD_GPLATES = "FALSE"
 # Note that it is better to first build a wheel and then repair it with auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
 # in order to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
 # And then install that repaired wheel (using 'pip wheel ...'). This avoids potential issues with binary dependency conflicts from other
-# installed Python packages that have the same dependencies (eg, the GDAL dependency). This means first creating a wheel *without* copying
-# dependency libraries into it. For example, building a wheel that will subsequently be repaired by auditwheel/delocate/delvewheel can be done with:
-#    "python -m pip wheel --wheel-dir dist -v --config-settings cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=FALSE <source_dir>"
+# installed Python packages that have the same dependencies (eg, the GDAL dependency). This means first creating a wheel that leaves the
+# dependency libraries to the repair tool. For example, building a wheel that will subsequently be repaired by auditwheel/delocate/delvewheel can be done with:
+#    "python -m pip wheel --wheel-dir dist -v --config-settings cmake.define.GPLATES_INSTALL_FOR_WHEEL_REPAIR=TRUE <source_dir>"
+# Such a wheel is only meant as the input to the repair: install the repaired wheel, never this one.
 
 
 # Build in parallel on Windows (in Visual Studio).
@@ -296,13 +297,14 @@ test-command = [
 
 [tool.cibuildwheel.config-settings]
 # The wheel-repair step (auditwheel/delocate/delvewheel) vendors the dependency shared
-# libraries into the wheel and mangles their names - so CMake must not copy them in as well.
-# This must be explicit: the automatic disabling of it keys on CONDA_BUILD, not on conda
-# presence (see 'cmake/modules/ConfigDefault.cmake').
+# libraries into the wheel and mangles their names - so CMake must not copy them in as well
+# (and the wheel-only measures in the build key on it; see 'cmake/modules/ConfigDefault.cmake').
+# Nothing turns it on automatically, so it must be set here (only GPLATES_INSTALL_STANDALONE
+# has an automatic default, and that keys on CONDA_BUILD, not on conda presence).
 #
 # NOTE: Platform 'config-settings' tables below do NOT merge with this table - they override
 #       it entirely, so each platform table repeats this define.
-"cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
+"cmake.define.GPLATES_INSTALL_FOR_WHEEL_REPAIR" = "TRUE"
 
 # Build every Python version in the one directory, overriding the temporary directory that
 # [tool.scikit-build] leaves everything else with.
@@ -365,7 +367,7 @@ before-test = "sccache --show-stats"
 
 [tool.cibuildwheel.linux.config-settings]
 # See the notes in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
-"cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
+"cmake.define.GPLATES_INSTALL_FOR_WHEEL_REPAIR" = "TRUE"
 "build-dir" = "build/wheel"
 # No 'OpenGL_GL_PREFERENCE' here any more: the module links only Qt6Core, so nothing on its
 # link line reaches OpenGL and there is no GL family to choose. It was needed while the module
@@ -423,7 +425,7 @@ PATH = "$HOME/pygplates-wheel-deps/bin:$PATH"
 
 [tool.cibuildwheel.macos.config-settings]
 # See the notes in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
-"cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
+"cmake.define.GPLATES_INSTALL_FOR_WHEEL_REPAIR" = "TRUE"
 "build-dir" = "build/wheel"
 # Prefer dylibs/headers over Apple frameworks when CMake searches - otherwise dependencies
 # like Python and zlib can resolve to a framework rather than the intended library. (The root
@@ -510,7 +512,7 @@ CMAKE_PROGRAM_PATH = "C:/pygplates-wheel-deps/vcpkg/x64-windows/tools/proj"
 
 [tool.cibuildwheel.windows.config-settings]
 # See the notes in [tool.cibuildwheel.config-settings] - this table replaces it, not extends it.
-"cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES" = "FALSE"
+"cmake.define.GPLATES_INSTALL_FOR_WHEEL_REPAIR" = "TRUE"
 "build-dir" = "build/wheel"
 # Compile with MSVC. The Visual Studio generator would imply it; Ninja instead has CMake search
 # PATH, which on a machine with Visual Studio finds the LLVM it bundles ('VC/Tools/Llvm') and
