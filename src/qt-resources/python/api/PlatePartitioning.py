@@ -126,6 +126,9 @@ def plate_partitioner_partition_features(
     the geometries in the features to be partitioned (*features*) are not since they effectively represent a snapshot of the features at the reconstruction time.
     In other words the features to be partitioned effectively contain geometry at the reconstruction time (rather than present day) and hence they are *not* reconstructed
     to the reconstruction time before testing for overlap/intersection with the partitioning plates (even if they already happen to have a reconstruction plate ID property).
+    Likewise they are assumed to be in the reference frame of the anchor plate of this plate partitioner (the *anchor_plate_id* it was created with),
+    since that is the frame of the partitioning plates. After properties are copied, each partitioned feature is reverse reconstructed to present day
+    using the rotation model and anchor plate of this plate partitioner (see :func:`reverse_reconstruct`). Unpartitioned features are not reverse reconstructed.
     
     To partition features at present day (and assign reconstruction plate IDs) and write them to a new file:
     ::
@@ -418,13 +421,15 @@ def partition_into_plates(
         reconstruction_time=0,
         partition_method=PartitionMethod.split_into_plates,
         partition_return=PartitionReturn.combined_partitioned_and_unpartitioned,
-        sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id):
+        sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id,
+        anchor_plate_id=None):
     """partition_into_plates(partitioning_features, rotation_model, features_to_partition, \
         [properties_to_copy=[PartitionProperty.reconstruction_plate_id]], \
         [reconstruction_time=0], \
         [partition_method=PartitionMethod.split_into_plates], \
         [partition_return=PartitionReturn.combined_partitioned_and_unpartitioned], \
-        [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])
+        [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id], \
+        [anchor_plate_id])
     Partition features into plates.
     
     :param partitioning_features: the partitioning features
@@ -458,7 +463,12 @@ def partition_into_plates(
     :param sort_partitioning_plates: optional sort order of partitioning plates \
         (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
     :type sort_partitioning_plates: SortPartitioningPlates, or None
-    
+
+    :param anchor_plate_id: The anchored plate id used to reconstruct/resolve *partitioning_features* \
+        (and to reverse reconstruct the partitioned features). \
+        Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
+    :type anchor_plate_id: int
+
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
         (see :class:`PartitionReturn`) \
         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
@@ -484,6 +494,9 @@ def partition_into_plates(
     the geometries in the features to be partitioned (*features_to_partition*) are not since they effectively represent a snapshot of the features at the reconstruction time.
     In other words the features to be partitioned effectively contain geometry at the reconstruction time (rather than present day) and hence they are *not* reconstructed
     to the reconstruction time before testing for overlap/intersection with the partitioning plates (even if they already happen to have a reconstruction plate ID property).
+    Likewise they are assumed to be in the reference frame of the anchor plate (*anchor_plate_id*), since that is the frame of the partitioning plates.
+    After properties are copied, each partitioned feature is reverse reconstructed to present day using the rotation model and anchor plate
+    (see :func:`reverse_reconstruct`). Unpartitioned features are not reverse reconstructed.
     
     To partition features at present day (and assign reconstruction plate IDs) and write them to a new file:
     ::
@@ -629,17 +642,23 @@ def partition_into_plates(
                 reconstruction_time = 0,
                 partition_method = PartitionMethod.split_into_plates,
                 partition_return = PartitionReturn.combined_partitioned_and_unpartitioned,
-                sort_partitioning_plates = pygplates.SortPartitioningPlates.by_partition_type_then_plate_id):
-            
-            plate_partitioner = pygplates.PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
-            
+                sort_partitioning_plates = pygplates.SortPartitioningPlates.by_partition_type_then_plate_id,
+                anchor_plate_id = None):
+
+            plate_partitioner = pygplates.PlatePartitioner(
+                    partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates, anchor_plate_id)
+
             return plate_partitioner.partition_features(features_to_partition, properties_to_copy, partition_method, partition_return)
 
     .. versionchanged:: 0.44
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ \
     (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
+
+    .. versionchanged:: 1.1
+       Added the *anchor_plate_id* argument.
     """
-    
-    plate_partitioner = PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
+
+    plate_partitioner = PlatePartitioner(
+            partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates, anchor_plate_id)
     
     return plate_partitioner.partition_features(features_to_partition, properties_to_copy, partition_method, partition_return)

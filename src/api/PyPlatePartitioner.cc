@@ -58,7 +58,8 @@ namespace GPlatesApi
 			FeatureCollectionSequenceFunctionArgument partitioning_features_argument,
 			RotationModelFunctionArgument rotation_model_argument,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
-			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates)
+			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates,
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
 	{
 		// Time must not be distant past/future.
 		if (!reconstruction_time.is_real())
@@ -117,7 +118,16 @@ namespace GPlatesApi
 		}
 
 		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
-		RotationModel::non_null_ptr_type rotation_model = rotation_model_argument.get_rotation_model();
+
+		// Extract the rotation model from the function argument and adapt it to a new one that has
+		// 'anchor_plate_id' as its default (which if none, then uses default anchor plate of extracted
+		// rotation model instead). This ensures we reconstruct/resolve the partitioning plates, and
+		// later reverse reconstruct (if reconstruction time is not present day), using the correct
+		// anchor plate.
+		RotationModel::non_null_ptr_type rotation_model = RotationModel::create(
+				rotation_model_argument.get_rotation_model(),
+				1/*reconstruction_tree_cache_size*/,
+				anchor_plate_id);
 
 		return PlatePartitionerWrapper(
 				boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter>(
@@ -137,7 +147,8 @@ namespace GPlatesApi
 	plate_partitioner_create_from_reconstruction_geometries(
 			bp::object partitioning_plates, // Any python sequence (eg, list, tuple).
 			RotationModelFunctionArgument rotation_model_argument,
-			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates)
+			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates,
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
 	{
 		const char *partitioning_plates_type_error_string = "Expected a sequence of ReconstructionGeometry";
 
@@ -215,9 +226,15 @@ namespace GPlatesApi
 			}
 		}
 
-		// Extract the rotation model.
-		// It'll be used to reverse reconstruct (if reconstruction time is not present day).
-		RotationModel::non_null_ptr_type rotation_model = rotation_model_argument.get_rotation_model();
+		// Extract the rotation model from the function argument and adapt it to a new one that has
+		// 'anchor_plate_id' as its default (which if none, then uses default anchor plate of extracted
+		// rotation model instead). It'll be used to reverse reconstruct (if reconstruction time is not
+		// present day), and so must use the anchor plate that the partitioning plates were
+		// reconstructed/resolved with.
+		RotationModel::non_null_ptr_type rotation_model = RotationModel::create(
+				rotation_model_argument.get_rotation_model(),
+				1/*reconstruction_tree_cache_size*/,
+				anchor_plate_id);
 
 		return PlatePartitionerWrapper(
 				boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter>(
@@ -509,7 +526,9 @@ export_plate_partitioner()
 						(bp::arg("partitioning_plates"),
 								bp::arg("rotation_model"),
 								bp::arg("sort_partitioning_plates") =
-										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)),
+										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID,
+								bp::arg("anchor_plate_id") =
+										boost::optional<GPlatesModel::integer_plate_id_type>())),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				"__init__(...)\n"
 				"A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...\n"
@@ -538,7 +557,9 @@ export_plate_partitioner()
 				"\n"
 
 				// Specific overload signature...
-				"__init__(partitioning_plates, rotation_model, [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])\n"
+				"__init__(partitioning_plates, rotation_model, "
+				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id], "
+				"[anchor_plate_id])\n"
 				"  Create a partitioner from a sequence of reconstructed/resolved plates.\n"
 				"\n"
 				"  :param partitioning_plates: A sequence of reconstructed/resolved plates to partition with.\n"
@@ -550,6 +571,11 @@ export_plate_partitioner()
 				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
 				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
 				"  :type sort_partitioning_plates: SortPartitioningPlates, or None\n"
+				"  :param anchor_plate_id: The anchored plate id that *partitioning_plates* were "
+				"reconstructed/resolved with (and that is used to reverse reconstruct in "
+				":meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* "
+				"(or zero if *rotation_model* is not a :class:`RotationModel`).\n"
+				"  :type anchor_plate_id: int\n"
 				"  :raises DifferentTimesInPartitioningPlatesError: if all partitioning plates do not have the same "
 				":meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`\n"
 				"\n"
@@ -570,11 +596,17 @@ export_plate_partitioner()
 				"\n"
 				"  .. note:: *rotation_model* should be the same rotation model used to reconstruct/resolve "
 				"the partitioning plates. This enables partitioned feature geometries to be reverse-reconstructed "
-				"correctly in :meth:`partition_features` for non-zero reconstruction times.\n"
+				"correctly in :meth:`partition_features` for non-zero reconstruction times. For the same "
+				"reason, *anchor_plate_id* should be the anchor plate used to reconstruct/resolve the "
+				"partitioning plates (for example, the *anchor_plate_id* of the :class:`TopologicalSnapshot` "
+				"that resolved them).\n"
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Added the *anchor_plate_id* argument.\n")
 		//
 		// NOTE: We define this *after* the '__init__' associated with 'plate_partitioner_create_from_reconstruction_geometries()'
 		// because boost-python matches most recently defined functions first and this function has a tighter
@@ -588,10 +620,13 @@ export_plate_partitioner()
 								bp::arg("rotation_model"),
 								bp::arg("reconstruction_time") = GPlatesPropertyValues::GeoTimeInstant(0),
 								bp::arg("sort_partitioning_plates") =
-										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)),
+										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID,
+								bp::arg("anchor_plate_id") =
+										boost::optional<GPlatesModel::integer_plate_id_type>())),
 				// Specific overload signature...
 				"__init__(partitioning_features, rotation_model, [reconstruction_time=0], "
-				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])\n"
+				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id], "
+				"[anchor_plate_id])\n"
 				"  Create a partitioner by reconstructing/resolving plates from a sequence of plate features.\n"
 				"\n"
 				"  :param partitioning_features: A sequence of plate features to partition with.\n"
@@ -607,6 +642,11 @@ export_plate_partitioner()
 				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
 				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
 				"  :type sort_partitioning_plates: SortPartitioningPlates, or None\n"
+				"  :param anchor_plate_id: The anchored plate id used to reconstruct/resolve "
+				"*partitioning_features* (and that is used to reverse reconstruct in "
+				":meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* "
+				"(or zero if *rotation_model* is not a :class:`RotationModel`).\n"
+				"  :type anchor_plate_id: int\n"
 				"  :raises ValueError: if *reconstruction_time* is "
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
@@ -622,7 +662,10 @@ export_plate_partitioner()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Added the *anchor_plate_id* argument.\n")
 		.def("partition_geometry",
 				&GPlatesApi::plate_partitioner_partition_geometry,
 				(bp::arg("geometry"),
@@ -648,6 +691,11 @@ export_plate_partitioner()
 				"*partitioned_inside_geometries* (if specified) and the outside parts appended to "
 				"*partitioned_outside_geometries* (if specified). Otherwise ``False`` is returned "
 				"and *geometry* is appended to *partitioned_outside_geometries* (if specified).\n"
+				"\n"
+				"  *geometry* is assumed to be at the reconstruction time of this plate partitioner "
+				"(the time of the partitioning plates), and in the reference frame of its anchor plate "
+				"(the *anchor_plate_id* it was created with). It is *not* reconstructed before testing "
+				"for overlap/intersection with the partitioning plates.\n"
 				"\n"
 				"  .. note:: Each element in *partitioned_inside_geometries* is a 2-tuple "
 				"consisting of a partitioning :class:`ReconstructionGeometry` and a list of the "
@@ -687,6 +735,11 @@ export_plate_partitioner()
 				"  :rtype: ReconstructionGeometry or None\n"
 				"\n"
 				"  .. note:: ``None`` is returned if *point* is not contained by any partitioning plates.\n"
+				"\n"
+				"  *point* is assumed to be at the reconstruction time of this plate partitioner "
+				"(the time of the partitioning plates), and in the reference frame of its anchor plate "
+				"(the *anchor_plate_id* it was created with). It is *not* reconstructed before testing "
+				"whether the partitioning plates contain it.\n"
 				"\n"
 				"  To find the plate ID of the reconstructed static polygon containing latitude/longitude (0,0):\n"
 				"  ::\n"
