@@ -238,7 +238,8 @@ outside the `GPLATES_PYTHON_EMBEDDING` guard (`src/api/PyGPlatesModule.cc`), plu
 Enforcement, in CTest (run `ctest --test-dir <build-pygplates> -C Release`):
 
 - **pygplates-source-closure-test** re-runs the tracer against the source list the configure step
-  actually gave the `pygplates` target (`<build>/pygplates_sources.txt`), failing on over-
+  actually gave the `pygplates` target (`<build>/pygplates_sources.txt`, or
+  `pygplates_sources_<config>.txt` in a multi-config tree such as Visual Studio), failing on over-
   *and* under-inclusion, on any reach into a forbidden directory or a Qt Widgets / OpenGL /
   Qwt angle include, and on drift of the committed `dependency-matrix.md`.
 - **pygplates-linkage-test** inspects the built module's direct shared-library dependencies

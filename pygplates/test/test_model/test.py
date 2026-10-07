@@ -545,6 +545,15 @@ class FeatureCase(unittest.TestCase):
                 pygplates.VerifyInformationModel.no)
         self.assertTrue(len(self.feature) == self.property_count + 9 and len(properties_added) == 4)
     
+    def test_add_information_model_error_message(self):
+        volcano = pygplates.Feature(pygplates.FeatureType.create_gpml('Volcano'))
+        # A property name the GPGIM recognises, but not for this feature type.
+        self.assertRaisesRegex(pygplates.InformationModelError, "not in the feature type's list of valid names",
+                volcano.add, pygplates.PropertyName.create_gpml('leftPlate'), pygplates.GpmlPlateId(101))
+        # A property name the GPGIM does not recognise at all.
+        self.assertRaisesRegex(pygplates.InformationModelError, "not recognised as a valid name by the GPGIM",
+                volcano.add, pygplates.PropertyName.create_gpml('myProperty'), pygplates.GpmlPlateId(101))
+
     def test_remove(self):
         # Find the 'gml:name' property.
         name_property = None

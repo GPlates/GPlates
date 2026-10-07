@@ -52,7 +52,8 @@ class _InterpolateVisitor(PropertyValueVisitor):
     def visit_xs_double(self, xs_double1):
         # Use the epsilon comparison implicitly provided by GeoTimeInstant.
         if self.time2 == self.time1:
-            return xs_double1
+            self.interpolated_property_value = XsDouble(xs_double1.get_double())
+            return
         
         interpolation = (self.target_time.get_value() - self.time1.get_value()) / (
                 self.time2.get_value() - self.time1.get_value())
@@ -417,7 +418,8 @@ def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampli
     :rtype: tuple[GpmlTimeSample, GpmlTimeSample], or None
 
     Returns ``None`` if *time* is outside the range of times (later than the most recent time sample
-    or earlier than the least recent time sample).
+    or earlier than the least recent time sample). If there is only one time sample then *time* must
+    equal its time, and that sample is returned as both samples.
     
     *Note:* The returned time samples are ordered forward in time (the first sample is further in the past than the second sample).
     This is opposite the typical ordering of time samples in a :class:`GpmlIrregularSampling` (which are progressively further
@@ -432,7 +434,11 @@ def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampli
     
     if not time_samples:
         return
-    
+
+    # Compare times using the epsilon comparison provided by GeoTimeInstant
+    # (the time sample times are 'float' and so is *time*, if not already a GeoTimeInstant).
+    time = GeoTimeInstant(time)
+
     # GpmlIrregularSampling should already be sorted most recent to least recent
     # (ie, backwards in time from present to past times).
     # But create a reversed list if need be.
@@ -442,6 +448,12 @@ def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampli
     # If the requested time is later than the first (most-recent) time sample then
     # it is outside the time range of the time sample sequence.
     if time < time_samples[0].get_time():
+        return
+    
+    # A single time sample only bounds its own time (so it is returned as both samples).
+    if len(time_samples) == 1:
+        if time == time_samples[0].get_time():
+            return (time_samples[0], time_samples[0])
         return
     
     # Find adjacent time samples that span the requested time.

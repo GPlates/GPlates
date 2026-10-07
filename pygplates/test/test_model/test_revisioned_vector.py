@@ -224,6 +224,14 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.assertTrue(self.gpml_time_sample_list[4] == self.original_time_samples[3])
         self.assertTrue(self.gpml_time_sample_list[5] == self.original_time_samples[2])
 
+    def test_insert_out_of_range(self):
+        # Like 'list.insert()', an out-of-range index is clamped (rather than raising IndexError).
+        expected_list = list(self.original_time_samples)
+        for index, element_index in ((100, 1), (-100, 2), (-1, 3), (len(expected_list) + 2, 0)):
+            self.gpml_time_sample_list.insert(index, self.original_time_samples[element_index])
+            expected_list.insert(index, self.original_time_samples[element_index])
+            self.assertTrue(list(self.gpml_time_sample_list) == expected_list)
+
     def test_remove(self):
         self.gpml_time_sample_list.remove(self.original_time_samples[1])
         self.assertTrue(len(self.gpml_time_sample_list) == 3)

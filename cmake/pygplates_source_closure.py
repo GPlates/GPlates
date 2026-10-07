@@ -36,7 +36,8 @@
 #   python cmake/pygplates_source_closure.py
 #
 #   # Also diff the closure against the module target's actual source list (written by
-#   # file(GENERATE) in "src/CMakeLists.txt"); fail on over- AND under-inclusion.
+#   # file(GENERATE) in "src/CMakeLists.txt"); fail on over- AND under-inclusion. A multi-config
+#   # build tree (eg, Visual Studio) has one per configuration, eg "pygplates_sources_Release.txt".
 #   python cmake/pygplates_source_closure.py --check-sources build-pygplates/pygplates_sources.txt
 #
 #   # Also diff the committed dependency-matrix doc against what would be generated. The doc

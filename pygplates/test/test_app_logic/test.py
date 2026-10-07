@@ -7,6 +7,7 @@ import os
 import sys
 import pickle
 import shutil
+import tempfile
 import unittest
 import pygplates
 
@@ -94,6 +95,58 @@ class CrossoverTestCase(unittest.TestCase):
             self.assertTrue(len(crossover_results) == 123)
         
         # TODO: Add more tests.
+
+    def test_synchronise_crossovers_writes_only_if_synchronised(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_rot_filename = os.path.join(tmp_dir, 'rotations.rot')
+            shutil.copyfile(os.path.join(FIXTURES, 'rotations.rot'), tmp_rot_filename)
+            with open(tmp_rot_filename, 'rb') as tmp_rot_file:
+                original_contents = tmp_rot_file.read()
+            
+            # Record the files written (rather than relying on a read-only file failing to be written,
+            # which it does not when the tests run as root).
+            written_filenames = []
+            original_write = pygplates.FeatureCollection.write
+            def write(feature_collection, filename, *args, **kwargs):
+                written_filenames.append(filename)
+                return original_write(feature_collection, filename, *args, **kwargs)
+            
+            def synchronise_crossovers():
+                del written_filenames[:]
+                crossover_results = []
+                pygplates.FeatureCollection.write = write
+                try:
+                    pygplates.synchronise_crossovers(
+                            tmp_rot_filename,
+                            lambda crossover: crossover.time < 600,
+                            0.01,
+                            pygplates.CrossoverType.synch_old_crossover_and_stages,
+                            crossover_results)
+                finally:
+                    pygplates.FeatureCollection.write = original_write
+                self.assertTrue(len(crossover_results) == 123)
+                synchronised = any(result == pygplates.CrossoverResult.synchronised for _, result in crossover_results)
+                with open(tmp_rot_filename, 'rb') as tmp_rot_file:
+                    return (synchronised, list(written_filenames), tmp_rot_file.read())
+            
+            # Some crossovers need synchronising, so the file is written.
+            synchronised, written, contents = synchronise_crossovers()
+            self.assertTrue(synchronised)
+            self.assertTrue(len(written) == 1 and os.path.samefile(written[0], tmp_rot_filename))
+            self.assertTrue(contents != original_contents)
+            
+            # Writing rounds the rotations in the file, which can take a crossover out of synch again.
+            # So synchronise until no crossover needs it, and then the file is not written.
+            for _ in range(5):
+                previous_contents = contents
+                synchronised, written, contents = synchronise_crossovers()
+                if not synchronised:
+                    break
+                self.assertTrue(len(written) == 1 and os.path.samefile(written[0], tmp_rot_filename))
+            else:
+                self.fail('Crossovers did not stay synchronised')
+            self.assertFalse(written)
+            self.assertTrue(contents == previous_contents)
 
 
 class InterpolateTotalReconstructionSequenceTestCase(unittest.TestCase):
@@ -1327,6 +1380,74 @@ class PlatePartitionerTestCase(unittest.TestCase):
         self.assertTrue(partitioned_inside_geometries[0][0].get_feature().get_reconstruction_plate_id() == 0)
         self.assertTrue(partitioned_inside_geometries[1][0].get_feature().get_reconstruction_plate_id() == 1)
         self.assertTrue(partitioned_inside_geometries[2][0].get_feature().get_reconstruction_plate_id() == 2)
+
+    def test_partition_features_anchor_plate(self):
+        # Partitioning plates resolved with a non-zero anchor plate.
+        anchor_plate_id = 701
+        reconstruction_time = 10
+        resolved_topologies = pygplates.TopologicalSnapshot(
+                self.topological_features, self.rotation_features, reconstruction_time,
+                anchor_plate_id=anchor_plate_id).get_resolved_topologies()
+        # A point inside the first partitioning plate.
+        point = resolved_topologies[0].get_resolved_boundary().get_interior_centroid()
+        point_feature = pygplates.Feature()
+        point_feature.set_geometry(point)
+
+        def distance_from_point_after_reverse_reconstruction(plate_partitioner):
+            partitioned_features = plate_partitioner.partition_features(point_feature)
+            self.assertTrue(len(partitioned_features) == 1)
+            # Reconstruct the partitioned feature with the anchor plate of the partitioning plates.
+            reconstructed_feature_geometries = pygplates.ReconstructSnapshot(
+                    partitioned_features, self.rotation_features, reconstruction_time, anchor_plate_id).get_reconstructed_geometries()
+            self.assertTrue(len(reconstructed_feature_geometries) == 1)
+            return pygplates.GeometryOnSphere.distance(reconstructed_feature_geometries[0].get_reconstructed_geometry(), point)
+
+        # The partitioned feature is reverse reconstructed with the anchor plate given explicitly, or as the
+        # default anchor plate of the rotation model, so reconstructing it with that anchor plate gives back the point.
+        self.assertAlmostEqual(distance_from_point_after_reverse_reconstruction(
+                pygplates.PlatePartitioner(resolved_topologies, self.rotation_features, anchor_plate_id=anchor_plate_id)), 0)
+        self.assertAlmostEqual(distance_from_point_after_reverse_reconstruction(
+                pygplates.PlatePartitioner(
+                        resolved_topologies,
+                        pygplates.RotationModel(self.rotation_features, default_anchor_plate_id=anchor_plate_id))), 0)
+        # But not when the anchor plate is left as the default (zero) anchor plate of the rotation model.
+        self.assertTrue(distance_from_point_after_reverse_reconstruction(
+                pygplates.PlatePartitioner(resolved_topologies, self.rotation_features)) > 1e-3)
+
+        # Partitioning plates resolved from features, with the anchor plate given explicitly, or as the
+        # default anchor plate of the rotation model.
+        for plate_partitioner in (
+                pygplates.PlatePartitioner(
+                        self.topological_features, self.rotation_features, reconstruction_time,
+                        anchor_plate_id=anchor_plate_id),
+                pygplates.PlatePartitioner(
+                        self.topological_features,
+                        pygplates.RotationModel(self.rotation_features, default_anchor_plate_id=anchor_plate_id),
+                        reconstruction_time)):
+            # The plates are resolved with that anchor plate (the same plates as the topological snapshot's).
+            partitioning_plate = plate_partitioner.partition_point(point)
+            self.assertTrue(partitioning_plate)
+            snapshot_plate = next(
+                    resolved_topology for resolved_topology in resolved_topologies
+                    if resolved_topology.get_feature().get_feature_id() == partitioning_plate.get_feature().get_feature_id())
+            self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(
+                    partitioning_plate.get_resolved_boundary().get_interior_centroid(),
+                    snapshot_plate.get_resolved_boundary().get_interior_centroid()), 0)
+            # And partitioned features are reverse reconstructed with it.
+            self.assertAlmostEqual(distance_from_point_after_reverse_reconstruction(plate_partitioner), 0)
+        # But not when the anchor plate is left as the default (zero) anchor plate of the rotation model.
+        self.assertTrue(distance_from_point_after_reverse_reconstruction(
+                pygplates.PlatePartitioner(self.topological_features, self.rotation_features, reconstruction_time)) > 1e-3)
+
+        # 'partition_into_plates()' passes its anchor plate to the plate partitioner.
+        partitioned_features = pygplates.partition_into_plates(
+                self.topological_features, self.rotation_features, point_feature,
+                reconstruction_time=reconstruction_time, anchor_plate_id=anchor_plate_id)
+        reconstructed_feature_geometries = pygplates.ReconstructSnapshot(
+                partitioned_features, self.rotation_features, reconstruction_time, anchor_plate_id).get_reconstructed_geometries()
+        self.assertTrue(len(reconstructed_feature_geometries) == 1)
+        self.assertAlmostEqual(
+                pygplates.GeometryOnSphere.distance(reconstructed_feature_geometries[0].get_reconstructed_geometry(), point), 0)
 
     def test_partition_features(self):
         plate_partitioner = pygplates.PlatePartitioner(self.topological_features, self.rotation_features)
