@@ -4751,6 +4751,14 @@ export_feature()
 				"The :class:`feature type<FeatureType>` is a `flowline "
 				"<http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_.\n"
 				"\n"
+				"  The seed point is on the *left* plate: it is the point that was at the spreading centre "
+				"at the youngest of the *times* (usually present day). Between the youngest and oldest "
+				"*times*, the flowline spreads from the seed point along both plates. At a reconstruction "
+				"time younger than the youngest time, the flowline keeps its shape at that time, with each "
+				"half carried by its own plate. At (or older than) the oldest time there is no flowline, "
+				"only the seed point, carried by the left plate from where the spreading centre was at "
+				"that time.\n"
+				"\n"
 				"  Create a flowline feature:\n"
 				"  ::\n"
 				"\n"
@@ -4810,7 +4818,12 @@ export_feature()
 				"        reverse_reconstruct=(rotation_model, 50))\n"
 				"\n"
 				"  .. note:: In the above example we needed to call :meth:`set_reconstruction_method` to "
-				"set up a half-stage rotation since that is what :meth:`create_flowline` calls internally.\n")
+				"set up a half-stage rotation since that is what :meth:`create_flowline` calls internally.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     A flowline is reconstructed at times younger than its youngest time (previously "
+				"only between its youngest and oldest times). Its two halves start at the seed point even "
+				"when the left and right plates don't coincide at its youngest time.\n")
 		.staticmethod("create_flowline")
 		.def("create_motion_path",
 				&GPlatesApi::feature_handle_create_motion_path,

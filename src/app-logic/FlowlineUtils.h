@@ -30,6 +30,7 @@
 
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreeCreator.h"
+#include "app-logic/VelocityDeltaTime.h"
 
 #include "maths/PolylineOnSphere.h"
 
@@ -286,11 +287,19 @@ namespace GPlatesAppLogic
 		get_half_angle_rotation(
 			GPlatesMaths::FiniteRotation &rotation);
 
+		/**
+		 * Fills @a times with the times of the vertices of a flowline reconstructed to
+		 * @a reconstruction_time: @a reconstruction_time (clamped to the range of the sorted
+		 * @a time_samples), followed by each time in @a time_samples older than it.
+		 *
+		 * Younger than the youngest time sample, a flowline keeps its shape at that time (each half
+		 * is carried by its own plate). Older than the oldest, it is only its seed point.
+		 */
 		void
 		fill_times_vector(
 			std::vector<double> &times,
 			const double &reconstruction_time,
-			const std::vector<double> &time_samples);		
+			const std::vector<double> &time_samples);
 
 		void
 		get_times_from_time_period_array(
@@ -303,12 +312,10 @@ namespace GPlatesAppLogic
 			const std::vector<GPlatesMaths::FiniteRotation> &rotations,
 			bool reverse = false);
 
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct_seed_points(
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type seed_points,
-			const std::vector<GPlatesMaths::FiniteRotation> &rotations,
-			bool reverse = false);
-
+		/**
+		 * Reconstructs (or reverse reconstructs) a flowline's seed point(s) by
+		 * @a get_seed_point_rotation.
+		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_flowline_seed_points(
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type seed_points,
@@ -345,8 +352,45 @@ namespace GPlatesAppLogic
 			const ReconstructionTreeCreator &reconstruction_tree_creator);
 
 		/**
+		 * Returns the rotation that reconstructs a flowline's (stored) seed point to
+		 * @a reconstruction_time - the same rotation as @a reconstruct_flowline_seed_points.
+		 *
+		 * That is the left plate's rotation at @a reconstruction_time composed with the half-stage
+		 * rotations from the youngest of @a flowline_times to @a reconstruction_time (clamped to the
+		 * oldest of @a flowline_times). So outside the flowline's times the seed point moves with the
+		 * left plate only.
+		 */
+		GPlatesMaths::FiniteRotation
+		get_seed_point_rotation(
+			const double &reconstruction_time,
+			const std::vector<double> &flowline_times,
+			const GPlatesModel::integer_plate_id_type &left_plate_id,
+			const GPlatesModel::integer_plate_id_type &right_plate_id,
+			const ReconstructionTreeCreator &reconstruction_tree_creator);
+
+		/**
+		 * Returns the stage rotation over the velocity time range at @a reconstruction_time of a
+		 * flowline's seed point, as reconstructed by @a get_seed_point_rotation.
+		 *
+		 * The velocity time range is that of
+		 * PlateVelocityUtils::get_half_stage_rotation_velocity_time_range.
+		 */
+		GPlatesMaths::FiniteRotation
+		calculate_seed_point_stage_rotation(
+			const double &reconstruction_time,
+			const std::vector<double> &flowline_times,
+			const GPlatesModel::integer_plate_id_type &left_plate_id,
+			const GPlatesModel::integer_plate_id_type &right_plate_id,
+			const ReconstructionTreeCreator &reconstruction_tree_creator,
+			const double &velocity_delta_time,
+			VelocityDeltaTime::Type velocity_delta_time_type);
+
+		/**
 		 * Fills @a seed_point_rotations with half-stage rotations from earliest flowline
 		 * time to current time.
+		 *
+		 * The current time is clamped to the oldest flowline time, and there are no rotations
+		 * when it is younger than the earliest flowline time (or there are fewer than two times).
 		 */
 		void
 		fill_seed_point_rotations(
@@ -360,6 +404,11 @@ namespace GPlatesAppLogic
 		/**
 		 * Given a flowline end point(s) @a geometry_ at time @a reconstruction_time,
 		 * calculates the spreading centre for that flowline.
+		 *
+		 * @a plate_1 is the plate of the half of the flowline the end point is on, and
+		 * @a plate_2 the other plate. @a plate_1_is_right_plate says whether @a plate_1 is the
+		 * flowline's right plate: younger than the flowline's youngest time the two halves no longer
+		 * start at the same point, and the seed point is where the left half starts.
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		correct_end_point_to_centre(
@@ -368,7 +417,8 @@ namespace GPlatesAppLogic
 		    const GPlatesModel::integer_plate_id_type &plate_2,
 		    const std::vector<double> &times,
 			const ReconstructionTreeCreator &reconstruction_tree_creator,
-		    const double &reconstruction_time);
+		    const double &reconstruction_time,
+		    bool plate_1_is_right_plate);
 
 	}
 

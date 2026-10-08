@@ -24,6 +24,8 @@
 * with this program; if not, write to Free Software Foundation, Inc.,
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
+#include <algorithm>
+
 #include "boost/optional.hpp"
 
 #include <QDebug>
@@ -31,8 +33,10 @@
 #include "FlowlineUtils.h"
 
 #include "app-logic/AppLogicUtils.h"
+#include "app-logic/PlateVelocityUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/RotationUtils.h"
+#include "maths/CalculateVelocity.h"
 #include "maths/FiniteRotation.h"
 #include "maths/MathsUtils.h"
 #include "model/FeatureVisitor.h"
@@ -122,14 +126,23 @@ GPlatesAppLogic::FlowlineUtils::fill_times_vector(
 	const double &reconstruction_time,
 	const std::vector<double> &time_samples)
 {
-	times.push_back(reconstruction_time);
+	// Outside the flowline's times the flowline keeps the shape it has at its nearest time (each
+	// half carried by its own plate), so its rotations start from that time instead.
+	double flowline_time = reconstruction_time;
+	if (!time_samples.empty())
+	{
+		flowline_time = (std::max)(flowline_time, time_samples.front());
+		flowline_time = (std::min)(flowline_time, time_samples.back());
+	}
+
+	times.push_back(flowline_time);
 
 	std::vector<double>::const_iterator
 		samples_iter = time_samples.begin(),
 		samples_end = time_samples.end();
 
-	// Get to the first time which is older than our current reconstruction time. 
-	while ((samples_iter != samples_end) && (*samples_iter <= reconstruction_time))
+	// Get to the first time which is older than that time.
+	while ((samples_iter != samples_end) && (*samples_iter <= flowline_time))
 	{
 		++samples_iter;
 	}	
@@ -221,8 +234,7 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::can_process_flowline()
     // we can process the seed point and
     // we have left and right plate ids
     // we have a reconstruction time and
-    // we have a non-empty times vector and
-    // the reconstruction time lies between the end points of the times vector.
+    // we have a non-empty times vector.
 	if (d_times.empty() ||
 	   !d_left_plate ||
 	   !d_right_plate ||
@@ -232,18 +244,12 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::can_process_flowline()
 	    return false;
 	}
 
-	// Assumes the times are sorted.
-	double oldest = d_times.back();
-	double youngest = d_times.front();
+	// NOTE: The reconstruction time need not lie between the end points of the times vector
+	// (as for motion paths). Younger than the youngest time, the flowline keeps its shape at that
+	// time, each half carried by its own plate. Older than the oldest time, there is only the
+	// seed point, carried by the left plate from where the spreading centre was at that time.
 
-
-	if ((d_reconstruction_time->value() <= oldest) &&
-	     (d_reconstruction_time->value() >= youngest))
-	{
-		return true;
-	}	
-
-	return false;
+	return true;
 }
 
 bool
@@ -367,41 +373,6 @@ GPlatesAppLogic::FlowlineUtils::reconstruct_seed_point(
     return current_point;
 }
 
-GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::FlowlineUtils::reconstruct_seed_points(
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type seed_points,
-	const std::vector<GPlatesMaths::FiniteRotation> &rotations,
-	bool reverse)
-{
-    GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type current_points = seed_points;
-
-    if (reverse)
-    {
-		std::vector<GPlatesMaths::FiniteRotation>::const_reverse_iterator
-			iter = rotations.rbegin(),
-			end = rotations.rend();
-
-		for(; iter != end; ++iter)
-		{
-			current_points = get_reverse(*iter) * current_points;
-		}
-
-    }
-    else
-    {
-		std::vector<GPlatesMaths::FiniteRotation>::const_iterator
-			iter = rotations.begin(),
-			end = rotations.end();
-
-		for (; iter != end ; ++iter)
-		{
-			current_points  = (*iter) * current_points;
-		}
-    }
-
-    return current_points;
-}
-
 GPlatesMaths::FiniteRotation
 GPlatesAppLogic::FlowlineUtils::get_left_to_right_plate_frame_rotation(
 	const double &flowline_start_time,
@@ -432,9 +403,16 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
 	const ReconstructionTreeCreator &reconstruction_tree_creator,
     std::vector<GPlatesMaths::FiniteRotation> &seed_point_rotations)
 {
-	// The reconstruction tree for the current reconstruction time.
-	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-			reconstruction_tree_creator.get_reconstruction_tree(current_time);
+	// With fewer than two times there is no spreading to rotate by.
+	if (flowline_times.size() < 2)
+	{
+		return;
+	}
+
+	// Older than the oldest time, the seed point stays where the spreading centre was at that time
+	// (and is carried by the left plate), so it stays continuous across the oldest time.
+	// Younger than the youngest time there are no rotations (the loops below don't run).
+	const double spreading_time = (std::min)(current_time, flowline_times.back());
 
     std::vector<double>::const_iterator
             t_iter = flowline_times.begin(),
@@ -442,12 +420,7 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
 
     ++t_iter;
 
-    if (current_time > flowline_times.back())
-    {
-        return;
-    }
-
-    for (; *t_iter < current_time; ++t_iter, ++t_prev_iter)
+    for (; *t_iter < spreading_time; ++t_iter, ++t_prev_iter)
     {
 
         GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_time_t_ptr =
@@ -471,14 +444,14 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
 
     }
 
-    if (*t_prev_iter < current_time)
+    if (*t_prev_iter < spreading_time)
     {
-        // And one more, from the last time reached to the current time.
+        // And one more, from the last time reached to the spreading time.
         GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_time_t_ptr =
  				reconstruction_tree_creator.get_reconstruction_tree(*t_prev_iter);
 
         GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_current_time_ptr =
- 				reconstruction_tree_creator.get_reconstruction_tree(current_time);
+ 				reconstruction_tree_creator.get_reconstruction_tree(spreading_time);
 
         GPlatesMaths::FiniteRotation stage_pole =
                 GPlatesAppLogic::RotationUtils::get_stage_pole(
@@ -510,37 +483,85 @@ GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
 		return seed_points;
     }
 
-    std::vector<GPlatesMaths::FiniteRotation> seed_point_rotations;
+	// The same rotation as the seed point velocities use, so they can't disagree.
+	const GPlatesMaths::FiniteRotation seed_point_rotation =
+		get_seed_point_rotation(
+			current_time,
+			finder.get_times(),
+			finder.get_left_plate().get(),
+			finder.get_right_plate().get(),
+			reconstruction_tree_creator);
 
-   GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
-		current_time,
-		finder.get_times(),
-		finder.get_left_plate().get(),
-		finder.get_right_plate().get(),
+	return reverse
+		? get_reverse(seed_point_rotation) * seed_points
+		: seed_point_rotation * seed_points;
+}
+
+GPlatesMaths::FiniteRotation
+GPlatesAppLogic::FlowlineUtils::get_seed_point_rotation(
+	const double &reconstruction_time,
+	const std::vector<double> &flowline_times,
+	const GPlatesModel::integer_plate_id_type &left_plate_id,
+	const GPlatesModel::integer_plate_id_type &right_plate_id,
+	const ReconstructionTreeCreator &reconstruction_tree_creator)
+{
+	std::vector<GPlatesMaths::FiniteRotation> seed_point_rotations;
+	fill_seed_point_rotations(
+		reconstruction_time,
+		flowline_times,
+		left_plate_id,
+		right_plate_id,
 		reconstruction_tree_creator,
 		seed_point_rotations);
 
- 	// The reconstruction tree for the current reconstruction time.
-	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-			reconstruction_tree_creator.get_reconstruction_tree(current_time);
+	// The half-stage rotations apply first (in order), then the left plate's rotation.
+	GPlatesMaths::FiniteRotation seed_point_rotation =
+		reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)
+			->get_composed_absolute_rotation(left_plate_id);
 
-    GPlatesMaths::FiniteRotation plate_correction =
-			reconstruction_tree->get_composed_absolute_rotation(finder.get_left_plate().get());
+	std::vector<GPlatesMaths::FiniteRotation>::const_reverse_iterator
+		iter = seed_point_rotations.rbegin(),
+		end = seed_point_rotations.rend();
+	for (; iter != end; ++iter)
+	{
+		seed_point_rotation = GPlatesMaths::compose(seed_point_rotation, *iter);
+	}
 
-    if (reverse)
-    {
-		seed_points = get_reverse(plate_correction) * seed_points;
-    }
+	return seed_point_rotation;
+}
 
-    GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type corrected_seed_points =
-	    GPlatesAppLogic::FlowlineUtils::reconstruct_seed_points(seed_points,seed_point_rotations,reverse);
+GPlatesMaths::FiniteRotation
+GPlatesAppLogic::FlowlineUtils::calculate_seed_point_stage_rotation(
+	const double &reconstruction_time,
+	const std::vector<double> &flowline_times,
+	const GPlatesModel::integer_plate_id_type &left_plate_id,
+	const GPlatesModel::integer_plate_id_type &right_plate_id,
+	const ReconstructionTreeCreator &reconstruction_tree_creator,
+	const double &velocity_delta_time,
+	VelocityDeltaTime::Type velocity_delta_time_type)
+{
+	const std::pair<double, double> time_range =
+		PlateVelocityUtils::get_half_stage_rotation_velocity_time_range(
+			left_plate_id,
+			right_plate_id,
+			reconstruction_tree_creator,
+			reconstruction_time,
+			velocity_delta_time,
+			velocity_delta_time_type);
 
-    if (!reverse)
-    {
-		corrected_seed_points = plate_correction * corrected_seed_points;
-    }
-
-    return corrected_seed_points;
+	return GPlatesMaths::calculate_stage_rotation(
+		get_seed_point_rotation(
+			time_range.second/*young*/,
+			flowline_times,
+			left_plate_id,
+			right_plate_id,
+			reconstruction_tree_creator),
+		get_seed_point_rotation(
+			time_range.first/*old*/,
+			flowline_times,
+			left_plate_id,
+			right_plate_id,
+			reconstruction_tree_creator));
 }
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
@@ -550,7 +571,8 @@ GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
     const GPlatesModel::integer_plate_id_type &plate_2,
     const std::vector<double> &flowline_feature_times,
 	const ReconstructionTreeCreator &reconstruction_tree_creator,
-    const double &reconstruction_time)
+    const double &reconstruction_time,
+    bool plate_1_is_right_plate)
 {
     std::vector<double> times;
     std::vector<GPlatesMaths::FiniteRotation> flowline_rotations;
@@ -615,5 +637,31 @@ GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
 		geometry_ = get_reverse(*riter) * geometry_;
     }
 
-    return correction * geometry_;
+    // This is where the half of the flowline on plate 1 starts.
+    geometry_ = correction * geometry_;
+
+    // Younger than the flowline's youngest time, each half keeps its shape at that time and is
+    // carried by its own plate, so the right half no longer starts at the seed point. The seed point
+    // is where the left plate (plate 2) has carried the right half's start (from the youngest time).
+    if (plate_1_is_right_plate &&
+        !flowline_feature_times.empty() &&
+        reconstruction_time < flowline_feature_times.front())
+    {
+		const double youngest_time = flowline_feature_times.front();
+		const ReconstructionTree::non_null_ptr_to_const_type youngest_tree =
+				reconstruction_tree_creator.get_reconstruction_tree(youngest_time);
+
+		// R(t,A->L) * inverse[R(t0,A->L)] * R(t0,A->R) * inverse[R(t,A->R)]
+		const GPlatesMaths::FiniteRotation right_to_left_half_start = GPlatesMaths::compose(
+				GPlatesMaths::compose(
+						reconstruction_tree->get_composed_absolute_rotation(plate_2),
+						get_reverse(youngest_tree->get_composed_absolute_rotation(plate_2))),
+				GPlatesMaths::compose(
+						youngest_tree->get_composed_absolute_rotation(plate_1),
+						get_reverse(correction)));
+
+		geometry_ = right_to_left_half_start * geometry_;
+    }
+
+    return geometry_;
 }

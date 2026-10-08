@@ -177,31 +177,29 @@ GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_velocities(
 		return;
     }
 
-	//
-	// FIXME: I'm not sure if the following velocity calculation is correct.
-	// Need to go through FlowlineUtils to see how flowlines are reconstructed.
-	// For now we'll just calculate the velocity at the seed point at the current reconstruction time.
-	//
+	// The seed point velocity follows the seed point as reconstructed (and drawn) at the
+	// reconstruction time: by half-stage rotations from the flowline's youngest time (so with no
+	// spreading before that time, nor after its oldest time) and then by the left plate.
+	const GPlatesModel::integer_plate_id_type left_plate_id =
+			flowline_property_finder.get_left_plate().get();
+	const GPlatesModel::integer_plate_id_type right_plate_id =
+			flowline_property_finder.get_right_plate().get();
 
-	// If we can't get left/right plate IDs then we'll just use plate id zero (spin axis)
-	// which can still give a non-identity rotation if the anchor plate id is non-zero.
-	GPlatesModel::integer_plate_id_type left_plate_id = 0;
-	GPlatesModel::integer_plate_id_type right_plate_id = 0;
-	if (flowline_property_finder.get_left_plate())
-	{
-		left_plate_id = flowline_property_finder.get_left_plate().get();
-	}
-	if (flowline_property_finder.get_right_plate())
-	{
-		right_plate_id = flowline_property_finder.get_right_plate().get();
-	}
+	const GPlatesMaths::FiniteRotation finite_rotation =
+			FlowlineUtils::get_seed_point_rotation(
+					reconstruction_time,
+					flowline_property_finder.get_times(),
+					left_plate_id,
+					right_plate_id,
+					context.reconstruction_tree_creator);
 
-	const std::pair<double, double> time_range =
-			PlateVelocityUtils::get_half_stage_rotation_velocity_time_range(
+	const GPlatesMaths::FiniteRotation velocity_stage_rotation =
+			FlowlineUtils::calculate_seed_point_stage_rotation(
+					reconstruction_time,
+					flowline_property_finder.get_times(),
 					left_plate_id,
 					right_plate_id,
 					context.reconstruction_tree_creator,
-					reconstruction_time,
 					velocity_delta_time,
 					velocity_delta_time_type);
 
@@ -210,31 +208,6 @@ GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_velocities(
 	get_present_day_feature_geometries(present_day_geometries);
 	BOOST_FOREACH(const Geometry &present_day_geometry, present_day_geometries)
 	{
-		// Get the half-stage rotation.
-		const GPlatesMaths::FiniteRotation finite_rotation_1 = RotationUtils::get_half_stage_rotation(
-				context.reconstruction_tree_creator,
-				time_range.second/*young*/,
-				left_plate_id,
-				right_plate_id);
-		const GPlatesMaths::FiniteRotation finite_rotation_2 = RotationUtils::get_half_stage_rotation(
-				context.reconstruction_tree_creator,
-				time_range.first/*old*/,
-				left_plate_id,
-				right_plate_id);
-
-		// Use either the young or old half-stage rotations if the reconstruction time matches.
-		// Otherwise calculate a new half-stage rotation.
-		const GPlatesMaths::FiniteRotation finite_rotation =
-				GPlatesMaths::are_almost_exactly_equal(reconstruction_time, time_range.second/*young*/)
-				? finite_rotation_1
-				: (GPlatesMaths::are_almost_exactly_equal(reconstruction_time, time_range.first/*old*/)
-						? finite_rotation_2
-						: RotationUtils::get_half_stage_rotation(
-								context.reconstruction_tree_creator,
-								reconstruction_time,
-								left_plate_id,
-								right_plate_id));
-
 		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
 		// that stores a multi-point domain and a corresponding velocity field but the
 		// geometry property iterator (referenced by the MultiPointVectorField) could be a
@@ -242,8 +215,7 @@ GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_velocities(
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type velocity_domain =
 				GeometryUtils::convert_geometry_to_multi_point(*present_day_geometry.geometry);
 
-		// Rotate the velocity domain.
-		// We do this even if the plate id is zero because the anchor plate might be non-zero.
+		// Rotate the velocity domain to the reconstructed seed point(s).
 		velocity_domain = finite_rotation * velocity_domain;
 
 		// Create an RFG purely for the purpose of representing the feature that generated the
@@ -280,11 +252,12 @@ GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_velocities(
 		{
 			// Calculate the velocity.
 			const GPlatesMaths::Vector3D vector_xyz =
-					GPlatesMaths::calculate_velocity_vector(
+					PlateVelocityUtils::calculate_velocity_vector(
 							*domain_iter,
-							finite_rotation_1,
-							finite_rotation_2,
-							time_range.first/*old*/ - time_range.second/*young*/);
+							velocity_stage_rotation,
+							velocity_delta_time,
+							VelocityUnits::CMS_PER_YR,
+							GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 			*field_iter = MultiPointVectorField::CodomainElement(
 					vector_xyz,

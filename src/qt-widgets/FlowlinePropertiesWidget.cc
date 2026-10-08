@@ -113,6 +113,7 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
 		plate_2,
 		finder.get_times(),
 		reconstruction_tree_creator,
-		d_application_state.get_current_reconstruction_time());
+		d_application_state.get_current_reconstruction_time(),
+		radio_right->isChecked()/*plate_1_is_right_plate*/);
 
 }

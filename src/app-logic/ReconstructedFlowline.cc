@@ -25,8 +25,9 @@
 
 #include "ReconstructedFlowline.h"
 
+#include "FlowlineUtils.h"
+#include "PlateVelocityUtils.h"
 #include "ReconstructionGeometryVisitor.h"
-#include "ResolvedVertexSourceInfo.h"
 
 
 void
@@ -60,15 +61,24 @@ GPlatesAppLogic::ReconstructedFlowline::reconstructed_seed_point_velocity(
 		VelocityUnits::Value velocity_units,
 		const double &earth_radius_in_kms) const
 {
-	const ResolvedVertexSourceInfo::non_null_ptr_to_const_type reconstructed_source_info =
-			ResolvedVertexSourceInfo::create(get_non_null_pointer_to_const());
+	// The seed point moves by half-stage rotations from the flowline's youngest time (so with no
+	// spreading before that time, nor after its oldest time) and then by the left plate.
+	// So use the flowline's times, rather than a generic half-stage rotation.
+	const GPlatesMaths::FiniteRotation velocity_stage_rotation =
+			FlowlineUtils::calculate_seed_point_stage_rotation(
+					get_reconstruction_time(),
+					d_flowline_times,
+					d_left_plate_id,
+					d_right_plate_id,
+					get_reconstruction_tree_creator(),
+					velocity_delta_time,
+					velocity_delta_time_type);
 
 	// Calculate a velocity at seed point.
-	return reconstructed_source_info->get_velocity_vector(
+	return PlateVelocityUtils::calculate_velocity_vector(
 			reconstructed_seed_point(),
-			get_reconstruction_time(),
+			velocity_stage_rotation,
 			velocity_delta_time,
-			velocity_delta_time_type,
 			velocity_units,
 			earth_radius_in_kms);
 }

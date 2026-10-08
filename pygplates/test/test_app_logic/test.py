@@ -826,7 +826,137 @@ class ReconstructTestCase(unittest.TestCase):
             # First point in left/right flowline is reconstructed seed point.
             self.assertTrue(reconstructed_flowline.get_left_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
             self.assertTrue(reconstructed_flowline.get_right_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
-        
+
+    @staticmethod
+    def _flowline_rotation_model():
+        # Plate 201 moves relative to the anchor; 701 has a non-identity present day rotation; and
+        # 801 spreads from 201 at a varying rate about a moving pole.
+        def sequence(fixed_plate, moving_plate, samples):
+            return pygplates.Feature.create_total_reconstruction_sequence(
+                fixed_plate,
+                moving_plate,
+                pygplates.GpmlIrregularSampling([
+                    pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(pygplates.FiniteRotation(pole, math.radians(angle))),
+                        time)
+                    for time, pole, angle in samples]))
+        return pygplates.RotationModel([
+            sequence(0, 201, [(0, (0, 90), 0), (100, (0, 90), 50)]),
+            sequence(0, 701, [(0, (10, 20), 3), (100, (10, 20), 40)]),
+            sequence(201, 801, [(0, (30, 40), 0), (10, (30, 40), 5), (20, (50, 60), 30),
+                                (40, (60, 80), 40), (100, (60, 80), 100)]),
+        ])
+
+    def _reconstruct_flowline(self, flowline_feature, rotation_model, reconstruction_time):
+        reconstructed_flowlines = []
+        pygplates.reconstruct(
+                flowline_feature, rotation_model, reconstructed_flowlines, reconstruction_time,
+                reconstruct_type=pygplates.ReconstructType.flowline)
+        self.assertTrue(len(reconstructed_flowlines) <= 1)
+        return reconstructed_flowlines[0] if reconstructed_flowlines else None
+
+    def _assert_seed_velocity_follows_seed(self, flowline_feature, rotation_model, reconstruction_time):
+        # The seed point velocity should match how the reconstructed seed point actually moves.
+        delta_time = 0.01
+        reconstructed_flowline = self._reconstruct_flowline(flowline_feature, rotation_model, reconstruction_time)
+        next_reconstructed_flowline = self._reconstruct_flowline(
+                flowline_feature, rotation_model, reconstruction_time + delta_time)
+        # From the older position to the younger one (the velocity is forward in time).
+        expected_velocity = (
+                pygplates.Vector3D(reconstructed_flowline.get_reconstructed_seed_point().to_xyz()) -
+                pygplates.Vector3D(next_reconstructed_flowline.get_reconstructed_seed_point().to_xyz())
+            ) * (pygplates.Earth.mean_radius_in_kms / delta_time)
+        velocity = reconstructed_flowline.get_reconstructed_seed_point_velocity(velocity_delta_time=delta_time)
+        self.assertLess((velocity - expected_velocity).get_magnitude(), 0.01 * expected_velocity.get_magnitude())
+
+    def test_reconstruct_flowline_left_right_plates_not_coinciding(self):
+        # The two halves of a flowline start at its seed point even when the left and right plates
+        # don't coincide at the flowline's youngest time.
+        rotation_model = self._flowline_rotation_model()
+        seed_point = pygplates.PointOnSphere(20, 10)
+        for times, right_plate, reconstruction_time in (
+                ([10, 20, 30, 40], 801, 15),  # youngest time is not present day
+                ([0, 10, 20, 30, 40], 701, 5),  # right plate's present day rotation is not identity
+                ([10, 20, 30, 40], 701, 15)):  # both
+            flowline_feature = pygplates.Feature.create_flowline(
+                    seed_point, times, left_plate=201, right_plate=right_plate)
+            reconstructed_flowline = self._reconstruct_flowline(flowline_feature, rotation_model, reconstruction_time)
+            self.assertTrue(reconstructed_flowline.get_left_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
+            self.assertTrue(reconstructed_flowline.get_right_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
+            self._assert_seed_velocity_follows_seed(flowline_feature, rotation_model, reconstruction_time)
+
+    def test_reconstruct_flowline_younger_than_youngest_time(self):
+        rotation_model = self._flowline_rotation_model()
+        seed_point = pygplates.PointOnSphere(20, 10)
+        times = [10, 20, 30, 40]
+        for right_plate in (801, 701):
+            flowline_feature = pygplates.Feature.create_flowline(
+                    seed_point, times, left_plate=201, right_plate=right_plate, name='flowline')
+            flowline_at_youngest_time = self._reconstruct_flowline(flowline_feature, rotation_model, times[0])
+            left_rotation_from_youngest_time = rotation_model.get_rotation(times[0], 201).get_inverse()
+            right_rotation_from_youngest_time = rotation_model.get_rotation(times[0], right_plate).get_inverse()
+            for reconstruction_time in (0, 5):
+                # The flowline keeps its shape at its youngest time, each half carried by its own plate.
+                reconstructed_flowline = self._reconstruct_flowline(flowline_feature, rotation_model, reconstruction_time)
+                self.assertTrue(reconstructed_flowline)
+                left_rotation = rotation_model.get_rotation(reconstruction_time, 201) * left_rotation_from_youngest_time
+                right_rotation = rotation_model.get_rotation(reconstruction_time, right_plate) * right_rotation_from_youngest_time
+                left_flowline = reconstructed_flowline.get_left_flowline()
+                right_flowline = reconstructed_flowline.get_right_flowline()
+                self.assertEqual(len(left_flowline), len(times))
+                self.assertEqual(len(right_flowline), len(times))
+                for point, point_at_youngest_time in zip(left_flowline, flowline_at_youngest_time.get_left_flowline()):
+                    self.assertAlmostEqual(
+                            pygplates.GeometryOnSphere.distance(point, left_rotation * point_at_youngest_time), 0)
+                for point, point_at_youngest_time in zip(right_flowline, flowline_at_youngest_time.get_right_flowline()):
+                    self.assertAlmostEqual(
+                            pygplates.GeometryOnSphere.distance(point, right_rotation * point_at_youngest_time), 0)
+                # The seed point is carried by the left plate (and is the first point of the left flowline).
+                self.assertTrue(reconstructed_flowline.get_reconstructed_seed_point() == left_flowline[0])
+                self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(
+                        reconstructed_flowline.get_reconstructed_seed_point(),
+                        rotation_model.get_rotation(reconstruction_time, 201) * seed_point), 0)
+                self._assert_seed_velocity_follows_seed(flowline_feature, rotation_model, reconstruction_time)
+
+                # Reverse reconstruction is the inverse of reconstruction.
+                reverse_reconstructed_flowline_feature = pygplates.Feature.create_flowline(
+                        seed_point, times, left_plate=201, right_plate=right_plate,
+                        reverse_reconstruct=(rotation_model, reconstruction_time))
+                self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(
+                        self._reconstruct_flowline(
+                                reverse_reconstructed_flowline_feature, rotation_model, reconstruction_time
+                        ).get_reconstructed_seed_point(),
+                        seed_point), 0)
+
+            # Exported vertex times start at the youngest time.
+            temp_dir = tempfile.mkdtemp()
+            try:
+                export_filename = os.path.join(temp_dir, 'flowline.xy')
+                pygplates.reconstruct(flowline_feature, rotation_model, export_filename, 5,
+                        reconstruct_type=pygplates.ReconstructType.flowline)
+                with open(export_filename) as export_file:
+                    vertex_times = [float(line.split()[2]) for line in export_file
+                            if line.strip() and not line.startswith('>')]
+                self.assertEqual(vertex_times, times + times)
+            finally:
+                shutil.rmtree(temp_dir)
+
+    def test_reconstruct_flowline_older_than_oldest_time(self):
+        rotation_model = self._flowline_rotation_model()
+        seed_point = pygplates.PointOnSphere(20, 10)
+        times = [10, 20, 30, 40]
+        flowline_feature = pygplates.Feature.create_flowline(seed_point, times, left_plate=201, right_plate=801)
+        # There's no flowline at (or older than) the oldest time, only a seed point.
+        for reconstruction_time in (40, 50):
+            self.assertFalse(self._reconstruct_flowline(flowline_feature, rotation_model, reconstruction_time))
+        # The seed point (reverse reconstructed here) is continuous across the oldest time.
+        stored_seed_points = [
+            pygplates.Feature.create_flowline(
+                    seed_point, times, left_plate=201, right_plate=801,
+                    reverse_reconstruct=(rotation_model, reconstruction_time)).get_geometry()
+            for reconstruction_time in (39.999, 40.001)]
+        self.assertTrue(math.degrees(pygplates.GeometryOnSphere.distance(*stored_seed_points)) < 0.01)
+
     def test_reconstruct_motion_path(self):
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
         reconstruction_time = 15
