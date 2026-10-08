@@ -54,7 +54,9 @@
 //TODO: (not in this source file but...) The tab order during flowline feature creation is poor; it jumps
 // from leftplateID to geometry type....these widgets are spread over several container widgets though.
 
-const bool DEMAND_ZERO_TIME_VALUE_IN_TABLE = true;
+// NOTE: A new time sequence starts with a present day (0Ma) time, but it can be removed like any
+// other time. Flowlines and motion paths are both reconstructed at times younger than their
+// youngest time, so a time sequence need not include present day.
 
 namespace
 {
@@ -63,23 +65,6 @@ namespace
 		COLUMN_TIME, COLUMN_ACTION
 	};
 
-	bool
-	row_contains_zero(int row, QTableWidget *table)
-	{
-		bool ok;
-		double value = table->item(row,COLUMN_TIME)->data(Qt::DisplayRole).toDouble(&ok);
-
-		if (!ok)
-		{
-			return false;
-		}
-		if (qFuzzyCompare(value+1,1.))
-		{
-			return true;
-		}
-		return false;
-	}
-	
 	/**
 	 * Fetches the appropriate action widget given a row number.
 	 * May return NULL.
@@ -145,7 +130,7 @@ namespace
 		// Set the current cell to be a cell from the new row, so that an action widget is added to it. 
 		table.setCurrentCell(row,COLUMN_ACTION);		
 		
-		return row;
+		return true;
 	}	
 
 
@@ -254,12 +239,9 @@ namespace
 		int row,
 		QTableWidget *table_widget)
 	{
-		if (DEMAND_ZERO_TIME_VALUE_IN_TABLE && !row_contains_zero(row,table_widget))
-		{
-			table_widget->removeCellWidget(row,COLUMN_TIME);
-			table_widget->removeCellWidget(row,COLUMN_ACTION);
-			table_widget->removeRow(row);
-		}
+		table_widget->removeCellWidget(row,COLUMN_TIME);
+		table_widget->removeCellWidget(row,COLUMN_ACTION);
+		table_widget->removeRow(row);
 	}
 
 	/**
@@ -287,11 +269,7 @@ namespace
 
 			for (int i = 0 ; i < number_of_rows_to_remove ; ++i)
 			{
-				qDebug() << "removing: " << i << " of " << number_of_rows_to_remove;
-				if (DEMAND_ZERO_TIME_VALUE_IN_TABLE && !row_contains_zero(row_to_remove,table_widget))
-				{
-					remove_row(row_to_remove,table_widget);
-				}
+				remove_row(row_to_remove,table_widget);
 			}
 		}
 	}
@@ -308,14 +286,17 @@ namespace
 		}
 
 		QString previous_time_as_string = table->item(0,COLUMN_TIME)->text();
-		for (int count = 1; count < table->rowCount() ; ++count)
+		for (int count = 1; count < table->rowCount() ; )
 		{
 			QString current_time_as_string = table->item(count,COLUMN_TIME)->text();
 			if (current_time_as_string == previous_time_as_string)
 			{
+				// The next row moves up into this row, so compare it with the same previous time.
 				remove_row(count,table);
+				continue;
 			}
 			previous_time_as_string = current_time_as_string;
+			++count;
 		}
 	}
 
@@ -415,10 +396,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::reset_widget_to_default_values()
     table_times->clearContents();
     table_times->setRowCount(0);
 
-	if (DEMAND_ZERO_TIME_VALUE_IN_TABLE)
-	{
-		insert_single(0.);
-	}
+	// A new time sequence starts at present day (but that time can be removed).
+	insert_single(0.);
 
     // Reset widgets.
     spinbox_time->setValue(0.0);
@@ -683,10 +662,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::delete_time_from_table(
 		int row)
 {
 
-	if (DEMAND_ZERO_TIME_VALUE_IN_TABLE && row_contains_zero(row,table_times))
-	{
-		return;
-	}
 	// Before we delete the row, delete the action widget. removeRow() messes with the previous/current
 	// row indices, and then calls handle_current_cell_changed, which cannot delete the old action widget, 
 	// the upshot being that we end up with a surplus action widget which we can't get rid of. 
@@ -793,10 +768,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_remove_all()
 	table_times->clearContents();
 	table_times->setRowCount(0);
 
-	if (DEMAND_ZERO_TIME_VALUE_IN_TABLE)
-	{
-		insert_single(0);
-	}
 	update_buttons();
 	sort_and_commit();
 }
