@@ -76,6 +76,7 @@ Changes since 2.5:
     * A flowline whose times don't start at present day is now drawn and exported at times younger than its first time: it keeps its shape at that time, each half carried by its own plate. Previously only its seed point was drawn there, and it didn't move.
     * At and beyond its oldest time, a flowline's seed point is drawn carried by the left plate from where the spreading centre was at that time (previously nothing was drawn at exactly the oldest time, and an unmoving seed point beyond it).
     * Flowline velocity arrows are now drawn at the flowline's seed point and follow how it moves (previously they were drawn elsewhere when the flowline's times didn't start at present day).
+    * Fixed exported motion paths missing the feature's name (in the GMT header and the Shapefile "NAME" attribute), which exported flowlines include. The GMT header also labels the times ("Times:"), as for flowlines.
   * Fixed the wrong one of two errors being reported for a property not allowed in a feature (eg, in the Create Feature dialog, or in the Read Errors dialog when loading a GPML file from an older GPlates version): a property name valid only for other feature types was reported as not recognised, and an unrecognised property name as not valid for the feature type.
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.

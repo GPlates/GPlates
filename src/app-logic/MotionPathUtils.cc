@@ -49,6 +49,9 @@
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/XsBoolean.h"
+#include "property-values/XsString.h"
+
+#include "utils/UnicodeStringUtils.h"
 
 
 
@@ -85,6 +88,20 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::visit_gpml_plate_id(
 
 
 void
+GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::visit_xs_string(
+	const GPlatesPropertyValues::XsString &xs_string)
+{
+	static const GPlatesModel::PropertyName name_property_name =
+		GPlatesModel::PropertyName::create_gml("name");
+
+	if (current_top_level_propname() && *current_top_level_propname() == name_property_name)
+	{
+		d_name = GPlatesUtils::make_qstring(xs_string.get_value());
+	}
+}
+
+
+void
 GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::finalise_post_feature_properties(
 	const GPlatesModel::FeatureHandle &feature_handle)
 {
@@ -115,6 +132,7 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::initialise_pre_featu
 	d_time_of_dissappearance = boost::none;
 	d_reconstruction_plate_id = boost::none;
 	d_relative_plate_id = boost::none;
+	d_name.clear();
 	d_has_geometry = false;
 
 	return true;

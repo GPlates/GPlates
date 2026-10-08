@@ -1009,6 +1009,33 @@ class ReconstructTestCase(unittest.TestCase):
             # Last point in motion path is reconstructed seed point.
             self.assertTrue(reconstructed_motion_path.get_motion_path()[-1] == reconstructed_motion_path.get_reconstructed_seed_point())
 
+    def test_reconstruct_export_name(self):
+        # Exported flowlines and motion paths both include the feature's name.
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        features = (
+            (pygplates.Feature.create_flowline(
+                    pygplates.PointOnSphere(0, 0), [0, 10, 20], left_plate=201, right_plate=801,
+                    name='a flowline'),
+                pygplates.ReconstructType.flowline),
+            (pygplates.Feature.create_motion_path(
+                    pygplates.PointOnSphere(0, 0), [0, 10, 20], relative_plate=201, reconstruction_plate_id=801,
+                    name='a motion path'),
+                pygplates.ReconstructType.motion_path))
+        temp_dir = tempfile.mkdtemp()
+        try:
+            for index, (feature, reconstruct_type) in enumerate(features):
+                for extension in ('xy', 'geojson'):
+                    # A new file each time (overwriting prints a GDAL error for some formats).
+                    export_filename = os.path.join(temp_dir, 'export{}.{}'.format(index, extension))
+                    pygplates.reconstruct(feature, rotation_model, export_filename, 5, reconstruct_type=reconstruct_type)
+                    with open(export_filename) as export_file:
+                        export_contents = export_file.read()
+                    self.assertTrue(feature.get_name() in export_contents)
+                    if extension == 'xy':
+                        self.assertTrue('Times: 0,10,20' in export_contents)
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_reconstruct_export_files(self):
         reconstruct_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'volcanoes.gpml')) 
         self.assertTrue(len(reconstruct_features) == 4)
