@@ -318,6 +318,33 @@ namespace GPlatesAppLogic
 			bool reverse = false);
 
 		/**
+		 * Returns the rotation which transfers a flowline's seed point from the frame of the
+		 * left plate into the frame of the right plate.
+		 *
+		 * A flowline's seed point is stored in the frame of its *left* plate - that is the frame
+		 * @a reconstruct_flowline_seed_points reverse reconstructs it into. The right-hand half of
+		 * the flowline is however built up in the frame of the *right* plate, so the seed point
+		 * must be moved into that frame before it is used to seed the right-hand half.
+		 *
+		 * This is the rotation of the left plate relative to the right plate at
+		 * @a flowline_start_time (the youngest time in the flowline's list of times, which is when
+		 * both halves of the flowline start out together at the spreading centre), ie
+		 * R(0->flowline_start_time, right_plate->left_plate).
+		 *
+		 * It is the identity rotation whenever the two plates coincide at @a flowline_start_time -
+		 * which is the usual case, since the flowline's youngest time is usually present day and
+		 * rotations at present day are usually the identity rotation. It is *not* the identity when,
+		 * for example, a rotation file has been hand-edited so that present day is not the identity
+		 * rotation, or when the flowline's youngest time is not present day.
+		 */
+		GPlatesMaths::FiniteRotation
+		get_left_to_right_plate_frame_rotation(
+			const double &flowline_start_time,
+			const GPlatesModel::integer_plate_id_type &left_plate_id,
+			const GPlatesModel::integer_plate_id_type &right_plate_id,
+			const ReconstructionTreeCreator &reconstruction_tree_creator);
+
+		/**
 		 * Fills @a seed_point_rotations with half-stage rotations from earliest flowline
 		 * time to current time.
 		 */

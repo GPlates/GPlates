@@ -402,6 +402,27 @@ GPlatesAppLogic::FlowlineUtils::reconstruct_seed_points(
     return current_points;
 }
 
+GPlatesMaths::FiniteRotation
+GPlatesAppLogic::FlowlineUtils::get_left_to_right_plate_frame_rotation(
+	const double &flowline_start_time,
+	const GPlatesModel::integer_plate_id_type &left_plate_id,
+	const GPlatesModel::integer_plate_id_type &right_plate_id,
+	const ReconstructionTreeCreator &reconstruction_tree_creator)
+{
+	// R(0->t,right->left)
+	//    = R(0->t,right->A) * R(0->t,A->left)
+	//    = inverse[R(0->t,A->right)] * R(0->t,A->left)
+	//
+	// ...where 'A' is the anchor plate and 't' is the flowline's start time.
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			reconstruction_tree_creator.get_reconstruction_tree(flowline_start_time);
+
+	return GPlatesMaths::compose(
+			GPlatesMaths::get_reverse(
+					reconstruction_tree->get_composed_absolute_rotation(right_plate_id)),
+			reconstruction_tree->get_composed_absolute_rotation(left_plate_id));
+}
+
 void
 GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
     const double &current_time,
