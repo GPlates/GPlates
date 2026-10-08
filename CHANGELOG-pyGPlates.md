@@ -36,6 +36,8 @@ Changes since 1.0.0:
 * Documentation: the *Primer* is split into one page per topic (rotations, topologies and deformation). Links to sections of the old single-page Primer still work, redirecting to the section on its new page.
 * Removed the undocumented classes `Colour`, `Palette`, `PaletteKey`, `OldFeature` and `OldFeatureCollection` (they were only meaningful inside GPlates).
 * Removed `namedtuple`, `partial`, `math`, `itertools`, `numpy`, `iteritems`, `itervalues`, `listitems` and `listvalues` from the `pygplates` module. They were internal imports and Python 2 helpers, exposed as `pygplates.<name>` by accident; import them from the standard library (or `numpy`) instead.
+* The seed point of a flowline whose times don't start at present day is now where the spreading centre is at present day, not at the flowline's first time (see `Feature.create_flowline()`). So the pieces of a flowline with the same seed point join up, and adding present day to a flowline's times doesn't move it, as for motion paths.
+  * Such a flowline is in a different place from pyGPlates 1.0 (by half the spreading of its two plates between present day and its first time). `Feature.create_flowline()` shows how to keep it where it was.
 * Bug fixes:
   * Fixed `GeometryOnSphere.distance()` returning inconsistent closest positions and segment indices when two polylines/polygons intersect more than once.
   * Fixed a rare "function 'sqrt' invoked with invalid argument" error (from a rounding error when calculating angular extents).
@@ -68,7 +70,7 @@ Changes since 1.0.0:
     * Fixed velocities in the deforming region of a network pointing into or out of the globe: they are now tangential to it. The radial part is mostly well under 1% of the velocity (in the Müller et al. 2019 model), but is larger where network vertices are far apart. This also corrects the velocity magnitudes and obliquities of plate boundary statistics on the network side of a boundary, and can change which points `TopologicalModel` deactivates as they cross between a network and a rigid plate.
   * Flowlines whose times don't start at present day, or whose left and right plates don't coincide at their first time (eg, present-day rotations that aren't zero):
     * Fixed the right flowline (`ReconstructedFlowline.get_right_flowline()`) not starting at the seed point.
-    * Fixed `reconstruct()` returning no flowline at times younger than the first time. The flowline now keeps its shape at that time, each half carried by its own plate (and the seed point by the left plate).
+    * Fixed `reconstruct()` returning no flowline at times younger than the first time. Each half of the flowline now starts at that time, and the reconstructed seed point is where the spreading centre is.
     * Fixed `ReconstructedFlowline.get_reconstructed_seed_point_velocity()` not matching how the reconstructed seed point moves, which it now does at all times (previously it could differ by a few percent between widely spaced times).
     * Fixed reverse reconstructing a flowline's seed point at a time older than its oldest time jumping to a different position from just younger than that time.
   * Fixed exported motion paths (eg, `.xy`, Shapefile, GeoJSON) missing the feature's name, which exported flowlines include.

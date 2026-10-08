@@ -65,7 +65,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::FlowlineGeometryPopulator(
 	d_reconstruction_tree_creator(reconstruction_tree_creator),
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(reconstruction_time)),
 	d_flowline_property_finder(
-		new GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder(reconstruction_time))
+		new GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder(reconstruction_time)),
+	d_omit_seed_point_vertex(false)
 {  }
 
 bool
@@ -77,6 +78,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
     d_left_seed_point_rotations.clear();
     d_right_seed_point_rotations.clear();
     d_left_to_right_plate_frame_rotation = boost::none;
+    d_omit_seed_point_vertex = false;
 
     //Detect Flowline features.
     FlowlineUtils::DetectFlowlineFeatures detector;
@@ -102,13 +104,16 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 
 		//GPlatesModel::integer_plate_id_type anchor = reconstruction_tree->get_anchor_plate_id();
 		double current_time = reconstruction_tree->get_reconstruction_time();
-		std::vector<double> times = d_flowline_property_finder->get_times();
+
+		// The flowline is built up as if its times started at present day (its seed point is where
+		// the spreading centre is at present day), but only its own times are drawn.
+		std::vector<double> times =
+			FlowlineUtils::get_spreading_times(d_flowline_property_finder->get_times());
 
 		// The current time need not lie between the flowline's youngest and oldest times.
-		// Younger, the seed point rotations below are empty, and the flowline's rotations start at
-		// its youngest time (but each half is still corrected by its plate's rotation at the current
-		// time). Older, the seed point rotations stop at the oldest time, and there are no
-		// flowline rotations, so there's only a seed point.
+		// Younger, each half is built out from the seed point as usual, but starts at the youngest
+		// time (the seed point vertex is omitted). Older, the seed point rotations stop at the
+		// oldest time, and there are no flowline rotations, so there's only a seed point.
 		FlowlineUtils::fill_seed_point_rotations(
 			current_time,
 			times,
@@ -130,19 +135,24 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 		// between the two frames.
 		d_left_to_right_plate_frame_rotation =
 			FlowlineUtils::get_left_to_right_plate_frame_rotation(
-				times.front()/*the flowline's youngest time*/,
+				times.front()/*present day*/,
 				*d_flowline_property_finder->get_left_plate(),
 				*d_flowline_property_finder->get_right_plate(),
 				d_reconstruction_tree_creator);
 
-		// This will now hold the times we need to use for flowline rotations, from the current
-		// reconstruction time (clamped to the flowline's times) to the oldest time in the flowline.
+		// The times we need to use for flowline rotations, from the current reconstruction time
+		// (clamped to the spreading times) to the oldest time in the flowline.
+		const std::vector<double> spreading_times = times;
 		times.clear();
 
 		FlowlineUtils::fill_times_vector(
 			times,
 			current_time,
-			d_flowline_property_finder->get_times());
+			spreading_times);
+
+		// Younger than the flowline's youngest time, the first vertex (the seed point) is not one
+		// of the flowline's times.
+		d_omit_seed_point_vertex = times.front() < d_flowline_property_finder->get_times().front();
 
 		// We'll work from the current time, backwards in time.
 		std::vector<double>::const_iterator
@@ -334,10 +344,10 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_flowline(
 			d_reconstruction_tree_creator,
 			(current_top_level_propiter()->handle_weak_ref()));
 
-	// Older than the flowline's oldest time (or with only one time) there are no flowline
-	// rotations, so no flowline (it would have only one point), just its seed point(s), which move
+	// Older than the flowline's oldest time (or with only one time) there are not enough flowline
+	// rotations for a flowline (it would have only one vertex), just its seed point(s), which move
 	// with the left plate.
-	if (d_left_rotations.empty())
+	if (d_left_rotations.size() < (d_omit_seed_point_vertex ? 2u : 1u))
 	{
 		create_seed_geometry(
 				reconstructed_seed_geometry,
@@ -411,7 +421,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 		// left-hand half of the flowline (above), but it must first be moved into the right plate's
 		// frame to seed the right-hand half. Without this the two halves of the flowline start from
 		// different places whenever the left and right plates do not coincide at the flowline's
-		// youngest time.
+		// spreading start time (present day).
 		const GPlatesMaths::PointOnSphere right_plate_seed_point =
 			d_left_to_right_plate_frame_rotation
 			? *d_left_to_right_plate_frame_rotation * present_day_seed_point
@@ -440,6 +450,12 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 			right_flowline,
 			d_reconstruction_tree_creator,
 			d_right_rotations);
+
+		if (d_omit_seed_point_vertex)
+		{
+			left_flowline.erase(left_flowline.begin());
+			right_flowline.erase(right_flowline.begin());
+		}
 
 		// The reconstruction tree for the current reconstruction time.
 		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =

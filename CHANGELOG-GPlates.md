@@ -24,6 +24,8 @@ Changes since 2.5:
     * The dialog now shows its prompt and has Cancel and close buttons, and `q`/`quit` exits help.
   * Fixed the cancel button of the "Running Python code..." dialog not interrupting the running code.
   * Script filenames now appear correctly in tracebacks (instead of as `b'...'`).
+* A flowline whose times don't start at present day is now built out from its seed point at the spreading centre at present day, not at the flowline's first time. So the pieces of a flowline with the same seed point join up, and adding 0 Ma to a flowline's times doesn't move it, as for motion paths. A flowline's valid time can hide it at times younger than its first time.
+  * Such a flowline is in a different place from GPlates 2.5 (by half the spreading of its two plates between present day and its first time). To keep it where it was, move its seed point to where it was at its first time (the pyGPlates documentation of `Feature.create_flowline()` shows how).
 * The net rotation export calculates net rotation differently, so its results differ from GPlates 2.5:
   * Each sample point now has the same weight in the net rotation of its plate, instead of a weight proportional to cos²(latitude). The total net rotation of the globe is unaffected, but equatorial plates now have a higher net rotation and plates near the poles a lower one.
   * Stationary plates now count towards the area that the total net rotation is normalised by, which lowers the total when some plates do not move. This also fixes an error exporting net rotation when there are stationary plates.
@@ -73,7 +75,7 @@ Changes since 2.5:
     * Fixed velocities in the deforming region of a network pointing into or out of the globe: they are now tangential to it. The radial part is mostly well under 1% of the velocity (in the Müller et al. 2019 model), but is larger where network vertices are far apart. This also corrects the exported velocity magnitudes, and can change which points are deactivated as they cross between a network and a rigid plate.
   * Flowlines and motion paths:
     * Fixed the two halves of a flowline not meeting at its seed point when its left and right plates don't coincide at its first time (eg, times not starting at present day, or present-day rotations that aren't zero).
-    * A flowline whose times don't start at present day is now drawn and exported at times younger than its first time: it keeps its shape at that time, each half carried by its own plate. Previously only its seed point was drawn there, and it didn't move.
+    * A flowline whose times don't start at present day is now drawn and exported at times younger than its first time: each half starts at that time, and the seed point is drawn where the spreading centre is. Previously only its seed point was drawn there, and it didn't move.
     * At and beyond its oldest time, a flowline's seed point is drawn carried by the left plate from where the spreading centre was at that time (previously nothing was drawn at exactly the oldest time, and an unmoving seed point beyond it).
     * Flowline velocity arrows are now drawn at the flowline's seed point and follow how it moves (previously they were drawn elsewhere when the flowline's times didn't start at present day).
     * Fixed editing the times of a flowline or motion path in Edit Feature Properties adding the edited times after the old ones, instead of replacing them, which garbled the flowline or motion path.

@@ -51,7 +51,7 @@
 // The Create Feature dialog can place a new flowline so that the end of its left or right half,
 // rather than its seed point, is where the user clicked (FlowlineUtils::correct_end_point_to_centre).
 // That must find the seed point at any reconstruction time, including younger than the flowline's
-// youngest time, where the two halves no longer start at the same point. Only the GUI reaches it.
+// youngest time, where the halves don't start at the seed point. Only the GUI reaches it.
 namespace
 {
 	const GPlatesModel::integer_plate_id_type LEFT_PLATE = 201;
@@ -148,8 +148,7 @@ namespace
 							plate_2,
 							finder.get_times(),
 							d_reconstruction_tree_creator.get(),
-							reconstruction_time,
-							plate_1 == RIGHT_PLATE/*plate_1_is_right_plate*/);
+							reconstruction_time);
 
 			const boost::optional<const GPlatesMaths::PointOnSphere &> seed_point_on_sphere =
 					GPlatesAppLogic::GeometryUtils::get_point_on_sphere(*seed_point);
@@ -167,7 +166,7 @@ namespace
 
 	TEST_F(FlowlineUtilsTest, end_points_correct_to_the_seed_point)
 	{
-		// Younger than the youngest time (where the halves start at different points), at it,
+		// Younger than the youngest time (where the halves don't start at the seed point), at it,
 		// and between the flowline's times.
 		for (const double reconstruction_time : { 0.0, 5.0, 10.0, 15.0 })
 		{

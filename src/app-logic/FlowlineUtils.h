@@ -288,12 +288,13 @@ namespace GPlatesAppLogic
 			GPlatesMaths::FiniteRotation &rotation);
 
 		/**
-		 * Fills @a times with the times of the vertices of a flowline reconstructed to
-		 * @a reconstruction_time: @a reconstruction_time (clamped to the range of the sorted
+		 * Fills @a times with @a reconstruction_time (clamped to the range of the sorted
 		 * @a time_samples), followed by each time in @a time_samples older than it.
 		 *
-		 * Younger than the youngest time sample, a flowline keeps its shape at that time (each half
-		 * is carried by its own plate). Older than the oldest, it is only its seed point.
+		 * For a flowline's own times, these are the times of the vertices of each half of the
+		 * flowline reconstructed to @a reconstruction_time. Younger than the youngest time, each half
+		 * starts at its youngest time, not at the seed point. Older than the oldest, there is only
+		 * the seed point.
 		 */
 		void
 		fill_times_vector(
@@ -325,6 +326,20 @@ namespace GPlatesAppLogic
 			bool reverse = false);
 
 		/**
+		 * Returns the times that a flowline's spreading is built up over: @a flowline_times, starting
+		 * at present day.
+		 *
+		 * A flowline's seed point is where the spreading centre is at present day, even when its
+		 * times start later, so that the flowline is the same as the part of a flowline (with the
+		 * same seed point) whose times do start at present day. Then pieces of a flowline join up, and
+		 * adding present day to the times doesn't move it, as for motion paths. The times only decide
+		 * which vertices are drawn.
+		 */
+		std::vector<double>
+		get_spreading_times(
+			const std::vector<double> &flowline_times);
+
+		/**
 		 * Returns the rotation which transfers a flowline's seed point from the frame of the
 		 * left plate into the frame of the right plate.
 		 *
@@ -334,15 +349,14 @@ namespace GPlatesAppLogic
 		 * must be moved into that frame before it is used to seed the right-hand half.
 		 *
 		 * This is the rotation of the left plate relative to the right plate at
-		 * @a flowline_start_time (the youngest time in the flowline's list of times, which is when
-		 * both halves of the flowline start out together at the spreading centre), ie
-		 * R(0->flowline_start_time, right_plate->left_plate).
+		 * @a flowline_start_time (the youngest of the flowline's spreading times, see
+		 * @a get_spreading_times, which is when both halves of the flowline start out together at
+		 * the spreading centre), ie R(0->flowline_start_time, right_plate->left_plate).
 		 *
 		 * It is the identity rotation whenever the two plates coincide at @a flowline_start_time -
-		 * which is the usual case, since the flowline's youngest time is usually present day and
-		 * rotations at present day are usually the identity rotation. It is *not* the identity when,
-		 * for example, a rotation file has been hand-edited so that present day is not the identity
-		 * rotation, or when the flowline's youngest time is not present day.
+		 * which is the usual case, since that is present day, and rotations at present day are
+		 * usually the identity rotation. It is *not* the identity when, for example, a rotation file
+		 * has been hand-edited so that present day is not the identity rotation.
 		 */
 		GPlatesMaths::FiniteRotation
 		get_left_to_right_plate_frame_rotation(
@@ -356,8 +370,8 @@ namespace GPlatesAppLogic
 		 * @a reconstruction_time - the same rotation as @a reconstruct_flowline_seed_points.
 		 *
 		 * That is the left plate's rotation at @a reconstruction_time composed with the half-stage
-		 * rotations from the youngest of @a flowline_times to @a reconstruction_time (clamped to the
-		 * oldest of @a flowline_times). So outside the flowline's times the seed point moves with the
+		 * rotations from present day to @a reconstruction_time (clamped to the oldest of
+		 * @a flowline_times). So older than the flowline's oldest time the seed point moves with the
 		 * left plate only.
 		 */
 		GPlatesMaths::FiniteRotation
@@ -386,11 +400,11 @@ namespace GPlatesAppLogic
 			VelocityDeltaTime::Type velocity_delta_time_type);
 
 		/**
-		 * Fills @a seed_point_rotations with half-stage rotations from earliest flowline
-		 * time to current time.
+		 * Fills @a seed_point_rotations with half-stage rotations over the flowline's spreading
+		 * times (see @a get_spreading_times), from present day to current time.
 		 *
 		 * The current time is clamped to the oldest flowline time, and there are no rotations
-		 * when it is younger than the earliest flowline time (or there are fewer than two times).
+		 * at present day (or when there are no flowline times).
 		 */
 		void
 		fill_seed_point_rotations(
@@ -406,9 +420,7 @@ namespace GPlatesAppLogic
 		 * calculates the spreading centre for that flowline.
 		 *
 		 * @a plate_1 is the plate of the half of the flowline the end point is on, and
-		 * @a plate_2 the other plate. @a plate_1_is_right_plate says whether @a plate_1 is the
-		 * flowline's right plate: younger than the flowline's youngest time the two halves no longer
-		 * start at the same point, and the seed point is where the left half starts.
+		 * @a plate_2 the other plate.
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		correct_end_point_to_centre(
@@ -417,8 +429,7 @@ namespace GPlatesAppLogic
 		    const GPlatesModel::integer_plate_id_type &plate_2,
 		    const std::vector<double> &times,
 			const ReconstructionTreeCreator &reconstruction_tree_creator,
-		    const double &reconstruction_time,
-		    bool plate_1_is_right_plate);
+		    const double &reconstruction_time);
 
 	}
 

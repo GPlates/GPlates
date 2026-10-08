@@ -1142,11 +1142,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGui::DefaultPlateIdColourPalette::non_null_ptr_to_const_type palette =
 		GPlatesGui::DefaultPlateIdColourPalette::create();
 
-	// Reconstructed seed point - we can use the first point of either of the lines as an extra point for reference.
+	// Reconstructed seed point. Not the first point of either line: younger than the flowline's
+	// youngest time, the lines start at that time instead.
 	// FIXME: Could(perhaps should?) also do this for the end points of each line....
 	GPlatesViewOperations::RenderedGeometry rendered_seed_point =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-			rf->left_flowline_points()->start_point(),
+			rf->reconstructed_seed_point(),
 			d_colour ? d_colour.get() : palette->get_colour(0).get(),
 			3); // experiment with a bigger point, so that it stands out in relation to the left/right lines. 
 

@@ -839,7 +839,7 @@ class Feature:
 
         This function calls :meth:`set_geometry`. It optionally calls :meth:`set_times`, :meth:`set_name`, :meth:`set_description`, :meth:`set_valid_time`, :meth:`set_left_plate`, :meth:`set_right_plate`, :meth:`set_reconstruction_method` and :meth:`add`. The :class:`feature type<FeatureType>` is a `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_.
 
-        The seed point is on the *left* plate: it is the point that was at the spreading centre at the youngest of the *times* (usually present day). Between the youngest and oldest *times*, the flowline spreads from the seed point along both plates. At a reconstruction time younger than the youngest time, the flowline keeps its shape at that time, with each half carried by its own plate. At (or older than) the oldest time there is no flowline, only the seed point, carried by the left plate from where the spreading centre was at that time.
+        The seed point is on the *left* plate, at the spreading centre at present day. The flowline spreads from it along both plates, and has a point at each of the *times*. If the *times* don't start at present day, the flowline is the same as that part of a flowline (with the same seed point) whose times do, so the pieces of a flowline join up (as for motion paths). Then, at a reconstruction time younger than the youngest time, each half starts at that time (not at the seed point, which is where the spreading centre is at the reconstruction time). Use *valid_time* if the flowline should not be visible then. At (or older than) the oldest time there is no flowline, only the seed point, carried by the left plate from where the spreading centre was at that time.
 
         Create a flowline feature:
         ::
@@ -894,7 +894,16 @@ class Feature:
         .. note:: In the above example we needed to call :meth:`set_reconstruction_method` to set up a half-stage rotation since that is what :meth:`create_flowline` calls internally.
 
         .. versionchanged:: 1.1
-           A flowline is reconstructed at times younger than its youngest time (previously only between its youngest and oldest times). Its two halves start at the seed point even when the left and right plates don't coincide at its youngest time.
+           The seed point is at the spreading centre at present day even when the *times* don't start at present day (previously it was where the spreading centre was at their youngest time). So such a flowline is now in a different place. To keep it where it was, move its seed point to where it was at its youngest time:
+           ::
+
+             youngest_time = flowline_feature.get_times()[0]
+             flowline_feature.set_geometry(
+                 rotation_model.get_rotation(youngest_time, flowline_feature.get_left_plate()) *
+                     flowline_feature.get_geometry(),
+                 reverse_reconstruct=(rotation_model, youngest_time))
+
+           A flowline is also reconstructed at times younger than its youngest time (previously only between its youngest and oldest times), and its two halves start at the seed point even when the left and right plates don't coincide at present day.
         """
 
     @staticmethod
@@ -13293,6 +13302,8 @@ class ReconstructedFlowline(ReconstructionGeometry):
 
         The first point in the returned :class:`PolylineOnSphere` is the :meth:`reconstructed seed point<get_reconstructed_seed_point>` and subsequent points are progressively further in the geological past.
 
+        .. note:: At a reconstruction time younger than the youngest of the feature's times (see :meth:`Feature.get_times`), the first point is instead the point at that youngest time, and the :meth:`reconstructed seed point<get_reconstructed_seed_point>` is not in the flowline.
+
         .. note:: This is just one of the *left* flowlines associated with this :meth:`feature's<get_feature>` seed geometry if that seed geometry is a :class:`MultiPointOnSphere`.
 
         Iterate over the left flowline points:
@@ -13352,7 +13363,7 @@ class ReconstructedFlowline(ReconstructionGeometry):
 
         The first point in the returned :class:`PolylineOnSphere` is the :meth:`reconstructed seed point<get_reconstructed_seed_point>` and subsequent points are progressively further in the geological past.
 
-        .. note:: At a reconstruction time younger than the youngest of the feature's times (see :meth:`Feature.get_times`), the flowline keeps its shape at that youngest time, with each half carried by its own plate. So the first point is then where the *right* plate has carried the seed point, whereas the :meth:`reconstructed seed point<get_reconstructed_seed_point>` is carried by the *left* plate.
+        .. note:: At a reconstruction time younger than the youngest of the feature's times (see :meth:`Feature.get_times`), the first point is instead the point at that youngest time, and the :meth:`reconstructed seed point<get_reconstructed_seed_point>` is not in the flowline.
 
         .. note:: This is just one of the *right* flowlines associated with this :meth:`feature's<get_feature>` seed geometry if that seed geometry is a :class:`MultiPointOnSphere`.
 

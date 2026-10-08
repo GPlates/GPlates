@@ -178,8 +178,8 @@ GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_velocities(
     }
 
 	// The seed point velocity follows the seed point as reconstructed (and drawn) at the
-	// reconstruction time: by half-stage rotations from the flowline's youngest time (so with no
-	// spreading before that time, nor after its oldest time) and then by the left plate.
+	// reconstruction time: by half-stage rotations from present day (with no spreading after the
+	// flowline's oldest time) and then by the left plate.
 	const GPlatesModel::integer_plate_id_type left_plate_id =
 			flowline_property_finder.get_left_plate().get();
 	const GPlatesModel::integer_plate_id_type right_plate_id =

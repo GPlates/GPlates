@@ -182,6 +182,12 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesMaths::FiniteRotation> d_left_to_right_plate_frame_rotation;
 
+		/**
+		 * Whether to omit the first vertex (the seed point) of each half of the flowline, which
+		 * happens younger than the flowline's youngest time (where the halves start at that time).
+		 */
+		bool d_omit_seed_point_vertex;
+
 	};
 }
 
