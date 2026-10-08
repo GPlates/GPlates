@@ -249,9 +249,11 @@ namespace GPlatesQtWidgets
 		sort_and_commit();
 
 		/**
-		 * Updates the time samples in the GpmlIrregularSampling.
+		 * Replaces the time periods in the gpml:Array with those in the table.
+		 *
+		 * Returns false, and leaves the gpml:Array unchanged, if the table has fewer than two times.
 		 */
-		void
+		bool
 		update_time_array_from_widget();
 
 		void
