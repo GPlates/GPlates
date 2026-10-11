@@ -3670,7 +3670,22 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
                 for point_feature in resolved_geometry_point_features:
                     self.assertTrue(point_feature.get_name().startswith('section'))
-    
+
+        # Unsorted, the sections are in the order they are first found along the boundaries of the resolved
+        # boundaries and then networks (not in an order that can change from run to run).
+        # A section is its reconstructed or resolved geometry (one per geometry property in a snapshot).
+        sections_in_order_found = []
+        for resolved_topology in snapshot.get_resolved_topologies(
+                pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network):
+            for sub_segment in resolved_topology.get_boundary_sub_segments():
+                section = sub_segment.get_topological_section()
+                if section not in sections_in_order_found:
+                    sections_in_order_found.append(section)
+        self.assertEqual(
+                [resolved_topological_section.get_topological_section()
+                    for resolved_topological_section in resolved_topological_sections],
+                sections_in_order_found)
+
     def test_point_locations_velocities_strain_rates(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),

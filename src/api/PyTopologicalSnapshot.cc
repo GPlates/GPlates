@@ -2919,7 +2919,11 @@ export_topological_snapshot()
 				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
 				"\n"
 				"  .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topological sections are sorted in the order of their "
-				"respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.\n")
+				"respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files. "
+				"Otherwise they are in the order they are first found along the boundaries of the resolved topologies (resolved boundaries first, then networks).\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Without sorting, the order no longer changes from one run to the next.\n")
 		.def("export_resolved_topological_sections",
 				&GPlatesApi::topological_snapshot_export_resolved_topological_sections,
 				(bp::arg("export_filename"),
