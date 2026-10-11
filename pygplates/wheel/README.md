@@ -29,7 +29,7 @@ Run cibuildwheel from the root source directory, selecting a single build with `
 (otherwise it builds every Python version). For example:
 
 ```
-pipx run cibuildwheel==4.2.* --only cp313-manylinux_x86_64
+pipx run cibuildwheel==4.3.* --only cp313-manylinux_x86_64
 ```
 
 ...or `--only cp313-macosx_arm64` on Apple Silicon (`cp313-macosx_x86_64` on Intel), or
@@ -323,8 +323,8 @@ path, since the data still has to survive installation and the repair step to re
 pyGPlates is built with Ninja on every platform, Windows included (`CMAKE_GENERATOR` in
 `[tool.cibuildwheel.windows.environment]`). The Visual Studio generator would locate the compiler
 by itself, which is convenient, but it ignores `CMAKE_<LANG>_COMPILER_LAUNCHER` - so there would
-be no compiler cache, and each of the six Python versions would pay a full compile of about an
-hour.
+be no compiler cache, and each of the seven Python versions would pay a full compile of about
+20 minutes (measured on the CI runner, 2026-10).
 
 What Ninja costs is that it compiles with whatever `cl` the environment provides, and neither
 cibuildwheel nor scikit-build-core arranges one (scikit-build-core sets the MSVC environment up

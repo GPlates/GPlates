@@ -30,7 +30,7 @@
 # '.github/workflows/build-wheels.yml' fails if the two ever disagree. macOS and Windows need no
 # such list: 'build_boost_python.sh' builds Boost.Python for whatever Python version each wheel
 # build brings.
-PYTHON_VERSIONS="3.9 3.10 3.11 3.12 3.13 3.14"
+PYTHON_VERSIONS="3.9 3.10 3.11 3.12 3.13 3.14 3.15"
 
 # (The SHA-256 is of the 'qtbase' source archive, which only the Linux image downloads.)
 QT_VERSION=6.7.3

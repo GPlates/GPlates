@@ -61,8 +61,9 @@ cd "${PYGPLATES_DEPS}/src"
 # sccache (a static binary, so it has no dependencies).
 #
 # Not used by this script - it's for the wheel builds: cibuildwheel builds pyGPlates once per
-# Python version, and the builds share most of their object files, so builds 2-6 hit the cache
-# populated by build 1. (Installed into the deps prefix, which 'pyproject.toml' adds to PATH.)
+# Python version, and the builds share most of their object files, so the later builds hit the
+# cache populated by the first. (Installed into the deps prefix, which 'pyproject.toml' adds to
+# PATH.)
 if [ ! -f "${PYGPLATES_DEPS}/stamps/sccache-${SCCACHE_VERSION}" ]; then
     # sccache names the architecture 'aarch64', uname names it 'arm64'.
     sccache_arch=$([ "${ARCH}" = arm64 ] && echo aarch64 || echo "${ARCH}")

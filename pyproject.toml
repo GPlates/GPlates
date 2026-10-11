@@ -81,6 +81,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Topic :: Scientific/Engineering :: GIS",
 ]
 
@@ -255,7 +256,7 @@ provider-path = "cmake"
 # version is added deliberately: NumPy must ship wheels for it first (we build against the
 # NumPy C API), and the Linux images must be rebuilt with its Boost.Python library
 # (keep PYTHON_VERSIONS in 'pygplates/wheel/versions.sh' in sync with this list).
-build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
+build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*", "cp315-*"]
 
 # Belt-and-braces versus the explicit 'build' list above:
 # - musllinux (Alpine etc) would need a separate dependency stack built against musl

@@ -88,8 +88,8 @@ COPY versions.sh download.sh /tmp/
 # sccache (a static musl binary, so it has no dependencies on the image).
 #
 # Not used when building this image - it's for the wheel builds this image hosts:
-# cibuildwheel builds pyGPlates once per Python version, and the six builds share most of
-# their object files, so builds 2-6 hit the cache populated by build 1.
+# cibuildwheel builds pyGPlates once per Python version, and the builds share most of their
+# object files, so the later builds hit the cache populated by the first.
 RUN . /tmp/versions.sh && . /tmp/download.sh && cd /tmp && \
     case ${ARCH} in \
         x86_64) sccache_sha256=${SCCACHE_SHA256_LINUX_X86_64} ;; \
