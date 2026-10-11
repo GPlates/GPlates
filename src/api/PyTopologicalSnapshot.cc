@@ -2862,7 +2862,8 @@ export_topological_snapshot()
 				"``pygplates.ResolveTopologyType.network``\n"
 				"\n"
 				"  .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topologies are sorted in the order of their "
-				"respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.\n")
+				"respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files. "
+				"Otherwise they are grouped by type (lines, then boundaries, then networks), and each type is in the order of its topological features.\n")
 		.def("export_resolved_topologies",
 				&GPlatesApi::topological_snapshot_export_resolved_topologies,
 				(bp::arg("export_filename"),

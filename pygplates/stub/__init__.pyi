@@ -17390,7 +17390,7 @@ class TopologicalSnapshot:
         :rtype: list[ResolvedTopologicalLine | ResolvedTopologicalBoundary | ResolvedTopologicalNetwork]
         :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
-        .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topologies are sorted in the order of their respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.
+        .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topologies are sorted in the order of their respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files. Otherwise they are grouped by type (lines, then boundaries, then networks), and each type is in the order of its topological features.
         """
 
     def get_rotation_model(self) -> RotationModel:

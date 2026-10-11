@@ -3686,6 +3686,20 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                     for resolved_topological_section in resolved_topological_sections],
                 sections_in_order_found)
 
+        # Unsorted, the resolved topologies are grouped by type (lines, boundaries, networks), each type in feature order.
+        all_resolve_topology_types = (pygplates.ResolveTopologyType.line |
+                pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network)
+        resolved_topology_type_order = [
+                pygplates.ResolvedTopologicalLine, pygplates.ResolvedTopologicalBoundary, pygplates.ResolvedTopologicalNetwork]
+        # The expected order comes from the sorted order (the network 'topology3' is between boundaries in the file),
+        # grouped by type. Python's sort is stable, so each type stays in feature order.
+        resolved_topologies_in_feature_order = snapshot.get_resolved_topologies(
+                all_resolve_topology_types, same_order_as_topological_features=True)
+        self.assertEqual(
+                snapshot.get_resolved_topologies(all_resolve_topology_types),
+                sorted(resolved_topologies_in_feature_order,
+                       key=lambda resolved_topology: resolved_topology_type_order.index(type(resolved_topology))))
+
     def test_point_locations_velocities_strain_rates(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),
