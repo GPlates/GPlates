@@ -9237,7 +9237,12 @@ class NetRotationSnapshot:
               if net_rotation:
                   print('Topology {} has net rotation {}'.format(resolved_topology.get_feature().get_name(), net_rotation.get_finite_rotation()))
 
+        The ``dict`` is in the same order as that loop: the resolved boundaries, and then the resolved networks, of the :meth:`topological snapshot<get_topological_snapshot>`.
+
         .. seealso:: :meth:`get_total_net_rotation`
+
+        .. versionchanged:: 1.1
+           The ``dict`` is in the order of the resolved topologies (previously the order could change from one run to the next).
         """
 
     def get_topological_snapshot(self) -> TopologicalSnapshot:

@@ -1037,6 +1037,11 @@ class NetRotationTestCase(unittest.TestCase):
             if resolved_topology_net_rotation:
                 total_net_rotation_accumulator += resolved_topology_net_rotation
         self.assertTrue(total_net_rotation.get_finite_rotation() == total_net_rotation_accumulator.get_finite_rotation())
+        # The dict is in the order of the resolved topologies (boundaries, then networks) that contribute net rotation.
+        self.assertEqual(
+                list(net_rotation_snapshot.get_net_rotation().keys()),
+                [resolved_topology for resolved_topology in net_rotation_snapshot.get_topological_snapshot().get_resolved_topologies()
+                    if net_rotation_snapshot.get_net_rotation(resolved_topology)])
     
     def test_net_rotation_samples(self):
         # Create equal net rotation samples from a finite rotation (over 1Myr) and from an equivalent rotation rate vector.

@@ -294,20 +294,38 @@ namespace GPlatesApi
 		// Return net rotations for all resolved topological boundaries and networks that contribute net rotation (in a dict).
 		//
 
+		// Add them in the order of the topological snapshot's resolved boundaries and then networks
+		// (a Python dict iterates in insertion order). Iterating over the maps instead would order them
+		// by resolved topology address, which changes from run to run.
 		bp::dict net_rotation_dict;
 
+		const TopologicalSnapshot::non_null_ptr_type topological_snapshot =
+				net_rotation_snapshot->get_topological_snapshot();
+
 		// Iterate over all resolved topological boundaries.
-		for (const auto &rtb_entry : net_rotation_calculator.get_topological_boundary_net_rotation_map())
+		const auto &rtb_net_rotation_map =
+				net_rotation_calculator.get_topological_boundary_net_rotation_map();
+		for (const auto &rtb : topological_snapshot->get_resolved_topological_boundaries())
 		{
-			// Map the current resolved topology to its net rotation.
-			net_rotation_dict[rtb_entry.first] = rtb_entry.second;
+			auto rtb_iter = rtb_net_rotation_map.find(rtb);
+			if (rtb_iter != rtb_net_rotation_map.end())
+			{
+				// Map the current resolved topology to its net rotation.
+				net_rotation_dict[rtb_iter->first] = rtb_iter->second;
+			}
 		}
 
 		// Iterate over all resolved topological networks.
-		for (const auto &rtn_entry : net_rotation_calculator.get_topological_network_net_rotation_map())
+		const auto &rtn_net_rotation_map =
+				net_rotation_calculator.get_topological_network_net_rotation_map();
+		for (const auto &rtn : topological_snapshot->get_resolved_topological_networks())
 		{
-			// Map the current resolved topology to its net rotation.
-			net_rotation_dict[rtn_entry.first] = rtn_entry.second;
+			auto rtn_iter = rtn_net_rotation_map.find(rtn);
+			if (rtn_iter != rtn_net_rotation_map.end())
+			{
+				// Map the current resolved topology to its net rotation.
+				net_rotation_dict[rtn_iter->first] = rtn_iter->second;
+			}
 		}
 
 		return net_rotation_dict;
@@ -1102,7 +1120,13 @@ export_net_rotation()
 				"        if net_rotation:\n"
 				"            print('Topology {} has net rotation {}'.format(resolved_topology.get_feature().get_name(), net_rotation.get_finite_rotation()))\n"
 				"\n"
-				"  .. seealso:: :meth:`get_total_net_rotation`\n")
+				"  The ``dict`` is in the same order as that loop: the resolved boundaries, and then the resolved networks, "
+				"of the :meth:`topological snapshot<get_topological_snapshot>`.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_total_net_rotation`\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     The ``dict`` is in the order of the resolved topologies (previously the order could change from one run to the next).\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
