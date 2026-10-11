@@ -4067,6 +4067,20 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 else:
                     self.assertTrue(shared_sub_segment_stat.boundary_feature.get_name() == shared_sub_feature_name)
 
+        # The dict is in the order of the sections' features, then of the shared sub-segments along each section.
+        shared_sub_segments_in_order = [
+                shared_sub_segment
+                for resolved_topological_section in snapshot.get_resolved_topological_sections(same_order_as_topological_features=True)
+                for shared_sub_segment in resolved_topological_section.get_shared_sub_segments()]
+        self.assertEqual(
+                list(plate_boundary_stats_dict.keys()),
+                [shared_sub_segment for shared_sub_segment in shared_sub_segments_in_order if shared_sub_segment in plate_boundary_stats_dict])
+        # And the list is in the same order as the dict.
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True)
+        self.assertEqual(
+                [stat.boundary_point for stat in plate_boundary_stats],
+                [stat.boundary_point for stats in plate_boundary_stats_dict.values() for stat in stats])
+
         # Filter boundary sections by feature type.
         plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
                                                                                  include_network_boundaries=True,

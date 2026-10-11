@@ -72,6 +72,7 @@ Changes since 1.0.0:
   * Fixed `InformationModelError` giving the wrong one of two messages: adding a property the information model recognises, but not for the feature type, said the property name was not recognised (and adding an unknown property name said it was not valid for the feature type).
   * `synchronise_crossovers()` writes the rotation files it was given only if it synchronised a crossover (previously it always rewrote them, changing their layout even when no rotation changed).
   * `TopologicalSnapshot.get_resolved_topological_sections()`, unless sorted with `same_order_as_topological_features=True`, returned the sections in an order that could change from one run of a script to the next. They are now in the order they are first found along the boundaries of the resolved topologies.
+  * `TopologicalSnapshot.calculate_plate_boundary_statistics()` returns its statistics in the order of the topological features, and then along each boundary section (previously the order could change from one run of a script to the next).
   * Fixed the pip wheels loading the GDAL plugins named by a `GDAL_DRIVER_PATH` environment variable (eg, set by an active conda environment with GDAL, or by OSGeo4W or QGIS). Those plugins are built for another GDAL, and reading a file could crash (eg, a Shapefile after `import pygmt`).
 
 pyGPlates 1.0.0

@@ -17152,11 +17152,16 @@ class TopologicalSnapshot:
 
         Each :class:`resolved topological section <ResolvedTopologicalSection>` is associated with a specific boundary :class:`Feature` and represents the :meth:`shared sub-segments <ResolvedTopologicalSection.get_shared_sub_segments>` that are the parts of it that actually contribute to plate boundaries. Along each shared sub-segment, uniform points are ordered from its start to its end.
 
+        The statistics (or the ``dict`` entries) are returned in the order of the topological sections' features (see :meth:`constructor<__init__>`), including the order across any topological feature collections/files. Within each section they are in the order of its shared sub-segments, from the start of the section to its end.
+
         Uniform points are **not** generated along *network* boundaries by default (unless they happen to also be a plate boundary) since not all parts of a network's boundary are necessarily along plate boundaries. But you can optionally generate points along them by setting *include_network_boundaries* to ``True``. Note that, regardless of this option, networks are always used when *calculating* plate statistics. This is because networks typically *overlay* rigid plates, and so need to be queried (at uniform points along plate boundaries) with a higher priority than the *underlying* rigid plate.
 
         .. note:: The plate boundaries, *along* which uniform points are generated, can be further restricted using *boundary_section_filter*.
 
         .. versionadded:: 0.47
+
+        .. versionchanged:: 1.1
+           The statistics are returned in the order of the topological features (previously the order could change from one run to the next).
         """
 
     def export_resolved_topological_sections(self, export_filename: str | os.PathLike, resolve_topological_section_types: ResolveTopologyType | int = ..., export_topological_line_sub_segments: bool = True, wrap_to_dateline: bool = True) -> None:

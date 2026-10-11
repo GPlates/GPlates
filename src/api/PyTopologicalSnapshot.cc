@@ -260,9 +260,13 @@ namespace GPlatesApi
 		//       *include_network_boundaries* because we still need to discover the left/right networks
 		//       sharing a plate boundary (and our first attempt at doing this is via the resolved topologies
 		//       sharing the resolved topological section).
+		//
+		// The sections are sorted in the order of the topological features, since that is the order
+		// in which the statistics are returned.
 		std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections =
 				topological_snapshot->get_resolved_topological_sections(
-						ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES);
+						ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES,
+						true/*same_order_as_topological_features*/);
 
 		// If a boundary section filter object was specified then filter the resolved topological sections,
 		// otherwise accept them all.
@@ -365,35 +369,46 @@ namespace GPlatesApi
 				earth_radius_in_kms,
 				include_network_boundaries);
 		
-		// If we should group plate boundary stats (dict value) by their shared sub-segments (dict key).
-		if (return_shared_sub_segment_dict)
+		// Return the stats in the order of the sections, and of the shared sub-segments along each
+		// section (the stats of a shared sub-segment are already in order along it). Iterating over the
+		// map instead would order them by shared sub-segment address, which changes from run to run.
+		//
+		// If we should group plate boundary stats (dict value) by their shared sub-segments (dict key),
+		// the dict keeps that order too (a Python dict iterates in insertion order). Otherwise return
+		// one big list of plate boundary stats (not grouped by shared sub-segment).
+		bp::dict shared_sub_segment_dict;
+		bp::list plate_boundary_stats_list;
+		for (const auto &resolved_topological_section : resolved_topological_sections)
 		{
-			bp::dict shared_sub_segment_dict;
-
-			// Add a list of plate boundary stats for each shared sub-segment to the dict.
-			for (const auto &shared_sub_segment_plate_boundary_stats : plate_boundary_stats)
+			for (const auto &shared_sub_segment : resolved_topological_section->get_shared_sub_segments())
 			{
+				const auto shared_sub_segment_plate_boundary_stats =
+						plate_boundary_stats.find(shared_sub_segment);
+				if (shared_sub_segment_plate_boundary_stats == plate_boundary_stats.end())
+				{
+					continue;
+				}
+
 				bp::list shared_sub_segment_plate_boundary_stats_list;
-				for (const auto &plate_boundary_stat : shared_sub_segment_plate_boundary_stats.second)
+				for (const auto &plate_boundary_stat : shared_sub_segment_plate_boundary_stats->second)
 				{
 					shared_sub_segment_plate_boundary_stats_list.append(plate_boundary_stat);
 				}
 
-				shared_sub_segment_dict[shared_sub_segment_plate_boundary_stats.first] =
-						shared_sub_segment_plate_boundary_stats_list;
+				if (return_shared_sub_segment_dict)
+				{
+					shared_sub_segment_dict[shared_sub_segment] = shared_sub_segment_plate_boundary_stats_list;
+				}
+				else
+				{
+					plate_boundary_stats_list.extend(shared_sub_segment_plate_boundary_stats_list);
+				}
 			}
-
-			return shared_sub_segment_dict;
 		}
 
-		// One big list of plate boundary stats (not grouped by shared sub-segment).
-		bp::list plate_boundary_stats_list;
-		for (const auto &shared_sub_segment_plate_boundary_stats : plate_boundary_stats)
+		if (return_shared_sub_segment_dict)
 		{
-			for (const auto &plate_boundary_stat : shared_sub_segment_plate_boundary_stats.second)
-			{
-				plate_boundary_stats_list.append(plate_boundary_stat);
-			}
+			return shared_sub_segment_dict;
 		}
 
 		return plate_boundary_stats_list;
@@ -3048,6 +3063,10 @@ export_topological_snapshot()
 				":meth:`shared sub-segments <ResolvedTopologicalSection.get_shared_sub_segments>` that are the parts of it that actually contribute to plate boundaries. "
 				"Along each shared sub-segment, uniform points are ordered from its start to its end.\n"
 				"\n"
+				"  The statistics (or the ``dict`` entries) are returned in the order of the topological sections' features "
+				"(see :meth:`constructor<__init__>`), including the order across any topological feature collections/files. "
+				"Within each section they are in the order of its shared sub-segments, from the start of the section to its end.\n"
+				"\n"
 				"  Uniform points are **not** generated along *network* boundaries by default (unless they happen to also be a plate boundary) since "
 				"not all parts of a network's boundary are necessarily along plate boundaries. But you can optionally generate points along them by setting "
 				"*include_network_boundaries* to ``True``. Note that, regardless of this option, networks are always used when *calculating* plate statistics. "
@@ -3056,7 +3075,10 @@ export_topological_snapshot()
 				"\n"
 				"  .. note:: The plate boundaries, *along* which uniform points are generated, can be further restricted using *boundary_section_filter*.\n"
 				"\n"
-				"  .. versionadded:: 0.47\n")
+				"  .. versionadded:: 0.47\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     The statistics are returned in the order of the topological features (previously the order could change from one run to the next).\n")
 		.def("get_point_locations",
 				&GPlatesApi::topological_snapshot_get_point_locations,
 				(bp::arg("points"),
