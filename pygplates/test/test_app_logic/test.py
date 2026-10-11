@@ -3637,6 +3637,19 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 for point_feature in resolved_geometry_point_features:
                     self.assertTrue(point_feature.get_name().startswith('section'))
 
+        # Every resolved topology type has 'get_geometry_sub_segments()' as an alias of its own sub-segments method.
+        resolved_topology_types = set()
+        for resolved_topology in snapshot.get_resolved_topologies(
+                pygplates.ResolveTopologyType.line | pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network):
+            resolved_topology_types.add(type(resolved_topology))
+            sub_segments = (resolved_topology.get_line_sub_segments()
+                    if isinstance(resolved_topology, pygplates.ResolvedTopologicalLine)
+                    else resolved_topology.get_boundary_sub_segments())
+            self.assertTrue(sub_segments)
+            self.assertEqual(resolved_topology.get_geometry_sub_segments(), sub_segments)
+        self.assertEqual(resolved_topology_types,
+                         {pygplates.ResolvedTopologicalLine, pygplates.ResolvedTopologicalBoundary, pygplates.ResolvedTopologicalNetwork})
+
     def test_resolved_topological_shared_sub_segments(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),

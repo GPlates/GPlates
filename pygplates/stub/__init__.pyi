@@ -14938,6 +14938,14 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. seealso:: :meth:`get_resolved_feature`
         """
 
+    def get_geometry_sub_segments(self) -> list[ResolvedTopologicalSubSegment]:
+        """Same as :meth:`get_boundary_sub_segments`.
+
+        These are the sub-segments of the network's boundary, which is its :meth:`resolved geometry <get_resolved_geometry>`. The network's interior geometries and :meth:`rigid blocks <get_rigid_blocks>` have no sub-segments.
+
+        .. versionadded:: 1.1
+        """
+
     def get_network_triangulation(self) -> NetworkTriangulation:
         """Returns the triangulation of this resolved topological network.
 
