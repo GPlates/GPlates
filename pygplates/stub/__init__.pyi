@@ -9237,7 +9237,12 @@ class NetRotationSnapshot:
               if net_rotation:
                   print('Topology {} has net rotation {}'.format(resolved_topology.get_feature().get_name(), net_rotation.get_finite_rotation()))
 
+        The ``dict`` is in the same order as that loop: the resolved boundaries, and then the resolved networks, of the :meth:`topological snapshot<get_topological_snapshot>`.
+
         .. seealso:: :meth:`get_total_net_rotation`
+
+        .. versionchanged:: 1.1
+           The ``dict`` is in the order of the resolved topologies (previously the order could change from one run to the next).
         """
 
     def get_topological_snapshot(self) -> TopologicalSnapshot:
@@ -14938,6 +14943,14 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. seealso:: :meth:`get_resolved_feature`
         """
 
+    def get_geometry_sub_segments(self) -> list[ResolvedTopologicalSubSegment]:
+        """Same as :meth:`get_boundary_sub_segments`.
+
+        These are the sub-segments of the network's boundary, which is its :meth:`resolved geometry <get_resolved_geometry>`. The network's interior geometries and :meth:`rigid blocks <get_rigid_blocks>` have no sub-segments.
+
+        .. versionadded:: 1.1
+        """
+
     def get_network_triangulation(self) -> NetworkTriangulation:
         """Returns the triangulation of this resolved topological network.
 
@@ -17144,11 +17157,16 @@ class TopologicalSnapshot:
 
         Each :class:`resolved topological section <ResolvedTopologicalSection>` is associated with a specific boundary :class:`Feature` and represents the :meth:`shared sub-segments <ResolvedTopologicalSection.get_shared_sub_segments>` that are the parts of it that actually contribute to plate boundaries. Along each shared sub-segment, uniform points are ordered from its start to its end.
 
+        The statistics (or the ``dict`` entries) are returned in the order of the topological sections' features (see :meth:`constructor<__init__>`), including the order across any topological feature collections/files. Within each section they are in the order of its shared sub-segments, from the start of the section to its end.
+
         Uniform points are **not** generated along *network* boundaries by default (unless they happen to also be a plate boundary) since not all parts of a network's boundary are necessarily along plate boundaries. But you can optionally generate points along them by setting *include_network_boundaries* to ``True``. Note that, regardless of this option, networks are always used when *calculating* plate statistics. This is because networks typically *overlay* rigid plates, and so need to be queried (at uniform points along plate boundaries) with a higher priority than the *underlying* rigid plate.
 
         .. note:: The plate boundaries, *along* which uniform points are generated, can be further restricted using *boundary_section_filter*.
 
         .. versionadded:: 0.47
+
+        .. versionchanged:: 1.1
+           The statistics are returned in the order of the topological features (previously the order could change from one run to the next).
         """
 
     def export_resolved_topological_sections(self, export_filename: str | os.PathLike, resolve_topological_section_types: ResolveTopologyType | int = ..., export_topological_line_sub_segments: bool = True, wrap_to_dateline: bool = True) -> None:
@@ -17360,7 +17378,10 @@ class TopologicalSnapshot:
         :rtype: list of ResolvedTopologicalSection
         :raises ValueError: if *resolve_topological_section_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
-        .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topological sections are sorted in the order of their respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.
+        .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topological sections are sorted in the order of their respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files. Otherwise they are in the order they are first found along the boundaries of the resolved topologies (resolved boundaries first, then networks).
+
+        .. versionchanged:: 1.1
+           Without sorting, the order no longer changes from one run to the next.
         """
 
     def get_resolved_topologies(self, resolve_topology_types: ResolveTopologyType | int = ..., same_order_as_topological_features: bool = False) -> list[ResolvedTopologicalLine | ResolvedTopologicalBoundary | ResolvedTopologicalNetwork]:
@@ -17374,7 +17395,7 @@ class TopologicalSnapshot:
         :rtype: list[ResolvedTopologicalLine | ResolvedTopologicalBoundary | ResolvedTopologicalNetwork]
         :raises ValueError: if *resolve_topology_types* (if specified) contains a flag that is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``
 
-        .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topologies are sorted in the order of their respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files.
+        .. note:: If *same_order_as_topological_features* is ``True`` then the returned resolved topologies are sorted in the order of their respective topological features (see :meth:`constructor<__init__>`). This includes the order across any topological feature collections/files. Otherwise they are grouped by type (lines, then boundaries, then networks), and each type is in the order of its topological features.
         """
 
     def get_rotation_model(self) -> RotationModel:

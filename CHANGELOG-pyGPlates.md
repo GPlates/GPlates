@@ -15,6 +15,7 @@ Changes since 1.0.0:
   * Pickles written by pyGPlates 1.0 can still be loaded, but pickles written by 1.1 cannot be loaded by 1.0.
   * Fixed pickling an object that had extra attributes added to it from Python (previously raised "Incomplete pickle support").
 * Added `TopologicalSnapshot.reconstruct_points()` to incrementally reconstruct points (lying within the snapshot's resolved plates and networks) to another time.
+* Added `ResolvedTopologicalNetwork.get_geometry_sub_segments()` (the same as `get_boundary_sub_segments()`), so that all three resolved topology types now have it, as resolved lines and boundaries already did.
 * `GpmlTopologicalSection.create()` accepts a feature whose geometry is a polygon (returning a line section), as the topology building tools in GPlates do.
 * `GpmlTopologicalSection.create()` and `create_network_interior()` take a `property_return` argument: with `PropertyReturn.first` they reference a feature that has more than one geometry with the same property name, instead of returning `None`.
 * Added an `anchor_plate_id` argument to `PlatePartitioner` and `partition_into_plates()` (it defaults to the rotation model's default anchor plate, which was previously always used):
@@ -70,6 +71,9 @@ Changes since 1.0.0:
   * Fixed `GpmlIrregularSampling.get_value()` returning `None` at the time of the only enabled time sample, and (for an `XsDouble`) where two time samples have the same time. Likewise `get_time_samples_bounding_time()` now returns the only enabled time sample (as both samples) at its time. Times are compared with a small tolerance (eg, a time sample at 0.3 is found at 0.1 + 0.2).
   * Fixed `InformationModelError` giving the wrong one of two messages: adding a property the information model recognises, but not for the feature type, said the property name was not recognised (and adding an unknown property name said it was not valid for the feature type).
   * `synchronise_crossovers()` writes the rotation files it was given only if it synchronised a crossover (previously it always rewrote them, changing their layout even when no rotation changed).
+  * `TopologicalSnapshot.get_resolved_topological_sections()`, unless sorted with `same_order_as_topological_features=True`, returned the sections in an order that could change from one run of a script to the next. They are now in the order they are first found along the boundaries of the resolved topologies.
+  * `TopologicalSnapshot.calculate_plate_boundary_statistics()` returns its statistics in the order of the topological features, and then along each boundary section (previously the order could change from one run of a script to the next).
+  * `NetRotationSnapshot.get_net_rotation()`, without a resolved topology, returns its `dict` in the order of the resolved boundaries and then networks (previously the order could change from one run of a script to the next).
   * Fixed the pip wheels loading the GDAL plugins named by a `GDAL_DRIVER_PATH` environment variable (eg, set by an active conda environment with GDAL, or by OSGeo4W or QGIS). Those plugins are built for another GDAL, and reading a file could crash (eg, a Shapefile after `import pygmt`).
 
 pyGPlates 1.0.0

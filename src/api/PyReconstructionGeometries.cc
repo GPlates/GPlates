@@ -2929,6 +2929,15 @@ export_resolved_topological_network()
 				"            resolved_boundary_points.extend(sub_segment_points)\n"
 				"\n"
 				"        return pygplates.PolygonOnSphere(resolved_boundary_points)\n")
+		.def("get_geometry_sub_segments",
+				&GPlatesApi::resolved_topological_network_get_boundary_sub_segments,
+				"get_geometry_sub_segments()\n"
+				"  Same as :meth:`get_boundary_sub_segments`.\n"
+				"\n"
+				"  These are the sub-segments of the network's boundary, which is its :meth:`resolved geometry <get_resolved_geometry>`. "
+				"The network's interior geometries and :meth:`rigid blocks <get_rigid_blocks>` have no sub-segments.\n"
+				"\n"
+				"  .. versionadded:: 1.1\n")
 		.def("get_rigid_blocks",
 				&GPlatesApi::resolved_topological_network_get_rigid_blocks,
 				"get_rigid_blocks()\n"

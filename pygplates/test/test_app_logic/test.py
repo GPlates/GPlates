@@ -1037,6 +1037,11 @@ class NetRotationTestCase(unittest.TestCase):
             if resolved_topology_net_rotation:
                 total_net_rotation_accumulator += resolved_topology_net_rotation
         self.assertTrue(total_net_rotation.get_finite_rotation() == total_net_rotation_accumulator.get_finite_rotation())
+        # The dict is in the order of the resolved topologies (boundaries, then networks) that contribute net rotation.
+        self.assertEqual(
+                list(net_rotation_snapshot.get_net_rotation().keys()),
+                [resolved_topology for resolved_topology in net_rotation_snapshot.get_topological_snapshot().get_resolved_topologies()
+                    if net_rotation_snapshot.get_net_rotation(resolved_topology)])
     
     def test_net_rotation_samples(self):
         # Create equal net rotation samples from a finite rotation (over 1Myr) and from an equivalent rotation rate vector.
@@ -3637,6 +3642,19 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 for point_feature in resolved_geometry_point_features:
                     self.assertTrue(point_feature.get_name().startswith('section'))
 
+        # Every resolved topology type has 'get_geometry_sub_segments()' as an alias of its own sub-segments method.
+        resolved_topology_types = set()
+        for resolved_topology in snapshot.get_resolved_topologies(
+                pygplates.ResolveTopologyType.line | pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network):
+            resolved_topology_types.add(type(resolved_topology))
+            sub_segments = (resolved_topology.get_line_sub_segments()
+                    if isinstance(resolved_topology, pygplates.ResolvedTopologicalLine)
+                    else resolved_topology.get_boundary_sub_segments())
+            self.assertTrue(sub_segments)
+            self.assertEqual(resolved_topology.get_geometry_sub_segments(), sub_segments)
+        self.assertEqual(resolved_topology_types,
+                         {pygplates.ResolvedTopologicalLine, pygplates.ResolvedTopologicalBoundary, pygplates.ResolvedTopologicalNetwork})
+
     def test_resolved_topological_shared_sub_segments(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),
@@ -3657,7 +3675,36 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
                 for point_feature in resolved_geometry_point_features:
                     self.assertTrue(point_feature.get_name().startswith('section'))
-    
+
+        # Unsorted, the sections are in the order they are first found along the boundaries of the resolved
+        # boundaries and then networks (not in an order that can change from run to run).
+        # A section is its reconstructed or resolved geometry (one per geometry property in a snapshot).
+        sections_in_order_found = []
+        for resolved_topology in snapshot.get_resolved_topologies(
+                pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network):
+            for sub_segment in resolved_topology.get_boundary_sub_segments():
+                section = sub_segment.get_topological_section()
+                if section not in sections_in_order_found:
+                    sections_in_order_found.append(section)
+        self.assertEqual(
+                [resolved_topological_section.get_topological_section()
+                    for resolved_topological_section in resolved_topological_sections],
+                sections_in_order_found)
+
+        # Unsorted, the resolved topologies are grouped by type (lines, boundaries, networks), each type in feature order.
+        all_resolve_topology_types = (pygplates.ResolveTopologyType.line |
+                pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network)
+        resolved_topology_type_order = [
+                pygplates.ResolvedTopologicalLine, pygplates.ResolvedTopologicalBoundary, pygplates.ResolvedTopologicalNetwork]
+        # The expected order comes from the sorted order (the network 'topology3' is between boundaries in the file),
+        # grouped by type. Python's sort is stable, so each type stays in feature order.
+        resolved_topologies_in_feature_order = snapshot.get_resolved_topologies(
+                all_resolve_topology_types, same_order_as_topological_features=True)
+        self.assertEqual(
+                snapshot.get_resolved_topologies(all_resolve_topology_types),
+                sorted(resolved_topologies_in_feature_order,
+                       key=lambda resolved_topology: resolved_topology_type_order.index(type(resolved_topology))))
+
     def test_point_locations_velocities_strain_rates(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),
@@ -4038,6 +4085,20 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                     self.assertTrue(shared_sub_segment_stat.boundary_feature.get_name() in shared_sub_sub_feature_names)
                 else:
                     self.assertTrue(shared_sub_segment_stat.boundary_feature.get_name() == shared_sub_feature_name)
+
+        # The dict is in the order of the sections' features, then of the shared sub-segments along each section.
+        shared_sub_segments_in_order = [
+                shared_sub_segment
+                for resolved_topological_section in snapshot.get_resolved_topological_sections(same_order_as_topological_features=True)
+                for shared_sub_segment in resolved_topological_section.get_shared_sub_segments()]
+        self.assertEqual(
+                list(plate_boundary_stats_dict.keys()),
+                [shared_sub_segment for shared_sub_segment in shared_sub_segments_in_order if shared_sub_segment in plate_boundary_stats_dict])
+        # And the list is in the same order as the dict.
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True)
+        self.assertEqual(
+                [stat.boundary_point for stat in plate_boundary_stats],
+                [stat.boundary_point for stats in plate_boundary_stats_dict.values() for stat in stats])
 
         # Filter boundary sections by feature type.
         plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
