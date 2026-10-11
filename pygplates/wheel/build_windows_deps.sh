@@ -76,22 +76,10 @@ WHEEL_DIR=$(cd "$(dirname "$(cygpath --unix "$0")")" && pwd)
 # build and so cannot find Visual Studio for itself).
 . "${WHEEL_DIR}/msvc_env.sh"
 
-# Download an archive and extract it into the current directory: the URL, then the tar options
-# (eg, 'xz --strip-components=1'). One transient outage on any download host would otherwise fail
-# a long job (ftp.gnu.org timed out twice). The archive goes to a file, not straight into tar,
-# because a retry after a partial transfer would feed tar the start of the archive a second time;
-# and '--fail' so that an HTTP error page is an error rather than something for tar to choke on.
-# Plain '--retry' covers timeouts and HTTP 408/429/500/502-504, and '--retry-connrefused' adds
-# refused connections ('--retry-all-errors' would cover more, but needs curl 7.71).
-# A fixed path, so a failed download is overwritten by the next run rather than left behind; and
-# tar reads it from stdin, since GNU tar takes a 'C:/...' archive name for a remote host.
-download_and_extract() {
-    local archive="${PYGPLATES_DEPS}/src/download.tmp"
-    curl -fsSL --retry 5 --retry-connrefused --retry-delay 10 -o "${archive}" "$1"
-    shift
-    tar "$@" -f - < "${archive}"
-    rm -f "${archive}"
-}
+# The source downloads, each checked against the SHA-256 pinned in 'versions.sh' (shared by all
+# three platforms). The archive is downloaded into the deps prefix.
+DOWNLOAD_ARCHIVE=${PYGPLATES_DEPS}/src/download.tmp
+. "${WHEEL_DIR}/download.sh"
 
 NPROC=$(nproc)
 
@@ -126,7 +114,9 @@ cd "${PYGPLATES_DEPS}/src"
 if [ ! -f "${PYGPLATES_DEPS}/stamps/sccache-${SCCACHE_VERSION}" ]; then
     sccache_dir=sccache-v${SCCACHE_VERSION}-x86_64-pc-windows-msvc
     rm -rf "${sccache_dir}"
-    download_and_extract https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/${sccache_dir}.tar.gz xz
+    download_and_extract "${SCCACHE_SHA256_WINDOWS_X86_64}" \
+        "https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/${sccache_dir}.tar.gz" \
+        xz
     install -m 755 "${sccache_dir}/sccache.exe" "${PYGPLATES_DEPS}/bin/sccache.exe"
     rm -rf "${sccache_dir}"
     touch "${PYGPLATES_DEPS}/stamps/sccache-${SCCACHE_VERSION}"
@@ -278,7 +268,10 @@ if [ ! -f "${PYGPLATES_DEPS}/stamps/boost-${BOOST_VERSION}" ]; then
     # one; in CI the version is part of the cache key) would link a Boost.Python from the old Boost
     # against the new Boost's headers.
     rm -f "${PYGPLATES_DEPS}"/lib/boost_python*.* "${PYGPLATES_DEPS}"/bin/boost_python*.*
-    download_and_extract https://archives.boost.io/release/${BOOST_VERSION}/source/boost_${BOOST_UNDERSCORE_VERSION}.tar.bz2 xj
+    download_and_extract "${BOOST_SHA256}" \
+        "https://archives.boost.io/release/${BOOST_VERSION}/source/boost_${BOOST_UNDERSCORE_VERSION}.tar.bz2
+         https://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/boost_${BOOST_UNDERSCORE_VERSION}.tar.bz2/download" \
+        xj
     cd boost_${BOOST_UNDERSCORE_VERSION}
     cmd //c "$(cygpath --windows ./bootstrap.bat)"
     ./b2 -j ${NPROC} toolset=msvc address-model=64 variant=release \
@@ -292,7 +285,9 @@ fi
 # for GMP and MPFR while configuring, hence the vcpkg prefix.
 if [ ! -f "${PYGPLATES_DEPS}/stamps/cgal-${CGAL_VERSION}" ]; then
     rm -rf cgal && mkdir cgal && cd cgal
-    download_and_extract https://github.com/CGAL/cgal/releases/download/v${CGAL_VERSION}/CGAL-${CGAL_VERSION}.tar.xz xJ --strip-components=1
+    download_and_extract "${CGAL_SHA256}" \
+        "https://github.com/CGAL/cgal/releases/download/v${CGAL_VERSION}/CGAL-${CGAL_VERSION}.tar.xz" \
+        xJ --strip-components=1
     cmake -DCMAKE_INSTALL_PREFIX="${PYGPLATES_DEPS}" -DCMAKE_PREFIX_PATH="${VCPKG_PREFIX}" .
     cmake --build . --config Release --target install
     cd .. && rm -rf cgal

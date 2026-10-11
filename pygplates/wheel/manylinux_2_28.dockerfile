@@ -79,15 +79,25 @@ RUN printf '/usr/local/lib\n/usr/local/lib64\n' > /etc/ld.so.conf.d/pygplates-de
 # receiving per-version ARGs) so that a local 'docker build' needs no --build-arg plumbing -
 # at the cost that a version bump invalidates every layer from here down (fine: the CI image
 # builds start from scratch anyway).
-COPY versions.sh /tmp/versions.sh
+#
+# Each step also sources 'download.sh', shared with the macOS and Windows dependency builds: its
+# 'download_and_extract' retries, falls back to the other hosts listed, and fails unless the
+# archive matches the SHA-256 pinned in 'versions.sh'.
+COPY versions.sh download.sh /tmp/
 
 # sccache (a static musl binary, so it has no dependencies on the image).
 #
 # Not used when building this image - it's for the wheel builds this image hosts:
 # cibuildwheel builds pyGPlates once per Python version, and the six builds share most of
 # their object files, so builds 2-6 hit the cache populated by build 1.
-RUN . /tmp/versions.sh && cd /tmp && \
-    curl -sSL https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-${ARCH}-unknown-linux-musl.tar.gz | tar xz && \
+RUN . /tmp/versions.sh && . /tmp/download.sh && cd /tmp && \
+    case ${ARCH} in \
+        x86_64) sccache_sha256=${SCCACHE_SHA256_LINUX_X86_64} ;; \
+        aarch64) sccache_sha256=${SCCACHE_SHA256_LINUX_AARCH64} ;; \
+    esac && \
+    download_and_extract "${sccache_sha256}" \
+        "https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-${ARCH}-unknown-linux-musl.tar.gz" \
+        xz && \
     install -m 755 sccache-v${SCCACHE_VERSION}-${ARCH}-unknown-linux-musl/sccache /usr/local/bin/sccache && \
     rm -rf /tmp/sccache-v${SCCACHE_VERSION}-${ARCH}-unknown-linux-musl
 
@@ -100,8 +110,12 @@ RUN . /tmp/versions.sh && cd /tmp && \
 
 # SQLite3 (for PROJ and GDAL - EL8's sqlite 3.26 is older than they like).
 WORKDIR /tmp/build
-RUN . /tmp/versions.sh && \
-    curl -sSL https://sqlite.org/${SQLITE3_YEAR}/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz | tar xz --strip-components=1 && \
+RUN . /tmp/versions.sh && . /tmp/download.sh && \
+    download_and_extract "${SQLITE3_SHA256}" \
+        "https://sqlite.org/${SQLITE3_YEAR}/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz \
+         https://www2.sqlite.org/${SQLITE3_YEAR}/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz \
+         https://www3.sqlite.org/${SQLITE3_YEAR}/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz" \
+        xz --strip-components=1 && \
     ./configure && \
     make -j $(nproc) && \
     make install && \
@@ -129,8 +143,10 @@ RUN . /tmp/versions.sh && \
 #
 # (${QT_VERSION%.*} strips the patch level - the download path groups releases by series.)
 WORKDIR /tmp/build
-RUN . /tmp/versions.sh && \
-    curl -sSL https://download.qt.io/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/qtbase-everywhere-src-${QT_VERSION}.tar.xz | tar xJ --strip-components=1 && \
+RUN . /tmp/versions.sh && . /tmp/download.sh && \
+    download_and_extract "${QT_SHA256}" \
+        "https://download.qt.io/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/qtbase-everywhere-src-${QT_VERSION}.tar.xz" \
+        xJ --strip-components=1 && \
     mkdir build && cd build && \
     cmake -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -161,8 +177,11 @@ RUN . /tmp/versions.sh && \
 # The interpreters have no shared libpython - that's fine, libboost_python leaves the Python
 # symbols unresolved until import time (standard practice for Python extensions on Linux).
 WORKDIR /tmp/build
-RUN . /tmp/versions.sh && \
-    curl -sSL https://archives.boost.io/release/${BOOST_VERSION}/source/boost_$(echo ${BOOST_VERSION} | tr . _).tar.bz2 | tar xj --strip-components=1 && \
+RUN . /tmp/versions.sh && . /tmp/download.sh && \
+    download_and_extract "${BOOST_SHA256}" \
+        "https://archives.boost.io/release/${BOOST_VERSION}/source/boost_$(echo ${BOOST_VERSION} | tr . _).tar.bz2 \
+         https://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/boost_$(echo ${BOOST_VERSION} | tr . _).tar.bz2/download" \
+        xj --strip-components=1 && \
     for python_version in ${PYTHON_VERSIONS}; do \
         cp_tag=cp$(echo ${python_version} | tr -d .); \
         python_prefix=/opt/python/${cp_tag}-${cp_tag}; \
@@ -178,8 +197,11 @@ RUN . /tmp/versions.sh && \
 
 # PROJ (for GDAL and pyGPlates - EL8's proj 4.x is far too old).
 WORKDIR /tmp/build
-RUN . /tmp/versions.sh && \
-    curl -sSL https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz | tar xz --strip-components=1 && \
+RUN . /tmp/versions.sh && . /tmp/download.sh && \
+    download_and_extract "${PROJ_SHA256}" \
+        "https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz \
+         https://github.com/OSGeo/PROJ/releases/download/${PROJ_VERSION}/proj-${PROJ_VERSION}.tar.gz" \
+        xz --strip-components=1 && \
     mkdir build && cd build && \
     cmake \
         -DENABLE_CURL:BOOL=OFF \
@@ -198,8 +220,11 @@ RUN . /tmp/versions.sh && \
 # configuration as the macOS build, and the closest the source builds come to the vcpkg port's
 # feature set on Windows ('vcpkg.json' explains the correspondence).
 WORKDIR /tmp/build
-RUN . /tmp/versions.sh && \
-    curl -sSL https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz | tar xz --strip-components=1 && \
+RUN . /tmp/versions.sh && . /tmp/download.sh && \
+    download_and_extract "${GDAL_SHA256}" \
+        "https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz \
+         https://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz" \
+        xz --strip-components=1 && \
     mkdir build && cd build && \
     cmake \
         -DBUILD_PYTHON_BINDINGS:BOOL=OFF \
@@ -214,8 +239,10 @@ RUN . /tmp/versions.sh && \
 
 # CGAL (header-only since CGAL 5 - this just installs the headers and CMake config).
 WORKDIR /tmp/build
-RUN . /tmp/versions.sh && \
-    curl -sSL https://github.com/CGAL/cgal/releases/download/v${CGAL_VERSION}/CGAL-${CGAL_VERSION}.tar.xz | tar xJ --strip-components=1 && \
+RUN . /tmp/versions.sh && . /tmp/download.sh && \
+    download_and_extract "${CGAL_SHA256}" \
+        "https://github.com/CGAL/cgal/releases/download/v${CGAL_VERSION}/CGAL-${CGAL_VERSION}.tar.xz" \
+        xJ --strip-components=1 && \
     cmake -DCMAKE_INSTALL_PREFIX=/usr/local . && \
     make install && \
     rm -rf /tmp/build

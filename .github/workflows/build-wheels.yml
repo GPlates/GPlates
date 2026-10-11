@@ -270,9 +270,9 @@ jobs:
           if [ "${{ runner.os }}" = macOS ]; then
               target=$(sed -n 's/^MACOSX_DEPLOYMENT_TARGET *= *"\([^"]*\)".*/\1/p' pyproject.toml)
               [ -n "${target}" ] # fail here if the pyproject.toml line was reformatted
-              key=pygplates-wheel-deps-${{ matrix.id }}-target${target}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/build_macos_deps.sh', 'pygplates/wheel/build_boost_python.sh') }}
+              key=pygplates-wheel-deps-${{ matrix.id }}-target${target}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/download.sh', 'pygplates/wheel/build_macos_deps.sh', 'pygplates/wheel/build_boost_python.sh') }}
           else
-              key=pygplates-wheel-deps-${{ matrix.id }}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/vcpkg.json', 'pygplates/wheel/build_windows_deps.sh', 'pygplates/wheel/build_boost_python.sh', 'pygplates/wheel/msvc_env.sh') }}
+              key=pygplates-wheel-deps-${{ matrix.id }}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/download.sh', 'pygplates/wheel/vcpkg.json', 'pygplates/wheel/build_windows_deps.sh', 'pygplates/wheel/build_boost_python.sh', 'pygplates/wheel/msvc_env.sh') }}
           fi
           echo "key=${key}" >> "$GITHUB_OUTPUT"
 
