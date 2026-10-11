@@ -487,8 +487,8 @@ namespace GPlatesApi
 				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
 						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 				// Note: Property will only get added if property name is valid for the feature's type,
-				//       which it should since the GPGIM says it's valid for all reconstructable features.
-				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				//       which it should since the GPGIM says it's valid for all reconstructable features
+				//       (and flowlines, which spread from it).
 				GPlatesModel::ModelUtils::set_property(
 						reconstructable_feature,
 						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,

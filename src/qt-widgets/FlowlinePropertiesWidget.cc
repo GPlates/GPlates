@@ -112,6 +112,7 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
 		plate_1,
 		plate_2,
 		finder.get_times(),
+		finder.get_spreading_start_time(),
 		reconstruction_tree_creator,
 		d_application_state.get_current_reconstruction_time());
 

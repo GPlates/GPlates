@@ -105,10 +105,15 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 		//GPlatesModel::integer_plate_id_type anchor = reconstruction_tree->get_anchor_plate_id();
 		double current_time = reconstruction_tree->get_reconstruction_time();
 
-		// The flowline is built up as if its times started at present day (its seed point is where
-		// the spreading centre is at present day), but only its own times are drawn.
-		std::vector<double> times =
-			FlowlineUtils::get_spreading_times(d_flowline_property_finder->get_times());
+		const std::vector<double> &times = d_flowline_property_finder->get_times();
+		const GPlatesModel::integer_plate_id_type left_plate_id =
+			d_flowline_property_finder->get_left_plate().get();
+		const GPlatesModel::integer_plate_id_type right_plate_id =
+			d_flowline_property_finder->get_right_plate().get();
+
+		// The flowline spreads from its geometry import time (or its youngest time if it has none),
+		// whatever its times, which only decide which vertices are drawn.
+		const double spreading_start_time = d_flowline_property_finder->get_spreading_start_time();
 
 		// The current time need not lie between the flowline's youngest and oldest times.
 		// Younger, each half is built out from the seed point as usual, but starts at the youngest
@@ -117,16 +122,18 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 		FlowlineUtils::fill_seed_point_rotations(
 			current_time,
 			times,
-			*d_flowline_property_finder->get_left_plate(),
-			*d_flowline_property_finder->get_right_plate(),
+			spreading_start_time,
+			left_plate_id,
+			right_plate_id,
 			d_reconstruction_tree_creator,
 			d_left_seed_point_rotations);
 
 		FlowlineUtils::fill_seed_point_rotations(
 			current_time,
 			times,
-			*d_flowline_property_finder->get_right_plate(),
-			*d_flowline_property_finder->get_left_plate(),
+			spreading_start_time,
+			right_plate_id,
+			left_plate_id,
 			d_reconstruction_tree_creator,
 			d_right_seed_point_rotations);
 
@@ -135,70 +142,34 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 		// between the two frames.
 		d_left_to_right_plate_frame_rotation =
 			FlowlineUtils::get_left_to_right_plate_frame_rotation(
-				times.front()/*present day*/,
-				*d_flowline_property_finder->get_left_plate(),
-				*d_flowline_property_finder->get_right_plate(),
+				spreading_start_time,
+				left_plate_id,
+				right_plate_id,
 				d_reconstruction_tree_creator);
 
-		// The times we need to use for flowline rotations, from the current reconstruction time
-		// (clamped to the spreading times) to the oldest time in the flowline.
-		const std::vector<double> spreading_times = times;
-		times.clear();
-
-		FlowlineUtils::fill_times_vector(
-			times,
+		// The rotations that build each half out from the seed point, one per vertex older than the
+		// current time.
+		FlowlineUtils::fill_flowline_rotations(
 			current_time,
-			spreading_times);
+			times,
+			spreading_start_time,
+			left_plate_id/*fixed*/,
+			right_plate_id/*moving*/,
+			d_reconstruction_tree_creator,
+			d_left_rotations);
 
-		// Younger than the flowline's youngest time, the first vertex (the seed point) is not one
+		FlowlineUtils::fill_flowline_rotations(
+			current_time,
+			times,
+			spreading_start_time,
+			right_plate_id/*fixed*/,
+			left_plate_id/*moving*/,
+			d_reconstruction_tree_creator,
+			d_right_rotations);
+
+		// Younger than the flowline's youngest time, the first vertex (the seed point) is not at one
 		// of the flowline's times.
-		d_omit_seed_point_vertex = times.front() < d_flowline_property_finder->get_times().front();
-
-		// We'll work from the current time, backwards in time.
-		std::vector<double>::const_iterator
-			iter = times.begin(),
-			end = times.end();
-
-		// Save the "previous" tree for use in the loop.
-		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_prev_time_ptr =
-				d_reconstruction_tree_creator.get_reconstruction_tree(*iter);
-
-		// Step forward beyond the current time
-		++iter;
-
-		for (; iter != end ; ++iter)
-		{
-
-			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_time_t_ptr =
-				d_reconstruction_tree_creator.get_reconstruction_tree(*iter);
-
-
-			// The stage pole for the right plate w.r.t. the left plate
-			GPlatesMaths::FiniteRotation stage_pole_left =
-				GPlatesAppLogic::RotationUtils::get_stage_pole(
-				*tree_at_prev_time_ptr,
-				*tree_at_time_t_ptr,
-				*d_flowline_property_finder->get_right_plate(),
-				*d_flowline_property_finder->get_left_plate());
-
-
-			GPlatesMaths::FiniteRotation stage_pole_right =
-				GPlatesAppLogic::RotationUtils::get_stage_pole(
-				*tree_at_prev_time_ptr,
-				*tree_at_time_t_ptr,
-				*d_flowline_property_finder->get_left_plate(),
-				*d_flowline_property_finder->get_right_plate());
-
-			// Halve the stage poles, and store them.
-			FlowlineUtils::get_half_angle_rotation(stage_pole_left);
-			FlowlineUtils::get_half_angle_rotation(stage_pole_right);
-
-			d_left_rotations.push_back(stage_pole_left);
-			d_right_rotations.push_back(stage_pole_right);
-
-			tree_at_prev_time_ptr = tree_at_time_t_ptr;
-
-		}
+		d_omit_seed_point_vertex = current_time < times.front();
     }
     return true;
 
@@ -421,7 +392,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 		// left-hand half of the flowline (above), but it must first be moved into the right plate's
 		// frame to seed the right-hand half. Without this the two halves of the flowline start from
 		// different places whenever the left and right plates do not coincide at the flowline's
-		// spreading start time (present day).
+		// spreading start time.
 		const GPlatesMaths::PointOnSphere right_plate_seed_point =
 			d_left_to_right_plate_frame_rotation
 			? *d_left_to_right_plate_frame_rotation * present_day_seed_point
@@ -496,6 +467,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 				*d_flowline_property_finder->get_left_plate(),
 				*d_flowline_property_finder->get_right_plate(),
 				d_flowline_property_finder->get_times(),
+				d_flowline_property_finder->get_spreading_start_time(),
 				*(current_top_level_propiter()->handle_weak_ref()),
 				*(current_top_level_propiter()),
 				reconstructed_seed_geometry);

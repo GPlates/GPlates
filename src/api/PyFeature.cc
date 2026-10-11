@@ -46,6 +46,7 @@
 #include "PythonHashDefVisitor.h"
 #include "PythonPickle.h"
 
+#include "app-logic/FlowlineUtils.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructionTreeCreator.h"
 #include "app-logic/ReconstructMethodRegistry.h"
@@ -987,8 +988,8 @@ namespace GPlatesApi
 				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
 						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 				// Note: Property will only get added if property name is valid for the feature's type,
-				//       which it should since the GPGIM says it's valid for all reconstructable features.
-				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				//       which it should since the GPGIM says it's valid for all reconstructable features
+				//       (and flowlines, which spread from it).
 				GPlatesModel::ModelUtils::set_property(
 						feature_handle.reference(),
 						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
@@ -1128,8 +1129,8 @@ namespace GPlatesApi
 				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
 						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 				// Note: Property will only get added if property name is valid for the feature's type,
-				//       which it should since the GPGIM says it's valid for all reconstructable features.
-				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				//       which it should since the GPGIM says it's valid for all reconstructable features
+				//       (and flowlines, which spread from it).
 				GPlatesModel::ModelUtils::set_property(
 						feature_handle.reference(),
 						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
@@ -3737,9 +3738,15 @@ namespace GPlatesApi
 		// Call python since Feature.set_times is implemented in python code...
 		feature_object.attr("set_times")(times, verify_information_model);
 
-		// Set the reconstruction method to half-stage rotation.
+		// The flowline spreads from its geometry import time, like a 'HalfStageRotationVersion3' ridge,
+		// although a flowline doesn't use its reconstruction method.
 		// Call python since Feature.set_reconstruction_method is implemented in python code...
 		feature_object.attr("set_reconstruction_method")("HalfStageRotationVersion3", verify_information_model);
+
+		// Spread from the youngest time, unless the geometry is reverse reconstructed below, which sets
+		// the geometry import time to the reconstruction time. Either way, changing the times later
+		// doesn't shift the flowline (its position at any reconstruction time).
+		GPlatesAppLogic::FlowlineUtils::set_default_geometry_import_time(feature->reference());
 
 		if (name != bp::object()/*Py_None*/)
 		{
@@ -3810,9 +3817,8 @@ namespace GPlatesApi
 		// Call python since Feature.set_times is implemented in python code...
 		feature_object.attr("set_times")(times, verify_information_model);
 
-		// Set the reconstruction method to by-plate-id.
-		// Call python since Feature.set_reconstruction_method is implemented in python code...
-		feature_object.attr("set_reconstruction_method")("ByPlateId", verify_information_model);
+		// Note: No reconstruction method is set, since a motion path is reconstructed by its plate IDs
+		//       whatever its reconstruction method (GPlates doesn't set one either).
 
 		if (name != bp::object()/*Py_None*/)
 		{
@@ -4745,21 +4751,27 @@ export_feature()
 				"and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.\n"
 				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time\n"
 				"\n"
-				"  This function calls :meth:`set_geometry`. It optionally calls :meth:`set_times`, :meth:`set_name`, "
-				":meth:`set_description`, :meth:`set_valid_time`, :meth:`set_left_plate`, "
-				":meth:`set_right_plate`, :meth:`set_reconstruction_method` and :meth:`add`. "
+				"  This function calls :meth:`set_geometry`, :meth:`set_times`, "
+				":meth:`set_reconstruction_method` and :meth:`set_geometry_import_time`. It optionally "
+				"calls :meth:`set_name`, :meth:`set_description`, :meth:`set_valid_time`, "
+				":meth:`set_left_plate`, :meth:`set_right_plate` and :meth:`add`. "
 				"The :class:`feature type<FeatureType>` is a `flowline "
 				"<http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_.\n"
 				"\n"
-				"  The seed point is on the *left* plate, at the spreading centre at present day. The "
-				"flowline spreads from it along both plates, and has a point at each of the *times*. If "
-				"the *times* don't start at present day, the flowline is the same as that part of a "
-				"flowline (with the same seed point) whose times do, so the pieces of a flowline join up "
-				"(as for motion paths). Then, at a reconstruction time younger than the youngest time, "
-				"each half starts at that time (not at the seed point, which is where the spreading centre "
-				"is at the reconstruction time). Use *valid_time* if the flowline should not be visible "
-				"then. At (or older than) the oldest time there is no flowline, only the seed point, "
-				"carried by the left plate from where the spreading centre was at that time.\n"
+				"  The seed point is on the *left* plate: it is where the spreading centre was at the "
+				"flowline's :meth:`geometry import time<set_geometry_import_time>`, carried to present day "
+				"by the left plate. Reverse reconstructing *seed_geometry* (with *reverse_reconstruct*) "
+				"sets the geometry import time to the reconstruction time, otherwise it is set to the "
+				"youngest of the *times*. The flowline spreads from there along both plates (like a "
+				"'HalfStageRotationVersion3' mid-ocean ridge, so forward in time at times younger than the "
+				"geometry import time), and has a point at each of the *times*. So changing the *times* "
+				"doesn't move the flowline, and pieces of a flowline with the same seed point and geometry "
+				"import time join up (as for motion paths). At a reconstruction time younger than the "
+				"youngest time, each half starts at that time (not at the seed point, which is where the "
+				"spreading centre is at the reconstruction time). Use *valid_time* if the flowline should "
+				"not be visible then. At (or older than) the oldest time there is no flowline, only the "
+				"seed point, carried by the left plate from where the spreading centre was at that time. "
+				"A flowline without a geometry import time spreads from its youngest time.\n"
 				"\n"
 				"  Create a flowline feature:\n"
 				"  ::\n"
@@ -4820,26 +4832,17 @@ export_feature()
 				"        reverse_reconstruct=(rotation_model, 50))\n"
 				"\n"
 				"  .. note:: In the above example we called :meth:`set_reconstruction_method` only because "
-				":meth:`create_flowline` does. A flowline doesn't use its reconstruction method: it is "
-				"always reconstructed by half-stage rotations between its *times* (and from present day), "
-				"whatever its reconstruction method.\n"
+				":meth:`create_flowline` does. A flowline is always reconstructed like "
+				"'HalfStageRotationVersion3' (spreading from its geometry import time, which reverse "
+				"reconstructing sets), whatever its reconstruction method.\n"
 				"\n"
 				"  .. versionchanged:: 1.1\n"
-				"     The seed point is at the spreading centre at present day even when the *times* don't "
-				"start at present day (previously it was where the spreading centre was at their youngest time). "
-				"So such a flowline is now in a different place. To keep it where it was, move its seed "
-				"point to where it was at its youngest time:\n"
-				"     ::\n"
-				"\n"
-				"       youngest_time = flowline_feature.get_times()[0]\n"
-				"       flowline_feature.set_geometry(\n"
-				"           rotation_model.get_rotation(youngest_time, flowline_feature.get_left_plate()) *\n"
-				"               flowline_feature.get_geometry(),\n"
-				"           reverse_reconstruct=(rotation_model, youngest_time))\n"
-				"\n"
-				"     A flowline is also reconstructed at times younger than its youngest time (previously "
-				"only between its youngest and oldest times), and its two halves start at the seed point "
-				"even when the left and right plates don't coincide at present day.\n")
+				"     Sets the geometry import time, and the flowline spreads from it (previously from its "
+				"youngest time, as a flowline without a geometry import time still does, so existing "
+				"flowlines stay where they were). A flowline is also reconstructed at times younger than its "
+				"youngest time (previously only between its youngest and oldest times), and its two halves "
+				"start at the seed point even when the left and right plates don't coincide at its "
+				"geometry import time.\n")
 		.staticmethod("create_flowline")
 		.def("create_motion_path",
 				&GPlatesApi::feature_handle_create_motion_path,
@@ -4901,9 +4904,9 @@ export_feature()
 				"and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.\n"
 				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time\n"
 				"\n"
-				"  This function calls :meth:`set_geometry`. It optionally calls :meth:`set_times`, :meth:`set_name`, "
-				":meth:`set_description`, :meth:`set_valid_time`, :meth:`set_relative_plate`, "
-				":meth:`set_reconstruction_plate_id`, :meth:`set_reconstruction_method` and :meth:`add`. "
+				"  This function calls :meth:`set_geometry` and :meth:`set_times`. It optionally calls "
+				":meth:`set_name`, :meth:`set_description`, :meth:`set_valid_time`, :meth:`set_relative_plate`, "
+				":meth:`set_reconstruction_plate_id` and :meth:`add`. "
 				"The :class:`feature type<FeatureType>` is a `motion path "
 				"<http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_.\n"
 				"\n"

@@ -61,13 +61,14 @@ GPlatesAppLogic::ReconstructedFlowline::reconstructed_seed_point_velocity(
 		VelocityUnits::Value velocity_units,
 		const double &earth_radius_in_kms) const
 {
-	// The seed point moves by half-stage rotations from present day (with no spreading after the
-	// flowline's oldest time) and then by the left plate.
+	// The seed point moves by half-stage rotations from the flowline's spreading start time (with no
+	// spreading after its oldest time) and then by the left plate.
 	// So use the flowline's times, rather than a generic half-stage rotation.
 	const GPlatesMaths::FiniteRotation velocity_stage_rotation =
 			FlowlineUtils::calculate_seed_point_stage_rotation(
 					get_reconstruction_time(),
 					d_flowline_times,
+					d_spreading_start_time,
 					d_left_plate_id,
 					d_right_plate_id,
 					get_reconstruction_tree_creator(),

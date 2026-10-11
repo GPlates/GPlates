@@ -46,12 +46,19 @@
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
+#include "model/ModelUtils.h"
+
+#include "property-values/GeoTimeInstant.h"
+#include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlArray.h"
+#include "property-values/StructuralType.h"
 
 
 // The Create Feature dialog can place a new flowline so that the end of its left or right half,
 // rather than its seed point, is where the user clicked (FlowlineUtils::correct_end_point_to_centre).
 // That must find the seed point at any reconstruction time, including younger than the flowline's
-// youngest time, where the halves don't start at the seed point. Only the GUI reaches it.
+// youngest time, where the halves don't start at the seed point, and wherever the flowline's spreading
+// starts (its geometry import time, or its youngest time if it has none). Only the GUI reaches it.
 namespace
 {
 	const GPlatesModel::integer_plate_id_type LEFT_PLATE = 201;
@@ -80,7 +87,7 @@ namespace
 		SetUp() override
 		{
 			// The flowline's times are [10, 20, 30, 40], so it doesn't start at present day, and
-			// plates 201 and 801 move differently before 10 Ma.
+			// plates 201 and 801 move differently before 10 Ma. It has no geometry import time.
 			d_rotation_file = read(GPLATES_UNIT_TEST_DATA_DIR "/flowline/rotations.rot");
 			d_flowline_file = read(GPLATES_UNIT_TEST_DATA_DIR "/flowline/flowline.gpml");
 
@@ -104,6 +111,46 @@ namespace
 			GPlatesFileIO::ReadErrorAccumulation read_errors;
 			d_registry.read_feature_collection(file->get_reference(), read_errors);
 			return file;
+		}
+
+		/**
+		 * Gives the flowline a geometry import time (the time its spreading starts from).
+		 */
+		void
+		set_geometry_import_time(
+				const double &geometry_import_time)
+		{
+			GPlatesModel::ModelUtils::set_property(
+					d_flowline,
+					GPlatesModel::PropertyName::create_gpml("geometryImportTime"),
+					GPlatesModel::ModelUtils::create_gml_time_instant(
+							GPlatesPropertyValues::GeoTimeInstant(geometry_import_time)));
+		}
+
+		/**
+		 * Replaces the flowline's times (youngest first), as editing them does.
+		 */
+		void
+		set_times(
+				const std::vector<double> &times)
+		{
+			std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods;
+			for (unsigned int n = 1; n < times.size(); ++n)
+			{
+				time_periods.push_back(
+						GPlatesPropertyValues::GmlTimePeriod::create(
+								GPlatesModel::ModelUtils::create_gml_time_instant(
+										GPlatesPropertyValues::GeoTimeInstant(times[n])),
+								GPlatesModel::ModelUtils::create_gml_time_instant(
+										GPlatesPropertyValues::GeoTimeInstant(times[n - 1]))));
+			}
+
+			GPlatesModel::ModelUtils::set_property(
+					d_flowline,
+					GPlatesModel::PropertyName::create_gpml("times"),
+					GPlatesPropertyValues::GpmlArray::create(
+							time_periods,
+							GPlatesPropertyValues::StructuralType::create_gml("TimePeriod")));
 		}
 
 		/**
@@ -147,6 +194,7 @@ namespace
 							plate_1,
 							plate_2,
 							finder.get_times(),
+							finder.get_spreading_start_time(),
 							d_reconstruction_tree_creator.get(),
 							reconstruction_time);
 
@@ -154,6 +202,41 @@ namespace
 					GPlatesAppLogic::GeometryUtils::get_point_on_sphere(*seed_point);
 			EXPECT_TRUE(seed_point_on_sphere);
 			return seed_point_on_sphere.get();
+		}
+
+		/**
+		 * Checks that the end of each half of the flowline corrects to its seed point: younger than the
+		 * youngest time (where the halves don't start at the seed point), at it, and between the times.
+		 */
+		void
+		check_end_points_correct_to_the_seed_point()
+		{
+			for (const double reconstruction_time : { 0.0, 5.0, 10.0, 15.0, 25.0 })
+			{
+				SCOPED_TRACE(reconstruction_time);
+				const GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_to_const_type flowline =
+						reconstruct(reconstruction_time);
+				const GPlatesMaths::PointOnSphere &seed_point = flowline->reconstructed_seed_point();
+
+				EXPECT_LT(
+						angle_in_degrees(
+								correct_end_point_to_centre(
+										flowline->left_flowline_points()->end_point(),
+										LEFT_PLATE,
+										RIGHT_PLATE,
+										reconstruction_time),
+								seed_point),
+						MAX_ANGLE_IN_DEGREES);
+				EXPECT_LT(
+						angle_in_degrees(
+								correct_end_point_to_centre(
+										flowline->right_flowline_points()->end_point(),
+										RIGHT_PLATE,
+										LEFT_PLATE,
+										reconstruction_time),
+								seed_point),
+						MAX_ANGLE_IN_DEGREES);
+			}
 		}
 
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry d_registry;
@@ -166,33 +249,84 @@ namespace
 
 	TEST_F(FlowlineUtilsTest, end_points_correct_to_the_seed_point)
 	{
-		// Younger than the youngest time (where the halves don't start at the seed point), at it,
-		// and between the flowline's times.
-		for (const double reconstruction_time : { 0.0, 5.0, 10.0, 15.0 })
-		{
-			SCOPED_TRACE(reconstruction_time);
-			const GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_to_const_type flowline =
-					reconstruct(reconstruction_time);
-			const GPlatesMaths::PointOnSphere &seed_point = flowline->reconstructed_seed_point();
+		// Spreading from the youngest time (no geometry import time).
+		check_end_points_correct_to_the_seed_point();
+	}
 
-			EXPECT_LT(
-					angle_in_degrees(
-							correct_end_point_to_centre(
-									flowline->left_flowline_points()->end_point(),
-									LEFT_PLATE,
-									RIGHT_PLATE,
-									reconstruction_time),
-							seed_point),
-					MAX_ANGLE_IN_DEGREES);
-			EXPECT_LT(
-					angle_in_degrees(
-							correct_end_point_to_centre(
-									flowline->right_flowline_points()->end_point(),
-									RIGHT_PLATE,
-									LEFT_PLATE,
-									reconstruction_time),
-							seed_point),
-					MAX_ANGLE_IN_DEGREES);
-		}
+
+	TEST_F(FlowlineUtilsTest, end_points_correct_to_the_seed_point_with_geometry_import_time)
+	{
+		// Between two of the flowline's times, so it splits a half-stage step.
+		set_geometry_import_time(15.0);
+		check_end_points_correct_to_the_seed_point();
+
+		// Older than the flowline's oldest time.
+		set_geometry_import_time(50.0);
+		check_end_points_correct_to_the_seed_point();
+	}
+
+
+	TEST_F(FlowlineUtilsTest, default_geometry_import_time_is_the_youngest_time)
+	{
+		// Without a geometry import time the flowline spreads from its youngest time...
+		GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder finder;
+		finder.visit_feature(d_flowline);
+		EXPECT_FALSE(finder.get_geometry_import_time());
+		EXPECT_EQ(finder.get_spreading_start_time(), 10.0);
+		EXPECT_TRUE(GPlatesAppLogic::FlowlineUtils::get_default_geometry_import_time(d_flowline) ==
+				boost::optional<double>(10.0));
+
+		// ...so giving it one there doesn't shift it.
+		const GPlatesMaths::PointOnSphere seed_point_before = reconstruct(25.0)->reconstructed_seed_point();
+		EXPECT_TRUE(GPlatesAppLogic::FlowlineUtils::set_default_geometry_import_time(d_flowline));
+		EXPECT_LT(angle_in_degrees(reconstruct(25.0)->reconstructed_seed_point(), seed_point_before),
+				MAX_ANGLE_IN_DEGREES);
+
+		GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder finder_after;
+		finder_after.visit_feature(d_flowline);
+		EXPECT_TRUE(finder_after.get_geometry_import_time() == boost::optional<double>(10.0));
+
+		// It already has one now.
+		EXPECT_FALSE(GPlatesAppLogic::FlowlineUtils::get_default_geometry_import_time(d_flowline));
+		EXPECT_FALSE(GPlatesAppLogic::FlowlineUtils::set_default_geometry_import_time(d_flowline));
+	}
+
+
+	TEST_F(FlowlineUtilsTest, editing_times_does_not_shift_a_flowline)
+	{
+		const GPlatesModel::PropertyName times_property_name =
+				GPlatesModel::PropertyName::create_gpml("times");
+		const GPlatesModel::PropertyName name_property_name =
+				GPlatesModel::PropertyName::create_gml("name");
+
+		const auto get_geometry_import_time = [this]()
+		{
+			GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder finder;
+			finder.visit_feature(d_flowline);
+			return finder.get_geometry_import_time();
+		};
+
+		// An edit of another property, or one that doesn't modify the times, adds nothing.
+		EXPECT_TRUE(GPlatesAppLogic::FlowlineUtils::edit_property_without_shifting_flowline(
+				d_flowline, name_property_name, []() { return true; }));
+		EXPECT_FALSE(GPlatesAppLogic::FlowlineUtils::edit_property_without_shifting_flowline(
+				d_flowline, times_property_name, []() { return false; }));
+		EXPECT_FALSE(get_geometry_import_time());
+
+		// Removing the youngest time (10 Ma) would make the flowline spread from 20 Ma...
+		const GPlatesMaths::PointOnSphere seed_point_before = reconstruct(25.0)->reconstructed_seed_point();
+		EXPECT_TRUE(GPlatesAppLogic::FlowlineUtils::edit_property_without_shifting_flowline(
+				d_flowline,
+				times_property_name,
+				[this]()
+				{
+					set_times({ 20.0, 30.0, 40.0 });
+					return true;
+				}));
+
+		// ...but it still spreads from 10 Ma, so it isn't shifted.
+		EXPECT_TRUE(get_geometry_import_time() == boost::optional<double>(10.0));
+		EXPECT_LT(angle_in_degrees(reconstruct(25.0)->reconstructed_seed_point(), seed_point_before),
+				MAX_ANGLE_IN_DEGREES);
 	}
 }

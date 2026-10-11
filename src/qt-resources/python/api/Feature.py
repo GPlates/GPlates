@@ -631,6 +631,10 @@ def set_reconstruction_method(feature, reconstruction_method, verify_information
     
       feature.set_reconstruction_method('HalfStageRotationVersion2')
     
+    .. note:: :meth:`Flowlines<create_flowline>` and :meth:`motion paths<create_motion_path>` are reconstructed
+       the same way whatever their reconstruction method (a flowline like 'HalfStageRotationVersion3', a motion path
+       by its plate IDs).
+    
     .. seealso:: :meth:`get_reconstruction_method`
     """
     
@@ -1017,7 +1021,17 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
     .. note:: The 'gpml:times' property actually contains a :class:`list<GpmlArray>` of :class:`time periods<GmlTimePeriod>`
        (not time instants). So this method converts the time instants (in *times*) to adjoining time periods when creating the property.
     
+    .. note:: Changing the times of a :meth:`flowline<create_flowline>` doesn't shift it (at any reconstruction time),
+       since it spreads from its :meth:`geometry import time<set_geometry_import_time>`. So if it has times but no geometry
+       import time (it then spreads from its youngest time) this method first sets its geometry import time to its current
+       youngest time. Other ways of changing its times don't (eg, :meth:`set` with ``pygplates.PropertyName.gpml_times``,
+       or modifying the :class:`GpmlArray` it contains), so first :meth:`set the geometry import time<set_geometry_import_time>`
+       of a flowline that has none.
+    
     .. seealso:: :meth:`get_times`
+    
+    .. versionchanged:: 1.1
+       Sets the geometry import time of a flowline that has none.
     """
     
     if len(times) < 2:
@@ -1036,6 +1050,14 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
         gml_time_periods.append(GmlTimePeriod(time, prev_time))
         
         prev_time = time
+    
+    # A flowline without a geometry import time spreads from its youngest time, so give it one there
+    # first (it then stays where it is when its times change).
+    if (feature.get_feature_type() == FeatureType.gpml_flowline and
+        feature.get_geometry_import_time(None) is None):
+        current_times = feature.get_times()
+        if current_times:
+            feature.set_geometry_import_time(current_times[0], verify_information_model)
     
     return feature.set(PropertyName.gpml_times, GpmlArray(gml_time_periods), verify_information_model)
 

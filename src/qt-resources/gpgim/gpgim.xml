@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet href="gpgim.xsl" type="text/xsl"?>
 <GPGIM
-	gpgim:version="1.6.0339"
+	gpgim:version="1.6.0340"
 	xmlns="http://www.gplates.org/gpgim"
 	xmlns:gpgim="http://www.gplates.org/gpgim"
 	xmlns:gpml="http://www.gplates.org/gplates"
@@ -1114,6 +1114,7 @@
 			<Multiplicity>0..1</Multiplicity>
 			<Comment>This property is added when a new feature is digitised in GPlates (its value is the geological time at which the feature is digitised). The digitised geometry is still stored in present day coordinates though (ie, reverse reconstructed to present day).</Comment>
 			<Comment>Used by MidOceanRidge features, along with left plate ID, to reconstruct ridge position to the import time and then perform ridge-spreading from there. This enables the user to subsequently change the spreading asymmetry without significantly affecting the ridge position (with no effect at the import time) when the 'HalfStageRotationVersion3' reconstruct method is used.</Comment>
+			<Comment>Used by Flowline features in the same way: a flowline spreads from its import time (or from its youngest time if it has none), so changing its times doesn't shift it (at any reconstruction time), and rotations younger than its import time don't affect where it is at that time.</Comment>
 			<Comment>Also used when a feature's geometry is reconstructed using topologies (instead of using the feature's properties, eg, reconstruction plate ID). This enables paleo-geometries to be used (eg, fracture zones prior to subduction) and masked by topologies through time (mid-ocean ridges going backward in time and subduction zones going forward in time).</Comment>
 		</Property>
 
@@ -2185,6 +2186,7 @@
 			<Property>gpml:reconstructionMethod</Property>
 			<Property>gpml:leftPlate</Property>
 			<Property>gpml:rightPlate</Property>
+			<Property>gpml:geometryImportTime</Property>
 		</FeatureClass>
 		
 		<FeatureClass>
