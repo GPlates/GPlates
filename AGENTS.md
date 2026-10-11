@@ -330,6 +330,11 @@ publishing** — the trusted-publisher registration binds to the filename. Addin
 requires updating both `[tool.cibuildwheel].build` in `pyproject.toml` and `PYTHON_VERSIONS` in
 `pygplates/wheel/versions.sh`, or the sdist job fails. Details: `pygplates/wheel/README.md`.
 
+Cutting a series branch of either product also closes that series to features, so move every
+issue still open in its GitHub milestone (`PyGPlates 1.1`, say) to the next series' milestone
+(`PyGPlates 1.2`), creating it if need be. Milestones are per series, not per release, because a
+patch release takes only cherry-picked fixes.
+
 ## Working agreements
 
 - Propose a plan and get agreement before multi-file refactors, and before changing build logic
