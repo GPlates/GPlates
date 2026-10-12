@@ -10,7 +10,7 @@
 # Full runs (every Python version) happen on release tags and manual dispatch. A pull request
 # that touches the wheel machinery instead builds two Python versions per platform - enough to
 # prove the machinery works, and to show the compiler cache carrying from the first version to
-# the second, without spending six builds' worth of runner time - and a dispatch can ask for
+# the second, without spending seven builds' worth of runner time - and a dispatch can ask for
 # the same, for a build that only tests something. Wheels of a development
 # version, for someone to try before a release, come from a manual dispatch - from a
 # 'PyGPlates-*.dev*' tag on the commit, by preference, so that the build stays findable by its
@@ -164,17 +164,19 @@ jobs:
     # of wheel builds start. The sdist job takes under a minute.
     needs: build-sdist
     runs-on: ${{ matrix.os }}
-    # A full run is six Python versions: the first compiles pyGPlates from scratch and the rest
+    # A full run is seven Python versions: the first compiles pyGPlates from scratch and the rest
     # reuse about 90% of its object files from the compiler cache (measured - only the ~100
     # sources that include Python's own headers really differ between versions).
     #
-    # The worst case is a fully cold run on the slowest platform (Windows): ~64 minutes building
-    # the dependencies, ~63 minutes compiling the first wheel from scratch, then ~23 minutes per
-    # remaining wheel - about 4.5 hours in all (measured, 2026-08). So this limit is not expected
-    # to trip; hitting it means something is broken (a hung build, or compile times have
-    # genuinely grown). It sits deliberately below GitHub's hard 6-hour kill so that on a timeout
-    # the 'always()' steps below still get a window to salvage the run's work: the dependency
-    # cache is saved (the retry then starts warm) and the wheels already built are uploaded.
+    # The worst case is a fully cold run on the slowest platform (Windows): ~60 minutes building
+    # the dependencies, ~21 minutes compiling the first wheel from scratch, then ~8 minutes per
+    # remaining wheel - about 2.2 hours in all (measured, 2026-10, with seven versions). It was 4.5
+    # hours with six in 2026-08, before the module was cut to the pyGPlates API's include closure
+    # (971 sources compiled per version, now ~365). So this limit is not expected to trip; hitting
+    # it means something is broken (a hung build, or compile times have genuinely grown). It sits
+    # deliberately below GitHub's hard 6-hour kill so that on a timeout the 'always()' steps below
+    # still get a window to salvage the run's work: the dependency cache is saved (the retry then
+    # starts warm) and the wheels already built are uploaded.
     #
     # If the arithmetic ever creeps toward the ceiling (eg, many more sources come to include
     # Python.h, eroding the ~90% compiler-cache reuse), the fallback is to build the dependencies
@@ -270,9 +272,9 @@ jobs:
           if [ "${{ runner.os }}" = macOS ]; then
               target=$(sed -n 's/^MACOSX_DEPLOYMENT_TARGET *= *"\([^"]*\)".*/\1/p' pyproject.toml)
               [ -n "${target}" ] # fail here if the pyproject.toml line was reformatted
-              key=pygplates-wheel-deps-${{ matrix.id }}-target${target}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/build_macos_deps.sh', 'pygplates/wheel/build_boost_python.sh') }}
+              key=pygplates-wheel-deps-${{ matrix.id }}-target${target}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/download.sh', 'pygplates/wheel/build_macos_deps.sh', 'pygplates/wheel/build_boost_python.sh') }}
           else
-              key=pygplates-wheel-deps-${{ matrix.id }}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/vcpkg.json', 'pygplates/wheel/build_windows_deps.sh', 'pygplates/wheel/build_boost_python.sh', 'pygplates/wheel/msvc_env.sh') }}
+              key=pygplates-wheel-deps-${{ matrix.id }}-${{ hashFiles('pygplates/wheel/versions.sh', 'pygplates/wheel/download.sh', 'pygplates/wheel/vcpkg.json', 'pygplates/wheel/build_windows_deps.sh', 'pygplates/wheel/build_boost_python.sh', 'pygplates/wheel/msvc_env.sh') }}
           fi
           echo "key=${key}" >> "$GITHUB_OUTPUT"
 
@@ -377,7 +379,7 @@ jobs:
           echo "CIBW_MANYLINUX_AARCH64_IMAGE=${image}_aarch64:${IMAGE_TAG}" >> "$GITHUB_ENV"
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v4.2.0
+        uses: pypa/cibuildwheel@v4.3.1
 
       - name: Check the Linux wheel imports with no system packages installed
         # The manylinux wheel is meant to need nothing from the user's system beyond glibc and
@@ -400,7 +402,7 @@ jobs:
           # before the message below, which is the whole reason the check is here.
           wheel=$(ls wheelhouse/pygplates-*-cp313-*manylinux*_x86_64.whl 2> /dev/null | head -1 || true)
           if [ -z "${wheel}" ]; then
-              # Every run builds cp313 (full runs build all six versions; pull request runs,
+              # Every run builds cp313 (full runs build every version; pull request runs,
               # and a dispatch limited to two versions, build cp312 and cp313), so there is no
               # case where skipping is right.
               echo "No cp313 manylinux x86_64 wheel in wheelhouse/ to check." >&2
@@ -494,8 +496,8 @@ jobs:
 
       - name: Upload wheels
         # 'always()' so the wheels already built and repaired survive a later version failing
-        # (or the job timing out) - a full run is six sequential builds, and losing five good
-        # wheels to a test flake on the sixth would force the whole job to run again.
+        # (or the job timing out) - a full run is seven sequential builds, and losing six good
+        # wheels to a test flake on the seventh would force the whole job to run again.
         # 'if-no-files-found: ignore' keeps the step green when the failure came before any
         # wheel finished.
         # 'overwrite' because an artifact belongs to the run, not to the attempt: a leg that
@@ -633,7 +635,7 @@ jobs:
         # See the TestPyPI step for the choice of 'release/v1' and the attestations note.
         # 'skip-existing' here is what makes a partial upload recoverable: PyPI reserves
         # filenames forever (even after deletion) and rejects re-uploads, and the upload stops
-        # at the first rejection - so a network failure partway through 31 files would
+        # at the first rejection - so a network failure partway through 36 files would
         # otherwise wedge the release permanently, with re-runs dying on the first
         # already-uploaded file. With it, "Re-run failed jobs" finishes the job. The risk
         # 'skip-existing' usually carries - quietly not uploading a stale rebuild - is closed

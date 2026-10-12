@@ -8,7 +8,7 @@ pyGPlates 1.1 (unreleased)
 
 Changes since 1.0.0:
 
-* Supports Python 3.9 to 3.14 (Python 3.8 is no longer supported).
+* Supports Python 3.9 to 3.15 (Python 3.8 is no longer supported).
 * Type stub included in the package (PEP 561), so editors and type checkers get completion, signature help and type checking for the whole API.
 * The API reference documents every enumeration (eg, `PartitionMethod`) and exception (eg, `InvalidLatLonError`) on its own page, and parameter types and raised exceptions now link to those pages.
 * Pickling is much faster (eg, a `RotationModel` pickles about 7 times faster and unpickles about 5 times faster).

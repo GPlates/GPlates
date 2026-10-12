@@ -11,7 +11,8 @@ The pieces fit together like this:
 | Piece | What it does |
 |---|---|
 | `[tool.cibuildwheel]` in the root `pyproject.toml` | The wheel configuration: Python versions, dependency images, hooks, CMake defines, test command. |
-| `versions.sh` (this directory) | The dependency version pins - the single source of truth shared by all three platforms. |
+| `versions.sh` (this directory) | The dependency version pins, and the SHA-256 of each archive downloaded - the single source of truth shared by all three platforms. |
+| `download.sh` (this directory) | Downloads and extracts a dependency's source archive, trying each listed host in turn and failing unless the archive matches its pinned SHA-256 (sourced by the dockerfile and the two scripts below). |
 | `manylinux_2_28.dockerfile` (this directory) | Docker image with the pyGPlates dependency libraries, that the Linux wheels are built inside. |
 | `build_macos_deps.sh` (this directory) | Builds the pyGPlates dependency libraries on macOS (run automatically by cibuildwheel, once per machine; cached in CI). |
 | `build_windows_deps.sh` (this directory) | The same on Windows. |
@@ -28,7 +29,7 @@ Run cibuildwheel from the root source directory, selecting a single build with `
 (otherwise it builds every Python version). For example:
 
 ```
-pipx run cibuildwheel==4.2.* --only cp313-manylinux_x86_64
+pipx run cibuildwheel==4.3.* --only cp313-manylinux_x86_64
 ```
 
 ...or `--only cp313-macosx_arm64` on Apple Silicon (`cp313-macosx_x86_64` on Intel), or
@@ -157,9 +158,9 @@ installs the dependency libraries into a single prefix, `~/pygplates-wheel-deps`
   is built only once (about a minute) and then reused.
 
 In CI the whole prefix is cached (`.github/workflows/build-wheels.yml`), keyed on the hash of
-`versions.sh` and the two scripts plus the deployment target - so bumping a dependency version
-rebuilds the cache automatically, and runs with an up-to-date cache spend about a minute
-restoring it instead of about an hour building dependencies. `build_macos_deps.sh` is
+`versions.sh`, `download.sh` and the two scripts plus the deployment target - so bumping a
+dependency version rebuilds the cache automatically, and runs with an up-to-date cache spend
+about a minute restoring it instead of about an hour building dependencies. `build_macos_deps.sh` is
 idempotent (each dependency is stamped once installed), so a partial cache saved by a failed
 run is completed by the next run, not rebuilt from scratch.
 
@@ -322,8 +323,8 @@ path, since the data still has to survive installation and the repair step to re
 pyGPlates is built with Ninja on every platform, Windows included (`CMAKE_GENERATOR` in
 `[tool.cibuildwheel.windows.environment]`). The Visual Studio generator would locate the compiler
 by itself, which is convenient, but it ignores `CMAKE_<LANG>_COMPILER_LAUNCHER` - so there would
-be no compiler cache, and each of the six Python versions would pay a full compile of about an
-hour.
+be no compiler cache, and each of the seven Python versions would pay a full compile of about
+20 minutes (measured on the CI runner, 2026-10).
 
 What Ninja costs is that it compiles with whatever `cl` the environment provides, and neither
 cibuildwheel nor scikit-build-core arranges one (scikit-build-core sets the MSVC environment up

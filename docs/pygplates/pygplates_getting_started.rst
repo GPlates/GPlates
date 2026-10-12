@@ -98,7 +98,7 @@ PyGPlates installed using ``pip`` supports (via our `binary wheels <https://pypi
 
 - Python:
 
-  - Version 3.9 - 3.14.
+  - Version 3.9 - 3.15.
 
 - NumPy:
 
