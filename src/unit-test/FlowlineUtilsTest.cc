@@ -175,6 +175,37 @@ namespace
 		}
 
 		/**
+		 * The flowline's seed point reconstructed to @a reconstruction_time, including where there
+		 * is no flowline (at or older than its oldest time), only the seed point.
+		 */
+		GPlatesMaths::PointOnSphere
+		reconstruct_seed_point(
+				const double &reconstruction_time)
+		{
+			std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> geometries;
+			GPlatesAppLogic::FlowlineGeometryPopulator populator(
+					geometries,
+					d_reconstruction_tree_creator.get(),
+					reconstruction_time);
+			populator.visit_feature(d_flowline);
+
+			EXPECT_EQ(geometries.size(), 1u);
+			const GPlatesAppLogic::ReconstructedFlowline *flowline =
+					dynamic_cast<const GPlatesAppLogic::ReconstructedFlowline *>(geometries.front().get());
+			if (flowline)
+			{
+				return flowline->reconstructed_seed_point();
+			}
+
+			std::vector<GPlatesMaths::PointOnSphere> seed_points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(
+					*geometries.front()->reconstructed_geometry(),
+					seed_points);
+			EXPECT_EQ(seed_points.size(), 1u);
+			return seed_points.front();
+		}
+
+		/**
 		 * The seed point that correct_end_point_to_centre finds for @a end_point, the end of the
 		 * half of the flowline on @a plate_1.
 		 */
@@ -328,5 +359,28 @@ namespace
 		EXPECT_TRUE(get_geometry_import_time() == boost::optional<double>(10.0));
 		EXPECT_LT(angle_in_degrees(reconstruct(25.0)->reconstructed_seed_point(), seed_point_before),
 				MAX_ANGLE_IN_DEGREES);
+	}
+
+
+	TEST_F(FlowlineUtilsTest, seed_point_keeps_spreading_older_than_the_oldest_time)
+	{
+		// Digitised at 50 Ma, older than the flowline's oldest time (40 Ma)...
+		set_geometry_import_time(50.0);
+		const std::vector<double> reconstruction_times = { 15.0, 40.0, 45.0, 50.0, 55.0 };
+		std::vector<GPlatesMaths::PointOnSphere> seed_points;
+		for (const double reconstruction_time : reconstruction_times)
+		{
+			seed_points.push_back(reconstruct_seed_point(reconstruction_time));
+		}
+
+		// ...the seed point is where that of a longer flowline (with times older than 40 Ma) is,
+		// digitised at the same time and point. So pieces of a flowline digitised there join up.
+		set_times({ 10.0, 20.0, 30.0, 40.0, 50.0, 60.0 });
+		for (unsigned int n = 0; n < reconstruction_times.size(); ++n)
+		{
+			SCOPED_TRACE(reconstruction_times[n]);
+			EXPECT_LT(angle_in_degrees(reconstruct_seed_point(reconstruction_times[n]), seed_points[n]),
+					MAX_ANGLE_IN_DEGREES);
+		}
 	}
 }

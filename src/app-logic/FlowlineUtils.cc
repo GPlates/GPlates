@@ -269,8 +269,7 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::can_process_flowline()
 	// NOTE: The reconstruction time need not lie between the end points of the times vector
 	// (as for motion paths). Younger than the youngest time, each half of the flowline starts at
 	// that time (not at the seed point, which is where the spreading centre is). Older than the
-	// oldest time, there is only the seed point, carried by the left plate from where the spreading
-	// centre was at that time.
+	// oldest time, there is only the seed point (where the spreading centre is).
 
 	return true;
 }
@@ -527,19 +526,17 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
 		return;
 	}
 
-	// Older than the oldest time, the seed point stays where the spreading centre was at that time
-	// (and is carried by the left plate), so it stays continuous across the oldest time.
-	const double spreading_time = (std::min)(current_time, flowline_times.back());
-
-	// Steps from the spreading start time to the spreading time, at the flowline times in between.
+	// Steps from the spreading start time to the current time, at the flowline times in between.
+	// Outside the flowline's times the spreading continues (in both directions), just as for a
+	// spreading start time outside them.
 	std::vector<double> step_times(1, spreading_start_time);
-	if (spreading_time > spreading_start_time)
+	if (current_time > spreading_start_time)
 	{
 		// Backward in time.
 		std::vector<double>::const_iterator times_iter = flowline_times.begin();
 		for ( ; times_iter != flowline_times.end(); ++times_iter)
 		{
-			if (*times_iter > spreading_start_time && *times_iter < spreading_time)
+			if (*times_iter > spreading_start_time && *times_iter < current_time)
 			{
 				step_times.push_back(*times_iter);
 			}
@@ -551,13 +548,13 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
 		std::vector<double>::const_reverse_iterator times_iter = flowline_times.rbegin();
 		for ( ; times_iter != flowline_times.rend(); ++times_iter)
 		{
-			if (*times_iter < spreading_start_time && *times_iter > spreading_time)
+			if (*times_iter < spreading_start_time && *times_iter > current_time)
 			{
 				step_times.push_back(*times_iter);
 			}
 		}
 	}
-	step_times.push_back(spreading_time);
+	step_times.push_back(current_time);
 
 	for (unsigned int n = 1; n < step_times.size(); ++n)
 	{

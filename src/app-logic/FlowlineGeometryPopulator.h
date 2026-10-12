@@ -125,8 +125,9 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Reconstruct the seed point(s) @a present_day_seed_geometry as a flowline, and add the
-		 * flowline of each seed point to the reconstruction geometry collection - or, older than
-		 * the flowline's oldest time (where it has no flowline), just the reconstructed seed point(s).
+		 * flowline of each seed point to the reconstruction geometry collection - or, at or older
+		 * than the flowline's oldest time (where it has no flowline), just the reconstructed seed
+		 * point(s).
 		 */
 		void
 		reconstruct_flowline(

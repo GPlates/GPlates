@@ -117,8 +117,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 
 		// The current time need not lie between the flowline's youngest and oldest times.
 		// Younger, each half is built out from the seed point as usual, but starts at the youngest
-		// time (the seed point vertex is omitted). Older, the seed point rotations stop at the
-		// oldest time, and there are no flowline rotations, so there's only a seed point.
+		// time (the seed point vertex is omitted). Older, there are no flowline rotations, so
+		// there's only a seed point (where the spreading centre is).
 		FlowlineUtils::fill_seed_point_rotations(
 			current_time,
 			times,
@@ -315,9 +315,9 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_flowline(
 			d_reconstruction_tree_creator,
 			(current_top_level_propiter()->handle_weak_ref()));
 
-	// Older than the flowline's oldest time (or with only one time) there are not enough flowline
-	// rotations for a flowline (it would have only one vertex), just its seed point(s), which move
-	// with the left plate.
+	// At or older than the flowline's oldest time (or with only one time) there are not enough
+	// flowline rotations for a flowline (it would have only one vertex), just its seed point(s).
+	// They're given the left plate's ID, since they're stored in its frame.
 	if (d_left_rotations.size() < (d_omit_seed_point_vertex ? 2u : 1u))
 	{
 		create_seed_geometry(

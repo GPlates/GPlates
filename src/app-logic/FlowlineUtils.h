@@ -320,8 +320,8 @@ namespace GPlatesAppLogic
 		 *
 		 * For a flowline's own times, these are the times of the vertices of each half of the
 		 * flowline reconstructed to @a reconstruction_time. Younger than the youngest time, each half
-		 * starts at its youngest time, not at the seed point. Older than the oldest, there is only
-		 * the seed point.
+		 * starts at its youngest time, not at the seed point. At or older than the oldest, there is
+		 * only the seed point.
 		 */
 		void
 		fill_times_vector(
@@ -361,7 +361,9 @@ namespace GPlatesAppLogic
 		 * The half is on @a fixed_plate_id, and spreads from @a moving_plate_id. When the flowline's
 		 * @a spreading_start_time lies between two vertices it splits that step (its two half-stage
 		 * rotations are composed into the one rotation), so that the vertices are where the spreading
-		 * centre was at their times, whatever the reconstruction time.
+		 * centre was at their times. That doesn't depend on the reconstruction time, unless a
+		 * plate's stage pole changes between it and the next vertex: it ends a step too (see
+		 * @a fill_seed_point_rotations).
 		 *
 		 * There are none at or older than the oldest of @a flowline_times.
 		 */
@@ -406,8 +408,7 @@ namespace GPlatesAppLogic
 		 * @a reconstruction_time - the same rotation as @a reconstruct_flowline_seed_points.
 		 *
 		 * That is the left plate's rotation at @a reconstruction_time composed with the half-stage
-		 * rotations of @a fill_seed_point_rotations. So older than the flowline's oldest time the seed
-		 * point moves with the left plate only.
+		 * rotations of @a fill_seed_point_rotations.
 		 */
 		GPlatesMaths::FiniteRotation
 		get_seed_point_rotation(
@@ -443,9 +444,19 @@ namespace GPlatesAppLogic
 		 * @a flowline_times in between. Backward in time when @a current_time is older than
 		 * @a spreading_start_time, forward when younger (as for 'HalfStageRotationVersion3' ridges).
 		 *
-		 * The current time is clamped to the oldest flowline time: older than that the seed point stays
-		 * where the spreading centre was at that time (and is carried by the left plate). There are
-		 * no rotations at the spreading start time (or when there are no flowline times).
+		 * The spreading continues outside the flowline's times (younger than the youngest, older than
+		 * the oldest), so the seed point is always where the spreading centre is. That needs rotations
+		 * of both plates there; if they aren't spreading then, the flowline's valid time can hide it.
+		 * There it takes one step from the nearest flowline time (or the spreading start time) to the
+		 * current time. Each step uses only the rotations at its two ends, so a rotation sample inside
+		 * it (where the stage pole changes) makes the flowline differ from one whose times stop there
+		 * (eg, a 40-60 Ma piece viewed at 1 Ma, with samples at 10 and 20 Ma, was 85 km from a 10-60 Ma
+		 * flowline digitised at the same time and point). The same happens inside the flowline's
+		 * times, between two of them. Stepping at the rotation sample times would be exact.
+		 * (Carrying the seed point by the left plate alone older than the oldest time would need only
+		 * that plate's rotations there, but then changing the oldest time would shift it, and
+		 * pieces of a flowline digitised older than their oldest time wouldn't join.) There are no
+		 * rotations at the spreading start time (or when there are no flowline times).
 		 *
 		 * The spreading start time is the flowline's geometry import time, or its youngest time if
 		 * it has none. So it doesn't depend on the flowline's times (if it has an import time), and
