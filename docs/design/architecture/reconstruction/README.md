@@ -451,11 +451,14 @@ reconstruction time. Unlike a ridge's, each step ends at one of the flowline's o
 spreading start time or the reconstruction time, not every 10 My, and there is no spreading
 asymmetry. A step halves a left-right stage pole (`RotationUtils::get_stage_pole`) between trees
 at its two ends, which is why flowlines need a large tree cache, and it is exact only if neither
-plate's stage pole changes inside it, so where one does the flowline depends slightly on its
-times. `ReconstructMethodFlowline::reconstruct_feature_velocities` and
+plate's stage pole changes inside it, so where one does the flowline depends on its times
+(slightly between them, more so far outside them, where one step spans from the nearest time).
+`ReconstructMethodFlowline::reconstruct_feature_velocities` and
 `ReconstructedFlowline::reconstructed_seed_point_velocity` take the seed point's velocity from
 the same rotations (`get_seed_point_rotation`, `calculate_seed_point_stage_rotation`), so it
-matches how the drawn seed point moves.
+matches how the drawn seed point moves. What the seed point means, why flowlines spread from the
+import time, the cost of the step boundaries and the alternatives rejected are in
+[`flowlines.md`](flowlines.md).
 
 ### The topology seam
 

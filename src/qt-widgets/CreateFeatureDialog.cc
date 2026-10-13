@@ -1384,6 +1384,10 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_propertie
 		// import time and then perform ridge-spreading from there. This enables the user to subsequently change
 		// the spreading asymmetry without significantly affecting the ridge position (with no effect at the import time)
 		//
+		// Flowline features spread from it too (see FlowlineUtils::fill_seed_point_rotations). The common
+		// properties are in the feature before its geometry is reverse reconstructed (and before the
+		// flowline end-point correction), so the seed point is stored relative to this time.
+		//
 		// Also used when a feature's geometry is reconstructed using topologies
 		// (instead of using the feature's properties, eg, reconstruction plate ID).
 		// This enables paleo-geometries to be used (eg, fracture zones prior to subduction) and masked by topologies

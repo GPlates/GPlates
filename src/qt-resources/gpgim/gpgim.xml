@@ -2187,6 +2187,7 @@
 			<Property>gpml:leftPlate</Property>
 			<Property>gpml:rightPlate</Property>
 			<Property>gpml:geometryImportTime</Property>
+			<Comment>A flowline is reconstructed the same way whatever its reconstruction method (it spreads from its geometry import time, like 'HalfStageRotationVersion3', or from its youngest time if it has none). The property is kept because GPlates' Create Feature dialog offers the left and right plates through it, and because a flowline used as a topological section gets its vertex velocities from the generic half-stage rotation, which reads it.</Comment>
 		</FeatureClass>
 		
 		<FeatureClass>
@@ -2502,6 +2503,7 @@
 			<Property>gpml:times</Property>
 			<Property>gpml:reconstructionMethod</Property>
 			<Property>gpml:relativePlate</Property>
+			<Comment>A motion path is reconstructed by its plate IDs whatever its reconstruction method (nothing reads it, and neither GPlates nor pyGPlates writes one). The property is kept for files that carry it.</Comment>
 		</FeatureClass>
 		
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">

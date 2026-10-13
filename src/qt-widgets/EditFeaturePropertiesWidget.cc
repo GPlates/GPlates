@@ -278,7 +278,9 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::commit_edit_widget_data()
 			//
 			// Editing the times of a flowline without a geometry import time would shift it at
 			// every reconstruction time (it spreads from its youngest time), so that also gives it
-			// one, at its old youngest time.
+			// one, at its old youngest time. Also when the times weren't actually changed, since the
+			// time sequence editor commits whenever it holds two or more times: harmless (that is
+			// where the flowline already spreads from), but it marks the file as modified.
 			const auto update_property_value = [this]()
 			{
 				return d_edit_widget_group_box_ptr->update_property_value_from_widget();
