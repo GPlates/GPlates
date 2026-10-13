@@ -498,7 +498,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<double>
 		get_default_geometry_import_time(
-			const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref);
 
 		/**
 		 * Gives the flowline @a feature_ref a "gpml:geometryImportTime" at its youngest time, if it is

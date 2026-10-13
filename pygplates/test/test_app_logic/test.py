@@ -913,8 +913,35 @@ class ReconstructTestCase(unittest.TestCase):
         flowline_feature.set_times([5] + times)
         self.assertEqual(flowline_feature.get_geometry_import_time(None), times[0])
 
+    def test_flowline_geometry_import_time_in_ogr_formats(self):
+        # These formats don't store a flowline's times, but store its geometry import time. A flowline
+        # without one spreads from its youngest time, so that is what they store, not no value (which
+        # OGR-GMT reads back as 0).
+        times = [10, 20, 30, 40]
+        legacy_flowline_feature = pygplates.Feature(pygplates.FeatureType.gpml_flowline)
+        legacy_flowline_feature.set_times(times)
+        legacy_flowline_feature.set_left_plate(201)
+        legacy_flowline_feature.set_right_plate(801)
+        legacy_flowline_feature.set_geometry(pygplates.PointOnSphere(20, 10))
+        flowline_feature = pygplates.Feature.create_flowline(
+                pygplates.PointOnSphere(20, 10), times, left_plate=201, right_plate=801)
+        flowline_feature.set_geometry_import_time(15)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            for extension in ('shp', 'geojson', 'gpkg', 'gmt'):
+                for index, (feature, geometry_import_time) in enumerate(
+                        ((legacy_flowline_feature, times[0]), (flowline_feature, 15))):
+                    # A new file each time (overwriting prints a GDAL error for some formats).
+                    filename = os.path.join(temp_dir, 'flowline{}.{}'.format(index, extension))
+                    pygplates.FeatureCollection([feature]).write(filename)
+                    read_feature, = pygplates.FeatureCollection(filename)
+                    self.assertEqual(read_feature.get_geometry_import_time(None), geometry_import_time)
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_reconstruct_flowline_changing_times(self):
-        # Changing the times of a flowline doesn't move it (only which vertices it has), since it
+        # Changing the times of a flowline doesn't shift it at any reconstruction time (only changes
+        # which vertices it has), since it
         # spreads from its geometry import time. So pieces of a flowline join up, as for motion paths.
         rotation_model = self._flowline_rotation_model()
         seed_point = pygplates.PointOnSphere(20, 10)

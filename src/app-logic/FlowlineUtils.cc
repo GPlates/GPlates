@@ -715,7 +715,7 @@ GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
 
 boost::optional<double>
 GPlatesAppLogic::FlowlineUtils::get_default_geometry_import_time(
-		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
 	static const GPlatesModel::FeatureType flowline_feature_type =
 			GPlatesModel::FeatureType::create_gpml("Flowline");

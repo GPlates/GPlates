@@ -32,6 +32,8 @@
 
 #include "boost/foreach.hpp"
 
+#include "app-logic/FlowlineUtils.h"
+
 #include "model/KeyValueDictionaryFinder.h"
 #include "model/ToQvariantConverter.h"
 #include "model/GpgimProperty.h"
@@ -906,6 +908,12 @@ GPlatesFileIO::OgrUtils::add_geometry_import_time_to_kvd(
     {
 		geometry_import_time = get_time_from_time_instant(*time_instant.get());
     }
+	else if (const boost::optional<double> flowline_geometry_import_time =
+			GPlatesAppLogic::FlowlineUtils::get_default_geometry_import_time(feature))
+	{
+		// A flowline without one spreads from its youngest time.
+		geometry_import_time = flowline_geometry_import_time.get();
+	}
 
 	GPlatesPropertyValues::XsDouble::non_null_ptr_type value =
 			GPlatesPropertyValues::XsDouble::create(geometry_import_time);
