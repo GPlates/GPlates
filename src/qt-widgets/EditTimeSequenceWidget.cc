@@ -54,7 +54,9 @@
 //TODO: (not in this source file but...) The tab order during flowline feature creation is poor; it jumps
 // from leftplateID to geometry type....these widgets are spread over several container widgets though.
 
-const bool DEMAND_ZERO_TIME_VALUE_IN_TABLE = true;
+// NOTE: A new time sequence starts with a present day (0Ma) time, but it can be removed like any
+// other time. Flowlines and motion paths are both reconstructed at times younger than their
+// youngest time, so a time sequence need not include present day.
 
 namespace
 {
@@ -63,23 +65,6 @@ namespace
 		COLUMN_TIME, COLUMN_ACTION
 	};
 
-	bool
-	row_contains_zero(int row, QTableWidget *table)
-	{
-		bool ok;
-		double value = table->item(row,COLUMN_TIME)->data(Qt::DisplayRole).toDouble(&ok);
-
-		if (!ok)
-		{
-			return false;
-		}
-		if (qFuzzyCompare(value+1,1.))
-		{
-			return true;
-		}
-		return false;
-	}
-	
 	/**
 	 * Fetches the appropriate action widget given a row number.
 	 * May return NULL.
@@ -145,7 +130,7 @@ namespace
 		// Set the current cell to be a cell from the new row, so that an action widget is added to it. 
 		table.setCurrentCell(row,COLUMN_ACTION);		
 		
-		return row;
+		return true;
 	}	
 
 
@@ -254,12 +239,9 @@ namespace
 		int row,
 		QTableWidget *table_widget)
 	{
-		if (DEMAND_ZERO_TIME_VALUE_IN_TABLE && !row_contains_zero(row,table_widget))
-		{
-			table_widget->removeCellWidget(row,COLUMN_TIME);
-			table_widget->removeCellWidget(row,COLUMN_ACTION);
-			table_widget->removeRow(row);
-		}
+		table_widget->removeCellWidget(row,COLUMN_TIME);
+		table_widget->removeCellWidget(row,COLUMN_ACTION);
+		table_widget->removeRow(row);
 	}
 
 	/**
@@ -287,11 +269,7 @@ namespace
 
 			for (int i = 0 ; i < number_of_rows_to_remove ; ++i)
 			{
-				qDebug() << "removing: " << i << " of " << number_of_rows_to_remove;
-				if (DEMAND_ZERO_TIME_VALUE_IN_TABLE && !row_contains_zero(row_to_remove,table_widget))
-				{
-					remove_row(row_to_remove,table_widget);
-				}
+				remove_row(row_to_remove,table_widget);
 			}
 		}
 	}
@@ -308,15 +286,71 @@ namespace
 		}
 
 		QString previous_time_as_string = table->item(0,COLUMN_TIME)->text();
-		for (int count = 1; count < table->rowCount() ; ++count)
+		for (int count = 1; count < table->rowCount() ; )
 		{
 			QString current_time_as_string = table->item(count,COLUMN_TIME)->text();
 			if (current_time_as_string == previous_time_as_string)
 			{
+				// The next row moves up into this row, so compare it with the same previous time.
 				remove_row(count,table);
+				continue;
 			}
 			previous_time_as_string = current_time_as_string;
+			++count;
 		}
+	}
+
+	/**
+	 * Returns the time periods between consecutive valid times in the (sorted) table - the members
+	 * of a gpml:Array of gml:TimePeriod.
+	 *
+	 * There are none if the table has fewer than two valid times.
+	 */
+	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>
+	create_time_periods_from_table(
+			QTableWidget &table)
+	{
+		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods;
+
+		// Find first valid time in table, so we can store it as the "end" part of the first gpml:Array element.
+		boost::optional<double> begin_time,end_time;
+		int count;
+
+		for (count = 0; count < table.rowCount(); ++count)
+		{
+			end_time = get_valid_time(table,count);
+			if (end_time)
+			{
+				break;
+			}
+		}
+		++count;
+		for (int i = count; i < table.rowCount(); ++i)
+		{
+			begin_time = get_valid_time(table,i);
+			if (begin_time)
+			{
+				GPlatesPropertyValues::GeoTimeInstant end_geo_instant(*end_time);
+				GPlatesPropertyValues::GeoTimeInstant begin_geo_instant(*begin_time);
+
+				GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type end_gml_instant =
+					GPlatesModel::ModelUtils::create_gml_time_instant(end_geo_instant);
+
+				GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type begin_gml_instant =
+					GPlatesModel::ModelUtils::create_gml_time_instant(begin_geo_instant);
+
+				GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period =
+					GPlatesPropertyValues::GmlTimePeriod::create(begin_gml_instant,end_gml_instant);
+
+				time_periods.push_back(gml_time_period);
+
+				// Get ready for next iteration; use the current begin_time as the end_time for the next
+				// time-period.
+				end_time = begin_time;
+			}
+		}
+
+		return time_periods;
 	}
 }
 
@@ -362,10 +396,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::reset_widget_to_default_values()
     table_times->clearContents();
     table_times->setRowCount(0);
 
-	if (DEMAND_ZERO_TIME_VALUE_IN_TABLE)
-	{
-		insert_single(0.);
-	}
+	// A new time sequence starts at present day (but that time can be removed).
+	insert_single(0.);
 
     // Reset widgets.
     spinbox_time->setValue(0.0);
@@ -382,49 +414,11 @@ GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() co
 {
 	sort_and_remove_duplicates_from_table(table_times);
 
-	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods;
-
 	static const GPlatesPropertyValues::StructuralType gml_time_period_type =
 		GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
 
-	// Find first valid time in table, so we can store it as the "end" part of the first gpml:Array element. 
-	boost::optional<double> begin_time,end_time;
-	int count;
-
-	for (count = 0; count < table_times->rowCount(); ++count)
-	{			   
-		end_time = get_valid_time(*table_times,count);
-		if (end_time)
-		{			 
-			break;
-		}
-	}		
-	++count;
-	for (int i = count; i < table_times->rowCount(); ++i)
-	{
-		begin_time = get_valid_time(*table_times,i);
-		if (begin_time)
-		{
-			GPlatesPropertyValues::GeoTimeInstant end_geo_instant(*end_time);
-			GPlatesPropertyValues::GeoTimeInstant begin_geo_instant(*begin_time);
-
-			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type end_gml_instant =
-				GPlatesModel::ModelUtils::create_gml_time_instant(end_geo_instant);
-
-			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type begin_gml_instant =
-				GPlatesModel::ModelUtils::create_gml_time_instant(begin_geo_instant);	
-
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period =
-				GPlatesPropertyValues::GmlTimePeriod::create(begin_gml_instant,end_gml_instant);
-
-			time_periods.push_back(gml_time_period);
-
-			// Get ready for next iteration; use the current begin_time as the end_time for the next 
-			// time-period. 
-			end_time = begin_time;
-		}
-
-	}
+	const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods =
+			create_time_periods_from_table(*table_times);
 
 	// There should be at least one time *period* in the array (which is really two time *samples*).
 	//
@@ -449,9 +443,14 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_property_value_from_widget()
 	if (d_array_ptr.get() != NULL) {
 		if (is_dirty()) {
 			sort_and_remove_duplicates_from_table(table_times);
-			update_time_array_from_widget();
-			set_clean();
-			return true;
+			// With fewer than two times nothing is written, so stay dirty: the edit is written once
+			// there are two or more times again (eg, after "Remove All" and inserting new times).
+			const bool modified = update_time_array_from_widget();
+			if (modified)
+			{
+				set_clean();
+			}
+			return modified;
 		} else {
 			return false;
 		}
@@ -535,52 +534,23 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
 }
 
 
-void
+bool
 GPlatesQtWidgets::EditTimeSequenceWidget::update_time_array_from_widget()
 {
-	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &time_periods = d_array_ptr->members();
+	const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods =
+			create_time_periods_from_table(*table_times);
 
-	static const GPlatesPropertyValues::StructuralType gml_time_period_type =
-		GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
-
-	// Find first valid time in table, so we can store it as the "end" part of the first gpml:Array element. 
-	boost::optional<double> begin_time, end_time;
-	int count;
-
-	for (count = 0; count < table_times->rowCount(); ++count)
-	{			   
-		end_time = get_valid_time(*table_times,count);
-		if (end_time)
-		{			 
-			break;
-		}
-	}
-	++count;
-	for (int i = count; i < table_times->rowCount(); ++i)
+	// A time sequence needs at least two times (as when creating one). With fewer, leave the
+	// property's times as they were rather than emptying them.
+	if (time_periods.empty())
 	{
-		begin_time = get_valid_time(*table_times,i);
-		if (begin_time)
-		{
-			GPlatesPropertyValues::GeoTimeInstant end_geo_instant(*end_time);
-			GPlatesPropertyValues::GeoTimeInstant begin_geo_instant(*begin_time);
-
-			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type end_gml_instant =
-				GPlatesModel::ModelUtils::create_gml_time_instant(end_geo_instant);
-
-			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type begin_gml_instant =
-				GPlatesModel::ModelUtils::create_gml_time_instant(begin_geo_instant);	
-
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period =
-				GPlatesPropertyValues::GmlTimePeriod::create(begin_gml_instant,end_gml_instant);
-
-			time_periods.push_back(gml_time_period);
-
-			// Get ready for next iteration; use the current begin_time as the end_time for the next 
-			// time-period. 
-			end_time = begin_time;
-		}
-
+		return false;
 	}
+
+	// Replace the times (not append to them).
+	d_array_ptr->members().assign(time_periods.begin(), time_periods.end());
+
+	return true;
 }
 
 void
@@ -692,10 +662,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::delete_time_from_table(
 		int row)
 {
 
-	if (DEMAND_ZERO_TIME_VALUE_IN_TABLE && row_contains_zero(row,table_times))
-	{
-		return;
-	}
 	// Before we delete the row, delete the action widget. removeRow() messes with the previous/current
 	// row indices, and then calls handle_current_cell_changed, which cannot delete the old action widget, 
 	// the upshot being that we end up with a surplus action widget which we can't get rid of. 
@@ -802,10 +768,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_remove_all()
 	table_times->clearContents();
 	table_times->setRowCount(0);
 
-	if (DEMAND_ZERO_TIME_VALUE_IN_TABLE)
-	{
-		insert_single(0);
-	}
 	update_buttons();
 	sort_and_commit();
 }
@@ -916,7 +878,7 @@ GPlatesQtWidgets::EditTimeSequenceSpinBoxDelegate::setEditorData(
 		QWidget *editor,
 		const QModelIndex &index) const
 {
-	double value = index.model()->data(index, Qt::EditRole).toInt();
+	double value = index.model()->data(index, Qt::EditRole).toDouble();
 	QDoubleSpinBox *spinbox = static_cast<QDoubleSpinBox*>(editor);
 	spinbox->setValue(value);
 }

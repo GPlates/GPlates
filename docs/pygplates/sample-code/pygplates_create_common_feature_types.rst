@@ -511,8 +511,11 @@ feature and then set its properties one by one.
 .. sample-code:: pygplates_create_common_feature_types_flowline_alt.py
    :fragment: set-flowline-properties
 
-.. note:: In the alternate sample code we needed to call :meth:`pygplates.Feature.set_reconstruction_method` to
-   set up a half-stage rotation since that is what :meth:`pygplates.Feature.create_flowline` calls internally.
+.. note:: In the alternate sample code we called :meth:`pygplates.Feature.set_reconstruction_method` only because
+   :meth:`pygplates.Feature.create_flowline` does (a flowline is reconstructed the same way whatever its reconstruction
+   method). :meth:`pygplates.Feature.create_flowline` also sets the
+   :meth:`geometry import time<pygplates.Feature.set_geometry_import_time>` to the youngest time, but a flowline
+   without one spreads from its youngest time anyway.
 
 
 .. _pygplates_create_total_reconstruction_sequence_feature:

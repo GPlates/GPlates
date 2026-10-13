@@ -19,6 +19,13 @@ boundary is marked within it rather than described separately.
 - One directory per area, listed under [Areas](#areas): what the area is for, its component
   diagram and, where it has them, sequence diagrams of its key operations, how it works, its
   traps and known weaknesses, and where to start reading.
+- Design documents for an area, or a part of one, beside its page in the area's directory (eg
+  [`scribe-system/`](scribe-system/README.md) and
+  [`reconstruction/flowlines.md`](reconstruction/flowlines.md)): what the design means, why, and the
+  alternatives rejected. A design that spans several areas goes in the area holding its central
+  code, linked from another area's page only where a reader of that area needs it; one that
+  belongs to no area (a cross-cutting concern, such as testing or versioning) gets its own
+  directory beside `architecture/`.
 
 Before changing an area, read its page. A pull request that changes an area's structure updates
 its page in the same pull request.

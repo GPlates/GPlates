@@ -28,13 +28,17 @@
 #ifndef GPLATES_APPLOGIC_FLOWLINEUTILS_H
 #define GPLATES_APPLOGIC_FLOWLINEUTILS_H
 
+#include <functional>
+
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreeCreator.h"
+#include "app-logic/VelocityDeltaTime.h"
 
 #include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
+#include "model/PropertyName.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlMultiPoint.h"
@@ -139,6 +143,24 @@ namespace GPlatesAppLogic
 			{
 				return d_times;
 			}
+
+			/**
+			 * Returns the "gpml:geometryImportTime" property, if found (and not distant past or future).
+			 */
+			const boost::optional<double> &
+			get_geometry_import_time() const
+			{
+				return d_geometry_import_time;
+			}
+
+			/**
+			 * Returns the time the flowline's spreading starts from: its geometry import time, or its
+			 * youngest time if it has none (see FlowlineUtils::fill_seed_point_rotations).
+			 *
+			 * The times must not be empty.
+			 */
+			double
+			get_spreading_start_time() const;
 
 			QString
 			get_feature_info_string()
@@ -246,6 +268,11 @@ namespace GPlatesAppLogic
 
 			virtual
 			void
+			visit_gml_time_instant(
+				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
+
+			virtual
+			void
 			visit_gml_time_period(
 				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
 
@@ -263,6 +290,7 @@ namespace GPlatesAppLogic
 			boost::optional<GPlatesModel::integer_plate_id_type> d_right_plate;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_appearance;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_dissappearance;
+			boost::optional<double> d_geometry_import_time;
 			QString d_feature_info;
 			QString d_name;
 
@@ -286,11 +314,20 @@ namespace GPlatesAppLogic
 		get_half_angle_rotation(
 			GPlatesMaths::FiniteRotation &rotation);
 
+		/**
+		 * Fills @a times with @a reconstruction_time (clamped to the range of the sorted
+		 * @a time_samples), followed by each time in @a time_samples older than it.
+		 *
+		 * For a flowline's own times, these are the times of the vertices of each half of the
+		 * flowline reconstructed to @a reconstruction_time. Younger than the youngest time, each half
+		 * starts at its youngest time, not at the seed point. At or older than the oldest, there is
+		 * only the seed point.
+		 */
 		void
 		fill_times_vector(
 			std::vector<double> &times,
 			const double &reconstruction_time,
-			const std::vector<double> &time_samples);		
+			const std::vector<double> &time_samples);
 
 		void
 		get_times_from_time_period_array(
@@ -303,12 +340,10 @@ namespace GPlatesAppLogic
 			const std::vector<GPlatesMaths::FiniteRotation> &rotations,
 			bool reverse = false);
 
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct_seed_points(
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type seed_points,
-			const std::vector<GPlatesMaths::FiniteRotation> &rotations,
-			bool reverse = false);
-
+		/**
+		 * Reconstructs (or reverse reconstructs) a flowline's seed point(s) by
+		 * @a get_seed_point_rotation.
+		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_flowline_seed_points(
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type seed_points,
@@ -316,6 +351,31 @@ namespace GPlatesAppLogic
 			const ReconstructionTreeCreator &reconstruction_tree_creator,
 			const GPlatesModel::FeatureHandle::weak_ref &feature_handle,
 			bool reverse = false);
+
+		/**
+		 * Fills @a flowline_rotations with the half-stage rotations that build one half of a flowline
+		 * out from its seed point at @a reconstruction_time: one rotation per vertex, for each of
+		 * @a flowline_times older than @a reconstruction_time, each from the previous vertex (the
+		 * first from the seed point).
+		 *
+		 * The half is on @a fixed_plate_id, and spreads from @a moving_plate_id. When the flowline's
+		 * @a spreading_start_time lies between two vertices it splits that step (its two half-stage
+		 * rotations are composed into the one rotation), so that the vertices are where the spreading
+		 * centre was at their times. That doesn't depend on the reconstruction time, unless a
+		 * plate's stage pole changes between it and the next vertex: it ends a step too (see
+		 * @a fill_seed_point_rotations).
+		 *
+		 * There are none at or older than the oldest of @a flowline_times.
+		 */
+		void
+		fill_flowline_rotations(
+			const double &reconstruction_time,
+			const std::vector<double> &flowline_times,
+			const double &spreading_start_time,
+			const GPlatesModel::integer_plate_id_type &fixed_plate_id,
+			const GPlatesModel::integer_plate_id_type &moving_plate_id,
+			const ReconstructionTreeCreator &reconstruction_tree_creator,
+			std::vector<GPlatesMaths::FiniteRotation> &flowline_rotations);
 
 		/**
 		 * Returns the rotation which transfers a flowline's seed point from the frame of the
@@ -327,15 +387,14 @@ namespace GPlatesAppLogic
 		 * must be moved into that frame before it is used to seed the right-hand half.
 		 *
 		 * This is the rotation of the left plate relative to the right plate at
-		 * @a flowline_start_time (the youngest time in the flowline's list of times, which is when
-		 * both halves of the flowline start out together at the spreading centre), ie
-		 * R(0->flowline_start_time, right_plate->left_plate).
+		 * @a flowline_start_time (the flowline's spreading start time, see
+		 * FlowlinePropertyFinder::get_spreading_start_time, which is when the seed point is at the
+		 * spreading centre in both plates' frames), ie R(0->flowline_start_time, right_plate->left_plate).
 		 *
-		 * It is the identity rotation whenever the two plates coincide at @a flowline_start_time -
-		 * which is the usual case, since the flowline's youngest time is usually present day and
-		 * rotations at present day are usually the identity rotation. It is *not* the identity when,
-		 * for example, a rotation file has been hand-edited so that present day is not the identity
-		 * rotation, or when the flowline's youngest time is not present day.
+		 * It is the identity rotation whenever the two plates coincide at @a flowline_start_time - for
+		 * example at present day, where rotations are usually the identity rotation. It is *not* the
+		 * identity at a past time, or when a rotation file has been hand-edited so that present day is
+		 * not the identity rotation.
 		 */
 		GPlatesMaths::FiniteRotation
 		get_left_to_right_plate_frame_rotation(
@@ -345,13 +404,72 @@ namespace GPlatesAppLogic
 			const ReconstructionTreeCreator &reconstruction_tree_creator);
 
 		/**
-		 * Fills @a seed_point_rotations with half-stage rotations from earliest flowline
-		 * time to current time.
+		 * Returns the rotation that reconstructs a flowline's (stored) seed point to
+		 * @a reconstruction_time - the same rotation as @a reconstruct_flowline_seed_points.
+		 *
+		 * That is the left plate's rotation at @a reconstruction_time composed with the half-stage
+		 * rotations of @a fill_seed_point_rotations.
+		 */
+		GPlatesMaths::FiniteRotation
+		get_seed_point_rotation(
+			const double &reconstruction_time,
+			const std::vector<double> &flowline_times,
+			const double &spreading_start_time,
+			const GPlatesModel::integer_plate_id_type &left_plate_id,
+			const GPlatesModel::integer_plate_id_type &right_plate_id,
+			const ReconstructionTreeCreator &reconstruction_tree_creator);
+
+		/**
+		 * Returns the stage rotation over the velocity time range at @a reconstruction_time of a
+		 * flowline's seed point, as reconstructed by @a get_seed_point_rotation.
+		 *
+		 * The velocity time range is that of
+		 * PlateVelocityUtils::get_half_stage_rotation_velocity_time_range.
+		 */
+		GPlatesMaths::FiniteRotation
+		calculate_seed_point_stage_rotation(
+			const double &reconstruction_time,
+			const std::vector<double> &flowline_times,
+			const double &spreading_start_time,
+			const GPlatesModel::integer_plate_id_type &left_plate_id,
+			const GPlatesModel::integer_plate_id_type &right_plate_id,
+			const ReconstructionTreeCreator &reconstruction_tree_creator,
+			const double &velocity_delta_time,
+			VelocityDeltaTime::Type velocity_delta_time_type);
+
+		/**
+		 * Fills @a seed_point_rotations with the half-stage rotations that move a flowline's seed
+		 * point, in the left plate's frame, from where the spreading centre is at
+		 * @a spreading_start_time to where it is at @a current_time, in steps between the
+		 * @a flowline_times in between. Backward in time when @a current_time is older than
+		 * @a spreading_start_time, forward when younger (as for 'HalfStageRotationVersion3' ridges).
+		 *
+		 * The spreading continues outside the flowline's times (younger than the youngest, older than
+		 * the oldest), so the seed point is always where the spreading centre is. That needs rotations
+		 * of both plates there; if they aren't spreading then, the flowline's valid time can hide it.
+		 * There it takes one step from the nearest flowline time (or the spreading start time) to the
+		 * current time. Each step uses only the rotations at its two ends, so a rotation sample inside
+		 * it (where the stage pole changes) makes the flowline differ from one whose times stop there
+		 * (eg, a 40-60 Ma piece viewed at 1 Ma, with samples at 10 and 20 Ma, was 85 km from a 10-60 Ma
+		 * flowline digitised at the same time and point). The same happens inside the flowline's
+		 * times, between two of them. Stepping at the rotation sample times would be exact.
+		 * (Carrying the seed point by the left plate alone older than the oldest time would need only
+		 * that plate's rotations there, but then changing the oldest time would shift it, and
+		 * pieces of a flowline digitised older than their oldest time wouldn't join.) There are no
+		 * rotations at the spreading start time (or when there are no flowline times).
+		 *
+		 * The spreading start time is the flowline's geometry import time, or its youngest time if
+		 * it has none. So it doesn't depend on the flowline's times (if it has an import time), and
+		 * neither does the flowline: changing its times only changes which vertices are drawn.
+		 * The seed point only moves with the left plate between present day and the spreading start
+		 * time, so rotations younger than that time don't change where it is then (as for
+		 * 'HalfStageRotationVersion3' ridges).
 		 */
 		void
 		fill_seed_point_rotations(
 			const double &current_time,
 			const std::vector<double> &flowline_times,
+			const double &spreading_start_time,
 			const GPlatesModel::integer_plate_id_type &left_plate_id,
 			const GPlatesModel::integer_plate_id_type &right_plate_id,
 			const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -360,6 +478,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Given a flowline end point(s) @a geometry_ at time @a reconstruction_time,
 		 * calculates the spreading centre for that flowline.
+		 *
+		 * @a plate_1 is the plate of the half of the flowline the end point is on, and
+		 * @a plate_2 the other plate.
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		correct_end_point_to_centre(
@@ -367,8 +488,54 @@ namespace GPlatesAppLogic
 		    const GPlatesModel::integer_plate_id_type &plate_1,
 		    const GPlatesModel::integer_plate_id_type &plate_2,
 		    const std::vector<double> &times,
+		    const double &spreading_start_time,
 			const ReconstructionTreeCreator &reconstruction_tree_creator,
 		    const double &reconstruction_time);
+
+		/**
+		 * Returns the youngest time of @a feature_ref, if it is a flowline with times and no
+		 * "gpml:geometryImportTime" (see @a set_default_geometry_import_time).
+		 */
+		boost::optional<double>
+		get_default_geometry_import_time(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref);
+
+		/**
+		 * Gives the flowline @a feature_ref a "gpml:geometryImportTime" at its youngest time, if it is
+		 * a flowline with times and no geometry import time.
+		 *
+		 * That is where its spreading already starts from (see
+		 * FlowlinePropertyFinder::get_spreading_start_time), so it isn't shifted (at any
+		 * reconstruction time), but then it isn't shifted when its times change either. Returns
+		 * true if the property was added.
+		 */
+		bool
+		set_default_geometry_import_time(
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
+
+		/**
+		 * Edits the property @a property_name of @a feature_ref by calling @a edit_property, which
+		 * returns whether it modified the property, and returns that.
+		 *
+		 * If @a feature_ref is a flowline without a "gpml:geometryImportTime", it spreads from its
+		 * youngest time, so an edit of its "gpml:times" would shift it (at every reconstruction
+		 * time). So if the edit modifies them, the flowline is then given a geometry import time at
+		 * its youngest time *before* the edit (see @a get_default_geometry_import_time), and stays
+		 * where it was. For any other feature, property or edit, this only calls @a edit_property.
+		 *
+		 * Edits that don't come through here (or pyGPlates' Feature.set_times, which does the same)
+		 * still shift such a flowline: pyGPlates' Feature.set with "gpml:times", modifying the
+		 * GpmlArray of times in place, or deleting the times in GPlates and adding them again with
+		 * the Add Property dialog. They are left documented rather than covered.
+		 *
+		 * The property is added after the edit, so it can't disturb whatever is doing the edit (eg,
+		 * a property edit widget that is still committing its value).
+		 */
+		bool
+		edit_property_without_shifting_flowline(
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+			const GPlatesModel::PropertyName &property_name,
+			const std::function<bool ()> &edit_property);
 
 	}
 

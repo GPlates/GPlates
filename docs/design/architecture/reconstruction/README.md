@@ -425,7 +425,8 @@ only when topologies are present, taking the velocities from each `GeometryTimeS
 points by whether they fell in a network's deforming region, a rigid block, or none.
 `ReconstructedFeatureGeometry::reconstructed_geometry_point_velocities` computes velocities from
 the RFG alone, through `ResolvedVertexSourceInfo`, which picks by-plate-ID or half-stage from the
-RFG's method type and uses the RFG's own tree creator.
+RFG's method type and uses the RFG's own tree creator. A flowline's seed-point velocity does not
+(see below).
 
 ### Half-stage rotations, flowlines, motion paths
 
@@ -436,9 +437,28 @@ the version-2/3 path, under a comment that it cannot change without a new
 with it; the same 10 is `DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION`, the default argument of the
 generic overload only. The version enumeration in the feature selects the older behaviours
 (version 1 symmetric from present day, version 2 with intervals and asymmetry, version 3 with a
-spreading start time equal to the geometry import time). `FlowlineGeometryPopulator` walks the
-flowline's time list from the reconstruction time back, fetching a tree per time and halving each
-left-right stage pole (`RotationUtils::get_stage_pole`), which is why it needs a large tree cache.
+spreading start time equal to the geometry import time).
+
+A flowline spreads like a version-3 ridge, from its spreading start time
+(`FlowlinePropertyFinder::get_spreading_start_time`: its geometry import time, or if it has none
+its youngest time, where flowlines spread from before they had one), but the rotations that build
+it are in `FlowlineUtils`, shared by `FlowlineGeometryPopulator`, reverse reconstruction
+(`reconstruct_flowline_seed_points`) and the seed-point velocities. The seed point is stored at
+present day in the left plate's frame. `fill_seed_point_rotations` carries it from the spreading
+start time to the reconstruction time, backward or forward and also outside the flowline's times,
+and `fill_flowline_rotations` builds each half out from it through the times older than the
+reconstruction time. Unlike a ridge's, each step ends at one of the flowline's own times, the
+spreading start time or the reconstruction time, not every 10 My, and there is no spreading
+asymmetry. A step halves a left-right stage pole (`RotationUtils::get_stage_pole`) between trees
+at its two ends, which is why flowlines need a large tree cache, and it is exact only if neither
+plate's stage pole changes inside it, so where one does the flowline depends on its times
+(slightly between them, more so far outside them, where one step spans from the nearest time).
+`ReconstructMethodFlowline::reconstruct_feature_velocities` and
+`ReconstructedFlowline::reconstructed_seed_point_velocity` take the seed point's velocity from
+the same rotations (`get_seed_point_rotation`, `calculate_seed_point_stage_rotation`), so it
+matches how the drawn seed point moves. What the seed point means, why flowlines spread from the
+import time, the cost of the step boundaries and the alternatives rejected are in
+[`flowlines.md`](flowlines.md).
 
 ### The topology seam
 

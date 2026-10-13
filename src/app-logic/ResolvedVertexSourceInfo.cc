@@ -107,6 +107,12 @@ GPlatesAppLogic::ResolvedVertexSourceInfo::create_source_from_reconstruction_pro
 	// If it's not reconstructed by half stage rotations (which includes flowlines) then it defaults to by-plate-ID.
 	//
 	// Note that the topology builder tools now only allow RFGs by-plate-id and by-half-stage-rotation.
+	//
+	// NOTE: This is the one place a flowline's 'gpml:reconstructionMethod' is read (its own
+	// reconstruction ignores it, see FlowlineUtils): a flowline used as a topological section gets
+	// its vertex velocities from the generic half-stage rotation, which for
+	// 'HalfStageRotationVersion3' spreads from the geometry import time (as the flowline itself
+	// does), but in 10My steps. So flowlines must keep being written with that method.
 	if (reconstruction_properties->get_reconstruct_method_type() == ReconstructMethod::HALF_STAGE_ROTATION ||
 		reconstruction_properties->get_reconstruct_method_type() == ReconstructMethod::FLOWLINE)
 	{

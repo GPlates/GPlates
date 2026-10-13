@@ -32,6 +32,8 @@
 
 #include "EditTimePeriodWidget.h"
 
+#include "app-logic/FlowlineUtils.h"
+
 #include "model/FeatureHandle.h"
 #include "model/PropertyName.h"
 #include "model/ModelUtils.h"
@@ -273,7 +275,22 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::commit_edit_widget_data()
 		if (d_edit_widget_group_box_ptr->is_dirty()) {
 			// FIXME: UNDO
 			// Edit PropertyValues in the model by modifying them in-place.
-			bool modified = d_edit_widget_group_box_ptr->update_property_value_from_widget();
+			//
+			// Editing the times of a flowline without a geometry import time would shift it at
+			// every reconstruction time (it spreads from its youngest time), so that also gives it
+			// one, at its old youngest time. Also when the times weren't actually changed, since the
+			// time sequence editor commits whenever it holds two or more times: harmless (that is
+			// where the flowline already spreads from), but it marks the file as modified.
+			const auto update_property_value = [this]()
+			{
+				return d_edit_widget_group_box_ptr->update_property_value_from_widget();
+			};
+			bool modified = d_selected_property_iterator->is_still_valid()
+					? GPlatesAppLogic::FlowlineUtils::edit_property_without_shifting_flowline(
+							d_feature_ref,
+							(*d_selected_property_iterator.get())->get_property_name(),
+							update_property_value)
+					: update_property_value();
 			// As we are no longer going through FeaturePropertyTableModel to make this change,
 			// we should notify others of the modification.
 			if (modified) {

@@ -549,8 +549,8 @@ namespace GPlatesApi
 
 		// Downcast the ReconstructedFeatureGeometry's generated when reconstructing flowlines to ReconstructedFlowline's.
 		//
-		// Note that, unlike motion paths, all ReconstructedFeatureGeometry's generated when reconstructing flowlines
-		// are actually ReconstructedFlowline's.
+		// As for motion paths, this ignores the plain ReconstructedFeatureGeometry's of seed points
+		// (a flowline only where it has no flowline, eg, at or older than its oldest time).
 		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 						reconstructed_flowlines.begin(),
 						reconstructed_flowlines.end(),

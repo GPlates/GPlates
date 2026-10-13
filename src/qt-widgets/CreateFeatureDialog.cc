@@ -966,14 +966,17 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 	if (should_offer_reconstruct_method_prop(d_feature_type, d_geometry_property_type))
 	{
 		// Force flowline feature type to be reconstructed as HALF_STAGE_ROTATION.
+		// That sets up its left and right plates; a flowline is reconstructed the same way whatever its
+		// reconstruction method (spreading from its geometry import time, like HalfStageRotationVersion3).
 		if (d_feature_type.get() == GPlatesModel::FeatureType::create_gpml("Flowline"))
 		{
 			d_recon_method_combobox->setEnabled(false); // Prevent user from changing option.
 			d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
 		}
 		// Force motion path feature type to be reconstructed as BY_PLATE_ID.
-		// (Later we should allow changing to HALF_STAGE_ROTATION; the MotionPathGeometryPopulator
-		// won't currently handle this correctly, so disable this option until we do handle it).
+		// That sets up its reconstruction plate ID and relative plate (and removes the reconstruction
+		// method property); a motion path is reconstructed by its plate IDs whatever its reconstruction
+		// method.
 		else if (d_feature_type.get() == GPlatesModel::FeatureType::create_gpml("MotionPath"))
 		{
 			d_recon_method_combobox->setEnabled(false); // Prevent user from changing option.
@@ -1380,6 +1383,10 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_propertie
 		// It is used by MidOceanRidge features, along with left plate ID, to reconstruct ridge position to the
 		// import time and then perform ridge-spreading from there. This enables the user to subsequently change
 		// the spreading asymmetry without significantly affecting the ridge position (with no effect at the import time)
+		//
+		// Flowline features spread from it too (see FlowlineUtils::fill_seed_point_rotations). The common
+		// properties are in the feature before its geometry is reverse reconstructed (and before the
+		// flowline end-point correction), so the seed point is stored relative to this time.
 		//
 		// Also used when a feature's geometry is reconstructed using topologies
 		// (instead of using the feature's properties, eg, reconstruction plate ID).

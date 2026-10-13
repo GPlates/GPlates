@@ -40,6 +40,7 @@
 #include "OgrException.h"
 #include "PropertyMapper.h"
 #include "OgrUtils.h"
+#include "app-logic/FlowlineUtils.h"
 #include "app-logic/GeometryTypeFinder.h"
 #include "model/KeyValueDictionaryFinder.h"
 #include "model/PropertyValueFinder.h"
@@ -895,16 +896,28 @@ namespace
 		static const GPlatesModel::PropertyName geometry_import_time_property_name =
 				GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 
+		boost::optional<double> geometry_import_time;
 		boost::optional<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type> time_instant =
 				GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimeInstant>(
 						feature, geometry_import_time_property_name);
 		if (time_instant)
 		{
+			geometry_import_time = get_time_from_time_instant(*time_instant.get());
+		}
+		else
+		{
+			// A flowline without one spreads from its youngest time. Write that, rather than no
+			// value, since the flowline's times aren't written: read back, it then keeps spreading
+			// from there whatever times it is given. (No value is read back as none, except by
+			// OGR-GMT, which can't store it and reads back 0.)
+			geometry_import_time =
+					GPlatesAppLogic::FlowlineUtils::get_default_geometry_import_time(feature);
+		}
 
-			const double geometry_import_time = get_time_from_time_instant(*time_instant.get());
-
+		if (geometry_import_time)
+		{
 			GPlatesPropertyValues::XsDouble::non_null_ptr_type value =
-					GPlatesPropertyValues::XsDouble::create(geometry_import_time);
+					GPlatesPropertyValues::XsDouble::create(geometry_import_time.get());
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::GEOMETRY_IMPORT_TIME]);

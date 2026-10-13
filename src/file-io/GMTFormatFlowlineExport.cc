@@ -194,28 +194,6 @@ namespace
 		}
 	}
 
-	void
-	get_export_times(
-		std::vector<double> &export_times,
-		const std::vector<double> &times,
-		const double &reconstruction_time)
-	{
-		std::vector<double>::const_iterator 
-			it = times.begin(),
-			end = times.end();
-			
-		while ((it != end) && (*it <= reconstruction_time))
-		{
-			++it;
-		}	
-		export_times.push_back(reconstruction_time);
-		while (it != end)
-		{
-			export_times.push_back(*it);
-			++it;
-		}
-	}
-
 	
 	void
 	get_points_from_multipoint(
@@ -376,7 +354,9 @@ GPlatesFileIO::GMTFormatFlowlinesExport::export_flowlines(
 
 		gmt_header_printer.print_feature_header_lines(output_stream,feature_header_lines);
 
-		get_export_times(export_times,feature_times,reconstruction_time);
+		// The times of the flowline's vertices (the same as the populator uses to build it).
+		GPlatesAppLogic::FlowlineUtils::fill_times_vector(
+				export_times, reconstruction_time, feature_times);
 
 		reconstructed_flowline_seq_type::const_iterator rf_iter;
 		for (rf_iter = flowline_group.recon_geoms.begin();

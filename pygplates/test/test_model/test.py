@@ -258,7 +258,7 @@ class CreateFeatureCase(unittest.TestCase):
 
     def test_create_flowline(self):
         seed_point = pygplates.PointOnSphere((0, 90))
-        times = [0, 10, 20, 30]
+        times = [5, 10, 20, 30]
         feature = pygplates.Feature.create_flowline(
                 seed_point,
                 times,
@@ -267,7 +267,8 @@ class CreateFeatureCase(unittest.TestCase):
                 valid_time=(30, 0),
                 left_plate=201,
                 right_plate=701)
-        self.assertTrue(len(feature) == 8+1) # Extra property is the 'gpml:reconstructionMethod'.
+        # Extra properties are the 'gpml:reconstructionMethod' and 'gpml:geometryImportTime'.
+        self.assertTrue(len(feature) == 8+2)
         self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('Flowline'))
         self.assertTrue(feature.get_geometry() == seed_point)
         self.assertTrue(feature.get_times() == times)
@@ -275,6 +276,8 @@ class CreateFeatureCase(unittest.TestCase):
         self.assertTrue(feature.get_description() == 'a flowline feature')
         self.assertTrue(feature.get_valid_time() == (30, 0))
         self.assertTrue(feature.get_reconstruction_method() == 'HalfStageRotationVersion3')
+        # The flowline spreads from its youngest time (unless reverse reconstructed).
+        self.assertTrue(feature.get_geometry_import_time(None) == times[0])
         self.assertTrue(feature.get_left_plate() == 201)
         self.assertTrue(feature.get_right_plate() == 701)
         
@@ -297,14 +300,15 @@ class CreateFeatureCase(unittest.TestCase):
                 valid_time=(30, 0),
                 relative_plate=201,
                 reconstruction_plate_id=701)
-        self.assertTrue(len(feature) == 8+1) # Extra property is the 'gpml:reconstructionMethod'.
+        self.assertTrue(len(feature) == 8)
         self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('MotionPath'))
         self.assertTrue(feature.get_geometry() == seed_point)
         self.assertTrue(feature.get_times() == times)
         self.assertTrue(feature.get_name([], pygplates.PropertyReturn.all) == ['Test motion path1', 'Test motion path2'])
         self.assertTrue(feature.get_description() == 'a motion path feature')
         self.assertTrue(feature.get_valid_time() == (30, 0))
-        self.assertTrue(feature.get_reconstruction_method() == 'ByPlateId')
+        # A motion path is reconstructed by its plate IDs, so it has no reconstruction method.
+        self.assertTrue(feature.get_reconstruction_method(None) is None)
         self.assertTrue(feature.get_relative_plate() == 201)
         self.assertTrue(feature.get_reconstruction_plate_id() == 701)
         

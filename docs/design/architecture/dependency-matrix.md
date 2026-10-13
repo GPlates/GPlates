@@ -232,12 +232,12 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 4 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
-| api |  | 275 | 125 |  |  | 8 | 36 | 156 | 15 | 86 | 78 | 2 | 3 | 114 | 5 | 29 |  | 44 |  |
-| app-logic |  |  | 939 |  |  | 7 | 21 | 161 |  | 279 | 293 | 12 |  | 307 |  | 25 |  | 121 |  |
+| api |  | 275 | 126 |  |  | 8 | 36 | 156 | 15 | 86 | 78 | 2 | 3 | 114 | 5 | 29 |  | 44 |  |
+| app-logic |  |  | 942 |  |  | 7 | 21 | 161 |  | 280 | 294 | 12 |  | 309 |  | 25 |  | 122 |  |
 | canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 36 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
 | cli |  |  | 17 |  | 42 |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
 | data-mining |  |  | 18 |  |  | 81 | 4 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
-| file-io |  |  | 82 |  |  |  | 540 | 117 | 19 | 116 | 244 |  |  | 417 |  |  |  | 78 |  |
+| file-io |  |  | 84 |  |  |  | 540 | 117 | 19 | 116 | 244 |  |  | 417 |  |  |  | 78 |  |
 | global |  |  |  |  |  |  |  | 25 |  |  |  |  |  |  |  |  |  | 5 |  |
 | gui |  | 18 | 169 | 53 |  | 3 | 53 | 95 | 480 | 117 | 81 | 113 | 79 | 98 | 163 | 14 |  | 89 | 108 |
 | maths |  |  |  |  |  |  |  | 75 |  | 410 | 1 |  |  |  |  | 24 |  | 41 |  |
@@ -245,9 +245,9 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | opengl |  |  | 16 |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
 | presentation |  | 1 | 100 |  |  | 1 | 24 | 23 | 76 | 12 | 9 | 3 | 93 | 6 | 26 | 25 |  | 11 | 19 |
 | property-values |  |  |  |  |  |  | 11 | 64 | 5 | 26 | 292 |  |  | 176 |  | 103 |  | 35 |  |
-| qt-widgets |  | 17 | 276 | 7 |  | 8 | 79 | 133 | 223 | 116 | 268 | 35 | 116 | 212 | 834 |  |  | 55 | 26 |
+| qt-widgets |  | 17 | 277 | 7 |  | 8 | 79 | 133 | 223 | 116 | 268 | 35 | 116 | 212 | 834 |  |  | 55 | 26 |
 | scribe |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
-| unit-test |  |  | 4 |  |  | 2 | 15 | 2 | 5 | 11 | 18 |  |  | 14 |  | 16 | 2 | 7 |  |
+| unit-test |  |  | 9 |  |  | 2 | 19 | 2 | 5 | 13 | 21 |  |  | 18 |  | 16 | 2 | 7 |  |
 | utils |  | 1 |  |  |  |  | 1 | 34 |  | 13 | 1 |  |  | 54 |  | 3 |  | 50 |  |
 | view-operations |  |  | 44 | 6 |  |  | 5 | 27 | 56 | 92 | 27 |  | 6 | 9 | 1 | 3 |  | 13 | 232 |
 
@@ -279,7 +279,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | property-values | 127 / 128 |
 | qt-widgets | 0 / 441 |
 | scribe | 56 / 64 |
-| unit-test | 0 / 17 |
+| unit-test | 0 / 18 |
 | utils | 45 / 75 |
 | view-operations | 0 / 82 |
 

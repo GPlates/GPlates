@@ -29,6 +29,7 @@ Nothing in this directory is installed or packaged. It exists only to be read by
 |---|---|
 | `cpt/cpt_unit_test.txt` | `CptPaletteTest.cc` |
 | `citcoms-velocity-domains/` | `GenerateVelocityDomainCitcomsTest.cc` |
+| `flowline/` | `FlowlineUtilsTest.cc` |
 | `gsml/` | `GeoscimlReaderTest.cc` |
 
 **Everything else is not yet referenced by any test.** It arrived on 2026-08-11 from the old
@@ -49,6 +50,8 @@ Anything still unreferenced at that point can simply be deleted.
   `src/qt-resources/*.cpt`.
 - **`deformation/`** — deformation network fixtures (`def_*.gpml`), crustal thickness and velocity
   scalar coverages, a velocity domain, and 21 `DEF_TEST_t*Ma.xy` files.
+- **`flowline/`** — a rotation file and a flowline whose times start at 10 Ma, for the
+  Create Feature dialog's end-point correction. Written by pyGPlates.
 - **`geojson/`** — a single GeoJSON file; the only one in the repository.
 - **`gsml/`** — two GeoSciML 2.0 files for the `.gsml` reader: a WFS response holding every member
   type the reader translates (plus one it must skip), the three geometry kinds and a

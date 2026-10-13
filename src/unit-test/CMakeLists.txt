@@ -12,6 +12,7 @@ set(srcs
     CsvExportTest.cc
     DataAssociationDataTableTest.cc
     ExportTemplateFilenameTest.cc
+    FlowlineUtilsTest.cc
     GenerateVelocityDomainCitcomsTest.cc
     GeoscimlReaderTest.cc
     GrotFileTest.cc

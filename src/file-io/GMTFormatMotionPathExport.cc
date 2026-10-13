@@ -271,7 +271,7 @@ namespace
 				end = times.end();
 
 			QString times_string;	
-			times_string += " ";
+			times_string += " Times: ";
 			times_string += QString::number(*it);
 			++it;
 			for( ; it != end ; ++it)
