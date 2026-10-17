@@ -223,28 +223,14 @@ namespace GPlatesMaths
 					return boost::none;
 				}
 			}
-			// Else either there's no threshold or the threshold is greater than 90 degrees.
-			// In the latter case the position will always be less than the threshold distance from
-			// the GCA because it's within the GCA's lune and all positions within the lune are
-			// within 90 degrees of the GCA. So we don't need to test the threshold again.
+			// Else either there's no threshold or the threshold is greater than 90 degrees (in which case
+			// the position is within the threshold, since all positions within the lune are within
+			// 90 degrees of the GCA).
 
-			// Set caller's closest position *after* passing threshold test (if any).
-			if (closest_position_on_great_circle_arc)
-			{
-				// Set the caller's closest point.
-				closest_position_on_great_circle_arc.get() =
-						calculate_closest_position_on_great_circle(
-								position_vector,
-								arc_plane_normal,
-								position_dot_arc_normal);
-
-				return AngularDistance::create_from_cosine(
-						dot(position_vector, closest_position_on_great_circle_arc.get()));
-			}
-			// We don't need to calculate the closed point...
-
-			// It's cheaper to calculate sine of minimum angular distance and then convert to cosine.
-			// This still requires a 'sqrt', but it's better than calculating cosine as:
+			// The distance is calculated from its sine, whether or not the closest point is requested,
+			// so that requesting the closest point cannot change the distance (previously it was
+			// calculated from the closest point when requested, which differed in the last bits).
+			// This is also cheaper than calculating the cosine as:
 			//
 			// dot(
 			//     position_vector,
@@ -253,12 +239,29 @@ namespace GPlatesMaths
 			//           arc_plane_normal))
 			//
 			// ...which requires two dot products, a sqrt and a division.
-
 			const real_t &sine_min_angular_distance = position_dot_arc_normal;
-			const real_t cosine_min_angular_distance =
-					sqrt(1 - sine_min_angular_distance * sine_min_angular_distance);
+			const AngularDistance min_distance = AngularDistance::create_from_cosine(
+					sqrt(1 - sine_min_angular_distance * sine_min_angular_distance));
 
-			return AngularDistance::create_from_cosine(cosine_min_angular_distance);
+			// The quick rejection above compares sines, so test the threshold exactly on the distance itself
+			// (otherwise a distance exceeding the threshold in its last bits could be returned).
+			if (minimum_distance_threshold &&
+				min_distance.is_precisely_greater_than(minimum_distance_threshold.get()))
+			{
+				return boost::none;
+			}
+
+			// Set caller's closest position *after* passing threshold test (if any).
+			if (closest_position_on_great_circle_arc)
+			{
+				closest_position_on_great_circle_arc.get() =
+						calculate_closest_position_on_great_circle(
+								position_vector,
+								arc_plane_normal,
+								position_dot_arc_normal);
+			}
+
+			return min_distance;
 		}
 
 		/**

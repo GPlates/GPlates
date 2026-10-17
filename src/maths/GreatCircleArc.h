@@ -563,7 +563,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
 	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
-	 * threshold).
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest point is *not* stored in
 	 * @a closest_position_on_great_circle_arc (even if it's not none).
 	 *

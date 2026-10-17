@@ -45,8 +45,9 @@ Changes since 1.0.0:
   * GPML files saved by pyGPlates 1.1 record information model version 1.6.0340. pyGPlates 1.0 reads them, but ignores a flowline's geometry import time.
 * Bug fixes:
   * Fixed `GeometryOnSphere.distance()` returning inconsistent closest positions and segment indices when two polylines/polygons intersect more than once.
-  * Fixed `GeometryOnSphere.distance()` for geometries exactly PI apart (eg, antipodal points): a threshold of PI returned `None`, and with `return_closest_indices=True` a multi-point or polyline returned an undefined index.
+  * Fixed `GeometryOnSphere.distance()` for geometries exactly PI apart (eg, antipodal points): a threshold of PI returned `None`, and with `return_closest_indices=True` a multi-point, polyline or polygon returned an undefined index.
   * Fixed `GeometryOnSphere.distance()` returning `None` for intersecting polylines/polygons when the threshold was zero (or very nearly zero).
+  * Fixed `GeometryOnSphere.distance()` sometimes returning `None` when the threshold equals the distance (eg, a distance it returned earlier, passed back as the threshold, or a threshold of zero for geometries it reports as zero distance apart). A NaN threshold now raises `ValueError` (it was ignored).
   * Fixed `GeometryOnSphere.distance()` returning the closest position of one candidate and the closest index of another, equally close, candidate (eg, two points of a multi-point equally close to a polyline).
   * Fixed a rare "function 'sqrt' invoked with invalid argument" error (from a rounding error when calculating angular extents).
   * A malformed `gml:pos` or `gml:coordinates` in a GPML file is now dropped as a read error instead of silently loading as a point at (0, 0).

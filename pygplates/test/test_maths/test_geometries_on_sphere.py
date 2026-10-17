@@ -4,6 +4,7 @@ Unit tests for the pygplates geometries on sphere.
 
 import math
 import os
+import random
 import unittest
 import pickle
 import pygplates
@@ -16,6 +17,100 @@ except ImportError:
 
 # Fixture path
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
+
+
+#
+# Brute-force distances, independent of pyGPlates' distance code, for 'test_distance_against_brute_force'.
+#
+
+def _dot(a, b):
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+def _cross(a, b):
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
+def _normalise(a):
+    length = math.sqrt(_dot(a, a))
+    return (a[0] / length, a[1] / length, a[2] / length)
+
+def _angle(a, b):
+    # More accurate than acos for small (and near pi) angles.
+    return math.atan2(math.sqrt(_dot(_cross(a, b), _cross(a, b))), _dot(a, b))
+
+def _point_to_arc(p, a, b):
+    normal = _cross(a, b)
+    if _dot(normal, normal) < 1e-24:  # zero-length arc
+        return _angle(p, a)
+    normal = _normalise(normal)
+    projected = tuple(p[i] - _dot(p, normal) * normal[i] for i in range(3))
+    if _dot(projected, projected) > 1e-24:
+        q = _normalise(projected)
+        if _dot(_cross(a, q), normal) >= 0 and _dot(_cross(q, b), normal) >= 0:
+            return _angle(p, q)
+    return min(_angle(p, a), _angle(p, b))
+
+def _arcs_intersect(a1, b1, a2, b2):
+    line = _cross(_cross(a1, b1), _cross(a2, b2))
+    if _dot(line, line) < 1e-24:
+        return False  # on the same great circle (or zero length) - overlap is found by the end points
+    line = _normalise(line)
+    for c in (line, (-line[0], -line[1], -line[2])):
+        if all(_dot(_cross(a, c), _cross(a, b)) >= 0 and _dot(_cross(c, b), _cross(a, b)) >= 0
+               for a, b in ((a1, b1), (a2, b2))):
+            return True
+    return False
+
+def _arcs(geometry):
+    points = [point.to_xyz() for point in geometry.get_points()]
+    if isinstance(geometry, (pygplates.PointOnSphere, pygplates.MultiPointOnSphere)):
+        return [(p, p) for p in points]
+    if isinstance(geometry, pygplates.PolygonOnSphere):
+        points.append(points[0])
+    return list(zip(points[:-1], points[1:]))
+
+def _brute_force_distance(geometry1, geometry2, solid1, solid2):
+    for polygon, solid, other in ((geometry1, solid1, geometry2), (geometry2, solid2, geometry1)):
+        if (solid and isinstance(polygon, pygplates.PolygonOnSphere) and
+                any(polygon.is_point_in_polygon(point) for point in other.get_points())):
+            return 0.0
+    distance = math.pi
+    for a1, b1 in _arcs(geometry1):
+        for a2, b2 in _arcs(geometry2):
+            if _arcs_intersect(a1, b1, a2, b2):
+                return 0.0
+            distance = min(distance,
+                _point_to_arc(a1, a2, b2), _point_to_arc(b1, a2, b2),
+                _point_to_arc(a2, a1, b1), _point_to_arc(b2, a1, b1))
+    return distance
+
+def _distance_to_indexed(geometry, index, p):
+    # Distance from 'p' to the point (or segment) of 'geometry' at 'index'.
+    if isinstance(geometry, pygplates.PointOnSphere):
+        return _angle(p, geometry.to_xyz()) if index == 0 else math.pi
+    if isinstance(geometry, pygplates.MultiPointOnSphere):
+        return _angle(p, geometry[index].to_xyz())
+    segment = geometry.get_segments()[index]
+    return _point_to_arc(p, segment.get_start_point().to_xyz(), segment.get_end_point().to_xyz())
+
+def _random_unit_vector(rng):
+    return _normalise((rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 1)))
+
+def _random_geometry(rng, centre):
+    # Clustered around 'centre' (within about 20 degrees).
+    def random_point(near, spread):
+        return pygplates.PointOnSphere(_normalise(tuple(near[i] + rng.gauss(0, spread) for i in range(3))))
+    geometry_type = rng.choice(('point', 'multipoint', 'polyline', 'polyline', 'polygon', 'polygon'))
+    if geometry_type == 'point':
+        return random_point(centre, 0.2)
+    if geometry_type == 'multipoint':
+        return pygplates.MultiPointOnSphere([random_point(centre, 0.2) for _ in range(rng.randint(1, 30))])
+    # A random walk, so that segments are short and the bounding tree has spatially coherent nodes.
+    points = [random_point(centre, 0.15)]
+    for _ in range(rng.randint(10, 30) - 1):
+        points.append(random_point(points[-1].to_xyz(), 0.04))
+    if geometry_type == 'polyline':
+        return pygplates.PolylineOnSphere(points)
+    return pygplates.PolygonOnSphere(points)
 
 
 class GeometryOnSphereCase(unittest.TestCase):
@@ -160,7 +255,7 @@ class GeometryOnSphereCase(unittest.TestCase):
         # Two candidates equally close: the closest positions and indices must come from the same one.
         # There was a bug in pyGPlates 1.0 where, for a multi-point and a polyline, they could come
         # from different candidates.
-        multipoint =pygplates.MultiPointOnSphere([(10, 0), (-10, 0)])
+        multipoint = pygplates.MultiPointOnSphere([(10, 0), (-10, 0)])
         polyline = pygplates.PolylineOnSphere([(10, -5), (10, 5), (20, 5), (-20, 5), (-10, 5), (-10, -5)])
         distance, closest_point1, closest_point2, closest_index1, closest_index2 = pygplates.GeometryOnSphere.distance(
             multipoint, polyline, return_closest_positions=True, return_closest_indices=True)
@@ -182,6 +277,79 @@ class GeometryOnSphereCase(unittest.TestCase):
             self.assertTrue(closest_point1 == mp1[closest_index1])
             self.assertTrue(closest_point2 == mp2[closest_index2])
             self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), distance)
+
+    def test_distance_threshold_is_exact(self):
+        # A distance is None only if the distance that would be returned is greater than the threshold.
+        # There was a bug in pyGPlates 1.0 where a distance passed back as the threshold could be
+        # excluded by itself (the threshold in radians and the distance had different cosines).
+        D = pygplates.GeometryOnSphere.distance
+        point = pygplates.PointOnSphere(0, 0)
+        geometries = (
+            pygplates.PointOnSphere(30, 60),
+            pygplates.MultiPointOnSphere([(30, 60), (-20, 70)]),
+            pygplates.PolylineOnSphere([(30, 60), (-20, 70), (10, 100)]),
+            pygplates.PolygonOnSphere([(30, 60), (-20, 70), (10, 100)]))
+        for geometry in geometries:
+            for g1, g2 in ((point, geometry), (geometry, point)):
+                distance = D(g1, g2)
+                self.assertTrue(D(g1, g2, distance) == distance)
+                self.assertTrue(D(g1, g2, math.nextafter(distance, 0)) is None)
+        # Perpendicular points.
+        self.assertTrue(D(pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(0, 1, 0), math.pi / 2) == math.pi / 2)
+        # A distance within epsilon of zero is returned as zero, so it does not exceed a threshold of zero.
+        point1 = pygplates.PointOnSphere(0, 0)
+        point2 = pygplates.PointOnSphere(0, 1e-6)
+        self.assertTrue(D(point1, point2) == 0.0)
+        self.assertTrue(D(point1, point2, 0.0) == 0.0)
+        # A NaN threshold raises ValueError (it was ignored in pyGPlates 1.0).
+        self.assertRaises(ValueError, D, point1, point2, float('nan'))
+
+    def test_distance_independent_of_returned_positions(self):
+        # Requesting the closest positions must not change the distance.
+        # There was a bug in pyGPlates 1.0 where it could differ in the last bits.
+        D = pygplates.GeometryOnSphere.distance
+        point = pygplates.PointOnSphere(1.0, 1.234)
+        polyline = pygplates.PolylineOnSphere([(0, -10), (0, 10)])
+        self.assertTrue(D(point, polyline) == D(point, polyline, return_closest_positions=True)[0])
+
+    def test_distance_against_brute_force(self):
+        # Compare with a brute-force calculation (every pair of segments) for random geometries large
+        # enough to exercise the bounding-tree search (a leaf bounds up to 8 segments), clustered so that
+        # many segments are nearly as close as the closest, with random solid flags and thresholds.
+        rng = random.Random(1234)
+        D = pygplates.GeometryOnSphere.distance
+        for case in range(120):
+            centre = _random_unit_vector(rng)
+            geometry1 = _random_geometry(rng, centre)
+            geometry2 = _random_geometry(rng, centre)
+            solid1 = rng.random() < 0.5
+            solid2 = rng.random() < 0.5
+            msg = 'case {}: {} to {}, solid {} {}'.format(
+                case, type(geometry1).__name__, type(geometry2).__name__, solid1, solid2)
+            expected = _brute_force_distance(geometry1, geometry2, solid1, solid2)
+
+            distance, closest_point1, closest_point2, closest_index1, closest_index2 = D(
+                geometry1, geometry2, return_closest_positions=True, return_closest_indices=True,
+                geometry1_is_solid=solid1, geometry2_is_solid=solid2)
+            self.assertAlmostEqual(distance, expected, places=9, msg=msg)
+            # The closest positions lie on their geometries' closest point/segment, and their
+            # distance apart is the distance (unless inside a solid polygon, which is zero distance).
+            for geometry, closest_point, closest_index in (
+                    (geometry1, closest_point1, closest_index1),
+                    (geometry2, closest_point2, closest_index2)):
+                self.assertAlmostEqual(
+                    _distance_to_indexed(geometry, closest_index, closest_point.to_xyz()), 0, places=9, msg=msg)
+            if distance > 0:
+                self.assertAlmostEqual(D(closest_point1, closest_point2), distance, places=9, msg=msg)
+
+            threshold = rng.uniform(0, 2 * expected) if expected > 0 else rng.choice((0.0, 0.01))
+            if abs(threshold - expected) > 1e-9:
+                result = D(geometry1, geometry2, threshold, geometry1_is_solid=solid1, geometry2_is_solid=solid2)
+                if expected > threshold:
+                    self.assertTrue(result is None, msg=msg)
+                else:
+                    self.assertTrue(result is not None, msg=msg)
+                    self.assertAlmostEqual(result, distance, places=12, msg=msg)
 
     def test_get_centroid(self):
         # Test all geometry types have a 'get_centroid()' method.

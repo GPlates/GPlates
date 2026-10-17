@@ -253,6 +253,14 @@ namespace GPlatesApi
 		GPlatesMaths::AngularExtent threshold_storage = GPlatesMaths::AngularExtent::PI/*dummy value*/;
 		if (distance_threshold_radians)
 		{
+			// A NaN threshold would otherwise be silently ignored (it compares as within any range,
+			// and nothing compares as exceeding its NaN cosine).
+			if (distance_threshold_radians->is_nan())
+			{
+				PyErr_SetString(PyExc_ValueError, "Distance threshold must not be NaN.");
+				bp::throw_error_already_set();
+			}
+
 			// Clamp to the range [0, PI].
 			if (distance_threshold_radians->is_precisely_less_than(0))
 			{
@@ -263,7 +271,20 @@ namespace GPlatesApi
 				distance_threshold_radians.get() = GPlatesMaths::PI;
 			}
 
-			threshold_storage = GPlatesMaths::AngularExtent::create_from_angle(distance_threshold_radians.get());
+			// The threshold given to GPlatesMaths::minimum_distance() is slightly larger than the
+			// caller's, and the caller's threshold is applied exactly to the returned distance
+			// (below).
+			//
+			// minimum_distance() compares cosines exactly, but the caller sees the distance in
+			// radians: the cosine of a threshold in radians can differ from the cosine of the same
+			// distance by a few ULPs, so a distance passed back as a threshold could be excluded by
+			// itself. Also, a distance within epsilon of zero is returned as exactly 0.0 (below),
+			// and must not exceed a threshold of 0.0.
+			// The margin covers both (epsilon is 1e-12 on the cosine).
+			const double generous_threshold_cosine =
+					std::cos(distance_threshold_radians->dval()) - 2 * GPlatesMaths::EPSILON;
+			threshold_storage = GPlatesMaths::AngularExtent::create_from_cosine(
+					(generous_threshold_cosine < -1.0) ? -1.0 : generous_threshold_cosine);
 			minimum_distance_threshold = threshold_storage;
 		}
 
@@ -319,6 +340,14 @@ namespace GPlatesApi
 		const GPlatesMaths::real_t distance = (angular_distance.get() != GPlatesMaths::AngularDistance::ZERO /*epsilon comparison*/)
 				? angular_distance->calculate_angle()
 				: 0.0;
+
+		// Apply the caller's threshold exactly, to the distance the caller sees
+		// (minimum_distance() was given a slightly larger threshold, above).
+		if (distance_threshold_radians &&
+			distance.is_precisely_greater_than(distance_threshold_radians->dval()))
+		{
+			return bp::object()/*Py_None*/;
+		}
 
 		//
 		// If returning closest positions and/or closest indices then return a python tuple.
@@ -440,6 +469,7 @@ export_geometry_on_sphere()
 				"or ``None`` if *distance_threshold_radians* is specified and exceeded\n"
 				"  :rtype: float, or tuple[float, PointOnSphere, PointOnSphere], or tuple[float, int, int], "
 				"or tuple[float, PointOnSphere, PointOnSphere, int, int], or None\n"
+				"  :raises ValueError: if *distance_threshold_radians* is NaN\n"
 				"\n"
 				"  The returned distance is the shortest path between *geometry1* and *geometry2* along the "
 				"surface of the sphere (great circle arc path). To convert the distance from radians "
@@ -548,9 +578,12 @@ export_geometry_on_sphere()
 				"   distance threshold is clamped to the range [0, PI] to avoid an exception.\n"
 				"\n"
 				".. versionchanged:: 1.1\n"
-				"   A distance equal to the threshold no longer counts as exceeding it: geometries exactly "
-				"PI apart are found with a threshold of PI, and intersecting polylines and polygons with a "
-				"threshold of zero. The closest positions and indices always belong to the same closest pair.\n")
+				"   ``None`` is returned only if the distance that would be returned is greater "
+				"than *distance_threshold_radians*, so a distance equal to the threshold is "
+				"returned (eg, PI for antipodal points with a threshold of PI, or zero for "
+				"intersecting polylines and polygons with a threshold of zero). A NaN threshold "
+				"raises ``ValueError`` (it was ignored). The closest positions and indices always "
+				"belong to the same closest pair.\n")
 		.staticmethod("distance")
 	;
 

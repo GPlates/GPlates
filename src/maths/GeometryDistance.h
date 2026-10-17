@@ -601,10 +601,10 @@ namespace GPlatesMaths
 	 * (ie, it's not the nearest vertices of the polygons - it's the nearest points *on* the polygons).
 	 * If the polygon outlines intersect then the intersection point is returned for both polygons.
 	 * If the polygon outlines intersect more than once then any intersection point is returned (for both polygons).
-	 * Note that if @a polygon1_interior_is_solid is true and @a polyline2 is entirely inside @a polygon1
+	 * Note that if @a polygon1_interior_is_solid is true and @a polygon2 is entirely inside @a polygon1
 	 * (without intersecting its outline) then the threshold is not exceeded and hence @a closest_positions
 	 * (if specified) will always store the closest point on each polygon outline.
-	 * Note that if @a polygon2_interior_is_solid is true and @a polyline1 is entirely inside @a polygon2
+	 * Note that if @a polygon2_interior_is_solid is true and @a polygon1 is entirely inside @a polygon2
 	 * (without intersecting its outline) then the threshold is not exceeded and hence @a closest_positions
 	 * (if specified) will always store the closest point on each polygon outline.
 	 *
@@ -613,10 +613,10 @@ namespace GPlatesMaths
 	 * The closest point on each polygon outline lies on the closest segment of each polygon.
 	 * The segment indices can be used with PolygonOnSphere::get_segment().
 	 * Note that the segment indices can refer to interior rings.
-	 * Note that if @a polygon1_interior_is_solid is true and @a polyline2 is entirely inside @a polygon1
+	 * Note that if @a polygon1_interior_is_solid is true and @a polygon2 is entirely inside @a polygon1
 	 * (without intersecting its outline) then the threshold is not exceeded and hence @a closest_segment_indices
 	 * (if specified) will always store the closest segment on each polygon.
-	 * Note that if @a polygon2_interior_is_solid is true and @a polyline1 is entirely inside @a polygon2
+	 * Note that if @a polygon2_interior_is_solid is true and @a polygon1 is entirely inside @a polygon2
 	 * (without intersecting its outline) then the threshold is not exceeded and hence @a closest_segment_indices
 	 * (if specified) will always store the closest segment on each polygon.
 	 */

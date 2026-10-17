@@ -2179,7 +2179,7 @@ GPlatesMaths::minimum_distance(
 
 					// Note that we have to call this a second time because the first time (above)
 					// determined if the polygon outlines intersected (and this can happen even if
-					// none of polyline2's points are inside polygon1).
+					// none of polygon2's points are inside polygon1).
 					// But the first time used a threshold and did not find the closest points
 					// and/or segments since they were separated by a distance greater than the threshold.
 					// Note that because polygon1 is solid and polygon2 is inside polygon1
@@ -2257,7 +2257,7 @@ GPlatesMaths::minimum_distance(
 
 					// Note that we have to call this a second time because the first time (above)
 					// determined if the polygon outlines intersected (and this can happen even if
-					// none of polyline1's points are inside polygon2).
+					// none of polygon1's points are inside polygon2).
 					// But the first time used a threshold and did not find the closest points
 					// and/or segments since they were separated by a distance greater than the threshold.
 					// Note that because polygon2 is solid and polygon1 is inside polygon2
