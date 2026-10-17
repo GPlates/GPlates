@@ -205,11 +205,10 @@ namespace GPlatesDataMining
 
 					// Calculate minimum distance between the two geometries.
 					//
-					// The returned distance will either be less than 'range_in_radians' threshold or
-					// AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+					// The returned distance is none if it exceeds the 'range_in_radians' threshold.
 					const GPlatesMaths::AngularExtent range_angular_extent =
 							GPlatesMaths::AngularExtent::create_from_angle(range_in_radians);
-					const GPlatesMaths::AngularDistance min_dist = minimum_distance(
+					const boost::optional<GPlatesMaths::AngularDistance> min_dist = minimum_distance(
 							*reconstructed_seed_geom.get_reconstructed_feature_geometry()->reconstructed_geometry(), 
 							*reconstructed_target_geom.get_reconstructed_feature_geometry()->reconstructed_geometry(), 
 							// If either (or both) geometry is a polygon then the distance will be zero
@@ -218,8 +217,8 @@ namespace GPlatesDataMining
 							true/*geometry2_interior_is_solid*/,
 							range_angular_extent);
 
-					// If the minimum distance was less than the threshold 'range_in_radians'...
-					if (min_dist != GPlatesMaths::AngularDistance::PI)
+					// If the minimum distance was within the threshold 'range_in_radians'...
+					if (min_dist)
 					{
 						filtered_reconstructed_target_geometries.push_back(
 								GPlatesAppLogic::ReconstructContext::Reconstruction(

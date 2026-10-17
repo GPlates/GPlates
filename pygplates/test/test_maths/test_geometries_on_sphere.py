@@ -107,6 +107,82 @@ class GeometryOnSphereCase(unittest.TestCase):
             (pygplates.GeometryOnSphere.distance(polyline1_intersection, pygplates.PointOnSphere(5,0)) < math.radians(0.5) and polyline1_segment_index == 0 and polyline2_segment_index == 0) or
             (pygplates.GeometryOnSphere.distance(polyline1_intersection, pygplates.PointOnSphere(0,5)) < math.radians(0.5) and polyline1_segment_index == 1 and polyline2_segment_index == 1))
 
+    def test_distance_antipodal(self):
+        # Geometries exactly pi apart: each geometry type collapsed onto one of two antipodal points
+        # (only such degenerate geometries can be exactly pi apart).
+        # There was a bug in pyGPlates 1.0 where a threshold of pi counted as exceeded, and where the
+        # closest indices were never set (uninitialised) for multi-points and polylines.
+        north = pygplates.PointOnSphere(0, 0, 1)
+        south = pygplates.PointOnSphere(0, 0, -1)
+        def geometries_at(point):
+            return (
+                point,
+                pygplates.MultiPointOnSphere([point, point]),
+                pygplates.PolylineOnSphere([point, point]),
+                pygplates.PolygonOnSphere([point, point, point]))
+        for geometry1 in geometries_at(north):
+            for geometry2 in geometries_at(south):
+                for solid in (False, True):
+                    for g1, g2, p1, p2 in ((geometry1, geometry2, north, south), (geometry2, geometry1, south, north)):
+                        msg = '{} to {}, solid={}'.format(type(g1).__name__, type(g2).__name__, solid)
+                        def distance(*args, **kwargs):
+                            return pygplates.GeometryOnSphere.distance(
+                                g1, g2, *args, geometry1_is_solid=solid, geometry2_is_solid=solid, **kwargs)
+                        self.assertAlmostEqual(distance(), math.pi, msg=msg)
+                        self.assertAlmostEqual(distance(math.pi), math.pi, msg=msg)
+                        self.assertTrue(distance(math.pi - 1e-6) is None, msg=msg)
+                        for threshold in (None, math.pi):
+                            distance_, closest_point1, closest_point2, closest_index1, closest_index2 = distance(
+                                threshold, return_closest_positions=True, return_closest_indices=True)
+                            self.assertAlmostEqual(distance_, math.pi, msg=msg)
+                            self.assertTrue(closest_point1 == p1, msg=msg)
+                            self.assertTrue(closest_point2 == p2, msg=msg)
+                            self.assertTrue(closest_index1 == 0, msg=msg)
+                            self.assertTrue(closest_index2 == 0, msg=msg)
+                            distance_, closest_point1, closest_point2 = distance(threshold, return_closest_positions=True)
+                            self.assertTrue(closest_point1 == p1, msg=msg)
+                            self.assertTrue(closest_point2 == p2, msg=msg)
+                            distance_, closest_index1, closest_index2 = distance(threshold, return_closest_indices=True)
+                            self.assertTrue(closest_index1 == 0 and closest_index2 == 0, msg=msg)
+
+    def test_distance_threshold_zero(self):
+        # Intersecting geometries are zero distance apart, which does not exceed a threshold of zero.
+        # There was a bug in pyGPlates 1.0 where a threshold of zero (or within epsilon of zero)
+        # ignored the intersection of two polylines/polygons and returned None.
+        polyline = pygplates.PolylineOnSphere([(0, -10), (0, 10)])
+        polygon = pygplates.PolygonOnSphere([(-10, 0), (10, 0), (10, 5)])
+        for geometry1, geometry2 in ((polyline, polygon), (polygon, polyline), (polygon, polygon)):
+            for threshold in (0.0, 1e-9):
+                self.assertTrue(pygplates.GeometryOnSphere.distance(geometry1, geometry2, threshold) == 0.0)
+        self.assertTrue(pygplates.GeometryOnSphere.distance(polyline, pygplates.PointOnSphere(0, 0), 0.0) == 0.0)
+
+    def test_distance_closest_positions_match_indices(self):
+        # Two candidates equally close: the closest positions and indices must come from the same one.
+        # There was a bug in pyGPlates 1.0 where, for a multi-point and a polyline, they could come
+        # from different candidates.
+        multipoint =pygplates.MultiPointOnSphere([(10, 0), (-10, 0)])
+        polyline = pygplates.PolylineOnSphere([(10, -5), (10, 5), (20, 5), (-20, 5), (-10, 5), (-10, -5)])
+        distance, closest_point1, closest_point2, closest_index1, closest_index2 = pygplates.GeometryOnSphere.distance(
+            multipoint, polyline, return_closest_positions=True, return_closest_indices=True)
+        self.assertTrue(closest_point1 == multipoint[closest_index1])
+        closest_segment = polyline.get_segments()[closest_index2]
+        self.assertAlmostEqual(
+            pygplates.GeometryOnSphere.distance(
+                closest_point2,
+                pygplates.PolylineOnSphere([closest_segment.get_start_point(), closest_segment.get_end_point()])),
+            0)
+        self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), distance)
+
+        # An exact tie (mirror images in x) between two multi-points.
+        multipoint1 = pygplates.MultiPointOnSphere([(1, 0, 0), (-1, 0, 0)])
+        multipoint2 = pygplates.MultiPointOnSphere([(0.6, 0.8, 0), (-0.6, 0.8, 0)])
+        for mp1, mp2 in ((multipoint1, multipoint2), (multipoint2, multipoint1)):
+            distance, closest_point1, closest_point2, closest_index1, closest_index2 = pygplates.GeometryOnSphere.distance(
+                mp1, mp2, return_closest_positions=True, return_closest_indices=True)
+            self.assertTrue(closest_point1 == mp1[closest_index1])
+            self.assertTrue(closest_point2 == mp2[closest_index2])
+            self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), distance)
+
     def test_get_centroid(self):
         # Test all geometry types have a 'get_centroid()' method.
         self.assertTrue(isinstance(pygplates.PointOnSphere(0, 1, 0).get_centroid(), pygplates.PointOnSphere))

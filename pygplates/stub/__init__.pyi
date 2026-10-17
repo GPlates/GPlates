@@ -4630,6 +4630,9 @@ class GeometryOnSphere:
 
         .. versionchanged:: 0.41
          distance threshold is clamped to the range [0, PI] to avoid an exception.
+
+        .. versionchanged:: 1.1
+         A distance equal to the threshold no longer counts as exceeding it: geometries exactly PI apart are found with a threshold of PI, and intersecting polylines and polygons with a threshold of zero. The closest positions and indices always belong to the same closest pair.
         """
 
     def get_points(self) -> Sequence[PointOnSphere]:

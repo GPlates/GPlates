@@ -41,6 +41,7 @@ Changes since 2.5:
   * Fixed filenames given on the command line (data files, projects, config files and response files).
 * Bug fixes:
   * Fixed gaps in boundary sections in the Resolved Topologies (General) export (since GPlates 2.2).
+  * Fixed co-registration with a region of interest range of zero (or under about 9 m) leaving out target features whose lines or polygon outlines intersect the seed's.
   * Fixed Small Circle tool time period being limited to 1000 Ma (now 9999 Ma).
   * Fixed colour lookups occasionally falling between adjacent colour slices of a palette.
   * Fixed CPT palettes with a lower-case "COLOR_MODEL = hsv" comment (as written by GMT) being read as RGB.

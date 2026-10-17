@@ -3312,7 +3312,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::is_delta_velocity_
 
 	// If the distance from the previous point to the previous polygon boundary exceeds the threshold
 	// then the current point remains active.
-	if (GPlatesMaths::AngularExtent::PI == minimum_distance(
+	if (!minimum_distance(
 			prev_point,
 			*prev_topology_boundary,
 			false/*polygon_interior_is_solid*/,

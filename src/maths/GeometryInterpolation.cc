@@ -440,8 +440,8 @@ namespace GPlatesMaths
 			const real_t t2 = (-b + pm) / (2 * a);
 			const UnitVector3D intersect1 = (A + t1 * B).get_normalisation();
 			const UnitVector3D intersect2 = (A + t2 * B).get_normalisation();
-			const AngularDistance dist_intersect1 = minimum_distance(intersect1, gca);
-			const AngularDistance dist_intersect2 = minimum_distance(intersect2, gca);
+			const AngularDistance dist_intersect1 = minimum_distance(intersect1, gca).get();
+			const AngularDistance dist_intersect2 = minimum_distance(intersect2, gca).get();
 
 			return dist_intersect1.is_precisely_less_than(dist_intersect2)
 					? PointOnSphere(intersect1)
@@ -1097,7 +1097,7 @@ namespace GPlatesMaths
 
 			for ( ; from_points_iter != from_points_end; ++from_points_iter, ++to_points_iter)
 			{
-				const AngularDistance angular_distance = minimum_distance(*from_points_iter, *to_points_iter);
+				const AngularDistance angular_distance = minimum_distance(*from_points_iter, *to_points_iter).get();
 				if (angular_distance.is_precisely_greater_than(max_angular_distance_threshold.get()))
 				{
 					return false;
@@ -1140,7 +1140,7 @@ namespace GPlatesMaths
 			std::vector<AngularDistance> from_to_point_angular_distances;
 			for ( ; from_points_iter != from_points_end; ++from_points_iter, ++to_points_iter)
 			{
-				const AngularDistance angular_distance = minimum_distance(*from_points_iter, *to_points_iter);
+				const AngularDistance angular_distance = minimum_distance(*from_points_iter, *to_points_iter).get();
 				if (max_angular_distance_threshold &&
 					angular_distance.is_precisely_greater_than(max_angular_distance_threshold.get()))
 				{

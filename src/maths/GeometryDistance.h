@@ -61,8 +61,9 @@ namespace GPlatesMaths
 	 * edges (including edges of any polygon interior rings), and this holds even when the exterior and
 	 * interior rings intersect each other.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest points are *not* stored in @a closest_positions
 	 * (even if it's not none) and the closest indices are not stored in @a closest_indices
 	 * (even if it's not none).
@@ -100,7 +101,7 @@ namespace GPlatesMaths
 	 * is entirely inside the polygon (without intersecting its outline) then the threshold is not exceeded
 	 * and hence @a closest_indices (if specified) will always store indices.
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const GeometryOnSphere &geometry1,
 			const GeometryOnSphere &geometry2,
@@ -118,10 +119,11 @@ namespace GPlatesMaths
 	/**
 	 * Returns the minimum angular distance between two points.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PointOnSphere &point1,
 			const PointOnSphere &point2,
@@ -131,8 +133,9 @@ namespace GPlatesMaths
 	/**
 	 * Returns the minimum angular distance between a point and a multi-point.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest point is *not* stored in
 	 * @a closest_position_in_multipoint (even if it's not none) and the closest position index is
 	 * *not* stored in @a closest_position_index_in_multipoint (even if it's not none).
@@ -144,7 +147,7 @@ namespace GPlatesMaths
 	 * multi-point is stored in the integer it references (unless the threshold is exceeded, if specified).
 	 * The index can be used with MultiPointOnSphere::get_point().
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PointOnSphere &point,
 			const MultiPointOnSphere &multipoint,
@@ -156,8 +159,9 @@ namespace GPlatesMaths
 	/**
 	 * Returns the minimum angular distance between a point and a polyline.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest point is *not* stored in
 	 * @a closest_position_on_polyline (even if it's not none) and the closest segment index is
 	 * *not* stored in @a closest_segment_index_in_polyline (even if it's not none).
@@ -172,7 +176,7 @@ namespace GPlatesMaths
 	 * it references (unless the threshold is exceeded, if specified).
 	 * The index can be used with PolylineOnSphere::get_segment().
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PointOnSphere &point,
 			const PolylineOnSphere &polyline,
@@ -191,8 +195,9 @@ namespace GPlatesMaths
 	 * edges (including edges of any polygon interior rings), and this holds even when the exterior and
 	 * interior rings intersect each other.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest point is *not* stored in
 	 * @a closest_position_on_polygon_outline (even if it's not none) and the closest segment index is
 	 * *not* stored in @a closest_segment_index_in_polygon (even if it's not none).
@@ -214,7 +219,7 @@ namespace GPlatesMaths
 	 * the threshold is not exceeded and hence @a closest_segment_index_in_polygon (if specified)
 	 * will always store the index of the closest segment in the polygon.
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PointOnSphere &point,
 			const PolygonOnSphere &polygon,
@@ -230,7 +235,7 @@ namespace GPlatesMaths
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.
 	 */
 	inline
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const MultiPointOnSphere &multipoint,
 			const PointOnSphere &point,
@@ -250,8 +255,9 @@ namespace GPlatesMaths
 	/**
 	 * Returns the minimum angular distance between two multi-points.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none) and the closest position indices are
 	 * *not* stored in @a closest_position_indices (even if it's not none).
@@ -263,7 +269,7 @@ namespace GPlatesMaths
 	 * multi-point is stored in the integers it references (unless the threshold is exceeded, if specified).
 	 * The indices can be used with MultiPointOnSphere::get_point().
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const MultiPointOnSphere &multipoint1,
 			const MultiPointOnSphere &multipoint2,
@@ -279,8 +285,9 @@ namespace GPlatesMaths
 	/**
 	 * Returns the minimum angular distance between a multi-point and a polyline.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none) and the closest indices are *not* stored in
 	 * @a closest_indices (even if it's not none).
@@ -298,7 +305,7 @@ namespace GPlatesMaths
 	 * The multi-point index can be used with MultiPointOnSphere::get_point().
 	 * The polyline index can be used with PolylineOnSphere::get_segment().
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const MultiPointOnSphere &multipoint,
 			const PolylineOnSphere &polyline,
@@ -321,8 +328,9 @@ namespace GPlatesMaths
 	 * edges (including edges of any polygon interior rings), and this holds even when the exterior and
 	 * interior rings intersect each other.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none) and the closest indices are *not* stored in
 	 * @a closest_indices (even if it's not none).
@@ -351,7 +359,7 @@ namespace GPlatesMaths
 	 * the index of the closest point in the multi-point and the index of the closest segment on
 	 * the polygon outline.
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const MultiPointOnSphere &multipoint,
 			const PolygonOnSphere &polygon,
@@ -371,7 +379,7 @@ namespace GPlatesMaths
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.
 	 */
 	inline
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PolylineOnSphere &polyline,
 			const PointOnSphere &point,
@@ -393,7 +401,7 @@ namespace GPlatesMaths
 	 *
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PolylineOnSphere &polyline,
 			const MultiPointOnSphere &multipoint,
@@ -411,8 +419,9 @@ namespace GPlatesMaths
 	 *
 	 * If the polylines intersect then AngularDistance::ZERO is returned.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none) and the closest segment indices are *not* stored
 	 * in @a closest_segment_indices (even if it's not none).
@@ -430,7 +439,7 @@ namespace GPlatesMaths
 	 * The closest point on each polyline lies on the closest segment of each polyline.
 	 * The segment indices can be used with PolylineOnSphere::get_segment().
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PolylineOnSphere &polyline1,
 			const PolylineOnSphere &polyline2,
@@ -455,8 +464,9 @@ namespace GPlatesMaths
 	 * edges (including edges of any polygon interior rings), and this holds even when the exterior and
 	 * interior rings intersect each other.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest points are *not* stored in @a closest_positions
 	 * (even if it's not none) and the closest segment indices are *not* stored in
 	 * @a closest_segment_indices (even if it's not none).
@@ -488,7 +498,7 @@ namespace GPlatesMaths
 	 * hence @a closest_segment_indices (if specified) will always store the closest segment on the
 	 * polyline and the closest segment on the polygon outline.
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PolylineOnSphere &polyline,
 			const PolygonOnSphere &polygon,
@@ -508,7 +518,7 @@ namespace GPlatesMaths
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.
 	 */
 	inline
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PolygonOnSphere &polygon,
 			const PointOnSphere &point,
@@ -532,7 +542,7 @@ namespace GPlatesMaths
 	 *
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PolygonOnSphere &polygon,
 			const MultiPointOnSphere &multipoint,
@@ -551,7 +561,7 @@ namespace GPlatesMaths
 	 *
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PolygonOnSphere &polygon,
 			const PolylineOnSphere &polyline,
@@ -578,8 +588,9 @@ namespace GPlatesMaths
 	 * edges (including edges of any polygon interior rings), and this holds even when the exterior and
 	 * interior rings intersect each other.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest points are *not* stored in @a closest_positions
 	 * (even if it's not none) and the closest segment indices are *not* stored in
 	 * @a closest_segment_indices (even if it's not none).
@@ -609,7 +620,7 @@ namespace GPlatesMaths
 	 * (without intersecting its outline) then the threshold is not exceeded and hence @a closest_segment_indices
 	 * (if specified) will always store the closest segment on each polygon.
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PolygonOnSphere &polygon1,
 			const PolygonOnSphere &polygon2,

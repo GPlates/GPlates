@@ -105,7 +105,7 @@ GPlatesDataMining::DataMiningUtils::shortest_distance(
 				// If either (or both) geometry is a polygon then the distance will be zero
 				// if the other geometry overlaps its interior...
 				true/*geometry1_interior_is_solid*/,
-				true/*geometry2_interior_is_solid*/);
+				true/*geometry2_interior_is_solid*/).get();
 
 		const double dist_between_geos = angular_dist_between_geos.calculate_angle().dval() *
 				GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS;

@@ -282,14 +282,14 @@ namespace GPlatesApi
 
 		// Reference closest point or segment indices on each geometry if requested.
 		boost::optional< boost::tuple<unsigned int &/*geometry1*/, unsigned int &/*geometry2*/> > closest_indices;
-		unsigned int closest_index1;
-		unsigned int closest_index2;
+		unsigned int closest_index1 = 0/*dummy value*/;
+		unsigned int closest_index2 = 0/*dummy value*/;
 		if (return_closest_indices)
 		{
 			closest_indices = boost::make_tuple(boost::ref(closest_index1), boost::ref(closest_index2));
 		}
 
-		const GPlatesMaths::AngularDistance angular_distance =
+		const boost::optional<GPlatesMaths::AngularDistance> angular_distance =
 				GPlatesMaths::minimum_distance(
 						geometry1,
 						geometry2,
@@ -300,8 +300,7 @@ namespace GPlatesApi
 						closest_indices);
 
 		// If a threshold was requested and was exceeded then return Py_None.
-		if (minimum_distance_threshold &&
-			angular_distance == GPlatesMaths::AngularDistance::PI)
+		if (!angular_distance)
 		{
 			return bp::object()/*Py_None*/;
 		}
@@ -317,8 +316,8 @@ namespace GPlatesApi
 		// ie, exactly 0.0). Client C++ code will be fine here because it (epsilon) tests against AngularDistance::ZERO,
 		// but Python code typically tests exactly for 0.0 and so we need to set anything to 0.0 that (epsilon) compares
 		// equal to AngularDistance::ZERO.
-		const GPlatesMaths::real_t distance = (angular_distance != GPlatesMaths::AngularDistance::ZERO /*epsilon comparison*/)
-				? angular_distance.calculate_angle()
+		const GPlatesMaths::real_t distance = (angular_distance.get() != GPlatesMaths::AngularDistance::ZERO /*epsilon comparison*/)
+				? angular_distance->calculate_angle()
 				: 0.0;
 
 		//
@@ -546,7 +545,12 @@ export_geometry_on_sphere()
 				"            geometry2_is_solid=True)\n"
 				"\n"
 				".. versionchanged:: 0.41\n"
-				"   distance threshold is clamped to the range [0, PI] to avoid an exception.\n")
+				"   distance threshold is clamped to the range [0, PI] to avoid an exception.\n"
+				"\n"
+				".. versionchanged:: 1.1\n"
+				"   A distance equal to the threshold no longer counts as exceeding it: geometries exactly "
+				"PI apart are found with a threshold of PI, and intersecting polylines and polygons with a "
+				"threshold of zero. The closest positions and indices always belong to the same closest pair.\n")
 		.staticmethod("distance")
 	;
 

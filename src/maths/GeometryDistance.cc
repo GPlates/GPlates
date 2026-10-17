@@ -37,6 +37,37 @@ namespace GPlatesMaths
 	namespace
 	{
 		/**
+		 * Returns true if @a min_distance is exactly zero (an intersection was found).
+		 *
+		 * This is an exact test (no epsilon) since it is used to stop searching, and a distance
+		 * within epsilon of zero is not necessarily an intersection (a closer candidate can follow).
+		 */
+		bool
+		is_intersection(
+				const boost::optional<AngularDistance> &min_distance)
+		{
+			return min_distance &&
+					!AngularDistance::ZERO.is_precisely_less_than(min_distance.get());
+		}
+
+
+		/**
+		 * Returns true if @a candidate is within the threshold (not none) and is closer than
+		 * @a min_distance, or nothing has been recorded yet (@a min_distance is none).
+		 *
+		 * The first of exactly tied candidates is kept.
+		 */
+		bool
+		is_closer_candidate(
+				const boost::optional<AngularDistance> &candidate,
+				const boost::optional<AngularDistance> &min_distance)
+		{
+			return candidate &&
+					(!min_distance || candidate->is_precisely_less_than(min_distance.get()));
+		}
+
+
+		/**
 		 * Find the minimum distance between two derived @a GeometryOnSphere objects.
 		 */
 		class MinimumDistanceBetweenGeometryOnSpheres :
@@ -49,7 +80,7 @@ namespace GPlatesMaths
 					const GeometryOnSphere &second_geometry,
 					bool geometry1_interior_is_solid,
 					bool geometry2_interior_is_solid,
-					AngularDistance &minimum_distance,
+					boost::optional<AngularDistance> &minimum_distance,
 					const boost::optional<const AngularExtent &> &minimum_distance_threshold,
 					const boost::optional<
 							boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
@@ -83,7 +114,7 @@ namespace GPlatesMaths
 					PointOnSphereVisitor(
 							const PointOnSphere &point_on_sphere1_,
 							bool geometry2_interior_is_solid,
-							AngularDistance &minimum_distance,
+							boost::optional<AngularDistance> &minimum_distance,
 							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
 							const boost::optional<
 									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
@@ -109,13 +140,13 @@ namespace GPlatesMaths
 								point_on_sphere2->position(),
 								d_minimum_distance_threshold);
 
-						if (d_closest_positions)
+						if (d_minimum_distance && d_closest_positions)
 						{
 							boost::get<0>(d_closest_positions.get()) = d_point_on_sphere1.position_vector();
 							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
 
-						if (d_closest_indices)
+						if (d_minimum_distance && d_closest_indices)
 						{
 							boost::get<0>(d_closest_indices.get()) = 0;
 							boost::get<1>(d_closest_indices.get()) = 0;
@@ -145,11 +176,11 @@ namespace GPlatesMaths
 								closest_position_in_multipoint2,
 								closest_position_index_in_multipoint2);
 
-						if (d_closest_positions)
+						if (d_minimum_distance && d_closest_positions)
 						{
 							boost::get<0>(d_closest_positions.get()) = d_point_on_sphere1.position_vector();
 						}
-						if (d_closest_indices)
+						if (d_minimum_distance && d_closest_indices)
 						{
 							boost::get<0>(d_closest_indices.get()) = 0;
 						}
@@ -179,11 +210,11 @@ namespace GPlatesMaths
 								closest_position_on_polygon2,
 								closest_segment_index_in_polygon2);
 
-						if (d_closest_positions)
+						if (d_minimum_distance && d_closest_positions)
 						{
 							boost::get<0>(d_closest_positions.get()) = d_point_on_sphere1.position_vector();
 						}
-						if (d_closest_indices)
+						if (d_minimum_distance && d_closest_indices)
 						{
 							boost::get<0>(d_closest_indices.get()) = 0;
 						}
@@ -212,11 +243,11 @@ namespace GPlatesMaths
 								closest_position_on_polyline2,
 								closest_segment_index_in_polyline2);
 
-						if (d_closest_positions)
+						if (d_minimum_distance && d_closest_positions)
 						{
 							boost::get<0>(d_closest_positions.get()) = d_point_on_sphere1.position_vector();
 						}
-						if (d_closest_indices)
+						if (d_minimum_distance && d_closest_indices)
 						{
 							boost::get<0>(d_closest_indices.get()) = 0;
 						}
@@ -226,7 +257,7 @@ namespace GPlatesMaths
 
 					const PointOnSphere &d_point_on_sphere1;
 					bool d_geometry2_interior_is_solid;
-					AngularDistance &d_minimum_distance;
+					boost::optional<AngularDistance> &d_minimum_distance;
 					const boost::optional<const AngularExtent &> &d_minimum_distance_threshold;
 					const boost::optional<
 							boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
@@ -264,7 +295,7 @@ namespace GPlatesMaths
 					MultiPointOnSphereVisitor(
 							const MultiPointOnSphere &multi_point_on_sphere1_,
 							bool geometry2_interior_is_solid,
-							AngularDistance &minimum_distance,
+							boost::optional<AngularDistance> &minimum_distance,
 							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
 							const boost::optional<
 									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
@@ -303,11 +334,11 @@ namespace GPlatesMaths
 								closest_position_in_multipoint1,
 								closest_position_index_in_multipoint1);
 
-						if (d_closest_positions)
+						if (d_minimum_distance && d_closest_positions)
 						{
 							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
-						if (d_closest_indices)
+						if (d_minimum_distance && d_closest_indices)
 						{
 							boost::get<1>(d_closest_indices.get()) = 0;
 						}
@@ -357,7 +388,7 @@ namespace GPlatesMaths
 
 					const MultiPointOnSphere &d_multi_point_on_sphere1;
 					bool d_geometry2_interior_is_solid;
-					AngularDistance &d_minimum_distance;
+					boost::optional<AngularDistance> &d_minimum_distance;
 					const boost::optional<const AngularExtent &> &d_minimum_distance_threshold;
 					const boost::optional<
 							boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
@@ -396,7 +427,7 @@ namespace GPlatesMaths
 							const PolygonOnSphere &polygon_on_sphere1_,
 							bool geometry1_interior_is_solid,
 							bool geometry2_interior_is_solid,
-							AngularDistance &minimum_distance,
+							boost::optional<AngularDistance> &minimum_distance,
 							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
 							const boost::optional<
 									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
@@ -437,11 +468,11 @@ namespace GPlatesMaths
 								closest_position_on_polygon1,
 								closest_segment_index_in_polygon1);
 
-						if (d_closest_positions)
+						if (d_minimum_distance && d_closest_positions)
 						{
 							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
-						if (d_closest_indices)
+						if (d_minimum_distance && d_closest_indices)
 						{
 							boost::get<1>(d_closest_indices.get()) = 0;
 						}
@@ -495,7 +526,7 @@ namespace GPlatesMaths
 					const PolygonOnSphere &d_polygon_on_sphere1;
 					bool d_geometry1_interior_is_solid;
 					bool d_geometry2_interior_is_solid;
-					AngularDistance &d_minimum_distance;
+					boost::optional<AngularDistance> &d_minimum_distance;
 					const boost::optional<const AngularExtent &> &d_minimum_distance_threshold;
 					const boost::optional<
 							boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
@@ -534,7 +565,7 @@ namespace GPlatesMaths
 					PolylineOnSphereVisitor(
 							const PolylineOnSphere &polyline_on_sphere1_,
 							bool geometry2_interior_is_solid,
-							AngularDistance &minimum_distance,
+							boost::optional<AngularDistance> &minimum_distance,
 							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
 							const boost::optional<
 									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
@@ -573,11 +604,11 @@ namespace GPlatesMaths
 								closest_position_on_polyline1,
 								closest_segment_index_in_polyline1);
 
-						if (d_closest_positions)
+						if (d_minimum_distance && d_closest_positions)
 						{
 							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
-						if (d_closest_indices)
+						if (d_minimum_distance && d_closest_indices)
 						{
 							boost::get<1>(d_closest_indices.get()) = 0;
 						}
@@ -627,7 +658,7 @@ namespace GPlatesMaths
 
 					const PolylineOnSphere &d_polyline_on_sphere1;
 					bool d_geometry2_interior_is_solid;
-					AngularDistance &d_minimum_distance;
+					boost::optional<AngularDistance> &d_minimum_distance;
 					const boost::optional<const AngularExtent &> &d_minimum_distance_threshold;
 					const boost::optional<
 							boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
@@ -653,7 +684,7 @@ namespace GPlatesMaths
 			const GeometryOnSphere &d_second_geometry;
 			bool d_geometry1_interior_is_solid;
 			bool d_geometry2_interior_is_solid;
-			AngularDistance &d_minimum_distance;
+			boost::optional<AngularDistance> &d_minimum_distance;
 			const boost::optional<const AngularExtent &> &d_minimum_distance_threshold;
 			const boost::optional<
 					boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
@@ -673,7 +704,7 @@ namespace GPlatesMaths
 				const PointOnSphere &point,
 				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType> &polygeom_bounding_tree,
 				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::node_type &polygeom_sub_tree_node,
-				AngularDistance &min_distance,
+				boost::optional<AngularDistance> &min_distance,
 				AngularExtent &min_distance_threshold,
 				const boost::optional<UnitVector3D &> &closest_position_on_polygeom,
 				boost::optional<unsigned int &> closest_segment_index_in_polygeom)
@@ -682,6 +713,18 @@ namespace GPlatesMaths
 
 			if (polygeom_sub_tree_node.is_leaf_node())
 			{
+				// The closest point on a great circle arc is first stored here, and only copied to
+				// the caller's closest point when the candidate is recorded. A distance equal to
+				// the minimum so far does not exceed the threshold but is not recorded, so writing
+				// straight into the caller's closest point would pair it with the segment index of
+				// another candidate.
+				UnitVector3D candidate_position_on_polygeom = UnitVector3D::xBasis()/*dummy value*/;
+				boost::optional<UnitVector3D &> candidate_position_on_polygeom_ref;
+				if (closest_position_on_polygeom)
+				{
+					candidate_position_on_polygeom_ref = candidate_position_on_polygeom;
+				}
+
 				// Iterate over the great circle arcs of the leaf node.
 				typename bounding_tree_type::great_circle_arc_const_iterator_type
 						gca_iter = polygeom_sub_tree_node.get_bounded_great_circle_arcs_begin();
@@ -693,18 +736,24 @@ namespace GPlatesMaths
 					const GreatCircleArc &gca = *gca_iter;
 
 					// Calculate minimum distance from the point to the current great circle arc.
-					const AngularDistance min_distance_point_to_gca =
+					const boost::optional<AngularDistance> min_distance_point_to_gca =
 							minimum_distance(
 									point,
 									gca,
 									min_distance_threshold,
-									closest_position_on_polygeom);
+									candidate_position_on_polygeom_ref);
 
 					// If shortest distance so far (within threshold)...
-					if (min_distance_point_to_gca.is_precisely_less_than(min_distance))
+					if (is_closer_candidate(min_distance_point_to_gca, min_distance))
 					{
 						min_distance = min_distance_point_to_gca;
-						min_distance_threshold = AngularExtent(min_distance);
+						min_distance_threshold = AngularExtent(min_distance.get());
+
+						// If closest position on polygeom is requested...
+						if (closest_position_on_polygeom)
+						{
+							closest_position_on_polygeom.get() = candidate_position_on_polygeom;
+						}
 
 						// If index of closest segment in polygeom is requested...
 						if (closest_segment_index_in_polygeom)
@@ -778,7 +827,7 @@ namespace GPlatesMaths
 				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type>::node_type &geometry1_sub_tree_node,
 				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type> &geometry2_bounding_tree,
 				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type>::node_type &geometry2_sub_tree_node,
-				AngularDistance &min_distance,
+				boost::optional<AngularDistance> &min_distance,
 				AngularExtent &min_distance_threshold,
 				const boost::optional< boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/> > &closest_positions,
 				const boost::optional< boost::tuple<unsigned int &/*geometry1*/, unsigned int &/*geometry2*/> > &closest_segment_indices);
@@ -795,13 +844,19 @@ namespace GPlatesMaths
 				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type>::node_type &geometry1_sub_tree_node,
 				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type> &geometry2_bounding_tree,
 				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type>::node_type &geometry2_sub_tree_node,
-				AngularDistance &min_distance,
+				boost::optional<AngularDistance> &min_distance,
 				AngularExtent &min_distance_threshold,
 				const boost::optional< boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/> > &closest_positions,
 				const boost::optional< boost::tuple<unsigned int &/*geometry1*/, unsigned int &/*geometry2*/> > &closest_segment_indices)
 		{
 			typedef PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type> geometry1_bounding_tree_type;
 			typedef PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type> geometry2_bounding_tree_type;
+
+			// If the geometries are already known to intersect then nothing can be closer.
+			if (is_intersection(min_distance))
+			{
+				return;
+			}
 
 			// If both geometries are at one of their leaf nodes then calculate N*M distances
 			// between the N great circle arcs in first geometry's leaf node and the M great
@@ -840,7 +895,7 @@ namespace GPlatesMaths
 
 						// Calculate minimum distance between the current great circle arcs of the
 						// two geometries.
-						const AngularDistance min_distance_between_gcas =
+						const boost::optional<AngularDistance> min_distance_between_gcas =
 								minimum_distance(
 										gca1,
 										gca2,
@@ -848,10 +903,10 @@ namespace GPlatesMaths
 										closest_arc_positions);
 
 						// If shortest distance so far (within threshold)...
-						if (min_distance_between_gcas.is_precisely_less_than(min_distance))
+						if (is_closer_candidate(min_distance_between_gcas, min_distance))
 						{
 							min_distance = min_distance_between_gcas;
-							min_distance_threshold = AngularExtent(min_distance);
+							min_distance_threshold = AngularExtent(min_distance.get());
 
 							// If positions on closest segments in polygeoms is requested...
 							if (closest_positions)
@@ -865,6 +920,12 @@ namespace GPlatesMaths
 							{
 								boost::get<0>(closest_segment_indices.get()) = gca1_index;
 								boost::get<1>(closest_segment_indices.get()) = gca2_index;
+							}
+
+							// If the geometries intersect then nothing can be closer.
+							if (is_intersection(min_distance))
+							{
+								return;
 							}
 						}
 					}
@@ -995,7 +1056,7 @@ namespace GPlatesMaths
 				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type>::node_type &geometry1_sub_tree_node,
 				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type> &geometry2_bounding_tree,
 				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type>::node_type &geometry2_sub_tree_node,
-				AngularDistance &min_distance,
+				boost::optional<AngularDistance> &min_distance,
 				AngularExtent &min_distance_threshold,
 				const boost::optional< boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/> > &closest_positions,
 				const boost::optional< boost::tuple<unsigned int &/*geometry1*/, unsigned int &/*geometry2*/> > &closest_segment_indices)
@@ -1097,7 +1158,7 @@ namespace GPlatesMaths
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const GeometryOnSphere &geometry1,
 		const GeometryOnSphere &geometry2,
@@ -1107,7 +1168,7 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/> > closest_positions,
 		boost::optional< boost::tuple<unsigned int &/*geometry1*/, unsigned int &/*geometry2*/> > closest_indices)
 {
-	AngularDistance minimum_distance(AngularDistance::PI);
+	boost::optional<AngularDistance> minimum_distance;
 
 	MinimumDistanceBetweenGeometryOnSpheres visitor(
 			geometry2,
@@ -1124,7 +1185,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const PointOnSphere &point1,
 		const PointOnSphere &point2,
@@ -1134,19 +1195,18 @@ GPlatesMaths::minimum_distance(
 			AngularDistance::create_from_cosine(
 					dot(point1.position_vector(), point2.position_vector()));
 
-	// If there's a threshold and the minimum distance is greater than the threshold then
-	// return the maximum possible distance (PI) to signal this.
+	// If there's a threshold and the minimum distance is greater than the threshold.
 	if (minimum_distance_threshold &&
 		min_distance.is_precisely_greater_than(minimum_distance_threshold.get()))
 	{
-		return AngularDistance::PI;
+		return boost::none;
 	}
 
 	return min_distance;
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const PointOnSphere &point,
 		const MultiPointOnSphere &multipoint,
@@ -1154,9 +1214,9 @@ GPlatesMaths::minimum_distance(
 		boost::optional<UnitVector3D &> closest_position_in_multipoint,
 		boost::optional<unsigned int &> closest_position_index_in_multipoint)
 {
-	// The (maximum possible) distance to return if shortest distance between both geometries
-	// is not within the minimum distance threshold (if any).
-	AngularDistance min_distance = AngularDistance::PI;
+	// Remains none if the shortest distance between both geometries is not within the
+	// minimum distance threshold (if any).
+	boost::optional<AngularDistance> min_distance;
 
 	AngularExtent min_distance_threshold = AngularExtent::PI;
 	
@@ -1166,11 +1226,11 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the point is further away, from the multi-point's bounding small circle, than the
-		// threshold then return the maximum possible distance (PI) to signal this.
+		// threshold then the threshold is exceeded.
 		if (minimum_distance(point, multipoint.get_bounding_small_circle())
 			.is_precisely_greater_than(min_distance_threshold))
 		{
-			return AngularDistance::PI;
+			return boost::none;
 		}
 	}
 
@@ -1182,15 +1242,14 @@ GPlatesMaths::minimum_distance(
 	{
 		const PointOnSphere &multipoint_point = *multipoint_iter;
 
-		const AngularDistance min_distance_point_to_multipoint_point =
-				AngularDistance::create_from_cosine(
-						dot(point.position_vector(), multipoint_point.position_vector()));
+		const boost::optional<AngularDistance> min_distance_point_to_multipoint_point =
+				minimum_distance(point, multipoint_point, min_distance_threshold);
 
 		// If shortest distance so far (within threshold)...
-		if (min_distance_point_to_multipoint_point.is_precisely_less_than(min_distance) &&
-			min_distance_point_to_multipoint_point.is_precisely_less_than(min_distance_threshold))
+		if (is_closer_candidate(min_distance_point_to_multipoint_point, min_distance))
 		{
 			min_distance = min_distance_point_to_multipoint_point;
+			min_distance_threshold = AngularExtent(min_distance.get());
 			if (closest_position_in_multipoint)
 			{
 				closest_position_in_multipoint.get() = multipoint_point.position_vector();
@@ -1206,7 +1265,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const PointOnSphere &point,
 		const PolylineOnSphere &polyline,
@@ -1219,9 +1278,9 @@ GPlatesMaths::minimum_distance(
 	const PolylineOnSphere::bounding_tree_type::node_type polyline_bounding_tree_root_node =
 			polyline_bounding_tree.get_root_node();
 
-	// The (maximum possible) distance to return if shortest distance between both geometries
-	// is not within the minimum distance threshold (if any).
-	AngularDistance min_distance = AngularDistance::PI;
+	// Remains none if the shortest distance between both geometries is not within the
+	// minimum distance threshold (if any).
+	boost::optional<AngularDistance> min_distance;
 
 	// Note that after each minimum distance component calculation we update the threshold
 	// with the updated minimum distance.
@@ -1238,11 +1297,11 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the point is further away (from the root node's bounding small circle) than the
-		// threshold then return the maximum possible distance (PI) to signal this.
+		// threshold then the threshold is exceeded.
 		if (minimum_distance(point, polyline_bounding_tree_root_node.get_bounding_small_circle())
 			.is_precisely_greater_than(min_distance_threshold))
 		{
-			return AngularDistance::PI;
+			return boost::none;
 		}
 	}
 
@@ -1259,7 +1318,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const PointOnSphere &point,
 		const PolygonOnSphere &polygon,
@@ -1273,9 +1332,9 @@ GPlatesMaths::minimum_distance(
 	const PolygonOnSphere::bounding_tree_type::node_type polygon_bounding_tree_root_node =
 			polygon_bounding_tree.get_root_node();
 
-	// The (maximum possible) distance to return if shortest distance between both geometries
-	// is not within the minimum distance threshold (if any).
-	AngularDistance min_distance = AngularDistance::PI;
+	// Remains none if the shortest distance between both geometries is not within the
+	// minimum distance threshold (if any).
+	boost::optional<AngularDistance> min_distance;
 
 	// Note that after each minimum distance component calculation we update the threshold
 	// with the updated minimum distance.
@@ -1292,11 +1351,11 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the point is further away (from the root node's bounding small circle) than the
-		// threshold then return the maximum possible distance (PI) to signal this.
+		// threshold then the threshold is exceeded.
 		if (minimum_distance(point, polygon_bounding_tree_root_node.get_bounding_small_circle())
 			.is_precisely_greater_than(min_distance_threshold))
 		{
-			return AngularDistance::PI;
+			return boost::none;
 		}
 	}
 
@@ -1312,7 +1371,7 @@ GPlatesMaths::minimum_distance(
 			{
 				// Don't use a threshold since we now need to find the closest segment regardless because
 				// the polygon interior is solid (and hence threshold is zero and never exceeded).
-				min_distance = AngularDistance::PI;
+				min_distance = boost::none;
 				min_distance_threshold = AngularExtent::PI;
 
 				minimum_distance_between_point_and_poly_geometry_bounding_tree_node(
@@ -1344,7 +1403,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const MultiPointOnSphere &multipoint1,
 		const MultiPointOnSphere &multipoint2,
@@ -1352,9 +1411,9 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<UnitVector3D &/*multipoint1*/, UnitVector3D &/*multipoint2*/> > closest_positions,
 		boost::optional< boost::tuple<unsigned int &/*multipoint1*/, unsigned int &/*multipoint2*/> > closest_position_indices)
 {
-	// The (maximum possible) distance to return if shortest distance between both geometries
-	// is not within the minimum distance threshold (if any).
-	AngularDistance min_distance = AngularDistance::PI;
+	// Remains none if the shortest distance between both geometries is not within the
+	// minimum distance threshold (if any).
+	boost::optional<AngularDistance> min_distance;
 
 	AngularExtent min_distance_threshold = AngularExtent::PI;
 	
@@ -1364,13 +1423,13 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the bounding small circles of the two multi-points are further away than the
-		// threshold then return the maximum possible distance (PI) to signal this.
+		// threshold then the threshold is exceeded.
 		if (minimum_distance(
 				multipoint1.get_bounding_small_circle(),
 				multipoint2.get_bounding_small_circle())
 			.is_precisely_greater_than(min_distance_threshold))
 		{
-			return AngularDistance::PI;
+			return boost::none;
 		}
 	}
 
@@ -1419,6 +1478,24 @@ GPlatesMaths::minimum_distance(
 		}
 	}
 
+	// The closest point (and its index) in the smaller multi-point is first stored here, and only
+	// copied to the caller when the candidate is recorded. A distance equal to the minimum so far
+	// does not exceed the threshold but is not recorded, so writing straight to the caller would
+	// pair the closest point in one multi-point with the closest point in the other from another
+	// candidate.
+	UnitVector3D candidate_position_in_smaller = UnitVector3D::xBasis()/*dummy value*/;
+	unsigned int candidate_index_in_smaller = 0;
+	boost::optional<UnitVector3D &> candidate_position_in_smaller_ref;
+	boost::optional<unsigned int &> candidate_index_in_smaller_ref;
+	if (closest_position_in_smaller_multipoint)
+	{
+		candidate_position_in_smaller_ref = candidate_position_in_smaller;
+	}
+	if (closest_position_index_in_smaller_multipoint)
+	{
+		candidate_index_in_smaller_ref = candidate_index_in_smaller;
+	}
+
 	// Iterate over the points in the larger multi-point.
 	MultiPointOnSphere::const_iterator larger_multipoint_iter = larger_multipoint->begin();
 	MultiPointOnSphere::const_iterator larger_multipoint_end = larger_multipoint->end();
@@ -1429,19 +1506,27 @@ GPlatesMaths::minimum_distance(
 	{
 		const PointOnSphere &larger_multipoint_point = *larger_multipoint_iter;
 
-		const AngularDistance min_distance_larger_multipoint_point_to_smaller_multipoint =
+		const boost::optional<AngularDistance> min_distance_to_smaller_multipoint =
 				minimum_distance(
 						larger_multipoint_point,
 						*smaller_multipoint,
 						min_distance_threshold,
-						closest_position_in_smaller_multipoint,
-						closest_position_index_in_smaller_multipoint);
+						candidate_position_in_smaller_ref,
+						candidate_index_in_smaller_ref);
 
 		// If shortest distance so far (within threshold)...
-		if (min_distance_larger_multipoint_point_to_smaller_multipoint.is_precisely_less_than(min_distance))
+		if (is_closer_candidate(min_distance_to_smaller_multipoint, min_distance))
 		{
-			min_distance = min_distance_larger_multipoint_point_to_smaller_multipoint;
-			min_distance_threshold = AngularExtent(min_distance);
+			min_distance = min_distance_to_smaller_multipoint;
+			min_distance_threshold = AngularExtent(min_distance.get());
+			if (closest_position_in_smaller_multipoint)
+			{
+				closest_position_in_smaller_multipoint.get() = candidate_position_in_smaller;
+			}
+			if (closest_position_index_in_smaller_multipoint)
+			{
+				closest_position_index_in_smaller_multipoint.get() = candidate_index_in_smaller;
+			}
 			if (closest_position_in_larger_multipoint)
 			{
 				closest_position_in_larger_multipoint.get() = larger_multipoint_point.position_vector();
@@ -1457,7 +1542,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const MultiPointOnSphere &multipoint,
 		const PolylineOnSphere &polyline,
@@ -1465,9 +1550,9 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polyline*/> > closest_positions,
 		boost::optional< boost::tuple<unsigned int &/*multipoint*/, unsigned int &/*polyline*/> > closest_indices)
 {
-	// The (maximum possible) distance to return if shortest distance between both geometries
-	// is not within the minimum distance threshold (if any).
-	AngularDistance min_distance = AngularDistance::PI;
+	// Remains none if the shortest distance between both geometries is not within the
+	// minimum distance threshold (if any).
+	boost::optional<AngularDistance> min_distance;
 
 	AngularExtent min_distance_threshold = AngularExtent::PI;
 	
@@ -1477,13 +1562,13 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the bounding small circles of the multi-point and the polyline are further away than
-		// the threshold then return the maximum possible distance (PI) to signal this.
+		// the threshold then the threshold is exceeded.
 		if (minimum_distance(
 				multipoint.get_bounding_small_circle(),
 				polyline.get_bounding_small_circle())
 			.is_precisely_greater_than(min_distance_threshold))
 		{
-			return AngularDistance::PI;
+			return boost::none;
 		}
 	}
 
@@ -1503,6 +1588,24 @@ GPlatesMaths::minimum_distance(
 		closest_segment_index_in_polyline = boost::get<1>(closest_indices.get());
 	}
 
+	// The closest point (and segment index) on the polyline is first stored here, and only copied
+	// to the caller when the candidate is recorded. A distance equal to the minimum so far does not
+	// exceed the threshold but is not recorded, so writing straight to the caller would pair the
+	// closest point on the polyline with the closest point in the multi-point from another
+	// candidate.
+	UnitVector3D candidate_position_on_polyline = UnitVector3D::xBasis()/*dummy value*/;
+	unsigned int candidate_segment_index_in_polyline = 0;
+	boost::optional<UnitVector3D &> candidate_position_on_polyline_ref;
+	boost::optional<unsigned int &> candidate_segment_index_in_polyline_ref;
+	if (closest_position_on_polyline)
+	{
+		candidate_position_on_polyline_ref = candidate_position_on_polyline;
+	}
+	if (closest_segment_index_in_polyline)
+	{
+		candidate_segment_index_in_polyline_ref = candidate_segment_index_in_polyline;
+	}
+
 	// Iterate over the points in the multi-point.
 	MultiPointOnSphere::const_iterator multipoint_iter = multipoint.begin();
 	MultiPointOnSphere::const_iterator multipoint_end = multipoint.end();
@@ -1511,19 +1614,27 @@ GPlatesMaths::minimum_distance(
 	{
 		const PointOnSphere &multipoint_point = *multipoint_iter;
 
-		const AngularDistance min_distance_multipoint_point_to_polyline =
+		const boost::optional<AngularDistance> min_distance_multipoint_point_to_polyline =
 				minimum_distance(
 						multipoint_point,
 						polyline,
 						min_distance_threshold,
-						closest_position_on_polyline,
-						closest_segment_index_in_polyline);
+						candidate_position_on_polyline_ref,
+						candidate_segment_index_in_polyline_ref);
 
 		// If shortest distance so far (within threshold)...
-		if (min_distance_multipoint_point_to_polyline.is_precisely_less_than(min_distance))
+		if (is_closer_candidate(min_distance_multipoint_point_to_polyline, min_distance))
 		{
 			min_distance = min_distance_multipoint_point_to_polyline;
-			min_distance_threshold = AngularExtent(min_distance);
+			min_distance_threshold = AngularExtent(min_distance.get());
+			if (closest_position_on_polyline)
+			{
+				closest_position_on_polyline.get() = candidate_position_on_polyline;
+			}
+			if (closest_segment_index_in_polyline)
+			{
+				closest_segment_index_in_polyline.get() = candidate_segment_index_in_polyline;
+			}
 			if (closest_position_in_multipoint)
 			{
 				closest_position_in_multipoint.get() = multipoint_point.position_vector();
@@ -1539,7 +1650,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const MultiPointOnSphere &multipoint,
 		const PolygonOnSphere &polygon,
@@ -1548,9 +1659,9 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polygon*/> > closest_positions,
 		boost::optional< boost::tuple<unsigned int &/*multipoint*/, unsigned int &/*polygon*/> > closest_indices)
 {
-	// The (maximum possible) distance to return if shortest distance between both geometries
-	// is not within the minimum distance threshold (if any).
-	AngularDistance min_distance = AngularDistance::PI;
+	// Remains none if the shortest distance between both geometries is not within the
+	// minimum distance threshold (if any).
+	boost::optional<AngularDistance> min_distance;
 
 	AngularExtent min_distance_threshold = AngularExtent::PI;
 	
@@ -1560,13 +1671,13 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the bounding small circles of the multi-point and the polygon are further away than
-		// the threshold then return the maximum possible distance (PI) to signal this.
+		// the threshold then the threshold is exceeded.
 		if (minimum_distance(
 				multipoint.get_bounding_small_circle(),
 				polygon.get_bounding_small_circle())
 			.is_precisely_greater_than(min_distance_threshold))
 		{
-			return AngularDistance::PI;
+			return boost::none;
 		}
 	}
 
@@ -1586,6 +1697,24 @@ GPlatesMaths::minimum_distance(
 		closest_segment_index_in_polygon = boost::get<1>(closest_indices.get());
 	}
 
+	// The closest point (and segment index) on the polygon is first stored here, and only copied to
+	// the caller when the candidate is recorded. A distance equal to the minimum so far does not
+	// exceed the threshold but is not recorded, so writing straight to the caller would pair the
+	// closest point on the polygon with the closest point in the multi-point from another
+	// candidate.
+	UnitVector3D candidate_position_on_polygon = UnitVector3D::xBasis()/*dummy value*/;
+	unsigned int candidate_segment_index_in_polygon = 0;
+	boost::optional<UnitVector3D &> candidate_position_on_polygon_ref;
+	boost::optional<unsigned int &> candidate_segment_index_in_polygon_ref;
+	if (closest_position_on_polygon)
+	{
+		candidate_position_on_polygon_ref = candidate_position_on_polygon;
+	}
+	if (closest_segment_index_in_polygon)
+	{
+		candidate_segment_index_in_polygon_ref = candidate_segment_index_in_polygon;
+	}
+
 	// Iterate over the points in the multi-point.
 	MultiPointOnSphere::const_iterator multipoint_iter = multipoint.begin();
 	MultiPointOnSphere::const_iterator multipoint_end = multipoint.end();
@@ -1594,20 +1723,28 @@ GPlatesMaths::minimum_distance(
 	{
 		const PointOnSphere &multipoint_point = *multipoint_iter;
 
-		const AngularDistance min_distance_multipoint_point_to_polygon =
+		const boost::optional<AngularDistance> min_distance_multipoint_point_to_polygon =
 				minimum_distance(
 						multipoint_point,
 						polygon,
 						polygon_interior_is_solid,
 						min_distance_threshold,
-						closest_position_on_polygon,
-						closest_segment_index_in_polygon);
+						candidate_position_on_polygon_ref,
+						candidate_segment_index_in_polygon_ref);
 
 		// If shortest distance so far (within threshold)...
-		if (min_distance_multipoint_point_to_polygon.is_precisely_less_than(min_distance))
+		if (is_closer_candidate(min_distance_multipoint_point_to_polygon, min_distance))
 		{
 			min_distance = min_distance_multipoint_point_to_polygon;
-			min_distance_threshold = AngularExtent(min_distance);
+			min_distance_threshold = AngularExtent(min_distance.get());
+			if (closest_position_on_polygon)
+			{
+				closest_position_on_polygon.get() = candidate_position_on_polygon;
+			}
+			if (closest_segment_index_in_polygon)
+			{
+				closest_segment_index_in_polygon.get() = candidate_segment_index_in_polygon;
+			}
 			if (closest_position_in_multipoint)
 			{
 				closest_position_in_multipoint.get() = multipoint_point.position_vector();
@@ -1623,7 +1760,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const PolylineOnSphere &polyline,
 		const MultiPointOnSphere &multipoint,
@@ -1667,7 +1804,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const PolylineOnSphere &polyline1,
 		const PolylineOnSphere &polyline2,
@@ -1683,9 +1820,9 @@ GPlatesMaths::minimum_distance(
 	const PolylineOnSphere::bounding_tree_type::node_type polyline2_bounding_tree_root_node =
 			polyline2_bounding_tree.get_root_node();
 
-	// The (maximum possible) distance to return if shortest distance between both geometries
-	// is not within the minimum distance threshold (if any).
-	AngularDistance min_distance = AngularDistance::PI;
+	// Remains none if the shortest distance between both geometries is not within the
+	// minimum distance threshold (if any).
+	boost::optional<AngularDistance> min_distance;
 
 	// Note that after each minimum distance component calculation we update the threshold
 	// with the updated minimum distance.
@@ -1702,13 +1839,13 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the root node bounding small circles of the two geometries are further away than the
-		// threshold then return the maximum possible distance (PI) to signal this.
+		// threshold then the threshold is exceeded.
 		if (minimum_distance(
 				polyline1_bounding_tree_root_node.get_bounding_small_circle(),
 				polyline2_bounding_tree_root_node.get_bounding_small_circle())
 			.is_precisely_greater_than(min_distance_threshold))
 		{
-			return AngularDistance::PI;
+			return boost::none;
 		}
 	}
 
@@ -1726,7 +1863,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const PolylineOnSphere &polyline,
 		const PolygonOnSphere &polygon,
@@ -1743,9 +1880,9 @@ GPlatesMaths::minimum_distance(
 	const PolygonOnSphere::bounding_tree_type::node_type polygon_bounding_tree_root_node =
 			polygon_bounding_tree.get_root_node();
 
-	// The (maximum possible) distance to return if shortest distance between both geometries
-	// is not within the minimum distance threshold (if any).
-	AngularDistance min_distance = AngularDistance::PI;
+	// Remains none if the shortest distance between both geometries is not within the
+	// minimum distance threshold (if any).
+	boost::optional<AngularDistance> min_distance;
 
 	// Note that after each minimum distance component calculation we update the threshold
 	// with the updated minimum distance.
@@ -1762,13 +1899,13 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the root node bounding small circles of the two geometries are further away than the
-		// threshold then return the maximum possible distance (PI) to signal this.
+		// threshold then the threshold is exceeded.
 		if (minimum_distance(
 				polyline_bounding_tree_root_node.get_bounding_small_circle(),
 				polygon_bounding_tree_root_node.get_bounding_small_circle())
 			.is_precisely_greater_than(min_distance_threshold))
 		{
-			return AngularDistance::PI;
+			return boost::none;
 		}
 	}
 
@@ -1785,7 +1922,7 @@ GPlatesMaths::minimum_distance(
 	// If the polygon interior is solid and the polyline has not intersected the polygon boundary then
 	// it's possible the polyline is completely inside the polygon which also counts as an intersection.
 	if (polygon_interior_is_solid &&
-		min_distance != AngularDistance::ZERO /*epsilon comparison*/)
+		!(min_distance && min_distance.get() == AngularDistance::ZERO /*epsilon comparison*/))
 	{
 		// If the polyline is completely inside the polygon then we only need to test if one of
 		// the polyline's points (any arbitrary point) is inside the polygon (because we know the
@@ -1802,11 +1939,11 @@ GPlatesMaths::minimum_distance(
 			{
 				// Find the closest position and segment in polyline and the closest position and
 				// segment in polygon's *outline* (if haven't already found).
-				if (min_distance == AngularDistance::PI /*epsilon comparison*/)
+				if (!min_distance)
 				{
 					// Don't use a threshold since we now need to find the closest points and
 					// segments regardless.
-					min_distance = AngularDistance::PI;
+					min_distance = boost::none;
 					min_distance_threshold = AngularExtent::PI;
 
 					// Note that we have to call this a second time because the first time (above)
@@ -1838,7 +1975,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const PolygonOnSphere &polygon,
 		const MultiPointOnSphere &multipoint,
@@ -1883,7 +2020,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const PolygonOnSphere &polygon,
 		const PolylineOnSphere &polyline,
@@ -1930,7 +2067,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const PolygonOnSphere &polygon1,
 		const PolygonOnSphere &polygon2,
@@ -1948,9 +2085,9 @@ GPlatesMaths::minimum_distance(
 	const PolygonOnSphere::bounding_tree_type::node_type polygon2_bounding_tree_root_node =
 			polygon2_bounding_tree.get_root_node();
 
-	// The (maximum possible) distance to return if shortest distance between both geometries
-	// is not within the minimum distance threshold (if any).
-	AngularDistance min_distance = AngularDistance::PI;
+	// Remains none if the shortest distance between both geometries is not within the
+	// minimum distance threshold (if any).
+	boost::optional<AngularDistance> min_distance;
 
 	// Note that after each minimum distance component calculation we update the threshold
 	// with the updated minimum distance.
@@ -1967,13 +2104,13 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the root node bounding small circles of the two geometries are further away than the
-		// threshold then return the maximum possible distance (PI) to signal this.
+		// threshold then the threshold is exceeded.
 		if (minimum_distance(
 				polygon1_bounding_tree_root_node.get_bounding_small_circle(),
 				polygon2_bounding_tree_root_node.get_bounding_small_circle())
 			.is_precisely_greater_than(min_distance_threshold))
 		{
-			return AngularDistance::PI;
+			return boost::none;
 		}
 	}
 
@@ -1990,7 +2127,7 @@ GPlatesMaths::minimum_distance(
 	// If polygon1's interior is solid and polygon2 has not intersected polygon1's boundary then it's possible
 	// that one (or more) of polygon2's rings is completely inside polygon1 which also counts as an intersection.
 	if (polygon1_interior_is_solid &&
-		min_distance != AngularDistance::ZERO /*epsilon comparison*/)
+		!(min_distance && min_distance.get() == AngularDistance::ZERO /*epsilon comparison*/))
 	{
 		auto point_in_polygon_func = [](
 				const PolygonOnSphere &polygon,
@@ -2033,11 +2170,11 @@ GPlatesMaths::minimum_distance(
 				closest_segment_indices)
 			{
 				// Find the closest positions/segments in the polygon boundaries (if haven't already found).
-				if (min_distance == AngularDistance::PI /*epsilon comparison*/)
+				if (!min_distance)
 				{
 					// Don't use a threshold since we now need to find the closest points and
 					// segments regardless.
-					min_distance = AngularDistance::PI;
+					min_distance = boost::none;
 					min_distance_threshold = AngularExtent::PI;
 
 					// Note that we have to call this a second time because the first time (above)
@@ -2068,7 +2205,7 @@ GPlatesMaths::minimum_distance(
 	// If polygon2's interior is solid and polygon1 has not intersected polygon2's boundary then it's possible
 	// that one (or more) of polygon1's rings is completely inside polygon2 which also counts as an intersection.
 	if (polygon2_interior_is_solid &&
-		min_distance != AngularDistance::ZERO /*epsilon comparison*/)
+		!(min_distance && min_distance.get() == AngularDistance::ZERO /*epsilon comparison*/))
 	{
 		auto point_in_polygon_func = [](
 				const PolygonOnSphere &polygon,
@@ -2111,11 +2248,11 @@ GPlatesMaths::minimum_distance(
 				closest_segment_indices)
 			{
 				// Find the closest positions/segments in the polygon boundaries (if haven't already found).
-				if (min_distance == AngularDistance::PI /*epsilon comparison*/)
+				if (!min_distance)
 				{
 					// Don't use a threshold since we now need to find the closest points and
 					// segments regardless.
-					min_distance = AngularDistance::PI;
+					min_distance = boost::none;
 					min_distance_threshold = AngularExtent::PI;
 
 					// Note that we have to call this a second time because the first time (above)
