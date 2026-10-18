@@ -49,6 +49,7 @@ Changes since 1.0.0:
   * Fixed `GeometryOnSphere.distance()` returning `None` for intersecting polylines/polygons when the threshold was zero (or very nearly zero).
   * Fixed `GeometryOnSphere.distance()` sometimes returning `None` when the threshold equals the distance (eg, a distance it returned earlier, passed back as the threshold, or a threshold of zero for geometries it reports as zero distance apart). A NaN threshold now raises `ValueError` (it was ignored).
   * Fixed `GeometryOnSphere.distance()` returning the closest position of one candidate and the closest index of another, equally close, candidate (eg, two points of a multi-point equally close to a polyline).
+  * Fixed `GeometryOnSphere.distance()` returning, for polylines/polygons that cross at a very shallow angle, a closest position that could lie slightly off one of them (up to about a metre for long segments).
   * Fixed a rare "function 'sqrt' invoked with invalid argument" error (from a rounding error when calculating angular extents).
   * A malformed `gml:pos` or `gml:coordinates` in a GPML file is now dropped as a read error instead of silently loading as a point at (0, 0).
   * Fixed crustal thinning factors in GPML files written before GPlates 1.6.338 not being upgraded when loaded.

@@ -38,10 +38,14 @@ def _angle(a, b):
     return math.atan2(math.sqrt(_dot(_cross(a, b), _cross(a, b))), _dot(a, b))
 
 def _point_to_arc(p, a, b):
-    normal = _cross(a, b)
-    if _dot(normal, normal) < 1e-24:  # zero-length arc
-        return _angle(p, a)
-    normal = _normalise(normal)
+    if _angle(a, b) < 1e-5:
+        # A short arc's plane is too inaccurate (its normal is a tiny cross product), so find the closest
+        # point on its chord instead, and project that onto the sphere (onto the arc).
+        chord = tuple(b[i] - a[i] for i in range(3))
+        chord_length_squared = _dot(chord, chord)
+        f = 0.0 if chord_length_squared == 0 else max(0.0, min(1.0, _dot(tuple(p[i] - a[i] for i in range(3)), chord) / chord_length_squared))
+        return _angle(p, _normalise(tuple(a[i] + f * chord[i] for i in range(3))))
+    normal = _normalise(_cross(a, b))
     projected = tuple(p[i] - _dot(p, normal) * normal[i] for i in range(3))
     if _dot(projected, projected) > 1e-24:
         q = _normalise(projected)
@@ -61,17 +65,26 @@ def _arcs_intersect(a1, b1, a2, b2):
     return False
 
 def _arcs(geometry):
-    points = [point.to_xyz() for point in geometry.get_points()]
     if isinstance(geometry, (pygplates.PointOnSphere, pygplates.MultiPointOnSphere)):
-        return [(p, p) for p in points]
-    if isinstance(geometry, pygplates.PolygonOnSphere):
-        points.append(points[0])
-    return list(zip(points[:-1], points[1:]))
+        return [(point.to_xyz(), point.to_xyz()) for point in geometry.get_points()]
+    # Includes a polygon's interior rings.
+    return [(segment.get_start_point().to_xyz(), segment.get_end_point().to_xyz())
+            for segment in geometry.get_segments()]
 
 def _brute_force_distance(geometry1, geometry2, solid1, solid2):
+    # Inside a solid polygon is zero distance. If the outlines do not intersect (found below) then each
+    # ring (or polyline) is entirely inside or outside, so testing one vertex of each is enough.
     for polygon, solid, other in ((geometry1, solid1, geometry2), (geometry2, solid2, geometry1)):
-        if (solid and isinstance(polygon, pygplates.PolygonOnSphere) and
-                any(polygon.is_point_in_polygon(point) for point in other.get_points())):
+        if not (solid and isinstance(polygon, pygplates.PolygonOnSphere)):
+            continue
+        if isinstance(other, pygplates.PolygonOnSphere):
+            points = [other.get_exterior_ring_points()[0]] + [
+                other.get_interior_ring_points(ring)[0] for ring in range(other.get_number_of_interior_rings())]
+        elif isinstance(other, pygplates.PolylineOnSphere):
+            points = [other.get_points()[0]]
+        else:
+            points = list(other.get_points())
+        if any(polygon.is_point_in_polygon(point) for point in points):
             return 0.0
     distance = math.pi
     for a1, b1 in _arcs(geometry1):
@@ -95,22 +108,66 @@ def _distance_to_indexed(geometry, index, p):
 def _random_unit_vector(rng):
     return _normalise((rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 1)))
 
-def _random_geometry(rng, centre):
-    # Clustered around 'centre' (within about 20 degrees).
-    def random_point(near, spread):
-        return pygplates.PointOnSphere(_normalise(tuple(near[i] + rng.gauss(0, spread) for i in range(3))))
+def _random_point(rng, near, spread):
+    return pygplates.PointOnSphere(_normalise(tuple(near[i] + rng.gauss(0, spread) for i in range(3))))
+
+def _random_geometry(rng, centre, scale=1.0, duplicates=False):
+    # Clustered around 'centre' (within about 20 degrees, times 'scale').
+    # With 'duplicates', polylines and polygons get duplicate consecutive points (zero-length segments).
     geometry_type = rng.choice(('point', 'multipoint', 'polyline', 'polyline', 'polygon', 'polygon'))
     if geometry_type == 'point':
-        return random_point(centre, 0.2)
+        return _random_point(rng, centre, 0.2 * scale)
     if geometry_type == 'multipoint':
-        return pygplates.MultiPointOnSphere([random_point(centre, 0.2) for _ in range(rng.randint(1, 30))])
+        return pygplates.MultiPointOnSphere(
+            [_random_point(rng, centre, 0.2 * scale) for _ in range(rng.randint(1, 30))])
     # A random walk, so that segments are short and the bounding tree has spatially coherent nodes.
-    points = [random_point(centre, 0.15)]
+    points = [_random_point(rng, centre, 0.15 * scale)]
     for _ in range(rng.randint(10, 30) - 1):
-        points.append(random_point(points[-1].to_xyz(), 0.04))
+        points.append(_random_point(rng, points[-1].to_xyz(), 0.04 * scale))
+        if duplicates and rng.random() < 0.2:
+            points.append(points[-1])
     if geometry_type == 'polyline':
         return pygplates.PolylineOnSphere(points)
     return pygplates.PolygonOnSphere(points)
+
+def _random_ring(rng, centre, radius, num_points):
+    # A roughly circular ring of points about 'radius' radians from 'centre'.
+    u = _normalise(_cross(centre, (0.3, 0.5, 0.8) if abs(centre[2]) < 0.9 else (1.0, 0.0, 0.0)))
+    v = _cross(centre, u)
+    points = []
+    for k in range(num_points):
+        angle = 2 * math.pi * k / num_points
+        r = radius * rng.uniform(0.8, 1.2)
+        points.append(pygplates.PointOnSphere(_normalise(tuple(
+            math.cos(r) * centre[i] + math.sin(r) * (math.cos(angle) * u[i] + math.sin(angle) * v[i])
+            for i in range(3)))))
+    return points
+
+def _random_polygon_with_interior_rings(rng, centre):
+    interior_rings = [
+        _random_ring(rng, _random_point(rng, centre, 0.05).to_xyz(), rng.uniform(0.02, 0.08), rng.randint(5, 20))
+        for _ in range(rng.randint(1, 3))]
+    return pygplates.PolygonOnSphere(_random_ring(rng, centre, 0.3, rng.randint(20, 40)), interior_rings)
+
+def _random_global_geometry(rng):
+    # Spanning more than a hemisphere.
+    geometry_type = rng.choice(('multipoint', 'polyline', 'polygon', 'ring'))
+    if geometry_type == 'ring':
+        return pygplates.PolygonOnSphere(
+            _random_ring(rng, _random_unit_vector(rng), rng.uniform(1.7, 2.8), rng.randint(10, 60)))
+    points = [pygplates.PointOnSphere(_random_unit_vector(rng)) for _ in range(rng.randint(3, 12))]
+    if geometry_type == 'multipoint':
+        return pygplates.MultiPointOnSphere(points)
+    # Leave out a point (nearly) antipodal to the one before it, which cannot form a segment.
+    kept = [points[0]]
+    for point in points[1:]:
+        if _dot(point.to_xyz(), kept[-1].to_xyz()) > -0.999:
+            kept.append(point)
+    if len(kept) < 2:
+        kept.append(_random_point(rng, kept[0].to_xyz(), 0.1))
+    if geometry_type == 'polyline' or len(kept) < 3:
+        return pygplates.PolylineOnSphere(kept)
+    return pygplates.PolygonOnSphere(kept)
 
 
 class GeometryOnSphereCase(unittest.TestCase):
@@ -316,14 +373,39 @@ class GeometryOnSphereCase(unittest.TestCase):
         # Compare with a brute-force calculation (every pair of segments) for random geometries large
         # enough to exercise the bounding-tree search (a leaf bounds up to 8 segments), clustered so that
         # many segments are nearly as close as the closest, with random solid flags and thresholds.
+        # Some cases are special: tiny geometries near each other's antipode (distances near PI),
+        # geometries spanning more than a hemisphere, polygons with interior rings, and duplicate
+        # consecutive points (zero-length segments).
         rng = random.Random(1234)
         D = pygplates.GeometryOnSphere.distance
-        for case in range(120):
+        for case in range(200):
             centre = _random_unit_vector(rng)
-            geometry1 = _random_geometry(rng, centre)
-            geometry2 = _random_geometry(rng, centre)
+            kind = case % 5
+            if kind == 1:
+                scale = rng.choice((1e-3, 1e-5))
+                geometry1 = _random_geometry(rng, centre, scale)
+                geometry2 = _random_geometry(rng, tuple(-c for c in centre), scale)
+            elif kind == 2:
+                geometry1 = _random_global_geometry(rng)
+                geometry2 = _random_global_geometry(rng) if rng.random() < 0.5 else _random_geometry(rng, centre)
+            elif kind == 3:
+                geometry1 = _random_polygon_with_interior_rings(rng, centre)
+                geometry2 = _random_geometry(rng, centre, 0.5)
+            elif kind == 4:
+                geometry1 = _random_geometry(rng, centre, duplicates=True)
+                geometry2 = _random_geometry(rng, centre, duplicates=True)
+            else:
+                geometry1 = _random_geometry(rng, centre)
+                geometry2 = _random_geometry(rng, centre)
+            if rng.random() < 0.5:
+                geometry1, geometry2 = geometry2, geometry1
             solid1 = rng.random() < 0.5
             solid2 = rng.random() < 0.5
+            if kind == 1:
+                # Not solid near the antipode: point-in-polygon has a known bug there (a tiny polygon can
+                # contain a point near its antipode), and this brute force uses pyGPlates' point-in-polygon.
+                # To be re-enabled with an independent point-in-polygon test, when that bug is fixed.
+                solid1 = solid2 = False
             msg = 'case {}: {} to {}, solid {} {}'.format(
                 case, type(geometry1).__name__, type(geometry2).__name__, solid1, solid2)
             expected = _brute_force_distance(geometry1, geometry2, solid1, solid2)
@@ -331,7 +413,10 @@ class GeometryOnSphereCase(unittest.TestCase):
             distance, closest_point1, closest_point2, closest_index1, closest_index2 = D(
                 geometry1, geometry2, return_closest_positions=True, return_closest_indices=True,
                 geometry1_is_solid=solid1, geometry2_is_solid=solid2)
-            self.assertAlmostEqual(distance, expected, places=9, msg=msg)
+            # Distances within epsilon of zero are returned as zero, and near PI resolve only to ~1.5e-8.
+            places = 7 if expected > math.pi - 1e-3 else 9
+            if not (distance == 0.0 and expected < 1.5e-6):
+                self.assertAlmostEqual(distance, expected, places=places, msg=msg)
             # The closest positions lie on their geometries' closest point/segment, and their
             # distance apart is the distance (unless inside a solid polygon, which is zero distance).
             for geometry, closest_point, closest_index in (
@@ -340,16 +425,17 @@ class GeometryOnSphereCase(unittest.TestCase):
                 self.assertAlmostEqual(
                     _distance_to_indexed(geometry, closest_index, closest_point.to_xyz()), 0, places=9, msg=msg)
             if distance > 0:
-                self.assertAlmostEqual(D(closest_point1, closest_point2), distance, places=9, msg=msg)
+                self.assertAlmostEqual(D(closest_point1, closest_point2), distance, places=places, msg=msg)
 
-            threshold = rng.uniform(0, 2 * expected) if expected > 0 else rng.choice((0.0, 0.01))
-            if abs(threshold - expected) > 1e-9:
-                result = D(geometry1, geometry2, threshold, geometry1_is_solid=solid1, geometry2_is_solid=solid2)
-                if expected > threshold:
-                    self.assertTrue(result is None, msg=msg)
-                else:
-                    self.assertTrue(result is not None, msg=msg)
-                    self.assertAlmostEqual(result, distance, places=12, msg=msg)
+            # None only if the distance returned (without a threshold) exceeds the threshold.
+            threshold = rng.uniform(0, 2 * distance) if distance > 0 else rng.choice((0.0, 0.01))
+            result = D(geometry1, geometry2, threshold, geometry1_is_solid=solid1, geometry2_is_solid=solid2)
+            if distance > threshold:
+                self.assertTrue(result is None, msg=msg)
+            else:
+                self.assertTrue(result == distance, msg=msg)
+            self.assertTrue(D(geometry1, geometry2, distance, geometry1_is_solid=solid1, geometry2_is_solid=solid2) == distance,
+                            msg=msg)
 
     def test_get_centroid(self):
         # Test all geometry types have a 'get_centroid()' method.

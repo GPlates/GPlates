@@ -522,8 +522,11 @@ namespace GPlatesMaths
 	 *
 	 * If @a intersection is specified then returns the intersection position (if the arcs intersected).
 	 *
-	 * Note that if both arcs lie on the same great circle, and they overlap each other, then the
-	 * returned intersection point will be an arbitrary arc end point of one of the arcs.
+	 * Note that if both arcs lie on the same great circle (within numerical tolerance) then the
+	 * intersection is interpolated along one arc to where it crosses the other arc's plane. If that
+	 * point is not within both arcs (the planes are too close to place it accurately along them),
+	 * or neither arc can be interpolated (both are close to half circles), then the end point
+	 * (of either arc) closest to the other arc is returned.
 	 */
 	bool
 	intersect(

@@ -300,6 +300,59 @@ namespace GPlatesMaths
 
 			return distance_to_arc_end;
 		}
+
+		/**
+		 * Returns true if @a point is within the lune of the (non-zero length) great circle arc.
+		 *
+		 * This is the same test as in GeometryIntersect (but on a GreatCircleArc).
+		 */
+		bool
+		is_in_arc_lune(
+				const UnitVector3D &point,
+				const GreatCircleArc &arc)
+		{
+			const Vector3D point_cross_arc_plane = cross(point, arc.rotation_axis());
+
+			return dot(point_cross_arc_plane, arc.start_point().position_vector()).dval() >= 0 &&
+					dot(point_cross_arc_plane, arc.end_point().position_vector()).dval() <= 0;
+		}
+
+		/**
+		 * Returns the point on @a arc (non-zero length) where it crosses the plane, given the
+		 * signed distances of its start and end points from that plane (which must have opposite
+		 * signs), or none if the arc is too close to a half circle to interpolate along its chord.
+		 *
+		 * The point is a combination of the arc's end points, so it is on the arc's great circle,
+		 * and it has zero signed distance from the plane, to within rounding - however small the
+		 * angle between the arc's plane and the other plane (unlike the cross product of the two
+		 * planes' normals, whose error grows as the angle shrinks). This is the method
+		 * GeometryIntersect uses.
+		 */
+		boost::optional<UnitVector3D>
+		interpolate_plane_crossing(
+				const GreatCircleArc &arc,
+				const double &start_point_dot_plane,
+				const double &end_point_dot_plane)
+		{
+			const UnitVector3D &start_point = arc.start_point().position_vector();
+			const UnitVector3D &end_point = arc.end_point().position_vector();
+
+			// Make sure the start and end points are not close to being antipodal.
+			// NOTE: We're avoiding the more expensive square-root calculation here.
+			const Vector3D chord_mid_point_unnormalised =
+					Vector3D(start_point) + Vector3D(end_point);
+			if (chord_mid_point_unnormalised.magSqrd().dval() <= 1e-6 /*a magnitude of 1e-3*/)
+			{
+				return boost::none;
+			}
+
+			// Not zero, since the start and end points are on opposite sides of the plane.
+			const double inv_denom = 1.0 / (start_point_dot_plane - end_point_dot_plane);
+
+			return ((start_point_dot_plane * inv_denom) * end_point -
+					(end_point_dot_plane * inv_denom) * start_point)
+				.get_normalisation();
+		}
 	}
 }
 
@@ -817,24 +870,28 @@ GPlatesMaths::intersect(
 		// the other arc (and vice versa) and the start (or end) point of one arc is in the positive
 		// half-space of the other arc (and the opposite true for the other arc).
 
-		const bool arc1_start_point_on_positive_side_of_arc2 = dot(
+		const double arc1_start_dot_arc2_plane = dot(
 				arc1.start_point().position_vector(),
-				arc2.rotation_axis()).dval() >= 0;
-		const bool arc1_end_point_on_positive_side_of_arc2 = dot(
+				arc2.rotation_axis()).dval();
+		const double arc1_end_dot_arc2_plane = dot(
 				arc1.end_point().position_vector(),
-				arc2.rotation_axis()).dval() >= 0;
+				arc2.rotation_axis()).dval();
+		const bool arc1_start_point_on_positive_side_of_arc2 = arc1_start_dot_arc2_plane >= 0;
+		const bool arc1_end_point_on_positive_side_of_arc2 = arc1_end_dot_arc2_plane >= 0;
 		if (arc1_start_point_on_positive_side_of_arc2 == arc1_end_point_on_positive_side_of_arc2)
 		{
 			// No intersection found.
 			return false;
 		}
 
-		const bool arc2_start_point_on_positive_side_of_arc1 = dot(
+		const double arc2_start_dot_arc1_plane = dot(
 				arc2.start_point().position_vector(),
-				arc1.rotation_axis()).dval() >= 0;
-		const bool arc2_end_point_on_positive_side_of_arc1 = dot(
+				arc1.rotation_axis()).dval();
+		const double arc2_end_dot_arc1_plane = dot(
 				arc2.end_point().position_vector(),
-				arc1.rotation_axis()).dval() >= 0;
+				arc1.rotation_axis()).dval();
+		const bool arc2_start_point_on_positive_side_of_arc1 = arc2_start_dot_arc1_plane >= 0;
+		const bool arc2_end_point_on_positive_side_of_arc1 = arc2_end_dot_arc1_plane >= 0;
 		if (arc2_start_point_on_positive_side_of_arc1 == arc2_end_point_on_positive_side_of_arc1)
 		{
 			// No intersection found.
@@ -865,36 +922,76 @@ GPlatesMaths::intersect(
 			}
 			else
 			{
-				// Both arcs are on the same great circle since have same (or opposite) rotation axis...
+				// Both arcs are on the same great circle, within numerical tolerance (since they
+				// have the same, or opposite, rotation axis), so the cross product of the rotation
+				// axes is too inaccurate.
+				//
+				// Instead interpolate along the chord of one arc, using the signed distances of its
+				// end points from the other arc's plane. Use the arc whose end points differ most
+				// in signed distance (the better conditioned). The interpolated point is on both
+				// arcs' great circles (to within rounding), but its position *along* them is less
+				// certain the smaller the angle between their planes (GeometryIntersect bounds this
+				// with its *thick* planes, but these sign tests are exact), so it must also be
+				// within both arcs.
+				auto interpolate_along_arc1 = [&]()
+				{
+					return interpolate_plane_crossing(
+							arc1, arc1_start_dot_arc2_plane, arc1_end_dot_arc2_plane);
+				};
+				auto interpolate_along_arc2 = [&]()
+				{
+					return interpolate_plane_crossing(
+							arc2, arc2_start_dot_arc1_plane, arc2_end_dot_arc1_plane);
+				};
+				const bool arc1_is_better_conditioned =
+						std::fabs(arc1_start_dot_arc2_plane - arc1_end_dot_arc2_plane) >=
+						std::fabs(arc2_start_dot_arc1_plane - arc2_end_dot_arc1_plane);
+				boost::optional<UnitVector3D> interpolated_intersection = arc1_is_better_conditioned
+						? interpolate_along_arc1()
+						: interpolate_along_arc2();
+				if (!interpolated_intersection)
+				{
+					// The chosen arc is too close to a half circle, so try the other arc.
+					interpolated_intersection = arc1_is_better_conditioned
+							? interpolate_along_arc2()
+							: interpolate_along_arc1();
+				}
 
-				// See if arc1's start point is on arc2...
-				if (dot(arc2.start_point().position_vector(), arc1.start_point().position_vector())
-						.is_precisely_greater_than(arc2.dot_of_endpoints().dval()) &&
-					dot(arc2.end_point().position_vector(), arc1.start_point().position_vector())
-						.is_precisely_greater_than(arc2.dot_of_endpoints().dval()))
+				if (interpolated_intersection &&
+					is_in_arc_lune(interpolated_intersection.get(), arc1) &&
+					is_in_arc_lune(interpolated_intersection.get(), arc2))
 				{
-					intersection.get() = arc1.start_point().position_vector();
-				}
-				// See if arc1's end point is on arc2...
-				else if (dot(arc2.start_point().position_vector(), arc1.end_point().position_vector())
-						.is_precisely_greater_than(arc2.dot_of_endpoints().dval()) &&
-					dot(arc2.end_point().position_vector(), arc1.end_point().position_vector())
-						.is_precisely_greater_than(arc2.dot_of_endpoints().dval()))
-				{
-					intersection.get() = arc1.end_point().position_vector();
-				}
-				// See if arc2's start point is on arc1...
-				else if (dot(arc1.start_point().position_vector(), arc2.start_point().position_vector())
-						.is_precisely_greater_than(arc1.dot_of_endpoints().dval()) &&
-					dot(arc1.end_point().position_vector(), arc2.start_point().position_vector())
-						.is_precisely_greater_than(arc1.dot_of_endpoints().dval()))
-				{
-					intersection.get() = arc2.start_point().position_vector();
+					intersection.get() = interpolated_intersection.get();
 				}
 				else
 				{
-					// If we get here then arc2's end point must be on arc1.
-					intersection.get() = arc2.end_point().position_vector();
+					// The planes are so close that the interpolated point fell outside an arc, in
+					// which case any point where the arcs overlap is within rounding of both arcs.
+					// Or neither arc could be interpolated (both are close to half circles), in
+					// which case an end point can be off the other arc by about half its length
+					// times the angle between the planes (under 2e-6 radians). Either way, use the
+					// end point (of either arc) that is closest to the other arc.
+					const UnitVector3D *end_points[4] =
+					{
+						&arc1.start_point().position_vector(),
+						&arc1.end_point().position_vector(),
+						&arc2.start_point().position_vector(),
+						&arc2.end_point().position_vector()
+					};
+					unsigned int closest_end_point_index = 0;
+					AngularDistance closest_end_point_distance = AngularDistance::PI;
+					for (unsigned int e = 0; e < 4; ++e)
+					{
+						const AngularDistance end_point_distance =
+								minimum_distance(*end_points[e], (e < 2) ? arc2 : arc1).get();
+						if (e == 0 ||
+							end_point_distance.is_precisely_less_than(closest_end_point_distance))
+						{
+							closest_end_point_index = e;
+							closest_end_point_distance = end_point_distance;
+						}
+					}
+					intersection.get() = *end_points[closest_end_point_index];
 				}
 			}
 		}
@@ -974,7 +1071,13 @@ GPlatesMaths::minimum_distance(
 		intersection = closest_position_on_arc1;
 	}
 
-	if (intersect(arc1, arc2, intersection))
+	// Only for arcs that are not zero length. A zero-length arc can only "intersect" by lying on
+	// the other arc, which the end point distances (below) find exactly, whereas intersect()
+	// decides it with epsilon tests (reporting points up to about 1.4e-6 radians apart as
+	// intersecting).
+	if (!arc1.is_zero_length() &&
+		!arc2.is_zero_length() &&
+		intersect(arc1, arc2, intersection))
 	{
 		// The closest point on each arc is the same point - the intersection point.
 		if (intersection)
