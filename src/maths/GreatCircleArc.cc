@@ -1207,10 +1207,20 @@ GPlatesMaths::minimum_distance(
 {
 	if (arc.is_zero_length())
 	{
-		// Arc start and end points are the same - arbitrarily pick either as the closest point.
-
-		const AngularDistance min_distance =
-				AngularDistance::create_from_cosine(dot(position_vector, arc.start_point().position_vector()));
+		// The arc has no rotation axis, so use the closer of its end points. They can still be up
+		// to about 1e-6 radians apart (the zero-length threshold), so don't just use the start
+		// point: the end point of a polyline's last segment would never be measured (other end
+		// points are the start points of the next segment).
+		const UnitVector3D &arc_start_position = arc.start_point().position_vector();
+		const UnitVector3D &arc_end_position = arc.end_point().position_vector();
+		const AngularDistance distance_to_arc_start =
+				AngularDistance::create_from_cosine(dot(position_vector, arc_start_position));
+		const AngularDistance distance_to_arc_end =
+				AngularDistance::create_from_cosine(dot(position_vector, arc_end_position));
+		const bool start_is_closer =
+				!distance_to_arc_end.is_precisely_less_than(distance_to_arc_start);
+		const AngularDistance &min_distance =
+				start_is_closer ? distance_to_arc_start : distance_to_arc_end;
 
 		// If there's a threshold and the minimum distance is greater than the threshold.
 		if (minimum_distance_threshold &&
@@ -1222,7 +1232,8 @@ GPlatesMaths::minimum_distance(
 		// Set caller's closest position *after* passing threshold test (if any).
 		if (closest_position_on_great_circle_arc)
 		{
-			closest_position_on_great_circle_arc.get() = arc.start_point().position_vector();
+			closest_position_on_great_circle_arc.get() =
+					start_is_closer ? arc_start_position : arc_end_position;
 		}
 
 		return min_distance;

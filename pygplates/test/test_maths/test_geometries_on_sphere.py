@@ -361,6 +361,21 @@ class GeometryOnSphereCase(unittest.TestCase):
         # A NaN threshold raises ValueError (it was ignored in pyGPlates 1.0).
         self.assertRaises(ValueError, D, point1, point2, float('nan'))
 
+    def test_distance_to_zero_length_segment(self):
+        # A segment shorter than about 1e-6 radians counts as zero length. Its closer end point is
+        # measured: there was a bug in pyGPlates 1.0 where only its start point was, so the end point of
+        # a polyline's last segment was never measured.
+        D = pygplates.GeometryOnSphere.distance
+        start = pygplates.PointOnSphere(0, 10)
+        end = pygplates.PointOnSphere(0, 10 + 1e-5)  # 1.7e-7 radians further east
+        point = pygplates.PointOnSphere(0, 11)
+        polyline = pygplates.PolylineOnSphere([pygplates.PointOnSphere(0, 9), start, end])
+        distance, _, closest_point, _, closest_index = D(
+            point, polyline, return_closest_positions=True, return_closest_indices=True)
+        self.assertAlmostEqual(distance, D(point, end), places=12)
+        self.assertTrue(closest_point == end)
+        self.assertTrue(closest_index == 1)
+
     def test_distance_independent_of_returned_positions(self):
         # Requesting the closest positions must not change the distance.
         # There was a bug in pyGPlates 1.0 where it could differ in the last bits.
