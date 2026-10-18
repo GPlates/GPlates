@@ -208,28 +208,8 @@ namespace GPlatesMaths
 		{
 			const real_t position_dot_arc_normal = dot(position_vector, arc_plane_normal);
 
-			// If there's a threshold and it's less than 90 degrees then we can quickly
-			// reject positions with a single dot product before we do more expensive calculations.
-			if (minimum_distance_threshold
-				&& is_strictly_positive(minimum_distance_threshold->get_cosine()))
-			{
-				// Instead of testing closeness to the GCA we test closeness to the GCA poles.
-				const real_t closeness_to_gca_poles = abs(position_dot_arc_normal);
-
-				// If close enough to the GCA poles then it means we've exceeded threshold distance
-				// to the GCA itself.
-				if (closeness_to_gca_poles.is_precisely_greater_than(minimum_distance_threshold->get_sine().dval()))
-				{
-					return boost::none;
-				}
-			}
-			// Else either there's no threshold or the threshold is greater than 90 degrees (in which case
-			// the position is within the threshold, since all positions within the lune are within
-			// 90 degrees of the GCA).
-
-			// The distance is calculated from its sine, whether or not the closest point is requested,
-			// so that requesting the closest point cannot change the distance (previously it was
-			// calculated from the closest point when requested, which differed in the last bits).
+			// The distance is calculated from its sine, whether or not the closest point is
+			// requested, so that requesting the closest point cannot change the distance.
 			// This is also cheaper than calculating the cosine as:
 			//
 			// dot(
@@ -243,8 +223,13 @@ namespace GPlatesMaths
 			const AngularDistance min_distance = AngularDistance::create_from_cosine(
 					sqrt(1 - sine_min_angular_distance * sine_min_angular_distance));
 
-			// The quick rejection above compares sines, so test the threshold exactly on the distance itself
-			// (otherwise a distance exceeding the threshold in its last bits could be returned).
+			// Test the threshold exactly on the distance itself.
+			//
+			// Note: Don't reject earlier by comparing the sine (the dot product above) with the
+			// sine of the threshold. It is not exact: near zero distance many sines give the same
+			// cosine, so it can reject a distance equal to the threshold, and no fixed margin on
+			// the sine fixes that. It would only save this sqrt (and the threshold's sine costs a
+			// sqrt too, whenever the threshold changes).
 			if (minimum_distance_threshold &&
 				min_distance.is_precisely_greater_than(minimum_distance_threshold.get()))
 			{
