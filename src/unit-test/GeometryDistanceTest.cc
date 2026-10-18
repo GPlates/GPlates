@@ -36,6 +36,7 @@
 #include "maths/GreatCircleArc.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/UnitVector3D.h"
 
@@ -184,4 +185,56 @@ TEST(GeometryDistanceTest, antipodal_geometries)
 			EXPECT_EQ(closest_index2, 0u);
 		}
 	}
+}
+
+
+TEST(GeometryDistanceTest, inside_solid_polygon_near_its_outline)
+{
+	// A polyline, and a polygon, inside a solid polygon and about 1e-7 radians from its outline
+	// (within epsilon, but not intersecting). Being inside the solid interior, their distance is
+	// exactly zero, which used to be skipped for outlines within epsilon of each other.
+	const std::vector<GPlatesMaths::PointOnSphere> triangle_points = {
+			point_from_lat_lon_radians(0, -0.1),
+			point_from_lat_lon_radians(0, 0.1),
+			point_from_lat_lon_radians(0.1, 0) };
+	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type triangle =
+			GPlatesMaths::PolygonOnSphere::create(triangle_points);
+
+	const std::vector<GPlatesMaths::PointOnSphere> inner_points = {
+			point_from_lat_lon_radians(1e-7, -0.05),
+			point_from_lat_lon_radians(1e-7, 0.05),
+			point_from_lat_lon_radians(0.01, 0) };
+	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type inner_polyline =
+			GPlatesMaths::PolylineOnSphere::create(inner_points);
+	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type inner_polygon =
+			GPlatesMaths::PolygonOnSphere::create(inner_points);
+
+	// Not intersecting, but within epsilon (when the interior is not solid).
+	const boost::optional<GPlatesMaths::AngularDistance> outline_distance =
+			GPlatesMaths::minimum_distance(*inner_polyline, *triangle);
+	ASSERT_TRUE(outline_distance);
+	EXPECT_LT(outline_distance->get_cosine().dval(), 1.0);
+	EXPECT_TRUE(
+			outline_distance.get() == GPlatesMaths::AngularDistance::ZERO/*epsilon comparison*/);
+
+	const boost::optional<GPlatesMaths::AngularDistance> polyline_distance =
+			GPlatesMaths::minimum_distance(
+					*inner_polyline, *triangle, true/*polygon_interior_is_solid*/);
+	ASSERT_TRUE(polyline_distance);
+	EXPECT_EQ(polyline_distance->get_cosine().dval(), 1.0);
+
+	const boost::optional<GPlatesMaths::AngularDistance> polygon_distance =
+			GPlatesMaths::minimum_distance(
+					*triangle, *inner_polygon, true/*polygon1_interior_is_solid*/);
+	ASSERT_TRUE(polygon_distance);
+	EXPECT_EQ(polygon_distance->get_cosine().dval(), 1.0);
+
+	const boost::optional<GPlatesMaths::AngularDistance> reversed_polygon_distance =
+			GPlatesMaths::minimum_distance(
+					*inner_polygon,
+					*triangle,
+					false/*polygon1_interior_is_solid*/,
+					true/*polygon2_interior_is_solid*/);
+	ASSERT_TRUE(reversed_polygon_distance);
+	EXPECT_EQ(reversed_polygon_distance->get_cosine().dval(), 1.0);
 }

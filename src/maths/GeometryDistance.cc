@@ -39,8 +39,10 @@ namespace GPlatesMaths
 		/**
 		 * Returns true if @a min_distance is exactly zero (an intersection was found).
 		 *
-		 * This is an exact test (no epsilon) since it is used to stop searching, and a distance
-		 * within epsilon of zero is not necessarily an intersection (a closer candidate can follow).
+		 * This is an exact test (no epsilon), since a distance within epsilon of zero is not
+		 * necessarily an intersection: it is used to stop searching (a closer candidate can
+		 * follow), and to decide whether a solid polygon interior still needs testing (the
+		 * geometries may be near each other but not intersect, with one inside the other).
 		 */
 		bool
 		is_intersection(
@@ -1922,7 +1924,7 @@ GPlatesMaths::minimum_distance(
 	// If the polygon interior is solid and the polyline has not intersected the polygon boundary then
 	// it's possible the polyline is completely inside the polygon which also counts as an intersection.
 	if (polygon_interior_is_solid &&
-		!(min_distance && min_distance.get() == AngularDistance::ZERO /*epsilon comparison*/))
+		!is_intersection(min_distance))
 	{
 		// If the polyline is completely inside the polygon then we only need to test if one of
 		// the polyline's points (any arbitrary point) is inside the polygon (because we know the
@@ -2127,7 +2129,7 @@ GPlatesMaths::minimum_distance(
 	// If polygon1's interior is solid and polygon2 has not intersected polygon1's boundary then it's possible
 	// that one (or more) of polygon2's rings is completely inside polygon1 which also counts as an intersection.
 	if (polygon1_interior_is_solid &&
-		!(min_distance && min_distance.get() == AngularDistance::ZERO /*epsilon comparison*/))
+		!is_intersection(min_distance))
 	{
 		auto point_in_polygon_func = [](
 				const PolygonOnSphere &polygon,
@@ -2205,7 +2207,7 @@ GPlatesMaths::minimum_distance(
 	// If polygon2's interior is solid and polygon1 has not intersected polygon2's boundary then it's possible
 	// that one (or more) of polygon1's rings is completely inside polygon2 which also counts as an intersection.
 	if (polygon2_interior_is_solid &&
-		!(min_distance && min_distance.get() == AngularDistance::ZERO /*epsilon comparison*/))
+		!is_intersection(min_distance))
 	{
 		auto point_in_polygon_func = [](
 				const PolygonOnSphere &polygon,
