@@ -522,8 +522,11 @@ namespace GPlatesMaths
 	 *
 	 * If @a intersection is specified then returns the intersection position (if the arcs intersected).
 	 *
-	 * Note that if both arcs lie on the same great circle, and they overlap each other, then the
-	 * returned intersection point will be an arbitrary arc end point of one of the arcs.
+	 * Note that if both arcs lie on the same great circle (within numerical tolerance) then the
+	 * intersection is interpolated along one arc to where it crosses the other arc's plane. If that
+	 * point is not within both arcs (the planes are too close to place it accurately along them),
+	 * or neither arc can be interpolated (both are close to half circles), then the end point
+	 * (of either arc) closest to the other arc is returned.
 	 */
 	bool
 	intersect(
@@ -537,17 +540,17 @@ namespace GPlatesMaths
 	 *
 	 * If they intersect then the returned angular distance will be zero.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * Note that if the threshold is zero then AngularDistance::PI is returned to signify threshold exceeded
-	 * (even if an intersection would have occurred, which would otherwise have returned a distance of zero).
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it, so a threshold of zero
+	 * still returns zero if the arcs intersect.
 	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions_on_arcs (even if it's not none).
 	 *
 	 * If @a closest_positions_on_arcs is specified then the closest point on each arc is stored in
 	 * the unit vectors it references (unless the threshold is exceeded, if specified).
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const GreatCircleArc &arc1,
 			const GreatCircleArc &arc2,
@@ -561,15 +564,16 @@ namespace GPlatesMaths
 	 * Returns the minimum angular distance between a unit vector and a great circle arc, and
 	 * optionally the closest point on the arc - optionally within a minimum threshold distance.
 	 *
-	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
-	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If @a minimum_distance_threshold is specified and the minimum distance exceeds it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold). A distance equal to the threshold does not exceed it.
 	 * If the threshold is exceeded then the closest point is *not* stored in
 	 * @a closest_position_on_great_circle_arc (even if it's not none).
 	 *
 	 * If @a closest_position_on_great_circle_arc is specified then the closest point on the arc
 	 * is stored in the unit vector it references (unless the threshold is exceeded, if specified).
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const UnitVector3D &position_vector,
 			const GreatCircleArc &arc,
@@ -580,7 +584,7 @@ namespace GPlatesMaths
 	 * Overload of @a minimum_distance between a point and a great circle arc.
 	 */
 	inline
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const GreatCircleArc &arc,
 			const UnitVector3D &position_vector,
@@ -598,7 +602,7 @@ namespace GPlatesMaths
 	 * Overload of @a minimum_distance between a point and a great circle arc.
 	 */
 	inline
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const PointOnSphere &point,
 			const GreatCircleArc &arc,
@@ -616,7 +620,7 @@ namespace GPlatesMaths
 	 * Overload of @a minimum_distance between a point and a great circle arc.
 	 */
 	inline
-	AngularDistance
+	boost::optional<AngularDistance>
 	minimum_distance(
 			const GreatCircleArc &arc,
 			const PointOnSphere &point,
@@ -634,15 +638,16 @@ namespace GPlatesMaths
 	/**
 	 * Returns the maximum angular distance between two great circle arcs.
 	 *
-	 * If @a maximum_distance_threshold is specified then the returned distance will either be greater
-	 * than the threshold or AngularDistance::ZERO (minimum possible distance) to signify threshold not exceeded.
+	 * If @a maximum_distance_threshold is specified and the maximum distance is less than it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold).
 	 * If the threshold is not exceeded then the furthest points are *not* stored in
 	 * @a furthest_positions_on_arcs (even if it's not none).
 	 *
 	 * If @a furthest_positions_on_arcs is specified then the furthest point on each arc is stored in
 	 * the unit vectors it references (unless the threshold is not exceeded, if specified).
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	maximum_distance(
 			const GreatCircleArc &arc1,
 			const GreatCircleArc &arc2,
@@ -656,15 +661,16 @@ namespace GPlatesMaths
 	 * Returns the maximum angular distance between a unit vector and a great circle arc, and
 	 * optionally the furthest point on the arc - optionally exceeding a maximum threshold distance.
 	 *
-	 * If @a maximum_distance_threshold is specified then the returned distance will either be greater
-	 * than the threshold or AngularDistance::ZERO (minimum possible distance) to signify threshold not exceeded.
+	 * If @a maximum_distance_threshold is specified and the maximum distance is less than it then
+	 * boost::none is returned (otherwise the distance is returned, so it is never none without a
+	 * threshold).
 	 * If the threshold is not exceeded then the furthest point is *not* stored in
 	 * @a furthest_position_on_great_circle_arc (even if it's not none).
 	 *
 	 * If @a furthest_position_on_great_circle_arc is specified then the furthest point on the arc
 	 * is stored in the unit vector it references (unless the threshold is not exceeded, if specified).
 	 */
-	AngularDistance
+	boost::optional<AngularDistance>
 	maximum_distance(
 			const UnitVector3D &position_vector,
 			const GreatCircleArc &arc,
@@ -675,7 +681,7 @@ namespace GPlatesMaths
 	 * Overload of @a maximum_distance between a point and a great circle arc.
 	 */
 	inline
-	AngularDistance
+	boost::optional<AngularDistance>
 	maximum_distance(
 			const GreatCircleArc &arc,
 			const UnitVector3D &position_vector,
@@ -693,7 +699,7 @@ namespace GPlatesMaths
 	 * Overload of @a maximum_distance between a point and a great circle arc.
 	 */
 	inline
-	AngularDistance
+	boost::optional<AngularDistance>
 	maximum_distance(
 			const PointOnSphere &point,
 			const GreatCircleArc &arc,
@@ -711,7 +717,7 @@ namespace GPlatesMaths
 	 * Overload of @a maximum_distance between a point and a great circle arc.
 	 */
 	inline
-	AngularDistance
+	boost::optional<AngularDistance>
 	maximum_distance(
 			const GreatCircleArc &arc,
 			const PointOnSphere &point,

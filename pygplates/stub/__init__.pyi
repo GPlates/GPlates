@@ -4557,6 +4557,7 @@ class GeometryOnSphere:
         :type geometry2_is_solid: bool
         :returns: distance (in radians), or a tuple containing distance and the closest point on each geometry if *return_closest_positions* is ``True``, or a tuple containing distance and the indices of the closest :class:`point<PointOnSphere>` (for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) on each geometry if *return_closest_indices* is ``True``, or a tuple containing distance and the closest point on each geometry and the indices of the closest :class:`point<PointOnSphere>` (for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) on each geometry if both *return_closest_positions* and *return_closest_indices* are ``True``, or ``None`` if *distance_threshold_radians* is specified and exceeded
         :rtype: float, or tuple[float, PointOnSphere, PointOnSphere], or tuple[float, int, int], or tuple[float, PointOnSphere, PointOnSphere, int, int], or None
+        :raises ValueError: if *distance_threshold_radians* is NaN
 
         The returned distance is the shortest path between *geometry1* and *geometry2* along the surface of the sphere (great circle arc path). To convert the distance from radians (distance on a unit radius sphere) to real distance you will need to multiply it by the Earth's radius (see :class:`Earth`).
 
@@ -4630,6 +4631,9 @@ class GeometryOnSphere:
 
         .. versionchanged:: 0.41
          distance threshold is clamped to the range [0, PI] to avoid an exception.
+
+        .. versionchanged:: 1.1
+         ``None`` is returned only if the distance that would be returned is greater than *distance_threshold_radians*, so a distance equal to the threshold is returned (eg, PI for antipodal points with a threshold of PI, or zero for intersecting polylines and polygons with a threshold of zero). A NaN threshold raises ``ValueError`` (it was ignored). The closest positions and indices always belong to the same closest pair.
         """
 
     def get_points(self) -> Sequence[PointOnSphere]:

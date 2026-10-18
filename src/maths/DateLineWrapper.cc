@@ -579,7 +579,7 @@ GPlatesMaths::DateLineWrapper::output_non_intersecting_polygon_rings(
 					PolygonOnSphere::non_null_ptr_to_const_type polygon_exterior_ring = polygon_exterior_rings[r].first;
 
 					// Test for intersection - includes case where one polygon is fully inside the other.
-					if (minimum_distance(*ring_polygon, *polygon_exterior_ring, true, true) == AngularDistance::ZERO)
+					if (minimum_distance(*ring_polygon, *polygon_exterior_ring, true, true).get() == AngularDistance::ZERO)
 					{
 						// Make the ring an interior of the current wrapped polygon.
 						const unsigned int wrapped_polygon_index = polygon_exterior_rings[r].second;

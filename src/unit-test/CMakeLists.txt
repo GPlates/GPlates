@@ -14,6 +14,7 @@ set(srcs
     ExportTemplateFilenameTest.cc
     FlowlineUtilsTest.cc
     GenerateVelocityDomainCitcomsTest.cc
+    GeometryDistanceTest.cc
     GeoscimlReaderTest.cc
     GrotFileTest.cc
     GsmlXmlQueryTest.cc

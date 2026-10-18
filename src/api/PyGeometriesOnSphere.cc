@@ -253,6 +253,14 @@ namespace GPlatesApi
 		GPlatesMaths::AngularExtent threshold_storage = GPlatesMaths::AngularExtent::PI/*dummy value*/;
 		if (distance_threshold_radians)
 		{
+			// A NaN threshold would otherwise be silently ignored (it compares as within any range,
+			// and nothing compares as exceeding its NaN cosine).
+			if (distance_threshold_radians->is_nan())
+			{
+				PyErr_SetString(PyExc_ValueError, "Distance threshold must not be NaN.");
+				bp::throw_error_already_set();
+			}
+
 			// Clamp to the range [0, PI].
 			if (distance_threshold_radians->is_precisely_less_than(0))
 			{
@@ -263,7 +271,20 @@ namespace GPlatesApi
 				distance_threshold_radians.get() = GPlatesMaths::PI;
 			}
 
-			threshold_storage = GPlatesMaths::AngularExtent::create_from_angle(distance_threshold_radians.get());
+			// The threshold given to GPlatesMaths::minimum_distance() is slightly larger than the
+			// caller's, and the caller's threshold is applied exactly to the returned distance
+			// (below).
+			//
+			// minimum_distance() compares cosines exactly, but the caller sees the distance in
+			// radians: the cosine of a threshold in radians can differ from the cosine of the same
+			// distance by a few ULPs, so a distance passed back as a threshold could be excluded by
+			// itself. Also, a distance within epsilon of zero is returned as exactly 0.0 (below),
+			// and must not exceed a threshold of 0.0.
+			// The margin covers both (epsilon is 1e-12 on the cosine).
+			const double generous_threshold_cosine =
+					std::cos(distance_threshold_radians->dval()) - 2 * GPlatesMaths::EPSILON;
+			threshold_storage = GPlatesMaths::AngularExtent::create_from_cosine(
+					(generous_threshold_cosine < -1.0) ? -1.0 : generous_threshold_cosine);
 			minimum_distance_threshold = threshold_storage;
 		}
 
@@ -282,14 +303,14 @@ namespace GPlatesApi
 
 		// Reference closest point or segment indices on each geometry if requested.
 		boost::optional< boost::tuple<unsigned int &/*geometry1*/, unsigned int &/*geometry2*/> > closest_indices;
-		unsigned int closest_index1;
-		unsigned int closest_index2;
+		unsigned int closest_index1 = 0/*dummy value*/;
+		unsigned int closest_index2 = 0/*dummy value*/;
 		if (return_closest_indices)
 		{
 			closest_indices = boost::make_tuple(boost::ref(closest_index1), boost::ref(closest_index2));
 		}
 
-		const GPlatesMaths::AngularDistance angular_distance =
+		const boost::optional<GPlatesMaths::AngularDistance> angular_distance =
 				GPlatesMaths::minimum_distance(
 						geometry1,
 						geometry2,
@@ -300,26 +321,31 @@ namespace GPlatesApi
 						closest_indices);
 
 		// If a threshold was requested and was exceeded then return Py_None.
-		if (minimum_distance_threshold &&
-			angular_distance == GPlatesMaths::AngularDistance::PI)
+		if (!angular_distance)
 		{
 			return bp::object()/*Py_None*/;
 		}
 
 		// The distance (in radians).
 		//
-		// NOTE: We clamp to zero if the angular distance is equal to zero within epsilon.
-		// This is done because the same epsilon comparison tests are done in GPlatesMaths::minimum_distance()
-		// and so it's possible that 'angular_distance' is very small (but non-zero) and yet still compares
-		// equal to AngularDistance::ZERO. An example is polygon-to-polygon distance with solid set to true -
-		// in this case if the polygon outlines are close enough then it will avoid doing the solid tests and
-		// just return the non-zero result (even though the solid tests would have returned AngularDistance::ZERO,
-		// ie, exactly 0.0). Client C++ code will be fine here because it (epsilon) tests against AngularDistance::ZERO,
-		// but Python code typically tests exactly for 0.0 and so we need to set anything to 0.0 that (epsilon) compares
-		// equal to AngularDistance::ZERO.
-		const GPlatesMaths::real_t distance = (angular_distance != GPlatesMaths::AngularDistance::ZERO /*epsilon comparison*/)
-				? angular_distance.calculate_angle()
+		// NOTE: We clamp to zero if the angular distance is equal to zero within epsilon (a cosine
+		// within 1e-12 of 1, about 1.4e-6 radians). Python code typically tests exactly for 0.0,
+		// but geometries that touch (eg, share a vertex) can come out a tiny non-zero distance when
+		// rounding hides the contact (the smallest non-zero distance from a cosine is about 1.5e-8
+		// radians). Intersections, and geometries inside a solid polygon, are exactly zero already.
+		// The clamp is user-visible (pyGPlates 1.0 had it).
+		const GPlatesMaths::real_t distance =
+				(angular_distance.get() != GPlatesMaths::AngularDistance::ZERO /*epsilon test*/)
+				? angular_distance->calculate_angle()
 				: 0.0;
+
+		// Apply the caller's threshold exactly, to the distance the caller sees
+		// (minimum_distance() was given a slightly larger threshold, above).
+		if (distance_threshold_radians &&
+			distance.is_precisely_greater_than(distance_threshold_radians->dval()))
+		{
+			return bp::object()/*Py_None*/;
+		}
 
 		//
 		// If returning closest positions and/or closest indices then return a python tuple.
@@ -441,6 +467,7 @@ export_geometry_on_sphere()
 				"or ``None`` if *distance_threshold_radians* is specified and exceeded\n"
 				"  :rtype: float, or tuple[float, PointOnSphere, PointOnSphere], or tuple[float, int, int], "
 				"or tuple[float, PointOnSphere, PointOnSphere, int, int], or None\n"
+				"  :raises ValueError: if *distance_threshold_radians* is NaN\n"
 				"\n"
 				"  The returned distance is the shortest path between *geometry1* and *geometry2* along the "
 				"surface of the sphere (great circle arc path). To convert the distance from radians "
@@ -546,7 +573,15 @@ export_geometry_on_sphere()
 				"            geometry2_is_solid=True)\n"
 				"\n"
 				".. versionchanged:: 0.41\n"
-				"   distance threshold is clamped to the range [0, PI] to avoid an exception.\n")
+				"   distance threshold is clamped to the range [0, PI] to avoid an exception.\n"
+				"\n"
+				".. versionchanged:: 1.1\n"
+				"   ``None`` is returned only if the distance that would be returned is greater "
+				"than *distance_threshold_radians*, so a distance equal to the threshold is "
+				"returned (eg, PI for antipodal points with a threshold of PI, or zero for "
+				"intersecting polylines and polygons with a threshold of zero). A NaN threshold "
+				"raises ``ValueError`` (it was ignored). The closest positions and indices always "
+				"belong to the same closest pair.\n")
 		.staticmethod("distance")
 	;
 

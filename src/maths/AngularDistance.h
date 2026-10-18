@@ -38,6 +38,31 @@
 namespace GPlatesMaths
 {
 	/**
+	 * Returns @a cosine clamped to [-1, 1] if it is outside that range by no more than epsilon.
+	 *
+	 * The dot product of two unit vectors can be an ULP or so outside [-1, 1] (eg, of a point and
+	 * its exact antipode). Clamping it means exact comparisons see the extreme it represents: a
+	 * distance with a cosine just below -1 would otherwise exceed a threshold of PI (cosine exactly
+	 * -1). Values further out are left alone, so that 'acos' still reports them as errors.
+	 */
+	inline
+	real_t
+	clamp_cosine_rounding_error(
+			const real_t &cosine)
+	{
+		if (cosine.dval() < -1.0 && cosine >= -1.0/*epsilon comparison*/)
+		{
+			return -1.0;
+		}
+		if (cosine.dval() > 1.0 && cosine <= 1.0/*epsilon comparison*/)
+		{
+			return 1.0;
+		}
+		return cosine;
+	}
+
+
+	/**
 	 * An angular distance stored as cosine instead of the actual angle.
 	 *
 	 * This class is very similar to @a AngularExtent, but is more lightweight and doesn't
@@ -78,14 +103,16 @@ namespace GPlatesMaths
 		/**
 		 * Create from the cosine of the angular distance.
 		 *
-		 * Note that the cosine can be efficiently calculated as the dot product of two unit vectors.
+		 * Note that the cosine can be efficiently calculated as the dot product of two unit
+		 * vectors. A cosine just outside [-1, 1] (by rounding) is clamped (see @a
+		 * clamp_cosine_rounding_error).
 		 */
 		static
 		AngularDistance
 		create_from_cosine(
 				const real_t &cosine)
 		{
-			return AngularDistance(cosine);
+			return AngularDistance(clamp_cosine_rounding_error(cosine));
 		}
 
 		/**

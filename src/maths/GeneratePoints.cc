@@ -152,7 +152,7 @@ namespace GPlatesMaths
 						const PolygonOnSphere::non_null_ptr_to_const_type polygon_bounds = *polygon_bounds_opt;
 
 						// The distance threshold accounts for the maximum random offset possible.
-						const AngularDistance distance = minimum_distance(
+						const boost::optional<AngularDistance> distance = minimum_distance(
 								*polygon_bounds,
 								*quad_poly,
 								false/*polygon1_interior_is_solid*/,
@@ -160,7 +160,7 @@ namespace GPlatesMaths
 								d_distance_threshold);
 
 						// See if the quad face and polygon are further apart than the distance threshold.
-						if (distance == AngularDistance::PI)
+						if (!distance)
 						{
 							// Polygons did not intersect.
 							// One might be completely inside the other.

@@ -93,14 +93,16 @@ namespace GPlatesMaths
 		/**
 		 * Create from the cosine of the angular extent - the sine will be calculated when/if needed.
 		 *
-		 * Note that the cosine can be efficiently calculated as the dot product of two unit vectors.
+		 * Note that the cosine can be efficiently calculated as the dot product of two unit
+		 * vectors. A cosine just outside [-1, 1] (by rounding) is clamped (see @a
+		 * clamp_cosine_rounding_error).
 		 */
 		static
 		AngularExtent
 		create_from_cosine(
 				const real_t &cosine)
 		{
-			return AngularExtent(cosine);
+			return AngularExtent(clamp_cosine_rounding_error(cosine));
 		}
 
 		/**

@@ -492,7 +492,7 @@ namespace GPlatesAppLogic
 							// interpolate information similar to what DateLineWrapper does.
 							GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 									partitioned_domain_point_geometry = partitioned_domain_point.get_geometry_on_sphere();
-							if (GPlatesMaths::AngularExtent::PI == minimum_distance(
+							if (!minimum_distance(
 									*partitioned_domain_point_geometry,  // const GeometryOnSphere &
 									*geometry_domain,                    // const GeometryOnSphere &
 									false/*geometry1_interior_is_solid*/,
@@ -521,11 +521,11 @@ namespace GPlatesAppLogic
 								// Calculate the interpolation ratio of the point along the great circle arc of the segment.
 								const GPlatesMaths::PointOnSphere &segment_start_point = geometry_range.domain_points[closest_segment_index];
 								const GPlatesMaths::PointOnSphere &segment_end_point = geometry_range.domain_points[closest_segment_index + 1];
-								const GPlatesMaths::AngularDistance segment_len = minimum_distance(segment_start_point, segment_end_point);
+								const GPlatesMaths::AngularDistance segment_len = minimum_distance(segment_start_point, segment_end_point).get();
 								if (segment_len != GPlatesMaths::AngularDistance::ZERO)
 								{
 									const double interpolate_ratio =
-											minimum_distance(segment_start_point, partitioned_domain_point).calculate_angle().dval() /
+											minimum_distance(segment_start_point, partitioned_domain_point)->calculate_angle().dval() /
 											segment_len.calculate_angle().dval();
 
 									// Interpolate the scalar values of segment's end points.
