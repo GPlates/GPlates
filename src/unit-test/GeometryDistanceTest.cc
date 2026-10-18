@@ -33,6 +33,7 @@
 #include "maths/AngularDistance.h"
 #include "maths/AngularExtent.h"
 #include "maths/GeometryDistance.h"
+#include "maths/GeometryOnSphere.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
@@ -53,6 +54,59 @@ namespace
 						std::cos(lat) * std::cos(lon),
 						std::cos(lat) * std::sin(lon),
 						std::sin(lat)));
+	}
+
+
+	/**
+	 * A random number in [-1, 1].
+	 *
+	 * Drawn directly from the generator, whose sequence the C++ standard defines, and not with
+	 * std::uniform_real_distribution, whose output differs between standard libraries (so CI would
+	 * test different cases on each platform, and a failure there might not reproduce locally).
+	 */
+	double
+	random_signed_unit(
+			std::mt19937 &rng)
+	{
+		return 2.0 * (rng() / 4294967295.0) - 1.0;
+	}
+
+
+	/**
+	 * A random geometry of type @a geometry_type (0 point, 1 multi-point, 2 polyline, 3 polygon) as
+	 * a random walk from (@a lat, @a lon) radians, in steps of up to @a step radians.
+	 *
+	 * The polylines and polygons have enough segments for the bounding-tree search (a leaf
+	 * bounds up to 8).
+	 */
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+	create_random_geometry(
+			std::mt19937 &rng,
+			unsigned int geometry_type,
+			double lat,
+			double lon,
+			double step)
+	{
+		const unsigned int num_points[4] = { 1, 10, 30, 30 };
+		std::vector<GPlatesMaths::PointOnSphere> points;
+		for (unsigned int p = 0; p < num_points[geometry_type]; ++p)
+		{
+			lat += step * random_signed_unit(rng);
+			lon += step * random_signed_unit(rng);
+			points.push_back(point_from_lat_lon_radians(lat, lon));
+		}
+
+		switch (geometry_type)
+		{
+		case 0:
+			return points.front().get_geometry_on_sphere();
+		case 1:
+			return GPlatesMaths::MultiPointOnSphere::create(points);
+		case 2:
+			return GPlatesMaths::PolylineOnSphere::create(points);
+		default:
+			return GPlatesMaths::PolygonOnSphere::create(points);
+		}
 	}
 }
 
@@ -95,41 +149,78 @@ TEST(GeometryDistanceTest, point_to_arc_threshold_equal_to_distance)
 
 TEST(GeometryDistanceTest, geometry_threshold_equal_to_distance)
 {
-	// Random polylines and points, clustered so that many segments are nearly as close as the closest
-	// (and with enough segments for the bounding-tree search, whose leaves bound up to 8 segments).
+	// Random geometries of every pairing of types, with solid flags, clustered so that many segments
+	// are nearly as close as the closest. In half the cases the second geometry is tiny and near the
+	// first's antipode (with the first also tiny), so the distance is close to PI.
+	//
+	// Those near the antipode are not solid: point-in-polygon has a known bug there (a tiny polygon
+	// can contain a point near its antipode). To be re-enabled when that bug is fixed.
 	std::mt19937 rng(1234);
-	std::uniform_real_distribution<double> uniform(-1.0, 1.0);
 
-	for (unsigned int n = 0; n < 200; ++n)
+	for (unsigned int n = 0; n < 640; ++n)
 	{
-		SCOPED_TRACE(testing::Message() << "case " << n);
+		const unsigned int geometry1_type = n % 4;
+		const unsigned int geometry2_type = (n / 4) % 4;
+		const bool near_antipodal = (n / 16) % 2 == 1;
+		const bool geometry1_is_solid = !near_antipodal && (n / 32) % 2 == 1;
+		const bool geometry2_is_solid = !near_antipodal && (n / 64) % 2 == 1;
+		SCOPED_TRACE(testing::Message() << "case " << n
+				<< ": types " << geometry1_type << " " << geometry2_type
+				<< (near_antipodal ? ", near antipodal" : "")
+				<< ", solid " << geometry1_is_solid << " " << geometry2_is_solid);
 
-		const double centre_lat = 1.4 * uniform(rng);
-		const double centre_lon = 3.1 * uniform(rng);
-		std::vector<GPlatesMaths::PointOnSphere> polyline_points;
-		double lat = centre_lat;
-		double lon = centre_lon;
-		for (unsigned int p = 0; p < 30; ++p)
-		{
-			lat += 0.02 * uniform(rng);
-			lon += 0.02 * uniform(rng);
-			polyline_points.push_back(point_from_lat_lon_radians(lat, lon));
-		}
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-				GPlatesMaths::PolylineOnSphere::create(polyline_points);
-
-		const GPlatesMaths::PointOnSphere point = point_from_lat_lon_radians(
-				centre_lat + 0.1 * uniform(rng),
-				centre_lon + 0.1 * uniform(rng));
+		const double centre_lat = 1.4 * random_signed_unit(rng);
+		const double centre_lon = 3.1 * random_signed_unit(rng);
+		const double step = near_antipodal ? 1e-7 : 0.02;
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry1 =
+				create_random_geometry(rng, geometry1_type, centre_lat, centre_lon, step);
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry2 = near_antipodal
+				? create_random_geometry(
+						rng, geometry2_type, -centre_lat, centre_lon + GPlatesMaths::PI, step)
+				: create_random_geometry(
+						rng,
+						geometry2_type,
+						centre_lat + 0.1 * random_signed_unit(rng),
+						centre_lon + 0.1 * random_signed_unit(rng),
+						step);
 
 		const boost::optional<GPlatesMaths::AngularDistance> distance =
-				GPlatesMaths::minimum_distance(point, *polyline);
+				GPlatesMaths::minimum_distance(
+						*geometry1, *geometry2, geometry1_is_solid, geometry2_is_solid);
 		ASSERT_TRUE(distance);
 		const GPlatesMaths::AngularExtent threshold(distance.get());
 		const boost::optional<GPlatesMaths::AngularDistance> thresholded_distance =
-				GPlatesMaths::minimum_distance(point, *polyline, threshold);
-		ASSERT_TRUE(thresholded_distance);
+				GPlatesMaths::minimum_distance(
+						*geometry1, *geometry2, geometry1_is_solid, geometry2_is_solid, threshold);
+		ASSERT_TRUE(thresholded_distance) << "distance cosine " << distance->get_cosine().dval();
 		EXPECT_EQ(thresholded_distance->get_cosine().dval(), distance->get_cosine().dval());
+	}
+}
+
+
+TEST(GeometryDistanceTest, exact_antipodes_within_threshold_of_pi)
+{
+	// A point and its exact antipode (coordinates negated) are PI apart, so a threshold of PI must
+	// not be exceeded. Their dot product can round to just below -1 (a cosine no threshold can
+	// have), which used to exceed it.
+	std::mt19937 rng(5678);
+
+	for (unsigned int n = 0; n < 1000; ++n)
+	{
+		SCOPED_TRACE(testing::Message() << "case " << n);
+		const GPlatesMaths::PointOnSphere point = point_from_lat_lon_radians(
+				1.5 * random_signed_unit(rng),
+				3.1 * random_signed_unit(rng));
+		const GPlatesMaths::UnitVector3D &position = point.position_vector();
+		const GPlatesMaths::PointOnSphere antipode(
+				GPlatesMaths::UnitVector3D(-position.x(), -position.y(), -position.z()));
+
+		const boost::optional<GPlatesMaths::AngularDistance> distance =
+				GPlatesMaths::minimum_distance(point, antipode, GPlatesMaths::AngularExtent::PI);
+		ASSERT_TRUE(distance);
+		// The dot product rounds to either side of -1 (by an ULP or two); below -1 it is clamped.
+		EXPECT_GE(distance->get_cosine().dval(), -1.0);
+		EXPECT_NEAR(distance->get_cosine().dval(), -1.0, 1e-15);
 	}
 }
 
