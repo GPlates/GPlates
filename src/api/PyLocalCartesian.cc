@@ -117,6 +117,45 @@ namespace GPlatesApi
 						extract_magnitude_azimuth_inclination(magnitude_azimuth_inclination));
 			}
 		}
+
+		//
+		// The 'convert_...()' functions taking a sequence of origins also convert at a single
+		// origin (deprecated). Their single-origin overloads are tried after them (see
+		// 'export_local_cartesian()'), so they apply the test those overloads did when they were
+		// tried first: is the origin argument convertible to a single point (and, for a vector
+		// conversion, the vector argument to a single vector)?
+		//
+
+		bool
+		is_single_local_origin(
+				bp::object local_origins_object)
+		{
+			return bp::extract<GPlatesMaths::PointOnSphere>(local_origins_object).check();
+		}
+
+		bool
+		is_single_local_origin_and_vector(
+				bp::object local_origins_object,
+				bp::object vectors_object)
+		{
+			return is_single_local_origin(local_origins_object) &&
+					bp::extract<GPlatesMaths::Vector3D>(vectors_object).check();
+		}
+
+		std::vector<GPlatesMaths::PointOnSphere>
+		extract_local_origins(
+				bp::object local_origins_object)
+		{
+			if (!PointSequenceFunctionArgument::is_convertible(local_origins_object))
+			{
+				PyErr_SetString(
+						PyExc_TypeError,
+						"Expected a sequence of points for 'local_origins'");
+				bp::throw_error_already_set();
+			}
+
+			return PointSequenceFunctionArgument(local_origins_object).get_points();
+		}
 	}
 
 	//
@@ -157,13 +196,22 @@ namespace GPlatesApi
 				vector);
 	}
 
-	bp::list
+	bp::object
 	local_cartesian_convert_sequence_from_geocentric_to_north_east_down(
-			PointSequenceFunctionArgument local_origins_function_argument,
+			bp::object local_origins_object,
 			bp::object vectors_object) // Any python sequence (eg, list, tuple).
 	{
- 		const std::vector<GPlatesMaths::PointOnSphere> &local_origins =
-				local_origins_function_argument.get_points();
+		// A single origin and vector (deprecated).
+		if (Implementation::is_single_local_origin_and_vector(local_origins_object, vectors_object))
+		{
+			return bp::object(
+					local_cartesian_convert_from_geocentric_to_north_east_down(
+							bp::extract<GPlatesMaths::PointOnSphere>(local_origins_object),
+							bp::extract<GPlatesMaths::Vector3D>(vectors_object)));
+		}
+
+		const std::vector<GPlatesMaths::PointOnSphere> local_origins =
+				Implementation::extract_local_origins(local_origins_object);
 
  		std::vector<GPlatesMaths::Vector3D> vectors;
 		Implementation::extract_vectors(vectors, vectors_object);
@@ -223,13 +271,22 @@ namespace GPlatesApi
 				vector);
 	}
 
-	bp::list
+	bp::object
 	local_cartesian_convert_sequence_from_north_east_down_to_geocentric(
-			PointSequenceFunctionArgument local_origins_function_argument,
+			bp::object local_origins_object,
 			bp::object vectors_object) // Any python sequence (eg, list, tuple).
 	{
- 		const std::vector<GPlatesMaths::PointOnSphere> &local_origins =
-				local_origins_function_argument.get_points();
+		// A single origin and vector (deprecated).
+		if (Implementation::is_single_local_origin_and_vector(local_origins_object, vectors_object))
+		{
+			return bp::object(
+					local_cartesian_convert_from_north_east_down_to_geocentric(
+							bp::extract<GPlatesMaths::PointOnSphere>(local_origins_object),
+							bp::extract<GPlatesMaths::Vector3D>(vectors_object)));
+		}
+
+		const std::vector<GPlatesMaths::PointOnSphere> local_origins =
+				Implementation::extract_local_origins(local_origins_object);
 
  		std::vector<GPlatesMaths::Vector3D> vectors;
 		Implementation::extract_vectors(vectors, vectors_object);
@@ -311,13 +368,21 @@ namespace GPlatesApi
 		return bp::make_tuple(boost::get<0>(coords), boost::get<1>(coords), boost::get<2>(coords));
 	}
 
-	bp::list
+	bp::object
 	local_cartesian_convert_sequence_from_geocentric_to_magnitude_azimuth_inclination(
-			PointSequenceFunctionArgument local_origins_function_argument,
+			bp::object local_origins_object,
 			bp::object vectors_object) // Any python sequence (eg, list, tuple).
 	{
- 		const std::vector<GPlatesMaths::PointOnSphere> &local_origins =
-				local_origins_function_argument.get_points();
+		// A single origin and vector (deprecated).
+		if (Implementation::is_single_local_origin_and_vector(local_origins_object, vectors_object))
+		{
+			return local_cartesian_convert_from_geocentric_to_magnitude_azimuth_inclination(
+					bp::extract<GPlatesMaths::PointOnSphere>(local_origins_object),
+					bp::extract<GPlatesMaths::Vector3D>(vectors_object));
+		}
+
+		const std::vector<GPlatesMaths::PointOnSphere> local_origins =
+				Implementation::extract_local_origins(local_origins_object);
 
  		std::vector<GPlatesMaths::Vector3D> vectors;
 		Implementation::extract_vectors(vectors, vectors_object);
@@ -388,13 +453,23 @@ namespace GPlatesApi
 				Implementation::extract_magnitude_azimuth_inclination(magnitude_azimuth_inclination_sequence));
 	}
 
-	bp::list
+	bp::object
 	local_cartesian_convert_sequence_from_magnitude_azimuth_inclination_to_geocentric(
-			PointSequenceFunctionArgument local_origins_function_argument,
+			bp::object local_origins_object,
 			bp::object local_coordinates_object) // Any python sequence (eg, list, tuple).
 	{
- 		const std::vector<GPlatesMaths::PointOnSphere> &local_origins =
-				local_origins_function_argument.get_points();
+		// A single origin and local coordinate (deprecated). Its overload accepted any object as
+		// the local coordinate, so only the origin decided it.
+		if (Implementation::is_single_local_origin(local_origins_object))
+		{
+			return bp::object(
+					local_cartesian_convert_from_magnitude_azimuth_inclination_to_geocentric(
+							bp::extract<GPlatesMaths::PointOnSphere>(local_origins_object),
+							local_coordinates_object));
+		}
+
+		const std::vector<GPlatesMaths::PointOnSphere> local_origins =
+				Implementation::extract_local_origins(local_origins_object);
 
 		std::vector<
 				boost::tuple<
@@ -463,6 +538,27 @@ export_local_cartesian()
 					"* *inclination* is the angle (in radians) in the downward direction (eg, :math:`\\frac{\\pi}{2}` if vector aligned "
 					"with Down axis, :math:`-\\frac{\\pi}{2}` if aligned with up direction and :math:`0` if vector in tangent plane).\n"
 					"\n"
+					"There are two ways to convert:\n"
+					"\n"
+					"* To convert at one location, create a *LocalCartesian* there and use its "
+					"``from_...`` methods (such as :meth:`from_geocentric_to_north_east_down`), "
+					"for as many vectors as needed.\n"
+					"* To convert vectors that are each at a different location, use the "
+					"``convert_...`` functions (such as "
+					":meth:`convert_from_geocentric_to_north_east_down`) with a sequence of "
+					"locations and a sequence of vectors. This is faster than creating a "
+					"*LocalCartesian* at each location.\n"
+					"\n"
+					"::\n"
+					"\n"
+					"  local_cartesian = pygplates.LocalCartesian(local_origin)\n"
+					"  local_vector = "
+					"local_cartesian.from_geocentric_to_north_east_down(geocentric_vector)\n"
+					"\n"
+					"  local_vectors = "
+					"pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(\n"
+					"      local_origins, geocentric_vectors)\n"
+					"\n"
 					"Local cartesians are equality (``==``, ``!=``) comparable (but not hashable - "
 					"cannot be used as a key in a ``dict``).\n",
 					bp::init<
@@ -485,88 +581,70 @@ export_local_cartesian()
 		// Geocentric to North/East/Down
 		//
 
-		// NOTE: This should be defined *before* the following (more restrictive overload) since this
-		// overload matches generic bp::object. This is because boost-python attempts to resolve
-		// overloaded functions in the reverse order in which they're declared...
+		// The sequence overload converts each of a sequence at its own origin. The overloads that
+		// convert at a single origin are deprecated, since they duplicate the same conversion as a
+		// method of a LocalCartesian created at that origin
+		// ('from_geocentric_to_north_east_down()'). They still work, but have no docstring since we
+		// don't want them documented anymore.
+		//
+		// NOTE: The deprecated overloads are defined *before* the sequence overload, so that the
+		// sequence overload is tried first (boost-python tries overloads in the reverse order in
+		// which they're declared). Defined after it, each deprecated overload would get a copy of
+		// its docstring, and '__doc__' would repeat it. The sequence overload accepts any objects,
+		// so it also converts at a single origin, as the deprecated overload of the same arity did
+		// when that was tried first. That overload is now reached only by its keyword names (and
+		// the other deprecated overload by its arity).
+		.def("convert_from_geocentric_to_north_east_down",
+				&GPlatesApi::local_cartesian_convert_from_geocentric_to_north_east_down,
+				(bp::arg("local_origin"), bp::arg("vector")))
+		.def("convert_from_geocentric_to_north_east_down",
+				&GPlatesApi::local_cartesian_convert_xyz_from_geocentric_to_north_east_down,
+				(bp::arg("local_origin"), bp::arg("x"), bp::arg("y"), bp::arg("z")))
 		.def("convert_from_geocentric_to_north_east_down",
 				&GPlatesApi::local_cartesian_convert_sequence_from_geocentric_to_north_east_down,
 				(bp::arg("local_origins"), bp::arg("vectors")),
-				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				"convert_from_geocentric_to_north_east_down(...)\n"
-				"Converts a geocentric vector (or vectors) to a cartesian vector (or vectors) "
-				"in a local North/East/Down coordinate system (or systems).\n"
-				"\n"
-				"This function can be called in more than one way...\n"
-				"\n"
-				// Specific overload signature...
 				"convert_from_geocentric_to_north_east_down(local_origins, vectors)\n"
-				"  Converts a sequence of geocentric *vectors* to a sequence of cartesian vectors in local "
-				"North/East/Down coordinate systems located at *local_origins*.\n"
+				"  Converts geocentric vectors to cartesian vectors in local North/East/Down "
+				"coordinate systems, each at its own origin.\n"
 				"\n"
-				"  :param local_origins: sequence of origins (points) of local cartesian systems.\n"
-				"  :type local_origins: Any sequence of PointOnSphere "
-				"or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param local_origins: the origins (points) of the local cartesian systems, one "
+				"for each vector\n"
+				"  :type local_origins: any sequence of PointOnSphere or LatLonPoint or "
+				"tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param vectors: the geocentric vectors\n"
-				"  :type vectors: Any sequence of Vector3D or tuple (x,y,z)\n"
+				"  :type vectors: any sequence of Vector3D or tuple (x,y,z)\n"
 				"  :returns: list of local cartesian North/East/Down vectors\n"
 				"  :rtype: list of Vector3D\n"
 				"  :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths\n"
 				"\n"
-				"  Convert geocentric vectors to local cartesian vectors:\n"
+				"  Each of the *vectors* is converted in the local coordinate system located at "
+				"the origin with the same index in *local_origins*:\n"
 				"  ::\n"
 				"\n"
-				"    local_origins = [...]\n"
-				"    geocentric_vectors = [...]\n"
 				"    local_vectors = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(\n"
-				"        local_origins, geocentric_vectors)\n")
-		.def("convert_from_geocentric_to_north_east_down",
-				&GPlatesApi::local_cartesian_convert_from_geocentric_to_north_east_down,
-				(bp::arg("local_origin"), bp::arg("vector")),
-				// Specific overload signature...
-				"convert_from_geocentric_to_north_east_down(local_origin, vector)\n"
-				"  Converts a geocentric *vector* to a cartesian vector in the local "
-				"North/East/Down coordinate system located at *local_origin*.\n"
+				"        local_origins, geocentric_vectors)\n"
 				"\n"
-				"  :param local_origin: origin of local cartesian system.\n"
-				"  :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
-				", in degrees, or tuple (x,y,z)\n"
-				"  :param vector: the geocentric vector\n"
-				"  :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)\n"
-				"  :returns: local cartesian North/East/Down vector\n"
-				"  :rtype: Vector3D\n"
-				"\n"
-				"  Convert a geocentric vector to the local North/East/Down coordinate system "
-				"located at latitude/longitude (0, 0) on the globe:\n"
+				"  This gives the same result as the following, but is faster since it does not "
+				"create a :class:`LocalCartesian` for each origin:\n"
 				"  ::\n"
 				"\n"
-				"    local_vector = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(\n"
-				"        (0, 0), geocentric_vector)\n")
-		.def("convert_from_geocentric_to_north_east_down",
-				&GPlatesApi::local_cartesian_convert_xyz_from_geocentric_to_north_east_down,
-				(bp::arg("local_origin"), bp::arg("x"), bp::arg("y"), bp::arg("z")),
-				// Specific overload signature...
-				"convert_from_geocentric_to_north_east_down(local_origin, x, y, z)\n"
-				"  Converts the geocentric vector (x, y, z) to a cartesian vector in the local "
-				"North/East/Down coordinate system located at *local_origin*.\n"
+				"    local_vectors = [\n"
+				"        "
+				"pygplates.LocalCartesian(local_origin).from_geocentric_to_north_east_down(geocent"
+				"ric_vector)\n"
+				"        for local_origin, geocentric_vector in zip(local_origins, "
+				"geocentric_vectors)]\n"
 				"\n"
-				"  :param local_origin: origin of local cartesian system.\n"
-				"  :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
-				", in degrees, or tuple (x,y,z)\n"
-				"  :param x: the *x* component of the geocentric vector\n"
-				"  :type x: float\n"
-				"  :param y: the *y* component of the geocentric vector\n"
-				"  :type y: float\n"
-				"  :param z: the *z* component of the geocentric vector\n"
-				"  :type z: float\n"
-				"  :returns: local cartesian North/East/Down vector\n"
-				"  :rtype: Vector3D\n"
+				"  To convert at a single origin, use :meth:`from_geocentric_to_north_east_down` "
+				"on a :class:`LocalCartesian` created at that origin.\n"
 				"\n"
-				"  Convert the geocentric vector (2, 1, 0) to the local North/East/Down coordinate system "
-				"located at latitude/longitude (0, 0) on the globe:\n"
-				"  ::\n"
-				"\n"
-				"    local_vector = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(\n"
-				"        (0,0), 2, 1, 0)\n")
+				"  .. versionchanged:: 1.1\n"
+				"     Deprecated converting at a single origin with "
+				"``convert_from_geocentric_to_north_east_down(local_origin, vector)`` and "
+				"``convert_from_geocentric_to_north_east_down(local_origin, x, y, z)``. They still "
+				"work, but use "
+				"``pygplates.LocalCartesian(local_origin).from_geocentric_to_north_east_down(vecto"
+				"r)`` instead.\n")
 		.staticmethod("convert_from_geocentric_to_north_east_down")
 		.def("from_geocentric_to_north_east_down",
 				&GPlatesMaths::convert_from_geocentric_to_north_east_down,
@@ -582,7 +660,7 @@ export_local_cartesian()
 				"  Converts the geocentric *vector* to a local North/East/Down cartesian vector.\n"
 				"\n"
 				"  :param vector: the geocentric vector\n"
-				"  :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :type vector: Vector3D, or sequence (such as list or tuple) of float\n"
 				"  :returns: local cartesian North/East/Down vector\n"
 				"  :rtype: Vector3D\n"
 				"\n"
@@ -619,88 +697,69 @@ export_local_cartesian()
 		// North/East/Down to Geocentric
 		//
 
-		// NOTE: This should be defined *before* the following (more restrictive overload) since this
-		// overload matches generic bp::object. This is because boost-python attempts to resolve
-		// overloaded functions in the reverse order in which they're declared...
+		// The sequence overload converts each of a sequence at its own origin. The overloads that
+		// convert at a single origin are deprecated, since they duplicate the same conversion as a
+		// method of a LocalCartesian created at that origin
+		// ('from_north_east_down_to_geocentric()'). They still work, but have no docstring since we
+		// don't want them documented anymore.
+		//
+		// NOTE: The deprecated overloads are defined *before* the sequence overload, so that the
+		// sequence overload is tried first (boost-python tries overloads in the reverse order in
+		// which they're declared). Defined after it, each deprecated overload would get a copy of
+		// its docstring, and '__doc__' would repeat it. The sequence overload accepts any objects,
+		// so it also converts at a single origin, as the deprecated overload of the same arity did
+		// when that was tried first. That overload is now reached only by its keyword names (and
+		// the other deprecated overload by its arity).
+		.def("convert_from_north_east_down_to_geocentric",
+				&GPlatesApi::local_cartesian_convert_from_north_east_down_to_geocentric,
+				(bp::arg("local_origin"), bp::arg("vector")))
+		.def("convert_from_north_east_down_to_geocentric",
+				&GPlatesApi::local_cartesian_convert_xyz_from_north_east_down_to_geocentric,
+				(bp::arg("local_origin"), bp::arg("x"), bp::arg("y"), bp::arg("z")))
 		.def("convert_from_north_east_down_to_geocentric",
 				&GPlatesApi::local_cartesian_convert_sequence_from_north_east_down_to_geocentric,
 				(bp::arg("local_origins"), bp::arg("vectors")),
-				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				"convert_from_north_east_down_to_geocentric(...)\n"
-				"Converts a cartesian vector (or vectors) in a local North/East/Down "
-				"coordinate system (or systems) to a geocentric vector (or vectors).\n"
-				"\n"
-				"This function can be called in more than one way...\n"
-				"\n"
-				// Specific overload signature...
 				"convert_from_north_east_down_to_geocentric(local_origins, vectors)\n"
-				"  Converts a cartesian *vector* in the local North/East/Down coordinate system "
-				"located at *local_origin* to a geocentric vector.\n"
+				"  Converts cartesian vectors in local North/East/Down coordinate systems, each at "
+				"its own origin, to geocentric vectors.\n"
 				"\n"
-				"  :param local_origins: sequence of origins (points) of local cartesian systems.\n"
+				"  :param local_origins: the origins (points) of the local cartesian systems, one "
+				"for each vector\n"
 				"  :type local_origins: any sequence of PointOnSphere or LatLonPoint or "
 				"tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-				"  :param vectors: the local cartesian vectors\n"
-				"  :type vectors: Any sequence of Vector3D or tuple (x,y,z)\n"
+				"  :param vectors: the local cartesian North/East/Down vectors\n"
+				"  :type vectors: any sequence of Vector3D or tuple (x,y,z)\n"
 				"  :returns: list of geocentric vectors\n"
 				"  :rtype: list of Vector3D\n"
 				"  :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths\n"
 				"\n"
-				"  Convert local cartesian vectors to geocentric vectors:\n"
+				"  Each of the *vectors* is converted in the local coordinate system located at "
+				"the origin with the same index in *local_origins*:\n"
 				"  ::\n"
 				"\n"
-				"    local_origins = [...]\n"
-				"    local_vectors = [...]\n"
 				"    geocentric_vectors = pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(\n"
-				"        local_origins, local_vectors)\n")
-		.def("convert_from_north_east_down_to_geocentric",
-				&GPlatesApi::local_cartesian_convert_from_north_east_down_to_geocentric,
-				(bp::arg("local_origin"), bp::arg("vector")),
-				// Specific overload signature...
-				"convert_from_north_east_down_to_geocentric(local_origin, vector)\n"
-				"  Converts a cartesian vector in the local North/East/Down coordinate system located "
-				"at *local_origin* to a geocentric vector.\n"
+				"        local_origins, local_vectors)\n"
 				"\n"
-				"  :param local_origin: origin of local cartesian system.\n"
-				"  :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
-				", in degrees, or tuple (x,y,z)\n"
-				"  :param vector: the local cartesian vector\n"
-				"  :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)\n"
-				"  :returns: geocentric vector\n"
-				"  :rtype: Vector3D\n"
-				"\n"
-				"  Convert a local cartesian vector in a local North/East/Down coordinate system "
-				"located at latitude/longitude (0, 0) on the globe to a geocentric vector:\n"
+				"  This gives the same result as the following, but is faster since it does not "
+				"create a :class:`LocalCartesian` for each origin:\n"
 				"  ::\n"
 				"\n"
-				"    geocentric_vector = pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(\n"
-				"        (0, 0), geocentric_vector)\n")
-		.def("convert_from_north_east_down_to_geocentric",
-				&GPlatesApi::local_cartesian_convert_xyz_from_north_east_down_to_geocentric,
-				(bp::arg("local_origin"), bp::arg("x"), bp::arg("y"), bp::arg("z")),
-				// Specific overload signature...
-				"convert_from_north_east_down_to_geocentric(local_origin, x, y, z)\n"
-				"  Converts a cartesian vector (x, y, z) in the local North/East/Down coordinate system "
-				"located at *local_origin* to a geocentric vector.\n"
+				"    geocentric_vectors = [\n"
+				"        "
+				"pygplates.LocalCartesian(local_origin).from_north_east_down_to_geocentric(local_v"
+				"ector)\n"
+				"        for local_origin, local_vector in zip(local_origins, local_vectors)]\n"
 				"\n"
-				"  :param local_origin: origin of local cartesian system.\n"
-				"  :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
-				", in degrees, or tuple (x,y,z)\n"
-				"  :param x: the *x* component of the local cartesian vector\n"
-				"  :type x: float\n"
-				"  :param y: the *y* component of the local cartesian vector\n"
-				"  :type y: float\n"
-				"  :param z: the *z* component of the local cartesian vector\n"
-				"  :type z: float\n"
-				"  :returns: geocentric vector\n"
-				"  :rtype: Vector3D\n"
+				"  To convert at a single origin, use :meth:`from_north_east_down_to_geocentric` "
+				"on a :class:`LocalCartesian` created at that origin.\n"
 				"\n"
-				"  Convert the local cartesian vector (2, 1, 0) in the local North/East/Down coordinate system "
-				"located at latitude/longitude (0, 0) on the globe to a geocentric vector:\n"
-				"  ::\n"
-				"\n"
-				"    geocentric_vector = pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(\n"
-				"        (0,0), 2, 1, 0)\n")
+				"  .. versionchanged:: 1.1\n"
+				"     Deprecated converting at a single origin with "
+				"``convert_from_north_east_down_to_geocentric(local_origin, vector)`` and "
+				"``convert_from_north_east_down_to_geocentric(local_origin, x, y, z)``. They still "
+				"work, but use "
+				"``pygplates.LocalCartesian(local_origin).from_north_east_down_to_geocentric(vecto"
+				"r)`` instead.\n")
 		.staticmethod("convert_from_north_east_down_to_geocentric")
 		.def("from_north_east_down_to_geocentric",
 				&GPlatesMaths::convert_from_north_east_down_to_geocentric,
@@ -716,7 +775,7 @@ export_local_cartesian()
 				"  Converts the local North/East/Down cartesian *vector* to a geocentric vector.\n"
 				"\n"
 				"  :param vector: the local cartesian vector\n"
-				"  :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :type vector: Vector3D, or sequence (such as list or tuple) of float\n"
 				"  :returns: geocentric vector\n"
 				"  :rtype: Vector3D\n"
 				"\n"
@@ -753,88 +812,72 @@ export_local_cartesian()
 		// Geocentric to Magnitude/Azimuth/Inclination
 		//
 
-		// NOTE: This should be defined *before* the following (more restrictive overload) since this
-		// overload matches generic bp::object. This is because boost-python attempts to resolve
-		// overloaded functions in the reverse order in which they're declared...
+		// The sequence overload converts each of a sequence at its own origin. The overloads that
+		// convert at a single origin are deprecated, since they duplicate the same conversion as a
+		// method of a LocalCartesian created at that origin
+		// ('from_geocentric_to_magnitude_azimuth_inclination()'). They still work, but have no
+		// docstring since we don't want them documented anymore.
+		//
+		// NOTE: The deprecated overloads are defined *before* the sequence overload, so that the
+		// sequence overload is tried first (boost-python tries overloads in the reverse order in
+		// which they're declared). Defined after it, each deprecated overload would get a copy of
+		// its docstring, and '__doc__' would repeat it. The sequence overload accepts any objects,
+		// so it also converts at a single origin, as the deprecated overload of the same arity did
+		// when that was tried first. That overload is now reached only by its keyword names (and
+		// the other deprecated overload by its arity).
+		.def("convert_from_geocentric_to_magnitude_azimuth_inclination",
+				&GPlatesApi::local_cartesian_convert_from_geocentric_to_magnitude_azimuth_inclination,
+				(bp::arg("local_origin"), bp::arg("vector")))
+		.def("convert_from_geocentric_to_magnitude_azimuth_inclination",
+				&GPlatesApi::local_cartesian_convert_xyz_from_geocentric_to_magnitude_azimuth_inclination,
+				(bp::arg("local_origin"), bp::arg("x"), bp::arg("y"), bp::arg("z")))
 		.def("convert_from_geocentric_to_magnitude_azimuth_inclination",
 				&GPlatesApi::local_cartesian_convert_sequence_from_geocentric_to_magnitude_azimuth_inclination,
 				(bp::arg("local_origins"), bp::arg("vectors")),
-				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				"convert_from_geocentric_to_magnitude_azimuth_inclination(...)\n"
-				"Converts a geocentric vector (or vectors) to spherical coordinates in a "
-				"local North/East/Down coordinate system (or systems).\n"
-				"\n"
-				"This function can be called in more than one way...\n"
-				"\n"
-				// Specific overload signature...
 				"convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins, vectors)\n"
-				"  Converts geocentric *vectors* to spherical coordinates in local "
-				"North/East/Down coordinate systems located at *local_origins*.\n"
+				"  Converts geocentric vectors to spherical coordinates in local North/East/Down "
+				"coordinate systems, each at its own origin.\n"
 				"\n"
-				"  :param local_origins: sequence of origins (points) of local cartesian systems.\n"
+				"  :param local_origins: the origins (points) of the local cartesian systems, one "
+				"for each vector\n"
 				"  :type local_origins: any sequence of PointOnSphere or LatLonPoint or "
 				"tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param vectors: the geocentric vectors\n"
-				"  :type vectors: Any sequence of Vector3D or tuple (x,y,z)\n"
+				"  :type vectors: any sequence of Vector3D or tuple (x,y,z)\n"
 				"  :returns: list of (magnitude, azimuth, inclination)\n"
 				"  :rtype: list[tuple[float, float, float]]\n"
 				"  :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths\n"
 				"\n"
-				"  Convert geocentric vectors to local spherical coordinates:\n"
+				"  Each of the *vectors* is converted in the local coordinate system located at "
+				"the origin with the same index in *local_origins*:\n"
 				"  ::\n"
 				"\n"
-				"    local_origins = [...]\n"
-				"    geocentric_vectors = [...]\n"
 				"    local_coords = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(\n"
-				"        local_origins, geocentric_vectors)\n")
-		.def("convert_from_geocentric_to_magnitude_azimuth_inclination",
-				&GPlatesApi::local_cartesian_convert_from_geocentric_to_magnitude_azimuth_inclination,
-				(bp::arg("local_origin"), bp::arg("vector")),
-				// Specific overload signature...
-				"convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, vector)\n"
-				"  Converts a geocentric *vector* to a tuple of spherical coordinates in the local "
-				"North/East/Down coordinate system located at *local_origin*.\n"
+				"        local_origins, geocentric_vectors)\n"
 				"\n"
-				"  :param local_origin: origin of local cartesian system.\n"
-				"  :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
-				", in degrees, or tuple (x,y,z)\n"
-				"  :param vector: the geocentric vector\n"
-				"  :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)\n"
-				"  :returns: tuple of (magnitude, azimuth, inclination)\n"
-				"  :rtype: tuple[float, float, float]\n"
-				"\n"
-				"  Convert a geocentric vector to the local North/East/Down spherical coordinate system "
-				"located at latitude/longitude (0, 0) on the globe:\n"
+				"  This gives the same result as the following, but is faster since it does not "
+				"create a :class:`LocalCartesian` for each origin:\n"
 				"  ::\n"
 				"\n"
-				"    magnitude, azimuth, inclination = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(\n"
-				"        (0, 0), geocentric_vector)\n")
-		.def("convert_from_geocentric_to_magnitude_azimuth_inclination",
-				&GPlatesApi::local_cartesian_convert_xyz_from_geocentric_to_magnitude_azimuth_inclination,
-				(bp::arg("local_origin"), bp::arg("x"), bp::arg("y"), bp::arg("z")),
-				// Specific overload signature...
-				"convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, x, y, z)\n"
-				"  Converts the geocentric vector (x, y, z) to a tuple of spherical coordinates in the local "
-				"North/East/Down coordinate system located at *local_origin*.\n"
+				"    local_coords = [\n"
+				"        "
+				"pygplates.LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_incli"
+				"nation(geocentric_vector)\n"
+				"        for local_origin, geocentric_vector in zip(local_origins, "
+				"geocentric_vectors)]\n"
 				"\n"
-				"  :param local_origin: origin of local cartesian system.\n"
-				"  :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
-				", in degrees, or tuple (x,y,z)\n"
-				"  :param x: the *x* component of the geocentric vector\n"
-				"  :type x: float\n"
-				"  :param y: the *y* component of the geocentric vector\n"
-				"  :type y: float\n"
-				"  :param z: the *z* component of the geocentric vector\n"
-				"  :type z: float\n"
-				"  :returns: tuple of (magnitude, azimuth, inclination)\n"
-				"  :rtype: tuple[float, float, float]\n"
+				"  To convert at a single origin, use "
+				":meth:`from_geocentric_to_magnitude_azimuth_inclination` on a "
+				":class:`LocalCartesian` created at that origin.\n"
 				"\n"
-				"  Convert the geocentric vector (2, 1, 0) to the local North/East/Down spherical coordinate system "
-				"located at latitude/longitude (0, 0) on the globe:\n"
-				"  ::\n"
-				"\n"
-				"    magnitude, azimuth, inclination = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(\n"
-				"        (0,0), 2, 1, 0)\n")
+				"  .. versionchanged:: 1.1\n"
+				"     Deprecated converting at a single origin with "
+				"``convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, "
+				"vector)`` and "
+				"``convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, x, y, "
+				"z)``. They still work, but use "
+				"``pygplates.LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inc"
+				"lination(vector)`` instead.\n")
 		.staticmethod("convert_from_geocentric_to_magnitude_azimuth_inclination")
 		.def("from_geocentric_to_magnitude_azimuth_inclination",
 				&GPlatesApi::local_cartesian_from_geocentric_to_magnitude_azimuth_inclination,
@@ -851,7 +894,7 @@ export_local_cartesian()
 				"  Converts the geocentric *vector* to a local North/East/Down tuple of spherical coordinates.\n"
 				"\n"
 				"  :param vector: the geocentric vector\n"
-				"  :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :type vector: Vector3D, or sequence (such as list or tuple) of float\n"
 				"  :returns: tuple of (magnitude, azimuth, inclination)\n"
 				"  :rtype: tuple[float, float, float]\n"
 				"\n"
@@ -888,88 +931,73 @@ export_local_cartesian()
 		// Magnitude/Azimuth/Inclination to Geocentric
 		//
 
-		// NOTE: This should be defined *before* the following (more restrictive overload) since this
-		// overload matches generic bp::object. This is because boost-python attempts to resolve
-		// overloaded functions in the reverse order in which they're declared...
+		// The sequence overload converts each of a sequence at its own origin. The overloads that
+		// convert at a single origin are deprecated, since they duplicate the same conversion as a
+		// method of a LocalCartesian created at that origin
+		// ('from_magnitude_azimuth_inclination_to_geocentric()'). They still work, but have no
+		// docstring since we don't want them documented anymore.
+		//
+		// NOTE: The deprecated overloads are defined *before* the sequence overload, so that the
+		// sequence overload is tried first (boost-python tries overloads in the reverse order in
+		// which they're declared). Defined after it, each deprecated overload would get a copy of
+		// its docstring, and '__doc__' would repeat it. The sequence overload accepts any objects,
+		// so it also converts at a single origin, as the deprecated overload of the same arity did
+		// when that was tried first. That overload is now reached only by its keyword names (and
+		// the other deprecated overload by its arity).
+		.def("convert_from_magnitude_azimuth_inclination_to_geocentric",
+				&GPlatesApi::local_cartesian_convert_from_magnitude_azimuth_inclination_to_geocentric,
+				(bp::arg("local_origin"), bp::arg("local_coordinate")))
+		.def("convert_from_magnitude_azimuth_inclination_to_geocentric",
+				&GPlatesApi::local_cartesian_convert_mai_from_magnitude_azimuth_inclination_to_geocentric,
+				(bp::arg("local_origin"),
+						bp::arg("magnitude"), bp::arg("azimuth"), bp::arg("inclination")))
 		.def("convert_from_magnitude_azimuth_inclination_to_geocentric",
 				&GPlatesApi::local_cartesian_convert_sequence_from_magnitude_azimuth_inclination_to_geocentric,
 				(bp::arg("local_origins"), bp::arg("local_coordinates")),
-				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				"convert_from_magnitude_azimuth_inclination_to_geocentric(...)\n"
-				"Converts a local North/East/Down tuple (or tuples) of spherical coordinates to "
-				"a cartesian geocentric vector (or vectors).\n"
-				"\n"
-				"This function can be called in more than one way...\n"
-				"\n"
-				// Specific overload signature...
 				"convert_from_magnitude_azimuth_inclination_to_geocentric(local_origins, local_coordinates)\n"
-				"  Converts a sequence of local North/East/Down tuples of spherical coordinates located at "
-				"*local_origins* to a sequence of geocentric vectors.\n"
+				"  Converts spherical coordinates in local North/East/Down coordinate systems, "
+				"each at its own origin, to geocentric vectors.\n"
 				"\n"
-				"  :param local_origins: sequence of origins (points) of local cartesian systems.\n"
+				"  :param local_origins: the origins (points) of the local cartesian systems, one "
+				"for each local coordinate\n"
 				"  :type local_origins: any sequence of PointOnSphere or LatLonPoint or "
 				"tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-				"  :param local_coordinates: sequence of local spherical coordinates (magnitude, azimuth, inclination)\n"
-				"  :type local_coordinates: Any sequence of (float, float, float) tuples\n"
+				"  :param local_coordinates: the local spherical coordinates (magnitude, azimuth, "
+				"inclination)\n"
+				"  :type local_coordinates: any sequence of (float, float, float) tuples\n"
 				"  :returns: list of geocentric vectors\n"
 				"  :rtype: list of Vector3D\n"
 				"  :raises ValueError: if the sequences *local_origins* and *local_coordinates* have different lengths\n"
 				"\n"
-				"  Convert local spherical coordinates to geocentric vectors:\n"
+				"  Each of the *local_coordinates* is converted in the local coordinate system "
+				"located at the origin with the same index in *local_origins*:\n"
 				"  ::\n"
 				"\n"
-				"    local_origins = [...]\n"
-				"    local_coords = [...]\n"
 				"    geocentric_vectors = pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(\n"
-				"        local_origins, local_coords)\n")
-		.def("convert_from_magnitude_azimuth_inclination_to_geocentric",
-				&GPlatesApi::local_cartesian_convert_from_magnitude_azimuth_inclination_to_geocentric,
-				(bp::arg("local_origin"), bp::arg("local_coordinate")),
-				// Specific overload signature...
-				"convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, local_coordinate)\n"
-				"  Converts a local North/East/Down tuple of spherical coordinates located at *local_origin* "
-				"to a geocentric vector.\n"
+				"        local_origins, local_coords)\n"
 				"\n"
-				"  :param local_origin: origin of local cartesian system.\n"
-				"  :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
-				", in degrees, or tuple (x,y,z)\n"
-				"  :param local_coordinate: the local spherical coordinates (magnitude, azimuth, inclination)\n"
-				"  :type local_coordinate: sequence (such as list or tuple) of (float,float,float)\n"
-				"  :returns: geocentric vector\n"
-				"  :rtype: Vector3D\n"
-				"\n"
-				"  Convert a local vector of unit magnitude aligned with the local East axis to a geocentric vector:\n"
+				"  This gives the same result as the following, but is faster since it does not "
+				"create a :class:`LocalCartesian` for each origin:\n"
 				"  ::\n"
 				"\n"
-				"    geocentric_vector = pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(\n"
-				"        (0, 0), (1, 0.5 * math.pi, 0))\n")
-		.def("convert_from_magnitude_azimuth_inclination_to_geocentric",
-				&GPlatesApi::local_cartesian_convert_mai_from_magnitude_azimuth_inclination_to_geocentric,
-				(bp::arg("local_origin"), bp::arg("magnitude"), bp::arg("azimuth"), bp::arg("inclination")),
-				// Specific overload signature...
-				"convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, "
-				"magnitude, azimuth, inclination)\n"
-				"  Converts local North/East/Down spherical coordinates located at *local_origin* "
-				"to a geocentric vector.\n"
+				"    geocentric_vectors = [\n"
+				"        "
+				"pygplates.LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geoc"
+				"entric(local_coord)\n"
+				"        for local_origin, local_coord in zip(local_origins, local_coords)]\n"
 				"\n"
-				"  :param local_origin: origin of local cartesian system.\n"
-				"  :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
-				", in degrees, or tuple (x,y,z)\n"
-				"  :param magnitude: the length of the local cartesian vector\n"
-				"  :type magnitude: float\n"
-				"  :param azimuth: the angle (in radians) clockwise (East-wise) from North (in the range :math:`[0, 2\\pi]`)\n"
-				"  :type azimuth: float\n"
-				"  :param inclination: the angle (in radians) in the downward direction (eg, :math:`\\frac{\\pi}{2}` if vector "
-				"aligned with Down axis, :math:`-\\frac{\\pi}{2}` if aligned with up direction and :math:`0` if vector in tangent plane)\n"
-				"  :type inclination: float\n"
-				"  :returns: geocentric vector\n"
-				"  :rtype: Vector3D\n"
+				"  To convert at a single origin, use "
+				":meth:`from_magnitude_azimuth_inclination_to_geocentric` on a "
+				":class:`LocalCartesian` created at that origin.\n"
 				"\n"
-				"  Convert a local vector of unit magnitude aligned with the local East axis to a geocentric vector:\n"
-				"  ::\n"
-				"\n"
-				"    geocentric_vector = pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(\n"
-				"        (0,0), 1, 0.5 * math.pi, 0)\n")
+				"  .. versionchanged:: 1.1\n"
+				"     Deprecated converting at a single origin with "
+				"``convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, "
+				"local_coordinate)`` and "
+				"``convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, "
+				"magnitude, azimuth, inclination)``. They still work, but use "
+				"``pygplates.LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_ge"
+				"ocentric(local_coordinate)`` instead.\n")
 		.staticmethod("convert_from_magnitude_azimuth_inclination_to_geocentric")
 		.def("from_magnitude_azimuth_inclination_to_geocentric",
 				&GPlatesApi::local_cartesian_from_magnitude_azimuth_inclination_to_geocentric,
@@ -985,7 +1013,7 @@ export_local_cartesian()
 				"  Converts a local North/East/Down tuple of spherical coordinates to a geocentric vector.\n"
 				"\n"
 				"  :param local_coordinate: the local spherical coordinates (magnitude, azimuth, inclination)\n"
-				"  :type local_coordinate: sequence (such as list or tuple) of (float,float,float)\n"
+				"  :type local_coordinate: sequence (such as list or tuple) of float\n"
 				"  :returns: geocentric vector\n"
 				"  :rtype: Vector3D\n"
 				"\n"

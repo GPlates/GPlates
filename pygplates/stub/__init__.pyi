@@ -8224,6 +8224,19 @@ class LocalCartesian:
     * *azimuth* is the angle (in radians) clockwise (East-wise) from North (in the range :math:`[0, 2\pi]`),
     * *inclination* is the angle (in radians) in the downward direction (eg, :math:`\frac{\pi}{2}` if vector aligned with Down axis, :math:`-\frac{\pi}{2}` if aligned with up direction and :math:`0` if vector in tangent plane).
 
+    There are two ways to convert:
+
+    * To convert at one location, create a *LocalCartesian* there and use its ``from_...`` methods (such as :meth:`from_geocentric_to_north_east_down`), for as many vectors as needed.
+    * To convert vectors that are each at a different location, use the ``convert_...`` functions (such as :meth:`convert_from_geocentric_to_north_east_down`) with a sequence of locations and a sequence of vectors. This is faster than creating a *LocalCartesian* at each location.
+
+    ::
+
+      local_cartesian = pygplates.LocalCartesian(local_origin)
+      local_vector = local_cartesian.from_geocentric_to_north_east_down(geocentric_vector)
+
+      local_vectors = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(
+          local_origins, geocentric_vectors)
+
     Local cartesians are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).
     """
 
@@ -8252,280 +8265,132 @@ class LocalCartesian:
 
     def __ne__(self, other: object) -> bool: ...
 
-    @overload
     @staticmethod
     def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[tuple[float, float, float]]:
-        """Converts a geocentric vector (or vectors) to spherical coordinates in a local North/East/Down coordinate system (or systems).
+        """Converts geocentric vectors to spherical coordinates in local North/East/Down coordinate systems, each at its own origin.
 
-        This function can be called in more than one way...
-
-        Converts geocentric *vectors* to spherical coordinates in local North/East/Down coordinate systems located at *local_origins*.
-
-        :param local_origins: sequence of origins (points) of local cartesian systems.
+        :param local_origins: the origins (points) of the local cartesian systems, one for each vector
         :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param vectors: the geocentric vectors
-        :type vectors: Any sequence of Vector3D or tuple (x,y,z)
+        :type vectors: any sequence of Vector3D or tuple (x,y,z)
         :returns: list of (magnitude, azimuth, inclination)
         :rtype: list[tuple[float, float, float]]
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
 
-        Convert geocentric vectors to local spherical coordinates:
+        Each of the *vectors* is converted in the local coordinate system located at the origin with the same index in *local_origins*:
         ::
 
-          local_origins = [...]
-          geocentric_vectors = [...]
           local_coords = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(
               local_origins, geocentric_vectors)
-        """
 
-    @overload
-    @staticmethod
-    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[tuple[float, float, float]]) -> tuple[float, float, float]:
-        """Converts a geocentric *vector* to a tuple of spherical coordinates in the local North/East/Down coordinate system located at *local_origin*.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param vector: the geocentric vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :returns: tuple of (magnitude, azimuth, inclination)
-        :rtype: tuple[float, float, float]
-
-        Convert a geocentric vector to the local North/East/Down spherical coordinate system located at latitude/longitude (0, 0) on the globe:
+        This gives the same result as the following, but is faster since it does not create a :class:`LocalCartesian` for each origin:
         ::
 
-          magnitude, azimuth, inclination = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(
-              (0, 0), geocentric_vector)
+          local_coords = [
+              pygplates.LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(geocentric_vector)
+              for local_origin, geocentric_vector in zip(local_origins, geocentric_vectors)]
+
+        To convert at a single origin, use :meth:`from_geocentric_to_magnitude_azimuth_inclination` on a :class:`LocalCartesian` created at that origin.
+
+        .. versionchanged:: 1.1
+           Deprecated converting at a single origin with ``convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, vector)`` and ``convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, x, y, z)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(vector)`` instead.
         """
 
-    @overload
-    @staticmethod
-    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> tuple[float, float, float]:
-        """Converts the geocentric vector (x, y, z) to a tuple of spherical coordinates in the local North/East/Down coordinate system located at *local_origin*.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param x: the *x* component of the geocentric vector
-        :type x: float
-        :param y: the *y* component of the geocentric vector
-        :type y: float
-        :param z: the *z* component of the geocentric vector
-        :type z: float
-        :returns: tuple of (magnitude, azimuth, inclination)
-        :rtype: tuple[float, float, float]
-
-        Convert the geocentric vector (2, 1, 0) to the local North/East/Down spherical coordinate system located at latitude/longitude (0, 0) on the globe:
-        ::
-
-          magnitude, azimuth, inclination = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(
-              (0,0), 2, 1, 0)
-        """
-
-    @overload
     @staticmethod
     def convert_from_geocentric_to_north_east_down(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[Vector3D]:
-        """Converts a geocentric vector (or vectors) to a cartesian vector (or vectors) in a local North/East/Down coordinate system (or systems).
+        """Converts geocentric vectors to cartesian vectors in local North/East/Down coordinate systems, each at its own origin.
 
-        This function can be called in more than one way...
-
-        Converts a sequence of geocentric *vectors* to a sequence of cartesian vectors in local North/East/Down coordinate systems located at *local_origins*.
-
-        :param local_origins: sequence of origins (points) of local cartesian systems.
-        :type local_origins: Any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :param local_origins: the origins (points) of the local cartesian systems, one for each vector
+        :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param vectors: the geocentric vectors
-        :type vectors: Any sequence of Vector3D or tuple (x,y,z)
+        :type vectors: any sequence of Vector3D or tuple (x,y,z)
         :returns: list of local cartesian North/East/Down vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
 
-        Convert geocentric vectors to local cartesian vectors:
+        Each of the *vectors* is converted in the local coordinate system located at the origin with the same index in *local_origins*:
         ::
 
-          local_origins = [...]
-          geocentric_vectors = [...]
           local_vectors = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(
               local_origins, geocentric_vectors)
-        """
 
-    @overload
-    @staticmethod
-    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
-        """Converts a geocentric *vector* to a cartesian vector in the local North/East/Down coordinate system located at *local_origin*.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param vector: the geocentric vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :returns: local cartesian North/East/Down vector
-        :rtype: Vector3D
-
-        Convert a geocentric vector to the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe:
+        This gives the same result as the following, but is faster since it does not create a :class:`LocalCartesian` for each origin:
         ::
 
-          local_vector = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(
-              (0, 0), geocentric_vector)
+          local_vectors = [
+              pygplates.LocalCartesian(local_origin).from_geocentric_to_north_east_down(geocentric_vector)
+              for local_origin, geocentric_vector in zip(local_origins, geocentric_vectors)]
+
+        To convert at a single origin, use :meth:`from_geocentric_to_north_east_down` on a :class:`LocalCartesian` created at that origin.
+
+        .. versionchanged:: 1.1
+           Deprecated converting at a single origin with ``convert_from_geocentric_to_north_east_down(local_origin, vector)`` and ``convert_from_geocentric_to_north_east_down(local_origin, x, y, z)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)`` instead.
         """
 
-    @overload
-    @staticmethod
-    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> Vector3D:
-        """Converts the geocentric vector (x, y, z) to a cartesian vector in the local North/East/Down coordinate system located at *local_origin*.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param x: the *x* component of the geocentric vector
-        :type x: float
-        :param y: the *y* component of the geocentric vector
-        :type y: float
-        :param z: the *z* component of the geocentric vector
-        :type z: float
-        :returns: local cartesian North/East/Down vector
-        :rtype: Vector3D
-
-        Convert the geocentric vector (2, 1, 0) to the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe:
-        ::
-
-          local_vector = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(
-              (0,0), 2, 1, 0)
-        """
-
-    @overload
     @staticmethod
     def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], local_coordinates: Sequence[tuple[float, float, float]]) -> list[Vector3D]:
-        """Converts a local North/East/Down tuple (or tuples) of spherical coordinates to a cartesian geocentric vector (or vectors).
+        """Converts spherical coordinates in local North/East/Down coordinate systems, each at its own origin, to geocentric vectors.
 
-        This function can be called in more than one way...
-
-        Converts a sequence of local North/East/Down tuples of spherical coordinates located at *local_origins* to a sequence of geocentric vectors.
-
-        :param local_origins: sequence of origins (points) of local cartesian systems.
+        :param local_origins: the origins (points) of the local cartesian systems, one for each local coordinate
         :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param local_coordinates: sequence of local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinates: Any sequence of (float, float, float) tuples
+        :param local_coordinates: the local spherical coordinates (magnitude, azimuth, inclination)
+        :type local_coordinates: any sequence of (float, float, float) tuples
         :returns: list of geocentric vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *local_coordinates* have different lengths
 
-        Convert local spherical coordinates to geocentric vectors:
+        Each of the *local_coordinates* is converted in the local coordinate system located at the origin with the same index in *local_origins*:
         ::
 
-          local_origins = [...]
-          local_coords = [...]
           geocentric_vectors = pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(
               local_origins, local_coords)
-        """
 
-    @overload
-    @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], local_coordinate: Sequence[tuple[float, float, float]]) -> Vector3D:
-        """Converts a local North/East/Down tuple of spherical coordinates located at *local_origin* to a geocentric vector.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param local_coordinate: the local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinate: sequence (such as list or tuple) of (float,float,float)
-        :returns: geocentric vector
-        :rtype: Vector3D
-
-        Convert a local vector of unit magnitude aligned with the local East axis to a geocentric vector:
+        This gives the same result as the following, but is faster since it does not create a :class:`LocalCartesian` for each origin:
         ::
 
-          geocentric_vector = pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(
-              (0, 0), (1, 0.5 * math.pi, 0))
+          geocentric_vectors = [
+              pygplates.LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coord)
+              for local_origin, local_coord in zip(local_origins, local_coords)]
+
+        To convert at a single origin, use :meth:`from_magnitude_azimuth_inclination_to_geocentric` on a :class:`LocalCartesian` created at that origin.
+
+        .. versionchanged:: 1.1
+           Deprecated converting at a single origin with ``convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, local_coordinate)`` and ``convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, magnitude, azimuth, inclination)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)`` instead.
         """
 
-    @overload
-    @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], magnitude: float, azimuth: float, inclination: float) -> Vector3D:
-        r"""Converts local North/East/Down spherical coordinates located at *local_origin* to a geocentric vector.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param magnitude: the length of the local cartesian vector
-        :type magnitude: float
-        :param azimuth: the angle (in radians) clockwise (East-wise) from North (in the range :math:`[0, 2\pi]`)
-        :type azimuth: float
-        :param inclination: the angle (in radians) in the downward direction (eg, :math:`\frac{\pi}{2}` if vector aligned with Down axis, :math:`-\frac{\pi}{2}` if aligned with up direction and :math:`0` if vector in tangent plane)
-        :type inclination: float
-        :returns: geocentric vector
-        :rtype: Vector3D
-
-        Convert a local vector of unit magnitude aligned with the local East axis to a geocentric vector:
-        ::
-
-          geocentric_vector = pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(
-              (0,0), 1, 0.5 * math.pi, 0)
-        """
-
-    @overload
     @staticmethod
     def convert_from_north_east_down_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[Vector3D]:
-        """Converts a cartesian vector (or vectors) in a local North/East/Down coordinate system (or systems) to a geocentric vector (or vectors).
+        """Converts cartesian vectors in local North/East/Down coordinate systems, each at its own origin, to geocentric vectors.
 
-        This function can be called in more than one way...
-
-        Converts a cartesian *vector* in the local North/East/Down coordinate system located at *local_origin* to a geocentric vector.
-
-        :param local_origins: sequence of origins (points) of local cartesian systems.
+        :param local_origins: the origins (points) of the local cartesian systems, one for each vector
         :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param vectors: the local cartesian vectors
-        :type vectors: Any sequence of Vector3D or tuple (x,y,z)
+        :param vectors: the local cartesian North/East/Down vectors
+        :type vectors: any sequence of Vector3D or tuple (x,y,z)
         :returns: list of geocentric vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
 
-        Convert local cartesian vectors to geocentric vectors:
+        Each of the *vectors* is converted in the local coordinate system located at the origin with the same index in *local_origins*:
         ::
 
-          local_origins = [...]
-          local_vectors = [...]
           geocentric_vectors = pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(
               local_origins, local_vectors)
-        """
 
-    @overload
-    @staticmethod
-    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
-        """Converts a cartesian vector in the local North/East/Down coordinate system located at *local_origin* to a geocentric vector.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param vector: the local cartesian vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :returns: geocentric vector
-        :rtype: Vector3D
-
-        Convert a local cartesian vector in a local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe to a geocentric vector:
+        This gives the same result as the following, but is faster since it does not create a :class:`LocalCartesian` for each origin:
         ::
 
-          geocentric_vector = pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(
-              (0, 0), geocentric_vector)
+          geocentric_vectors = [
+              pygplates.LocalCartesian(local_origin).from_north_east_down_to_geocentric(local_vector)
+              for local_origin, local_vector in zip(local_origins, local_vectors)]
+
+        To convert at a single origin, use :meth:`from_north_east_down_to_geocentric` on a :class:`LocalCartesian` created at that origin.
+
+        .. versionchanged:: 1.1
+           Deprecated converting at a single origin with ``convert_from_north_east_down_to_geocentric(local_origin, vector)`` and ``convert_from_north_east_down_to_geocentric(local_origin, x, y, z)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_north_east_down_to_geocentric(vector)`` instead.
         """
 
     @overload
-    @staticmethod
-    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> Vector3D:
-        """Converts a cartesian vector (x, y, z) in the local North/East/Down coordinate system located at *local_origin* to a geocentric vector.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param x: the *x* component of the local cartesian vector
-        :type x: float
-        :param y: the *y* component of the local cartesian vector
-        :type y: float
-        :param z: the *z* component of the local cartesian vector
-        :type z: float
-        :returns: geocentric vector
-        :rtype: Vector3D
-
-        Convert the local cartesian vector (2, 1, 0) in the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe to a geocentric vector:
-        ::
-
-          geocentric_vector = pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(
-              (0,0), 2, 1, 0)
-        """
-
-    @overload
-    def from_geocentric_to_magnitude_azimuth_inclination(self, vector: Vector3D | Sequence[tuple[float, float, float]]) -> tuple[float, float, float]:
+    def from_geocentric_to_magnitude_azimuth_inclination(self, vector: Vector3D | Sequence[float]) -> tuple[float, float, float]:
         """Converts a geocentric vector to a tuple of spherical coordinates in the local North/East/Down coordinate system.
 
         This method can be called in more than one way...
@@ -8533,7 +8398,7 @@ class LocalCartesian:
         Converts the geocentric *vector* to a local North/East/Down tuple of spherical coordinates.
 
         :param vector: the geocentric vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :type vector: Vector3D, or sequence (such as list or tuple) of float
         :returns: tuple of (magnitude, azimuth, inclination)
         :rtype: tuple[float, float, float]
 
@@ -8565,7 +8430,7 @@ class LocalCartesian:
         """
 
     @overload
-    def from_geocentric_to_north_east_down(self, vector: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
+    def from_geocentric_to_north_east_down(self, vector: Vector3D | Sequence[float]) -> Vector3D:
         """Converts a geocentric vector to a local North/East/Down cartesian vector.
 
         This method can be called in more than one way...
@@ -8573,7 +8438,7 @@ class LocalCartesian:
         Converts the geocentric *vector* to a local North/East/Down cartesian vector.
 
         :param vector: the geocentric vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :type vector: Vector3D, or sequence (such as list or tuple) of float
         :returns: local cartesian North/East/Down vector
         :rtype: Vector3D
 
@@ -8605,7 +8470,7 @@ class LocalCartesian:
         """
 
     @overload
-    def from_magnitude_azimuth_inclination_to_geocentric(self, local_coordinate: Sequence[tuple[float, float, float]]) -> Vector3D:
+    def from_magnitude_azimuth_inclination_to_geocentric(self, local_coordinate: Sequence[float]) -> Vector3D:
         """Converts local spherical coordinates to a geocentric vector.
 
         This method can be called in more than one way...
@@ -8613,7 +8478,7 @@ class LocalCartesian:
         Converts a local North/East/Down tuple of spherical coordinates to a geocentric vector.
 
         :param local_coordinate: the local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinate: sequence (such as list or tuple) of (float,float,float)
+        :type local_coordinate: sequence (such as list or tuple) of float
         :returns: geocentric vector
         :rtype: Vector3D
 
@@ -8647,7 +8512,7 @@ class LocalCartesian:
         """
 
     @overload
-    def from_north_east_down_to_geocentric(self, vector: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
+    def from_north_east_down_to_geocentric(self, vector: Vector3D | Sequence[float]) -> Vector3D:
         """Converts a local North/East/Down cartesian vector to a geocentric vector.
 
         This method can be called in more than one way...
@@ -8655,7 +8520,7 @@ class LocalCartesian:
         Converts the local North/East/Down cartesian *vector* to a geocentric vector.
 
         :param vector: the local cartesian vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :type vector: Vector3D, or sequence (such as list or tuple) of float
         :returns: geocentric vector
         :rtype: Vector3D
 
@@ -17631,11 +17496,11 @@ class Vector3D:
         """
 
     @overload
-    def __init__(self, vector: Sequence[tuple[float, float, float]] | Vector3D) -> None:
+    def __init__(self, vector: Sequence[float] | Vector3D) -> None:
         """Create a *Vector3D* instance from an (x,y,z) sequence (or *Vector3D*).
 
         :param vector: (x,y,z) vector
-        :type vector: sequence (such as list or tuple) of (float,float,float), or Vector3D
+        :type vector: sequence (such as list or tuple) of float, or Vector3D
 
         The following example shows a few different ways to use this method:
         ::
@@ -17677,11 +17542,11 @@ class Vector3D:
 
     def __sub__(self, other: Any) -> Any: ...
 
-    def angle_between(self, other_vector: Vector3D | Sequence[tuple[float, float, float]]) -> float:
+    def angle_between(self, other_vector: Vector3D | Sequence[float]) -> float:
         """Returns the angle between this vector and another vector (in radians).
 
         :param other_vector: the other vector
-        :type other_vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :type other_vector: Vector3D, or sequence (such as list or tuple) of float
         :rtype: float
         :raises UnableToNormaliseZeroVectorError: if either this vector or *other_vector* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
 
@@ -17696,12 +17561,10 @@ class Vector3D:
 
           angle = vec1.angle_between((-1.1, -2.2, -3.3))
 
-        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument (which can then also be a sequence of (float,float,float)):
+        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument:
         ::
 
           angle = pygplates.Vector3D.angle_between(vec1, vec2)
-
-          angle = pygplates.Vector3D.angle_between((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))
 
         This method is the equivalent of:
         ::
@@ -17718,7 +17581,7 @@ class Vector3D:
 
     @overload
     @staticmethod
-    def create_normalised(xyz: Sequence[tuple[float, float, float]] | Vector3D) -> Vector3D:
+    def create_normalised(xyz: Sequence[float] | Vector3D) -> Vector3D:
         """Returns a new vector that is a normalised (unit length) version of another.
 
         This function can be called in more than one way...
@@ -17726,7 +17589,7 @@ class Vector3D:
         Returns a new vector that is a normalised (unit length) version of *vector*.
 
         :param xyz: the vector (x,y,z) components
-        :type xyz: sequence (such as list or tuple) of (float,float,float), or Vector3D
+        :type xyz: sequence (such as list or tuple) of float, or Vector3D
         :rtype: Vector3D
         :raises UnableToNormaliseZeroVectorError: if *xyz* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
 
@@ -17770,11 +17633,11 @@ class Vector3D:
         """See :meth:`create_normalised`.
         """
 
-    def cross(self, other_vector: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
+    def cross(self, other_vector: Vector3D | Sequence[float]) -> Vector3D:
         """Returns the cross product of this vector and another vector.
 
         :param other_vector: the other vector
-        :type other_vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :type other_vector: Vector3D, or sequence (such as list or tuple) of float
         :rtype: Vector3D
 
         The cross product is a new vector (this vector is not modified, since a :class:`Vector3D` is immutable). The order matters: ``vec1.cross(vec2)`` is the opposite of ``vec2.cross(vec1)``.
@@ -17788,12 +17651,10 @@ class Vector3D:
 
           cross_product = vec1.cross((-1.1, -2.2, -3.3))
 
-        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument (which can then also be a sequence of (float,float,float)):
+        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument:
         ::
 
           cross_product = pygplates.Vector3D.cross(vec1, vec2)
-
-          cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))
 
         The cross product is the equivalent of:
         ::
@@ -17807,11 +17668,11 @@ class Vector3D:
            Can be called on a vector (``vector.cross(other_vector)``), as well as on the :class:`Vector3D` class (it was a static method). Renamed the argument *vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot be mixed with the new name in the same call).
         """
 
-    def dot(self, other_vector: Vector3D | Sequence[tuple[float, float, float]]) -> float:
+    def dot(self, other_vector: Vector3D | Sequence[float]) -> float:
         """Returns the dot product of this vector and another vector.
 
         :param other_vector: the other vector
-        :type other_vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :type other_vector: Vector3D, or sequence (such as list or tuple) of float
         :rtype: float
 
         The following example shows a few different ways to use this method:
@@ -17823,12 +17684,10 @@ class Vector3D:
 
           dot_product = vec1.dot((-1.1, -2.2, -3.3))
 
-        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument (which can then also be a sequence of (float,float,float)):
+        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument:
         ::
 
           dot_product = pygplates.Vector3D.dot(vec1, vec2)
-
-          dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))
 
         The dot product is the equivalent of:
         ::
