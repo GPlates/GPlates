@@ -4537,52 +4537,40 @@ class GeometryOnSphere:
            Geometry is immutable so there's no need to clone (instead you can just share the geometry).
         """
 
-    @staticmethod
-    def distance(geometry1: GeometryOnSphere, geometry2: GeometryOnSphere, distance_threshold_radians: float | None = ..., return_closest_positions: bool = False, return_closest_indices: bool = False, geometry1_is_solid: bool = False, geometry2_is_solid: bool = False) -> float | tuple[float, PointOnSphere, PointOnSphere] | tuple[float, int, int] | tuple[float, PointOnSphere, PointOnSphere, int, int] | None:
-        r"""Returns the (minimum) distance between two geometries (in radians).
+    def distance(self, other_geometry: GeometryOnSphere, distance_threshold_radians: float | None = ..., return_closest_positions: bool = False, return_closest_indices: bool = False, geometry_is_solid: bool = False, other_geometry_is_solid: bool = False) -> float | tuple[float, PointOnSphere, PointOnSphere] | tuple[float, int, int] | tuple[float, PointOnSphere, PointOnSphere, int, int] | None:
+        r"""Returns the (minimum) distance between this geometry and another geometry (in radians).
 
-        :param geometry1: the first geometry
-        :type geometry1: GeometryOnSphere
-        :param geometry2: the second geometry
-        :type geometry2: GeometryOnSphere
+        :param other_geometry: the other geometry
+        :type other_geometry: GeometryOnSphere
         :param distance_threshold_radians: optional distance threshold in radians - threshold is clamped to the range [0, PI] if specified
-        :type distance_threshold_radians: float or None
+        :type distance_threshold_radians: float, or None
         :param return_closest_positions: whether to also return the closest point on each geometry - default is ``False``
         :type return_closest_positions: bool
         :param return_closest_indices: whether to also return the index of the closest :class:`point<PointOnSphere>` (for multi-points) or the index of the closest :class:`segment<GreatCircleArc>` (for polylines and polygons) - default is ``False``
         :type return_closest_indices: bool
-        :param geometry1_is_solid: whether the interior of *geometry1* is solid or not - this parameter is ignored if *geometry1* is not a :class:`PolygonOnSphere` - default is ``False``
-        :type geometry1_is_solid: bool
-        :param geometry2_is_solid: whether the interior of *geometry2* is solid or not - this parameter is ignored if *geometry2* is not a :class:`PolygonOnSphere` - default is ``False``
-        :type geometry2_is_solid: bool
-        :returns: distance (in radians), or a tuple containing distance and the closest point on each geometry if *return_closest_positions* is ``True``, or a tuple containing distance and the indices of the closest :class:`point<PointOnSphere>` (for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) on each geometry if *return_closest_indices* is ``True``, or a tuple containing distance and the closest point on each geometry and the indices of the closest :class:`point<PointOnSphere>` (for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) on each geometry if both *return_closest_positions* and *return_closest_indices* are ``True``, or ``None`` if *distance_threshold_radians* is specified and exceeded
+        :param geometry_is_solid: whether the interior of this geometry is solid or not - this parameter is ignored if this geometry is not a :class:`PolygonOnSphere` - default is ``False``
+        :type geometry_is_solid: bool
+        :param other_geometry_is_solid: whether the interior of *other_geometry* is solid or not - this parameter is ignored if *other_geometry* is not a :class:`PolygonOnSphere` - default is ``False``
+        :type other_geometry_is_solid: bool
+        :returns: distance (in radians), or a tuple containing distance and the closest point on this geometry and on *other_geometry* if *return_closest_positions* is ``True``, or a tuple containing distance and the indices of the closest :class:`point<PointOnSphere>` (for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) on this geometry and on *other_geometry* if *return_closest_indices* is ``True``, or a tuple containing distance and the closest point on each geometry and the indices of the closest :class:`point<PointOnSphere>` (for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) on each geometry if both *return_closest_positions* and *return_closest_indices* are ``True``, or ``None`` if *distance_threshold_radians* is specified and exceeded
         :rtype: float, or tuple[float, PointOnSphere, PointOnSphere], or tuple[float, int, int], or tuple[float, PointOnSphere, PointOnSphere, int, int], or None
         :raises ValueError: if *distance_threshold_radians* is NaN
 
-        The returned distance is the shortest path between *geometry1* and *geometry2* along the surface of the sphere (great circle arc path). To convert the distance from radians (distance on a unit radius sphere) to real distance you will need to multiply it by the Earth's radius (see :class:`Earth`).
+        The returned distance is the shortest path between this geometry and *other_geometry* along the surface of the sphere (great circle arc path). To convert the distance from radians (distance on a unit radius sphere) to real distance you will need to multiply it by the Earth's radius (see :class:`Earth`).
 
-        Each geometry (*geometry1* and *geometry2*) can be any of the four geometry types (:class:`PointOnSphere`, :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and :class:`PolygonOnSphere`) allowing all combinations of distance calculations:
+        This geometry and *other_geometry* can each be any of the four geometry types (:class:`PointOnSphere`, :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and :class:`PolygonOnSphere`) allowing all combinations of distance calculations. For example:
         ::
 
-          distance_radians = pygplates.GeometryOnSphere.distance(point1, point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(point1, multi_point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(point1, polyline2)
-          distance_radians = pygplates.GeometryOnSphere.distance(point1, polygon2)
+          distance_radians = point.distance(other_point)
+          distance_radians = point.distance(polygon)
+          distance_radians = multi_point.distance(polyline)
+          distance_radians = polygon.distance(other_polygon)
 
-          distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, multi_point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, polyline2)
-          distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, polygon2)
+        This method can also be called on the :class:`GeometryOnSphere` class, passing this geometry as the first argument. So the following two calls are equivalent:
+        ::
 
-          distance_radians = pygplates.GeometryOnSphere.distance(polyline1, point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polyline1, multi_point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polyline1, polyline2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polyline1, polygon2)
-
-          distance_radians = pygplates.GeometryOnSphere.distance(polygon1, point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polygon1, multi_point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polygon1, polyline2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polygon1, polygon2)
+          distance_radians = polyline.distance(polygon)
+          distance_radians = pygplates.GeometryOnSphere.distance(polyline, polygon)
 
         If *distance_threshold_radians* is specified and the (minimum) distance between the two geometries exceeds this threshold then ``None`` is returned.
         ::
@@ -4590,8 +4578,8 @@ class GeometryOnSphere:
           # Perform a region-of-interest query between two geometries to see if
           # they are within 1 degree of each other.
           #
-          # Note that we explicitly test against None because a distance of zero is equilavent to False.
-          if pygplates.GeometryOnSphere.distance(geometry1, geometry2, math.radians(1)) is not None:
+          # Note that we explicitly test against None because a distance of zero is equivalent to False.
+          if geometry.distance(other_geometry, math.radians(1)) is not None:
               ...
 
         Note that it is more efficient to specify a distance threshold parameter (as shown in the above example) than it is to explicitly compare the returned distance to a threshold yourself. This is because internally each polyline/polygon geometry has an inbuilt spatial tree that optimises distance queries.
@@ -4599,19 +4587,19 @@ class GeometryOnSphere:
         The minimum distance between two geometries is zero (and hence does not exceed any distance threshold) **if**:
 
         * both geometries are a polyline/polygon and they intersect each other, or
-        * *geometry1_is_solid* is ``True`` and *geometry1* is a :class:`PolygonOnSphere` and *geometry2* overlaps the interior of the polygon (even if it doesn't intersect the polygon boundary) - similarly for *geometry2_is_solid*. However note that *geometry1_is_solid* is ignored if *geometry1* is not a :class:`PolygonOnSphere` - similarly for *geometry2_is_solid*.
+        * *geometry_is_solid* is ``True`` and this geometry is a :class:`PolygonOnSphere` and *other_geometry* overlaps the interior of the polygon (even if it doesn't intersect the polygon boundary) - similarly for *other_geometry_is_solid*. However note that *geometry_is_solid* is ignored if this geometry is not a :class:`PolygonOnSphere` - similarly for *other_geometry_is_solid*.
 
-        If *return_closest_positions* is ``True`` then the closest point on each geometry is returned (unless the distance threshold is exceeded, if specified). Note that for polygons the closest point is always on the polygon boundary regardless of whether the polygon is solid or not (see *geometry1_is_solid* and *geometry2_is_solid*). Also note that the closest position on a polyline/polygon can be anywhere along any of its :class:`segments<GreatCircleArc>`. In other words it's not the nearest vertex of the polyline/polygon - it's the nearest point *on* the polyline/polygon itself. If both geometries are polyline/polygon and they intersect then the intersection point is returned (same point for both geometries). If both geometries are polyline/polygon and they intersect more than once then any intersection point can be returned (but the same point is returned for both geometries). If one geometry is a solid :class:`PolygonOnSphere` and the other geometry is a :class:`MultiPointOnSphere` with more than one of its points inside the interior of the polygon then the closest point in the multi-point could be any of those inside points.
+        If *return_closest_positions* is ``True`` then the closest point on each geometry is returned (unless the distance threshold is exceeded, if specified). Note that for polygons the closest point is always on the polygon boundary regardless of whether the polygon is solid or not (see *geometry_is_solid* and *other_geometry_is_solid*). Also note that the closest position on a polyline/polygon can be anywhere along any of its :class:`segments<GreatCircleArc>`. In other words it's not the nearest vertex of the polyline/polygon - it's the nearest point *on* the polyline/polygon itself. If both geometries are polyline/polygon and they intersect then the intersection point is returned (same point for both geometries). If both geometries are polyline/polygon and they intersect more than once then any intersection point can be returned (but the same point is returned for both geometries). If one geometry is a solid :class:`PolygonOnSphere` and the other geometry is a :class:`MultiPointOnSphere` with more than one of its points inside the interior of the polygon then the closest point in the multi-point could be any of those inside points.
         ::
 
-          distance_radians, closest_point_on_geometry1, closest_point_on_geometry2 = \
-              pygplates.GeometryOnSphere.distance(geometry1, geometry2, return_closest_positions=True)
+          distance_radians, closest_point_on_geometry, closest_point_on_other_geometry = \
+              geometry.distance(other_geometry, return_closest_positions=True)
 
         If *return_closest_indices* is ``True`` then the index of the closest :class:`point<PointOnSphere>` (for multi-points) or the index of the closest :class:`segment<GreatCircleArc>` (for polylines and polygons) is returned (unless the threshold is exceeded, if specified). Note that for :class:`point<PointOnSphere>` geometries the index will always be zero. The point indices can be used to index directly into :class:`MultiPointOnSphere` and the segment indices can be used with :meth:`PolylineOnSphere.get_segments` or :meth:`PolygonOnSphere.get_segments` as shown in the following example:
         ::
 
           distance_radians, closest_point_index_on_multipoint, closest_segment_index_on_polyline = \
-              pygplates.GeometryOnSphere.distance(multipoint, polyline, return_closest_indices=True)
+              multipoint.distance(polyline, return_closest_indices=True)
 
           closest_point_on_multipoint = multipoint[closest_point_index_on_multipoint]
           closest_segment_on_polyline = polyline.get_segments()[closest_segment_index_on_polyline]
@@ -4622,18 +4610,20 @@ class GeometryOnSphere:
 
           # Distance between a polyline and a solid polygon.
           distance_radians, polyline_point, polygon_point, polyline_segment_index, polygon_segment_index = \
-              pygplates.GeometryOnSphere.distance(
-                  polyline,
+              polyline.distance(
                   polygon,
                   return_closest_positions=True,
                   return_closest_indices=True,
-                  geometry2_is_solid=True)
+                  other_geometry_is_solid=True)
 
         .. versionchanged:: 0.41
          distance threshold is clamped to the range [0, PI] to avoid an exception.
 
         .. versionchanged:: 1.1
          ``None`` is returned only if the distance that would be returned is greater than *distance_threshold_radians*, so a distance equal to the threshold is returned (eg, PI for antipodal points with a threshold of PI, or zero for intersecting polylines and polygons with a threshold of zero). A NaN threshold raises ``ValueError`` (it was ignored). The closest positions and indices always belong to the same closest pair.
+
+        .. versionchanged:: 1.1
+         Can be called on a geometry (``geometry.distance(other_geometry)``), as well as on the :class:`GeometryOnSphere` class (it was a static method). Renamed the arguments *geometry2*, *geometry1_is_solid* and *geometry2_is_solid* to *other_geometry*, *geometry_is_solid* and *other_geometry_is_solid* (the old names, including *geometry1*, still work, but cannot be mixed with the new names in the same call).
         """
 
     def get_points(self) -> Sequence[PointOnSphere]:
@@ -7910,7 +7900,7 @@ class GreatCircleArc:
 
         .. note:: The normal to the great circle can be considered to be the tangential direction (to the Earth's surface) at any point along the great circle arc that is most pointing away from (perpendicular to) the direction of the arc (from start point to end point - see :meth:`get_arc_direction`).
 
-        The normal vector is the same direction as the :meth:`cross product<Vector3D.cross>` of the start point and the end point. In fact it is equivalent to ``pygplates.Vector3D.cross(arc.start_point().to_xyz(), arc.end_point().to_xyz()).to_normalised()``.
+        The normal vector is the same direction as the :meth:`cross product<Vector3D.cross>` of the start point and the end point. In fact it is equivalent to ``pygplates.Vector3D(arc.get_start_point().to_xyz()).cross(arc.get_end_point().to_xyz()).to_normalised()``.
 
         If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) then *IndeterminateGreatCircleArcNormalError* is raised.
 
@@ -8234,6 +8224,19 @@ class LocalCartesian:
     * *azimuth* is the angle (in radians) clockwise (East-wise) from North (in the range :math:`[0, 2\pi]`),
     * *inclination* is the angle (in radians) in the downward direction (eg, :math:`\frac{\pi}{2}` if vector aligned with Down axis, :math:`-\frac{\pi}{2}` if aligned with up direction and :math:`0` if vector in tangent plane).
 
+    There are two ways to convert:
+
+    * To convert at one location, create a *LocalCartesian* there and use its ``from_...`` methods (such as :meth:`from_geocentric_to_north_east_down`), for as many vectors as needed.
+    * To convert vectors that are each at a different location, use the ``convert_...`` functions (such as :meth:`convert_from_geocentric_to_north_east_down`) with a sequence of locations and a sequence of vectors. This is faster than creating a *LocalCartesian* at each location.
+
+    ::
+
+      local_cartesian = pygplates.LocalCartesian(local_origin)
+      local_vector = local_cartesian.from_geocentric_to_north_east_down(geocentric_vector)
+
+      local_vectors = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(
+          local_origins, geocentric_vectors)
+
     Local cartesians are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).
     """
 
@@ -8262,280 +8265,132 @@ class LocalCartesian:
 
     def __ne__(self, other: object) -> bool: ...
 
-    @overload
     @staticmethod
     def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[tuple[float, float, float]]:
-        """Converts a geocentric vector (or vectors) to spherical coordinates in a local North/East/Down coordinate system (or systems).
+        """Converts geocentric vectors to spherical coordinates in local North/East/Down coordinate systems, each at its own origin.
 
-        This function can be called in more than one way...
-
-        Converts geocentric *vectors* to spherical coordinates in local North/East/Down coordinate systems located at *local_origins*.
-
-        :param local_origins: sequence of origins (points) of local cartesian systems.
+        :param local_origins: the origins (points) of the local cartesian systems, one for each vector
         :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param vectors: the geocentric vectors
-        :type vectors: Any sequence of Vector3D or tuple (x,y,z)
+        :type vectors: any sequence of Vector3D or tuple (x,y,z)
         :returns: list of (magnitude, azimuth, inclination)
         :rtype: list[tuple[float, float, float]]
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
 
-        Convert geocentric vectors to local spherical coordinates:
+        Each of the *vectors* is converted in the local coordinate system located at the origin with the same index in *local_origins*:
         ::
 
-          local_origins = [...]
-          geocentric_vectors = [...]
           local_coords = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(
               local_origins, geocentric_vectors)
-        """
 
-    @overload
-    @staticmethod
-    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[tuple[float, float, float]]) -> tuple[float, float, float]:
-        """Converts a geocentric *vector* to a tuple of spherical coordinates in the local North/East/Down coordinate system located at *local_origin*.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param vector: the geocentric vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :returns: tuple of (magnitude, azimuth, inclination)
-        :rtype: tuple[float, float, float]
-
-        Convert a geocentric vector to the local North/East/Down spherical coordinate system located at latitude/longitude (0, 0) on the globe:
+        This gives the same result as the following, but is faster since it does not create a :class:`LocalCartesian` for each origin:
         ::
 
-          magnitude, azimuth, inclination = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(
-              (0, 0), geocentric_vector)
+          local_coords = [
+              pygplates.LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(geocentric_vector)
+              for local_origin, geocentric_vector in zip(local_origins, geocentric_vectors)]
+
+        To convert at a single origin, use :meth:`from_geocentric_to_magnitude_azimuth_inclination` on a :class:`LocalCartesian` created at that origin.
+
+        .. versionchanged:: 1.1
+           Deprecated converting at a single origin with ``convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, vector)`` and ``convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, x, y, z)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(vector)`` instead.
         """
 
-    @overload
-    @staticmethod
-    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> tuple[float, float, float]:
-        """Converts the geocentric vector (x, y, z) to a tuple of spherical coordinates in the local North/East/Down coordinate system located at *local_origin*.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param x: the *x* component of the geocentric vector
-        :type x: float
-        :param y: the *y* component of the geocentric vector
-        :type y: float
-        :param z: the *z* component of the geocentric vector
-        :type z: float
-        :returns: tuple of (magnitude, azimuth, inclination)
-        :rtype: tuple[float, float, float]
-
-        Convert the geocentric vector (2, 1, 0) to the local North/East/Down spherical coordinate system located at latitude/longitude (0, 0) on the globe:
-        ::
-
-          magnitude, azimuth, inclination = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(
-              (0,0), 2, 1, 0)
-        """
-
-    @overload
     @staticmethod
     def convert_from_geocentric_to_north_east_down(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[Vector3D]:
-        """Converts a geocentric vector (or vectors) to a cartesian vector (or vectors) in a local North/East/Down coordinate system (or systems).
+        """Converts geocentric vectors to cartesian vectors in local North/East/Down coordinate systems, each at its own origin.
 
-        This function can be called in more than one way...
-
-        Converts a sequence of geocentric *vectors* to a sequence of cartesian vectors in local North/East/Down coordinate systems located at *local_origins*.
-
-        :param local_origins: sequence of origins (points) of local cartesian systems.
-        :type local_origins: Any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :param local_origins: the origins (points) of the local cartesian systems, one for each vector
+        :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
         :param vectors: the geocentric vectors
-        :type vectors: Any sequence of Vector3D or tuple (x,y,z)
+        :type vectors: any sequence of Vector3D or tuple (x,y,z)
         :returns: list of local cartesian North/East/Down vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
 
-        Convert geocentric vectors to local cartesian vectors:
+        Each of the *vectors* is converted in the local coordinate system located at the origin with the same index in *local_origins*:
         ::
 
-          local_origins = [...]
-          geocentric_vectors = [...]
           local_vectors = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(
               local_origins, geocentric_vectors)
-        """
 
-    @overload
-    @staticmethod
-    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
-        """Converts a geocentric *vector* to a cartesian vector in the local North/East/Down coordinate system located at *local_origin*.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param vector: the geocentric vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :returns: local cartesian North/East/Down vector
-        :rtype: Vector3D
-
-        Convert a geocentric vector to the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe:
+        This gives the same result as the following, but is faster since it does not create a :class:`LocalCartesian` for each origin:
         ::
 
-          local_vector = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(
-              (0, 0), geocentric_vector)
+          local_vectors = [
+              pygplates.LocalCartesian(local_origin).from_geocentric_to_north_east_down(geocentric_vector)
+              for local_origin, geocentric_vector in zip(local_origins, geocentric_vectors)]
+
+        To convert at a single origin, use :meth:`from_geocentric_to_north_east_down` on a :class:`LocalCartesian` created at that origin.
+
+        .. versionchanged:: 1.1
+           Deprecated converting at a single origin with ``convert_from_geocentric_to_north_east_down(local_origin, vector)`` and ``convert_from_geocentric_to_north_east_down(local_origin, x, y, z)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)`` instead.
         """
 
-    @overload
-    @staticmethod
-    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> Vector3D:
-        """Converts the geocentric vector (x, y, z) to a cartesian vector in the local North/East/Down coordinate system located at *local_origin*.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param x: the *x* component of the geocentric vector
-        :type x: float
-        :param y: the *y* component of the geocentric vector
-        :type y: float
-        :param z: the *z* component of the geocentric vector
-        :type z: float
-        :returns: local cartesian North/East/Down vector
-        :rtype: Vector3D
-
-        Convert the geocentric vector (2, 1, 0) to the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe:
-        ::
-
-          local_vector = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(
-              (0,0), 2, 1, 0)
-        """
-
-    @overload
     @staticmethod
     def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], local_coordinates: Sequence[tuple[float, float, float]]) -> list[Vector3D]:
-        """Converts a local North/East/Down tuple (or tuples) of spherical coordinates to a cartesian geocentric vector (or vectors).
+        """Converts spherical coordinates in local North/East/Down coordinate systems, each at its own origin, to geocentric vectors.
 
-        This function can be called in more than one way...
-
-        Converts a sequence of local North/East/Down tuples of spherical coordinates located at *local_origins* to a sequence of geocentric vectors.
-
-        :param local_origins: sequence of origins (points) of local cartesian systems.
+        :param local_origins: the origins (points) of the local cartesian systems, one for each local coordinate
         :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param local_coordinates: sequence of local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinates: Any sequence of (float, float, float) tuples
+        :param local_coordinates: the local spherical coordinates (magnitude, azimuth, inclination)
+        :type local_coordinates: any sequence of (float, float, float) tuples
         :returns: list of geocentric vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *local_coordinates* have different lengths
 
-        Convert local spherical coordinates to geocentric vectors:
+        Each of the *local_coordinates* is converted in the local coordinate system located at the origin with the same index in *local_origins*:
         ::
 
-          local_origins = [...]
-          local_coords = [...]
           geocentric_vectors = pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(
               local_origins, local_coords)
-        """
 
-    @overload
-    @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], local_coordinate: Sequence[tuple[float, float, float]]) -> Vector3D:
-        """Converts a local North/East/Down tuple of spherical coordinates located at *local_origin* to a geocentric vector.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param local_coordinate: the local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinate: sequence (such as list or tuple) of (float,float,float)
-        :returns: geocentric vector
-        :rtype: Vector3D
-
-        Convert a local vector of unit magnitude aligned with the local East axis to a geocentric vector:
+        This gives the same result as the following, but is faster since it does not create a :class:`LocalCartesian` for each origin:
         ::
 
-          geocentric_vector = pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(
-              (0, 0), (1, 0.5 * math.pi, 0))
+          geocentric_vectors = [
+              pygplates.LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coord)
+              for local_origin, local_coord in zip(local_origins, local_coords)]
+
+        To convert at a single origin, use :meth:`from_magnitude_azimuth_inclination_to_geocentric` on a :class:`LocalCartesian` created at that origin.
+
+        .. versionchanged:: 1.1
+           Deprecated converting at a single origin with ``convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, local_coordinate)`` and ``convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, magnitude, azimuth, inclination)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)`` instead.
         """
 
-    @overload
-    @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], magnitude: float, azimuth: float, inclination: float) -> Vector3D:
-        r"""Converts local North/East/Down spherical coordinates located at *local_origin* to a geocentric vector.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param magnitude: the length of the local cartesian vector
-        :type magnitude: float
-        :param azimuth: the angle (in radians) clockwise (East-wise) from North (in the range :math:`[0, 2\pi]`)
-        :type azimuth: float
-        :param inclination: the angle (in radians) in the downward direction (eg, :math:`\frac{\pi}{2}` if vector aligned with Down axis, :math:`-\frac{\pi}{2}` if aligned with up direction and :math:`0` if vector in tangent plane)
-        :type inclination: float
-        :returns: geocentric vector
-        :rtype: Vector3D
-
-        Convert a local vector of unit magnitude aligned with the local East axis to a geocentric vector:
-        ::
-
-          geocentric_vector = pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(
-              (0,0), 1, 0.5 * math.pi, 0)
-        """
-
-    @overload
     @staticmethod
     def convert_from_north_east_down_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[Vector3D]:
-        """Converts a cartesian vector (or vectors) in a local North/East/Down coordinate system (or systems) to a geocentric vector (or vectors).
+        """Converts cartesian vectors in local North/East/Down coordinate systems, each at its own origin, to geocentric vectors.
 
-        This function can be called in more than one way...
-
-        Converts a cartesian *vector* in the local North/East/Down coordinate system located at *local_origin* to a geocentric vector.
-
-        :param local_origins: sequence of origins (points) of local cartesian systems.
+        :param local_origins: the origins (points) of the local cartesian systems, one for each vector
         :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param vectors: the local cartesian vectors
-        :type vectors: Any sequence of Vector3D or tuple (x,y,z)
+        :param vectors: the local cartesian North/East/Down vectors
+        :type vectors: any sequence of Vector3D or tuple (x,y,z)
         :returns: list of geocentric vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
 
-        Convert local cartesian vectors to geocentric vectors:
+        Each of the *vectors* is converted in the local coordinate system located at the origin with the same index in *local_origins*:
         ::
 
-          local_origins = [...]
-          local_vectors = [...]
           geocentric_vectors = pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(
               local_origins, local_vectors)
-        """
 
-    @overload
-    @staticmethod
-    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
-        """Converts a cartesian vector in the local North/East/Down coordinate system located at *local_origin* to a geocentric vector.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param vector: the local cartesian vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :returns: geocentric vector
-        :rtype: Vector3D
-
-        Convert a local cartesian vector in a local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe to a geocentric vector:
+        This gives the same result as the following, but is faster since it does not create a :class:`LocalCartesian` for each origin:
         ::
 
-          geocentric_vector = pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(
-              (0, 0), geocentric_vector)
+          geocentric_vectors = [
+              pygplates.LocalCartesian(local_origin).from_north_east_down_to_geocentric(local_vector)
+              for local_origin, local_vector in zip(local_origins, local_vectors)]
+
+        To convert at a single origin, use :meth:`from_north_east_down_to_geocentric` on a :class:`LocalCartesian` created at that origin.
+
+        .. versionchanged:: 1.1
+           Deprecated converting at a single origin with ``convert_from_north_east_down_to_geocentric(local_origin, vector)`` and ``convert_from_north_east_down_to_geocentric(local_origin, x, y, z)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_north_east_down_to_geocentric(vector)`` instead.
         """
 
     @overload
-    @staticmethod
-    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> Vector3D:
-        """Converts a cartesian vector (x, y, z) in the local North/East/Down coordinate system located at *local_origin* to a geocentric vector.
-
-        :param local_origin: origin of local cartesian system.
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :param x: the *x* component of the local cartesian vector
-        :type x: float
-        :param y: the *y* component of the local cartesian vector
-        :type y: float
-        :param z: the *z* component of the local cartesian vector
-        :type z: float
-        :returns: geocentric vector
-        :rtype: Vector3D
-
-        Convert the local cartesian vector (2, 1, 0) in the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe to a geocentric vector:
-        ::
-
-          geocentric_vector = pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(
-              (0,0), 2, 1, 0)
-        """
-
-    @overload
-    def from_geocentric_to_magnitude_azimuth_inclination(self, vector: Vector3D | Sequence[tuple[float, float, float]]) -> tuple[float, float, float]:
+    def from_geocentric_to_magnitude_azimuth_inclination(self, vector: Vector3D | Sequence[float]) -> tuple[float, float, float]:
         """Converts a geocentric vector to a tuple of spherical coordinates in the local North/East/Down coordinate system.
 
         This method can be called in more than one way...
@@ -8543,7 +8398,7 @@ class LocalCartesian:
         Converts the geocentric *vector* to a local North/East/Down tuple of spherical coordinates.
 
         :param vector: the geocentric vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :type vector: Vector3D, or sequence (such as list or tuple) of float
         :returns: tuple of (magnitude, azimuth, inclination)
         :rtype: tuple[float, float, float]
 
@@ -8575,7 +8430,7 @@ class LocalCartesian:
         """
 
     @overload
-    def from_geocentric_to_north_east_down(self, vector: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
+    def from_geocentric_to_north_east_down(self, vector: Vector3D | Sequence[float]) -> Vector3D:
         """Converts a geocentric vector to a local North/East/Down cartesian vector.
 
         This method can be called in more than one way...
@@ -8583,7 +8438,7 @@ class LocalCartesian:
         Converts the geocentric *vector* to a local North/East/Down cartesian vector.
 
         :param vector: the geocentric vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :type vector: Vector3D, or sequence (such as list or tuple) of float
         :returns: local cartesian North/East/Down vector
         :rtype: Vector3D
 
@@ -8615,7 +8470,7 @@ class LocalCartesian:
         """
 
     @overload
-    def from_magnitude_azimuth_inclination_to_geocentric(self, local_coordinate: Sequence[tuple[float, float, float]]) -> Vector3D:
+    def from_magnitude_azimuth_inclination_to_geocentric(self, local_coordinate: Sequence[float]) -> Vector3D:
         """Converts local spherical coordinates to a geocentric vector.
 
         This method can be called in more than one way...
@@ -8623,7 +8478,7 @@ class LocalCartesian:
         Converts a local North/East/Down tuple of spherical coordinates to a geocentric vector.
 
         :param local_coordinate: the local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinate: sequence (such as list or tuple) of (float,float,float)
+        :type local_coordinate: sequence (such as list or tuple) of float
         :returns: geocentric vector
         :rtype: Vector3D
 
@@ -8657,7 +8512,7 @@ class LocalCartesian:
         """
 
     @overload
-    def from_north_east_down_to_geocentric(self, vector: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
+    def from_north_east_down_to_geocentric(self, vector: Vector3D | Sequence[float]) -> Vector3D:
         """Converts a local North/East/Down cartesian vector to a geocentric vector.
 
         This method can be called in more than one way...
@@ -8665,7 +8520,7 @@ class LocalCartesian:
         Converts the local North/East/Down cartesian *vector* to a geocentric vector.
 
         :param vector: the local cartesian vector
-        :type vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :type vector: Vector3D, or sequence (such as list or tuple) of float
         :returns: geocentric vector
         :rtype: Vector3D
 
@@ -10742,8 +10597,8 @@ class PointOnSphere(GeometryOnSphere):
         This is also useful for performing vector dot and cross products:
         ::
 
-          dot_product = pygplates.Vector3D.dot(point1.to_xyz(), point2.to_xyz())
-          cross_product = pygplates.Vector3D.cross(point1.to_xyz(), point2.to_xyz())
+          dot_product = pygplates.Vector3D(point1.to_xyz()).dot(point2.to_xyz())
+          cross_product = pygplates.Vector3D(point1.to_xyz()).cross(point2.to_xyz())
         """
 
 class PolygonOnSphere(GeometryOnSphere):
@@ -17641,11 +17496,11 @@ class Vector3D:
         """
 
     @overload
-    def __init__(self, vector: Sequence[tuple[float, float, float]] | Vector3D) -> None:
+    def __init__(self, vector: Sequence[float] | Vector3D) -> None:
         """Create a *Vector3D* instance from an (x,y,z) sequence (or *Vector3D*).
 
         :param vector: (x,y,z) vector
-        :type vector: sequence (such as list or tuple) of (float,float,float), or Vector3D
+        :type vector: sequence (such as list or tuple) of float, or Vector3D
 
         The following example shows a few different ways to use this method:
         ::
@@ -17687,45 +17542,46 @@ class Vector3D:
 
     def __sub__(self, other: Any) -> Any: ...
 
-    @staticmethod
-    def angle_between(vector1: Vector3D | Sequence[tuple[float, float, float]], vector2: Vector3D | Sequence[tuple[float, float, float]]) -> float:
-        """Returns the angle between two vectors (in radians).
+    def angle_between(self, other_vector: Vector3D | Sequence[float]) -> float:
+        """Returns the angle between this vector and another vector (in radians).
 
-        :param vector1: the first vector
-        :type vector1: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :param vector2: the second vector
-        :type vector2: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :param other_vector: the other vector
+        :type other_vector: Vector3D, or sequence (such as list or tuple) of float
         :rtype: float
-        :raises UnableToNormaliseZeroVectorError: if either *vector1* or *vector2* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
+        :raises UnableToNormaliseZeroVectorError: if either this vector or *other_vector* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
 
         Note that the angle between a vector (``vec``) and its opposite (``-vec``) is ``math.pi`` (and not zero) even though both vectors are parallel. This is because they point in opposite directions.
 
-        The following example shows a few different ways to use this function:
+        The following example shows a few different ways to use this method:
         ::
 
           vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)
           vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)
-          angle = pygplates.Vector3D.angle_between(vec1, vec2)
+          angle = vec1.angle_between(vec2)
 
-          angle = pygplates.Vector3D.angle_between((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))
+          angle = vec1.angle_between((-1.1, -2.2, -3.3))
 
-          angle = pygplates.Vector3D.angle_between(vec1, (-1.1, -2.2, -3.3))
-
-          angle = pygplates.Vector3D.angle_between((1.1, 2.2, 3.3), vec2)
-
-        This function is the equivalent of:
+        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument:
         ::
 
-          if not vector1.is_zero_magnitude() and not vector2.is_zero_magnitude():
+          angle = pygplates.Vector3D.angle_between(vec1, vec2)
+
+        This method is the equivalent of:
+        ::
+
+          if not vector.is_zero_magnitude() and not other_vector.is_zero_magnitude():
               angle_between = math.acos(
-                  pygplates.Vector3D.dot(vector1.to_normalised(), vector2.to_normalised()))
+                  vector.to_normalised().dot(other_vector.to_normalised()))
           else:
               raise pygplates.UnableToNormaliseZeroVectorError
+
+        .. versionchanged:: 1.1
+           Can be called on a vector (``vector.angle_between(other_vector)``), as well as on the :class:`Vector3D` class (it was a static method). Renamed the argument *vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot be mixed with the new name in the same call).
         """
 
     @overload
     @staticmethod
-    def create_normalised(xyz: Sequence[tuple[float, float, float]] | Vector3D) -> Vector3D:
+    def create_normalised(xyz: Sequence[float] | Vector3D) -> Vector3D:
         """Returns a new vector that is a normalised (unit length) version of another.
 
         This function can be called in more than one way...
@@ -17733,7 +17589,7 @@ class Vector3D:
         Returns a new vector that is a normalised (unit length) version of *vector*.
 
         :param xyz: the vector (x,y,z) components
-        :type xyz: sequence (such as list or tuple) of (float,float,float), or Vector3D
+        :type xyz: sequence (such as list or tuple) of float, or Vector3D
         :rtype: Vector3D
         :raises UnableToNormaliseZeroVectorError: if *xyz* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
 
@@ -17777,68 +17633,72 @@ class Vector3D:
         """See :meth:`create_normalised`.
         """
 
-    @staticmethod
-    def cross(vector1: Vector3D | Sequence[tuple[float, float, float]], vector2: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
-        """Returns the cross product of two vectors.
+    def cross(self, other_vector: Vector3D | Sequence[float]) -> Vector3D:
+        """Returns the cross product of this vector and another vector.
 
-        :param vector1: the first vector
-        :type vector1: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :param vector2: the second vector
-        :type vector2: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :param other_vector: the other vector
+        :type other_vector: Vector3D, or sequence (such as list or tuple) of float
         :rtype: Vector3D
 
-        The following example shows a few different ways to use this function:
+        The cross product is a new vector (this vector is not modified, since a :class:`Vector3D` is immutable). The order matters: ``vec1.cross(vec2)`` is the opposite of ``vec2.cross(vec1)``.
+
+        The following example shows a few different ways to use this method:
         ::
 
           vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)
           vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)
+          cross_product = vec1.cross(vec2)
+
+          cross_product = vec1.cross((-1.1, -2.2, -3.3))
+
+        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument:
+        ::
+
           cross_product = pygplates.Vector3D.cross(vec1, vec2)
-
-          cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))
-
-          cross_product = pygplates.Vector3D.cross(vec1, (-1.1, -2.2, -3.3))
-
-          cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), vec2)
 
         The cross product is the equivalent of:
         ::
 
           cross_product = pygplates.Vector3D(
-              vector1.get_y() * vector2.get_z() - vector1.get_z() * vector2.get_y(),
-              vector1.get_z() * vector2.get_x() - vector1.get_x() * vector2.get_z(),
-              vector1.get_x() * vector2.get_y() - vector1.get_y() * vector2.get_x())
+              vector.get_y() * other_vector.get_z() - vector.get_z() * other_vector.get_y(),
+              vector.get_z() * other_vector.get_x() - vector.get_x() * other_vector.get_z(),
+              vector.get_x() * other_vector.get_y() - vector.get_y() * other_vector.get_x())
+
+        .. versionchanged:: 1.1
+           Can be called on a vector (``vector.cross(other_vector)``), as well as on the :class:`Vector3D` class (it was a static method). Renamed the argument *vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot be mixed with the new name in the same call).
         """
 
-    @staticmethod
-    def dot(vector1: Vector3D | Sequence[tuple[float, float, float]], vector2: Vector3D | Sequence[tuple[float, float, float]]) -> float:
-        """Returns the dot product of two vectors.
+    def dot(self, other_vector: Vector3D | Sequence[float]) -> float:
+        """Returns the dot product of this vector and another vector.
 
-        :param vector1: the first vector
-        :type vector1: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :param vector2: the second vector
-        :type vector2: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :param other_vector: the other vector
+        :type other_vector: Vector3D, or sequence (such as list or tuple) of float
         :rtype: float
 
-        The following example shows a few different ways to use this function:
+        The following example shows a few different ways to use this method:
         ::
 
           vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)
           vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)
+          dot_product = vec1.dot(vec2)
+
+          dot_product = vec1.dot((-1.1, -2.2, -3.3))
+
+        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument:
+        ::
+
           dot_product = pygplates.Vector3D.dot(vec1, vec2)
-
-          dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))
-
-          dot_product = pygplates.Vector3D.dot(vec1, (-1.1, -2.2, -3.3))
-
-          dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), vec2)
 
         The dot product is the equivalent of:
         ::
 
           dot_product = (
-              vector1.get_x() * vector2.get_x() +
-              vector1.get_y() * vector2.get_y() +
-              vector1.get_z() * vector2.get_z())
+              vector.get_x() * other_vector.get_x() +
+              vector.get_y() * other_vector.get_y() +
+              vector.get_z() * other_vector.get_z())
+
+        .. versionchanged:: 1.1
+           Can be called on a vector (``vector.dot(other_vector)``), as well as on the :class:`Vector3D` class (it was a static method). Renamed the argument *vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot be mixed with the new name in the same call).
         """
 
     def get_magnitude(self) -> float:

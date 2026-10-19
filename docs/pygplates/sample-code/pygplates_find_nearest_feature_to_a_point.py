@@ -47,8 +47,7 @@ for feature, feature_reconstructed_geometries in reconstructed_features:
 
         # [fragment: distance]
         # Get the minimum distance from point to the current reconstructed geometry.
-        min_distance_to_feature = pygplates.GeometryOnSphere.distance(
-                point,
+        min_distance_to_feature = point.distance(
                 feature_reconstructed_geometry.get_reconstructed_geometry(),
                 min_distance_to_all_features)
         # [end: distance]

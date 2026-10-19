@@ -108,7 +108,7 @@ nearest subducting lines.
    :fragment: initial-minimum-distance
 
 | Calculate the minimum distance from the reconstructed regular feature to the subducting line using
-  :meth:`pygplates.GeometryOnSphere.distance`.
+  the :meth:`distance()<pygplates.GeometryOnSphere.distance>` method of the reconstructed geometry.
 | *min_distance_to_subducting_line* is specified as the distance threshold since we're only interested
   in subducting lines that are nearer than the closest one encountered so far.
 

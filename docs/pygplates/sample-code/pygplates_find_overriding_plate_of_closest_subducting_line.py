@@ -72,10 +72,10 @@ for time in range(num_time_steps + 1):
                     # [fragment: distance]
                     # Get the minimum distance from the current reconstructed geometry to
                     # the current subducting line.
-                    min_distance_to_subducting_line = pygplates.GeometryOnSphere.distance(
-                            feature_reconstructed_geometry.get_reconstructed_geometry(),
-                            shared_sub_segment.get_resolved_geometry(),
-                            min_distance_to_all_subducting_lines)
+                    min_distance_to_subducting_line = (
+                            feature_reconstructed_geometry.get_reconstructed_geometry().distance(
+                                    shared_sub_segment.get_resolved_geometry(),
+                                    min_distance_to_all_subducting_lines))
                     # [end: distance]
 
                     # [fragment: nearest-so-far]

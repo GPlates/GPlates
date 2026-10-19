@@ -154,7 +154,7 @@ stage pole and then getting the direction of the arc using :meth:`pygplates.Grea
    :fragment: segment-to-stage-pole-direction
 
 | Both vectors point *from* the segment's mid-point, but in different directions.
-| The angle (in *radians*) between them is found using :meth:`pygplates.Vector3D.angle_between`.
+| The angle (in *radians*) between them is found using the :meth:`angle_between()<pygplates.Vector3D.angle_between>` method of one of them.
 
 .. sample-code:: pygplates_split_isochron_into_ridges_and_transforms.py
    :fragment: deviation

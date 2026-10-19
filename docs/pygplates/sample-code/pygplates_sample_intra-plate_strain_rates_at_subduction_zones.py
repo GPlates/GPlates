@@ -66,7 +66,8 @@ for time in range(num_time_steps + 1):
             if overriding_resolved_network:
                 # [fragment: off-boundary-rotation-pole]
                 # To rotate a point along boundary normal direction we need a rotation pole that is orthogonal to the boundary point and normal.
-                off_boundary_rotation_pole = pygplates.Vector3D.cross(stat.boundary_point.to_xyz(), stat.boundary_normal).to_normalised()
+                off_boundary_rotation_pole = pygplates.Vector3D(
+                        stat.boundary_point.to_xyz()).cross(stat.boundary_normal).to_normalised()
                 # [end: off-boundary-rotation-pole]
                 # [fragment: reverse-rotation-pole]
                 if not overriding_plate_is_on_left:

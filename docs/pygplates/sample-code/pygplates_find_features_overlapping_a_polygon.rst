@@ -68,12 +68,12 @@ A feature can have more than one geometry and hence will have more than one *rec
 .. sample-code:: pygplates_find_features_overlapping_a_polygon.py
    :fragment: iterate-geometries
 
-| Calculate the minimum distance between the polygon and a reconstructed feature geometry using :meth:`pygplates.GeometryOnSphere.distance`.
-| *geometry1_is_solid* is set to True in case the reconstructed geometry lies entirely inside
+| Calculate the minimum distance between the polygon and a reconstructed feature geometry using the polygon's :meth:`distance()<pygplates.GeometryOnSphere.distance>` method.
+| *geometry_is_solid* is set to True in case the reconstructed geometry lies entirely inside
   the polygon in which case it will return a distance of zero.
 | If we did not specify this it would have returned the distance to the polygon's boundary outline
   which could be non-zero if the reconstructed geometry did not intersect the outline.
-| And *geometry2_is_solid* is set to True in case the polygon lies entirely inside the reconstructed
+| And *other_geometry_is_solid* is set to True in case the polygon lies entirely inside the reconstructed
   geometry (if it's a polygon also). This also constitutes an overlap.
 
 .. sample-code:: pygplates_find_features_overlapping_a_polygon.py

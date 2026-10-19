@@ -16,6 +16,15 @@ Changes since 1.0.0:
   * Fixed pickling an object that had extra attributes added to it from Python (previously raised "Incomplete pickle support").
 * Added `TopologicalSnapshot.reconstruct_points()` to incrementally reconstruct points (lying within the snapshot's resolved plates and networks) to another time.
 * Added `ResolvedTopologicalNetwork.get_geometry_sub_segments()` (the same as `get_boundary_sub_segments()`), so that all three resolved topology types now have it, as resolved lines and boundaries already did.
+* `GeometryOnSphere.distance()` can be called on any geometry (eg, `point.distance(polygon)`), as well as on the class as before (`GeometryOnSphere.distance(point, polygon)`).
+  * Its arguments `geometry2`, `geometry1_is_solid` and `geometry2_is_solid` are renamed `other_geometry`, `geometry_is_solid` and `other_geometry_is_solid`. The old names (including `geometry1`) still work, but not mixed with the new ones in the same call.
+  * Calling it on a geometry with two other geometries (eg, `geometry.distance(point, polygon)`, which ignored `geometry`) no longer works.
+* `Vector3D.angle_between()`, `Vector3D.dot()` and `Vector3D.cross()` can likewise be called on a vector (eg, `vec1.dot(vec2)`), as well as on the class as before (`Vector3D.dot(vec1, vec2)`).
+  * Their argument `vector2` is renamed `other_vector`. The old names (`vector1` and `vector2`) still work, but not mixed with the new one in the same call.
+  * Calling them on a vector with two other vectors (eg, `vec.dot(vec1, vec2)`, which ignored `vec`) no longer works.
+* Deprecated converting at a single origin with the `LocalCartesian.convert_...()` functions (eg, `convert_from_geocentric_to_north_east_down(local_origin, vector)`). They still work, but use the matching method of a `LocalCartesian` at that origin instead (eg, `LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)`). The `convert_...()` functions that convert a sequence of vectors, each at its own origin, are unchanged.
+* Type stub: arguments that take an (x,y,z) vector or a (magnitude, azimuth, inclination) tuple (eg, in `Vector3D.dot()` and `LocalCartesian`) now accept a tuple or list of floats. The stub expected a sequence of tuples, so type checkers rejected correct calls.
+* Type stub: some forms that still work, for compatibility, aren't in the stub, so type checkers report them as errors. These are the old argument names of `GeometryOnSphere.distance()` and `Vector3D.angle_between()`/`dot()`/`cross()`, converting at a single origin with `LocalCartesian.convert_...()`, and calling `Vector3D.angle_between()`/`dot()`/`cross()` on the class with an (x,y,z) tuple as the first argument.
 * `GpmlTopologicalSection.create()` accepts a feature whose geometry is a polygon (returning a line section), as the topology building tools in GPlates do.
 * `GpmlTopologicalSection.create()` and `create_network_interior()` take a `property_return` argument: with `PropertyReturn.first` they reference a feature that has more than one geometry with the same property name, instead of returning `None`.
 * Added an `anchor_plate_id` argument to `PlatePartitioner` and `partition_into_plates()` (it defaults to the rotation model's default anchor plate, which was previously always used):
@@ -34,6 +43,7 @@ Changes since 1.0.0:
   * Wheels on all platforms bundle the same PROJ (9.8.1) and GDAL (3.12.4) versions.
   * Requires NumPy 1.19 or later, and `pip` now enforces it: installing pyGPlates upgrades an older NumPy (previously the oldest NumPy that worked depended on the Python version, and an older one failed `import pygplates`).
 * Documentation: corrected the supported Python versions and platforms in *Getting started*, fixed the introductory examples (which raised `NameError`), and documented the Python console in GPlates.
+* Documentation: methods a class inherits (eg, `distance()` listed on the `PointOnSphere` page) link to their documentation in the base class (previously they were listed without a link).
 * Documentation: the *Primer* is split into one page per topic (rotations, topologies and deformation). Links to sections of the old single-page Primer still work, redirecting to the section on its new page.
 * Removed the undocumented classes `Colour`, `Palette`, `PaletteKey`, `OldFeature` and `OldFeatureCollection` (they were only meaningful inside GPlates).
 * Removed `namedtuple`, `partial`, `math`, `itertools`, `numpy`, `iteritems`, `itervalues`, `listitems` and `listvalues` from the `pygplates` module. They were internal imports and Python 2 helpers, exposed as `pygplates.<name>` by accident; import them from the standard library (or `numpy`) instead.

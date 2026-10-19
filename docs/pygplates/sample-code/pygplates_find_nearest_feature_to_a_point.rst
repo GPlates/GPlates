@@ -60,8 +60,8 @@ The features are reconstructed to their 10Ma positions.
    :fragment: reconstruct
 
 | Initially we don't have a minimum distance of the point to all features.
-| This value is also used as the threshold to the :meth:`distance<pygplates.GeometryOnSphere.distance>`
-  function and initially this will be ``None`` which means no threshold.
+| This value is also used as the threshold to the :meth:`distance()<pygplates.GeometryOnSphere.distance>`
+  method and initially this will be ``None`` which means no threshold.
 
 .. sample-code:: pygplates_find_nearest_feature_to_a_point.py
    :fragment: initial-minimum-distance
@@ -77,7 +77,7 @@ A feature can have more than one geometry and hence will have more than one *rec
 .. sample-code:: pygplates_find_nearest_feature_to_a_point.py
    :fragment: iterate-geometries
 
-| Calculate the minimum distance from the point to a reconstructed feature geometry using :meth:`pygplates.GeometryOnSphere.distance`.
+| Calculate the minimum distance from the point to a reconstructed feature geometry using the point's :meth:`distance()<pygplates.GeometryOnSphere.distance>` method.
 | *min_distance_to_all_features* is specified as the distance threshold since we're only interested
   in geometries that are nearer than the closest geometry encountered so far.
 
@@ -108,14 +108,13 @@ If we also want to find the nearest position on the nearest feature then we can 
     
     ...
     
-    min_distance_to_feature_and_closest_positions = pygplates.GeometryOnSphere.distance(
-            point,
+    min_distance_to_feature_and_closest_positions = point.distance(
             feature_reconstructed_geometry.get_reconstructed_geometry(),
             min_distance_to_all_features,
             return_closest_positions=True)
 
-| When ``return_closest_positions`` is ``True`` the :meth:`distance<pygplates.GeometryOnSphere.distance>`
-  function returns a 3-tuple of (distance, closest point on geometry1, closest point on geometry2).
+| When ``return_closest_positions`` is ``True`` the :meth:`distance()<pygplates.GeometryOnSphere.distance>`
+  method returns a 3-tuple of (distance, closest point on the geometry it's called on, closest point on the other geometry).
 | If the geometry distance is below the threshold then we can extract that tuple into its individual elements.
 
 ::
@@ -125,7 +124,7 @@ If we also want to find the nearest position on the nearest feature then we can 
         nearest_feature = feature
 
 | ...where the ``_`` is just a placeholder to ignore the second element of the tuple returned
-  by the :meth:`distance<pygplates.GeometryOnSphere.distance>` function.
+  by the :meth:`distance()<pygplates.GeometryOnSphere.distance>` method.
 | We ignore it because it's the closest distance to the test point which is just the test point itself.
   And we are only interested in the closest point on the feature's geometry.
 

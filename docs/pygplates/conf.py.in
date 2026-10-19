@@ -146,6 +146,55 @@ def setup(app):
     app.add_directive('sample-code', SampleCodeDirective)
     # Redirect links to the old single-page Primer (see 'write_primer_anchors').
     app.connect('build-finished', write_primer_anchors)
+    # Link inherited members to the base class that documents them (see 'resolve_inherited_member').
+    app.connect('missing-reference', resolve_inherited_member)
+
+
+#
+# Link an inherited member to the base class that documents it.
+#
+# Inherited members are not documented on a derived class's page ('inherited-members' is False in
+# 'autodoc_default_options'), but autosummary still lists them in the class's summary table, as
+# references through the derived class (eg, 'pygplates.PointOnSphere.distance'). Nothing defines
+# that target, so the entry was not a link. Resolving it through the class's MRO links it to the
+# base class's entry instead ('pygplates.GeometryOnSphere.distance'). The same applies to a role
+# in a docstring that names a member through a derived class.
+#
+def resolve_inherited_member(app, env, node, contnode):
+    if node.get('refdomain') != 'py':
+        return None
+    # The target names the module ('pygplates.PointOnSphere.distance'), or not, in a docstring or
+    # page whose current module is pygplates (':meth:`PointOnSphere.distance`'). A bare member name
+    # (':meth:`distance`') names a member of the class being documented.
+    target = node.get('reftarget', '')
+    if target.startswith('pygplates.'):
+        target = target[len('pygplates.'):]
+    elif node.get('py:module') != 'pygplates':
+        return None
+    class_name, _, member_name = target.rpartition('.')
+    if not class_name:
+        class_name = node.get('py:class') or ''
+    if not class_name or '.' in class_name or not member_name:
+        return None
+
+    import pygplates
+    cls = getattr(pygplates, class_name, None)
+    if not isinstance(cls, type):
+        return None
+
+    # Only follow bases that pyGPlates documents (not 'object' or 'Boost.Python.instance'). A base
+    # can define the member without documenting it (no docstring), so keep looking past one that
+    # doesn't resolve.
+    python_domain = env.get_domain('py')
+    for base in cls.__mro__[1:]:
+        if base.__module__ != 'pygplates' or member_name not in vars(base):
+            continue
+        resolved = python_domain.resolve_xref(
+                env, node['refdoc'], app.builder, node['reftype'],
+                'pygplates.{}.{}'.format(base.__name__, member_name), node, contnode)
+        if resolved is not None:
+            return resolved
+    return None
 
 
 #
@@ -359,8 +408,8 @@ autodoc_default_options = {
     # Don't include inherited members (from base classes) since it can actually be a bit confusing for some classes.
     # For example, pygplates.GeometryOnSphere.get_points() is a bit confusing when included in derived
     # class pygplates.PointOnSphere (since it's a single point, not multiple points).
-    # It seems inherited members still show up under the classes "Methods" section but they are not documented
-    # (there's no link to the documented method), the user should instead browse the base class...
+    # Inherited members still show up under the class's "Methods" section, where
+    # 'resolve_inherited_member' links them to the base class that documents them...
     'inherited-members' : False,
     # Show base classes (eg, show that pygplates.PolylineOnSphere derives from pygplates.GeometryOnSphere)...
     'show-inheritance' : True}
