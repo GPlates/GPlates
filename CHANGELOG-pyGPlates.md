@@ -16,6 +16,8 @@ Changes since 1.0.0:
   * Fixed pickling an object that had extra attributes added to it from Python (previously raised "Incomplete pickle support").
 * Added `TopologicalSnapshot.reconstruct_points()` to incrementally reconstruct points (lying within the snapshot's resolved plates and networks) to another time.
 * Added `ResolvedTopologicalNetwork.get_geometry_sub_segments()` (the same as `get_boundary_sub_segments()`), so that all three resolved topology types now have it, as resolved lines and boundaries already did.
+* `GeometryOnSphere.distance()` can be called on any geometry (eg, `point.distance(polygon)`), as well as on the class as before (`GeometryOnSphere.distance(point, polygon)`).
+  * Its arguments `geometry1`, `geometry2`, `geometry1_is_solid` and `geometry2_is_solid` are renamed `geometry`, `other_geometry`, `geometry_is_solid` and `other_geometry_is_solid`. The old names still work, but not mixed with the new ones in the same call.
 * `GpmlTopologicalSection.create()` accepts a feature whose geometry is a polygon (returning a line section), as the topology building tools in GPlates do.
 * `GpmlTopologicalSection.create()` and `create_network_interior()` take a `property_return` argument: with `PropertyReturn.first` they reference a feature that has more than one geometry with the same property name, instead of returning `None`.
 * Added an `anchor_plate_id` argument to `PlatePartitioner` and `partition_into_plates()` (it defaults to the rotation model's default anchor plate, which was previously always used):

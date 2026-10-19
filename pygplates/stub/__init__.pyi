@@ -4537,52 +4537,40 @@ class GeometryOnSphere:
            Geometry is immutable so there's no need to clone (instead you can just share the geometry).
         """
 
-    @staticmethod
-    def distance(geometry1: GeometryOnSphere, geometry2: GeometryOnSphere, distance_threshold_radians: float | None = ..., return_closest_positions: bool = False, return_closest_indices: bool = False, geometry1_is_solid: bool = False, geometry2_is_solid: bool = False) -> float | tuple[float, PointOnSphere, PointOnSphere] | tuple[float, int, int] | tuple[float, PointOnSphere, PointOnSphere, int, int] | None:
-        r"""Returns the (minimum) distance between two geometries (in radians).
+    def distance(self, other_geometry: GeometryOnSphere, distance_threshold_radians: float | None = ..., return_closest_positions: bool = False, return_closest_indices: bool = False, geometry_is_solid: bool = False, other_geometry_is_solid: bool = False) -> float | tuple[float, PointOnSphere, PointOnSphere] | tuple[float, int, int] | tuple[float, PointOnSphere, PointOnSphere, int, int] | None:
+        r"""Returns the (minimum) distance between this geometry and another geometry (in radians).
 
-        :param geometry1: the first geometry
-        :type geometry1: GeometryOnSphere
-        :param geometry2: the second geometry
-        :type geometry2: GeometryOnSphere
+        :param other_geometry: the other geometry
+        :type other_geometry: GeometryOnSphere
         :param distance_threshold_radians: optional distance threshold in radians - threshold is clamped to the range [0, PI] if specified
-        :type distance_threshold_radians: float or None
+        :type distance_threshold_radians: float, or None
         :param return_closest_positions: whether to also return the closest point on each geometry - default is ``False``
         :type return_closest_positions: bool
         :param return_closest_indices: whether to also return the index of the closest :class:`point<PointOnSphere>` (for multi-points) or the index of the closest :class:`segment<GreatCircleArc>` (for polylines and polygons) - default is ``False``
         :type return_closest_indices: bool
-        :param geometry1_is_solid: whether the interior of *geometry1* is solid or not - this parameter is ignored if *geometry1* is not a :class:`PolygonOnSphere` - default is ``False``
-        :type geometry1_is_solid: bool
-        :param geometry2_is_solid: whether the interior of *geometry2* is solid or not - this parameter is ignored if *geometry2* is not a :class:`PolygonOnSphere` - default is ``False``
-        :type geometry2_is_solid: bool
-        :returns: distance (in radians), or a tuple containing distance and the closest point on each geometry if *return_closest_positions* is ``True``, or a tuple containing distance and the indices of the closest :class:`point<PointOnSphere>` (for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) on each geometry if *return_closest_indices* is ``True``, or a tuple containing distance and the closest point on each geometry and the indices of the closest :class:`point<PointOnSphere>` (for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) on each geometry if both *return_closest_positions* and *return_closest_indices* are ``True``, or ``None`` if *distance_threshold_radians* is specified and exceeded
+        :param geometry_is_solid: whether the interior of this geometry is solid or not - this parameter is ignored if this geometry is not a :class:`PolygonOnSphere` - default is ``False``
+        :type geometry_is_solid: bool
+        :param other_geometry_is_solid: whether the interior of *other_geometry* is solid or not - this parameter is ignored if *other_geometry* is not a :class:`PolygonOnSphere` - default is ``False``
+        :type other_geometry_is_solid: bool
+        :returns: distance (in radians), or a tuple containing distance and the closest point on this geometry and on *other_geometry* if *return_closest_positions* is ``True``, or a tuple containing distance and the indices of the closest :class:`point<PointOnSphere>` (for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) on this geometry and on *other_geometry* if *return_closest_indices* is ``True``, or a tuple containing distance and the closest point on each geometry and the indices of the closest :class:`point<PointOnSphere>` (for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) on each geometry if both *return_closest_positions* and *return_closest_indices* are ``True``, or ``None`` if *distance_threshold_radians* is specified and exceeded
         :rtype: float, or tuple[float, PointOnSphere, PointOnSphere], or tuple[float, int, int], or tuple[float, PointOnSphere, PointOnSphere, int, int], or None
         :raises ValueError: if *distance_threshold_radians* is NaN
 
-        The returned distance is the shortest path between *geometry1* and *geometry2* along the surface of the sphere (great circle arc path). To convert the distance from radians (distance on a unit radius sphere) to real distance you will need to multiply it by the Earth's radius (see :class:`Earth`).
+        The returned distance is the shortest path between this geometry and *other_geometry* along the surface of the sphere (great circle arc path). To convert the distance from radians (distance on a unit radius sphere) to real distance you will need to multiply it by the Earth's radius (see :class:`Earth`).
 
-        Each geometry (*geometry1* and *geometry2*) can be any of the four geometry types (:class:`PointOnSphere`, :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and :class:`PolygonOnSphere`) allowing all combinations of distance calculations:
+        This geometry and *other_geometry* can each be any of the four geometry types (:class:`PointOnSphere`, :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and :class:`PolygonOnSphere`) allowing all combinations of distance calculations. For example:
         ::
 
-          distance_radians = pygplates.GeometryOnSphere.distance(point1, point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(point1, multi_point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(point1, polyline2)
-          distance_radians = pygplates.GeometryOnSphere.distance(point1, polygon2)
+          distance_radians = point.distance(other_point)
+          distance_radians = point.distance(polygon)
+          distance_radians = multi_point.distance(polyline)
+          distance_radians = polygon.distance(other_polygon)
 
-          distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, multi_point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, polyline2)
-          distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, polygon2)
+        This method can also be called on the :class:`GeometryOnSphere` class, passing this geometry as the first argument. So the following two calls are equivalent:
+        ::
 
-          distance_radians = pygplates.GeometryOnSphere.distance(polyline1, point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polyline1, multi_point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polyline1, polyline2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polyline1, polygon2)
-
-          distance_radians = pygplates.GeometryOnSphere.distance(polygon1, point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polygon1, multi_point2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polygon1, polyline2)
-          distance_radians = pygplates.GeometryOnSphere.distance(polygon1, polygon2)
+          distance_radians = polyline.distance(polygon)
+          distance_radians = pygplates.GeometryOnSphere.distance(polyline, polygon)
 
         If *distance_threshold_radians* is specified and the (minimum) distance between the two geometries exceeds this threshold then ``None`` is returned.
         ::
@@ -4590,8 +4578,8 @@ class GeometryOnSphere:
           # Perform a region-of-interest query between two geometries to see if
           # they are within 1 degree of each other.
           #
-          # Note that we explicitly test against None because a distance of zero is equilavent to False.
-          if pygplates.GeometryOnSphere.distance(geometry1, geometry2, math.radians(1)) is not None:
+          # Note that we explicitly test against None because a distance of zero is equivalent to False.
+          if geometry.distance(other_geometry, math.radians(1)) is not None:
               ...
 
         Note that it is more efficient to specify a distance threshold parameter (as shown in the above example) than it is to explicitly compare the returned distance to a threshold yourself. This is because internally each polyline/polygon geometry has an inbuilt spatial tree that optimises distance queries.
@@ -4599,19 +4587,19 @@ class GeometryOnSphere:
         The minimum distance between two geometries is zero (and hence does not exceed any distance threshold) **if**:
 
         * both geometries are a polyline/polygon and they intersect each other, or
-        * *geometry1_is_solid* is ``True`` and *geometry1* is a :class:`PolygonOnSphere` and *geometry2* overlaps the interior of the polygon (even if it doesn't intersect the polygon boundary) - similarly for *geometry2_is_solid*. However note that *geometry1_is_solid* is ignored if *geometry1* is not a :class:`PolygonOnSphere` - similarly for *geometry2_is_solid*.
+        * *geometry_is_solid* is ``True`` and this geometry is a :class:`PolygonOnSphere` and *other_geometry* overlaps the interior of the polygon (even if it doesn't intersect the polygon boundary) - similarly for *other_geometry_is_solid*. However note that *geometry_is_solid* is ignored if this geometry is not a :class:`PolygonOnSphere` - similarly for *other_geometry_is_solid*.
 
-        If *return_closest_positions* is ``True`` then the closest point on each geometry is returned (unless the distance threshold is exceeded, if specified). Note that for polygons the closest point is always on the polygon boundary regardless of whether the polygon is solid or not (see *geometry1_is_solid* and *geometry2_is_solid*). Also note that the closest position on a polyline/polygon can be anywhere along any of its :class:`segments<GreatCircleArc>`. In other words it's not the nearest vertex of the polyline/polygon - it's the nearest point *on* the polyline/polygon itself. If both geometries are polyline/polygon and they intersect then the intersection point is returned (same point for both geometries). If both geometries are polyline/polygon and they intersect more than once then any intersection point can be returned (but the same point is returned for both geometries). If one geometry is a solid :class:`PolygonOnSphere` and the other geometry is a :class:`MultiPointOnSphere` with more than one of its points inside the interior of the polygon then the closest point in the multi-point could be any of those inside points.
+        If *return_closest_positions* is ``True`` then the closest point on each geometry is returned (unless the distance threshold is exceeded, if specified). Note that for polygons the closest point is always on the polygon boundary regardless of whether the polygon is solid or not (see *geometry_is_solid* and *other_geometry_is_solid*). Also note that the closest position on a polyline/polygon can be anywhere along any of its :class:`segments<GreatCircleArc>`. In other words it's not the nearest vertex of the polyline/polygon - it's the nearest point *on* the polyline/polygon itself. If both geometries are polyline/polygon and they intersect then the intersection point is returned (same point for both geometries). If both geometries are polyline/polygon and they intersect more than once then any intersection point can be returned (but the same point is returned for both geometries). If one geometry is a solid :class:`PolygonOnSphere` and the other geometry is a :class:`MultiPointOnSphere` with more than one of its points inside the interior of the polygon then the closest point in the multi-point could be any of those inside points.
         ::
 
-          distance_radians, closest_point_on_geometry1, closest_point_on_geometry2 = \
-              pygplates.GeometryOnSphere.distance(geometry1, geometry2, return_closest_positions=True)
+          distance_radians, closest_point_on_geometry, closest_point_on_other_geometry = \
+              geometry.distance(other_geometry, return_closest_positions=True)
 
         If *return_closest_indices* is ``True`` then the index of the closest :class:`point<PointOnSphere>` (for multi-points) or the index of the closest :class:`segment<GreatCircleArc>` (for polylines and polygons) is returned (unless the threshold is exceeded, if specified). Note that for :class:`point<PointOnSphere>` geometries the index will always be zero. The point indices can be used to index directly into :class:`MultiPointOnSphere` and the segment indices can be used with :meth:`PolylineOnSphere.get_segments` or :meth:`PolygonOnSphere.get_segments` as shown in the following example:
         ::
 
           distance_radians, closest_point_index_on_multipoint, closest_segment_index_on_polyline = \
-              pygplates.GeometryOnSphere.distance(multipoint, polyline, return_closest_indices=True)
+              multipoint.distance(polyline, return_closest_indices=True)
 
           closest_point_on_multipoint = multipoint[closest_point_index_on_multipoint]
           closest_segment_on_polyline = polyline.get_segments()[closest_segment_index_on_polyline]
@@ -4622,18 +4610,20 @@ class GeometryOnSphere:
 
           # Distance between a polyline and a solid polygon.
           distance_radians, polyline_point, polygon_point, polyline_segment_index, polygon_segment_index = \
-              pygplates.GeometryOnSphere.distance(
-                  polyline,
+              polyline.distance(
                   polygon,
                   return_closest_positions=True,
                   return_closest_indices=True,
-                  geometry2_is_solid=True)
+                  other_geometry_is_solid=True)
 
         .. versionchanged:: 0.41
          distance threshold is clamped to the range [0, PI] to avoid an exception.
 
         .. versionchanged:: 1.1
          ``None`` is returned only if the distance that would be returned is greater than *distance_threshold_radians*, so a distance equal to the threshold is returned (eg, PI for antipodal points with a threshold of PI, or zero for intersecting polylines and polygons with a threshold of zero). A NaN threshold raises ``ValueError`` (it was ignored). The closest positions and indices always belong to the same closest pair.
+
+        .. versionchanged:: 1.1
+         Can be called on a geometry (``geometry.distance(other_geometry)``), as well as on the :class:`GeometryOnSphere` class (it was a static method). Renamed the arguments *geometry2*, *geometry1_is_solid* and *geometry2_is_solid* to *other_geometry*, *geometry_is_solid* and *other_geometry_is_solid* (the old names, including *geometry1*, still work, but cannot be mixed with the new names in the same call).
         """
 
     def get_points(self) -> Sequence[PointOnSphere]:

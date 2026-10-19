@@ -29,9 +29,10 @@ for reconstructed_feature_geometry in reconstructed_feature_geometries:
     # Calculate distance between:
     #  - the centroid of the present-day geometry, and
     #  - the centroid of the reconstructed geometry.
-    distance_reconstructed = pygplates.GeometryOnSphere.distance(
-        reconstructed_feature_geometry.get_present_day_geometry().get_centroid(),
+    present_day_centroid = reconstructed_feature_geometry.get_present_day_geometry().get_centroid()
+    reconstructed_centroid = (
         reconstructed_feature_geometry.get_reconstructed_geometry().get_centroid())
+    distance_reconstructed = present_day_centroid.distance(reconstructed_centroid)
 
     # Convert distance from radians to Kms.
     distance_reconstructed_in_kms = distance_reconstructed * pygplates.Earth.mean_radius_in_kms

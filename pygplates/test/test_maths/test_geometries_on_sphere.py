@@ -226,14 +226,14 @@ class GeometryOnSphereCase(unittest.TestCase):
         # 'features[0]' is a polygon.
         distance, closest_point1, closest_point2 = pygplates.GeometryOnSphere.distance(
                 features[0].get_geometry(), features[1].get_geometry(),
-                return_closest_positions=True, geometry1_is_solid=True)
+                return_closest_positions=True, geometry_is_solid=True)
         # One of the points of the multi-point is inside the (solid) polygon.
         self.assertAlmostEqual(distance, 0)
         self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), 0.03407617)
         
         distance, closest_point1, closest_point2 = pygplates.GeometryOnSphere.distance(
                 features[0].get_geometry(), features[2].get_geometry(),
-                return_closest_positions=True, geometry1_is_solid=True)
+                return_closest_positions=True, geometry_is_solid=True)
         # The polyline intersects the polygon.
         self.assertAlmostEqual(distance, 0)
         self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), 0)
@@ -259,6 +259,33 @@ class GeometryOnSphereCase(unittest.TestCase):
             (pygplates.GeometryOnSphere.distance(polyline1_intersection, pygplates.PointOnSphere(5,0)) < math.radians(0.5) and polyline1_segment_index == 0 and polyline2_segment_index == 0) or
             (pygplates.GeometryOnSphere.distance(polyline1_intersection, pygplates.PointOnSphere(0,5)) < math.radians(0.5) and polyline1_segment_index == 1 and polyline2_segment_index == 1))
 
+    def test_distance_call_forms(self):
+        point = pygplates.PointOnSphere(0, 0)
+        polygon = pygplates.PolygonOnSphere([(-5, 5), (5, 5), (5, 10), (-5, 10)])
+        distance = math.radians(5)
+        # Called on a geometry, and (as when it was a static method) on the class, including a derived class.
+        self.assertAlmostEqual(point.distance(polygon), distance)
+        self.assertAlmostEqual(polygon.distance(point), distance)
+        self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(point, polygon), distance)
+        self.assertAlmostEqual(pygplates.PointOnSphere.distance(point, polygon), distance)
+        # Keyword arguments, including for the geometry that it's called on (an undocumented keyword,
+        # but the binding must name it: see 'export_geometry_on_sphere()').
+        self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(geometry=point, other_geometry=polygon), distance)
+        self.assertAlmostEqual(point.distance(other_geometry=polygon), distance)
+        inside_point = pygplates.PointOnSphere(0, 7)
+        self.assertTrue(polygon.distance(inside_point) > 0)
+        self.assertEqual(polygon.distance(inside_point, geometry_is_solid=True), 0.0)
+        self.assertEqual(inside_point.distance(polygon, other_geometry_is_solid=True), 0.0)
+        # The argument names it had as a static method still work...
+        self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(geometry1=point, geometry2=polygon), distance)
+        self.assertAlmostEqual(point.distance(geometry2=polygon), distance)
+        self.assertEqual(pygplates.GeometryOnSphere.distance(polygon, inside_point, geometry1_is_solid=True), 0.0)
+        self.assertEqual(pygplates.GeometryOnSphere.distance(inside_point, polygon, geometry2_is_solid=True), 0.0)
+        # ...but cannot be mixed with the new names.
+        self.assertRaises(
+                TypeError,  # Boost.Python.ArgumentError
+                pygplates.GeometryOnSphere.distance, polygon, inside_point, geometry_is_solid=True, geometry2_is_solid=True)
+
     def test_distance_antipodal(self):
         # Geometries exactly pi apart: each geometry type collapsed onto one of two antipodal points
         # (only such degenerate geometries can be exactly pi apart).
@@ -279,7 +306,7 @@ class GeometryOnSphereCase(unittest.TestCase):
                         msg = '{} to {}, solid={}'.format(type(g1).__name__, type(g2).__name__, solid)
                         def distance(*args, **kwargs):
                             return pygplates.GeometryOnSphere.distance(
-                                g1, g2, *args, geometry1_is_solid=solid, geometry2_is_solid=solid, **kwargs)
+                                g1, g2, *args, geometry_is_solid=solid, other_geometry_is_solid=solid, **kwargs)
                         self.assertAlmostEqual(distance(), math.pi, msg=msg)
                         self.assertAlmostEqual(distance(math.pi), math.pi, msg=msg)
                         self.assertTrue(distance(math.pi - 1e-6) is None, msg=msg)
@@ -427,7 +454,7 @@ class GeometryOnSphereCase(unittest.TestCase):
 
             distance, closest_point1, closest_point2, closest_index1, closest_index2 = D(
                 geometry1, geometry2, return_closest_positions=True, return_closest_indices=True,
-                geometry1_is_solid=solid1, geometry2_is_solid=solid2)
+                geometry_is_solid=solid1, other_geometry_is_solid=solid2)
             # Distances within epsilon of zero are returned as zero, and near PI resolve only to ~1.5e-8.
             places = 7 if expected > math.pi - 1e-3 else 9
             if not (distance == 0.0 and expected < 1.5e-6):
@@ -444,12 +471,12 @@ class GeometryOnSphereCase(unittest.TestCase):
 
             # None only if the distance returned (without a threshold) exceeds the threshold.
             threshold = rng.uniform(0, 2 * distance) if distance > 0 else rng.choice((0.0, 0.01))
-            result = D(geometry1, geometry2, threshold, geometry1_is_solid=solid1, geometry2_is_solid=solid2)
+            result = D(geometry1, geometry2, threshold, geometry_is_solid=solid1, other_geometry_is_solid=solid2)
             if distance > threshold:
                 self.assertTrue(result is None, msg=msg)
             else:
                 self.assertTrue(result == distance, msg=msg)
-            self.assertTrue(D(geometry1, geometry2, distance, geometry1_is_solid=solid1, geometry2_is_solid=solid2) == distance,
+            self.assertTrue(D(geometry1, geometry2, distance, geometry_is_solid=solid1, other_geometry_is_solid=solid2) == distance,
                             msg=msg)
 
     def test_get_centroid(self):

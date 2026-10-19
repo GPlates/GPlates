@@ -115,7 +115,7 @@ The features will be reconstructed to their 50Ma positions.
   own centroid), to find the centroid of the
   :meth:`present day<pygplates.ReconstructedFeatureGeometry.get_present_day_geometry>` and
   :meth:`reconstructed<pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry>` geometries.
-| We use the :meth:`pygplates.GeometryOnSphere.distance` function to calculate the shortest
+| We use the :meth:`distance()<pygplates.GeometryOnSphere.distance>` method of one centroid to calculate the shortest
   distance between the two centroids and convert it to kilometres using :class:`pygplates.Earth`.
 
 .. sample-code:: pygplates_reconstruct_regular_features_distance.py

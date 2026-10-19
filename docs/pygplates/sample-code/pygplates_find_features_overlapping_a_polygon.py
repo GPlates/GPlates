@@ -45,11 +45,10 @@ for feature, feature_reconstructed_geometries in reconstructed_features:
         # Get the minimum distance from polygon to the current reconstructed geometry.
         # We treat the polygon as solid so anything inside it has a distance of zero.
         # We also treat the reconstructed geometry as solid (in case it's also a polygon).
-        min_distance_to_feature = pygplates.GeometryOnSphere.distance(
-                polygon,
+        min_distance_to_feature = polygon.distance(
                 feature_reconstructed_geometry.get_reconstructed_geometry(),
-                geometry1_is_solid=True,
-                geometry2_is_solid=True)
+                geometry_is_solid=True,
+                other_geometry_is_solid=True)
         # [end: distance]
 
         # [fragment: overlap-test]
