@@ -7900,7 +7900,7 @@ class GreatCircleArc:
 
         .. note:: The normal to the great circle can be considered to be the tangential direction (to the Earth's surface) at any point along the great circle arc that is most pointing away from (perpendicular to) the direction of the arc (from start point to end point - see :meth:`get_arc_direction`).
 
-        The normal vector is the same direction as the :meth:`cross product<Vector3D.cross>` of the start point and the end point. In fact it is equivalent to ``pygplates.Vector3D.cross(arc.start_point().to_xyz(), arc.end_point().to_xyz()).to_normalised()``.
+        The normal vector is the same direction as the :meth:`cross product<Vector3D.cross>` of the start point and the end point. In fact it is equivalent to ``pygplates.Vector3D(arc.get_start_point().to_xyz()).cross(arc.get_end_point().to_xyz()).to_normalised()``.
 
         If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) then *IndeterminateGreatCircleArcNormalError* is raised.
 
@@ -10732,8 +10732,8 @@ class PointOnSphere(GeometryOnSphere):
         This is also useful for performing vector dot and cross products:
         ::
 
-          dot_product = pygplates.Vector3D.dot(point1.to_xyz(), point2.to_xyz())
-          cross_product = pygplates.Vector3D.cross(point1.to_xyz(), point2.to_xyz())
+          dot_product = pygplates.Vector3D(point1.to_xyz()).dot(point2.to_xyz())
+          cross_product = pygplates.Vector3D(point1.to_xyz()).cross(point2.to_xyz())
         """
 
 class PolygonOnSphere(GeometryOnSphere):
@@ -17677,40 +17677,43 @@ class Vector3D:
 
     def __sub__(self, other: Any) -> Any: ...
 
-    @staticmethod
-    def angle_between(vector1: Vector3D | Sequence[tuple[float, float, float]], vector2: Vector3D | Sequence[tuple[float, float, float]]) -> float:
-        """Returns the angle between two vectors (in radians).
+    def angle_between(self, other_vector: Vector3D | Sequence[tuple[float, float, float]]) -> float:
+        """Returns the angle between this vector and another vector (in radians).
 
-        :param vector1: the first vector
-        :type vector1: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :param vector2: the second vector
-        :type vector2: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :param other_vector: the other vector
+        :type other_vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
         :rtype: float
-        :raises UnableToNormaliseZeroVectorError: if either *vector1* or *vector2* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
+        :raises UnableToNormaliseZeroVectorError: if either this vector or *other_vector* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)
 
         Note that the angle between a vector (``vec``) and its opposite (``-vec``) is ``math.pi`` (and not zero) even though both vectors are parallel. This is because they point in opposite directions.
 
-        The following example shows a few different ways to use this function:
+        The following example shows a few different ways to use this method:
         ::
 
           vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)
           vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)
+          angle = vec1.angle_between(vec2)
+
+          angle = vec1.angle_between((-1.1, -2.2, -3.3))
+
+        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument (which can then also be a sequence of (float,float,float)):
+        ::
+
           angle = pygplates.Vector3D.angle_between(vec1, vec2)
 
           angle = pygplates.Vector3D.angle_between((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))
 
-          angle = pygplates.Vector3D.angle_between(vec1, (-1.1, -2.2, -3.3))
-
-          angle = pygplates.Vector3D.angle_between((1.1, 2.2, 3.3), vec2)
-
-        This function is the equivalent of:
+        This method is the equivalent of:
         ::
 
-          if not vector1.is_zero_magnitude() and not vector2.is_zero_magnitude():
+          if not vector.is_zero_magnitude() and not other_vector.is_zero_magnitude():
               angle_between = math.acos(
-                  pygplates.Vector3D.dot(vector1.to_normalised(), vector2.to_normalised()))
+                  vector.to_normalised().dot(other_vector.to_normalised()))
           else:
               raise pygplates.UnableToNormaliseZeroVectorError
+
+        .. versionchanged:: 1.1
+           Can be called on a vector (``vector.angle_between(other_vector)``), as well as on the :class:`Vector3D` class (it was a static method). Renamed the argument *vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot be mixed with the new name in the same call).
         """
 
     @overload
@@ -17767,68 +17770,76 @@ class Vector3D:
         """See :meth:`create_normalised`.
         """
 
-    @staticmethod
-    def cross(vector1: Vector3D | Sequence[tuple[float, float, float]], vector2: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
-        """Returns the cross product of two vectors.
+    def cross(self, other_vector: Vector3D | Sequence[tuple[float, float, float]]) -> Vector3D:
+        """Returns the cross product of this vector and another vector.
 
-        :param vector1: the first vector
-        :type vector1: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :param vector2: the second vector
-        :type vector2: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :param other_vector: the other vector
+        :type other_vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
         :rtype: Vector3D
 
-        The following example shows a few different ways to use this function:
+        The cross product is a new vector (this vector is not modified, since a :class:`Vector3D` is immutable). The order matters: ``vec1.cross(vec2)`` is the opposite of ``vec2.cross(vec1)``.
+
+        The following example shows a few different ways to use this method:
         ::
 
           vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)
           vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)
+          cross_product = vec1.cross(vec2)
+
+          cross_product = vec1.cross((-1.1, -2.2, -3.3))
+
+        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument (which can then also be a sequence of (float,float,float)):
+        ::
+
           cross_product = pygplates.Vector3D.cross(vec1, vec2)
 
           cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))
-
-          cross_product = pygplates.Vector3D.cross(vec1, (-1.1, -2.2, -3.3))
-
-          cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), vec2)
 
         The cross product is the equivalent of:
         ::
 
           cross_product = pygplates.Vector3D(
-              vector1.get_y() * vector2.get_z() - vector1.get_z() * vector2.get_y(),
-              vector1.get_z() * vector2.get_x() - vector1.get_x() * vector2.get_z(),
-              vector1.get_x() * vector2.get_y() - vector1.get_y() * vector2.get_x())
+              vector.get_y() * other_vector.get_z() - vector.get_z() * other_vector.get_y(),
+              vector.get_z() * other_vector.get_x() - vector.get_x() * other_vector.get_z(),
+              vector.get_x() * other_vector.get_y() - vector.get_y() * other_vector.get_x())
+
+        .. versionchanged:: 1.1
+           Can be called on a vector (``vector.cross(other_vector)``), as well as on the :class:`Vector3D` class (it was a static method). Renamed the argument *vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot be mixed with the new name in the same call).
         """
 
-    @staticmethod
-    def dot(vector1: Vector3D | Sequence[tuple[float, float, float]], vector2: Vector3D | Sequence[tuple[float, float, float]]) -> float:
-        """Returns the dot product of two vectors.
+    def dot(self, other_vector: Vector3D | Sequence[tuple[float, float, float]]) -> float:
+        """Returns the dot product of this vector and another vector.
 
-        :param vector1: the first vector
-        :type vector1: Vector3D, or sequence (such as list or tuple) of (float,float,float)
-        :param vector2: the second vector
-        :type vector2: Vector3D, or sequence (such as list or tuple) of (float,float,float)
+        :param other_vector: the other vector
+        :type other_vector: Vector3D, or sequence (such as list or tuple) of (float,float,float)
         :rtype: float
 
-        The following example shows a few different ways to use this function:
+        The following example shows a few different ways to use this method:
         ::
 
           vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)
           vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)
+          dot_product = vec1.dot(vec2)
+
+          dot_product = vec1.dot((-1.1, -2.2, -3.3))
+
+        This method can also be called on the :class:`Vector3D` class, passing this vector as the first argument (which can then also be a sequence of (float,float,float)):
+        ::
+
           dot_product = pygplates.Vector3D.dot(vec1, vec2)
 
           dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))
-
-          dot_product = pygplates.Vector3D.dot(vec1, (-1.1, -2.2, -3.3))
-
-          dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), vec2)
 
         The dot product is the equivalent of:
         ::
 
           dot_product = (
-              vector1.get_x() * vector2.get_x() +
-              vector1.get_y() * vector2.get_y() +
-              vector1.get_z() * vector2.get_z())
+              vector.get_x() * other_vector.get_x() +
+              vector.get_y() * other_vector.get_y() +
+              vector.get_z() * other_vector.get_z())
+
+        .. versionchanged:: 1.1
+           Can be called on a vector (``vector.dot(other_vector)``), as well as on the :class:`Vector3D` class (it was a static method). Renamed the argument *vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot be mixed with the new name in the same call).
         """
 
     def get_magnitude(self) -> float:

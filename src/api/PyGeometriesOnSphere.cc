@@ -1159,8 +1159,8 @@ export_point_on_sphere()
 				"  This is also useful for performing vector dot and cross products:\n"
 				"  ::\n"
 				"\n"
-				"    dot_product = pygplates.Vector3D.dot(point1.to_xyz(), point2.to_xyz())\n"
-				"    cross_product = pygplates.Vector3D.cross(point1.to_xyz(), point2.to_xyz())\n")
+				"    dot_product = pygplates.Vector3D(point1.to_xyz()).dot(point2.to_xyz())\n"
+				"    cross_product = pygplates.Vector3D(point1.to_xyz()).cross(point2.to_xyz())\n")
 		.def("to_lat_lon_point",
 				&GPlatesApi::point_on_sphere_to_lat_lon_point,
 				"to_lat_lon_point()\n"

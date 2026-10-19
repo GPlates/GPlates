@@ -693,7 +693,33 @@ class Vector3DCase(unittest.TestCase):
         self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(2,0,0), (1,0,0)) == pygplates.Vector3D(0,0,0))
         self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(2,0,0), (0,1,0)) == pygplates.Vector3D(0,0,2))
         self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(0,1,0), (2,0,0)) == pygplates.Vector3D(0,0,-2))
-    
+
+    def test_angle_between_dot_cross_call_forms(self):
+        x_axis = pygplates.Vector3D(1, 0, 0)
+        y_axis = pygplates.Vector3D(0, 1, 0)
+        # Called on a vector, and (as when they were static methods) on the class.
+        self.assertAlmostEqual(x_axis.angle_between(y_axis), math.pi / 2)
+        self.assertAlmostEqual(x_axis.angle_between((0, 1, 0)), math.pi / 2)
+        self.assertAlmostEqual(x_axis.dot((2, 3, 4)), 2)
+        self.assertTrue(x_axis.cross(y_axis) == pygplates.Vector3D(0, 0, 1))
+        self.assertTrue(y_axis.cross(x_axis) == pygplates.Vector3D(0, 0, -1))
+        self.assertTrue(pygplates.Vector3D.cross(x_axis, y_axis) == pygplates.Vector3D(0, 0, 1))
+        # Keyword arguments, including for the vector that it's called on (an undocumented keyword,
+        # but the binding must name it: see 'export_vector_3d()').
+        self.assertAlmostEqual(pygplates.Vector3D.dot(vector=x_axis, other_vector=(2, 3, 4)), 2)
+        self.assertAlmostEqual(x_axis.dot(other_vector=(2, 3, 4)), 2)
+        self.assertAlmostEqual(x_axis.angle_between(other_vector=y_axis), math.pi / 2)
+        self.assertTrue(x_axis.cross(other_vector=y_axis) == pygplates.Vector3D(0, 0, 1))
+        # The argument names they had as static methods still work...
+        self.assertAlmostEqual(pygplates.Vector3D.dot(vector1=x_axis, vector2=(2, 3, 4)), 2)
+        self.assertAlmostEqual(pygplates.Vector3D.angle_between(vector1=(1, 0, 0), vector2=y_axis), math.pi / 2)
+        self.assertTrue(pygplates.Vector3D.cross(vector1=x_axis, vector2=y_axis) == pygplates.Vector3D(0, 0, 1))
+        self.assertTrue(x_axis.cross(vector2=y_axis) == pygplates.Vector3D(0, 0, 1))
+        # ...but cannot be mixed with the new names.
+        self.assertRaises(
+                TypeError,  # Boost.Python.ArgumentError
+                pygplates.Vector3D.dot, vector1=x_axis, other_vector=y_axis)
+
     def test_magnitude(self):
         self.assertTrue(pygplates.Vector3D(0,0,0).is_zero_magnitude())
         self.assertTrue(not pygplates.Vector3D(2,0,0).is_zero_magnitude())

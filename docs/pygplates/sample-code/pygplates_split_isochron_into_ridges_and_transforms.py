@@ -83,8 +83,8 @@ for isochron_feature in isochron_features:
 
             # [fragment: deviation]
             # The angle that the segment deviates from the stage pole direction.
-            deviation_of_segment_direction_from_stage_pole = pygplates.Vector3D.angle_between(
-                    segment_direction_at_midpoint, segment_to_stage_pole_direction)
+            deviation_of_segment_direction_from_stage_pole = (
+                    segment_direction_at_midpoint.angle_between(segment_to_stage_pole_direction))
             # [end: deviation]
 
             # [fragment: classify-segment]
