@@ -321,10 +321,13 @@ Autosummary emits a bare `.. autoclass::` into each stub, with no `:members:`, s
 undocumented. `autodoc_default_options` supplies the defaults instead:
 
 - `'members': True` — document the members.
-- `'inherited-members': False` — inherited members are deliberately *not* documented. They still
-  appear in the class's summary listing, just without a link, which is a reasonable hint to go
-  read the base class. It also avoids confusing entries such as `GeometryOnSphere.get_points()`
-  showing up on `PointOnSphere`.
+- `'inherited-members': False` — inherited members are deliberately *not* documented on a derived
+  class's page. That avoids confusing entries such as `GeometryOnSphere.get_points()` documented
+  on `PointOnSphere`. They still appear in the class's summary listing, as references through the
+  derived class (`pygplates.PointOnSphere.distance`) that nothing defines, so
+  `resolve_inherited_member` in `conf.py.in` (a `missing-reference` handler) resolves them through
+  the class's MRO and links each one to the base class's entry (`pygplates.GeometryOnSphere.distance`).
+  A role in a docstring that names a member through a derived class resolves the same way.
 - `'show-inheritance': True` — show base classes.
 
 Autosummary *templates* are not used; the defaults plus `autodoc_default_options` give good enough

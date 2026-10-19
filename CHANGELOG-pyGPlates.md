@@ -36,6 +36,7 @@ Changes since 1.0.0:
   * Wheels on all platforms bundle the same PROJ (9.8.1) and GDAL (3.12.4) versions.
   * Requires NumPy 1.19 or later, and `pip` now enforces it: installing pyGPlates upgrades an older NumPy (previously the oldest NumPy that worked depended on the Python version, and an older one failed `import pygplates`).
 * Documentation: corrected the supported Python versions and platforms in *Getting started*, fixed the introductory examples (which raised `NameError`), and documented the Python console in GPlates.
+* Documentation: methods a class inherits (eg, `distance()` listed on the `PointOnSphere` page) link to their documentation in the base class (previously they were listed without a link).
 * Documentation: the *Primer* is split into one page per topic (rotations, topologies and deformation). Links to sections of the old single-page Primer still work, redirecting to the section on its new page.
 * Removed the undocumented classes `Colour`, `Palette`, `PaletteKey`, `OldFeature` and `OldFeatureCollection` (they were only meaningful inside GPlates).
 * Removed `namedtuple`, `partial`, `math`, `itertools`, `numpy`, `iteritems`, `itervalues`, `listitems` and `listvalues` from the `pygplates` module. They were internal imports and Python 2 helpers, exposed as `pygplates.<name>` by accident; import them from the standard library (or `numpy`) instead.
