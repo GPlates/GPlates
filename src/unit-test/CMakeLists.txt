@@ -19,6 +19,7 @@ set(srcs
     GrotFileTest.cc
     GsmlXmlQueryTest.cc
     MipmapperTest.cc
+    PointInPolygonTest.cc
     RealTest.cc
     ScribeExportUnitTest.h
     SmartNodeLinkedListTest.cc

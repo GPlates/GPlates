@@ -4395,7 +4395,16 @@ export_polygon_on_sphere()
 				"\n"
 				"  .. note:: If a polygon has one or more non-intersecting interior rings contained fully within its "
 				"exterior ring and the test point is inside any interior ring then the test point is considered to be "
-				"*outside* the polygon. This is because the interior rings subtract area from the exterior ring.\n")
+				"*outside* the polygon. This is because the interior rings subtract area from the exterior ring.\n"
+				"\n"
+				"  A point on the polygon's outline, or within about 9 metres (1.4e-6 radians) of it, is *inside*. "
+				"So a point on a boundary shared by two adjacent polygons (eg, two topological plates) is inside both.\n"
+				"\n"
+				"  Inside is decided by the number of times a path to the point, from a point taken to be outside, crosses "
+				"the outline (exterior and interior rings): an odd number is inside. So the order (clockwise or "
+				"counter-clockwise) of a ring's points does not matter. And in a self-intersecting polygon, or one whose "
+				"interior ring crosses its exterior ring, a region is inside if it is reached from outside by crossing "
+				"the outline an odd number of times.\n")
 		.def("partition",
 				&GPlatesApi::polygon_on_sphere_partition,
 				(bp::arg("geometry"),

@@ -1621,13 +1621,14 @@ namespace GPlatesMaths
 		 * See PointInPolygon for more details. But in summary...
 		 *
 		 * Use:
-		 * LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
-		 * MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
-		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
+		 * LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              fewer than about 15 points per polygon,
+		 * MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   more points, most away from the outline,
+		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         more points otherwise, or many more.
 		 *
-		 * Or just use ADAPTIVE to progressively switch through the above stages as the number
-		 * of calls to @a is_point_in_polygon increases, eventually ending up at
-		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE if enough calls are made.
+		 * Or just use ADAPTIVE to progressively switch through the above stages as calls to
+		 * @a is_point_in_polygon are made: medium speed after 8 calls, then high speed once 20
+		 * calls at medium speed have had to test the polygon's edges (rather than its bounds
+		 * deciding), or after 1000 calls.
 		 */
 		enum PointInPolygonSpeedAndMemory
 		{
@@ -1654,7 +1655,8 @@ namespace GPlatesMaths
 		 *
 		 * If @a use_point_on_polygon_threshold is true then the point is considered *on* the outline
 		 * (and hence classified as *inside* the polygon) if it is within an (extremely small) threshold
-		 * distance from the polygon's outline. An example where this is useful is avoiding a point
+		 * distance from the polygon's outline (about 1.4e-6 radians, or 9 metres, from any edge or
+		 * vertex, at every speed). An example where this is useful is avoiding a point
 		 * exactly on the dateline not getting included by a polygon that has an edge exactly aligned
 		 * with the dateline.
 		 * So usually this should be true (the default) and only turned off for some specific cases

@@ -7,6 +7,7 @@ import os
 import random
 import unittest
 import pickle
+from fractions import Fraction
 import pygplates
 # Test using numpy if it's available...
 try:
@@ -74,6 +75,10 @@ def _arcs(geometry):
 def _brute_force_distance(geometry1, geometry2, solid1, solid2):
     # Inside a solid polygon is zero distance. If the outlines do not intersect (found below) then each
     # ring (or polyline) is entirely inside or outside, so testing one vertex of each is enough.
+    # Inside is decided by the brute-force point-in-polygon, without the point-on-outline threshold (as the
+    # distance code does). A vertex within the band of the outline (either answer) is not inside: its distance
+    # to the outline (below) is within the band anyway.
+    rng = random.Random(0)
     for polygon, solid, other in ((geometry1, solid1, geometry2), (geometry2, solid2, geometry1)):
         if not (solid and isinstance(polygon, pygplates.PolygonOnSphere)):
             continue
@@ -84,7 +89,8 @@ def _brute_force_distance(geometry1, geometry2, solid1, solid2):
             points = [other.get_points()[0]]
         else:
             points = list(other.get_points())
-        if any(polygon.is_point_in_polygon(point) for point in points):
+        if any(_brute_force_point_in_polygon(polygon, point, rng, use_point_on_polygon_threshold=False)
+               for point in points):
             return 0.0
     distance = math.pi
     for a1, b1 in _arcs(geometry1):
@@ -168,6 +174,99 @@ def _random_global_geometry(rng):
     if geometry_type == 'polyline' or len(kept) < 3:
         return pygplates.PolylineOnSphere(kept)
     return pygplates.PolygonOnSphere(kept)
+
+
+#
+# Brute-force point-in-polygon, independent of pyGPlates' point-in-polygon code, for
+# 'test_point_in_polygon_against_brute_force'.
+#
+# The same definition (crossing parity over all rings, from the antipode R of the boundary centroid),
+# but with exact orientation predicates, and a path from R to the point through a random waypoint (so
+# that neither arc is nearly antipodal or nearly zero length).
+#
+
+# The point-on-outline threshold (about 1.414e-6 radians): a point within this distance of the outline is
+# inside, beyond the band either answer is accepted, and beyond the band parity decides.
+_ON_OUTLINE_DISTANCE = 1.3e-6
+_ON_OUTLINE_BAND = 1.5e-6
+
+def _orient(a, b, c):
+    # Exact sign of det[a, b, c] for the double inputs: a float filter, then exact rationals.
+    d = _dot(a, _cross(b, c))
+    if d > 1e-14:
+        return 1
+    if d < -1e-14:
+        return -1
+    fa, fb, fc = [Fraction(x) for x in a], [Fraction(x) for x in b], [Fraction(x) for x in c]
+    d = (fa[0] * (fb[1] * fc[2] - fb[2] * fc[1]) + fa[1] * (fb[2] * fc[0] - fb[0] * fc[2]) +
+         fa[2] * (fb[0] * fc[1] - fb[1] * fc[0]))
+    return (d > 0) - (d < 0)
+
+class _Reroute(Exception):
+    pass
+
+def _path_arc_crosses_edge(a, b, c, d):
+    # Whether arc ab crosses edge cd (both shorter than pi), by S2's CrossingSign rule. A zero orientation
+    # (the path touches a vertex or an edge's great circle) reroutes the path. The vertices are perturbed (see
+    # below), so a zero can only involve the path's end points, R and the test point, which are off the outline.
+    acb = -_orient(a, b, c)
+    bda = _orient(a, b, d)
+    cbd = -_orient(c, d, b)
+    dac = _orient(c, d, a)
+    if 0 in (acb, bda, cbd, dac):
+        raise _Reroute()
+    return acb == bda == cbd == dac
+
+def _brute_force_point_in_polygon(polygon, point, rng, use_point_on_polygon_threshold=True):
+    # Returns True or False, or None if within the band of the outline (where either answer is accepted).
+    # Without the point-on-outline threshold the band extends to the outline.
+    rings = [[p.to_xyz() for p in polygon.get_exterior_ring_points()]] + [
+        [p.to_xyz() for p in polygon.get_interior_ring_points(ring)]
+        for ring in range(polygon.get_number_of_interior_rings())]
+    edges = [(ring[i], ring[(i + 1) % len(ring)]) for ring in rings for i in range(len(ring))]
+    p = point.to_xyz()
+    distance = min(min(_point_to_arc(p, a, b) for a, b in edges), min(_angle(p, v) for ring in rings for v in ring))
+    if use_point_on_polygon_threshold and distance < _ON_OUTLINE_DISTANCE:
+        return True
+    if distance < _ON_OUTLINE_BAND:
+        return None
+    # Each vertex is moved by about 1e-12 (the same move wherever it appears), so no orientation involving a
+    # vertex is exactly zero (eg, a vertex antipodal to the test point lies in the plane of every path arc ending
+    # there). R and the test point are further than the band from the outline, so parity cannot change.
+    jitter_rng = random.Random(1)
+    moves = {}
+    for v in (v for ring in rings for v in ring):
+        if v not in moves:
+            moves[v] = tuple(jitter_rng.uniform(-1e-12, 1e-12) for _ in range(3))
+    jittered = [[tuple(v[k] + moves[v][k] for k in range(3)) for v in ring] for ring in rings]
+    jittered_edges = [(ring[i], ring[(i + 1) % len(ring)]) for ring in jittered for i in range(len(ring))]
+    r = tuple(-x for x in polygon.get_boundary_centroid().to_xyz())
+    while True:
+        w = _random_unit_vector(rng)
+        if not (0.05 < _angle(r, w) < math.pi - 0.2 and 0.05 < _angle(w, p) < math.pi - 0.2):
+            continue
+        try:
+            crossings = sum(_path_arc_crosses_edge(r, w, c, d) + _path_arc_crosses_edge(w, p, c, d)
+                            for c, d in jittered_edges if c != d)
+            return crossings % 2 == 1
+        except _Reroute:
+            continue
+
+def _is_point_in_polygon_at_each_speed(polygon, point):
+    # pyGPlates' answer from a freshly created copy of 'polygon' (no set-up), a copy queried 16 times first
+    # (bounds, after 8) and one queried 36 times at a vertex first (bounds and, for more than 16 segments, a tree
+    # of lunes, which is built once 20 queries after the first 8 have got past the bounds, as one on the outline does).
+    def copy():
+        return pygplates.PolygonOnSphere(polygon.get_exterior_ring_points(), [
+            polygon.get_interior_ring_points(ring) for ring in range(polygon.get_number_of_interior_rings())])
+    vertex = polygon.get_exterior_ring_points()[0]
+    answers = []
+    for previous_queries in ([], [pygplates.PointOnSphere.north_pole] * 16, [vertex] * 36):
+        polygon_copy = copy()
+        for previous_query in previous_queries:
+            polygon_copy.is_point_in_polygon(previous_query)
+        answers.append(polygon_copy.is_point_in_polygon(point))
+    return answers
 
 
 class GeometryOnSphereCase(unittest.TestCase):
@@ -443,11 +542,6 @@ class GeometryOnSphereCase(unittest.TestCase):
                 geometry1, geometry2 = geometry2, geometry1
             solid1 = rng.random() < 0.5
             solid2 = rng.random() < 0.5
-            if kind == 1:
-                # Not solid near the antipode: point-in-polygon has a known bug there (a tiny polygon can
-                # contain a point near its antipode), and this brute force uses pyGPlates' point-in-polygon.
-                # To be re-enabled with an independent point-in-polygon test, when that bug is fixed.
-                solid1 = solid2 = False
             msg = 'case {}: {} to {}, solid {} {}'.format(
                 case, type(geometry1).__name__, type(geometry2).__name__, solid1, solid2)
             expected = _brute_force_distance(geometry1, geometry2, solid1, solid2)
@@ -1420,7 +1514,20 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(self.polygon.get_orientation() == pygplates.PolygonOnSphere.Orientation.counter_clockwise)
         self.assertTrue(pygplates.PolygonOnSphere(reversed(self.polygon.get_points())).get_orientation() ==
                 pygplates.PolygonOnSphere.Orientation.clockwise)
-    
+        # A concave (C-shaped) polygon, whatever its first vertex, and either way round. Orientation agrees with
+        # the sign of the signed area (each on a newly created polygon, since one is calculated from the other
+        # if that's cached). There was a bug in pyGPlates 1.0 where the edge from the last vertex to the first was
+        # left out of the orientation, so it could be wrong for a concave polygon, depending on the first vertex.
+        c_shape = [(-10, -10), (-10, 10), (-9.6, 10), (-9.6, -9.6), (9.6, -9.6), (9.6, 10), (10, 10), (10, -10)]
+        for points in (c_shape, list(reversed(c_shape))):
+            for first in range(len(points)):
+                rotated = points[first:] + points[:first]
+                expected = (pygplates.PolygonOnSphere.Orientation.counter_clockwise
+                            if pygplates.PolygonOnSphere(rotated).get_signed_area() > 0
+                            else pygplates.PolygonOnSphere.Orientation.clockwise)
+                self.assertEqual(pygplates.PolygonOnSphere(rotated).get_orientation(), expected,
+                                 msg='first vertex {}'.format(first))
+
     def test_point_in_polygon(self):
         inv_sqrt_two = 1.0 / math.sqrt(2.0)
         self.assertTrue(self.polygon.is_point_in_polygon(
@@ -1428,6 +1535,189 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertFalse(self.polygon.is_point_in_polygon(
                 pygplates.PointOnSphere(-inv_sqrt_two, 0, inv_sqrt_two)))
     
+    def test_point_in_polygon_on_outline(self):
+        # A point within about 1.4e-6 radians of the outline (an edge or a vertex) is inside, whatever its
+        # parity, and at every speed (the first queries of a polygon use a different method than later ones).
+        def rotated_away_from(point, centre, angle):
+            # 'point' moved 'angle' radians further from 'centre', along the great circle through both.
+            axis = _normalise(_cross(centre, point))
+            tangent = _cross(axis, point)
+            return pygplates.PointOnSphere(_normalise(tuple(
+                math.cos(angle) * point[i] + math.sin(angle) * tangent[i] for i in range(3))))
+        square = pygplates.PolygonOnSphere([(10, -10), (10, 10), (-10, 10), (-10, -10)])
+        # 24 segments, so that later queries use a tree of lunes.
+        ring = pygplates.PolygonOnSphere(_random_ring(random.Random(3), (1.0, 0.0, 0.0), 0.2, 24))
+        for polygon in (square, ring):
+            centroid = polygon.get_boundary_centroid().to_xyz()
+            vertex = polygon.get_exterior_ring_points()[0].to_xyz()
+            next_vertex = polygon.get_exterior_ring_points()[1].to_xyz()
+            # Outside a corner.
+            # There was a bug in pyGPlates 1.0 where a vertex itself could be outside, and points 1e-6 to 1.4e-6
+            # radians outside a corner (up to 1e-5 beyond a sharp one) were inside only for the first queries.
+            for distance, expected in ((0.0, True), (1e-6, True), (1.3e-6, True), (2e-6, False), (1e-5, False)):
+                point = rotated_away_from(vertex, centroid, distance)
+                self.assertEqual(_is_point_in_polygon_at_each_speed(polygon, point), [expected] * 3,
+                                 msg='{} outside a corner'.format(distance))
+            # Outside the middle of an edge.
+            midpoint = _normalise(tuple(vertex[i] + next_vertex[i] for i in range(3)))
+            for distance, expected in ((1e-7, True), (1.3e-6, True), (2e-6, False)):
+                point = rotated_away_from(midpoint, centroid, distance)
+                self.assertEqual(_is_point_in_polygon_at_each_speed(polygon, point), [expected] * 3,
+                                 msg='{} outside an edge'.format(distance))
+        # A point 1e-5 radians beyond a vertex, near the great circle of the next edge (1.2e-6 from it).
+        # There was a bug in pyGPlates 1.0 where it was inside: the distance to an edge's great circle was
+        # measured, not the distance to the edge, up to about 1e-4 radians away (640 metres).
+        polygon = pygplates.PolygonOnSphere([
+            (0.0811477206807658, 0.8312559099243764, -0.549935141306785),
+            (-0.758639761126243, 0.4280677056928801, 0.49114534730683423),
+            (-0.08121580393597666, -0.8312109862042011, 0.5499929905048542)])
+        point = pygplates.PointOnSphere(-0.08120819577687013, -0.8312150679124771, 0.5499879451532749)
+        self.assertEqual(_is_point_in_polygon_at_each_speed(polygon, point), [False] * 3)
+        # A tiny polygon (about 1e-5 radians) and a point near its antipode, which is outside.
+        # There was a bug in pyGPlates 1.0 where it was inside for the first three queries.
+        polygon = pygplates.PolygonOnSphere([
+            (79.73238827940156, -155.8187780084114),
+            (79.73238827940156, -155.81820505061629),
+            (79.73296123719669, -155.8187780084114)])
+        point = pygplates.PointOnSphere(-79.73255743831264, 24.181608291766533)
+        self.assertEqual(_is_point_in_polygon_at_each_speed(polygon, point), [False] * 3)
+
+    def test_point_in_polygon_near_antipodal_centroid(self):
+        # A point within about 1e-6 radians of the antipodal centroid (or the centroid), where the crossing arc
+        # from the antipodal centroid is too short (or too nearly antipodal) for its plane to be defined.
+        # There was a bug in pyGPlates 1.0 where these points were inside for the first three queries.
+        for exterior_ring, point in (
+                # A bow-tie (self-intersecting), at the antipodal centroid. Its edges' planes pass through the centroid.
+                ([(0.31632634991861924, -0.742914659942909, 0.5899283417408213),
+                  (0.9654266112134291, -0.05465835848510381, 0.2548802114889822),
+                  (0.9600187829640893, -0.2743411893103646, 0.05568526020342974),
+                  (0.3217341781679591, -0.5232318291176482, 0.7891232930263739)],
+                 (-0.7409205817415255, 0.4610391258804732, -0.4883437477424776)),
+                # A tiny polygon (about 1e-6 radians), at the antipode of a vertex.
+                ([(0.46331008067020724, 0.5714775076315026, -0.6773161945654718),
+                  (0.4633102924993963, 0.5714770455155942, -0.6773164395708191),
+                  (0.46331017983531914, 0.5714770689359648, -0.6773164968766986),
+                  (0.46331018144512975, 0.5714778365850115, -0.677315848080787)],
+                 (-0.4633102924993963, -0.5714770455155942, 0.6773164395708191)),
+                # A sliver (1e-6 radians wide), at the antipode of a vertex.
+                ([(-0.5170680360101083, -0.2608430351399412, -0.815230983927643),
+                  (-0.4540345429794015, -0.5160869754809512, -0.7262966800973347),
+                  (-0.3560274787820443, -0.73157574133981, -0.5814132515132491)],
+                 (0.4540345429794015, 0.5160869754809512, 0.7262966800973347))):
+            polygon = pygplates.PolygonOnSphere(exterior_ring)
+            self.assertEqual(_is_point_in_polygon_at_each_speed(polygon, pygplates.PointOnSphere(point)), [False] * 3)
+
+    def test_point_in_polygon_near_centroid_of_crossing_edges(self):
+        # A self-intersecting polygon (two 10-point lobes), whose crossing edges pass through its centroid, and
+        # points just over 1e-6 radians from the centroid, most of them within the point-on-outline threshold
+        # of those edges. Later queries use a tree of lunes about the centroid, and an edge passing round a
+        # lune's apex (the centroid) without entering the lune must still be in it for the on-outline test.
+        # There was a bug in pyGPlates 1.0 where it was not (so later queries could say outside).
+        centre = (1.0, 0.0, 0.0)
+        u = _normalise(_cross(centre, (0.3, 0.5, 0.8)))
+        v = _cross(centre, u)
+        def ring_point(radius, azimuth):
+            return pygplates.PointOnSphere(_normalise(tuple(
+                math.cos(radius) * centre[i] + math.sin(radius) * (math.cos(azimuth) * u[i] + math.sin(azimuth) * v[i])
+                for i in range(3))))
+        lobe1 = [ring_point(0.3, -0.25 + 0.5 * k / 9) for k in range(10)]
+        lobe2 = [ring_point(0.3, math.pi - 0.25 + 0.5 * k / 9) for k in range(10)]
+        polygon = pygplates.PolygonOnSphere(lobe1 + list(reversed(lobe2)))
+        centroid = polygon.get_boundary_centroid().to_xyz()
+        u = _normalise(_cross(centroid, (0.3, 0.5, 0.8)))
+        v = _cross(centroid, u)
+        rng = random.Random(1)
+        for distance in (1.05e-6, 1.1e-6, 1.2e-6, 1.3e-6, 2e-6):
+            for k in range(24):
+                azimuth = 2 * math.pi * k / 24 + 0.1
+                point = pygplates.PointOnSphere(_normalise(tuple(
+                    centroid[i] + distance * (math.cos(azimuth) * u[i] + math.sin(azimuth) * v[i]) for i in range(3))))
+                expected = _brute_force_point_in_polygon(polygon, point, rng)
+                answers = _is_point_in_polygon_at_each_speed(polygon, point)
+                msg = 'distance {}, azimuth {}'.format(distance, azimuth)
+                if expected is None:
+                    self.assertTrue(answers[0] == answers[1] == answers[2], msg=msg)
+                else:
+                    self.assertEqual(answers, [expected] * 3, msg=msg)
+
+    def test_point_in_polygon_against_brute_force(self):
+        # Compare with a brute-force point-in-polygon (exact predicates, independent of pyGPlates' point-in-polygon)
+        # at every speed, for random polygons (tiny, ordinary, larger than a hemisphere, with interior rings,
+        # slivers, self-intersecting, with duplicate points, and enough segments for the tree of lunes) and points
+        # (anywhere, near the polygon, on and near its vertices and edges, beyond a vertex along an edge's great
+        # circle, and on the great circle through the antipodal centroid and a vertex).
+        rng = random.Random(1234)
+        for case in range(60):
+            centre = _random_unit_vector(rng)
+            kind = case % 6
+            if kind == 0:
+                polygon = pygplates.PolygonOnSphere(
+                    [_random_point(rng, centre, rng.choice((1e-3, 1e-5))) for _ in range(rng.randint(3, 6))])
+            elif kind == 1:
+                polygon = _random_geometry(rng, centre, duplicates=rng.random() < 0.5)
+                if not isinstance(polygon, pygplates.PolygonOnSphere):
+                    polygon = pygplates.PolygonOnSphere(_random_ring(rng, centre, 0.2, rng.randint(4, 40)))
+            elif kind == 2:
+                polygon = pygplates.PolygonOnSphere(
+                    _random_ring(rng, centre, rng.uniform(0.05, 2.8), rng.randint(17, 300)))
+            elif kind == 3:
+                polygon = _random_polygon_with_interior_rings(rng, centre)
+            elif kind == 4:
+                # A sliver.
+                u = _normalise(_cross(centre, (0.3, 0.5, 0.8)))
+                width = rng.choice((1e-4, 1e-6))
+                polygon = pygplates.PolygonOnSphere([
+                    _normalise(tuple(centre[i] + 0.3 * u[i] for i in range(3))),
+                    _normalise(tuple(centre[i] + width * _cross(centre, u)[i] for i in range(3))),
+                    _normalise(tuple(centre[i] - 0.3 * u[i] for i in range(3)))])
+            else:
+                # Self-intersecting (a bow-tie).
+                ring = _random_ring(rng, centre, 0.3, 4)
+                polygon = pygplates.PolygonOnSphere([ring[0], ring[2], ring[1], ring[3]])
+            vertices = [v.to_xyz() for v in polygon.get_exterior_ring_points()]
+            r = tuple(-x for x in polygon.get_boundary_centroid().to_xyz())
+            scale = max(_angle(polygon.get_boundary_centroid().to_xyz(), v) for v in vertices)
+            points = [_random_unit_vector(rng) for _ in range(4)]
+            points += [_random_point(rng, rng.choice(vertices), scale).to_xyz() for _ in range(6)]
+            points += [rng.choice(vertices)]
+            for distance in (1e-7, 1.2e-6, 2e-6, 1e-5):
+                # Either side of an edge.
+                index = rng.randrange(len(vertices))
+                a, b = vertices[index], vertices[(index + 1) % len(vertices)]
+                if _angle(a, b) < 1e-5:
+                    continue
+                normal = _normalise(_cross(a, b))
+                midpoint = _normalise(tuple(a[i] + b[i] for i in range(3)))
+                sign = rng.choice((1, -1))
+                points.append(_normalise(tuple(midpoint[i] + sign * distance * normal[i] for i in range(3))))
+                # Beyond a vertex, near the edge's great circle.
+                tangent = _cross(normal, b)
+                points.append(_normalise(tuple(b[i] + distance * 10 * tangent[i] + sign * 1e-6 * normal[i] for i in range(3))))
+            vertex = rng.choice(vertices)
+            if 1e-3 < _angle(r, vertex) < math.pi - 1e-3:
+                # On the great circle through the antipodal centroid and a vertex, beyond the vertex.
+                tangent = _cross(_normalise(_cross(r, vertex)), vertex)
+                points.append(_normalise(tuple(vertex[i] + rng.choice((1e-5, 0.1 * scale)) * tangent[i] for i in range(3))))
+            # At, and within 1e-7 and 1e-5 radians of, the antipodal centroid R and the centroid (where pyGPlates'
+            # crossing arc, from R, is too short or nearly antipodal for its plane to be defined).
+            # There was a bug in pyGPlates 1.0 where a point there could be inside a tiny polygon (or a sliver or
+            # a self-intersecting one) for the first three queries.
+            for centre in (r, tuple(-x for x in r)):
+                points.append(centre)
+                points += [_random_point(rng, centre, spread).to_xyz() for spread in (1e-7, 1e-5)]
+            # The antipode of a vertex (near the antipodal centroid of a tiny polygon or a sliver).
+            points.append(tuple(-x for x in rng.choice(vertices)))
+            for p in points:
+                point = pygplates.PointOnSphere(p)
+                expected = _brute_force_point_in_polygon(polygon, point, rng)
+                answers = _is_point_in_polygon_at_each_speed(polygon, point)
+                msg = 'case {}: kind {}, point {}'.format(case, kind, p)
+                if expected is None:
+                    # Within the band of the outline, either answer is accepted, but the same at every speed.
+                    self.assertTrue(answers[0] == answers[1] == answers[2], msg=msg)
+                else:
+                    self.assertEqual(answers, [expected] * 3, msg=msg)
+
     def test_partition(self):
         inv_sqrt_two = 1.0 / math.sqrt(2.0)
         

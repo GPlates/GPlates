@@ -66,6 +66,7 @@ namespace GPlatesMaths
 		{
 			real_t ring_projected_signed_area = 0;
 
+			QPointF first_proj_point;
 			QPointF last_proj_point;
 
 			PolygonOnSphere::ring_vertex_const_iterator ring_vertex_iter = ring_vertex_begin;
@@ -80,6 +81,7 @@ namespace GPlatesMaths
 					return boost::none;
 				}
 
+				first_proj_point = point.get();
 				last_proj_point = point.get();
 				++ring_vertex_iter;
 			}
@@ -101,6 +103,14 @@ namespace GPlatesMaths
 
 				last_proj_point = point.get();
 			}
+
+			// The edge from the last vertex back to the first (the ring vertices don't repeat the
+			// first). There was a bug in pyGPlates 1.0 (and GPlates 2.5) where this term was
+			// missing, so the orientation of a concave polygon could be wrong, depending on which
+			// vertex was first.
+			ring_projected_signed_area +=
+					last_proj_point.x() * first_proj_point.y() -
+					last_proj_point.y() * first_proj_point.x();
 
 			return ring_projected_signed_area;
 		}

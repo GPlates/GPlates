@@ -44,25 +44,28 @@ namespace GPlatesMaths
 		class SphericalLuneTree;
 
 		/**
-		 * Some profile timings (on Intel 6750 Dual-core compiled in MSVC2005) running
-		 * global topological plate polygon set with 12 caps files at 33x33 resolution:
+		 * Some profile timings (2026, MSVC 2022, a polygon of 1024 edges and 0.2 radians radius, in
+		 * microseconds) for test points uniformly over the globe, near the polygon, and near its
+		 * outline (in that order):
 		 *
-		 * 1) non-member is_point_in_polygon(): 10us
+		 * 1) non-member is_point_in_polygon():  5.6 / 4.6 / 3.4 per point
+		 *    (and the polygon's centroid, once, about 25)
 		 *
 		 * 2) build_ologn_hint = false:
-		 *      Polygon constructor:            32us
-		 *      Polygon::is_point_in_polygon(): 0.44us
+		 *      Polygon constructor:             84
+		 *      Polygon::is_point_in_polygon():  0.03 / 0.69 / 3.3
 		 *
 		 * 3) build_ologn_hint = true:
-		 *      Polygon constructor:            114us
-		 *      Polygon::is_point_in_polygon(): 0.03us
+		 *      Polygon constructor:             150
+		 *      Polygon::is_point_in_polygon():  0.004 / 0.03 / 0.14
 		 *
-		 * According to this use:
-		 * 1) 0 < N < 4     points tested per polygon,
-		 * 2) 4 < N < 200   points tested per polygon,
-		 * 3) N > 200       points tested per polygon.
+		 * The constructors cost about 15 calls of (1) and the queries of (2) scale with the number
+		 * of edges, as do those of (1), at every size measured (4 to 4096 edges). So use:
+		 * 1) fewer than about 15 points tested per polygon,
+		 * 2) more points, if most are far from the polygon's outline (where its bounds decide),
+		 * 3) more points otherwise, or many more points (thousands, even far from the outline).
 		 *
-		 * When the number of test points is not known use (3).
+		 * When the number of test points is not known use (3), or PolygonOnSphere's adaptive mode.
 		 */
 
 		/**
@@ -87,7 +90,8 @@ namespace GPlatesMaths
 		 *
 		 * If @a use_point_on_polygon_threshold is true then the point is considered *on* the outline
 		 * (and hence classified as *inside* the polygon) if it is within an (extremely small) threshold
-		 * distance from the polygon's outline. An example where this is useful is avoiding a point
+		 * distance from the polygon's outline (about 1.4e-6 radians, or 9 metres, from any edge or
+		 * vertex, at every speed). An example where this is useful is avoiding a point
 		 * exactly on the dateline not getting included by a polygon that has an edge exactly aligned
 		 * with the dateline.
 		 * So usually this should be true (the default) and only turned off for some specific cases
@@ -155,7 +159,8 @@ namespace GPlatesMaths
 			 *
 			 * If @a use_point_on_polygon_threshold is true then the point is considered *on* the outline
 			 * (and hence classified as *inside* the polygon) if it is within an (extremely small) threshold
-			 * distance from the polygon's outline. An example where this is useful is avoiding a point
+			 * distance from the polygon's outline (about 1.4e-6 radians, or 9 metres, from any edge
+			 * or vertex, at every speed). An example where this is useful is avoiding a point
 			 * exactly on the dateline not getting included by a polygon that has an edge exactly aligned
 			 * with the dateline.
 			 * So usually this should be true (the default) and only turned off for some specific cases
@@ -166,6 +171,16 @@ namespace GPlatesMaths
 			is_point_in_polygon(
 					const PointOnSphere &point,
 					bool use_point_on_polygon_threshold = true) const;
+
+
+			/**
+			 * The number of calls to @a is_point_in_polygon so far that the bounds testing did
+			 * not decide (so polygon edges were tested).
+			 *
+			 * PolygonOnSphere's adaptive mode uses this to decide when to build the O(log(N)) tree.
+			 */
+			unsigned int
+			get_num_queries_testing_edges() const;
 
 		private:
 			/**

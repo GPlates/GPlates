@@ -153,8 +153,9 @@ TEST(GeometryDistanceTest, geometry_threshold_equal_to_distance)
 	// are nearly as close as the closest. In half the cases the second geometry is tiny and near the
 	// first's antipode (with the first also tiny), so the distance is close to PI.
 	//
-	// Those near the antipode are not solid: point-in-polygon has a known bug there (a tiny polygon
-	// can contain a point near its antipode). To be re-enabled when that bug is fixed.
+	// Solid ones near the antipode test point-in-polygon near a tiny polygon's antipode: there was
+	// a bug in pyGPlates 1.0 where a point there could be inside for the first three queries of a
+	// polygon, so the second call (with the threshold) could disagree with the first.
 	std::mt19937 rng(1234);
 
 	for (unsigned int n = 0; n < 640; ++n)
@@ -162,8 +163,8 @@ TEST(GeometryDistanceTest, geometry_threshold_equal_to_distance)
 		const unsigned int geometry1_type = n % 4;
 		const unsigned int geometry2_type = (n / 4) % 4;
 		const bool near_antipodal = (n / 16) % 2 == 1;
-		const bool geometry1_is_solid = !near_antipodal && (n / 32) % 2 == 1;
-		const bool geometry2_is_solid = !near_antipodal && (n / 64) % 2 == 1;
+		const bool geometry1_is_solid = (n / 32) % 2 == 1;
+		const bool geometry2_is_solid = (n / 64) % 2 == 1;
 		SCOPED_TRACE(testing::Message() << "case " << n
 				<< ": types " << geometry1_type << " " << geometry2_type
 				<< (near_antipodal ? ", near antipodal" : "")
