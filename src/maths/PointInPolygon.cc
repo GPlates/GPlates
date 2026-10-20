@@ -851,6 +851,17 @@ namespace GPlatesMaths
 					const UnitVector3D &test_point,
 					bool use_point_on_polygon_threshold) const;
 
+
+			/**
+			 * The number of calls to @a is_point_in_polygon that tested polygon edges (that
+			 * the bounds did not decide).
+			 */
+			unsigned int
+			get_num_queries_testing_edges() const
+			{
+				return d_num_queries_testing_edges;
+			}
+
 		private:
 			//! Typedef for an index into a sequence of @a EdgeSequence objects.
 			typedef unsigned int edge_sequence_index_type;
@@ -1097,6 +1108,14 @@ namespace GPlatesMaths
 			 */
 			boost::optional<TreeData> d_tree_data;
 
+			/**
+			 * The number of calls to @a is_point_in_polygon that tested polygon edges.
+			 *
+			 * Like the polygon's cache (that holds us), this is modified by a 'const' method
+			 * without synchronisation.
+			 */
+			mutable unsigned int d_num_queries_testing_edges;
+
 
 			SphericalLuneTree(
 					const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
@@ -1168,7 +1187,8 @@ namespace GPlatesMaths
 			d_polygon(*polygon),
 			d_polygon_centroid_antipodal(polygon_centroid_antipodal),
 			d_bounds_data(bounds_data_builder),
-			d_tree_data(tree_data)
+			d_tree_data(tree_data),
+			d_num_queries_testing_edges(0)
 		{
 			if (keep_shared_reference_to_polygon)
 			{
@@ -1205,6 +1225,9 @@ namespace GPlatesMaths
 			{
 				return d_bounds_data.d_is_polygon_centroid_in_polygon;
 			}
+
+			// The bounds did not decide, so the polygon edges (or some of them) will be tested.
+			++d_num_queries_testing_edges;
 
 			// If the test point is so close to the antipodal centroid, or the centroid, that the
 			// crossings arc is degenerate (which, with the bounds tests above, needs an outline
@@ -1792,6 +1815,13 @@ GPlatesMaths::PointInPolygon::Polygon::is_point_in_polygon(
 	return d_spherical_lune_tree->is_point_in_polygon(
 			test_point.position_vector(),
 			use_point_on_polygon_threshold);
+}
+
+
+unsigned int
+GPlatesMaths::PointInPolygon::Polygon::get_num_queries_testing_edges() const
+{
+	return d_spherical_lune_tree->get_num_queries_testing_edges();
 }
 
 

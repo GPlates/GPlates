@@ -613,27 +613,51 @@ GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
 		break;
 
 	case ADAPTIVE:
-		// Adapt the speed according to the number of point-in-polygon calls made so far.
-		//
-		// This is based on:
-		//
-		// LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
-		// MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
-		// HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
-		if (d_cached_calculations->num_point_in_polygon_calls >= 200)
 		{
-			if (d_cached_calculations->point_in_polygon_speed_and_memory < HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE)
+			// Adapt the speed to the point-in-polygon calls made so far.
+			//
+			// Measured (2026, polygons of 16 to 4096 edges, points anywhere, near the polygon and
+			// near its outline, 2 to 20000 calls per polygon): medium speed's set-up costs about 15
+			// low speed calls, whatever the number of edges (both are O(N)). High speed's extra
+			// set-up costs about 20 medium speed calls that have to test the polygon's edges, but
+			// medium speed's bounds decide points away from the outline almost for free, so a fixed
+			// number of calls can't suit both (a polygon tested with points far from it rarely
+			// needs high speed). So high speed is built once 20 medium speed calls have tested the
+			// edges (each set-up paid only once the calls it would have made cheaper have cost
+			// about as much), or after 1000 calls anyway (points far from the polygon would
+			// otherwise wait thousands of calls). Medium speed comes after 8 calls, earlier than
+			// its break-even of about 15, since that gave the best worst case. Against the best of
+			// several policies tried, in each case, this was at worst 1.75 times slower (1.13 on
+			// average), and the old fixed numbers of calls (4 and 200) 3.2 times (1.3 on average).
+			const unsigned int NUM_CALLS_BEFORE_MEDIUM_SPEED = 8;
+			const unsigned int NUM_MEDIUM_SPEED_CALLS_TESTING_EDGES_BEFORE_HIGH_SPEED = 20;
+			const unsigned int NUM_CALLS_BEFORE_HIGH_SPEED = 1000;
+
+			PolygonOnSphereImpl::CachedCalculations &cached_calculations = *d_cached_calculations;
+
+			if (cached_calculations.point_in_polygon_speed_and_memory ==
+				MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE)
 			{
-				// High speed...
-				build_and_cache_point_in_polygon_tester(*this, *d_cached_calculations, true/*high_speed*/);
+				if (cached_calculations.point_in_polygon_tester->get_num_queries_testing_edges() >=
+						NUM_MEDIUM_SPEED_CALLS_TESTING_EDGES_BEFORE_HIGH_SPEED ||
+					cached_calculations.num_point_in_polygon_calls >= NUM_CALLS_BEFORE_HIGH_SPEED)
+				{
+					// High speed...
+					build_and_cache_point_in_polygon_tester(
+							*this,
+							cached_calculations,
+							true/*high_speed*/);
+				}
 			}
-		}
-		else if (d_cached_calculations->num_point_in_polygon_calls >= 4)
-		{
-			if (d_cached_calculations->point_in_polygon_speed_and_memory < MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE)
+			else if (cached_calculations.point_in_polygon_speed_and_memory ==
+					LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE &&
+				cached_calculations.num_point_in_polygon_calls >= NUM_CALLS_BEFORE_MEDIUM_SPEED)
 			{
 				// Medium speed...
-				build_and_cache_point_in_polygon_tester(*this, *d_cached_calculations, false/*high_speed*/);
+				build_and_cache_point_in_polygon_tester(
+						*this,
+						cached_calculations,
+						false/*high_speed*/);
 			}
 		}
 		break;

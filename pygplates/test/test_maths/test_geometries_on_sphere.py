@@ -253,16 +253,18 @@ def _brute_force_point_in_polygon(polygon, point, rng, use_point_on_polygon_thre
             continue
 
 def _is_point_in_polygon_at_each_speed(polygon, point):
-    # pyGPlates' answer from a freshly created copy of 'polygon' (no set-up), a copy queried 4 times first
-    # (bounds) and one queried 200 times first (bounds and, for more than 16 segments, a tree of lunes).
+    # pyGPlates' answer from a freshly created copy of 'polygon' (no set-up), a copy queried 16 times first
+    # (bounds, after 8) and one queried 36 times at a vertex first (bounds and, for more than 16 segments, a tree
+    # of lunes, which is built once 20 queries after the first 8 have got past the bounds, as one on the outline does).
     def copy():
         return pygplates.PolygonOnSphere(polygon.get_exterior_ring_points(), [
             polygon.get_interior_ring_points(ring) for ring in range(polygon.get_number_of_interior_rings())])
+    vertex = polygon.get_exterior_ring_points()[0]
     answers = []
-    for num_previous_queries in (0, 4, 200):
+    for previous_queries in ([], [pygplates.PointOnSphere.north_pole] * 16, [vertex] * 36):
         polygon_copy = copy()
-        for _ in range(num_previous_queries):
-            polygon_copy.is_point_in_polygon(pygplates.PointOnSphere.north_pole)
+        for previous_query in previous_queries:
+            polygon_copy.is_point_in_polygon(previous_query)
         answers.append(polygon_copy.is_point_in_polygon(point))
     return answers
 
