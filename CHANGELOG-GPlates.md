@@ -47,6 +47,7 @@ Changes since 2.5:
     * A point within about 9 m of a polygon's outline, including at a vertex, is now always inside, as intended. Some were outside, so a point on a boundary shared by two plates could be in neither.
     * Fixed a point beyond the end of one of a polygon's edges, but near the line of that edge, counting as inside up to about 640 m outside the polygon.
     * Fixed a point near the antipode of a tiny, thin or self-intersecting polygon counting as inside, depending on how many points had been tested against that polygon. The answer no longer depends on that.
+  * Fixed the orientation (clockwise or counter-clockwise) of some concave polygons, which could be wrong depending on which vertex came first. It decides which side of a polygon the pieces of a line crossing it are on (eg, in Assign Plate IDs, partitioning lines), and which polygons the resolved topologies export reverses with "Force polygon orientation".
   * Fixed Small Circle tool time period being limited to 1000 Ma (now 9999 Ma).
   * Fixed colour lookups occasionally falling between adjacent colour slices of a palette.
   * Fixed CPT palettes with a lower-case "COLOR_MODEL = hsv" comment (as written by GMT) being read as RGB.

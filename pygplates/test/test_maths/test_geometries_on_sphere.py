@@ -1512,7 +1512,20 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(self.polygon.get_orientation() == pygplates.PolygonOnSphere.Orientation.counter_clockwise)
         self.assertTrue(pygplates.PolygonOnSphere(reversed(self.polygon.get_points())).get_orientation() ==
                 pygplates.PolygonOnSphere.Orientation.clockwise)
-    
+        # A concave (C-shaped) polygon, whatever its first vertex, and either way round. Orientation agrees with
+        # the sign of the signed area (each on a newly created polygon, since one is calculated from the other
+        # if that's cached). There was a bug in pyGPlates 1.0 where the edge from the last vertex to the first was
+        # left out of the orientation, so it could be wrong for a concave polygon, depending on the first vertex.
+        c_shape = [(-10, -10), (-10, 10), (-9.6, 10), (-9.6, -9.6), (9.6, -9.6), (9.6, 10), (10, 10), (10, -10)]
+        for points in (c_shape, list(reversed(c_shape))):
+            for first in range(len(points)):
+                rotated = points[first:] + points[:first]
+                expected = (pygplates.PolygonOnSphere.Orientation.counter_clockwise
+                            if pygplates.PolygonOnSphere(rotated).get_signed_area() > 0
+                            else pygplates.PolygonOnSphere.Orientation.clockwise)
+                self.assertEqual(pygplates.PolygonOnSphere(rotated).get_orientation(), expected,
+                                 msg='first vertex {}'.format(first))
+
     def test_point_in_polygon(self):
         inv_sqrt_two = 1.0 / math.sqrt(2.0)
         self.assertTrue(self.polygon.is_point_in_polygon(
