@@ -649,10 +649,24 @@ GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
 
 	// Since the low-speed test does not include a bounds test we will perform one here
 	// (provided we have a bounding small circle) for quick rejection of points outside polygon.
+	//
+	// The bounding small circle is widened by the point-ON-polygon threshold, so that a point
+	// on the outline (within the threshold) is not rejected (otherwise the answer would depend on
+	// whether the bounding small circle happened to be cached).
 	if (d_cached_calculations->inner_outer_bounding_small_circle)
 	{
-		if (d_cached_calculations->inner_outer_bounding_small_circle
-			->get_outer_bounding_small_circle().test(point) == BoundingSmallCircle::OUTSIDE_BOUNDS)
+		static const AngularExtent POINT_ON_POLYGON_THRESHOLD =
+				AngularExtent::create_from_cosine(
+						PointInPolygon::get_point_on_polygon_threshold_cosine());
+
+		const BoundingSmallCircle &outer_bounding_small_circle =
+				d_cached_calculations->inner_outer_bounding_small_circle
+						->get_outer_bounding_small_circle();
+		if (AngularDistance::create_from_cosine(
+				dot(outer_bounding_small_circle.get_centre(), point.position_vector()))
+					.is_precisely_greater_than(
+						outer_bounding_small_circle.get_angular_extent() +
+							POINT_ON_POLYGON_THRESHOLD))
 		{
 			// Point is outside polygon.
 			return false;

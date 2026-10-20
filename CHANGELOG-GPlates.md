@@ -42,6 +42,11 @@ Changes since 2.5:
 * Bug fixes:
   * Fixed gaps in boundary sections in the Resolved Topologies (General) export (since GPlates 2.2).
   * Fixed co-registration with a region of interest range of zero (or under about 9 m) leaving out target features whose lines or polygon outlines intersect the seed's.
+    * With a range of zero, a point up to about 9 m outside a polygon (a target point outside a seed polygon, or a seed point outside a target polygon) is no longer within the region of interest (it was treated as inside). Its "Distance" attribute is now that distance, not 0.
+  * Point-in-polygon tests (eg, in Assign Plate IDs, in locating points in resolved topologies, and for reconstructed rasters):
+    * A point within about 9 m of a polygon's outline, including at a vertex, is now always inside, as intended. Some were outside, so a point on a boundary shared by two plates could be in neither.
+    * Fixed a point beyond the end of one of a polygon's edges, but near the line of that edge, counting as inside up to about 640 m outside the polygon.
+    * Fixed a point near the antipode of a tiny, thin or self-intersecting polygon counting as inside, depending on how many points had been tested against that polygon. The answer no longer depends on that.
   * Fixed Small Circle tool time period being limited to 1000 Ma (now 9999 Ma).
   * Fixed colour lookups occasionally falling between adjacent colour slices of a palette.
   * Fixed CPT palettes with a lower-case "COLOR_MODEL = hsv" comment (as written by GMT) being read as RGB.

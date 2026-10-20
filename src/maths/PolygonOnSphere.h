@@ -1654,7 +1654,8 @@ namespace GPlatesMaths
 		 *
 		 * If @a use_point_on_polygon_threshold is true then the point is considered *on* the outline
 		 * (and hence classified as *inside* the polygon) if it is within an (extremely small) threshold
-		 * distance from the polygon's outline. An example where this is useful is avoiding a point
+		 * distance from the polygon's outline (about 1.4e-6 radians, or 9 metres, from any edge or
+		 * vertex, at every speed). An example where this is useful is avoiding a point
 		 * exactly on the dateline not getting included by a polygon that has an edge exactly aligned
 		 * with the dateline.
 		 * So usually this should be true (the default) and only turned off for some specific cases

@@ -1365,7 +1365,13 @@ GPlatesMaths::minimum_distance(
 	// the latter is a lot cheaper to test.
 	if (polygon_interior_is_solid)
 	{
-		if (polygon.is_point_in_polygon(point))
+		// Note we turn off point-on-polygon outline threshold testing (as for polylines and
+		// polygons below). A point outside the polygon but very close to its outline is not inside:
+		// its distance to the outline (calculated next) decides whether it touches.
+		if (polygon.is_point_in_polygon(
+				point,
+				GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
+				false/*use_point_on_polygon_threshold*/))
 		{
 			// Find the closest point and/or segment (on the polygon's outline).
 			if (closest_position_on_polygon_outline ||

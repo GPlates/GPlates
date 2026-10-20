@@ -11145,6 +11145,10 @@ class PolygonOnSphere(GeometryOnSphere):
             ...
 
         .. note:: If a polygon has one or more non-intersecting interior rings contained fully within its exterior ring and the test point is inside any interior ring then the test point is considered to be *outside* the polygon. This is because the interior rings subtract area from the exterior ring.
+
+        A point on the polygon's outline, or within about 9 metres (1.4e-6 radians) of it, is *inside*. So a point on a boundary shared by two adjacent polygons (eg, two topological plates) is inside both.
+
+        Inside is decided by the number of times a path to the point, from a point taken to be outside, crosses the outline (exterior and interior rings): an odd number is inside. So the order (clockwise or counter-clockwise) of a ring's points does not matter. And in a self-intersecting polygon, or one whose interior ring crosses its exterior ring, a region is inside if it is reached from outside by crossing the outline an odd number of times.
         """
 
     def partition(self, geometry: GeometryOnSphere, partitioned_geometries_inside: list[GeometryOnSphere] | None = ..., partitioned_geometries_outside: list[GeometryOnSphere] | None = ...) -> PolygonOnSpherePartitionResult:
