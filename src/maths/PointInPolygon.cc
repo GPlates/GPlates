@@ -144,15 +144,14 @@ namespace GPlatesMaths
 
 			if (arc_normal.magSqrd() <= 0 /*note: this is an epsilon test*/)
 			{
-				// The arc end points are either the same or they are antipodal.
-				// In either case we can just pick any plane that passes through
-				// one of the points and it will also pass through the other point.
-				// The orientation of the plane will be arbitrary but that's ok because
-				// the arc is only used to test for polygon edge crossings and:
-				// 1) if the arc end points are the same then it will result in no
-				//    edge crossings regardless of the plane orientation, and
-				// 2) if the arc end points are antipodal then any arc joining them should
-				//    produce the same parity of edge crossings regardless of orientation.
+				// The arc end points are the same or antipodal (within epsilon). Pick any plane
+				// that passes through the end point. Its orientation is arbitrary, which is fine
+				// only if the plane also contains the start point (any arc joining exactly
+				// antipodal points gives the same parity), and that is only true if the end points
+				// are *exactly* antipodal. So this is only used for the crossings arc from the
+				// antipodal centroid to the centroid (its exact negation). A test point this close
+				// to either of them is handled separately (see
+				// 'is_point_in_polygon_with_degenerate_crossings_arc()').
 				return generate_perpendicular(crossing_arc_end_point);
 			}
 
@@ -560,6 +559,40 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Returns true if @a point is within the point-ON-polygon threshold distance of the
+		 * polygon's outline (its exterior ring or any interior ring).
+		 */
+		bool
+		is_point_on_polygon_outline(
+				const PolygonOnSphere &polygon,
+				const UnitVector3D &point)
+		{
+			if (is_point_on_polygon_outline(
+					polygon.exterior_ring_begin(),
+					polygon.exterior_ring_end(),
+					point))
+			{
+				return true;
+			}
+
+			for (unsigned int interior_ring_index = 0;
+				interior_ring_index < polygon.number_of_interior_rings();
+				++interior_ring_index)
+			{
+				if (is_point_on_polygon_outline(
+						polygon.interior_ring_begin(interior_ring_index),
+						polygon.interior_ring_end(interior_ring_index),
+						point))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+
+		/**
 		 * Returns true if the test point (which is @a crossings_arc_end_point) is inside polygon
 		 * (taking into account exterior and interior rings).
 		 *
@@ -608,33 +641,84 @@ namespace GPlatesMaths
 			// Otherwise, if the test point lies *on* any polygon outline (exterior or interior)
 			// then it's considered to be *inside* the polygon. Otherwise the test point is outside
 			// the polygon.
-			if (!use_point_on_polygon_threshold)
-			{
-				return false;
-			}
+			return use_point_on_polygon_threshold &&
+					is_point_on_polygon_outline(polygon, crossings_arc_end_point);
+		}
 
-			if (is_point_on_polygon_outline(
-					polygon.exterior_ring_begin(),
-					polygon.exterior_ring_end(),
-					crossings_arc_end_point))
-			{
-				return true;
-			}
 
-			for (unsigned int interior_ring_index = 0;
-				interior_ring_index < polygon.number_of_interior_rings();
-				++interior_ring_index)
+		/**
+		 * Returns true if the crossings arc from @a crossings_arc_start_point (the antipodal
+		 * centroid) to @a test_point is too short, or too close to antipodal, for its plane to
+		 * be defined.
+		 *
+		 * This is when @a test_point is within about 1e-6 radians (the cross product of the
+		 * arc end points is zero within epsilon) of the antipodal centroid or of the centroid. The
+		 * plane chosen then (see @a get_crossings_arc_plane_normal) contains the test point
+		 * but not, in general, the antipodal centroid, so the test of which side of each polygon
+		 * edge's plane the antipodal centroid is on has no meaning, and nor does the crossing
+		 * parity.
+		 */
+		bool
+		is_crossings_arc_degenerate(
+				const UnitVector3D &crossings_arc_start_point,
+				const UnitVector3D &test_point)
+		{
+			return cross(crossings_arc_start_point, test_point).magSqrd() <=
+					0 /*note: this is an epsilon test*/;
+		}
+
+
+		/**
+		 * Returns true if @a test_point is inside @a polygon, when the crossings arc from
+		 * @a crossings_arc_start_point (the antipodal centroid) to @a test_point is degenerate
+		 * (see @a is_crossings_arc_degenerate).
+		 *
+		 * The test point is then within about 1e-6 radians of the antipodal centroid (which is
+		 * outside) or of the centroid (whose inside/outside status
+		 * @a is_polygon_centroid_in_polygon gives, if known). That is less than the
+		 * point-ON-polygon threshold. So if the test point is further than the threshold from the
+		 * outline then no edge passes between it and that nearby point, and it has the same status.
+		 * If not, it is on the outline (inside).
+		 *
+		 * FIXME: Without the threshold, a test point within about 1e-6 radians of both the outline
+		 * and the centroid (eg, a bow-tie's or a sliver's centroid can lie on its outline), or of
+		 * both the outline and the antipodal centroid, can have the wrong status, since an edge can
+		 * pass between it and that nearby point. Elsewhere the answer without the threshold is
+		 * exact to rounding. The fix is a second reference point, about 90 degrees from the
+		 * antipodal centroid, with its status cached, from which such a point's crossings arc is
+		 * well defined.
+		 */
+		bool
+		is_point_in_polygon_with_degenerate_crossings_arc(
+				const PolygonOnSphere &polygon,
+				const UnitVector3D &crossings_arc_start_point,
+				const UnitVector3D &test_point,
+				bool use_point_on_polygon_threshold,
+				boost::optional<bool> is_polygon_centroid_in_polygon = boost::none)
+		{
+			// If the test point is near the centroid (rather than near the antipodal centroid)...
+			if (dot(crossings_arc_start_point, test_point).dval() < 0)
 			{
-				if (is_point_on_polygon_outline(
-						polygon.interior_ring_begin(interior_ring_index),
-						polygon.interior_ring_end(interior_ring_index),
-						crossings_arc_end_point))
+				if (!is_polygon_centroid_in_polygon)
+				{
+					// The crossings arc from the antipodal centroid to the centroid is exactly
+					// antipodal, so the arbitrary plane through the centroid also contains the
+					// antipodal centroid.
+					is_polygon_centroid_in_polygon = is_point_in_polygon(
+							polygon,
+							crossings_arc_start_point,
+							-crossings_arc_start_point,
+							false/*use_point_on_polygon_threshold*/);
+				}
+
+				if (is_polygon_centroid_in_polygon.get())
 				{
 					return true;
 				}
 			}
 
-			return false;
+			return use_point_on_polygon_threshold &&
+					is_point_on_polygon_outline(polygon, test_point);
 		}
 
 
@@ -1255,6 +1339,19 @@ namespace GPlatesMaths
 				return d_bounds_data.d_is_polygon_centroid_in_polygon;
 			}
 
+			// If the test point is so close to the antipodal centroid, or the centroid, that the
+			// crossings arc is degenerate (which, with the bounds tests above, needs an outline
+			// that close to it too).
+			if (is_crossings_arc_degenerate(d_polygon_centroid_antipodal, test_point))
+			{
+				return is_point_in_polygon_with_degenerate_crossings_arc(
+						d_polygon,
+						d_polygon_centroid_antipodal,
+						test_point,
+						use_point_on_polygon_threshold,
+						d_bounds_data.d_is_polygon_centroid_in_polygon);
+			}
+
 			// If it's more efficient to bypass the spherical lune tree then simply
 			// test all the edges of the polygon. We still have the advantage of not having
 			// to calculate the polygon centroid for each point tested.
@@ -1790,6 +1887,15 @@ GPlatesMaths::PointInPolygon::is_point_in_polygon(
 	const UnitVector3D crossings_arc_start_point = -get_polygon_centroid(polygon);
 
 	const UnitVector3D &crossings_arc_end_point = point.position_vector();
+
+	if (is_crossings_arc_degenerate(crossings_arc_start_point, crossings_arc_end_point))
+	{
+		return is_point_in_polygon_with_degenerate_crossings_arc(
+				polygon,
+				crossings_arc_start_point,
+				crossings_arc_end_point,
+				use_point_on_polygon_threshold);
+	}
 
 	return is_point_in_polygon(
 			polygon,

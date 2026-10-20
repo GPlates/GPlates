@@ -235,16 +235,16 @@ TEST(PointInPolygonTest, speeds_agree)
 			points.push_back(
 					moved_away_from(on_outline, centroid, (rng() % 2 == 0) ? distance : -distance));
 		}
+		// At, and near, the antipodal centroid and the centroid.
+		for (const GPlatesMaths::UnitVector3D &centre : { -centroid, centroid })
+		{
+			points.push_back(GPlatesMaths::PointOnSphere(centre));
+			points.push_back(moved_away_from(centre, generate_perpendicular(centre), 1e-7));
+			points.push_back(moved_away_from(centre, generate_perpendicular(centre), 1e-5));
+		}
 
 		for (const GPlatesMaths::PointOnSphere &point : points)
 		{
-			// FIXME: Within 1e-6 radians of the antipodal centroid, or of the centroid, the
-			// crossing arc (from the antipodal centroid) is too short or nearly antipodal for its
-			// plane to be well defined.
-			if (std::fabs(dot(point.position_vector(), centroid).dval()) > std::cos(2e-6))
-			{
-				continue;
-			}
 			for (bool use_point_on_polygon_threshold : { true, false })
 			{
 				SCOPED_TRACE(use_point_on_polygon_threshold);
@@ -253,6 +253,90 @@ TEST(PointInPolygonTest, speeds_agree)
 						use_point_on_polygon_threshold,
 						GPlatesMaths::PointInPolygon::is_point_in_polygon(
 								point, *at_each_speed.polygon, use_point_on_polygon_threshold));
+			}
+		}
+	}
+}
+
+
+//
+// A point within about 1e-6 radians of the antipodal centroid, or the centroid, has the same status
+// as that point (outside, or the centroid's), at every speed.
+//
+// The crossing arc from the antipodal centroid is then too short, or too nearly antipodal, for its
+// plane to be defined. There was a bug in pyGPlates 1.0 (and GPlates 2.5) where such a point could
+// be inside a tiny polygon, without set-up only (the first three queries of a polygon).
+//
+TEST(PointInPolygonTest, near_antipodal_centroid_and_centroid)
+{
+	// Cases that failed: a bow-tie (self-intersecting, its edges' planes pass through the centroid)
+	// at the antipodal centroid, and a tiny polygon (about 1e-6 radians) and a sliver (1e-6 radians
+	// wide), each at the antipode of a vertex.
+	const double cases[3][5][3] = {
+		{
+			{ 0.31632634991861924, -0.742914659942909, 0.5899283417408213 },
+			{ 0.9654266112134291, -0.05465835848510381, 0.2548802114889822 },
+			{ 0.9600187829640893, -0.2743411893103646, 0.05568526020342974 },
+			{ 0.3217341781679591, -0.5232318291176482, 0.7891232930263739 },
+			{ -0.7409205817415255, 0.4610391258804732, -0.4883437477424776 }  // the test point
+		},
+		{
+			{ 0.46331008067020724, 0.5714775076315026, -0.6773161945654718 },
+			{ 0.4633102924993963, 0.5714770455155942, -0.6773164395708191 },
+			{ 0.46331017983531914, 0.5714770689359648, -0.6773164968766986 },
+			{ 0.46331018144512975, 0.5714778365850115, -0.677315848080787 },
+			{ -0.4633102924993963, -0.5714770455155942, 0.6773164395708191 }  // the test point
+		},
+		{
+			{ -0.5170680360101083, -0.2608430351399412, -0.815230983927643 },
+			{ -0.4540345429794015, -0.5160869754809512, -0.7262966800973347 },
+			{ -0.3560274787820443, -0.73157574133981, -0.5814132515132491 },
+			{ 0, 0, 0 },  // (only three vertices)
+			{ 0.4540345429794015, 0.5160869754809512, 0.7262966800973347 }  // the test point
+		}
+	};
+	for (unsigned int c = 0; c < 3; ++c)
+	{
+		SCOPED_TRACE(testing::Message() << "case " << c);
+		std::vector<GPlatesMaths::PointOnSphere> vertices;
+		const unsigned int num_vertices = (c == 2) ? 3 : 4;
+		for (unsigned int v = 0; v < num_vertices; ++v)
+		{
+			vertices.push_back(GPlatesMaths::PointOnSphere(
+					GPlatesMaths::UnitVector3D(cases[c][v][0], cases[c][v][1], cases[c][v][2])));
+		}
+		const AtEachSpeed at_each_speed(GPlatesMaths::PolygonOnSphere::create(vertices));
+		const GPlatesMaths::PointOnSphere point(
+				GPlatesMaths::UnitVector3D(cases[c][4][0], cases[c][4][1], cases[c][4][2]));
+		at_each_speed.expect(point, true, false);
+		at_each_speed.expect(point, false, false);
+	}
+
+	// Random tiny polygons, star-shaped about their centre, with their centroid close to it.
+	std::mt19937 rng(3);
+	for (unsigned int n = 0; n < 40; ++n)
+	{
+		SCOPED_TRACE(n);
+		const GPlatesMaths::UnitVector3D centre = random_unit_vector(rng);
+		const double radius = (n % 2 == 0) ? 1e-5 : 1e-3;
+		const AtEachSpeed at_each_speed(
+				create_random_ring(rng, centre, radius, 3 + (n % 30), 1.0 / 3));
+		const GPlatesMaths::UnitVector3D centroid = at_each_speed.polygon->get_boundary_centroid();
+		for (double distance : { 0.0, 1e-9, 1e-7, 9e-7 })
+		{
+			SCOPED_TRACE(distance);
+			const GPlatesMaths::UnitVector3D direction = generate_perpendicular(centroid);
+			for (bool use_point_on_polygon_threshold : { true, false })
+			{
+				SCOPED_TRACE(use_point_on_polygon_threshold);
+				at_each_speed.expect(
+						moved_away_from(-centroid, direction, distance),
+						use_point_on_polygon_threshold,
+						false);
+				at_each_speed.expect(
+						moved_away_from(centroid, direction, distance),
+						use_point_on_polygon_threshold,
+						true);
 			}
 		}
 	}

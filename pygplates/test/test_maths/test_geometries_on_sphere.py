@@ -75,6 +75,10 @@ def _arcs(geometry):
 def _brute_force_distance(geometry1, geometry2, solid1, solid2):
     # Inside a solid polygon is zero distance. If the outlines do not intersect (found below) then each
     # ring (or polyline) is entirely inside or outside, so testing one vertex of each is enough.
+    # Inside is decided by the brute-force point-in-polygon, without the point-on-outline threshold (as the
+    # distance code does). A vertex within the band of the outline (either answer) is not inside: its distance
+    # to the outline (below) is within the band anyway.
+    rng = random.Random(0)
     for polygon, solid, other in ((geometry1, solid1, geometry2), (geometry2, solid2, geometry1)):
         if not (solid and isinstance(polygon, pygplates.PolygonOnSphere)):
             continue
@@ -85,7 +89,8 @@ def _brute_force_distance(geometry1, geometry2, solid1, solid2):
             points = [other.get_points()[0]]
         else:
             points = list(other.get_points())
-        if any(polygon.is_point_in_polygon(point) for point in points):
+        if any(_brute_force_point_in_polygon(polygon, point, rng, use_point_on_polygon_threshold=False)
+               for point in points):
             return 0.0
     distance = math.pi
     for a1, b1 in _arcs(geometry1):
@@ -212,15 +217,16 @@ def _path_arc_crosses_edge(a, b, c, d):
         raise _Reroute()
     return acb == bda == cbd == dac
 
-def _brute_force_point_in_polygon(polygon, point, rng):
+def _brute_force_point_in_polygon(polygon, point, rng, use_point_on_polygon_threshold=True):
     # Returns True or False, or None if within the band of the outline (where either answer is accepted).
+    # Without the point-on-outline threshold the band extends to the outline.
     rings = [[p.to_xyz() for p in polygon.get_exterior_ring_points()]] + [
         [p.to_xyz() for p in polygon.get_interior_ring_points(ring)]
         for ring in range(polygon.get_number_of_interior_rings())]
     edges = [(ring[i], ring[(i + 1) % len(ring)]) for ring in rings for i in range(len(ring))]
     p = point.to_xyz()
     distance = min(min(_point_to_arc(p, a, b) for a, b in edges), min(_angle(p, v) for ring in rings for v in ring))
-    if distance < _ON_OUTLINE_DISTANCE:
+    if use_point_on_polygon_threshold and distance < _ON_OUTLINE_DISTANCE:
         return True
     if distance < _ON_OUTLINE_BAND:
         return None
@@ -534,11 +540,6 @@ class GeometryOnSphereCase(unittest.TestCase):
                 geometry1, geometry2 = geometry2, geometry1
             solid1 = rng.random() < 0.5
             solid2 = rng.random() < 0.5
-            if kind == 1:
-                # Not solid near the antipode: point-in-polygon has a known bug there (a tiny polygon can
-                # contain a point near its antipode), and this brute force uses pyGPlates' point-in-polygon.
-                # To be re-enabled with an independent point-in-polygon test, when that bug is fixed.
-                solid1 = solid2 = False
             msg = 'case {}: {} to {}, solid {} {}'.format(
                 case, type(geometry1).__name__, type(geometry2).__name__, solid1, solid2)
             expected = _brute_force_distance(geometry1, geometry2, solid1, solid2)
@@ -1566,6 +1567,31 @@ class PolygonOnSphereCase(unittest.TestCase):
         point = pygplates.PointOnSphere(-79.73255743831264, 24.181608291766533)
         self.assertEqual(_is_point_in_polygon_at_each_speed(polygon, point), [False] * 3)
 
+    def test_point_in_polygon_near_antipodal_centroid(self):
+        # A point within about 1e-6 radians of the antipodal centroid (or the centroid), where the crossing arc
+        # from the antipodal centroid is too short (or too nearly antipodal) for its plane to be defined.
+        # There was a bug in pyGPlates 1.0 where these points were inside for the first three queries.
+        for exterior_ring, point in (
+                # A bow-tie (self-intersecting), at the antipodal centroid. Its edges' planes pass through the centroid.
+                ([(0.31632634991861924, -0.742914659942909, 0.5899283417408213),
+                  (0.9654266112134291, -0.05465835848510381, 0.2548802114889822),
+                  (0.9600187829640893, -0.2743411893103646, 0.05568526020342974),
+                  (0.3217341781679591, -0.5232318291176482, 0.7891232930263739)],
+                 (-0.7409205817415255, 0.4610391258804732, -0.4883437477424776)),
+                # A tiny polygon (about 1e-6 radians), at the antipode of a vertex.
+                ([(0.46331008067020724, 0.5714775076315026, -0.6773161945654718),
+                  (0.4633102924993963, 0.5714770455155942, -0.6773164395708191),
+                  (0.46331017983531914, 0.5714770689359648, -0.6773164968766986),
+                  (0.46331018144512975, 0.5714778365850115, -0.677315848080787)],
+                 (-0.4633102924993963, -0.5714770455155942, 0.6773164395708191)),
+                # A sliver (1e-6 radians wide), at the antipode of a vertex.
+                ([(-0.5170680360101083, -0.2608430351399412, -0.815230983927643),
+                  (-0.4540345429794015, -0.5160869754809512, -0.7262966800973347),
+                  (-0.3560274787820443, -0.73157574133981, -0.5814132515132491)],
+                 (0.4540345429794015, 0.5160869754809512, 0.7262966800973347))):
+            polygon = pygplates.PolygonOnSphere(exterior_ring)
+            self.assertEqual(_is_point_in_polygon_at_each_speed(polygon, pygplates.PointOnSphere(point)), [False] * 3)
+
     def test_point_in_polygon_against_brute_force(self):
         # Compare with a brute-force point-in-polygon (exact predicates, independent of pyGPlates' point-in-polygon)
         # at every speed, for random polygons (tiny, ordinary, larger than a hemisphere, with interior rings,
@@ -1624,12 +1650,17 @@ class PolygonOnSphereCase(unittest.TestCase):
                 # On the great circle through the antipodal centroid and a vertex, beyond the vertex.
                 tangent = _cross(_normalise(_cross(r, vertex)), vertex)
                 points.append(_normalise(tuple(vertex[i] + rng.choice((1e-5, 0.1 * scale)) * tangent[i] for i in range(3))))
+            # At, and within 1e-7 and 1e-5 radians of, the antipodal centroid R and the centroid (where pyGPlates'
+            # crossing arc, from R, is too short or nearly antipodal for its plane to be defined).
+            # There was a bug in pyGPlates 1.0 where a point there could be inside a tiny polygon (or a sliver or
+            # a self-intersecting one) for the first three queries.
+            for centre in (r, tuple(-x for x in r)):
+                points.append(centre)
+                points += [_random_point(rng, centre, spread).to_xyz() for spread in (1e-7, 1e-5)]
+            # The antipode of a vertex (near the antipodal centroid of a tiny polygon or a sliver).
+            points.append(tuple(-x for x in rng.choice(vertices)))
             for p in points:
                 point = pygplates.PointOnSphere(p)
-                # FIXME: Within 1e-6 radians of the antipodal centroid R, or of the centroid, pyGPlates' crossing arc
-                # (from R) is too short or nearly antipodal for its plane to be well defined.
-                if min(_angle(p, r), math.pi - _angle(p, r)) < 2e-6:
-                    continue
                 expected = _brute_force_point_in_polygon(polygon, point, rng)
                 answers = _is_point_in_polygon_at_each_speed(polygon, point)
                 msg = 'case {}: kind {}, point {}'.format(case, kind, p)
