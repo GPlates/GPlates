@@ -341,3 +341,64 @@ TEST(PointInPolygonTest, near_antipodal_centroid_and_centroid)
 		}
 	}
 }
+
+
+//
+// Every speed, with and without the point-on-polygon threshold, gives the same answer for points
+// just over 1e-6 radians from the centroid of a polygon whose edges pass through its centroid.
+//
+// With more than 16 segments the tree of lunes is built about the centroid, and an edge passing
+// round a lune's apex (the centroid) without entering the lune must still be in it, for the
+// on-outline test. There was a bug in pyGPlates 1.0 (and GPlates 2.5) where it was not.
+//
+TEST(PointInPolygonTest, edges_through_centroid)
+{
+	// A self-intersecting polygon: two lobes of 10 points, whose crossing edges pass through its
+	// centre. (Their orientation matters: the tree's lunes depend on it. This one omitted edges.)
+	const GPlatesMaths::UnitVector3D centre(1, 0, 0);
+	const GPlatesMaths::Vector3D reference_direction(0.3, 0.5, 0.8);
+	const GPlatesMaths::UnitVector3D u = cross(centre, reference_direction).get_normalisation();
+	const GPlatesMaths::Vector3D v = cross(centre, u);
+	std::vector<GPlatesMaths::PointOnSphere> points;
+	for (double lobe_azimuth : { 0.0, GPlatesMaths::PI })
+	{
+		for (unsigned int k = 0; k < 10; ++k)
+		{
+			// The second lobe in reverse, so that the ring crosses itself at the centre.
+			const double azimuth = lobe_azimuth +
+					((lobe_azimuth == 0.0) ? -0.25 + 0.5 * k / 9 : 0.25 - 0.5 * k / 9);
+			points.push_back(GPlatesMaths::PointOnSphere((
+					std::cos(0.3) * GPlatesMaths::Vector3D(centre) +
+					std::sin(0.3) *
+						(std::cos(azimuth) * GPlatesMaths::Vector3D(u) + std::sin(azimuth) * v))
+								.get_normalisation()));
+		}
+	}
+	const AtEachSpeed at_each_speed(GPlatesMaths::PolygonOnSphere::create(points));
+	const GPlatesMaths::UnitVector3D centroid = at_each_speed.polygon->get_boundary_centroid();
+
+	const GPlatesMaths::UnitVector3D centroid_u =
+			cross(centroid, reference_direction).get_normalisation();
+	const GPlatesMaths::Vector3D centroid_v = cross(centroid, centroid_u);
+	for (double distance : { 1.05e-6, 1.1e-6, 1.2e-6, 1.3e-6, 2e-6 })
+	{
+		for (unsigned int k = 0; k < 48; ++k)
+		{
+			const double azimuth = 2 * GPlatesMaths::PI * k / 48 + 0.1;
+			const GPlatesMaths::PointOnSphere point((
+					GPlatesMaths::Vector3D(centroid) +
+					distance * (std::cos(azimuth) * GPlatesMaths::Vector3D(centroid_u) +
+						std::sin(azimuth) * centroid_v)).get_normalisation());
+			SCOPED_TRACE(testing::Message() << "distance " << distance << ", azimuth " << azimuth);
+			for (bool use_point_on_polygon_threshold : { true, false })
+			{
+				SCOPED_TRACE(use_point_on_polygon_threshold);
+				at_each_speed.expect(
+						point,
+						use_point_on_polygon_threshold,
+						GPlatesMaths::PointInPolygon::is_point_in_polygon(
+								point, *at_each_speed.polygon, use_point_on_polygon_threshold));
+			}
+		}
+	}
+}

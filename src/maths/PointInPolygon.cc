@@ -1300,8 +1300,11 @@ namespace GPlatesMaths
 			// Note that the leaf node's edges also include every edge within the point-ON-polygon
 			// threshold of the test point (so the leaf's edges are enough for the on-outline test,
 			// and a leaf with no edges means the test point is not on the outline). This is because
-			// the spherical lunes are expanded by SPHERICAL_WEDGE_PLANE_EPSILON (1e-4) when
-			// assigning edges to them, which is much larger than the threshold (about 1.4e-6).
+			// an edge is assigned to a spherical lune if it comes within
+			// SPHERICAL_WEDGE_PLANE_EPSILON (1e-4) of it, which is much larger than the threshold
+			// (about 1.4e-6): if it enters the lune (the lune expanded by that much), or comes that
+			// close to either of its bounding half circles (see
+			// 'get_polygon_edges_that_intersect_spherical_lune()').
 			if (!leaf_node.antipodal_centroid_bounds)
 			{
 				return false;
@@ -1627,6 +1630,77 @@ namespace GPlatesMaths
 				const UnitVector3D &first_spherical_wedge_bounding_plane,
 				const UnitVector3D &second_spherical_wedge_bounding_plane)
 		{
+			// The lune's two bounding half circles (from the polygon centroid to its antipode),
+			// each as two quarter circles (a great circle arc must be shorter than a half circle).
+			//
+			// An edge that does not enter the lune can still come within the point-ON-polygon
+			// threshold of a point in it, past one of these half circles: near the centroid or its
+			// antipode it can pass round the lune's apex (crossing a bounding great circle on its
+			// other half), and elsewhere it can run nearly parallel to a half circle with both end
+			// points outside the widened lune. So an edge that comes within the lune's widening of
+			// either half circle is included too, which makes a leaf's edges enough for the
+			// on-outline test. The lune is on the negative side of the first plane and the positive
+			// side of the second.
+			const UnitVector3D *const half_circle_planes[2] = {
+				&first_spherical_wedge_bounding_plane,
+				&second_spherical_wedge_bounding_plane
+			};
+			// Each half circle's two quarter circles, created only if an edge needs them.
+			typedef std::pair<GreatCircleArc, GreatCircleArc> half_circle_type;
+			boost::optional<half_circle_type> half_circles[2];
+			const auto get_half_circle = [&](
+					unsigned int half_circle_index) -> const half_circle_type &
+			{
+				if (!half_circles[half_circle_index])
+				{
+					const UnitVector3D &half_circle_plane = *half_circle_planes[half_circle_index];
+					const UnitVector3D &other_plane = *half_circle_planes[1 - half_circle_index];
+					// The half circle's midpoint, 90 degrees from the centroid, is on the lune's
+					// side of the other plane (the positive side for the first half circle,
+					// negative for the second).
+					const UnitVector3D midpoint =
+							cross(half_circle_plane, d_polygon_centroid).get_normalisation();
+					const PointOnSphere half_circle_midpoint(
+							((dot(other_plane, midpoint).dval() >= 0) == (half_circle_index == 0))
+									? midpoint
+									: -midpoint);
+					const PointOnSphere centroid(d_polygon_centroid);
+					const PointOnSphere centroid_antipodal(-d_polygon_centroid);
+					half_circles[half_circle_index] = std::make_pair(
+							GreatCircleArc::create(centroid, half_circle_midpoint),
+							GreatCircleArc::create(half_circle_midpoint, centroid_antipodal));
+				}
+
+				return half_circles[half_circle_index].get();
+			};
+			static const AngularExtent LUNE_WIDENING =
+					AngularExtent::create_from_angle(std::asin(SPHERICAL_WEDGE_PLANE_EPSILON));
+			const auto is_edge_near_half_circle = [&](
+					const GreatCircleArc &edge,
+					unsigned int half_circle_index)
+			{
+				// An arc (shorter than a half circle) that does not cross a great circle is nowhere
+				// closer to it than at its nearer end point (the sine of the distance along the arc
+				// is a sine curve), so if both end points are further than the widening, on one
+				// side, then so is the whole arc. That rejects most edges with two dot products.
+				const UnitVector3D &half_circle_plane = *half_circle_planes[half_circle_index];
+				const double start_dot =
+						dot(half_circle_plane, edge.start_point().position_vector()).dval();
+				const double end_dot =
+						dot(half_circle_plane, edge.end_point().position_vector()).dval();
+				if ((start_dot > SPHERICAL_WEDGE_PLANE_EPSILON &&
+						end_dot > SPHERICAL_WEDGE_PLANE_EPSILON) ||
+					(start_dot < -SPHERICAL_WEDGE_PLANE_EPSILON &&
+						end_dot < -SPHERICAL_WEDGE_PLANE_EPSILON))
+				{
+					return false;
+				}
+
+				const half_circle_type &half_circle = get_half_circle(half_circle_index);
+				return minimum_distance(edge, half_circle.first, LUNE_WIDENING) ||
+						minimum_distance(edge, half_circle.second, LUNE_WIDENING);
+			};
+
 			unsigned int num_intersecting_edges = 0;
 
 			// Keep track of the current sequence of edges that intersect the spherical lune.
@@ -1691,7 +1765,8 @@ namespace GPlatesMaths
 					// spherical lune but the arc still crosses the spherical lune.
 					// Since the spherical lune is bounded by the two half-circles we only need to test
 					// if the polygon edge arc intersects *one* of the half-circles because if it
-					// crosses one half-circle then it must also cross the other half-circle.
+					// crosses one half-circle then it must also cross the other half-circle
+					// (unless it passes through the lune's apex, which the test below catches).
 					// We arbitrarily choose the first spherical wedge half-circle to test against.
 
 					// If the polygon edge arc intersects a half-circle:
@@ -1737,6 +1812,15 @@ namespace GPlatesMaths
 							continue;
 						}
 					}
+				}
+
+				// The polygon edge does not enter the spherical lune, but include it if it comes
+				// within the lune's widening of either bounding half circle (see above).
+				if (is_edge_near_half_circle(edge, 0) ||
+					is_edge_near_half_circle(edge, 1))
+				{
+					++num_intersecting_edges;
+					continue;
 				}
 
 				// The current polygon edge does not intersect the spherical lune so

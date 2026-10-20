@@ -1607,6 +1607,39 @@ class PolygonOnSphereCase(unittest.TestCase):
             polygon = pygplates.PolygonOnSphere(exterior_ring)
             self.assertEqual(_is_point_in_polygon_at_each_speed(polygon, pygplates.PointOnSphere(point)), [False] * 3)
 
+    def test_point_in_polygon_near_centroid_of_crossing_edges(self):
+        # A self-intersecting polygon (two 10-point lobes), whose crossing edges pass through its centroid, and
+        # points just over 1e-6 radians from the centroid, most of them within the point-on-outline threshold
+        # of those edges. Later queries use a tree of lunes about the centroid, and an edge passing round a
+        # lune's apex (the centroid) without entering the lune must still be in it for the on-outline test.
+        # There was a bug in pyGPlates 1.0 where it was not (so later queries could say outside).
+        centre = (1.0, 0.0, 0.0)
+        u = _normalise(_cross(centre, (0.3, 0.5, 0.8)))
+        v = _cross(centre, u)
+        def ring_point(radius, azimuth):
+            return pygplates.PointOnSphere(_normalise(tuple(
+                math.cos(radius) * centre[i] + math.sin(radius) * (math.cos(azimuth) * u[i] + math.sin(azimuth) * v[i])
+                for i in range(3))))
+        lobe1 = [ring_point(0.3, -0.25 + 0.5 * k / 9) for k in range(10)]
+        lobe2 = [ring_point(0.3, math.pi - 0.25 + 0.5 * k / 9) for k in range(10)]
+        polygon = pygplates.PolygonOnSphere(lobe1 + list(reversed(lobe2)))
+        centroid = polygon.get_boundary_centroid().to_xyz()
+        u = _normalise(_cross(centroid, (0.3, 0.5, 0.8)))
+        v = _cross(centroid, u)
+        rng = random.Random(1)
+        for distance in (1.05e-6, 1.1e-6, 1.2e-6, 1.3e-6, 2e-6):
+            for k in range(24):
+                azimuth = 2 * math.pi * k / 24 + 0.1
+                point = pygplates.PointOnSphere(_normalise(tuple(
+                    centroid[i] + distance * (math.cos(azimuth) * u[i] + math.sin(azimuth) * v[i]) for i in range(3))))
+                expected = _brute_force_point_in_polygon(polygon, point, rng)
+                answers = _is_point_in_polygon_at_each_speed(polygon, point)
+                msg = 'distance {}, azimuth {}'.format(distance, azimuth)
+                if expected is None:
+                    self.assertTrue(answers[0] == answers[1] == answers[2], msg=msg)
+                else:
+                    self.assertEqual(answers, [expected] * 3, msg=msg)
+
     def test_point_in_polygon_against_brute_force(self):
         # Compare with a brute-force point-in-polygon (exact predicates, independent of pyGPlates' point-in-polygon)
         # at every speed, for random polygons (tiny, ordinary, larger than a hemisphere, with interior rings,
