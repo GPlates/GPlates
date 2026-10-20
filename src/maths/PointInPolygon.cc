@@ -815,139 +815,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Returns the coverage of polygon edges as a min/max range of dot products to a point.
-		 *
-		 * The polygon edges are defined by a sequence of edge sequences of @a edge_sequences.
-		 */
-		std::pair< double/*min dot product*/, double/*max dot product*/ >
-		get_dot_product_range_of_polygon_edges_to_point(
-				const edge_sequence_list_type &edge_sequences,
-				const UnitVector3D &point)
-		{
-			double min_dot_product = 1.0;
-			double max_dot_product = -1.0;
-
-			// Iterate over the edge sequences.
-			BOOST_FOREACH(const EdgeSequence &edge_sequence, edge_sequences)
-			{
-				// Iterate over the polygon edges to be tested for intersection.
-				PolygonOnSphere::ring_const_iterator polygon_edge_iter = edge_sequence.begin;
-				for ( ; polygon_edge_iter != edge_sequence.end; ++polygon_edge_iter)
-				{
-					const GreatCircleArc &edge = *polygon_edge_iter;
-
-					const UnitVector3D &edge_start_point = edge.start_point().position_vector();
-					const UnitVector3D &edge_end_point = edge.end_point().position_vector();
-
-					const double edge_start_dot_polygon_centroid_antipodal =
-							dot(edge_start_point, point).dval();
-					const double edge_end_dot_polygon_centroid_antipodal =
-							dot(edge_end_point, point).dval();
-
-					// See if the polygon edge arc endpoints are closer/further than
-					// the current closest/furthest so far.
-					if (edge_start_dot_polygon_centroid_antipodal > max_dot_product)
-					{
-						max_dot_product = edge_start_dot_polygon_centroid_antipodal;
-					}
-					if (edge_start_dot_polygon_centroid_antipodal < min_dot_product)
-					{
-						min_dot_product = edge_start_dot_polygon_centroid_antipodal;
-					}
-					if (edge_end_dot_polygon_centroid_antipodal > max_dot_product)
-					{
-						max_dot_product = edge_end_dot_polygon_centroid_antipodal;
-					}
-					if (edge_end_dot_polygon_centroid_antipodal < min_dot_product)
-					{
-						min_dot_product = edge_end_dot_polygon_centroid_antipodal;
-					}
-
-					if (edge.is_zero_length())
-					{
-						continue;
-					}
-
-					// Polygon edge is not zero length and hence has a rotation axis...
-					const UnitVector3D &edge_plane_normal = edge.rotation_axis();
-
-					const Vector3D polygon_centroid_antipodal_cross_edge_plane_normal =
-							cross(point, edge_plane_normal);
-					if (polygon_centroid_antipodal_cross_edge_plane_normal.magSqrd() <= 0)
-					{
-						// The polygon edge rotation axis is aligned, within numerical precision,
-						// with the polygon centroid/antipodal axis. Therefore the dot product
-						// distance of all points on the polygon edge to the polygon centroid
-						// antipodal is the same (within numerical precision).
-						// And we've already covered this case above.
-						// The issue of precision is covered below where we subtract/add an
-						// epsilon to the min/max dot product to expand the region covered
-						// by the polygon edges slightly.
-						continue;
-					}
-
-					// See if the polygon edge arc forms a local minima or maxima between
-					// its endpoints. This happens if its endpoints are on opposite sides
-					// of the dividing plane.
-					const bool edge_start_point_on_negative_side = dot(
-							polygon_centroid_antipodal_cross_edge_plane_normal,
-							edge_start_point).dval() <= 0;
-					const bool edge_end_point_on_negative_side = dot(
-							polygon_centroid_antipodal_cross_edge_plane_normal,
-							edge_end_point).dval() <= 0;
-
-					// If endpoints on opposite sides of the plane.
-					if (edge_start_point_on_negative_side ^ edge_end_point_on_negative_side)
-					{
-						if (edge_start_point_on_negative_side)
-						{
-							// The arc forms a local maxima...
-
-							const UnitVector3D maxima_point = cross(
-									polygon_centroid_antipodal_cross_edge_plane_normal,
-									edge_plane_normal)
-								.get_normalisation();
-							const double maxima_point_dot_polygon_centroid_antipodal =
-									dot(maxima_point, point).dval();
-							// See if the current arc is the furthest so far from the
-							// polygon centroid antipodal point.
-							if (maxima_point_dot_polygon_centroid_antipodal < min_dot_product)
-							{
-								min_dot_product = maxima_point_dot_polygon_centroid_antipodal;
-							}
-						}
-						else
-						{
-							// The arc forms a local minima...
-
-							const UnitVector3D minima_point = cross(
-									edge_plane_normal,
-									polygon_centroid_antipodal_cross_edge_plane_normal)
-								.get_normalisation();
-							const double minima_point_dot_polygon_centroid_antipodal =
-									dot(minima_point, point).dval();
-							// See if the current arc is the closest so far to the
-							// polygon centroid antipodal point.
-							if (minima_point_dot_polygon_centroid_antipodal > max_dot_product)
-							{
-								max_dot_product = minima_point_dot_polygon_centroid_antipodal;
-							}
-						}
-					}
-				}
-			}
-
-			// The epsilon expands the dot product range the polygon covers
-			// as a protection against numerical precision.
-			// This epsilon should be larger than used in class Real (which is about 1e-12).
-			min_dot_product -= 1e-6;
-			max_dot_product += 1e-6;
-
-			return std::make_pair(min_dot_product, max_dot_product);
-		}
-
-
-		/**
 		 * A recursive spatial partition of the surface of the sphere into spherical lunes.
 		 *
 		 * A spherical lune is the surface of the sphere bounded by two half great circles
@@ -1012,7 +879,7 @@ namespace GPlatesMaths
 				//! Normal to the plane that splits the current node into two child nodes.
 				UnitVector3D splitting_plane;
 
-				//! The first/second child node is on the negative/positive side of the plane.
+				//! The first/second child node is on the positive/negative side of the plane.
 				node_index_type child_node_indices[2];
 
 				//! The type of each child node (internal or leaf).

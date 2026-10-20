@@ -59,6 +59,12 @@ namespace GPlatesMaths
 	{
 		/**
 		 * Cached results of calculations performed on the polygon geometry.
+		 *
+		 * NOTE: The cache is created, and filled in, lazily by 'const' methods, without
+		 * synchronisation (as are the point-in-polygon call count and tester), so one polygon must
+		 * not be queried from two threads at once. pyGPlates holds the Python GIL during these
+		 * calls, and in GPlates only a script running in its Python thread, sharing a polygon with
+		 * the GUI thread, could do so.
 		 */
 		struct CachedCalculations :
 				public GPlatesUtils::ReferenceCount<CachedCalculations>
