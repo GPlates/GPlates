@@ -119,26 +119,33 @@ GPlatesGui::PythonStyleAdapter::init_configuration()
 		bp::dict cfg_defs = bp::extract<bp::dict>(d_py_obj.attr("get_config")());
 		bp::list tmp_cfg_items =  cfg_defs.items();
 		int len = bp::len(tmp_cfg_items);
-		QString cfg_name;
-		std::map<QString, QString> cfg_map;
+		typedef std::map<QString, QString> ConfigDefinition;
+		typedef std::map<QString, ConfigDefinition> ConfigDefinitions;
+		ConfigDefinitions config_definitions;
 
 		for (int i = 0; i < len; i++)
 		{
 			bp::tuple t = bp::extract<bp::tuple>(tmp_cfg_items[i]);
 			QString key = QString::fromUtf8(bp::extract<const char*>(t[0])());
 			QString value = QString::fromUtf8(bp::extract<const char*>(t[1])());
-			QString sub_key = key.right(key.length() - key.indexOf('/') -1);
-			key.chop(key.length() - key.indexOf('/'));
-			if(key == cfg_name)
+			const int separator_index = key.indexOf('/');
+			if (separator_index <= 0 || separator_index == key.length() - 1)
 			{
-				cfg_map[sub_key] = value;
+				qWarning() << "Invalid python configuration key:" << key;
+				continue;
 			}
-			else
+
+			const QString cfg_name = key.left(separator_index);
+			const QString sub_key = key.mid(separator_index + 1);
+			config_definitions[cfg_name][sub_key] = value;
+		}
+
+		BOOST_FOREACH(const ConfigDefinitions::value_type& config_definition, config_definitions)
+		{
+			PythonCfgItem* cfg_item = create_cfg_item(config_definition.second);
+			if (cfg_item)
 			{
-				cfg_map[sub_key] = value;
-				cfg_name = key;
-				d_cfg.set(cfg_name, create_cfg_item(cfg_map));
-				cfg_map.clear();
+				d_cfg.set(config_definition.first, cfg_item);
 			}
 		}
 	}
@@ -270,16 +277,25 @@ GPlatesGui::PythonStyleAdapter::create_cfg_item(const std::map<QString, QString>
 		qWarning() << "No type found in python configuration definition.";
 		return NULL;
 	}
+	std::map<QString, QString>::const_iterator default_it = data.find("default");
+	const QString default_value =
+			(default_it == data.end()) ? QString() : default_it->second;
 
 	if(it->second == "Color")
 	{
-		return new PythonCfgColor("Color", "white");
+		return new PythonCfgColor(
+				"Color",
+				default_value.isEmpty() ? QString("white") : default_value);
 	}
 	else if(it->second == "Palette")
 	{
-		return new PythonCfgPalette("Palette", "DeaultPalette");
+		return new PythonCfgPalette(
+				"Palette",
+				default_value.isEmpty() ? QString("DeaultPalette") : default_value);
 	} 
-	return new PythonCfgString("String", " ");
+	return new PythonCfgString(
+			"String",
+			default_it == data.end() ? QString(" ") : default_value);
 }
 
 

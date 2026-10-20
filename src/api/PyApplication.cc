@@ -34,7 +34,9 @@
 #include "PythonUtils.h"
 #include "Sleeper.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/UserPreferences.h"
 
 #include "global/CompilerWarnings.h"
 #include "global/python.h"
@@ -257,6 +259,23 @@ namespace GPlatesApi
 			return d_app.get_application_state().get_current_reconstruction_time();
 		}
 
+		/**
+		 * The default reconstruction time range, as (oldest, youngest) in Ma.
+		 *
+		 * This is the range configured under Preferences > Default View Settings, so a draw style
+		 * or utility can span the times a project actually uses rather than a hardcoded guess.
+		 */
+		boost::python::tuple
+		default_time_range()
+		{
+			GPlatesAppLogic::UserPreferences &preferences =
+					d_app.get_application_state().get_user_preferences();
+
+			return boost::python::make_tuple(
+					preferences.get_value("view/animation/default_time_range_start").toDouble(),
+					preferences.get_value("view/animation/default_time_range_end").toDouble());
+		}
+
 		private:
 			GPlatesPresentation::Application& d_app;
 	};
@@ -282,5 +301,6 @@ export_instance()
 		.def("register_draw_style", &Application::register_draw_style)
 		.def("feature_collections", &Application::feature_collections)
 		.def("current_time", &Application::current_time)
+		.def("default_time_range", &Application::default_time_range)
 		;
 }
