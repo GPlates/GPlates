@@ -1881,6 +1881,32 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(isinstance(self.polygon.get_boundary_centroid(), pygplates.PointOnSphere))
         self.assertTrue(isinstance(self.polygon.get_interior_centroid(), pygplates.PointOnSphere))
         self.assertEqual(self.polygon.get_centroid(), self.polygon.get_interior_centroid())
+
+    def test_interior_centroid_of_large_polygon(self):
+        # The interior centroid of a large, lopsided polygon, against its area moment from a fan of triangles each
+        # split 4096 ways, each piece weighted by its area at its vertices' mean (within about 5e-6 here; it converges
+        # as the square of the piece size). There was a bug in pyGPlates 1.0 where it was about 0.6 degrees off for a
+        # polygon this size (it used that approximation on the unsplit triangles).
+        def add(a, b):
+            return tuple(a[i] + b[i] for i in range(3))
+        def moment(a, b, c, depth):
+            if depth == 0:
+                return tuple(x * _triangle_signed_area(a, b, c) for x in _normalise(add(add(a, b), c)))
+            ab, bc, ca = _normalise(add(a, b)), _normalise(add(b, c)), _normalise(add(c, a))
+            return add(add(moment(a, ab, ca, depth - 1), moment(ab, b, bc, depth - 1)),
+                       add(moment(ca, bc, c, depth - 1), moment(ab, bc, ca, depth - 1)))
+        for points in (
+                [(0, 0), (0, 80), (60, 40), (20, 20), (50, -10)],
+                [(-30, -60), (10, 100), (-10, 20), (40, -20)]):
+            polygon = pygplates.PolygonOnSphere(points)
+            vertices = [v.to_xyz() for v in polygon.get_exterior_ring_points()]
+            apex = polygon.get_boundary_centroid().to_xyz()
+            total = (0.0, 0.0, 0.0)
+            for i in range(len(vertices)):
+                total = add(total, moment(apex, vertices[i], vertices[(i + 1) % len(vertices)], 6))
+            if polygon.get_signed_area() < 0:
+                total = tuple(-x for x in total)
+            self.assertLess(_angle(polygon.get_interior_centroid().to_xyz(), _normalise(total)), 2e-5)
     
     def test_tessellate(self):
         tessellated = self.polygon.to_tessellated(math.radians(91))
