@@ -29,10 +29,14 @@
 #include <vector>
 #include <gtest/gtest.h>
 
+#include "maths/AngularExtent.h"
+#include "maths/CubeQuadTreePartition.h"
+#include "maths/GeometryDistance.h"
 #include "maths/MathsUtils.h"
 #include "maths/PointInPolygon.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
+#include "maths/SmallCircleBounds.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
@@ -794,4 +798,67 @@ TEST(PointInPolygonTest, near_centroid_on_outline)
 					false);
 		}
 	}
+}
+
+
+//
+// Code that skips a polygon because something lies outside a small circle bounding its outline
+// must not skip a solid or filled polygon whose interior reaches past that circle, as a band that
+// wraps round the globe does (the region round the antipode of its boundary centroid, outside the
+// circle, is inside the band).
+//
+TEST(PointInPolygonTest, interior_beyond_bounding_circle)
+{
+	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon = create_helix_band();
+	const GPlatesMaths::BoundingSmallCircle &bounding_small_circle =
+			polygon->get_bounding_small_circle();
+	const GPlatesMaths::PointOnSphere point(-polygon->get_boundary_centroid());
+	ASSERT_EQ(
+			bounding_small_circle.test(point.position_vector()),
+			GPlatesMaths::BoundingSmallCircle::OUTSIDE_BOUNDS);
+
+	EXPECT_FALSE(polygon->is_outside_bounding_small_circle_outside_polygon(bounding_small_circle));
+
+	// The point is inside the solid polygon, so at distance zero, even with a threshold smaller than
+	// its distance to the outline's bounding circle. There was a bug in pyGPlates 1.0 (and GPlates
+	// 2.5) where the threshold was exceeded (but then the point was also wrongly outside).
+	const GPlatesMaths::AngularExtent threshold = GPlatesMaths::AngularExtent::create_from_angle(1e-3);
+	const boost::optional<GPlatesMaths::AngularDistance> distance = minimum_distance(
+			point,
+			*polygon,
+			true/*polygon_interior_is_solid*/,
+			threshold);
+	ASSERT_TRUE(distance);
+	EXPECT_EQ(distance->get_cosine().dval(), 1.0);
+
+	// The polygon's outline is inside its own bounding circle, but its fill reaches past it.
+	EXPECT_EQ(
+			bounding_small_circle.test_filled_polygon(*polygon),
+			GPlatesMaths::BoundingSmallCircle::INTERSECTING_BOUNDS);
+	const GPlatesMaths::InnerOuterBoundingSmallCircle inner_outer_bounding_small_circle(
+			bounding_small_circle.get_centre(),
+			bounding_small_circle.get_angular_extent(),
+			bounding_small_circle.get_angular_extent());
+	EXPECT_EQ(
+			inner_outer_bounding_small_circle.test_filled_polygon(*polygon),
+			GPlatesMaths::InnerOuterBoundingSmallCircle::INTERSECTING_BOUNDS);
+
+	// So a spatial partition puts it at the root (not in a quad tree node about its circle), where
+	// every tile sees its fill.
+	GPlatesMaths::CubeQuadTreeLocation location;
+	GPlatesMaths::CubeQuadTreePartition<int>::create(6)->add(0, *polygon, &location);
+	EXPECT_FALSE(location.get_node_location());
+
+	// An ordinary polygon's interior doesn't reach past its circle.
+	std::mt19937 rng(6);
+	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type ordinary_polygon =
+			create_random_ring(rng, GPlatesMaths::UnitVector3D(0, 0, 1), 0.5, 20, 0.2);
+	EXPECT_TRUE(ordinary_polygon->is_outside_bounding_small_circle_outside_polygon(
+			ordinary_polygon->get_bounding_small_circle()));
+	EXPECT_EQ(
+			ordinary_polygon->get_bounding_small_circle().test_filled_polygon(*ordinary_polygon),
+			GPlatesMaths::BoundingSmallCircle::INSIDE_BOUNDS);
+	GPlatesMaths::CubeQuadTreeLocation ordinary_location;
+	GPlatesMaths::CubeQuadTreePartition<int>::create(6)->add(0, *ordinary_polygon, &ordinary_location);
+	EXPECT_TRUE(ordinary_location.get_node_location());
 }

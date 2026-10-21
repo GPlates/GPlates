@@ -1353,9 +1353,13 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the point is further away (from the root node's bounding small circle) than the
-		// threshold then the threshold is exceeded.
+		// threshold then the threshold is exceeded. Unless the interior is solid and reaches
+		// past the circle (a polygon that wraps round the globe can).
 		if (minimum_distance(point, polygon_bounding_tree_root_node.get_bounding_small_circle())
-			.is_precisely_greater_than(min_distance_threshold))
+				.is_precisely_greater_than(min_distance_threshold) &&
+			(!polygon_interior_is_solid ||
+				polygon.is_outside_bounding_small_circle_outside_polygon(
+						polygon_bounding_tree_root_node.get_bounding_small_circle())))
 		{
 			return boost::none;
 		}
@@ -1679,11 +1683,15 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the bounding small circles of the multi-point and the polygon are further away than
-		// the threshold then the threshold is exceeded.
+		// the threshold then the threshold is exceeded. Unless the polygon's interior is solid and
+		// reaches past its circle (a polygon that wraps round the globe can).
 		if (minimum_distance(
 				multipoint.get_bounding_small_circle(),
 				polygon.get_bounding_small_circle())
-			.is_precisely_greater_than(min_distance_threshold))
+					.is_precisely_greater_than(min_distance_threshold) &&
+			(!polygon_interior_is_solid ||
+				polygon.is_outside_bounding_small_circle_outside_polygon(
+						polygon.get_bounding_small_circle())))
 		{
 			return boost::none;
 		}
@@ -1907,11 +1915,15 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the root node bounding small circles of the two geometries are further away than the
-		// threshold then the threshold is exceeded.
+		// threshold then the threshold is exceeded. Unless the polygon's interior is solid and
+		// reaches past its circle (a polygon that wraps round the globe can).
 		if (minimum_distance(
 				polyline_bounding_tree_root_node.get_bounding_small_circle(),
 				polygon_bounding_tree_root_node.get_bounding_small_circle())
-			.is_precisely_greater_than(min_distance_threshold))
+					.is_precisely_greater_than(min_distance_threshold) &&
+			(!polygon_interior_is_solid ||
+				polygon.is_outside_bounding_small_circle_outside_polygon(
+						polygon_bounding_tree_root_node.get_bounding_small_circle())))
 		{
 			return boost::none;
 		}
@@ -2112,11 +2124,18 @@ GPlatesMaths::minimum_distance(
 		min_distance_threshold = minimum_distance_threshold_opt.get();
 
 		// If the root node bounding small circles of the two geometries are further away than the
-		// threshold then the threshold is exceeded.
+		// threshold then the threshold is exceeded. Unless a polygon's interior is solid and reaches
+		// past its circle (a polygon that wraps round the globe can).
 		if (minimum_distance(
 				polygon1_bounding_tree_root_node.get_bounding_small_circle(),
 				polygon2_bounding_tree_root_node.get_bounding_small_circle())
-			.is_precisely_greater_than(min_distance_threshold))
+					.is_precisely_greater_than(min_distance_threshold) &&
+			(!polygon1_interior_is_solid ||
+				polygon1.is_outside_bounding_small_circle_outside_polygon(
+						polygon1_bounding_tree_root_node.get_bounding_small_circle())) &&
+			(!polygon2_interior_is_solid ||
+				polygon2.is_outside_bounding_small_circle_outside_polygon(
+						polygon2_bounding_tree_root_node.get_bounding_small_circle())))
 		{
 			return boost::none;
 		}

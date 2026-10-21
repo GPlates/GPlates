@@ -842,6 +842,32 @@ GPlatesMaths::PolygonOnSphere::get_outside_point() const
 }
 
 
+bool
+GPlatesMaths::PolygonOnSphere::is_outside_bounding_small_circle_outside_polygon(
+		const BoundingSmallCircle &small_circle) const
+{
+	if (small_circle.test(get_outside_point()) == BoundingSmallCircle::OUTSIDE_BOUNDS)
+	{
+		return true;
+	}
+
+	// The antipode of the circle's centre is outside the circle, unless the circle covers the
+	// sphere (and then there is no region outside it). It is far from the outline, so the
+	// point-on-polygon threshold doesn't matter. The test counts towards the adaptive speed, like
+	// any other, so a polygon asked this repeatedly (once per distance query, say) gets faster.
+	const UnitVector3D small_circle_centre_antipode = -small_circle.get_centre();
+	if (small_circle.test(small_circle_centre_antipode) != BoundingSmallCircle::OUTSIDE_BOUNDS)
+	{
+		return true;
+	}
+
+	return !is_point_in_polygon(
+			PointOnSphere(small_circle_centre_antipode),
+			ADAPTIVE,
+			false/*use_point_on_polygon_threshold*/);
+}
+
+
 const GPlatesMaths::PointInPolygon::SecondReferencePoint &
 GPlatesMaths::PolygonOnSphere::get_second_reference_point() const
 {

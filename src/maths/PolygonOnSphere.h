@@ -1714,6 +1714,25 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Returns true if the region outside @a small_circle, which must contain this polygon's
+		 * outline (every ring), is outside this polygon.
+		 *
+		 * That region contains no edges, so it is all inside or all outside, and it is outside unless
+		 * this polygon wraps round the globe so far that its interior reaches past its outline's
+		 * bounding circle. Code that skips a polygon because something lies outside a small circle
+		 * bounding its outline, when it means the polygon's interior (a solid polygon, or a fill)
+		 * and not just its outline, must check this first.
+		 *
+		 * It is true at once if the outside point (see @a get_outside_point) is outside the circle,
+		 * as for every polygon whose vertices are within the open hemisphere about its boundary
+		 * centroid, with a circle centred near it. Otherwise it costs a point-in-polygon test.
+		 */
+		bool
+		is_outside_bounding_small_circle_outside_polygon(
+				const BoundingSmallCircle &small_circle) const;
+
+
+		/**
 		 * Returns a second point from which point-in-polygon can count crossings, with its status
 		 * (see PointInPolygon::SecondReferencePoint).
 		 *
