@@ -1239,7 +1239,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_polygon(
 	add_polygon_ring_mesh_to_current_filled_drawable(
 			polygon.exterior_ring_vertex_begin(),
 			polygon.number_of_vertices_in_exterior_ring(),
-			polygon.get_boundary_centroid(),
+			-polygon.get_outside_point(),
 			rgba8_color);
 
 	// Add the polygon's interior rings.
@@ -1250,7 +1250,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_polygon(
 		add_polygon_ring_mesh_to_current_filled_drawable(
 				polygon.interior_ring_vertex_begin(interior_ring_index),
 				polygon.number_of_vertices_in_interior_ring(interior_ring_index),
-				polygon.get_boundary_centroid(),
+				-polygon.get_outside_point(),
 				rgba8_color);
 	}
 

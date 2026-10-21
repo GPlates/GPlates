@@ -4468,7 +4468,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 			map_vertex_buffer_scope,
 			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
 
-	// Render each polygon as a triangle fan with the fan apex being the polygon centroid.
+	// Render each polygon as a triangle fan with the fan apex being the antipode of the polygon's
+	// outside point, so that the odd-coverage fill agrees with point-in-polygon.
 	fill_region_of_interest_stream_primitives_type::TriangleFans fill_stream_triangle_fans(fill_stream);
 
 	// Iterate over the polygon geometries - the only geometry type that supports fill (has an interior).
@@ -4482,7 +4483,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		const GPlatesMaths::PolygonOnSphere &polygon_on_sphere =
 				dynamic_cast<const GPlatesMaths::PolygonOnSphere &>(seed_co_registration.geometry);
 
-		const GPlatesMaths::UnitVector3D &centroid = polygon_on_sphere.get_boundary_centroid();
+		const GPlatesMaths::UnitVector3D fan_apex = -polygon_on_sphere.get_outside_point();
 
 		// Most of the vertex data is the same for all vertices for polygon triangle fan.
 		FillRegionOfInterestVertex vertex;
@@ -4490,10 +4491,10 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 
 		fill_stream_triangle_fans.begin_triangle_fan();
 
-		// The first vertex is the polygon centroid.
-		vertex.fill_position[0] = centroid.x().dval();
-		vertex.fill_position[1] = centroid.y().dval();
-		vertex.fill_position[2] = centroid.z().dval();
+		// The first vertex is the fan apex.
+		vertex.fill_position[0] = fan_apex.x().dval();
+		vertex.fill_position[1] = fan_apex.y().dval();
+		vertex.fill_position[2] = fan_apex.z().dval();
 		if (!fill_stream_triangle_fans.add_vertex(vertex))
 		{
 			suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
@@ -4564,10 +4565,10 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		{
 			fill_stream_triangle_fans.begin_triangle_fan();
 
-			// The first vertex is the polygon centroid.
-			vertex.fill_position[0] = centroid.x().dval();
-			vertex.fill_position[1] = centroid.y().dval();
-			vertex.fill_position[2] = centroid.z().dval();
+			// The first vertex is the fan apex.
+			vertex.fill_position[0] = fan_apex.x().dval();
+			vertex.fill_position[1] = fan_apex.y().dval();
+			vertex.fill_position[2] = fan_apex.z().dval();
 			if (!fill_stream_triangle_fans.add_vertex(vertex))
 			{
 				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(

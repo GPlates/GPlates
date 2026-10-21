@@ -3957,7 +3957,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 	const unsigned int num_vertices_in_all_rings = polygon->number_of_vertices();
 	const unsigned int num_interior_rings = polygon->number_of_interior_rings();
 
-	// Each ring in the polygon is rendered as a triangle fan which has an extra vertex at centroid
+	// Each ring in the polygon is rendered as a triangle fan which has an extra vertex at its apex
 	// and to close off ring (although the ring is already closed, but we are using the same code
 	// used for a polyline which does require an extra vertex to close the ring).
 	const unsigned int num_rings = 1 + num_interior_rings;
@@ -3976,7 +3976,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 		stream_surface_fill_mask_ring_as_primitive(
 				polygon->exterior_ring_vertex_begin(),
 				polygon->number_of_vertices_in_exterior_ring(),
-				polygon->get_boundary_centroid(),
+				-polygon->get_outside_point(),
 				vertex_index);
 
 		// Interior rings.
@@ -3987,7 +3987,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 			stream_surface_fill_mask_ring_as_primitive(
 					polygon->interior_ring_vertex_begin(interior_ring_index),
 					polygon->number_of_vertices_in_interior_ring(interior_ring_index),
-					polygon->get_boundary_centroid(),
+					-polygon->get_outside_point(),
 					vertex_index);
 		}
 
@@ -4002,7 +4002,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 		stream_surface_fill_mask_ring_as_triangle_fan(
 				polygon->exterior_ring_vertex_begin(),
 				polygon->number_of_vertices_in_exterior_ring(),
-				polygon->get_boundary_centroid());
+				-polygon->get_outside_point());
 
 		// Interior rings.
 		//
@@ -4012,7 +4012,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_s
 			stream_surface_fill_mask_ring_as_triangle_fan(
 					polygon->interior_ring_vertex_begin(interior_ring_index),
 					polygon->number_of_vertices_in_interior_ring(interior_ring_index),
-					polygon->get_boundary_centroid());
+					-polygon->get_outside_point());
 		}
 	}
 }
@@ -4224,7 +4224,7 @@ GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::visit
 	render_volume_fill_boundary(
 			polygon_on_sphere->exterior_ring_begin(),
 			polygon_on_sphere->exterior_ring_end(),
-			polygon_on_sphere->get_boundary_centroid());
+			-polygon_on_sphere->get_outside_point());
 
 	// Interior rings.
  	const unsigned int num_interior_rings = polygon_on_sphere->number_of_interior_rings();
@@ -4233,7 +4233,7 @@ GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::visit
 		render_volume_fill_boundary(
 				polygon_on_sphere->interior_ring_begin(interior_ring_index),
 				polygon_on_sphere->interior_ring_end(interior_ring_index),
-				polygon_on_sphere->get_boundary_centroid());
+				-polygon_on_sphere->get_outside_point());
  	}
 }
 
