@@ -92,6 +92,8 @@ namespace GPlatesMaths
 			boost::optional<InnerOuterBoundingSmallCircle> inner_outer_bounding_small_circle;
 			boost::optional<real_t> signed_area;
 			boost::optional<PolygonOrientation::Orientation> orientation;
+			boost::optional<PointInPolygon::InteriorReference> interior_reference;
+			boost::optional<PointInPolygon::SecondReferencePoint> second_reference_point;
 
 			PolygonOnSphere::PointInPolygonSpeedAndMemory point_in_polygon_speed_and_memory;
 			unsigned int num_point_in_polygon_calls;
@@ -683,7 +685,13 @@ GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
 	// The bounding small circle is widened by the point-ON-polygon threshold, so that a point
 	// on the outline (within the threshold) is not rejected (otherwise the answer would depend on
 	// whether the bounding small circle happened to be cached).
-	if (d_cached_calculations->inner_outer_bounding_small_circle)
+	//
+	// The region outside the circle contains no edges, so it is all inside or all outside. It is
+	// known to be outside if it contains the outside point (true unless this polygon wraps round more
+	// than a hemisphere about its boundary centroid).
+	if (d_cached_calculations->inner_outer_bounding_small_circle &&
+		d_cached_calculations->inner_outer_bounding_small_circle->get_outer_bounding_small_circle()
+				.test(get_outside_point()) == BoundingSmallCircle::OUTSIDE_BOUNDS)
 	{
 		static const AngularExtent POINT_ON_POLYGON_THRESHOLD =
 				AngularExtent::create_from_cosine(
@@ -807,6 +815,48 @@ GPlatesMaths::PolygonOnSphere::get_inner_outer_bounding_small_circle() const
 	}
 
 	return d_cached_calculations->inner_outer_bounding_small_circle.get();
+}
+
+
+const GPlatesMaths::PointInPolygon::InteriorReference &
+GPlatesMaths::PolygonOnSphere::get_interior_reference() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	if (!d_cached_calculations->interior_reference)
+	{
+		d_cached_calculations->interior_reference = PointInPolygon::calculate_interior_reference(*this);
+	}
+
+	return d_cached_calculations->interior_reference.get();
+}
+
+
+const GPlatesMaths::UnitVector3D &
+GPlatesMaths::PolygonOnSphere::get_outside_point() const
+{
+	return get_interior_reference().get_outside_point();
+}
+
+
+const GPlatesMaths::PointInPolygon::SecondReferencePoint &
+GPlatesMaths::PolygonOnSphere::get_second_reference_point() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	if (!d_cached_calculations->second_reference_point)
+	{
+		d_cached_calculations->second_reference_point =
+				PointInPolygon::calculate_second_reference_point(*this);
+	}
+
+	return d_cached_calculations->second_reference_point.get();
 }
 
 
