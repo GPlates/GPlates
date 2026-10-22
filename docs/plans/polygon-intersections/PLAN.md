@@ -41,6 +41,16 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   - **Checkpoint:** the developer reads §5.2, the requirements file and the papers, chooses the
     algorithm, and answers its section 4 questions.
 
+- **Resume here** (2026-10-23):
+  - Phases 0 to 2 are done and claim-checked. Waiting on the developer at the Phase 2 checkpoint:
+    the choice of algorithm (recommendation: (b), the overlay) and answers to the 11 questions in
+    `phase2-requirements.md` §4.
+  - Then Phase 3: the `GeometryIntersect` audit (Fable), plus the brute-force check of
+    `DateLineWrapper` (Opus).
+  - Build trees: `build-gplates` and `build-pygplates` in this worktree, configured and green
+    (GPlates 92/92, pyGPlates 7/7).
+  - The planning repository's worktree for this session is `gplates-planning-wt/worktree-2`.
+
 ## Context
 
 `PolygonOnSphere.partition`, `PlatePartitioner.partition_geometry` and GPlates' Assign Plate IDs
@@ -245,6 +255,15 @@ requirements in hand, as the developer anticipated.
   arcs, and ring edges cut and re-fed (as the cascade does).
 - Add C++ GoogleTest coverage for GeometryIntersect. There is none today. Follow the `cpp-test`
   skill.
+- **A brute-force check of `DateLineWrapper`** (decided 2026-10-23). This is an Opus job, not a
+  Fable audit. Wrap random polygons through `pygplates.DateLineWrapper(central_meridian)`: holes,
+  rings round a pole, touches, vertices on the dateline, non-zero central meridians. Then check
+  that a random point is inside some output piece exactly when it is inside the input, outside a
+  narrow band along the dateline. This is the Phase 5 oracle, reused.
+  - It measures whether the defects listed in §5.2 reach users today.
+  - Anything serious becomes a small fix on `main`, separate from this branch.
+  - The full audit waits for the Phase 4 decision below, so it isn't spent on code the overlay may
+    replace.
 - Doc §4.4 to §4.5: the tolerances of intersection within §1's system, and the decisions with
   their rejected alternatives.
 - **PR A**: fixes, tests, doc §4 and §5.1 to §5.2, and changelog entries if anything visible changes
@@ -288,6 +307,21 @@ requirements in hand, as the developer anticipated.
   (`GeometryCookieCutter.cc:563-568`).
 - Decide where it lives: a new `src/maths/PolygonClipping` (or similar) replacing the internals
   of `PolygonPartitioner`. Decide `GeometryCrossing`'s fate: absorbed or deleted.
+- **`DateLineWrapper` as a layer over the overlay?** (decided 2026-10-23 to settle it here.)
+  Clipping to the dateline is cutting by one open arc, from pole to pole. In the overlay, that
+  means splitting at the intersections, keeping the input's pieces, and keeping the arc's pieces
+  that lie inside the input *in both directions*, so they become the front and back edges. Then
+  the pieces are linked.
+  - The overlay would fix `DateLineWrapper`'s known defects: holes merged into exteriors, the
+    both-poles guess, reversed rings at a touch, and the epsilon grouping.
+  - What stays: lat/lon output, snapping to ±180/±90, the central meridian, tessellation, and
+    provenance.
+  - So the design should support cutting by an open arc (pieces used in both directions), not
+    only by a polygon.
+  - If yes: port `DateLineWrapper` in its own PR after PR B, outside 1.1. It changes map display
+    and export, so it needs the developer's visual check and changelog entries in both products.
+    Then audit only the thin layer.
+  - If no: audit `DateLineWrapper` as it is, after PR B.
 - **Checkpoint:** the developer approves the design, the coverage policy and the coverage scope.
 
 ### Phase 5: implementation (Opus implements; Fable reviews each major commit)
@@ -307,8 +341,7 @@ requirements in hand, as the developer anticipated.
     check the values at original vertices, at intersections, and along cuts;
   - `GLReconstructedStaticPolygonMeshes.cc:917-964` (classification only);
   - the pyGPlates tests that assert polylines.
-- Optional, with the developer's say-so: DateLineWrapper's ring grouping moved to the new
-  containment code, which closes the roadmap's epsilon "touching" item.
+- `DateLineWrapper` is not touched in PR B. See Phase 4's decision about it.
 
 ### Phase 6: finish → PR B
 - Write doc §5.3 onwards from the implemented code.
