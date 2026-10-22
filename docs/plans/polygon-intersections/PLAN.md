@@ -6,6 +6,19 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
 
 - 2026-10-23: plan approved. Phase 0 done: branch restarted off `main` (`601ca9e45`); the 2021
   branch is `archive/polygon-intersections-2021` on `private`. Next: Phase 1.
+- 2026-10-23: Phase 1 drafted. `spherical-geometry.md` has new §4 Intersection (4.1 to 4.3)
+  and §5.1 Partitioning today; Testing and Deferred work are now §6 and §7. DateLineWrapper
+  becomes §5.2 (Phase 2). Next: the Fable claim check of §4 and §5.1, then the developer reads them.
+- **Found in Phase 1** (measured with pyGPlates at `601ca9e45`; now in doc §5.1). These are bugs in
+  the no-intersection shortcut, separate from the polyline output, and PR B must fix them:
+  - a partitioning polygon wholly inside the input polygon puts the whole input outside;
+  - an input crossing only a partitioning polygon's hole is decided wholesale by one vertex (a
+    polygon wholly outside, a polyline wholly inside);
+  - an input polygon with a hole is wholly outside a partitioner that crosses only that hole's
+    boundary.
+
+  `GLReconstructedStaticPolygonMeshes` works around the first itself. Each case becomes a
+  regression test in PR B.
 
 ## Context
 
@@ -167,7 +180,7 @@ requirements in hand, as the developer anticipated.
     `C:\Users\jcann\Development\Usyd\documentation\Papers\Graphics\Intersection\`);
   - the GeometryCrossing stub.
 - It writes:
-  1. **Doc §5.1, "Clipping by DateLineWrapper"**: how its Greiner-Hormann works, and which
+  1. **Doc §5.2, "Clipping by DateLineWrapper"**: how its Greiner-Hormann works, and which
      shortcuts are dateline-only. This describes existing code, so it is fine for the design doc.
   2. **Requirements for the intersection primitive**, in the plan. Partitioning needs:
      - crossing, touch and overlap classified consistently along *both* geometries;
@@ -187,7 +200,7 @@ requirements in hand, as the developer anticipated.
      later piece, whereas (b) confines an error to one sub-edge, and it handles holes and
      self-crossing rings uniformly. Fable should argue the case either way. Both share
      Greiner-Hormann's start: the parity from the outside point.
-- **Checkpoint:** the developer reads §5.1 and the candidates (and the papers), and chooses.
+- **Checkpoint:** the developer reads §5.2 and the candidates (and the papers), and chooses.
 
 ### Phase 3: intersection audit and fixes (Fable audit; Opus fixes) → PR A
 - A Fable audit of GeometryIntersect against the phase 2 requirements, and against
@@ -213,7 +226,7 @@ requirements in hand, as the developer anticipated.
   skill.
 - Doc §4.4 to §4.5: the tolerances of intersection within §1's system, and the decisions with
   their rejected alternatives.
-- **PR A**: fixes, tests, doc §4 and §5.1, and changelog entries if anything visible changes
+- **PR A**: fixes, tests, doc §4 and §5.1 to §5.2, and changelog entries if anything visible changes
   (topology resolving uses GeometryIntersect, so a fix there can be visible in both products).
 
 ### Phase 4: partitioning design (Fable designs; Opus reviews against the code)
@@ -277,7 +290,7 @@ requirements in hand, as the developer anticipated.
   containment code, which closes the roadmap's epsilon "touching" item.
 
 ### Phase 6: finish → PR B
-- Write doc §5.2 onwards from the implemented code.
+- Write doc §5.3 onwards from the implemented code.
 - Changelog entries in both products: Assign Plate IDs (GPlates) and
   `partition`/`PlatePartitioner` (pyGPlates).
 - The developer's visual check of Assign Plate IDs on polygons in GPlates. There is no rendering
