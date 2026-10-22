@@ -23,7 +23,7 @@ Two more pieces build on these: the intersection of polylines and polygons
 inside and outside it (`PolylineIntersections.{h,cc}` and `PolygonPartitioner.{h,cc}`, and the
 plate partitioner `src/app-logic/GeometryCookieCutter.{h,cc}`, section 5). pyGPlates exposes
 partitioning through `PolygonOnSphere.partition()` and `PlatePartitioner`, and GPlates through
-Assign Plate IDs.
+Assign Plate IDs (and, for points, the velocity layers).
 
 They are one design because their tolerances are one system. Point-in-polygon's point-on-outline
 threshold has the cosine `1 - 1e-12`, which is the distance code's epsilon zero (a distance with
@@ -58,7 +58,7 @@ The one table of every tolerance in this code. "Exact" means a plain `double` co
 | pyGPlates zero clamp | `geometry_on_sphere_distance`: `angular_distance != AngularDistance::ZERO` is an epsilon comparison, so a cosine within `1e-12` of 1 (a distance up to about `1.414e-6` radians) is returned as `0.0` | What Python sees as zero | Deliberate and user-visible since pyGPlates 1.0: Python code tests `== 0.0`, and geometries that touch (share a vertex, say) can come out a tiny non-zero distance when rounding hides the contact |
 | pyGPlates threshold margin, `2 * EPSILON` on the cosine | `geometry_on_sphere_distance`: `minimum_distance()` is given the cosine of the caller's threshold less `2e-12`, and the caller's threshold is then applied exactly, in radians, to the distance returned | Whether `distance()` returns `None` | `cos(acos(c))` differs from `c` by a few ULPs, so a distance passed back as the threshold was excluded by itself about a quarter of the time; and a distance clamped to `0.0` must not exceed a threshold of `0.0`. The margin covers both. A NaN threshold raises `ValueError`; the threshold is clamped to `[0, pi]` |
 | `intersect()` | `GreatCircleArc.cc` | Whether two arcs cross: four signed distances compared with zero exactly (`>= 0` on `.dval()`). An epsilon enters only once the arcs are known to cross and the caller wants the point: `cross(axis1, axis2).magSqrd() > 0` (a `real_t`, so planes within about `1e-6` radians count as the same great circle) chooses between the normalised cross product and interpolation along one arc's chord (see section 2) | The sign tests are exact so that a crossing is a crossing; only *where* near-collinear arcs cross needs care, since the cross product of nearly parallel normals is inaccurate |
-| `GeometryIntersect` thickness, the zero-length threshold (about `1e-6` radians) | `GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine()` (the zero-length cosine) and `get_on_segment_start_threshold_sine()` (its sine), used as `THICKNESS_THRESHOLD_COSINE` and `THICKNESS_THRESHOLD_SINE` in `GeometryIntersect.cc`; also the default expansion of every bounding small circle (`BoundingSmallCircleBuilder::get_default_angular_expansion()`) | Two vertices whose dot product is at least the cosine coincide. A vertex whose signed distance from an arc's plane is within the sine (both comparisons exact) is *on* the plane, and touches the arc if it is also in the arc's lune. Two arcs cross only if each has its end points beyond the sine on opposite sides of the other's plane (section 4.2) | The longest a zero-length arc can be, so a zero-length arc never has its end points on opposite sides of a thick plane, and touches any arc whose plane it straddles (the comment at `get_on_segment_start_threshold_cosine`). The bounding circles are expanded by the same amount so that the bounding tree never prunes a pair of arcs close enough to touch |
+| `GeometryIntersect` thickness, the zero-length threshold (about `1e-6` radians) | `GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine()` (the zero-length cosine) and `get_on_segment_start_threshold_sine()` (its sine), used as `THICKNESS_THRESHOLD_COSINE` and `THICKNESS_THRESHOLD_SINE` in `GeometryIntersect.cc`; also the default expansion of a bounding small circle (`BoundingSmallCircleBuilder::get_default_angular_expansion()`), which the bounding trees use | Two vertices whose dot product is at least the cosine coincide. A vertex whose signed distance from an arc's plane is within the sine (both comparisons exact) is *on* the plane, and touches the arc if it is also in the arc's lune. Two arcs cross only if each has its end points beyond the sine on opposite sides of the other's plane (section 4.2) | The longest a zero-length arc can be, so a zero-length arc never has its end points on opposite sides of a thick plane: it has both end points on any thick plane it straddles, so it can still touch that arc (the comment at `get_on_segment_start_threshold_cosine`). The bounding circles are expanded by the same amount so that the bounding tree never prunes a pair of arcs close enough to touch |
 | Lune membership in `minimum_distance(point, arc)` | The two dot products are compared with zero as `real_t` (epsilon) | Whether the point is inside the arc's lune (closest to the arc's interior) or to an end point | Deliberately epsilon, so that a point at the arc's rotation axis, where both dot products are zero, goes to the end-point branch rather than normalising a zero vector |
 | Degenerate crossing arc | `PointInPolygon::is_crossings_arc_degenerate`: `cross(R, P).magSqrd() <= 0` as a `real_t` | Whether the test point `P` is within about `1e-6` radians of `R` or of `-R`, where the crossing arc's plane is undefined, so that crossings are counted from `R2` instead (section 3.8) | The same bound as a zero-length arc |
 | Hemisphere test, `dot(v, C) > 0` exactly | `is_ring_in_open_hemisphere` (`PointInPolygon.cc`), on every vertex of a ring | Whether a ring keeps parity from `-C` (and its fan sum from `C`), or is decided by the winding rule (section 3.2) | Strict, so that a ring that passes has `-C` more than 90 degrees from every vertex: `-C` is then outside the ring, the fan from `C` is well conditioned, and the old results are reproduced bit for bit. The 1e-12 of a `real_t` comparison would gain nothing, since a vertex that close to 90 degrees passes or fails harmlessly either way |
@@ -712,7 +712,7 @@ them, `GeometryIntersect`, is shared:
   neighbours', and `ResolvedSubSegmentRangeInSection.cc` builds sub-segment ranges from the
   intersections and reuses the threshold. So does `PolylineIntersections`, which partitioning is
   built on (section 5.1) and which `GenerateVelocityDomainCitcoms.cc` also uses. Its threshold is
-  also the default expansion of every bounding small circle (section 1).
+  also the default expansion of a bounding small circle, which the bounding trees use (section 1).
 - **`GreatCircleArc::intersect`** (`GreatCircleArc.cc`) decides whether two arcs cross, and where.
   It serves the distance code only: `minimum_distance(arc, arc)` (section 2, section 4.3).
 - **`PointInPolygon`** intersects an edge with the crossing arc's plane
@@ -781,15 +781,18 @@ whether the geometries cross there, touch without crossing, or start or stop run
    - no end points coincide (step 1);
    - each arc's end points are strictly on opposite sides of the other's thick plane;
    - the orientations agree. When the first arc starts on the positive side, the second must
-     start on the negative side, and the other way round. That puts the crossing where the arcs
-     are, not at its antipode.
+     start on the negative side, and the other way round. Without this, each arc could cross the
+     other's great circle at antipodal points and never meet. The same sign later chooses between
+     the cross product and its antipode.
 
    This gives one LL intersection, and the test stops there.
 4. **Touching.** Otherwise, a start point lying on the other arc's thick plane, away from that
    arc's end points, and inside its lune (`point_is_in_segment_lune`, two exact sign tests) gives
    an SL or LS intersection, placed at that start point. So it can be up to the thickness off the
    other arc. End points are not tested: the next segment's start point covers them, except at a
-   polyline's last vertex, which is tested here too.
+   polyline's last vertex, which is tested here too. A zero-length arc has no plane, so nothing
+   touches *it* except at a coincident vertex (step 1). Its own start point can still touch the
+   other arc.
 
 **Why vertices come first.** The comment in `intersect_segments` gives the reason. Take a point
 near a vertex shared by two consecutive arcs. It can pass the point-to-vertex test (step 1) but
@@ -845,11 +848,13 @@ The distance code's `intersect(arc1, arc2)` answers a narrower question, in a di
 - **`GeometryCookieCutter`** (`src/app-logic/`) holds one `PolygonPartitioner` per partitioning
   polygon, which can be:
   - a resolved plate boundary;
-  - a resolved network's boundary with its rigid blocks as interior rings, preceded by each rigid
-    block as a polygon of its own;
+  - a resolved network's boundary with its rigid blocks as interior rings, preceded (before
+    sorting) by each rigid block as a polygon of its own;
   - a reconstructed static polygon.
 
-  The polygons are kept in a fixed order, which can be sorted by plate ID or by area.
+  The polygons are kept in the order they were added: networks, then plate boundaries, then
+  static polygons. Each of those groups can be stable-sorted, by plate ID or by area, highest
+  first. Assign Plate IDs sorts by plate ID. Sorting can move a rigid block after its network.
 - **`PolygonPartitioner`** (`src/maths/`) partitions one geometry by one polygon:
   - points and multi-points by point-in-polygon;
   - polylines and polygons through `PolylineIntersections`, which cuts both geometries into
@@ -876,25 +881,33 @@ vertex again:
 - **An intersection at a polyline's first or last vertex** (a T-junction) has no piece on that side.
 
 **Classifying a piece** (`is_partitioned_polyline_inside_partitioning_polygon`). The test is made at
-the piece's first intersection, or at its last intersection for the first piece. It takes three
-arcs:
+the intersection where the piece starts, or, for the piece before the first intersection, where it
+ends. It takes three arcs:
 - the partitioning polygon's last non-zero-length arc before the intersection;
 - the partitioning polygon's first non-zero-length arc after it;
 - the piece's first (or last) non-zero-length arc.
 
-It decides which way they bend (`do_adjacent_great_circle_arcs_bend_left`, the sign of a triple
-product), and so whether the piece leaves the intersection into the narrower angle between the
-polygon's two arcs. The partitioning polygon's orientation then says whether that angle is inside.
+If any of the three cannot be found (all the arcs are zero length), the piece is inside.
+
+It decides which way they bend (`do_adjacent_great_circle_arcs_bend_left`, an exact `> 0` test on
+a triple product), and so whether the piece leaves the intersection into the narrower angle
+between the polygon's two arcs. The partitioning polygon's orientation then says whether that angle
+is inside.
 
 Consecutive inside pieces are joined into one polyline (`InsidePartitionedPolylineMerger`), but not
-across the ring's first vertex.
+across the ring's first vertex. Each join repeats the intersection point, so a merged polyline has
+a zero-length segment there. Outside pieces are not merged.
 
 The decision is local, and that has consequences. Each piece is judged at one intersection, from
 three arcs:
-- A piece that runs along the partitioning boundary (an overlap) is judged by whichever way its
-  first arc happens to bend.
-- An intersection where the geometries only touch is treated like a crossing.
-- Only the partitioning polygon's exterior ring is consulted.
+- **A piece that runs along the partitioning boundary** (an overlap) is collinear with the
+  polygon's arcs. Every triple product is then zero up to rounding, and the exact `> 0` tests make
+  the answer the polygon's orientation: inside for a clockwise polygon, outside for a
+  counter-clockwise one. This was measured both ways, with the piece running in either direction
+  along the edge. `InsidePartitionedPolylineMerger`'s comment assumes an overlap is inside. For the
+  usual counter-clockwise polygon it is not.
+- **An intersection where the geometries only touch** is treated like a crossing.
+- **Only the partitioning polygon's exterior ring** is consulted.
 
 **No intersection.** When `PolylineIntersections` finds none, the geometry is taken to be wholly
 inside or wholly outside, decided by one vertex. That is its first vertex, or a polygon's first
@@ -906,30 +919,42 @@ the partitioning polygon's interior rings.
 
 - **A polygon that intersects comes back as polylines.** The warnings in the `PolygonOnSphere.partition`
   and `PlatePartitioner.partition_geometry` docstrings describe this, and GPlates' Assign Plate IDs
-  does the same. Cutting a square with a polygon covering its east half gives one inside polyline
-  and *two* outside polylines, which meet at the square's first vertex. In the cascade, every
+  does the same. Cutting a square with a polygon covering its east half gives one of two results,
+  because the ring is split at its first vertex whichever side that vertex lies on:
+  - one inside polyline and *two* outside polylines, meeting at the square's first vertex, when
+    that vertex is outside;
+  - two inside and one outside, when it is inside.
+
+  In the cascade, every
   partitioning polygon after the first that cuts it sees only polylines.
 - **A partitioning polygon wholly inside the input polygon** cuts nothing. The input's first vertex
   is outside it, so the whole input is outside, and the part inside the partitioning polygon is
   lost. `GLReconstructedStaticPolygonMeshes` makes up for this itself, by testing whether the
-  quad-tree node's polygon contains a vertex of the partitioning polygon.
+  quad-tree node's polygon contains the partitioning polygon's first exterior vertex (with the
+  on-outline threshold off).
 - **Interior rings are invisible to the cut.** An input that crosses only a partitioning polygon's
-  interior ring has no intersections, so one vertex decides all of it:
-  - a polygon reaching from inside the hole out past it is wholly outside;
-  - a polyline across the hole is wholly inside.
+  interior ring has no intersections. So one vertex decides all of it, whichever side the rest
+  lies on:
+  - a polygon reaching from inside the hole out past it is wholly outside if its first vertex is
+    in the hole, and wholly inside if it is not;
+  - a polyline across the hole is wholly inside when it starts in the solid part, and wholly
+    outside when it starts in the hole.
 
   Likewise, an input polygon with a hole is wholly outside a partitioning polygon that crosses only
   that hole's boundary, even where the partitioning polygon covers the input's solid part.
 
 **Scalar coverages** (`src/app-logic/PartitionFeatureUtils.cc`). Partitioning a feature carries each
 scalar coverage of its geometries over to the pieces. A coverage's domain is the geometry's
-exterior points only, because `ScalarCoverageFeatureProperties` extracts it that way (its TODO
-asks for interior rings).
+exterior points only, because the scalar-coverage extraction (`ScalarCoverageFeatureProperties`)
+and `PartitionFeatureUtils` both take exterior points only
+(`GeometryUtils::get_geometry_exterior_points`). The TODO in `PartitionFeatureUtils.cc` asks for
+interior rings.
 - **A piece's point that matches an original point** takes that point's values. The match is
   through a `std::map` keyed with `PointOnSphereMapPredicate`, an epsilon comparison, so two
   original points close together can share one entry.
 - **Any other point** (an intersection) is located on the nearest original segment, searched within
-  0.5 degrees, and its values are interpolated along that segment.
+  0.5 degrees, or with no limit if nothing is found within that. Its values are interpolated along
+  that segment. On a zero-length segment it takes the start point's values.
 
 That relies on every point of a piece lying on the input's outline, which is true while the pieces
 are polylines (the TODO there says so). The TODO asks for the partitioner to record where each point
@@ -1006,10 +1031,10 @@ a build of the code before the rule: every polygon that passes the hemisphere te
 the only differences being in the interior centroid of the 879 polygons wider than its size switch,
 which is the change intended.
 
-Intersection and partitioning have no C++ tests. `GeometryIntersect` is exercised only through
-topology resolving, and through `GenerateVelocityDomainCitcomsTest.cc`, which uses
-`PolylineIntersections`. `GreatCircleArc::intersect` is exercised through the distance tests
-above. The pyGPlates partition tests (`test_partition` in `test_geometries_on_sphere.py`,
+Intersection and partitioning have no C++ tests of their own. In C++, `GeometryIntersect` is
+reached only through `GenerateVelocityDomainCitcomsTest.cc` (via `PolylineIntersections`).
+Otherwise it is reached through the pyGPlates topology and partition tests.
+`GreatCircleArc::intersect` is exercised through the distance tests above. The pyGPlates partition tests (`test_partition` in `test_geometries_on_sphere.py`,
 `test_partition_geometry` in `pygplates/test/test_app_logic/test.py`) assert today's behaviour,
 including the polylines from an intersecting polygon ("will be fixed in future") and three outside
 pieces "instead of 2".

@@ -19,6 +19,13 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
 
   `GLReconstructedStaticPolygonMeshes` works around the first itself. Each case becomes a
   regression test in PR B.
+- 2026-10-23: the Fable claim check of §4 and §5.1 found 16 issues, all applied. One is a fourth bug
+  for PR B. A piece overlapping the partitioning boundary is classified by the polygon's
+  *orientation*: the bend test's triple products are about zero, and `> 0` is exact. So it is
+  outside for a counter-clockwise polygon and inside for a clockwise one, although the merger's
+  comment assumes overlaps are inside. This is the cascade's normal case once the output is
+  polygons. Next: the developer reads §4 and §5.1, then Phase 2 (Fable), after checking the usage
+  limit.
 
 ## Context
 
