@@ -29,7 +29,7 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
 - 2026-10-23: Phase 2 written by Fable.
   - Doc §5.2, "Clipping by DateLineWrapper", plus two §1 table rows. Reviewed by Opus; one fix
     (the ring-grouping test also takes a ring that *contains* the exterior). Its own Fable claim
-    check is still to come.
+    check found 19 issues, all applied (2026-10-23).
   - `phase2-requirements.md`: the papers, requirements R1 to R12, the candidates and 11 open
     questions. It recommends **(b), the overlay**: split both geometries at every intersection,
     classify each piece by one threshold-off `is_point_in_polygon` of its longest arc's midpoint,
