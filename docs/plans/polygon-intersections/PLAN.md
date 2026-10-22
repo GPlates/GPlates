@@ -45,8 +45,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   - Phases 0 to 2 are done and claim-checked. Waiting on the developer at the Phase 2 checkpoint:
     the choice of algorithm (recommendation: (b), the overlay) and answers to the 11 questions in
     `phase2-requirements.md` §4.
-  - Then Phase 3: the `GeometryIntersect` audit (Fable), plus the brute-force check of
-    `DateLineWrapper` (Opus).
+  - Then Phase 3: the `GeometryIntersect` audit (Fable). `DateLineWrapper` is not checked
+    before the Phase 4 decision.
   - Build trees: `build-gplates` and `build-pygplates` in this worktree, configured and green
     (GPlates 92/92, pyGPlates 7/7).
   - The planning repository's worktree for this session is `gplates-planning-wt/worktree-2`.
@@ -255,15 +255,6 @@ requirements in hand, as the developer anticipated.
   arcs, and ring edges cut and re-fed (as the cascade does).
 - Add C++ GoogleTest coverage for GeometryIntersect. There is none today. Follow the `cpp-test`
   skill.
-- **A brute-force check of `DateLineWrapper`** (decided 2026-10-23). This is an Opus job, not a
-  Fable audit. Wrap random polygons through `pygplates.DateLineWrapper(central_meridian)`: holes,
-  rings round a pole, touches, vertices on the dateline, non-zero central meridians. Then check
-  that a random point is inside some output piece exactly when it is inside the input, outside a
-  narrow band along the dateline. This is the Phase 5 oracle, reused.
-  - It measures whether the defects listed in §5.2 reach users today.
-  - Anything serious becomes a small fix on `main`, separate from this branch.
-  - The full audit waits for the Phase 4 decision below, so it isn't spent on code the overlay may
-    replace.
 - Doc §4.4 to §4.5: the tolerances of intersection within §1's system, and the decisions with
   their rejected alternatives.
 - **PR A**: fixes, tests, doc §4 and §5.1 to §5.2, and changelog entries if anything visible changes
@@ -318,10 +309,18 @@ requirements in hand, as the developer anticipated.
     provenance.
   - So the design should support cutting by an open arc (pieces used in both directions), not
     only by a polygon.
-  - If yes: port `DateLineWrapper` in its own PR after PR B, outside 1.1. It changes map display
-    and export, so it needs the developer's visual check and changelog entries in both products.
-    Then audit only the thin layer.
-  - If no: audit `DateLineWrapper` as it is, after PR B.
+  - If yes: port `DateLineWrapper` in its own PR after PR B. It is part of the pyGPlates API, so
+    it can go in 1.1 if time allows, or after 1.1 (decided 2026-10-23: either is fine, since it has
+    long served well as it is). The port changes map display, export and pyGPlates'
+    `DateLineWrapper` output: holes stay holes, and rings keep their direction. So it needs the
+    developer's visual check and changelog entries in both products.
+    - The port PR starts with a brute-force oracle on the current code. Wrap random polygons
+      (holes, rings round a pole, touches, vertices on the dateline, non-zero central meridians),
+      then check that a random point is inside some output piece exactly when it is inside the
+      input, outside a narrow band along the dateline. The same oracle then checks the port.
+    - Only the thin layer that stays needs an audit.
+  - If no: `DateLineWrapper` stays as it is for 1.1, without an audit (it has served well). A
+    later audit, with the same oracle, is the roadmap's call.
 - **Checkpoint:** the developer approves the design, the coverage policy and the coverage scope.
 
 ### Phase 5: implementation (Opus implements; Fable reviews each major commit)
