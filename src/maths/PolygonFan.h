@@ -39,7 +39,8 @@
 namespace GPlatesMaths
 {
 	/**
-	 * A triangular fan mesh with apex at the centroid of a polygon.
+	 * A triangular fan mesh with apex at the antipode of a polygon's outside point (see
+	 * PolygonOnSphere::get_outside_point), so that its fill by parity agrees with point-in-polygon.
 	 *
 	 * Can also be generated from a polyline by closing the gap between the first and last vertices.
 	 *

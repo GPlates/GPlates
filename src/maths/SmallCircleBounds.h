@@ -156,6 +156,8 @@ namespace GPlatesMaths
 		 *
 		 * If the polygon outline is completely outside the small circle *and*
 		 * the polygon surrounds the small circle then 'INTERSECTING_BOUNDS' is returned.
+		 * Likewise if the outline is completely inside the small circle but the polygon's interior
+		 * reaches past it (see PolygonOnSphere::is_outside_bounding_small_circle_outside_polygon).
 		 */
 		Result
 		test_filled_polygon(
@@ -743,6 +745,9 @@ namespace GPlatesMaths
 		 *
 		 * If the polygon outline is completely outside the outer small circle *and*
 		 * the polygon surrounds the outer small circle then 'INTERSECTING_BOUNDS' is returned.
+		 * Likewise if the outline is completely inside the inner small circle but the polygon's
+		 * interior reaches past it (see
+		 * PolygonOnSphere::is_outside_bounding_small_circle_outside_polygon).
 		 */
 		Result
 		test_filled_polygon(

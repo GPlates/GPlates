@@ -4324,7 +4324,10 @@ export_polygon_on_sphere()
 				"\n"
 				"  :rtype: float\n"
 				"\n"
-				"  The area is essentially the absolute value of the :meth:`signed area<get_signed_area>`.\n"
+				"  The area is essentially the absolute value of the :meth:`signed area<get_signed_area>`. "
+				"It is the area of the polygon's interior, the same interior as :meth:`is_point_in_polygon` "
+				"(each ring's smaller side), so a polygon whose rings don't cross themselves has an area of at "
+				"most half the sphere (2*pi steradians).\n"
 				"\n"
 				"  To convert the area from steradians (square radians) to square kms, multiply by the square of the :class:`Earth's radius<Earth>`:\n"
 				"  ::\n"
@@ -4332,7 +4335,15 @@ export_polygon_on_sphere()
 				"    area_in_square_kms = polygon.get_area() * pygplates.Earth.mean_radius_in_kms**2\n"
 				"\n"
 				"  .. note:: The interior rings reduce the absolute area of the exterior ring "
-				"(regardless of their orientation) because they are holes in the polygon.\n")
+				"(regardless of their orientation) because they are holes in the polygon. "
+				"That is exact when the interior rings are inside the exterior ring and don't overlap each other. "
+				"Otherwise the area differs from the region :meth:`is_point_in_polygon` counts as inside, "
+				"which includes the part of an interior ring outside the exterior ring, and the overlap of two "
+				"interior rings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     The area of the polygon's smaller side, even if it wraps round the globe "
+				"(see :meth:`is_point_in_polygon`).\n")
 		.def("get_signed_area",
 				&GPlatesMaths::PolygonOnSphere::get_signed_area,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -4343,6 +4354,8 @@ export_polygon_on_sphere()
 				"\n"
 				"  If this polygon is clockwise (when viewed from above the surface of the sphere) "
 				"then the returned area will be negative, otherwise it will be positive. "
+				"Clockwise means that the exterior ring goes clockwise round the polygon's interior, which is "
+				"the ring's smaller side (see :meth:`is_point_in_polygon`). "
 				"However if you only want to determine the orientation of this polygon then "
 				":meth:`get_orientation` is more efficient than comparing the sign of the area.\n"
 				"\n"
@@ -4352,9 +4365,15 @@ export_polygon_on_sphere()
 				"  .. note:: The interior rings reduce the absolute area of the exterior ring "
 				"(regardless of their orientation) because they are holes in the polygon. "
 				"So if the signed area of exterior ring is positive then any interior rings will reduce that, "
-				"and if it's negative then any interior rings will make it less negative.\n"
+				"and if it's negative then any interior rings will make it less negative. "
+				"That is exact only when the interior rings are inside the exterior ring and don't overlap each other "
+				"(see :meth:`get_area`).\n"
 				"\n"
-				"  .. seealso:: :meth:`get_area`\n")
+				"  .. seealso:: :meth:`get_area`\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     The signed area of the polygon's smaller side, even if it wraps round the globe "
+				"(see :meth:`is_point_in_polygon`).\n")
 		.def("get_orientation",
 				&GPlatesMaths::PolygonOnSphere::get_orientation,
 				"get_orientation()\n"
@@ -4373,8 +4392,15 @@ export_polygon_on_sphere()
 				"    else:\n"
 				"      print 'Orientation is counter-clockwise'\n"
 				"\n"
+				"  Clockwise means that the exterior ring goes clockwise round the polygon's interior, which is the "
+				"ring's smaller side (see :meth:`is_point_in_polygon`).\n"
+				"\n"
 				"  .. note:: The orientation is determined by the sign of the :meth:`signed area<get_signed_area>` "
-				"(with an optimization to make it more efficient in most cases).\n")
+				"(with an optimization to make it more efficient in most cases).\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     The orientation round the polygon's smaller side, even if it wraps round the globe "
+				"(see :meth:`is_point_in_polygon`).\n")
 		.def("is_point_in_polygon",
 				&GPlatesApi::polygon_on_sphere_is_point_in_polygon,
 				(bp::arg("point")),
@@ -4400,11 +4426,23 @@ export_polygon_on_sphere()
 				"  A point on the polygon's outline, or within about 9 metres (1.4e-6 radians) of it, is *inside*. "
 				"So a point on a boundary shared by two adjacent polygons (eg, two topological plates) is inside both.\n"
 				"\n"
-				"  Inside is decided by the number of times a path to the point, from a point taken to be outside, crosses "
-				"the outline (exterior and interior rings): an odd number is inside. So the order (clockwise or "
-				"counter-clockwise) of a ring's points does not matter. And in a self-intersecting polygon, or one whose "
-				"interior ring crosses its exterior ring, a region is inside if it is reached from outside by crossing "
-				"the outline an odd number of times.\n")
+				"  A point is inside the polygon if it is inside an odd number of the polygon's rings (exterior and "
+				"interior alike). So the order (clockwise or counter-clockwise) of a ring's points does not matter, and in "
+				"a polygon whose interior ring crosses its exterior ring, the part of the interior ring outside the "
+				"exterior ring is inside the polygon.\n"
+				"\n"
+				"  The inside of a ring is its smaller side, the side with less than half the area of the sphere, even if "
+				"the ring wraps round the globe. So a polygon cannot cover more than half the sphere: a ring round a larger "
+				"region means the region outside it. A ring that halves the sphere (to within about 1e-8 steradians, as "
+				"four points on the equator do) has its inside to its left, so reversing its points swaps its inside and "
+				"outside. In a ring that crosses itself, a region is inside if the number of times the ring winds round it "
+				"differs by an odd number from the ring's average winding number, rounded to the nearest whole number. "
+				"So in a ring that crosses itself only slightly (with a small twist or loop), every lobe is inside, "
+				"whichever way it is wound.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     The inside of each ring is its smaller side. Previously it was the side away from the antipode of "
+				":meth:`get_boundary_centroid`, so a ring that wraps round the globe could be inside out.\n")
 		.def("partition",
 				&GPlatesApi::polygon_on_sphere_partition,
 				(bp::arg("geometry"),
@@ -4498,16 +4536,22 @@ export_polygon_on_sphere()
 				"\n"
 				"  :rtype: PointOnSphere\n"
 				"\n"
-				"  The *interior* centroid is calculated as a weighted average of the centroids of "
-				"spherical triangles formed by all :class:`great circle arcs<GreatCircleArc>` of this polygon "
-				"with weighting proportional to the signed area of each individual spherical triangle. "
-				"The interior rings change the spherical area weighting because they are holes in the polygon "
-				"and essentially cut out the internal area of the exterior ring.\n"
+				"  The *interior* centroid is the centre of mass of the polygon's interior (the same interior as "
+				":meth:`is_point_in_polygon`), projected onto the sphere. "
+				"The interior rings change it because they are holes in the polygon "
+				"and essentially cut out the internal area of the exterior ring. "
+				"It is exact for a polygon wider than about 0.01 radians. For a smaller polygon it is a weighted "
+				"average of the centroids of the spherical triangles formed by the polygon's "
+				":class:`great circle arcs<GreatCircleArc>` and :meth:`get_boundary_centroid`.\n"
 				"\n"
 				"  This centroid is useful when the centre-of-mass of the polygon interior is desired. "
 				"For example, the *interior* centroid of a bottom-heavy, pear-shaped polygon will be "
-				"closer to the bottom of the polygon. This centroid is not exactly at the centre-of-mass, "
-				"but it will be a lot closer to the real centre-of-mass than :meth:`get_boundary_centroid`.\n")
+				"closer to the bottom of the polygon than :meth:`get_boundary_centroid`.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Exact for a polygon wider than about 0.01 radians (previously it used the triangle approximation for "
+				"every polygon, which is off by up to about 0.3 degrees for a polygon one radian across), and of the "
+				"polygon's smaller side, even if it wraps round the globe.\n")
 		.def("get_centroid",
 				&GPlatesApi::polygon_on_sphere_get_interior_centroid,
 				"get_centroid()\n"

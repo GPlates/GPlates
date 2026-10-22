@@ -27,6 +27,7 @@
 #ifndef GPLATES_MATHS_SPHERICALAREA_H
 #define GPLATES_MATHS_SPHERICALAREA_H
 
+#include "PolygonOnSphere.h"
 #include "types.h"
 
 
@@ -34,7 +35,6 @@ namespace GPlatesMaths
 {
 	class GreatCircleArc;
 	class PointOnSphere;
-	class PolygonOnSphere;
 
 	namespace SphericalArea
 	{
@@ -44,6 +44,12 @@ namespace GPlatesMaths
 		 * If the polygon is clockwise, when viewed from above the surface of the sphere,
 		 * the returned value will be negative, otherwise it will be positive.
 		 *
+		 * Each ring's area is the area of its interior (see PointInPolygon::InteriorReference), which
+		 * for a ring that doesn't cross itself is at most half the sphere, and its sign says whether
+		 * the interior is to the ring's left (positive) or right. For a ring that crosses itself it is
+		 * the area weighted by winding number (relative to the ring's outside), so a lobe wound the
+		 * other way counts negatively.
+		 *
 		 * The interior rings reduce the absolute area of the exterior ring (regardless of their
 		 * orientation) because they are holes in the polygon and are meant to cutout the internal area.
 		 * So if the signed area of exterior ring is positive then any interior rings will reduce that, and
@@ -51,6 +57,11 @@ namespace GPlatesMaths
 		 * Note that the orientation of the interior rings can be arbitrary (ie, the interior orientations
 		 * are not forced to have the opposite orientation to the exterior ring like some software does)
 		 * and they will still correctly affect the signed area.
+		 *
+		 * That is exact only when the interior rings are disjoint and inside the exterior ring.
+		 * Point-in-polygon combines the rings by parity, so the part of an interior ring outside the
+		 * exterior ring is inside the polygon (but is subtracted here), and so is the overlap of two
+		 * interior rings (which is subtracted twice here).
 		 *
 		 * The signed area assumes a unit radius sphere.
 		 * To get the signed area on the Earth, multiply by the square of the Earth's radius
@@ -63,14 +74,6 @@ namespace GPlatesMaths
 
 		/**
 		 * Same as @a calculate_polygon_signed_area but returns the absolute value of the area.
-		 *
-		 * The area is guaranteed to be less than "2 * PI" (ie, the area of a hemisphere).
-		 * You can think of a polygon-on-sphere as containing the smaller *inside* area or
-		 * the larger *outside* area.
-		 * Here we calculate the smaller *inside* area (less than "2 * PI").
-		 * This effectively makes this function polygon-orientation agnostic - the
-		 * polygon orientation is what determines whether the smaller or larger area
-		 * actually gets calculated internally - and this function takes the smaller area.
 		 */
 		inline
 		real_t
@@ -119,6 +122,21 @@ namespace GPlatesMaths
 		{
 			return abs(calculate_polygon_interior_ring_signed_area(polygon, interior_ring_index));
 		}
+
+
+		/**
+		 * Calculates the sum of the signed areas of the spherical triangles formed by @a apex and
+		 * each edge of a polygon ring (see @a calculate_spherical_triangle_signed_area).
+		 *
+		 * This is the integral, over the sphere, of the ring's winding number less its winding number
+		 * at the antipode of @a apex. So it is the signed area of the ring's interior only if the
+		 * apex's antipode is outside it (see PointInPolygon::get_ring_winding_offset).
+		 */
+		real_t
+		calculate_polygon_ring_fan_signed_area(
+				const PointOnSphere &apex,
+				const PolygonOnSphere::ring_const_iterator &ring_begin,
+				const PolygonOnSphere::ring_const_iterator &ring_end);
 
 
 		/**

@@ -28,6 +28,7 @@
 #include "SphericalArea.h"
 
 #include "GreatCircleArc.h"
+#include "PointInPolygon.h"
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
 #include "Rotation.h"
@@ -134,36 +135,58 @@ namespace GPlatesMaths
 }
 
 
+namespace GPlatesMaths
+{
+	namespace
+	{
+		/**
+		 * Calculates the *signed* spherical area of the interior of a polygon ring (see
+		 * PointInPolygon::InteriorReference).
+		 *
+		 * A ring within the open hemisphere about the boundary centroid C (its interior is parity
+		 * from -C) has the fan sum from apex C, as before the interior rule. Any other ring has the fan
+		 * sum from the antipode of the polygon's outside point, less 4 pi times its winding offset
+		 * (non-zero when the outside point is in the ring's interior): the same fan sum, and the same
+		 * rounding, as decided whether the outside point is outside.
+		 */
+		real_t
+		calculate_polygon_ring_signed_area(
+				const PolygonOnSphere &polygon,
+				bool is_ring_in_boundary_centroid_hemisphere,
+				const PolygonOnSphere::ring_const_iterator &ring_begin,
+				const PolygonOnSphere::ring_const_iterator &ring_end)
+		{
+			if (is_ring_in_boundary_centroid_hemisphere)
+			{
+				return SphericalArea::calculate_polygon_ring_fan_signed_area(
+						PointOnSphere(polygon.get_boundary_centroid()),
+						ring_begin,
+						ring_end);
+			}
+
+			const real_t ring_fan_signed_area = SphericalArea::calculate_polygon_ring_fan_signed_area(
+					PointOnSphere(-polygon.get_interior_reference().get_outside_point()),
+					ring_begin,
+					ring_end);
+
+			return ring_fan_signed_area -
+					4 * PI * PointInPolygon::get_ring_winding_offset(ring_fan_signed_area.dval());
+		}
+	}
+}
+
+
 GPlatesMaths::real_t
 GPlatesMaths::SphericalArea::calculate_polygon_signed_area(
 		const PolygonOnSphere &polygon)
 {
-	// Calculate a rough centroid of the polygon.
-	const PointOnSphere polygon_centroid(polygon.get_boundary_centroid());
+	const PointInPolygon::InteriorReference &interior_reference = polygon.get_interior_reference();
 
-	//
-	// Form triangles using the polygon centroid and each edge of the polygon (including exterior
-	// and interior rings) and sum the signed area of these spherical triangles (with the signed area
-	// of interior rings forced to have opposite sign than the exterior ring as detailed below).
-	//
-	// Form the edges of a spherical triangle that:
-	// (1) starts at the polygon centroid,
-	// (2) moves to the current polygon edge start point,
-	// (3) moves to the current polygon edge end point,
-	// (4) moves back to the polygon centroid,
-	// thus forming a continuous loop.
-	//
-
-	real_t exterior_ring_signed_area = 0;
-
-	// Calculate signed area of exterior ring.
-	PolygonOnSphere::ring_const_iterator exterior_ring_edges_iter = polygon.exterior_ring_begin();
-	const PolygonOnSphere::ring_const_iterator exterior_ring_edges_end = polygon.exterior_ring_end();
-	for ( ; exterior_ring_edges_iter != exterior_ring_edges_end; ++exterior_ring_edges_iter)
-	{
-		const GreatCircleArc &edge = *exterior_ring_edges_iter;
-		exterior_ring_signed_area += calculate_spherical_triangle_signed_area(polygon_centroid, edge);
-	}
+	const real_t exterior_ring_signed_area = calculate_polygon_ring_signed_area(
+			polygon,
+			interior_reference.is_exterior_ring_in_boundary_centroid_hemisphere(),
+			polygon.exterior_ring_begin(),
+			polygon.exterior_ring_end());
 
 	real_t total_signed_area = exterior_ring_signed_area;
 
@@ -173,15 +196,11 @@ GPlatesMaths::SphericalArea::calculate_polygon_signed_area(
 		interior_ring_index < num_interior_rings;
 		++interior_ring_index)
 	{
-		real_t interior_ring_signed_area = 0;
-
-		PolygonOnSphere::ring_const_iterator interior_ring_edges_iter = polygon.interior_ring_begin(interior_ring_index);
-		const PolygonOnSphere::ring_const_iterator interior_ring_edges_end = polygon.interior_ring_end(interior_ring_index);
-		for ( ; interior_ring_edges_iter != interior_ring_edges_end; ++interior_ring_edges_iter)
-		{
-			const GreatCircleArc &edge = *interior_ring_edges_iter;
-			interior_ring_signed_area += calculate_spherical_triangle_signed_area(polygon_centroid, edge);
-		}
+		const real_t interior_ring_signed_area = calculate_polygon_ring_signed_area(
+				polygon,
+				interior_reference.is_interior_ring_in_boundary_centroid_hemisphere(interior_ring_index),
+				polygon.interior_ring_begin(interior_ring_index),
+				polygon.interior_ring_end(interior_ring_index));
 
 		// Force the interior ring areas to have the opposite sign of the exterior area.
 		// This way the interior rings reduce the absolute area of the exterior ring because
@@ -206,33 +225,11 @@ GPlatesMaths::real_t
 GPlatesMaths::SphericalArea::calculate_polygon_exterior_ring_signed_area(
 		const PolygonOnSphere &polygon)
 {
-	// Calculate a rough centroid of the polygon.
-	const PointOnSphere polygon_centroid(polygon.get_boundary_centroid());
-
-	//
-	// Form triangles using the polygon centroid and each edge of the polygon exterior
-	// and sum the signed area of these spherical triangles.
-	//
-	// Form the edges of a spherical triangle that:
-	// (1) starts at the polygon centroid,
-	// (2) moves to the current polygon edge start point,
-	// (3) moves to the current polygon edge end point,
-	// (4) moves back to the polygon centroid,
-	// thus forming a continuous loop.
-	//
-
-	real_t ring_signed_area = 0;
-
-	// Calculate signed area of exterior ring.
-	PolygonOnSphere::ring_const_iterator ring_edges_iter = polygon.exterior_ring_begin();
-	const PolygonOnSphere::ring_const_iterator ring_edges_end = polygon.exterior_ring_end();
-	for ( ; ring_edges_iter != ring_edges_end; ++ring_edges_iter)
-	{
-		const GreatCircleArc &edge = *ring_edges_iter;
-		ring_signed_area += calculate_spherical_triangle_signed_area(polygon_centroid, edge);
-	}
-
-	return ring_signed_area;
+	return calculate_polygon_ring_signed_area(
+			polygon,
+			polygon.get_interior_reference().is_exterior_ring_in_boundary_centroid_hemisphere(),
+			polygon.exterior_ring_begin(),
+			polygon.exterior_ring_end());
 }
 
 
@@ -245,30 +242,40 @@ GPlatesMaths::SphericalArea::calculate_polygon_interior_ring_signed_area(
 			interior_ring_index < polygon.number_of_interior_rings(),
 			GPLATES_ASSERTION_SOURCE);
 
-	// Calculate a rough centroid of the polygon.
-	const PointOnSphere polygon_centroid(polygon.get_boundary_centroid());
+	return calculate_polygon_ring_signed_area(
+			polygon,
+			polygon.get_interior_reference().is_interior_ring_in_boundary_centroid_hemisphere(
+					interior_ring_index),
+			polygon.interior_ring_begin(interior_ring_index),
+			polygon.interior_ring_end(interior_ring_index));
+}
 
+
+GPlatesMaths::real_t
+GPlatesMaths::SphericalArea::calculate_polygon_ring_fan_signed_area(
+		const PointOnSphere &apex,
+		const PolygonOnSphere::ring_const_iterator &ring_begin,
+		const PolygonOnSphere::ring_const_iterator &ring_end)
+{
 	//
-	// Form triangles using the polygon centroid and each edge of the polygon interior
-	// and sum the signed area of these spherical triangles.
+	// Form triangles using the apex and each edge of the ring and sum the signed area of these
+	// spherical triangles.
 	//
 	// Form the edges of a spherical triangle that:
-	// (1) starts at the polygon centroid,
-	// (2) moves to the current polygon edge start point,
-	// (3) moves to the current polygon edge end point,
-	// (4) moves back to the polygon centroid,
+	// (1) starts at the apex,
+	// (2) moves to the current ring edge start point,
+	// (3) moves to the current ring edge end point,
+	// (4) moves back to the apex,
 	// thus forming a continuous loop.
 	//
 
 	real_t ring_signed_area = 0;
 
-	// Calculate signed area of interior ring.
-	PolygonOnSphere::ring_const_iterator ring_edges_iter = polygon.interior_ring_begin(interior_ring_index);
-	const PolygonOnSphere::ring_const_iterator ring_edges_end = polygon.interior_ring_end(interior_ring_index);
-	for ( ; ring_edges_iter != ring_edges_end; ++ring_edges_iter)
+	PolygonOnSphere::ring_const_iterator ring_edges_iter = ring_begin;
+	for ( ; ring_edges_iter != ring_end; ++ring_edges_iter)
 	{
 		const GreatCircleArc &edge = *ring_edges_iter;
-		ring_signed_area += calculate_spherical_triangle_signed_area(polygon_centroid, edge);
+		ring_signed_area += calculate_spherical_triangle_signed_area(apex, edge);
 	}
 
 	return ring_signed_area;

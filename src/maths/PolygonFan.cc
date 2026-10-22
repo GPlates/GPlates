@@ -151,7 +151,7 @@ GPlatesMaths::PolygonFan::create(
 	polygon_fan->add_fan_ring(
 			polygon->exterior_ring_vertex_begin(),
 			polygon->number_of_vertices_in_exterior_ring(),
-			polygon->get_boundary_centroid());
+			-polygon->get_outside_point());
 
 
 	// Add the polygon's interior rings.
@@ -161,7 +161,7 @@ GPlatesMaths::PolygonFan::create(
 		polygon_fan->add_fan_ring(
 				polygon->interior_ring_vertex_begin(interior_ring_index),
 				polygon->number_of_vertices_in_interior_ring(interior_ring_index),
-				polygon->get_boundary_centroid());
+				-polygon->get_outside_point());
 	}
 
 	return non_null_ptr_to_const_type(polygon_fan);

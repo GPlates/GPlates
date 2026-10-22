@@ -220,8 +220,14 @@ namespace GPlatesMaths
 		 * are not forced to have the opposite orientation to the exterior ring like some software does)
 		 * and they will still correctly affect the spherical weighting.
 		 *
+		 * The interior is the one point-in-polygon uses (see PointInPolygon::InteriorReference). A polygon
+		 * whose outline's bounding small circle is wider than 0.01 radians uses its exact area moment
+		 * (half the sum of each edge's arc length times its unit normal). A smaller one approximates it
+		 * with a fan of triangles from its boundary centroid, each weighted by area at its vertices' mean
+		 * (which the exact moment, a sum of terms much larger than itself, can't match for a tiny polygon).
+		 *
 		 * NOTE: Returns the first point of the exterior ring if centroid cannot be determined because
-		 * area weighted triangle centroids sum to the zero vector.
+		 * the area moment is the zero vector.
 		 */
 		UnitVector3D
 		calculate_interior_centroid(

@@ -57,6 +57,11 @@ namespace GPlatesMaths
 	{
 		struct CachedCalculations;
 	}
+	namespace PointInPolygon
+	{
+		class InteriorReference;
+		struct SecondReferencePoint;
+	}
 	class BoundingSmallCircle;
 	class InnerOuterBoundingSmallCircle;
 
@@ -1663,20 +1668,78 @@ namespace GPlatesMaths
 		 * (such as the polyline intersections code where a point extremely close to a polygon,
 		 * but still outside it, should not be considered inside it).
 		 *
-		 * The point-in-polygon test is done by counting the number of polygon edges crossed
-		 * (in the exterior ring and any interior rings) from the polygon's antipodal centroid to
-		 * the point being tested. This means that if an interior ring intersects the exterior ring
-		 * then it is possible for a test point, that is outside the exterior ring but inside the
-		 * interior ring, to pass the point-in-polygon test. This might not be desirable but it is
-		 * similar to how filled polygons are currently rendered and so at least there is some
-		 * consistency there (and reconstructed rasters use the point-in-polygon test when generating
-		 * a polygon mesh so it's consistent too).
+		 * The point-in-polygon test is done by counting the number of polygon edges crossed (in the
+		 * exterior ring and any interior rings) from a point outside the polygon (see
+		 * PolygonOnSphere::get_outside_point, and PointInPolygon::InteriorReference for how each
+		 * ring's interior is defined) to the point being tested. So if an interior ring intersects
+		 * the exterior ring then it is possible for a test point, that is outside the exterior ring
+		 * but inside the interior ring, to pass the point-in-polygon test. This might not be
+		 * desirable but it is similar to how filled polygons are currently rendered and so at least
+		 * there is some consistency there (and reconstructed rasters use the point-in-polygon test
+		 * when generating a polygon mesh so it's consistent too).
 		 */
 		bool
 		is_point_in_polygon(
 				const PointOnSphere &point,
 				PointInPolygonSpeedAndMemory speed_and_memory = ADAPTIVE,
 				bool use_point_on_polygon_threshold = true) const;
+
+
+		/**
+		 * Returns the point outside this polygon from which point-in-polygon counts crossings, and
+		 * how each ring's interior was decided (see PointInPolygon::InteriorReference).
+		 *
+		 * The result is cached on first call.
+		 */
+		const PointInPolygon::InteriorReference &
+		get_interior_reference() const;
+
+
+		/**
+		 * Returns a point outside this polygon (and as far from its outline as practical).
+		 *
+		 * Anything that decides what is inside this polygon must agree with point-in-polygon, which
+		 * counts crossings from this point. A triangle fan that fills the interior by parity (as
+		 * the globe's filled polygons do) must use this point's antipode as its apex. And a region
+		 * that contains no edges (the region outside a small circle bounding the outline, say) is
+		 * all inside or all outside, and is known to be outside if it contains this point.
+		 *
+		 * It is the antipode of @a get_boundary_centroid unless a vertex (of any ring) is outside
+		 * the open hemisphere about the centroid (as for a ring that wraps round the globe).
+		 *
+		 * The result is cached on first call.
+		 */
+		const UnitVector3D &
+		get_outside_point() const;
+
+
+		/**
+		 * Returns true if the region outside @a small_circle, which must contain this polygon's
+		 * outline (every ring), is outside this polygon.
+		 *
+		 * That region contains no edges, so it is all inside or all outside, and it is outside unless
+		 * this polygon wraps round the globe so far that its interior reaches past its outline's
+		 * bounding circle. Code that skips a polygon because something lies outside a small circle
+		 * bounding its outline, when it means the polygon's interior (a solid polygon, or a fill)
+		 * and not just its outline, must check this first.
+		 *
+		 * It is true at once if the outside point (see @a get_outside_point) is outside the circle,
+		 * as for every polygon whose vertices are within the open hemisphere about its boundary
+		 * centroid, with a circle centred near it. Otherwise it costs a point-in-polygon test.
+		 */
+		bool
+		is_outside_bounding_small_circle_outside_polygon(
+				const BoundingSmallCircle &small_circle) const;
+
+
+		/**
+		 * Returns a second point from which point-in-polygon can count crossings, with its status
+		 * (see PointInPolygon::SecondReferencePoint).
+		 *
+		 * The result is cached on first call.
+		 */
+		const PointInPolygon::SecondReferencePoint &
+		get_second_reference_point() const;
 
 
 		/**

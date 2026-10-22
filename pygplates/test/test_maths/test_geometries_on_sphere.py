@@ -217,9 +217,34 @@ def _path_arc_crosses_edge(a, b, c, d):
         raise _Reroute()
     return acb == bda == cbd == dac
 
+def _triangle_signed_area(a, b, c):
+    # The signed area of the spherical triangle abc (positive counter-clockwise), by the Van Oosterom and Strackee
+    # formula (pyGPlates sums interior angles instead).
+    return 2.0 * math.atan2(_dot(a, _cross(b, c)), 1.0 + _dot(a, b) + _dot(b, c) + _dot(c, a))
+
+def _parity(edges, r, p, rng):
+    # Crossing parity (True if odd) over the edges from r to p, both off the outline, via a random waypoint.
+    while True:
+        w = _random_unit_vector(rng)
+        if not (0.05 < _angle(r, w) < math.pi - 0.2 and 0.05 < _angle(w, p) < math.pi - 0.2):
+            continue
+        try:
+            crossings = sum(_path_arc_crosses_edge(r, w, c, d) + _path_arc_crosses_edge(w, p, c, d)
+                            for c, d in edges if c != d)
+            return crossings % 2 == 1
+        except _Reroute:
+            continue
+
 def _brute_force_point_in_polygon(polygon, point, rng, use_point_on_polygon_threshold=True):
-    # Returns True or False, or None if within the band of the outline (where either answer is accepted).
+    # Returns True or False, or None if within the band of the outline (where either answer is accepted), or if a
+    # ring halves the sphere (a tie, where pyGPlates takes the side to the ring's left).
     # Without the point-on-outline threshold the band extends to the outline.
+    #
+    # The interior rule: each ring's interior is the points whose winding number differs by an odd number from the
+    # ring's mean winding number rounded (its smaller side, for a ring that doesn't cross itself), except that a
+    # ring within the open hemisphere about the boundary centroid C keeps parity from -C, and the rings combine by
+    # parity. For each other ring, an anchor point Q far from it is inside if round(F / 4 pi) is odd, where F is
+    # the fan sum from apex -Q (the integral of the ring's winding number less its winding number at Q).
     rings = [[p.to_xyz() for p in polygon.get_exterior_ring_points()]] + [
         [p.to_xyz() for p in polygon.get_interior_ring_points(ring)]
         for ring in range(polygon.get_number_of_interior_rings())]
@@ -232,25 +257,58 @@ def _brute_force_point_in_polygon(polygon, point, rng, use_point_on_polygon_thre
         return None
     # Each vertex is moved by about 1e-12 (the same move wherever it appears), so no orientation involving a
     # vertex is exactly zero (eg, a vertex antipodal to the test point lies in the plane of every path arc ending
-    # there). R and the test point are further than the band from the outline, so parity cannot change.
+    # there). The anchors and the test point are further than the band from the outline, so parity cannot change.
     jitter_rng = random.Random(1)
     moves = {}
     for v in (v for ring in rings for v in ring):
         if v not in moves:
             moves[v] = tuple(jitter_rng.uniform(-1e-12, 1e-12) for _ in range(3))
-    jittered = [[tuple(v[k] + moves[v][k] for k in range(3)) for v in ring] for ring in rings]
-    jittered_edges = [(ring[i], ring[(i + 1) % len(ring)]) for ring in jittered for i in range(len(ring))]
-    r = tuple(-x for x in polygon.get_boundary_centroid().to_xyz())
-    while True:
-        w = _random_unit_vector(rng)
-        if not (0.05 < _angle(r, w) < math.pi - 0.2 and 0.05 < _angle(w, p) < math.pi - 0.2):
-            continue
-        try:
-            crossings = sum(_path_arc_crosses_edge(r, w, c, d) + _path_arc_crosses_edge(w, p, c, d)
-                            for c, d in jittered_edges if c != d)
-            return crossings % 2 == 1
-        except _Reroute:
-            continue
+    centroid = polygon.get_boundary_centroid().to_xyz()
+    inside = False
+    for ring in rings:
+        jittered_edges = [(tuple(ring[i][k] + moves[ring[i]][k] for k in range(3)),
+                           tuple(ring[(i + 1) % len(ring)][k] + moves[ring[(i + 1) % len(ring)]][k] for k in range(3)))
+                          for i in range(len(ring))]
+        if all(_dot(v, centroid) > 0 for v in ring):
+            anchor, anchor_inside = tuple(-x for x in centroid), False
+        else:
+            ring_edges = [(ring[i], ring[(i + 1) % len(ring)]) for i in range(len(ring))]
+            anchor_rng = random.Random(2)
+            best = None
+            for _ in range(200):
+                q = _random_unit_vector(anchor_rng)
+                d = min(_point_to_arc(q, a, b) for a, b in ring_edges)
+                if best is None or d > best[0]:
+                    best = (d, q)
+                if d > 0.1:
+                    break
+            anchor = best[1]
+            apex = tuple(-x for x in anchor)
+            x = sum(_triangle_signed_area(apex, a, b) for a, b in ring_edges if a != b) / (4 * math.pi)
+            if abs(x - (math.floor(x) + 0.5)) * 4 * math.pi < 1e-7:
+                return None
+            anchor_inside = math.ceil(x - 0.5) % 2 == 1
+        inside ^= _parity(jittered_edges, anchor, p, rng) ^ anchor_inside
+    return inside
+
+def _helix_band(rng, centre):
+    # A band along a helix about 'centre', sweeping 300 to 700 degrees while its colatitude ramps, so it wraps
+    # the globe (the antipode of its boundary centroid can be inside it).
+    u = _normalise(_cross(centre, (0.3, 0.5, 0.8)))
+    v = _cross(centre, u)
+    width = rng.uniform(0.03, 0.2)
+    sweep = math.radians(rng.uniform(300, 700))
+    ramp = max(rng.uniform(0.4, 2.2), 1.3 * width * sweep / (2 * math.pi))
+    start = rng.uniform(0.2, max(0.25, math.pi - 0.2 - ramp))
+    ramp = min(ramp, math.pi - 0.1 - start)
+    n = rng.randint(30, 120)
+    def point(colatitude, azimuth):
+        return _normalise(tuple(math.cos(colatitude) * centre[i] + math.sin(colatitude) * (
+            math.cos(azimuth) * u[i] + math.sin(azimuth) * v[i]) for i in range(3)))
+    side = [(start + ramp * k / (n - 1), sweep * k / (n - 1)) for k in range(n)]
+    return pygplates.PolygonOnSphere(
+        [point(colatitude + width / 2, azimuth) for colatitude, azimuth in side] +
+        [point(max(1e-3, colatitude - width / 2), azimuth) for colatitude, azimuth in reversed(side)])
 
 def _is_point_in_polygon_at_each_speed(polygon, point):
     # pyGPlates' answer from a freshly created copy of 'polygon' (no set-up), a copy queried 16 times first
@@ -1643,13 +1701,14 @@ class PolygonOnSphereCase(unittest.TestCase):
     def test_point_in_polygon_against_brute_force(self):
         # Compare with a brute-force point-in-polygon (exact predicates, independent of pyGPlates' point-in-polygon)
         # at every speed, for random polygons (tiny, ordinary, larger than a hemisphere, with interior rings,
-        # slivers, self-intersecting, with duplicate points, and enough segments for the tree of lunes) and points
-        # (anywhere, near the polygon, on and near its vertices and edges, beyond a vertex along an edge's great
-        # circle, and on the great circle through the antipodal centroid and a vertex).
+        # slivers, self-intersecting, with duplicate points, enough segments for the tree of lunes, bands that wrap
+        # round the globe, and rings on opposite sides of it) and points (anywhere, near the polygon, on and near
+        # its vertices and edges, beyond a vertex along an edge's great circle, and on the great circle through the
+        # antipodal centroid and a vertex).
         rng = random.Random(1234)
-        for case in range(60):
+        for case in range(80):
             centre = _random_unit_vector(rng)
-            kind = case % 6
+            kind = case % 8
             if kind == 0:
                 polygon = pygplates.PolygonOnSphere(
                     [_random_point(rng, centre, rng.choice((1e-3, 1e-5))) for _ in range(rng.randint(3, 6))])
@@ -1670,10 +1729,20 @@ class PolygonOnSphereCase(unittest.TestCase):
                     _normalise(tuple(centre[i] + 0.3 * u[i] for i in range(3))),
                     _normalise(tuple(centre[i] + width * _cross(centre, u)[i] for i in range(3))),
                     _normalise(tuple(centre[i] - 0.3 * u[i] for i in range(3)))])
-            else:
+            elif kind == 5:
                 # Self-intersecting (a bow-tie).
                 ring = _random_ring(rng, centre, 0.3, 4)
                 polygon = pygplates.PolygonOnSphere([ring[0], ring[2], ring[1], ring[3]])
+            elif kind == 6:
+                # Wrapping round the globe. There was a bug in pyGPlates 1.0 where the antipode of a polygon's
+                # boundary centroid was assumed to be outside it, so a band like this could be inside out.
+                polygon = _helix_band(rng, centre)
+            else:
+                # An exterior ring and an interior ring on opposite sides of the globe: both are inside (by
+                # parity), and so is the antipode of the boundary centroid.
+                polygon = pygplates.PolygonOnSphere(
+                    _random_ring(rng, centre, rng.uniform(0.1, 1.0), rng.randint(4, 30)),
+                    [_random_ring(rng, tuple(-x for x in centre), rng.uniform(0.1, 1.0), rng.randint(4, 30))])
             vertices = [v.to_xyz() for v in polygon.get_exterior_ring_points()]
             r = tuple(-x for x in polygon.get_boundary_centroid().to_xyz())
             scale = max(_angle(polygon.get_boundary_centroid().to_xyz(), v) for v in vertices)
@@ -1812,6 +1881,32 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(isinstance(self.polygon.get_boundary_centroid(), pygplates.PointOnSphere))
         self.assertTrue(isinstance(self.polygon.get_interior_centroid(), pygplates.PointOnSphere))
         self.assertEqual(self.polygon.get_centroid(), self.polygon.get_interior_centroid())
+
+    def test_interior_centroid_of_large_polygon(self):
+        # The interior centroid of a large, lopsided polygon, against its area moment from a fan of triangles each
+        # split 4096 ways, each piece weighted by its area at its vertices' mean (within about 5e-6 here; it converges
+        # as the square of the piece size). There was a bug in pyGPlates 1.0 where it was about 0.6 degrees off for a
+        # polygon this size (it used that approximation on the unsplit triangles).
+        def add(a, b):
+            return tuple(a[i] + b[i] for i in range(3))
+        def moment(a, b, c, depth):
+            if depth == 0:
+                return tuple(x * _triangle_signed_area(a, b, c) for x in _normalise(add(add(a, b), c)))
+            ab, bc, ca = _normalise(add(a, b)), _normalise(add(b, c)), _normalise(add(c, a))
+            return add(add(moment(a, ab, ca, depth - 1), moment(ab, b, bc, depth - 1)),
+                       add(moment(ca, bc, c, depth - 1), moment(ab, bc, ca, depth - 1)))
+        for points in (
+                [(0, 0), (0, 80), (60, 40), (20, 20), (50, -10)],
+                [(-30, -60), (10, 100), (-10, 20), (40, -20)]):
+            polygon = pygplates.PolygonOnSphere(points)
+            vertices = [v.to_xyz() for v in polygon.get_exterior_ring_points()]
+            apex = polygon.get_boundary_centroid().to_xyz()
+            total = (0.0, 0.0, 0.0)
+            for i in range(len(vertices)):
+                total = add(total, moment(apex, vertices[i], vertices[(i + 1) % len(vertices)], 6))
+            if polygon.get_signed_area() < 0:
+                total = tuple(-x for x in total)
+            self.assertLess(_angle(polygon.get_interior_centroid().to_xyz(), _normalise(total)), 2e-5)
     
     def test_tessellate(self):
         tessellated = self.polygon.to_tessellated(math.radians(91))
