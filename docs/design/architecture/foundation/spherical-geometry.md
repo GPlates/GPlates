@@ -66,6 +66,8 @@ The one table of every tolerance in this code. "Exact" means a plain `double` co
 | Candidate distance, `0.01` radians | `MAXIMUM_CANDIDATE_DISTANCE_TO_OUTLINE_COSINE = cos(1e-2)` in `PointInPolygon.cc`, against each candidate's `minimum_distance()` to the outline | A candidate for `R` closer than this to the outline is tried only if no candidate further away is outside | Two reasons (the comment at the constant): a candidate's status comes from fan sums of triangles with apex at its antipode, which are ill-conditioned for a candidate at a vertex; and the filled polygons are fans from `-R` rendered in perspective from the centre of the globe with a near plane `1e-3` from it (`GLCubeSubdivision`'s default `zNear`), and a fan triangle whose edge passes within `d` of `R` has its plane within about `d` of the centre, so it would be clipped for `d` under about `1e-3`. `R2` has no such minimum: its status comes from exact crossing parity and nothing is drawn from it, so it is simply the furthest candidate in its band |
 | `R2` band, 60 to 120 degrees from `R` | `calculate_second_reference_point`: a candidate with `fabs(dot(candidate, R)) > 0.5` is skipped | Which candidates may be the second reference point | The arc from `R` to `R2`, on which `R2`'s status is found, and the arc from `R2` to a point within `1e-6` of `R` or `-R`, are then 60 to 120 degrees long, so their planes are well defined. A candidate always exists, since no point is more than about 23 degrees from one (the comment there) |
 | Interior-centroid size switch, bounding radius `0.01` radians | `MINIMUM_RADIUS_COSINE_FOR_FAN = cos(0.01)` in `Centroid::calculate_interior_centroid`, against the angular extent of the polygon's bounding small circle | Whether the interior centroid is the exact area moment (wider) or the fan of triangles from `C` weighted by area at their vertices' mean (narrower) | Where the two methods' errors cross (section 3.3): the fan approximation is off by about `0.3` degrees for a polygon one radian across and the exact moment loses precision on tiny polygons; at this size they agree to about `1e-10` (the comment there, from measurement) |
+| `DateLineWrapper` thick plane and pole caps, cosine `1 - 1e-9`, about `4.5e-5` radians | `EPSILON_THICK_PLANE_COSINE` and its sine `EPSILON_THICK_PLANE_SINE` in `DateLineWrapper.cc`. `classify_vertex`: a vertex within the sine of the dateline's plane is on it, and within the cosine of a pole is on the pole. `intersect_line_segment`: the south pole within the sine of a segment's plane means the segment passes a pole | Which vertices are on the dateline or at a pole, and so which segments are intersected at all (section 5.2) | The comment says the epsilon is based on a cosine because that has the least accuracy for small angles, and that `1 - 1e-9` is a displacement of about `4.5e-5`. It is about 45 times `GeometryIntersect`'s thickness and 30 times `s`, and is not derived from `EPSILON`; it serves a map display, where a vertex that close to the dateline is better snapped onto it |
+| `DateLineWrapper`'s other epsilons: `1e-4`, and `real_t` zero tests | `does_line_segment_on_dateline_plane_cross_north_pole`: the dot product of a segment's normal with the dateline plane's normal, for a segment on the thick plane running between the arc and longitude zero, compared with `1e-4`; below that the sign of the end point's `z` decides. `calculate_intersection`: the chord interpolation's denominator and the interpolated vector's `magSqrd()` compared with zero as `real_t`; `intersect_line_segment`: `is_zero_length()`. `output_non_intersecting_polygon_rings`: `minimum_distance()` of two solid polygons compared with `AngularDistance::ZERO`, an epsilon comparison of cosines (`boost::equivalent` over `real_t`) | Which pole such a segment passes; no intersection for a segment whose ends are both too near the plane or nearly antipodal; a zero-length segment straddling the plane intersects at its start point; a non-intersecting ring within about `1.4e-6` radians of an output exterior ring becomes its interior ring (section 5.2) | The first is called lenient because both paths are covered; the comments say the next two cannot happen given the thick-plane precondition; the last is the epsilon in `AngularDistance::operator==`, not a choice made here |
 
 ## 2. Distance
 
@@ -717,8 +719,9 @@ them, `GeometryIntersect`, is shared:
   It serves the distance code only: `minimum_distance(arc, arc)` (section 2, section 4.3).
 - **`PointInPolygon`** intersects an edge with the crossing arc's plane
   (`if_plane_divides_gca_get_intersection_of_gca_and_plane`, section 3.4).
-- **`DateLineWrapper`** (`DateLineWrapper.{h,cc}`) clips polylines and polygons to the dateline. It
-  finds the crossings itself, against a thick dateline plane, and does not use `GeometryIntersect`.
+- **`DateLineWrapper`** (`DateLineWrapper.{h,cc}`) clips polylines and polygons to the dateline
+  (section 5.2). It finds the crossings itself, against a thick dateline plane, and does not use
+  `GeometryIntersect`.
 - **`GeometryCrossing`** (`GeometryCrossing.{h,cc}`) is meant to reduce a `GeometryIntersect` graph
   to the intersections where the geometries cross, dropping touches and overlaps that do not.
   It is a stub: `find_vertex_crossing` returns `boost::none`, so no vertex intersection survives.
@@ -959,6 +962,226 @@ interior rings.
 That relies on every point of a piece lying on the input's outline, which is true while the pieces
 are polylines (the TODO there says so). The TODO asks for the partitioner to record where each point
 came from instead, as `DateLineWrapper` does for its output.
+
+### 5.2 Clipping by `DateLineWrapper`
+
+`DateLineWrapper` (`DateLineWrapper.{h,cc}`) clips polylines and polygons to the dateline for the
+rectangular map projections: a geometry that crosses longitude 180 is cut into pieces that each
+stay on one side, so that no piece draws a line across the map. It also wraps longitudes into
+`[-180 + central_meridian, central_meridian + 180]` and can tessellate the output. It is the only
+polygon-by-polygon clipper in the code. The header cites Greiner and Hormann (1998) and, to a
+lesser extent, Liu et al. (2007), and the implementation is Greiner-Hormann's three phases run
+against a degenerate clip polygon: the **dateline polygon**, the whole globe less the dateline arc
+from the south pole to the north pole, whose four corners are `(-90, 180)`, `(90, 180)`,
+`(90, -180)` and `(-90, -180)`, in that order (clockwise seen from above the dateline, the comment
+at `d_dateline_corner_*`). Its front edge runs up the dateline at longitude `+180`, its back edge
+down it at `-180`, and its other two edges are the poles. Every point of the globe off the arc is
+inside it, so clipping by it removes nothing: an output piece follows the geometry, and where it
+crosses the dateline it follows the dateline's front or back edge instead. The pieces along the
+front edge come out at longitude `+180` and those along the back at `-180`, which is the wrapping.
+A geometry entirely *on* the arc is, the header says, outside the polygon, and is passed through
+unchanged with every longitude set to `central_meridian - 180`.
+
+`wrap_polygon` and `wrap_polyline` first reject a geometry whose bounding small circle misses the
+dateline (`possibly_wraps`, `intersects_dateline`), rotate it about the north pole into the frame
+where the central meridian has longitude zero (`CentralMeridian`) when that is not already so,
+build an `IntersectionGraph` from its rings, and rotate the output points back.
+
+**Data structures.** A `Vertex` holds the point in both forms (`lat_lon_point`, `point`); whether
+it is an intersection (`is_intersection`); its twin in the other list and that list
+(`intersection_neighbour`, `intersection_neighbour_list`, `void *` because of the cyclic types);
+whether it is an original point (`is_unwrapped_point`); its provenance
+(`interpolate_original_segment`, below); the entry/exit flag (`exits_other_polygon`); and whether
+it has been output (`used_to_output_polygon`). Vertices are nodes of a doubly linked list with a
+sentinel (`GPlatesUtils::SmartNodeLinkedList`), allocated from a `boost::object_pool`. The
+`IntersectionGraph` keeps one list per input ring, exterior first (a polyline has one), each with a
+flag `intersects_dateline`, and, for a polygon graph only, the one list `d_dateline_vertices`
+holding the four corners and the dateline copies of every intersection from every ring. Two flags
+record whether the geometry touched the north or the south pole. So the structure is Greiner and
+Hormann's: an intersection is two linked nodes, one in each polygon (their `neighbor` pointer),
+not Liu's single shared node.
+
+**Vertex classes** (`classify_vertex`). The dateline's plane is thick. A vertex whose signed
+distance from it (the dot product with the plane's normal, the `y` axis) exceeds
+`EPSILON_THICK_PLANE_SINE` is `CLASSIFY_FRONT` (longitude in `(0, 180)`), and below minus that it
+is `CLASSIFY_BACK`. On the thick plane it is first tested against the poles: a dot product with a
+pole above `EPSILON_THICK_PLANE_COSINE` makes it `CLASSIFY_ON_NORTH_POLE` or
+`CLASSIFY_ON_SOUTH_POLE` (a cap about `4.5e-5` radians across, tested first because, the comment
+says, it eats into the region tested next) and sets the touched-pole flag. Otherwise an exact sign
+against the hemisphere containing the dateline puts it `CLASSIFY_ON_DATELINE_ARC` or, near
+longitude zero, `CLASSIFY_OFF_DATELINE_ARC_ON_PLANE`. The thickness (section 1) is about `4.5e-5`
+radians, some 45 times `GeometryIntersect`'s thickness and 30 times the point-on-outline
+threshold, and is not derived from `EPSILON`.
+
+**Finding crossings.** `add_line_geometry` classifies the vertices and hands each segment with its
+two classes to `add_line_segment`, a six-by-six case table; a ring's first vertex is handled as the
+end of its last segment, a polyline's first vertex is added first unless it is on the arc or a
+pole. Only a segment going from front to back, or back to front, is intersected. Every other case
+is decided from the classes alone:
+
+- front to front, back to back, front or back to off-arc-on-plane and the reverse, and off-arc
+  to off-arc: the end vertex is appended as a regular vertex (`add_vertex`);
+- a segment ending on the arc (front or back to on-arc): one intersection vertex at its end point,
+  on the front or the back dateline, flagged as exiting; the next segment, starting on the arc,
+  adds an intersection at its start, flagged as entering, and then its end vertex. A vertex of the
+  geometry on the dateline therefore produces **two intersection vertices at the same point**, one
+  per adjacent segment. A crossing through the vertex puts one on each side; a touch puts both on
+  the same side, an exit then an entry;
+- a segment with both ends on the thick plane, one on the arc and one off it, passes a pole.
+  `does_line_segment_on_dateline_plane_cross_north_pole` decides which from the sign of the
+  segment's normal against the plane's normal, with its own epsilon of `1e-4`, and below that from
+  the sign of the end point's `z`. The intersection is at the pole with the longitude of the
+  off-arc end point and a ratio from the arc length to the pole;
+- a segment with an end at a pole: an intersection at the pole with the other end's longitude,
+  and the end vertex when the segment leaves the pole;
+- both ends on the arc or at poles: nothing is added, the segment being outside the dateline
+  polygon (the comments say "as odd as it sounds"). A ring of such segments adds no vertex at all.
+
+`intersect_line_segment` handles the front-to-back case. A zero-length segment returns its start
+point (the comment says this cannot happen, since the ends are on opposite sides of a plane wider
+than such a segment). The dateline is a half circle from pole to pole, so every segment's plane
+separates its end points and only Greiner-Hormann's second test remains, the orientation test of
+section 3.4 (2): the south pole's signed distance from the segment's plane, beyond the thickness
+sine, must have the sign opposite to the segment's start point's side of the dateline plane;
+otherwise the segment crosses the dateline's great circle on the far side of the globe and there is
+no intersection. If instead the south pole is on the segment's thick plane, the segment passes
+within the thickness of a pole, and each pole is tested for lying on the segment with two exact
+signs (closer to the start point than the end point is, and on the half circle starting at the
+start point) and returned as the intersection. `calculate_intersection` interpolates along the
+chord by the end points' signed distances (their `y`), with `real_t` tests on the denominator and
+on the interpolated vector's magnitude, which rejects a near-antipodal pair, normalises, and gives
+the ratio `acos(dot) / arc_length`. A crossing of the dateline appends two intersection vertices to
+the geometry's list, the front copy and the back copy in the order crossed, the first flagged
+exiting and the second entering, and then the end vertex. A crossing of a pole likewise appends
+two vertices at the pole, with the start point's and the end point's longitudes, so that a
+meridian stays vertical in the projection. Every intersection vertex is snapped: its longitude is
+set to exactly `+180` or `-180`, or its latitude to `+90` or `-90`, and its `PointOnSphere` is
+rebuilt from that (the `Vertex` constructor given no point).
+
+**Entry and exit.** The geometry's flags are set at creation, from the direction of the crossing
+(`exiting_dateline_polygon`): a geometry leaves the dateline polygon at the first copy and
+re-enters at the second, and a vertex on the arc exits at the end of the segment arriving and
+enters at the start of the segment leaving. The clip polygon is the globe, so every intersection
+exits and re-enters it, and nothing is toggled along the geometry. The dateline's flags are
+Greiner-Hormann's phase 2 (`generate_entry_exit_flags_for_dateline_polygon`): one point-in-polygon
+test of the north pole against the input polygon (`is_point_in_polygon`, low speed, the
+on-outline threshold on by default), then, from the north-front corner, toggling at each
+intersection vertex round the dateline list. If the geometry touched the north pole the south pole
+and the south-front corner are used instead; if it touched both, the start is assumed inside. The
+comment calls that arbitrary and says a polygon touching both poles is large, so being inside out
+is "not as bad". This is the only point-in-polygon call, and it is at a corner of the clip polygon
+that the geometry is known not to touch.
+
+**The dateline list is kept in order** so that the toggle walks round the clip polygon: up the
+front from the south-front corner at increasing latitude, across the north pole from the
+north-front to the north-back corner at decreasing longitude, down the back at decreasing latitude,
+and across the south pole at increasing longitude. Each `add_intersection_vertex_on_*` inserts the
+dateline copy by a linear scan between the right pair of corners on that one key
+(`splice_self_before`); an equal key goes before the vertex already there. Since the clip polygon's
+edges are two half meridians and two points, a position along an edge is a latitude or a
+longitude, and no segment index or ratio along the clip polygon is needed.
+
+**The traversal** (the private `output_intersecting_polygons`) is phase 3. An output polygon
+starts at a dateline vertex that is an intersection, exits the geometry polygon, and is unused.
+From there: append the vertex to the output ring and mark it used; at an intersection vertex jump
+to its twin, mark the twin used, and set the direction, forward if going forward from the twin
+does not exit the other polygon and backward if it does (`list_traversal_is_forward =
+!exits_other_polygon`); step, wrapping round the list; stop on returning to the start node. The
+ring alternates between stretches of the geometry (all inside the dateline polygon) and stretches
+of the dateline inside the geometry polygon. Each ring traced is the exterior ring of a new
+`LatLonPolygon`, and the loop over start vertices runs until every exit vertex is used, so one
+input ring can give several pieces. A corner is passed through when the geometry contains a pole,
+and the output then runs along the top or bottom of the map.
+
+**Interior rings.** Each ring has its own list but every ring's intersection copies go into the
+one dateline list, so the toggle round the dateline counts crossings of all rings: parity across
+rings, as section 3.1 defines the interior. A traced ring can pass from the exterior ring to an
+interior ring by way of the dateline, which is how a hole crossing the dateline becomes a notch in
+the pieces (the note at `get_interior_ring_point_flags` says a wrapped polygon can follow part of
+an exterior and part of an interior ring). No traced ring is ever made an interior ring of the
+output, and there is no containment test among them. The `FIXME` in the traversal lists what is
+not handled, self-intersecting rings, holes touching the exterior ring, and a hole that intersects
+both clipped halves of the exterior ring, and asks for the input to be made Shapefile-standard
+first.
+
+**Rings that don't cross** (`output_non_intersecting_polygon_rings`). For each ring,
+`get_line_geometry_intersection_results` reports `INTERSECTS_DATELINE` (the flag),
+`ENTIRELY_ON_DATELINE` (its list is empty, every vertex having been swallowed) or
+`ENTIRELY_OFF_DATELINE`. If every ring intersects there is nothing to do; if every ring is off, the
+polygon is output as it is, from the graph's lists. Otherwise the off rings are taken in order,
+exterior ring first. With `group_interior_with_exterior_rings` (the default) each becomes an
+interior ring of the first output polygon whose exterior ring it intersects, lies inside or contains (both are treated as solid), or
+else the exterior ring of a new output polygon, which then becomes a candidate itself. The
+candidates start as the traced pieces. The test builds a `PolygonOnSphere` from each ring's
+untessellated points and compares `minimum_distance()` of the two solid polygons with
+`AngularDistance::ZERO`, an epsilon comparison (section 1), so a ring within about `1.4e-6`
+radians of an exterior ring joins it too. Without the grouping every off ring is its own polygon;
+the header says the map view's filled polygons do not need it, since stencil parity makes the
+rings' roles irrelevant. A ring entirely on the dateline is output as its own polygon from the
+input ring, every point at `central_meridian - 180`.
+
+**Polylines.** A polyline graph has no dateline list; its intersection vertices are appended to
+the one list and never linked. `output_polylines` ends a polyline at each intersection vertex and
+starts the next at the following vertex, so a crossing's front copy ends one piece and its back
+copy starts the next. A stretch along the dateline is dropped, and a polyline entirely on the
+dateline is output unchanged (`output_polyline_if_entirely_on_dateline`).
+
+**Where each output point came from.** Every vertex carries an `InterpolateOriginalSegment`: the
+ring index, the segment index and the ratio along the segment. An original vertex is recorded as
+the *end* of its incoming segment (ratio 1; a ring's first vertex as the end of its last segment)
+when it comes through the graph, and as the *start* of its outgoing segment (ratio 0, segment
+index equal to the vertex index) when the geometry is passed through unclipped
+(`output_input_line_geometry`); the tessellation code tells the two apart by `is_unwrapped_point`.
+A computed crossing has the ratio from `calculate_intersection`; a vertex on the dateline has 0
+or 1 and is unwrapped. The public `LatLonPolygon` and `LatLonPolyline` return, per output point,
+flags (`ORIGINAL_POINT`, `ON_DATELINE`, `ON_ORIGINAL_SEGMENT`, `TESSELLATED_POINT`) and the
+optional record. Tessellation (`add_tessellated_points`) subdivides the arc between consecutive
+untessellated points; a tessellated point on an original segment gets a ratio interpolated between
+its end points' records (the case analysis there reconciles the two conventions above), and one
+along the dateline has no record and its longitude pinned to the end points'. A corner vertex has
+no record and no flags at all, being neither original nor an intersection. The arc between the two
+poles, antipodal, which the comment attributes to the arbitrary entry/exit choice when both poles
+are touched, is tessellated in latitude.
+
+**Degeneracies.** Nothing is perturbed. A vertex near the plane or a pole is snapped by the thick
+classes; a vertex on the arc becomes a pair of intersection vertices, which makes a crossing
+through a vertex and a touch at a vertex both consistent with the toggle (a touch gives an exit
+and an entry at one point, the traversal leaves the geometry at one and returns at the other, and
+the output ring repeats the point); a stretch along the arc is dropped and a whole geometry on it
+passed through; a zero-length segment that still straddles the plane intersects at its start
+point; a near-antipodal segment, or one whose ends are both too near the plane, gives no
+intersection; and the both-poles case is guessed. The tolerance is one global number chosen for
+display, not the one the rest of this document uses.
+
+**What depends on the dateline, and what generalises.** Dateline-only, in that each would need
+replacing for a general clip polygon:
+
+- the clip polygon's edges are half meridians and points, so a position along one is a scalar, the
+  dateline copies are placed by a scan on that key, and the orientation test needs only one sign;
+  crossings are sought only at front-to-back transitions of a classification against one fixed
+  plane, and vertex classes decide every other case;
+- the clip polygon's interior is the whole globe, so the geometry's entry/exit flags come from the
+  crossing direction alone, with no point-in-polygon test and no toggling, and every crossing is
+  two copies (front and back), which is the wrapping itself;
+- the dateline's flags start from one point-in-polygon test at a corner the geometry does not
+  touch, falling back to the other corner and then to a guess;
+- the thickness, and the snapping of intersections to the dateline;
+- every traced ring is an exterior ring, with no containment test among them, and a hole that
+  crosses the clip boundary is always merged into an exterior;
+- the off rings are grouped by an epsilon distance test against the output exteriors, in a fixed
+  order.
+
+General, and the same as Greiner-Hormann's:
+
+- the two linked lists with twin links and node pool, with one list per ring of the geometry and
+  one shared list for the clip polygon, which is what makes the toggle count parity across rings;
+- the phase-2 toggle from one vertex of known status, and the phase-3 walk with the direction rule
+  `forward = !exits`, continued until every exit vertex is used;
+- the per-vertex provenance (ring, segment, ratio) and flags, kept through the output;
+- the per-ring intersection status, and the separate handling of rings that do not intersect;
+- the pair of intersection vertices for a vertex lying on the other boundary, which stands in for
+  a crossing-or-touch classification; here the pair's flags are read from the neighbouring
+  vertices' classes, which a general clipper would have to decide by a side test.
 
 ## 6. Testing
 

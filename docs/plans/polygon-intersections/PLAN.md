@@ -26,6 +26,20 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   comment assumes overlaps are inside. This is the cascade's normal case once the output is
   polygons. Next: the developer reads §4 and §5.1, then Phase 2 (Fable), after checking the usage
   limit.
+- 2026-10-23: Phase 2 written by Fable.
+  - Doc §5.2, "Clipping by DateLineWrapper", plus two §1 table rows. Reviewed by Opus; one fix
+    (the ring-grouping test also takes a ring that *contains* the exterior). Its own Fable claim
+    check is still to come.
+  - `phase2-requirements.md`: the papers, requirements R1 to R12, the candidates and 11 open
+    questions. It recommends **(b), the overlay**: split both geometries at every intersection,
+    classify each piece by one threshold-off `is_point_in_polygon` of its longest arc's midpoint,
+    classify common chains by a "sector rule" at a chain end, and link the kept pieces by
+    rotational pairing at vertices, with local consistency checks.
+  - New gap found (R7): a vertex `1.1e-6` to `1.3e-6` rad off an edge is "on the outline" for
+    point-in-polygon, but `GeometryIntersect` finds no contact (thickness `1e-6` against
+    `s = 1.414e-6`).
+  - **Checkpoint:** the developer reads §5.2, the requirements file and the papers, chooses the
+    algorithm, and answers its section 4 questions.
 
 ## Context
 
