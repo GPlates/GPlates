@@ -8,7 +8,11 @@ code names its file and function; statements about the papers name the section o
 
 Notation as in the design doc: `P` is the geometry being partitioned, `Q` the partitioning polygon,
 `R` the outside point of a polygon, `s` the point-on-outline threshold (about `1.414e-6` radians),
-and "the thickness" is `GeometryIntersect`'s thick-plane tolerance (about `1e-6` radians).
+and "the thickness" is `GeometryIntersect`'s thick-plane tolerance (about `1e-6` radians). So `P` is
+the subject and `Q` the clip. Foster, Hormann and Popa's section 2 names them the other way round
+("two polygons P and Q, often called the clip and the subject polygon"), but their algorithm and
+figures treat the two symmetrically, so only that phrase differs; partitioning is not symmetric
+(`P \ Q` is an output), which is why the roles are fixed here.
 
 ## 1. The papers
 
@@ -101,7 +105,12 @@ coincides with a vertex of the other polygon, then the algorithm may fail (see F
 caption: it "handles self-intersecting polygons correctly, as long as the self-intersection does
 not lie on the other polygon". Their remedy is to split a self-crossing polygon into simple pieces
 first. So for our data: a twisted ring (design doc section 3.1) is fine unless its twist lies on
-the partitioning polygon's boundary, which the cascade can arrange.
+the partitioning polygon's boundary, which the cascade can arrange. The paper does not say why it
+fails. As we read Fig. 21, the twist is one point of `Q` but two of `P` (`P` passes through it
+twice), and phase 1's one-to-one neighbour link cannot represent that: `Q` gets two copies of the
+point a zero length apart, one per passage of `P` (Fig. 21b and c), or one vertex of `Q` needs two
+partners (Fig. 21d). The side test at either copy then reads the other copy as `Q-` or `Q+`, along
+an edge with no direction. Section 3.3 says how the overlay avoids this.
 
 **Phase 1** (section 4.1, Fig. 6 and 7). Edges are half open, `[P1, P2)` against `[Q1, Q2)`, so a
 contact at an end point is reported once, by the next edge. For non-parallel edges the
@@ -441,6 +450,27 @@ there is one way; with four or more (two output regions touching at the vertex, 
 of `P` on `Q`) the rotational order pairs them so that the rings are simple there, which is
 Foster-Hormann-Popa's split-candidate clean-up for free. Walk the pairings to close the rings.
 
+**Contract pieces shorter than the tolerance.** Step 2 of section 3.1 splits at each record, so two
+records at one point give two vertices with a piece of zero or rounding length between them, and
+that piece's midpoint test means nothing. A twist of `P` lying on `Q` does exactly this: `P` crosses
+`Q`'s edge twice at the same point, the case that defeats Foster-Hormann-Popa (section 1.3). Two
+touches within the tolerance do it too (section 4, question 4). So every piece shorter than the
+tolerance is *contracted*: removed, with its two end vertices merged into one. A merged vertex
+still has an even number of piece-ends of each polygon; the twist on `Q` becomes one vertex with
+four ends of `P` and two of `Q`. The walk round a vertex and the pairing take any number of ends,
+and the pairing makes `P`'s two lobes touch there rather than cross, the result Fig. 21 expects.
+Without contraction the checks below would still catch the short piece's wrong class, but only as
+an inconsistency to repair. A run of short pieces contracts to one vertex, which can be wider than
+the tolerance; the point set then moves by up to that width, and the Phase 5 hunt should measure
+how wide such clusters get in the cascade.
+
+**A twist away from `Q`** is not a vertex at all. It lies inside a piece, the piece's test is
+unaffected, and the output ring keeps the twist. The output is still right under the parity rule:
+counted mod 2, the boundary of `P ∩ Q` is the part of `P`'s boundary inside `Q` plus the part of
+`Q`'s boundary inside `P` (common chains by the sector rule), whether or not the rings are simple,
+and those are exactly the kept pieces. Foster-Hormann-Popa handle this case too; what they cannot
+represent is the twist on `Q`.
+
 **Checks.** At every vertex the number of kept ends is even and each inside-both sector has
 exactly two; memberships fixed twice agree; every walk closes. A failure is local, points at the
 vertex and the pieces concerned, and is the sign of a missed or spurious intersection (R9, R11) or
@@ -457,6 +487,25 @@ one. **Polylines** stop after classification: split at the intersections with `Q
 or out by its midpoint, a piece along `Q`'s boundary by the rule chosen for it (open question).
 **Provenance** is carried by the pieces from step 2.
 
+**Union and the other Boolean operations** (the developer asked for them, 2026-10-25).
+Partitioning needs two of them, `P ∩ Q` (inside) and `P \ Q` (outside), and the same
+classification gives every one. Write the operation as `f(in P, in Q)`: intersection is *and*,
+union *or*, `P \ Q` is *in `P` and not in `Q`*. A non-common piece or a common chain is on the
+output's boundary exactly when `f` differs between its two sides, and the walk round a vertex gives
+both sides' memberships for every piece-end. A non-common piece of `P`, for example, is in `P` on
+one side and not on the other, and in `Q` on both sides or on neither (its test), so it is kept for
+the intersection when it is inside `Q` and for the union when it is outside. Each kept piece is
+oriented with the output on the same side (its left, say), which reverses `Q`'s pieces for
+`P \ Q`, and the linking is then the same for every operation. The symmetric difference keeps every
+non-common piece and no common chain.
+
+One limit is new. `P ∩ Q`, `P \ Q` and `Q \ P` are subsets of an input, so they are under a
+hemisphere whenever the inputs are (section 1.6). A union, or a symmetric difference, of two
+polygons under a hemisphere can exceed one, and a ring cannot mean more than a hemisphere (design
+doc section 3.1; the fix is deferred in its section 7), so such a result would be read as its
+complement. The overlay knows which side of each output ring is meant, so it can detect this and
+fail rather than return the complement.
+
 For it:
 
 - **An error stays where it is made.** Each piece's class comes from one exact test of one point
@@ -468,8 +517,10 @@ For it:
   iff inside both) tests exactly the same function at other points.
 - **Holes, self-crossing rings and the cascade's overlaps are not special cases.** Every ring of
   both polygons is pieces; a common chain is a piece with the sector rule; a self-crossing of `P`
-  on `Q` is a vertex with more piece-ends, affecting only the rotational pairing.
-- **Both outputs from one classification**, and polylines through the same code.
+  on `Q` is a vertex with more piece-ends once short pieces are contracted, affecting only the
+  rotational pairing.
+- **Every Boolean operation from one classification**, partitioning's two outputs among them, and
+  polylines through the same code.
 - **The four bugs**: `Q` wholly inside `P` (step 4 classifies `Q`'s ring against `P`), the two
   interior-ring bugs (R6; all rings are pieces), and the overlap-by-orientation bug (the sector
   rule replaces the bend test).
@@ -491,9 +542,9 @@ Against it:
   rule applied at a vertex; Phase 4 must state it precisely and the Phase 5 hunt must test it,
   especially its anchorless case.
 - **Pieces shorter than the tolerance** (two touches within `1e-6` of each other, as a `1.5e-6`
-  segment crossing an edge produces) get an exact but arbitrary class; the ring walk then succeeds
-  or detects the inconsistency at one end. The output may carry such a piece as a duplicated
-  point. A policy for them is an open question.
+  segment crossing an edge produces, or a twist of `P` on `Q`) would get an exact but arbitrary
+  class. Contracting them (above) removes the problem, at the price of moving the point set by up
+  to the width of a contracted cluster.
 - **The sliver problem is not solved, only confined.** Where two plates' boundaries differ by more
   than the thickness, the cascade produces slivers that wide, exactly classified. Only a snapping
   tolerance equal to `s` would absorb them (R7).
@@ -548,9 +599,13 @@ vertices. The reasons, in order of weight:
    along the ring and hides a wrong one in a closed, plausible ring.
 2. Agreement with `is_point_in_polygon` by construction, everywhere, which is also what makes the
    Phase 5 oracle meaningful.
-3. One classification serves both outputs and polylines, and holes, twists and overlaps need no
-   separate paths.
+3. One classification serves both outputs, every other Boolean operation and polylines, and holes,
+   twists and overlaps need no separate paths.
 4. The cost objection does not apply at plate sizes.
+5. Foster-Hormann-Popa's one documented failure, a twist of `P` lying on `Q`, is an ordinary vertex
+   for the overlay once short pieces are contracted. (a) would need `P` split into simple rings
+   first, their own remedy, and that split is the overlay's machinery applied to `P` alone
+   (section 3.7).
 
 Foster-Hormann-Popa is still used: its phase-1 case table is the audit's specification (section 2),
 its chain reasoning defines the common pieces (section 3.1, step 3), and its split-candidate
@@ -562,10 +617,34 @@ Risks that remain with (b):
 - The sector rule and the anchorless ring need a precise statement and tests (Phase 4 and 5).
 - The rotational order at a vertex with nearly tangent arcs; harmless to the point set, but the
   ring decomposition there is arbitrary.
-- Pieces shorter than the tolerance, and slivers wider than it between adjacent plates.
+- Contracted clusters wider than the tolerance, and slivers wider than it between adjacent plates.
 - The inconsistency-repair policy, which must not turn a detected error back into a silent one.
 - `GeometryIntersect`'s known gaps (R7, R8, R9) are inherited by both candidates and are Phase 3's
   work; (b) does not remove the need for the audit.
+
+### 3.7 The same machinery for one polygon
+
+Splitting a polygon into simple polygons with holes, with the same interior, is the overlay of the
+polygon with itself (raised by the developer, 2026-10-25, as a possible later PR):
+
+1. Intersect every ring with itself and with every other ring of the polygon. This is the one new
+   primitive. `GeometryIntersect` intersects two geometries; a self-intersection must also skip each
+   segment against itself and against its neighbours, which always meet at their shared vertex
+   (looking past zero-length segments, and across a ring's wrap-around), and pair the bounding tree
+   with itself, each pair of nodes once.
+2. Split, and contract short pieces, as in sections 3.1 and 3.3.
+3. Classify without a point-in-polygon test. Under the parity rule, crossing any piece changes the
+   parity by one, so every piece is boundary and is kept, except a stretch the polygon covers twice
+   (a spike, a ring retracing itself, two rings sharing an edge), which is a common chain of the
+   polygon with itself and cancels.
+4. Link by the rotational pairing, so that lobes touch at the former crossings instead of crossing,
+   and group the rings by containment.
+
+The result keeps GPlates' meaning of the polygon, parity, rather than reinterpreting it by winding
+number. Two uses: export to formats whose polygons must be simple (OGC simple features), and the
+exact parity area for rings that cross each other, deferred in design doc section 7, which needs
+exactly these simple rings. Partitioning does not need it, since the overlay takes twists as they
+are (section 3.3).
 
 ## 4. Open questions for the developer
 
@@ -578,8 +657,9 @@ Risks that remain with (b):
 3. **Common chains.** The sector rule as primary and the offset test as the anchorless fallback;
    or the offset test throughout, which is simpler and has a thin-face failure mode. How large an
    offset?
-4. **Pieces shorter than the tolerance**: keep them (duplicated points in the output, consistent
-   with `PolygonOnSphere` allowing zero-length segments) or drop them?
+4. **Pieces shorter than the tolerance**: contract them, merging their end vertices (recommended,
+   section 3.3; it is also what makes a twist of `P` on `Q` work), rather than keep them as
+   duplicated points or drop them?
 5. **Inconsistency policy**: repair and continue in release builds, assert in debug builds, or
    return a failure to the caller?
 6. **Orientation of output rings**: keep each piece's original direction (so an output ring can

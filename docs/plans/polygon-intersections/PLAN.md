@@ -41,10 +41,26 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   - **Checkpoint:** the developer reads §5.2, the requirements file and the papers, chooses the
     algorithm, and answers its section 4 questions.
 
-- **Resume here** (2026-10-23):
+- 2026-10-25: the developer's questions at the checkpoint, before choosing.
+  - `P`/`Q` are named the other way round from Foster-Hormann-Popa's section 2. Kept; a note in
+    `phase2-requirements.md` says so.
+  - A twist of `P` lying on `Q` (Foster-Hormann-Popa's one failure). The overlay handles it only if
+    the two records at the twist become one vertex, which the requirements did not say. Added:
+    *contract pieces shorter than the tolerance* (requirements §3.3; also the proposed answer to
+    question 4), and recommendation reason 5.
+  - **Decided: support union and difference as well as intersection.** The overlay's keep-rule
+    generalises (requirements §3.3, "Union and the other Boolean operations"). New pyGPlates
+    methods on `PolygonOnSphere`; which PR is open (see *Decisions*).
+  - Splitting a self-crossing polygon into simple ones: the same machinery (requirements §3.7), a
+    possible PR after B.
+  - Proposed inbox notes, waiting on the developer: a spatial index for operations on many
+    polygons; multi-polygon and multi-polyline properties; and the simple-polygon split, unless
+    it joins this branch.
+
+- **Resume here** (2026-10-25):
   - Phases 0 to 2 are done and claim-checked. Waiting on the developer at the Phase 2 checkpoint:
     the choice of algorithm (recommendation: (b), the overlay) and answers to the 11 questions in
-    `phase2-requirements.md` §4.
+    `phase2-requirements.md` §4, plus the open points of the 2026-10-25 entry above.
   - Then Phase 3: the `GeometryIntersect` audit (Fable). `DateLineWrapper` is not checked
     before the Phase 4 decision.
   - Build trees: `build-gplates` and `build-pygplates` in this worktree, configured and green
@@ -178,6 +194,17 @@ re-learn the old code before designing, and to read the design doc stage by stag
   developer reads before each stage. The **new** design lives in the plan until it is implemented
   (AGENTS.md: a design doc must not describe a moving target).
 
+## Decisions (developer, 2026-10-25)
+
+- **Boolean operations: intersection, union and difference**, not only partitioning's inside and
+  outside. `PolygonOnSphere` gains methods for them (names proposed: `intersection`, `union`,
+  `difference`, perhaps `symmetric_difference`, as in Python's `set` and Shapely), each taking a
+  polygon and returning a list of polygons. Proposed: the overlay supports every operation in PR B,
+  and the methods come in a small PR C (API, docstrings, stub, changelog, a union oracle), so that
+  PR B's review stays on partitioning. Not yet confirmed.
+- Operations on many polygons (the union of a sequence, say) wait for a spatial index; see the
+  proposed inbox note.
+
 ## Phases
 
 The order changes from the developer's first sketch: requirements come **before** the audit. Then
@@ -267,8 +294,11 @@ requirements in hand, as the developer anticipated.
   - Rings that don't intersect. These are classified by point-in-polygon, never by
     `minimum_distance == 0`.
   - Grouping output rings into polygons, by containment or parity.
-  - Self-crossing input.
-  - Inside **and** outside output, both of which partitioning needs.
+  - Self-crossing input, including a twist lying on the other polygon: contract pieces shorter
+    than the tolerance, so that it is one vertex (requirements §3.3).
+  - Inside **and** outside output, both of which partitioning needs, and the other Boolean
+    operations by the same keep-rule. A union (or symmetric difference) larger than a hemisphere
+    must fail, not come back as its complement.
   - Polylines through the same machinery, so `PolylineIntersections` and the bend test can go.
   - The cascade in GeometryCookieCutter, which must now pass polygons on.
   - The `partition()` return contract in both products.
@@ -328,7 +358,8 @@ requirements in hand, as the developer anticipated.
 - **The oracle** needs no new exact reference, because point-in-polygon was audited in
   #106/#107. For random points `p`, `p` is inside an inside piece exactly when it is inside both
   the input and the partitioner, and the pieces are disjoint. Also, the areas of the inside and
-  outside pieces sum to the input's area (with the parity-area caveat for crossing rings).
+  outside pieces sum to the input's area (with the parity-area caveat for crossing rings). For
+  each Boolean operation `f`, `p` is inside the output exactly when `f(p in P, p in Q)`.
 - A Fable adversarial hunt for degenerate inputs: shared edges, cascaded plates from a real
   topology model, holes that touch the boundary, self-crossing rings, polygons near antipodal.
 - Switch the consumers:
