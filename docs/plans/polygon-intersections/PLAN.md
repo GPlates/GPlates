@@ -57,9 +57,10 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     multi-polyline properties; the simple-polygon split.
 
 - **Resume here** (2026-10-25):
-  - Phases 0 to 2 are done and claim-checked. Waiting on the developer at the Phase 2 checkpoint:
-    the choice of algorithm (recommendation: (b), the overlay) and answers to the 11 questions in
-    `phase2-requirements.md` §4.
+  - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
+    2026-10-25). Before answering the 11 questions in `phase2-requirements.md` §4, the developer
+    is walking through §3.3 paragraph by paragraph, where it differs from Foster-Hormann-Popa.
+    Started with "Classify each piece on its own".
   - Then Phase 3: the `GeometryIntersect` audit (Fable). `DateLineWrapper` is not checked
     before the Phase 4 decision.
   - Build trees: `build-gplates` and `build-pygplates` in this worktree, configured and green
