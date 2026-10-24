@@ -50,17 +50,16 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     question 4), and recommendation reason 5.
   - **Decided: support union and difference as well as intersection.** The overlay's keep-rule
     generalises (requirements §3.3, "Union and the other Boolean operations"). New pyGPlates
-    methods on `PolygonOnSphere`; which PR is open (see *Decisions*).
+    methods on `PolygonOnSphere`, in a PR C (see *Decisions*).
   - Splitting a self-crossing polygon into simple ones: the same machinery (requirements §3.7), a
     possible PR after B.
-  - Proposed inbox notes, waiting on the developer: a spatial index for operations on many
-    polygons; multi-polygon and multi-polyline properties; and the simple-polygon split, unless
-    it joins this branch.
+  - Three inbox notes filed: a spatial index for operations on many polygons; multi-polygon and
+    multi-polyline properties; the simple-polygon split.
 
 - **Resume here** (2026-10-25):
   - Phases 0 to 2 are done and claim-checked. Waiting on the developer at the Phase 2 checkpoint:
     the choice of algorithm (recommendation: (b), the overlay) and answers to the 11 questions in
-    `phase2-requirements.md` §4, plus the open points of the 2026-10-25 entry above.
+    `phase2-requirements.md` §4.
   - Then Phase 3: the `GeometryIntersect` audit (Fable). `DateLineWrapper` is not checked
     before the Phase 4 decision.
   - Build trees: `build-gplates` and `build-pygplates` in this worktree, configured and green
@@ -199,11 +198,14 @@ re-learn the old code before designing, and to read the design doc stage by stag
 - **Boolean operations: intersection, union and difference**, not only partitioning's inside and
   outside. `PolygonOnSphere` gains methods for them (names proposed: `intersection`, `union`,
   `difference`, perhaps `symmetric_difference`, as in Python's `set` and Shapely), each taking a
-  polygon and returning a list of polygons. Proposed: the overlay supports every operation in PR B,
-  and the methods come in a small PR C (API, docstrings, stub, changelog, a union oracle), so that
-  PR B's review stays on partitioning. Not yet confirmed.
-- Operations on many polygons (the union of a sequence, say) wait for a spatial index; see the
-  proposed inbox note.
+  polygon and returning a list of polygons. **Three PRs now:** the overlay supports every
+  operation in PR B, and the methods come in a small **PR C** (API, docstrings, stub, changelogs, a
+  union oracle), so that PR B's review stays on partitioning (confirmed by the developer). PR C
+  then deletes the plan instead of PR B.
+- Not in this branch; filed as `Notes:` entries in the planning repository's `requests/inbox.md`
+  (`c4d0055`): a spatial index for operations on many polygons (the union of a sequence, a plate
+  model's gaps and overlaps); multi-polygon and multi-polyline geometry properties; and splitting a
+  self-crossing polygon into simple polygons (requirements §3.7, a possible PR after B).
 
 ## Phases
 
@@ -379,8 +381,14 @@ requirements in hand, as the developer anticipated.
   `partition`/`PlatePartitioner` (pyGPlates).
 - The developer's visual check of Assign Plate IDs on polygons in GPlates. There is no rendering
   coverage.
-- **A Fable distillation of `docs/plans/polygon-intersections/`** (per CLAUDE.md, with a
-  self-contained prompt and every statement checked against the code), then delete the plan.
+- **A Fable distillation of what PR B completed** (per CLAUDE.md, with a self-contained prompt and
+  every statement checked against the code).
+
+### PR C: Boolean operations in pyGPlates (Opus)
+- `PolygonOnSphere` methods for intersection, union and difference (names in *Decisions*, 2026-10-25),
+  on PR B's overlay. Docstrings via the `api-docstring` skill; regenerate the stub; changelog.
+- The oracle for every operation (Phase 5), and the error for a union over a hemisphere.
+- The final Fable distillation of `docs/plans/polygon-intersections/`, then delete the plan.
 - The next checklist item, *Audit the plate partitioning*, follows. Also the roadmap's "revisit
   the exact parity area", which this PR's ring-intersection code unblocks.
 
