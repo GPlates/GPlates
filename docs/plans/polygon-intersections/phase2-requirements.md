@@ -445,12 +445,21 @@ that two different pieces both fix must agree, which is a check.
 
 **Link the kept pieces into rings.** For the inside output, keep `P`'s pieces inside `Q`, `Q`'s
 pieces inside `P`, and the common chains the sector rule assigns; for the outside output, `P`'s
-pieces outside `Q`, `Q`'s pieces inside `P` (reversed), and the other common chains. At each
-intersection vertex the kept piece-ends are paired: the piece arriving along one boundary of an
-inside-both sector continues along the sector's other boundary. With two kept ends at a vertex
-there is one way; with four or more (two output regions touching at the vertex, or a self-crossing
-of `P` on `Q`) the rotational order pairs them so that the rings are simple there, which is
-Foster-Hormann-Popa's split-candidate clean-up for free. Walk the pairings to close the rings.
+pieces outside `Q`, `Q`'s pieces inside `P`, and the other common chains. A piece of `Q` inside `P`
+is kept by both outputs, traversed in opposite senses relative to the `P` pieces it joins. That
+reversal is only relative: GPlates never normalises ring orientation (design doc section 3.1), and
+the linking uses no direction at all. At each intersection vertex the kept piece-ends are paired.
+Going round the vertex, output membership changes exactly at the kept ends, so the sectors
+alternate between output and not. With two kept ends (the usual case) there is one pairing and it
+needs no geometry: the kept pieces form cycles, and walking them closes the rings. With four or
+more (two output regions touching at the vertex, `Q` touching `P`'s boundary from inside, a
+self-crossing of `P` on `Q`), the ends are taken in rotational order and the two ends bounding each
+output sector are paired, so the rings touch there and never cross. That can still leave one ring
+passing through the vertex twice: `P \ Q`, where `Q` touches `P`'s edge from inside, comes out as
+one ring pinched at the touch, not as `P`'s ring with `Q` as a hole touching it. Swapping the
+pairing at that vertex splits the ring into two that each pass once. The kept pieces, and so the
+point set under the parity rule, are unchanged; only the grouping differs. That swap is
+Foster-Hormann-Popa's split-candidate clean-up, and whether always to make it is question 11.
 
 **Contract pieces shorter than the tolerance.** Step 2 of section 3.1 splits at each record, so two
 records at one point give two vertices with a piece of zero or rounding length between them, and
@@ -473,8 +482,8 @@ counted mod 2, the boundary of `P ∩ Q` is the part of `P`'s boundary inside `Q
 and those are exactly the kept pieces. Foster-Hormann-Popa handle this case too; what they cannot
 represent is the twist on `Q`.
 
-**Checks.** At every vertex the number of kept ends is even and each inside-both sector has
-exactly two; memberships fixed twice agree; every walk closes. A failure is local, points at the
+**Checks.** At every vertex the number of kept ends is even and output membership changes at
+every kept end and nowhere else; memberships fixed twice agree; every walk closes. A failure is local, points at the
 vertex and the pieces concerned, and is the sign of a missed or spurious intersection (R9, R11) or
 a piece shorter than the tolerance whose midpoint test fell on the wrong side. The repair policy
 (prefer the longer pieces' tests, flip the short piece, and carry on; or assert in debug builds) is
@@ -496,9 +505,8 @@ union *or*, `P \ Q` is *in `P` and not in `Q`*. A non-common piece or a common c
 output's boundary exactly when `f` differs between its two sides, and the walk round a vertex gives
 both sides' memberships for every piece-end. A non-common piece of `P`, for example, is in `P` on
 one side and not on the other, and in `Q` on both sides or on neither (its test), so it is kept for
-the intersection when it is inside `Q` and for the union when it is outside. Each kept piece is
-oriented with the output on the same side (its left, say), which reverses `Q`'s pieces for
-`P \ Q`, and the linking is then the same for every operation. The symmetric difference keeps every
+the intersection when it is inside `Q` and for the union when it is outside. The linking is the
+same for every operation, since it uses only which sectors are in the output. The symmetric difference keeps every
 non-common piece and no common chain.
 
 One limit is new. `P ∩ Q`, `P \ Q` and `Q \ P` are subsets of an input, so they are under a
@@ -675,5 +683,7 @@ are (section 3.3).
    (recommended, keeping `GeometryIntersect`'s contract and its other callers untouched), or extend
    the `Graph` to report them?
 10. **`GeometryCrossing`**: delete it.
-11. **Scope of self-crossing input**: accept figure-of-eight output rings where the rotational
-    order is ambiguous, or always split them?
+11. **Rings passing through a vertex twice** (section 3.3, the swap): accept them, or always split
+    them into rings that pass once? Recommended: always split, since OGC simple features (and so
+    most export formats) require rings that do not touch themselves, while a hole touching its
+    exterior at a point is allowed.
