@@ -436,8 +436,10 @@ one end of a common chain, with one piece `p` of `P`, one piece `q` of `Q` and t
 reduces to: `c` is in the inside output iff `[q inside P] != [p inside Q]`, and in the outside
 output otherwise (one of the two, always). A chain forming a whole ring with no non-common piece
 anywhere (`P`'s ring equals `Q`'s) has no anchor; the fallback is a point-in-polygon test of a point
-offset sideways from the ring by more than the tolerance, or the paper's rule (section 1.3). The
-walk round a vertex needs the piece-ends in rotational order about it (the tangent of each
+offset sideways from the ring by more than the tolerance, or the paper's rule (section 1.3). At a
+vertex with three piece-ends (the usual chain end) the rule needs no geometry at all: every pair of
+the three ends is adjacent, so the sectors are known without ordering them. With four or more, the
+walk round the vertex needs the piece-ends in rotational order about it (the tangent of each
 piece's first arc, `cross(axis, v)`, sorted by angle in the tangent plane), and the memberships
 that two different pieces both fix must agree, which is a check.
 
