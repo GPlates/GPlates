@@ -56,6 +56,15 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   - Three inbox notes filed: a spatial index for operations on many polygons; multi-polygon and
     multi-polyline properties; the simple-polygon split.
 
+- 2026-10-25: **Phase 3 audit done early, by Fable** (`phase3-audit.md`; scripts in the planning
+  repository's `plans/polygon-intersection-tools/`), assuming the recommended answers except Q1
+  and Q9. Not yet reviewed by the developer. Main findings: misordered touch records near a
+  segment start (D1), the R7 gap (D2; recommends raising the thickness to `s`), duplicate records
+  in a corner's wedge (D3), short-segment touches up to `2t` apart, so contraction needs `>= 2t`
+  (D4), unreachable chord interpolation, so porting `GreatCircleArc::intersect`'s refinements is
+  moot (D5). Q9: derive chains in the partitioner. Its section 7 lists corrections to the design
+  doc and the requirements, not yet applied.
+
 - **Resume here** (2026-10-25):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). Before answering the 11 questions in `phase2-requirements.md` §4, the developer
