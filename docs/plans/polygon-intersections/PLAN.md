@@ -65,12 +65,24 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   moot (D5). Q9: derive chains in the partitioner. Its section 7 lists corrections to the design
   doc and the requirements, not yet applied.
 
-- **Resume here** (2026-10-25):
+- 2026-10-26: the walk-through so far is written up in **`overlay-walkthrough.md`** (the
+  developer's request: the expanded explanations, to become the basis of doc §5.3 onwards, with
+  requirements §3.3 as the overview). Corrections from it, applied to the requirements:
+  - test a piece at an original vertex, not the longest arc's midpoint, which can lie within
+    rounding of `Q` (the developer's T-intersection example);
+  - the linking needs no direction; pairing can pinch a ring, and the split is a cut of the
+    ring's vertex sequence at a repeated vertex.
+
+  Decided: the sector rule is primary (Q3, partly); always split pinched rings (Q11). Proposed for
+  the anchorless fallback: the developer's idea, crossings from `R` leaving out the chain's own arc.
+
+- **Resume here** (2026-10-26):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). Before answering the 11 questions in `phase2-requirements.md` §4, the developer
-    is walking through §3.3 paragraph by paragraph, where it differs from Foster-Hormann-Popa.
-    Started with "Classify each piece on its own".
-  - Then Phase 3: the `GeometryIntersect` audit (Fable). `DateLineWrapper` is not checked
+    is walking through §3.3 paragraph by paragraph (written up in `overlay-walkthrough.md`; next
+    is contracting short pieces, then "Checks").
+  - Phase 3's audit is written (`phase3-audit.md`) and waits for the developer's review; then
+    its fixes, tests and doc corrections (Opus) and PR A. `DateLineWrapper` is not checked
     before the Phase 4 decision.
   - Build trees: `build-gplates` and `build-pygplates` in this worktree, configured and green
     (GPlates 92/92, pyGPlates 7/7).

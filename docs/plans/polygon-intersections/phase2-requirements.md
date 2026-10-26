@@ -418,11 +418,17 @@ degenerate examples. Against it:
 ### 3.3 (b) Overlay: split, classify each piece, link
 
 **Classify each piece on its own.** A piece of `P` that is not common is inside `Q` or outside it,
-decided by one `is_point_in_polygon` of an interior point of the piece against `Q`, threshold off
-(R10): the midpoint of the piece's longest arc, which is the point furthest from the piece's ends,
-the only places `Q` is known to be near. A piece of `Q` likewise against `P`. The piece has no
-crossing in its interior (R11), so its interior is on one side of the other polygon except within
-the tolerance of that polygon's boundary, and the midpoint test is the piece's status.
+decided by one `is_point_in_polygon` of one point of the piece against `Q`, threshold off (R10). A
+piece of `Q` likewise against `P`. The piece has no crossing in its interior (R11), so it is on one
+side of the other polygon except within the tolerance of that polygon's boundary. The point is an
+original vertex of the piece when it has one: a vertex in no intersection record is farther than
+the thickness from the other geometry, or it would be a touch, a margin of about `10^10` times
+point-in-polygon's rounding. A piece with no original vertex is a single arc between two
+intersection vertices, and uses that arc's midpoint, with no such margin; the checks compare its
+class with the other pieces at its ends, and whether it is deduced from them first is for
+Phase 4. (The first proposal, the midpoint of the longest arc, has no margin either: an arc leaving
+a touch at a small angle stays near `Q`, and can cross `Q`'s edge near its middle with no record.
+Found by the developer, 2026-10-26; `overlay-walkthrough.md` section 3.)
 
 **Common pieces: the sector rule.** A common piece (a chain of them) bounds `P` on one side and
 `Q` on one side, and belongs to the inside output exactly when one of its two sides is inside
@@ -435,8 +441,11 @@ fixed, toggling at each piece-end, fixes both memberships in every sector. At th
 one end of a common chain, with one piece `p` of `P`, one piece `q` of `Q` and the chain `c`, this
 reduces to: `c` is in the inside output iff `[q inside P] != [p inside Q]`, and in the outside
 output otherwise (one of the two, always). A chain forming a whole ring with no non-common piece
-anywhere (`P`'s ring equals `Q`'s) has no anchor; the fallback is a point-in-polygon test of a point
-offset sideways from the ring by more than the tolerance, or the paper's rule (section 1.3). At a
+anywhere (`P`'s ring equals `Q`'s) has no anchor. The proposed fallback (developer, 2026-10-26;
+`overlay-walkthrough.md` section 5) counts the crossings of the arc from `R` to a point `X` on the
+chain with each polygon's edges, leaving out the arc containing `X`, which gives the memberships on
+`R`'s side of the chain; an offset point fails for a face thinner than the offset, and the paper's
+rule (section 1.3) needs each ring's hole status. At a
 vertex with three piece-ends (the usual chain end) the rule needs no geometry at all: every pair of
 the three ends is adjacent, so the sectors are known without ordering them. With four or more, the
 walk round the vertex needs the piece-ends in rotational order about it (the tangent of each
@@ -457,9 +466,11 @@ self-crossing of `P` on `Q`), the ends are taken in rotational order and the two
 output sector are paired, so the rings touch there and never cross. That can still leave one ring
 passing through the vertex twice: `P \ Q`, where `Q` touches `P`'s edge from inside, comes out as
 one ring pinched at the touch, not as `P`'s ring with `Q` as a hole touching it. Swapping the
-pairing at that vertex splits the ring into two that each pass once. The kept pieces, and so the
-point set under the parity rule, are unchanged; only the grouping differs. That swap is
-Foster-Hormann-Popa's split-candidate clean-up, and whether always to make it is question 11.
+pairing at that vertex splits the ring into two that each pass once: cut the ring `v, A, v, B`
+into `v, A` and `v, B`, which by a Jordan-curve argument is always the other non-crossing pairing
+(`overlay-walkthrough.md` section 6.4). The kept pieces, and so the point set under the parity
+rule, are unchanged; only the grouping differs. That swap is Foster-Hormann-Popa's split-candidate
+clean-up, and it is always made (question 11).
 
 **Contract pieces shorter than the tolerance.** Step 2 of section 3.1 splits at each record, so two
 records at one point give two vertices with a piece of zero or rounding length between them, and
@@ -664,9 +675,9 @@ are (section 3.3).
    `is_point_in_polygon` calls on the outline is always a split point (R7)?
 2. **A polyline piece along the boundary.** Inside, matching the inclusive threshold (recommended),
    or decided by which side of the boundary the polygon's interior is?
-3. **Common chains.** The sector rule as primary and the offset test as the anchorless fallback;
-   or the offset test throughout, which is simpler and has a thin-face failure mode. How large an
-   offset?
+3. **Common chains.** *Partly decided (developer, 2026-10-26): the sector rule is primary.* Open:
+   the anchorless fallback. Recommended: crossings from `R` to a point on the chain, leaving out
+   its own arc (`overlay-walkthrough.md` section 5, option 3), rather than an offset test.
 4. **Pieces shorter than the tolerance**: contract them, merging their end vertices (recommended,
    section 3.3; it is also what makes a twist of `P` on `Q` work), rather than keep them as
    duplicated points or drop them?
@@ -683,7 +694,7 @@ are (section 3.3).
    (recommended, keeping `GeometryIntersect`'s contract and its other callers untouched), or extend
    the `Graph` to report them?
 10. **`GeometryCrossing`**: delete it.
-11. **Rings passing through a vertex twice** (section 3.3, the swap): accept them, or always split
-    them into rings that pass once? Recommended: always split, since OGC simple features (and so
+11. **Rings passing through a vertex twice** (section 3.3, the swap). *Decided (developer,
+    2026-10-26): always split them into rings that pass once*, since OGC simple features (and so
     most export formats) require rings that do not touch themselves, while a hole touching its
     exterior at a point is allowed.
