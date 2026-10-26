@@ -511,29 +511,36 @@ still catch a short piece's wrong class, but only as an inconsistency to repair.
 unaffected, and the output ring keeps the twist. The output is still right under the parity rule:
 counted mod 2, the boundary of `P ∩ Q` is the part of `P`'s boundary inside `Q` plus the part of
 `Q`'s boundary inside `P` (common chains by the sector rule), whether or not the rings are simple,
-and those are exactly the kept pieces. A set of edges fixes a region only up to its complement,
-and the parity rule reads the output rings as the smaller one, which is the intended one while the
-output is under a hemisphere (section 1.6). The twist is not an intersection vertex, so the split
+and those are exactly the kept pieces. On the sphere those rings bound a region and also its
+complement; the interior rule chooses by reading each ring's interior as its smaller side, which
+is the intended side while every output ring encloses less than a hemisphere, as it does when `P`'s
+exterior ring does (section 1.6). The twist is not an intersection vertex, so the split
 of question 11 does not see it: the output crosses itself where the input did, and a simple output
 needs section 3.7. A twist *near* `Q` gives two crossings of `Q`'s edge close together, and the
 piece of `Q` between them is contracted if it is shorter than the contraction tolerance, and
 otherwise classified like any other piece. Foster-Hormann-Popa handle this case too; what they
 cannot represent is the twist on `Q`.
 
-**Checks.** At every vertex the number of kept ends is even and output membership changes at
-every kept end and nowhere else; memberships fixed twice agree; every walk closes. A failure is local, points at the
-vertex and the pieces concerned, and is the sign of a missed or spurious intersection (R9, R11) or
-a piece shorter than the tolerance whose midpoint test fell on the wrong side. The repair policy
-(prefer the longer pieces' tests, flip the short piece, and carry on; or assert in debug builds) is
-an open question.
+**Checks.** Two properties hold by construction and are only assertions: at every vertex each
+polygon has an even number of ends, so the walk round it returns to its start, and every kept
+piece's two ends are paired, so every walk closes. The data-dependent checks: at every vertex the
+memberships that different non-common ends fix must agree (an ordinary crossing has two redundant
+constraints, a chain end none), and a common chain must get the same class from both its ends. A
+failure is local, points at the vertex and the pieces concerned, and is the sign of a missed or
+spurious intersection (R9, R11), a single-arc piece's midpoint test decided by rounding, or a wrong
+rotational order where ends leave a vertex nearly tangent. The repair policy is question 5
+(`overlay-walkthrough.md` section 9 proposes one).
 
 **Rings with no intersection** are pieces too (section 3.1, step 4) and join the output under the
-same rule. **Grouping** the output rings of each output into polygons with holes is by containment
-(a vertex of one ring not on another, threshold off, against that ring; nesting depth even for an
-exterior and odd for a hole of its immediate container); under the interior rule the point set does
-not depend on the grouping, so the grouping is for the user, and may be the simplest consistent
-one. **Polylines** stop after classification: split at the intersections with `Q`, each piece in
-or out by its midpoint, a piece along `Q`'s boundary by the rule chosen for it (open question).
+same rule. **Grouping** the output rings of each output into polygons with holes: a ring is an
+exterior when the output is on its smaller side and a hole when it is on its larger side, which the
+linking knows without a test; each hole goes to the smallest exterior containing it, by one vertex
+not shared with that exterior, threshold off. Under the interior rule the point set of all the
+rings together does not depend on the grouping, but each output polygon's does (a hole given to the
+wrong exterior becomes an island of it), so the grouping must be right. **Polylines** stop after
+classification: split at the intersections with `Q`, each piece in or out by its test, a piece
+along `Q`'s boundary by the rule chosen for it (question 2), and consecutive pieces of one class
+joined, so that a touch does not break a polyline.
 **Provenance** is carried by the pieces from step 2.
 
 **Union and the other Boolean operations** (the developer asked for them, 2026-10-25).
@@ -551,8 +558,9 @@ One limit is new. `P ∩ Q`, `P \ Q` and `Q \ P` are subsets of an input, so the
 hemisphere whenever the inputs are (section 1.6). A union, or a symmetric difference, of two
 polygons under a hemisphere can exceed one, and a ring cannot mean more than a hemisphere (design
 doc section 3.1; the fix is deferred in its section 7), so such a result would be read as its
-complement. The overlay knows which side of each output ring is meant, so it can detect this and
-fail rather than return the complement.
+complement. The overlay knows which side of each output ring is meant, so it detects this, as a
+ring with the output on its larger side and no exterior containing it, and fails rather than return
+the complement.
 
 For it:
 
@@ -711,12 +719,16 @@ are (section 3.3).
    tolerance of `2t` (`2s` if the thickness becomes `s`); the merged vertex at `P`'s original
    vertex if one was merged, else at a crossing.
 5. **Inconsistency policy**: repair and continue in release builds, assert in debug builds, or
-   return a failure to the caller?
-6. **Orientation of output rings**: keep each piece's original direction (so an output ring can
-   reverse direction where it switches from `P` to `Q`), or normalise every output ring? The
-   interior rule does not care; users and exports might.
+   return a failure to the caller? Proposed (`overlay-walkthrough.md` section 9.3): trust tests at
+   original vertices, deduce a disagreeing single-arc piece from them, assert in debug builds when
+   trusted tests disagree, repair and continue in release builds, and never fail the call.
+6. **Orientation of output rings**: follow `P`'s direction where the ring runs along `P`, or orient
+   every output ring with the output on its left (exteriors anticlockwise, holes clockwise)? The
+   interior rule does not care; users and exports might. Proposed: output on the left, which costs
+   nothing since the output side of each ring is known (`overlay-walkthrough.md` section 11).
 7. **Grouping**: strict nesting by containment, with rings allowed to touch; is a stricter
-   Shapefile-style output wanted?
+   Shapefile-style output wanted? Proposed: OGC simple features, where no ring touches itself and
+   a hole may touch its exterior at a point.
 8. **The cascade**: keep it sequential on (b) (recommended), and decide on all-plates-at-once only
    after the Phase 5 hunt measures the slivers.
 9. **Where R3 and R4 live**: derive crossings and chains in the partitioner from the four types

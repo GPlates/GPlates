@@ -470,10 +470,18 @@ input had it.
 
 **Why the output is still right.** Counted mod 2, the boundary of `P ∩ Q` is the part of `P`'s
 boundary inside `Q` plus the part of `Q`'s boundary inside `P` (with the common chains the sector
-rule assigns), whether or not any ring is simple; those are exactly the kept pieces. A set of edges
-fixes a region only up to its complement, and the parity rule reads the rings as the smaller of the
-two, which is the intended one while the output is under a hemisphere (requirements section 1.6).
-The same holds for `P \ Q` and the other operations.
+rule assigns), whether or not any ring is simple; those are exactly the kept pieces. The same holds
+for `P \ Q` and the other operations.
+
+Which side of those rings is the output is a separate question, and on the sphere it has two
+answers: the same rings bound a region and also its complement, the rest of the sphere. (In the
+plane there is no choice, because the unbounded side is always outside.) The interior rule chooses
+ring by ring, reading each ring's interior as its smaller side, and combines the rings by parity.
+So the output is read as intended when every output ring encloses less than a hemisphere, which
+holds when `P`'s exterior ring does, since every ring of `P ∩ Q` or `P \ Q` lies inside it
+(requirements section 1.6). The condition is on each ring, not on the region's area: a small
+region whose exterior ring encloses more than a hemisphere, with a large hole, would be read
+wrongly.
 
 **What it means for the output.** The twist is not an intersection vertex, so the split of
 section 6.4 (open question 11) does not see it: the output crosses itself where the input did.
@@ -488,8 +496,182 @@ distance from `P`'s boundary, so it is classified like any other single-arc piec
 
 FHP handle a twist away from `Q` too (their Fig. 21a); what they cannot represent is a twist on `Q`.
 
-## 9. Still to walk through
+## 9. Checks
 
-Section 3.3's remaining paragraphs: the checks,
-rings with no intersection and the grouping by containment, polylines, provenance, and the other
-Boolean operations; then the open questions of the requirements' section 4.
+### 9.1 What is automatic and what is checked
+
+Two properties hold by construction, so they are assertions on the overlay's own code, not checks
+on the data:
+
+- At every vertex each polygon has an even number of ends (section 6.2), so the walk round the
+  vertex, flipping memberships, comes back to where it started.
+- Every kept piece has two ends and each is paired, so every walk along the kept pieces closes.
+
+What the data can get wrong is the classes, and two checks test them:
+
+1. **At a vertex, the memberships fixed by different ends must agree.** Each non-common end fixes
+   the other polygon's membership in the two sectors beside it, and the walk needs only one sector
+   to start from. At an ordinary crossing, with ends `p1`, `p2`, `q1` and `q2`, `p1` and `p2` each
+   fix `Q`'s membership and `q1` and `q2` each fix `P`'s, so two of the four are redundant: `p1`
+   and `p2` must have different classes (`P` crosses `Q` there), and so must `q1` and `q2`. At a
+   bounce they must have the same class, which the rotational order (`p p q q`) must also show.
+   At a chain end (`p`, `q`, `c`) nothing is redundant: `p` and `q` fix exactly what is needed.
+2. **A common chain must get the same class from both its ends.** This is where a chain's
+   redundancy is.
+
+### 9.2 What a failure means
+
+Each test is exact for its own point, so a disagreement means the classes do not describe one
+consistent arrangement. The causes:
+
+- a missed or spurious intersection (R9, R11): a piece that really crosses the other polygon has no
+  single class;
+- a single-arc piece whose midpoint test was decided by rounding (section 3);
+- a wrong rotational order at a vertex with four or more ends, where two ends leave nearly tangent
+  (section 4.3).
+
+The failure names the vertex and the pieces, so it is local and can be debugged. FHP's equivalent
+error, one wrong label, inverts the rest of the ring and shows nowhere.
+
+### 9.3 Repair (open question 5)
+
+Proposed:
+
+- **Trust the tests made at original vertices** (margin at least `t`, section 3). When a single-arc
+  piece's midpoint test disagrees with them, give it the class its end vertex deduces from them.
+- **If trusted tests disagree,** an intersection was missed or invented. Assert in debug builds. In
+  release builds flip the class of the least reliable piece involved (a single arc before a longer
+  piece, a shorter piece before a longer one), recheck the vertex at its other end, and carry on.
+  Never fail the call: in the cascade every plate must get an answer.
+- **Count the repairs.** The Phase 5 hunt requires zero on its generated data, outside the cases
+  built to provoke them.
+
+## 10. Rings with no intersection
+
+A ring of either polygon with no record is one closed piece (section 2), classified by one of its
+vertices against the other polygon. No vertex of such a ring is within `t` of the other polygon (or
+it would be a record), so the test has the full margin. It is then kept or not like any other
+piece. With every ring of both polygons taking part, this fixes three of the four bugs in PLAN.md's
+Status, which all come from today's code intersecting exterior rings only and deciding a polygon
+whose exterior ring meets nothing by one vertex.
+
+**`Q` wholly inside `P`** (the first bug, where today all of `P` goes outside):
+
+```
+  +-----------------+
+  |  P              |
+  |     +-----+     |
+  |     |  Q  |     |
+  |     +-----+     |
+  |                 |
+  +-----------------+
+```
+
+`P`'s ring is outside `Q`, and `Q`'s ring is inside `P`. So `P ∩ Q` keeps `Q`'s ring: it is `Q`. And
+`P \ Q` keeps both rings: it is `P` with `Q` as a hole.
+
+**Holes.** Every ring of both polygons takes part, so the same rule covers the other two bugs: a
+partitioning polygon that crosses only a hole of `P` (`P`'s exterior ring has no record, is one
+piece, and is classified against `Q`), and an input crossing only a hole of `Q` (`Q`'s exterior ring
+likewise). A hole of `Q` lying inside `P` with no contact is a piece inside `P`: it is kept in
+`P ∩ Q`, as a hole of the intersection, and in `P \ Q`, where it bounds the part of `P` inside
+`Q`'s hole.
+
+## 11. Grouping the rings into polygons
+
+After the linking and the split of section 6.4, each output is a set of rings that do not cross
+each other (twists apart, section 8) and may touch at vertices. They become one or more polygons,
+each an exterior ring with its holes.
+
+**Why the grouping must be right.** Under the parity rule the point set of all the rings together
+does not depend on how they are grouped. But the output is several polygons, and a user reads their
+union. A hole given to the wrong exterior would lie outside that exterior, so under parity it would
+become an island of that polygon, and the union would be wrong. (The requirements' section 3.3 said
+the grouping was only for the user. That is true of a single polygon holding every ring, not of
+several polygons.)
+
+**Exteriors and holes need no test.** The linking knows which side of each ring the output is on,
+from the sector memberships. A ring with the output on its smaller side is an exterior; one with
+the output on its larger side is a hole (the hole itself is the smaller side, lying inside an
+exterior).
+
+**Which exterior a hole belongs to** is the smallest exterior that contains it: test one vertex of
+the hole, not shared with that exterior, against it, threshold off, with bounding circles to skip
+most candidates. An island inside a hole is an exterior of its own and makes its own polygon.
+
+**Open question 7 (the style).** Proposed: OGC simple features. Each polygon is an exterior with
+holes; no ring touches itself (section 6.4); a hole may touch its exterior at a point.
+
+**Open question 6 (orientation).** Since the output side of every ring is known, the rings can be
+oriented consistently at no cost, with the output on the left: exteriors anticlockwise seen from
+outside the sphere, holes clockwise. GeoJSON asks for that and Shapefile for the reverse; a fixed
+convention serves either. The alternative, following `P`'s direction where the ring runs along
+`P`, gives no consistent orientation, because GPlates never normalises its input. (The question's
+first wording, keeping each piece's original direction, is not possible: a ring is walked one way,
+and some of its pieces go against their original direction whatever is chosen.) The interior rule
+does not care either way. Proposed: output on the left.
+
+## 12. Polylines
+
+When `P` is a polyline, steps 1 to 3 are the same: split at every record, and classify each piece
+by its test (section 3). There are no sides, so a piece lying along `Q`'s boundary cannot use the
+sector rule; it gets the class of open question 2 (proposed: inside, matching the inclusive
+threshold, so that in the cascade a polyline along a boundary shared by two plates goes to the
+first of them).
+
+There is no linking. Consecutive pieces of one class are joined back into one polyline, so that a
+touch (a bounce) does not break a polyline in two. An end point of the polyline lying on `Q` has
+just one end of `P`, which needs no pairing. There is also less to check: the pieces of `Q` bound
+nothing, so they are not classified, and no end is redundant. A wrong midpoint test of a single-arc
+piece gives one short piece the wrong class, with no check to catch it.
+
+Points and multi-points are unchanged: one point-in-polygon test each.
+
+## 13. Provenance
+
+Every output vertex records where it came from:
+
+- an original vertex of `P` or of `Q`: its ring and index;
+- an intersection vertex: its segment and position along the segment on *both* polygons, which
+  `GeometryIntersect` already gives (R1);
+- a merged vertex (section 7): the provenance of every record merged into it.
+
+This is what `PartitionFeatureUtils` needs for scalar coverages, replacing its epsilon map of
+original points and its nearest-segment search (PLAN.md, *Context*). A value at an original vertex
+of `P` is copied, and one at an intersection vertex is interpolated along `P`'s segment. Along a
+cut, a piece of `Q` inside `P`, the coverage has no value at all; what to give those points is a
+Phase 4 decision for the developer (interpolating along the cut between its two ends is one option).
+
+## 14. Union and the other Boolean operations
+
+Write an operation as `f(in P, in Q)`: intersection is *and*, union is *or*, `P \ Q` is *in `P` and
+not in `Q`*. A piece is on the output's boundary exactly when `f` differs between its two sides, so
+each operation keeps:
+
+| Piece | `P ∩ Q` | `P ∪ Q` | `P \ Q` | `Q \ P` | symmetric difference |
+| --- | --- | --- | --- | --- | --- |
+| of `P`, inside `Q` | kept | | | kept | kept |
+| of `P`, outside `Q` | | kept | kept | | kept |
+| of `Q`, inside `P` | kept | | kept | | kept |
+| of `Q`, outside `P` | | kept | | kept | kept |
+| common, interiors on the same side | kept | kept | | | |
+| common, interiors on opposite sides | | | kept | kept | |
+
+For example, a piece of `P` inside `Q` has `(in P, in Q)` equal to `(1, 1)` on one side and `(0, 1)`
+on the other; `f` differs for *and* (1 and 0) but not for *or* (1 and 1). Partitioning is the
+intersection and `P \ Q`. In the two-squares example the union keeps `p2` and `q2`. The linking,
+the split and the grouping are the same for every operation: they use only which sectors are in the
+output.
+
+**The hemisphere limit.** `P ∩ Q`, `P \ Q` and `Q \ P` lie inside an input, so their rings enclose
+less than a hemisphere whenever the inputs' rings do (section 8). A union, or a symmetric
+difference, can exceed one, and a ring cannot mean more than a hemisphere (design doc section 3.1;
+the fix, an explicit side, is deferred in its section 7). The grouping detects it: the output then
+has a ring with the output on its larger side and no exterior containing it. The operation fails
+with an error rather than return the complement.
+
+## 15. Not walked through
+
+The requirements' section 3.3 ends with the case for and against the overlay, and sections 3.4 to
+3.6 compare it with the alternatives. They are the reasons for a choice the developer has made
+(2026-10-25), so they are not repeated here.

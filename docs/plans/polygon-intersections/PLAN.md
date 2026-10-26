@@ -76,17 +76,35 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   Decided: the sector rule is primary (Q3, partly); always split pinched rings (Q11). Proposed for
   the anchorless fallback: the developer's idea, crossings from `R` leaving out the chain's own arc.
 
-- **Resume here** (2026-10-26):
+- **Resume here** (2026-10-27):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
-    2026-10-25). Before answering the 11 questions in `phase2-requirements.md` §4, the developer
-    is walking through §3.3 paragraph by paragraph (written up in `overlay-walkthrough.md`; next
-    is "Checks").
-  - Phase 3's audit is written (`phase3-audit.md`) and waits for the developer's review; then
-    its fixes, tests and doc corrections (Opus) and PR A. `DateLineWrapper` is not checked
-    before the Phase 4 decision.
+    2026-10-25). The walk-through of requirements §3.3 is complete (`overlay-walkthrough.md`,
+    sections 1 to 15); the developer reads it, then answers the 11 questions in
+    `phase2-requirements.md` §4 (Q3 partly and Q11 already decided). Only **Q1** (thickness `t` or
+    `s`) and **Q9** (derive chains in the partitioner) bear on PR A; the rest are for PR B.
+  - **What is left for PR A**, once Q1 and Q9 are answered:
+    1. The developer reviews `phase3-audit.md`.
+    2. Apply its section 7 corrections to the design doc (§1, §4.2, §4.3) and the requirements, and
+       record the decisions: `GeometryIntersect` is the primitive; `GreatCircleArc::intersect`
+       stays separate for distance, with nothing ported (D5).
+    3. Fixes F1 to F7 (Opus): F1 the thickness and its comments; F2 order touch records by
+       projection; F3 report a corner contact once; F4 delete the dead code and state the
+       `sin(phi) > t` invariant; F5 document the record positions; F6 ring structure for consumers;
+       F7 `std::stable_sort`.
+    4. GoogleTests for `GeometryIntersect` (the audit's 16 cases, §6.1; `cpp-test` skill).
+    5. The hunt: extend `plans/polygon-intersection-tools/` in the planning repository (re-fed
+       pieces, interior rings, real-model shared edges, tiny and high-latitude geometries; §6.2),
+       and run it to zero mismatches after the fixes.
+    6. Topology resolving on a real model, before and after: unchanged if Q1 keeps `t`; every
+       change under `s` if Q1 raises it, which also needs changelog entries in both products.
+    7. Doc §4.4 to §4.5 (the tolerances within §1's system; the decisions and rejected
+       alternatives), with a Fable claim check.
+    8. Distil what PR A completes; `ctest` on both trees, a Linux Docker run, push to `private`,
+       and the PR when the developer asks.
+  - `DateLineWrapper` is not checked before the Phase 4 decision.
   - Build trees: `build-gplates` and `build-pygplates` in this worktree, configured and green
     (GPlates 92/92, pyGPlates 7/7).
-  - The planning repository's worktree for this session is `gplates-planning-wt/worktree-2`.
+  - The planning repository's worktree used so far is `gplates-planning-wt/worktree-2`.
 
 ## Context
 
