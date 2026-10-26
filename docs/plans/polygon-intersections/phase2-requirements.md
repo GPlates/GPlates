@@ -511,8 +511,14 @@ still catch a short piece's wrong class, but only as an inconsistency to repair.
 unaffected, and the output ring keeps the twist. The output is still right under the parity rule:
 counted mod 2, the boundary of `P ∩ Q` is the part of `P`'s boundary inside `Q` plus the part of
 `Q`'s boundary inside `P` (common chains by the sector rule), whether or not the rings are simple,
-and those are exactly the kept pieces. Foster-Hormann-Popa handle this case too; what they cannot
-represent is the twist on `Q`.
+and those are exactly the kept pieces. A set of edges fixes a region only up to its complement,
+and the parity rule reads the output rings as the smaller one, which is the intended one while the
+output is under a hemisphere (section 1.6). The twist is not an intersection vertex, so the split
+of question 11 does not see it: the output crosses itself where the input did, and a simple output
+needs section 3.7. A twist *near* `Q` gives two crossings of `Q`'s edge close together, and the
+piece of `Q` between them is contracted if it is shorter than the contraction tolerance, and
+otherwise classified like any other piece. Foster-Hormann-Popa handle this case too; what they
+cannot represent is the twist on `Q`.
 
 **Checks.** At every vertex the number of kept ends is even and output membership changes at
 every kept end and nowhere else; memberships fixed twice agree; every walk closes. A failure is local, points at the

@@ -436,8 +436,60 @@ undefined: the walk round the vertex fails, or the pairing lets the lobes cross.
   wide such clusters get in the cascade. Without contraction the checks would still catch a short
   piece's wrong class, but only as an inconsistency to repair.
 
-## 8. Still to walk through
+## 8. A twist away from `Q`
 
-Section 3.3's remaining paragraphs: a twist away from `Q`, the checks,
+`GeometryIntersect` intersects `P` with `Q`, never with itself, so a point `X` where `P` crosses
+itself is not a record, and not a vertex of the overlay, unless it lies on `Q` (section 7). It lies
+inside one piece (if both crossing edges are in the same piece) or inside two. Each of those
+pieces is still on one side of `Q`, and its test, at an original vertex, is unaffected. Its class
+is also right: point-in-polygon is parity from `R`, so a twisted lobe of `P` is inside `P`
+whichever way it is wound, as the interior rule says (design doc section 3.1).
+
+Example: `P` is the bow-tie of section 7, with `Q`'s top edge lower down, so that `X` is above it
+and the edge cuts both lobes:
+
+```
+  A               C
+  | \           / |
+  |   \       /   |
+  |       X       |
+  |   /       \   |
+  Y_L-F-------E-Y_R    Q's top edge (Q below)
+  | /           \ |
+  B               D
+```
+
+The records are the four crossings of `Q`'s edge: by `B`-`A` at `Y_L`, by `C`-`B` at `F`, by `A`-`D`
+at `E` and by `D`-`C` at `Y_R`. `X` is not among them. `P ∩ Q` is the two small triangles
+`Y_L, F, B` and `E, Y_R, D`; the part of `Q`'s edge from `F` to `E` is outside `P`, in the gap
+between the lobes below `X`. `P \ Q` is the two lobes above the edge, and they come out as one
+ring, `Y_L, A, E, Y_R, C, F`: `P`'s piece from `Y_L` up to `A` and down the diagonal to `E`, `Q`'s
+edge from `E` to `Y_R`, `P`'s piece up to `C` and down the other diagonal to `F`, and `Q`'s edge
+back to `Y_L`. Its arcs `A`-`E` and `C`-`F` cross at `X`: the output keeps the twist, exactly as the
+input had it.
+
+**Why the output is still right.** Counted mod 2, the boundary of `P ∩ Q` is the part of `P`'s
+boundary inside `Q` plus the part of `Q`'s boundary inside `P` (with the common chains the sector
+rule assigns), whether or not any ring is simple; those are exactly the kept pieces. A set of edges
+fixes a region only up to its complement, and the parity rule reads the rings as the smaller of the
+two, which is the intended one while the output is under a hemisphere (requirements section 1.6).
+The same holds for `P \ Q` and the other operations.
+
+**What it means for the output.** The twist is not an intersection vertex, so the split of
+section 6.4 (open question 11) does not see it: the output crosses itself where the input did.
+Partitioning does not make the input worse, but it does not make it simple either; a simple output
+needs the self-overlay of requirements section 3.7 (filed in the inbox as a possible PR after B).
+
+**A twist near `Q`.** If `X` is close to `Q`'s edge but not on it, `Q`'s edge is crossed twice close
+together, and the piece of `Q` between the two crossings is short. Shorter than the contraction
+tolerance, it is contracted and `X` is treated as on `Q` (section 7). Longer, it is a genuine small
+piece, inside or outside the tip of the gap between the lobes, and its midpoint is about the twist's
+distance from `P`'s boundary, so it is classified like any other single-arc piece (section 3).
+
+FHP handle a twist away from `Q` too (their Fig. 21a); what they cannot represent is a twist on `Q`.
+
+## 9. Still to walk through
+
+Section 3.3's remaining paragraphs: the checks,
 rings with no intersection and the grouping by containment, polylines, provenance, and the other
 Boolean operations; then the open questions of the requirements' section 4.

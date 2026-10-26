@@ -80,7 +80,7 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). Before answering the 11 questions in `phase2-requirements.md` §4, the developer
     is walking through §3.3 paragraph by paragraph (written up in `overlay-walkthrough.md`; next
-    is "A twist away from `Q`", then "Checks").
+    is "Checks").
   - Phase 3's audit is written (`phase3-audit.md`) and waits for the developer's review; then
     its fixes, tests and doc corrections (Opus) and PR A. `DateLineWrapper` is not checked
     before the Phase 4 decision.
