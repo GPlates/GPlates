@@ -473,18 +473,39 @@ rule, are unchanged; only the grouping differs. That swap is Foster-Hormann-Popa
 clean-up, and it is always made (question 11).
 
 **Contract pieces shorter than the tolerance.** Step 2 of section 3.1 splits at each record, so two
-records at one point give two vertices with a piece of zero or rounding length between them, and
-that piece's midpoint test means nothing. A twist of `P` lying on `Q` does exactly this: `P` crosses
-`Q`'s edge twice at the same point, the case that defeats Foster-Hormann-Popa (section 1.3). Two
-touches within the tolerance do it too (section 4, question 4). So every piece shorter than the
-tolerance is *contracted*: removed, with its two end vertices merged into one. A merged vertex
-still has an even number of piece-ends of each polygon; the twist on `Q` becomes one vertex with
-four ends of `P` and two of `Q`. The walk round a vertex and the pairing take any number of ends,
-and the pairing makes `P`'s two lobes touch there rather than cross, the result Fig. 21 expects.
-Without contraction the checks below would still catch the short piece's wrong class, but only as
-an inconsistency to repair. A run of short pieces contracts to one vertex, which can be wider than
-the tolerance; the point set then moves by up to that width, and the Phase 5 hunt should measure
-how wide such clusters get in the cascade.
+records at one point, or within the tolerance of each other, give two vertices with a piece of zero
+or tiny length between them. That piece has no test point (no original vertex, and its midpoint is
+on the other polygon) and no direction (a zero-length arc has no tangent for the rotational order
+at its ends). A twist of `P` lying on `Q` does exactly this: `P` crosses `Q`'s edge twice at the
+same point, the case that defeats Foster-Hormann-Popa (section 1.3). So do ties in the sort order
+along a segment (`phase3-audit.md`, R5, caveat 2). So a piece **with no original vertex** that is
+shorter than the contraction tolerance is *contracted*: removed, with its two end vertices merged
+into one. A piece with an original vertex is never contracted: it has a reliable test, and
+contracting it would drop an original vertex.
+
+The tolerance must be at least twice the thickness (`2t`, or `2s` if the thickness becomes `s`,
+question 1). A segment of `P` shorter than that, crossing an edge of `Q`, has both its vertices
+within `t` of the edge, so it gives two touches up to `2t` apart and no crossing (audit D4). Such a
+pair is usually consecutive along both geometries, and so already a common piece (step 3 of
+section 3.1) that the sector rule decides; contraction covers the cases where it is not. Records
+with equal sort keys on one segment are within `2t` of each other, so contraction by distance also
+settles ties.
+
+A merged vertex still has an even number of piece-ends of each polygon; the twist on `Q` becomes
+one vertex with four ends of `P` and two of `Q`. The walk round a vertex and the pairing take any
+number of ends, and the pairing makes `P`'s two lobes touch there rather than cross, the result
+Fig. 21 expects. The merged vertex's position, proposed: an original vertex of `P` if one was
+merged (so that `P`'s vertices stay exact, as scalar coverages want), else a crossing (accurate to
+about `2e-10` radians, audit D5), else any; the arcs ending there move by up to the tolerance.
+
+Two defects are fixed at the source rather than left to contraction: the order of touch records
+(audit F2, for D1), and a vertex in a corner's wedge reported once per edge (audit F3, for D3),
+whose piece of `Q` through the corner vertex has an original vertex and can be longer than any
+fixed tolerance at a sharp corner. A run of short pieces contracts to one vertex, which can be
+wider than the tolerance; the point set then moves by up to that width, and the Phase 5 hunt should
+measure how wide such clusters get in the cascade. Without contraction the checks below would
+still catch a short piece's wrong class, but only as an inconsistency to repair.
+`overlay-walkthrough.md` section 7 works through the twist.
 
 **A twist away from `Q`** is not a vertex at all. It lies inside a piece, the piece's test is
 unaffected, and the output ring keeps the twist. The output is still right under the parity rule:
@@ -562,10 +583,10 @@ Against it:
 - **The sector rule is not from a paper.** It is the Boolean reasoning of Martínez et al.'s overlap
   rule applied at a vertex; Phase 4 must state it precisely and the Phase 5 hunt must test it,
   especially its anchorless case.
-- **Pieces shorter than the tolerance** (two touches within `1e-6` of each other, as a `1.5e-6`
-  segment crossing an edge produces, or a twist of `P` on `Q`) would get an exact but arbitrary
-  class. Contracting them (above) removes the problem, at the price of moving the point set by up
-  to the width of a contracted cluster.
+- **Pieces shorter than the tolerance** (a twist of `P` on `Q`, ties in the sort order, two
+  touches up to `2t` apart from a segment shorter than `2t` crossing an edge) would get an exact
+  but arbitrary class. Contracting them (above) removes the problem, at the price of moving the
+  point set by up to the width of a contracted cluster.
 - **The sliver problem is not solved, only confined.** Where two plates' boundaries differ by more
   than the thickness, the cascade produces slivers that wide, exactly classified. Only a snapping
   tolerance equal to `s` would absorb them (R7).
@@ -680,7 +701,9 @@ are (section 3.3).
    its own arc (`overlay-walkthrough.md` section 5, option 3), rather than an offset test.
 4. **Pieces shorter than the tolerance**: contract them, merging their end vertices (recommended,
    section 3.3; it is also what makes a twist of `P` on `Q` work), rather than keep them as
-   duplicated points or drop them?
+   duplicated points or drop them? Proposed with it: only pieces with no original vertex; a
+   tolerance of `2t` (`2s` if the thickness becomes `s`); the merged vertex at `P`'s original
+   vertex if one was merged, else at a crossing.
 5. **Inconsistency policy**: repair and continue in release builds, assert in debug builds, or
    return a failure to the caller?
 6. **Orientation of output rings**: keep each piece's original direction (so an output ring can

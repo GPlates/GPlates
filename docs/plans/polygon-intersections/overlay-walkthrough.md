@@ -351,8 +351,93 @@ Pinches inherited from the input (a ring of `P` that touches itself at one of it
 not intersection vertices, and the cut does not see them. Splitting a polygon into simple rings in
 general is the overlay of a polygon with itself (requirements section 3.7).
 
-## 7. Still to walk through
+## 7. Contracting short pieces
 
-Section 3.3's remaining paragraphs: contracting short pieces, a twist away from `Q`, the checks,
+### 7.1 The problem
+
+Splitting at every record (section 2) assumes the records are at distinct points. When two records
+are at one point, or within the tolerance of each other, the piece between them has zero or tiny
+length, and two things fail. It has no test point: no original vertex, and its midpoint lies on the
+other polygon. And it has no direction: the rotational order at its ends (section 4.3) needs the
+tangent of its first arc, and a zero-length arc has none.
+
+Where it happens:
+
+- **A twist of `P` lying on `Q`'s boundary.** `P`'s ring is `A, D, C, B`: the edges `A`-`D` and
+  `C`-`B` cross at `X`, so `P` is a bow-tie, and `X` lies on `Q`'s top edge, with `Q` below:
+
+  ```
+    A               C
+    | \           / |
+    |   \       /   |
+    Y_L---- X ----Y_R      Q's top edge (Q below)
+    |   /       \   |
+    | /           \ |
+    B               D
+  ```
+
+  `Q`'s edge is crossed twice at `X`, once by `A`-`D` and once by `C`-`B`, so there are two
+  crossing records at one point. Along `Q` they have equal keys and sort in no defined order, with a
+  piece of `Q` of zero length between them. This is FHP's one failure (their Fig. 21).
+- **Ties along a segment.** Records at the same distance along one segment sort in no defined order
+  (`phase3-audit.md`, R5, caveat 2).
+- **Two touches up to `2t` apart** (audit D4). A segment of `P` shorter than `2t` that crosses an
+  edge of `Q` has both its vertices within `t` of the edge, so it gives two touch records and no
+  crossing. Such a pair is usually consecutive along both polygons with no original vertex between,
+  so it forms a common piece and the sector rule decides it (section 4); but not always.
+
+### 7.2 Contraction
+
+A piece with no original vertex, shorter than the contraction tolerance, is removed, and its two end
+vertices become one. Several short pieces in a row become one vertex too (each merge joins two
+clusters). The merged vertex's ends are the sum of its parts' ends, so each polygon still has an
+even number there (section 6.2).
+
+At the twist, the merged `X` has six ends: `P`'s four, towards `A`, `B`, `C` and `D`, and `Q`'s two,
+along its edge towards `Y_L` and `Y_R`. Going anticlockwise round `X` from `Q`'s edge on the right
+(as drawn), with each sector's (in `P`, in `Q`):
+
+| Sector | Where | (in `P`, in `Q`) |
+| --- | --- | --- |
+| `Y_R` to `C` | upper part of the right lobe | (1, 0) |
+| `C` to `A` | above `X`, between the lobes | (0, 0) |
+| `A` to `Y_L` | upper part of the left lobe | (1, 0) |
+| `Y_L` to `B` | lower part of the left lobe | (1, 1) |
+| `B` to `D` | below `X`, between the lobes | (0, 1) |
+| `D` to `Y_R` | lower part of the right lobe | (1, 1) |
+
+Each ray flips one membership (`P`'s rays flip `P`, `Q`'s flip `Q`), as it must. For `P ∩ Q` the
+output sectors are the two `(1, 1)` ones, so the kept ends are `Y_L`, `B`, `D` and `Y_R`, and pairing
+across the output sectors gives `{Y_L, B}` and `{D, Y_R}`: two triangles, `X, Y_L, B` and
+`X, Y_R, D`, touching at `X`. That is the result FHP's Fig. 21 expects: `P`'s lobes, which crossed
+at `X` in the input, touch there in the output. `P \ Q` is the two upper triangles, likewise.
+
+Without contraction there are two vertices at `X`, with the zero-length piece of `Q` between them. Its
+class is a coin toss, and at each of the two vertices one ray has no direction, so the sectors are
+undefined: the walk round the vertex fails, or the pairing lets the lobes cross.
+
+### 7.3 The choices
+
+- **The tolerance is at least `2t`** (`2s` if the thickness is raised to `s`, open question 1),
+  because of the touches up to `2t` apart. Records with equal keys on one segment are within `2t` of
+  each other, so contracting by distance also settles ties.
+- **Only pieces with no original vertex.** A piece with one has a reliable test (section 3), and
+  contracting it would drop an original vertex of the input.
+- **The merged vertex's position**, proposed: an original vertex of `P` if one was merged, so that
+  `P`'s vertices stay exact (scalar coverages want this); else a crossing, whose position is
+  accurate to about `2e-10` radians (audit D5); else any. The arcs ending there move by up to the
+  tolerance. Its provenance is that of every merged record: it lies on both polygons.
+- **Fixed at the source, not by contraction:** the sort order of touch records (audit F2, for D1),
+  and a vertex in a corner's wedge being reported once per edge (audit F3, for D3). The latter's
+  piece of `Q` runs through the corner vertex, so it has an original vertex, and at a sharp corner it
+  is longer than any fixed tolerance.
+- **The cost:** a chain of short pieces contracts to one vertex that can be wider than the
+  tolerance, and the point set then moves by up to that width. The Phase 5 hunt should measure how
+  wide such clusters get in the cascade. Without contraction the checks would still catch a short
+  piece's wrong class, but only as an inconsistency to repair.
+
+## 8. Still to walk through
+
+Section 3.3's remaining paragraphs: a twist away from `Q`, the checks,
 rings with no intersection and the grouping by containment, polylines, provenance, and the other
 Boolean operations; then the open questions of the requirements' section 4.
