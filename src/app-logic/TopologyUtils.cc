@@ -39,7 +39,6 @@
 #include <QDebug>
 
 #include "AppLogicUtils.h"
-#include "Reconstruction.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalGeometrySubSegment.h"
@@ -100,9 +99,21 @@ namespace GPlatesAppLogic
 		typedef std::pair<GPlatesModel::FeatureHandle::const_weak_ref, GPlatesModel::FeatureHandle::const_iterator>
 				topological_section_compare_type;
 
-		// Map of each topological section to all the resolved topologies that use it for a sub-segment.
-		typedef std::map<topological_section_compare_type, std::vector<ResolvedSubSegmentInfo> >
-				resolved_section_to_sharing_resolved_topologies_map_type;
+		// Each topological section, with all the resolved topologies that use it for a sub-segment.
+		//
+		// The sections are kept in the order they are first found (the order of the resolved
+		// topologies, and of the sub-segments in each), not in the map's order. The map orders by
+		// feature handle address, which changes from run to run, and so would the order of the
+		// resolved topological sections.
+		struct ResolvedSectionsToSharingResolvedTopologies
+		{
+			// Index of each topological section into 'sharing_resolved_topologies'.
+			std::map<topological_section_compare_type, std::size_t> section_indices;
+
+			// The resolved topologies sharing each topological section (in the order the sections
+			// were found).
+			std::vector<std::vector<ResolvedSubSegmentInfo>> sharing_resolved_topologies;
+		};
 
 
 		/**
@@ -110,7 +121,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		map_resolved_topological_sections_to_resolved_topologies(
-				resolved_section_to_sharing_resolved_topologies_map_type &resolved_section_to_sharing_resolved_topologies_map,
+				ResolvedSectionsToSharingResolvedTopologies &sections_to_sharing_topologies,
 				const ReconstructionGeometry::non_null_ptr_to_const_type &resolved_topology,
 				const sub_segment_seq_type &section_sub_segments)
 		{
@@ -145,12 +156,25 @@ namespace GPlatesAppLogic
 				{
 					const GPlatesModel::FeatureHandle::const_weak_ref section_feature_ref = sub_segment->get_feature_ref();
 
+					std::vector<std::vector<ResolvedSubSegmentInfo>> &sharing_resolved_topologies =
+							sections_to_sharing_topologies.sharing_resolved_topologies;
+
+					// Find the current section, or add it if this is the first time it is found.
+					const auto section_index_insert_result =
+							sections_to_sharing_topologies.section_indices.insert(
+									std::make_pair(
+											topological_section_compare_type(
+													section_feature_ref,
+													section_geometry_property.get()),
+											sharing_resolved_topologies.size()));
+					if (section_index_insert_result.second)
+					{
+						sharing_resolved_topologies.emplace_back();
+					}
+
 					// Add the current resolved topology to the list of those sharing the current section.
 					std::vector<ResolvedSubSegmentInfo> &sub_segment_infos =
-							resolved_section_to_sharing_resolved_topologies_map[
-									topological_section_compare_type(
-											section_feature_ref,
-											section_geometry_property.get())];
+							sharing_resolved_topologies[section_index_insert_result.first->second];
 					sub_segment_infos.push_back(ResolvedSubSegmentInfo(sub_segment, resolved_topology));
 				}
 			}
@@ -1804,7 +1828,7 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 	// And build a list of resolved topologies (and their sub-segments) that reference each topological section.
 	//
 
-	resolved_section_to_sharing_resolved_topologies_map_type resolved_section_to_sharing_resolved_topologies_map;
+	ResolvedSectionsToSharingResolvedTopologies sections_to_sharing_topologies;
 
 	// Iterate over the plate polygons.
 	BOOST_FOREACH(
@@ -1812,7 +1836,7 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 			resolved_topological_boundaries)
 	{
 		map_resolved_topological_sections_to_resolved_topologies(
-				resolved_section_to_sharing_resolved_topologies_map,
+				sections_to_sharing_topologies,
 				resolved_topological_boundary,
 				resolved_topological_boundary->get_sub_segment_sequence());
 	}
@@ -1823,7 +1847,7 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 			resolved_topological_networks)
 	{
 		map_resolved_topological_sections_to_resolved_topologies(
-				resolved_section_to_sharing_resolved_topologies_map,
+				sections_to_sharing_topologies,
 				resolved_topological_network,
 				// Only interested in boundary (not interior) since only boundary sub-segments
 				// are shared with adjacent plate/network topologies...
@@ -1835,14 +1859,10 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 	// uniquely shared by one or more resolved topologies.
 	//
 
-	// Iterate over the sections referenced by resolved topologies.
-	BOOST_FOREACH(
-			const resolved_section_to_sharing_resolved_topologies_map_type::value_type &
-					section_to_sharing_resolved_topologies_entry,
-			resolved_section_to_sharing_resolved_topologies_map)
+	// Iterate over the sections referenced by resolved topologies (in the order they were found).
+	for (const std::vector<ResolvedSubSegmentInfo> &sub_segments :
+		sections_to_sharing_topologies.sharing_resolved_topologies)
 	{
-		const std::vector<ResolvedSubSegmentInfo> &sub_segments = section_to_sharing_resolved_topologies_entry.second;
-
 		// All sub-segments share the same section feature and section geometry (so pick any sub-segment).
 		//
 		// However note that the sub-segments may have different ReconstructionGeometry's

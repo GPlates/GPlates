@@ -43,6 +43,7 @@
 #include "global/GPlatesException.h"
 #include "global/PreconditionViolationError.h"
 
+#include "gui/ColourQt.h"
 #include "gui/Map.h"
 #include "gui/MapProjection.h"
 #include "gui/MapTransform.h"
@@ -119,7 +120,6 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 		const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesGui::ViewportZoom &viewport_zoom,
-		const GPlatesGui::ColourScheme::non_null_ptr_type &colour_scheme,
 		QWidget *parent_) :
 	QGraphicsScene(parent_),
 	d_view_state(view_state),
@@ -135,7 +135,6 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			rendered_geometry_collection,
 			view_state.get_visual_layers(),
 			viewport_zoom,
-			colour_scheme,
 			gl_widget->devicePixelRatio()),
 	d_rendered_geometry_collection(&rendered_geometry_collection)
 {
@@ -465,7 +464,7 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 
 	// Fill the image with the clear colour in case there's an exception during rendering
 	// of one of the tiles and the image is incomplete.
-	image.fill(QColor(image_clear_colour).rgba());
+	image.fill(GPlatesGui::qcolor_from_colour(image_clear_colour).rgba());
 
 	// Get the frame buffer dimensions (in device pixels).
 	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =

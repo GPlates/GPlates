@@ -16,36 +16,11 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-from collections import namedtuple
-from functools import partial
-import math
+# Aliased with a leading underscore so they do not become public attributes of the
+# 'pygplates' module (this file is exec'd into the module namespace).
+from collections import namedtuple as _namedtuple
+from functools import partial as _partial
 
-#
-# Python 2 and 3 compatibility.
-#
-# Iterating over a dict.
-try:
-    dict.iteritems
-except AttributeError:
-    # Python 3
-    def itervalues(d):
-        return iter(d.values())
-    def iteritems(d):
-        return iter(d.items())
-    def listvalues(d):
-        return list(d.values())
-    def listitems(d):
-        return list(d.items())
-else:
-    # Python 2
-    def itervalues(d):
-        return d.itervalues()
-    def iteritems(d):
-        return d.iteritems()
-    def listvalues(d):
-        return d.values()
-    def listitems(d):
-        return d.items()
 
 
 # The maximum number of iterations over all crossovers to be synchronised.
@@ -182,7 +157,7 @@ class CrossoverResult(object):
     ignored = 3           # Crossover was ignored (since crossover type was 'ignore').
 
 
-Crossover = namedtuple("Crossover",
+Crossover = _namedtuple("Crossover",
     "type "
     "time "
     "moving_plate_id "
@@ -203,19 +178,19 @@ def find_crossovers(
     :param rotation_features: A rotation feature collection, or rotation filename, or \
         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
         of any combination of those four types
-    :type rotation_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
-        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature, \
+        or sequence of Feature, or sequence of any combination of those four types
     
     :param crossover_filter: A predicate function to determine which crossovers to return
-    :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or None
+    :type crossover_filter: callable (accepting single Crossover argument), or None
     
     :param crossover_type_function: A function that determines a crossover's type, or one of the \
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value
+    :type crossover_type_function: a callable, or a CrossoverType enumerated value
     
     :returns: A time-sorted list, from most recent (youngest) to least recent (oldest), of crossover named-tuple 'Crossover' (see table below)
-    :rtype: list of named-tuple 'Crossover'
+    :rtype: list[Crossover]
     
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
     to another (fixed) plate at a particular geological time.
@@ -389,7 +364,7 @@ def find_crossovers(
     if CrossoverType._is_valid(crossover_type_function):
         # Convert crossover type to a function returning that crossover type.
         # Use partial to avoid lambda function referencing itself.
-        crossover_type_function = partial(lambda *args: args[0], crossover_type_function)
+        crossover_type_function = _partial(lambda *args: args[0], crossover_type_function)
     # ...else it's a function so leave it as it is.
     
     # A 'dict' to map each moving plate to a list of total reconstruction poles
@@ -416,7 +391,7 @@ def find_crossovers(
     crossovers = []
     
     # Iterate over the moving plates.
-    for moving_plate_id, fixed_plate_rotation_sequences in iteritems(total_reconstruction_poles_by_moving_plate):
+    for moving_plate_id, fixed_plate_rotation_sequences in total_reconstruction_poles_by_moving_plate.items():
         # Only one fixed plate means no crossovers for the current moving plate.
         if len(fixed_plate_rotation_sequences) == 1:
             continue
@@ -521,15 +496,15 @@ def synchronise_crossovers(
     :param rotation_features: A rotation feature collection, or rotation filename, or \
         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
         of any combination of those four types - all features are used as input and output
-    :type rotation_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
-        or sequence of :class:`Feature`, or sequence of any combination of those four types
+    :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature, \
+        or sequence of Feature, or sequence of any combination of those four types
     
     :param crossover_filter: Optional predicate function (accepting a single crossover argument) that determines \
         which crossovers (in *rotation_features*) to synchronise, or an optional sequence of crossovers (in any order) to \
         synchronise - if nothing is specified then all crossovers (in *rotation_features*) are synchronised - \
         a crossover is a named-tuple 'Crossover' (see table below)
-    :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or \
-        a sequence of named-tuple 'Crossover', or None
+    :type crossover_filter: callable (accepting single Crossover argument), or \
+        sequence of Crossover, or None
     
     :param crossover_threshold_degrees: If specified then crossovers are synchronised only if the \
         old-crossover rotation latitude, longitude or angle differ from those in young-crossover rotation by \
@@ -538,9 +513,9 @@ def synchronise_crossovers(
     
     :param crossover_type_function: A function that determines a crossover's type, or one of the \
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
-        scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a *CrossoverType* enumerated value, \
-        or can also be None if *crossover_filter* is a sequence (since it then gets ignored)
+        scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment* - \
+        can also be ``None`` if *crossover_filter* is a sequence (since it then gets ignored)
+    :type crossover_type_function: a callable, or a CrossoverType enumerated value, or None
     
     :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered \
         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or \
@@ -548,7 +523,7 @@ def synchronise_crossovers(
         *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or \
         *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of \
         *CrossoverType.unknown*) - the list is sorted by crossover time - default is None
-    :type crossover_results: list or None
+    :type crossover_results: list[tuple[Crossover, int]], or None
     
     :returns: True on success. False if the type of any crossover is *CrossoverType.unknown* (which \
         generates a *CrossoverResult.error* in *crossover_results*, if specified, due to inability to \
@@ -592,7 +567,8 @@ def synchronise_crossovers(
     Synchronising crossovers results in modifications to *rotation_features*.
     The modified rotation features can then be used to create a new :class:`RotationModel` with updated rotations.
     If any filenames are specified in *rotation_features* then the modified feature collection(s) (containing synchronised crossovers)
-    that are associated with those files are written back out to those same files.
+    that are associated with those files are written back out to those same files. They are written only if at least one
+    crossover was synchronised (otherwise the files are left untouched).
     :class:`FeatureCollection` is used internally to read/write feature collections from/to those files.
     
     *crossover_filter* can optionally be used to limit (or specify) the crossovers to synchronise. It can either be a predicate function
@@ -768,7 +744,7 @@ def synchronise_crossovers(
     
     # Prepare the crossovers before processing them in iterations.
     # This avoids repeating redundant work at each iteration.
-    CrossoverInfo = namedtuple("CrossoverInfo",
+    CrossoverInfo = _namedtuple("CrossoverInfo",
         "crossover crossover_index "
         "disabled_samples_at_crossover_time "
         "synchronised_samples_at_crossover_time "
@@ -906,6 +882,7 @@ def synchronise_crossovers(
     # Perform up to a maximum number of iterations over all the crossovers until there are no remaining
     # crossovers to synchronise. If this is exceeded then it's likely there was an infinite cycle.
     iteration = 0
+    synchronised_any_crossovers = False
     while iteration < _MAX_CROSSOVER_ITERATIONS:
         synchronised_crossovers_in_current_iteration = False
         for crossover_info in crossover_infos:
@@ -960,6 +937,7 @@ def synchronise_crossovers(
             
             # Record that the crossover was synchronised.
             synchronised_crossovers_in_current_iteration = True
+            synchronised_any_crossovers = True
             if crossover_results is not None:
                 crossover_results[crossover_results_first_index + crossover_info.crossover_index] = (
                     crossover_info.crossover, CrossoverResult.synchronised)
@@ -1021,10 +999,12 @@ def synchronise_crossovers(
         success = False
     
     # If any rotation features came from files then write those feature collections back out to the same files.
+    # But only if a crossover was synchronised (the rotation features are unchanged otherwise, and writing
+    # would still re-lay-out the files).
     #
     # Only interested in those feature collections that came from files (have filenames).
     rotation_files = rotation_features.get_files()
-    if rotation_files:
+    if synchronised_any_crossovers and rotation_files:
         for feature_collection, filename in rotation_files:
             # This can raise OpenFileForWritingError if file is not writable.
             feature_collection.write(filename)

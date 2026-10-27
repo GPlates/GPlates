@@ -28,9 +28,15 @@
 #ifndef GPLATES_GUI_CSVEXPORT_H
 #define GPLATES_GUI_CSVEXPORT_H
 
-#include <iostream>
-#include <fstream>
-#include <QTableWidget>
+#include <vector>
+#include <QTextStream>
+
+// Forward declarations - only 'export_table_widget()' and 'export_table_view()'
+// (implemented in the ".cc") use them, and this header is also included by non-GUI
+// code (eg, data-mining) that must compile without the Qt Widgets headers.
+class QTableView;
+class QTableWidget;
+
 namespace GPlatesGui {
 
 	/**
@@ -77,7 +83,7 @@ namespace GPlatesGui {
 		static
 		void
 		export_line(
-				std::ofstream &os,
+				QTextStream &os,
 				const ExportOptions &options,
 				const LineDataType &line_data);
 

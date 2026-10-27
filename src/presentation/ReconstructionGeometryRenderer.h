@@ -52,7 +52,6 @@
 #include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
-#include "gui/ColourProxy.h"
 #include "gui/ColourPalette.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/RasterColourPalette.h"
@@ -250,9 +249,8 @@ namespace GPlatesPresentation
 		 * Created @a RenderedGeometry objects are added to the spatial partition of
 		 * rendered geometries @a rendered_geometry_spatial_partition.
 		 *
-		 * The colour of visited @a ReconstructionGeometry objects is determined at a later
-		 * time via class @a ColourProxy unless @a colour is specified in which case all
-		 * reconstruction geometries are drawn with that colour.
+		 * Visited @a ReconstructionGeometry objects take their colour from the draw style,
+		 * unless @a colour is specified, in which case all of them are drawn with that colour.
 		 *
 		 * @a render_params controls various rendering options.
 		 *

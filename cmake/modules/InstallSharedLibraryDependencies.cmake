@@ -102,8 +102,6 @@ endif()
 #
 # Find the dependency libraries.
 #
-# Note: file(GET_RUNTIME_DEPENDENCIES) requires CMake 3.16.
-#
 
 # The *build* target: executable (for gplates) or module library (for pygplates).
 install(CODE "set(_target_file \"$<TARGET_FILE:${BUILD_TARGET}>\")")
@@ -444,7 +442,6 @@ elseif (APPLE)
                             string(REGEX REPLACE "^.*/([^/]+)$" "\\1" _install_version_dir_basename "${_install_dependency_dir}")
 
                             # Create symbolic link.
-                            # Note: file(CREATE_LINK) requires CMake 3.14.
                             file(CREATE_LINK "${_install_version_dir_basename}" "${_install_versions_dir}/Current" SYMBOLIC)
                         endif()
 
@@ -454,7 +451,6 @@ elseif (APPLE)
                         # Create symbolic link (eg, '${install_framework_prefix}/Dependency.framework/Resources' -> 'Versions/Current/Resources').
                         if (NOT EXISTS "${_install_framework_dir}/Resources")
                             # Create symbolic link.
-                            # Note: file(CREATE_LINK) requires CMake 3.14.
                             file(CREATE_LINK "Versions/Current/Resources" "${_install_framework_dir}/Resources" SYMBOLIC)
                         endif()
 
@@ -464,7 +460,6 @@ elseif (APPLE)
                         # Create symbolic link (eg, '${install_framework_prefix}/Dependency.framework/Dependency' -> 'Versions/Current/Dependency').
                         if (NOT EXISTS "${_install_framework_dir}/${_dependency_basename}")
                             # Create symbolic link.
-                            # Note: file(CREATE_LINK) requires CMake 3.14.
                             file(CREATE_LINK "Versions/Current/${_dependency_basename}" "${_install_framework_dir}/${_dependency_basename}" SYMBOLIC)
                         endif()
                     endif()

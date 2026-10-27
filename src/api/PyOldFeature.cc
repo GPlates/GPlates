@@ -22,14 +22,74 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <QRegularExpression>
+
 #include "PyOldFeature.h"
 
-#include "feature-visitors/ShapefileAttributeFinder.h"
-#include "feature-visitors/KeyValueDictionaryFinder.h"
+#include "file-io/ShapefileAttributeFinder.h"
 
+#include "model/KeyValueDictionaryFinder.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
+
+#include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/GpmlPlateId.h"
 
 #include "utils/GetPropertyAsPythonObjVisitor.h"
+
+
+namespace
+{
+	/**
+	 * Returns the attribute name if @a name has the form "gpml:shapefileAttributes:<name>".
+	 */
+	boost::optional<QString>
+	get_shapefile_attribute(
+			const QString &name)
+	{
+		static const QRegularExpression rx(
+				"^\\s*(gpml:shapefileAttributes)\\s*:\\s*\\b(\\w+)\\b\\s*", // gpml:shapefileAttributes
+				QRegularExpression::UseUnicodePropertiesOption);
+		const QRegularExpressionMatch rx_match = rx.match(name);
+		if (!rx_match.hasMatch())
+		{
+			return boost::none;
+		}
+
+		return rx_match.captured(2);
+	}
+
+
+	/**
+	 * Converts a qualified property name of the form "gpml:<name>" or "gml:<name>".
+	 */
+	boost::optional<GPlatesModel::PropertyName>
+	convert_property_name(
+			const QString &name)
+	{
+		// Property names come from user data, so match "\w" against Unicode letters (as QRegExp did)
+		// rather than the ASCII-only default of QRegularExpression.
+		static const QRegularExpression rx(
+				"^\\s*(gpml|gml)\\s*:\\s*(\\w+)\\s*", // (gpml|gml):(name)
+				QRegularExpression::UseUnicodePropertiesOption);
+		const QRegularExpressionMatch rx_match = rx.match(name);
+		const QString prefix = rx_match.captured(1);
+		const QString short_name = rx_match.captured(2);
+
+		if (prefix == "gpml")
+		{
+			return GPlatesModel::PropertyName::create_gpml(short_name);
+		}
+
+		if (prefix == "gml")
+		{
+			return GPlatesModel::PropertyName::create_gml(short_name);
+		}
+
+		return boost::none;
+	}
+}
 
 
 void
@@ -86,7 +146,7 @@ GPlatesApi::OldFeature::get_properties_by_name(
 	const char* property_name = bp::extract<const char*>(prop_name);
 	QString q_property_name = QString(property_name);
 
-	boost::optional<QString> shapefile_attr = GPlatesUtils::get_shapefile_attribute(q_property_name);
+	boost::optional<QString> shapefile_attr = get_shapefile_attribute(q_property_name);
 	if(shapefile_attr)
 	{
 		is_shapefile_attr = true;
@@ -94,7 +154,7 @@ GPlatesApi::OldFeature::get_properties_by_name(
 
 	boost::optional<PropertyName> p_name = is_shapefile_attr ? 
 		PropertyName::create_gpml("shapefileAttributes") :
-		GPlatesUtils::convert_property_name(q_property_name);
+		convert_property_name(q_property_name);
 	
 	if(!p_name)
 	{
@@ -119,7 +179,7 @@ GPlatesApi::OldFeature::get_properties_by_name(
 			}
 			else
 			{
-				GPlatesFeatureVisitors::ShapefileAttributeFinder visitor(*shapefile_attr);
+				GPlatesFileIO::ShapefileAttributeFinder visitor(*shapefile_attr);
 				(*it)->accept_visitor(visitor);
 				
 				if(1 < std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
@@ -180,7 +240,7 @@ GPlatesApi::OldFeature::get_all_property_names()
 		
 		if(shape_file_attr_name == name)//shape file attributes
 		{
-			GPlatesFeatureVisitors::KeyValueDictionaryFinder finder(shape_file_attr_name);
+			GPlatesModel::KeyValueDictionaryFinder finder(shape_file_attr_name);
 			(*it)->accept_visitor(finder);
 			//finder.visit_feature(d_handle);
 			
@@ -264,9 +324,21 @@ GPlatesApi::OldFeature::valid_time()
 	if(!d_handle.is_valid())
 		return bp::tuple();
 
-	GPlatesMaths::Real start, end;
-	boost::tie(start, end) = GPlatesUtils::get_start_end_time(d_handle.handle_ptr());
-	return bp::make_tuple(start.dval(),end.dval());
+	static const GPlatesModel::PropertyName GML_VALID_TIME =
+			GPlatesModel::PropertyName::create_gml("validTime");
+	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> gml_valid_time =
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					d_handle,
+					GML_VALID_TIME);
+	if (!gml_valid_time)
+	{
+		return bp::make_tuple(0.0, 0.0);
+	}
+
+	// Note that the begin and end times can be finite, or positive/negative infinity.
+	return bp::make_tuple(
+			gml_valid_time.get()->begin()->get_time_position().value(),
+			gml_valid_time.get()->end()->get_time_position().value());
 }
 
 
@@ -308,7 +380,11 @@ GPlatesApi::OldFeature::plate_id()
 	if(!d_handle.is_valid())
 		return 0;
 
-	boost::optional<unsigned long> pid =
-		GPlatesUtils::get_recon_plate_id_as_int(d_handle.handle_ptr());
-	return pid ? *pid : 0;
+	static const GPlatesModel::PropertyName GPML_RECONSTRUCTION_PLATE_ID =
+			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> gpml_plate_id =
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					d_handle,
+					GPML_RECONSTRUCTION_PLATE_ID);
+	return gpml_plate_id ? gpml_plate_id.get()->get_value() : 0;
 }

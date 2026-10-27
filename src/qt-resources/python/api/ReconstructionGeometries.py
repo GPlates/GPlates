@@ -35,7 +35,8 @@ def get_overriding_and_subducting_plates(
               one overriding network or one overriding plate and network attached to this sub-segment, or ``None`` if
               *enforce_single_plates* is ``True`` and there is not exactly one subducting plate or one subducting network or one
               subducting plate and network attached to this sub-segment
-    :rtype: 2-tuple of :class:`ReconstructionGeometry` (or ``None`` if *enforce_single_plates* is ``False``), or 3-tuple appending a str, or ``None``
+    :rtype: tuple[ReconstructionGeometry | None, ReconstructionGeometry | None], or \
+        tuple[ReconstructionGeometry | None, ReconstructionGeometry | None, str], or None
     
     .. note:: If there is an overriding plate and an overriding network attached to this sub-segment then the
        overriding network is returned (since networks overlay plates). The same applies to *subducting* plates and networks.
@@ -186,8 +187,8 @@ def get_overriding_plate(
               is ``True``, or ``None`` if the subduction polarity is not 'Left' or 'Right' (or doesn't exist), or ``None`` if
               *enforce_single_plate* is ``True`` and there is not exactly one overriding plate or one overriding network or
               one overriding plate and network attached to this sub-segment
-    :rtype: :class:`ReconstructionGeometry` (or ``None`` if *enforce_single_plate* is ``False``), or 2-tuple appending a str, or ``None``
-    
+    :rtype: ReconstructionGeometry, or tuple[ReconstructionGeometry | None, str], or None
+
     .. note:: If there is an overriding plate and an overriding network attached to this sub-segment then the
        overriding network is returned (since networks overlay plates).
     
@@ -316,7 +317,7 @@ def get_subducting_plate(
               is ``True``, or ``None`` if the subduction polarity is not 'Left' or 'Right' (or doesn't exist), or ``None`` if
               *enforce_single_plate* is ``True`` and there is not exactly one subducting plate or one subducting network or
               one subducting plate and network attached to this sub-segment
-    :rtype: :class:`ReconstructionGeometry` (or ``None`` if *enforce_single_plate* is ``False``), or 2-tuple appending a str, or ``None``
+    :rtype: ReconstructionGeometry, or tuple[ReconstructionGeometry | None, str], or None
     
     .. note:: If there is a subducting plate and a subducting network attached to this sub-segment then the
        subducting network is returned (since networks overlay plates).

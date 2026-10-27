@@ -46,6 +46,7 @@
 #include "PythonHashDefVisitor.h"
 #include "PythonPickle.h"
 
+#include "app-logic/FlowlineUtils.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructionTreeCreator.h"
 #include "app-logic/ReconstructMethodRegistry.h"
@@ -102,20 +103,6 @@ namespace GPlatesApi
 			const GPlatesModel::PropertyName &property_name,
 			bp::object property_value_object,
 			VerifyInformationModel::Value verify_information_model);
-
-
-	/**
-	 * Enumeration to determine how properties are returned.
-	 */
-	namespace PropertyReturn
-	{
-		enum Value
-		{
-			EXACTLY_ONE, // Returns a single element only if there's one match to the query.
-			FIRST,       // Returns the first element that matches the query.
-			ALL          // Returns all elements that matches the query.
-		};
-	};
 
 
 	/**
@@ -1001,8 +988,8 @@ namespace GPlatesApi
 				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
 						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 				// Note: Property will only get added if property name is valid for the feature's type,
-				//       which it should since the GPGIM says it's valid for all reconstructable features.
-				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				//       which it should since the GPGIM says it's valid for all reconstructable features
+				//       (and flowlines, which spread from it).
 				GPlatesModel::ModelUtils::set_property(
 						feature_handle.reference(),
 						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
@@ -1142,8 +1129,8 @@ namespace GPlatesApi
 				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
 						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 				// Note: Property will only get added if property name is valid for the feature's type,
-				//       which it should since the GPGIM says it's valid for all reconstructable features.
-				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				//       which it should since the GPGIM says it's valid for all reconstructable features
+				//       (and flowlines, which spread from it).
 				GPlatesModel::ModelUtils::set_property(
 						feature_handle.reference(),
 						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
@@ -1520,7 +1507,11 @@ namespace GPlatesApi
 		return bp::object(property);
 	}
 
-	// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch.
+	// Disabled until the 'feature/pygplates-model-revisions' branch lands. The silent no-op
+	// '*property_iter = property' below is a one-line fix (use
+	// 'feature_handle.set(property_iter, property)'), but the property is still held by Python
+	// and would be stored directly, so later in-place edits through either reference would
+	// alias (see the FeatureHandle::set() comment).
 #if 0
 	//
 	// Support for "__setitem__".
@@ -2442,8 +2433,10 @@ namespace GPlatesApi
 			}
 			else if (property_return == PropertyReturn::FIRST)
 			{
-				// Return the first geometry.
-				geometry_object = bp::object(geometries.front());
+				// Return the first geometry (or None if there are none).
+				geometry_object = geometries.empty()
+						? bp::object()/*Py_None*/
+						: bp::object(geometries.front());
 			}
 			else if (property_return == PropertyReturn::ALL)
 			{
@@ -2523,13 +2516,21 @@ namespace GPlatesApi
 		}
 		else if (property_return == PropertyReturn::FIRST)
 		{
-			// Return the first coverage (domain, range) object.
-			const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = coverages.front();
-			geometry_object = bp::make_tuple(
-					bp::object(coverage.domain),
-					create_dict_from_gml_data_block_coordinate_lists(
-							coverage.range.begin(),
-							coverage.range.end()));
+			if (coverages.empty())
+			{
+				// There's no matching coverage.
+				geometry_object = bp::object()/*Py_None*/;
+			}
+			else
+			{
+				// Return the first coverage (domain, range) object.
+				const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = coverages.front();
+				geometry_object = bp::make_tuple(
+						bp::object(coverage.domain),
+						create_dict_from_gml_data_block_coordinate_lists(
+								coverage.range.begin(),
+								coverage.range.end()));
+			}
 		}
 		else if (property_return == PropertyReturn::ALL)
 		{
@@ -2878,8 +2879,10 @@ namespace GPlatesApi
 		}
 		else if (property_return == PropertyReturn::FIRST)
 		{
-			// Return the first topological geometry.
-			topological_geometry_object = bp::object(topological_geometries.front());
+			// Return the first topological geometry (or None if there are none).
+			topological_geometry_object = topological_geometries.empty()
+					? bp::object()/*Py_None*/
+					: bp::object(topological_geometries.front());
 		}
 		else if (property_return == PropertyReturn::ALL)
 		{
@@ -3735,9 +3738,15 @@ namespace GPlatesApi
 		// Call python since Feature.set_times is implemented in python code...
 		feature_object.attr("set_times")(times, verify_information_model);
 
-		// Set the reconstruction method to half-stage rotation.
+		// The flowline spreads from its geometry import time, like a 'HalfStageRotationVersion3' ridge,
+		// although a flowline doesn't use its reconstruction method.
 		// Call python since Feature.set_reconstruction_method is implemented in python code...
 		feature_object.attr("set_reconstruction_method")("HalfStageRotationVersion3", verify_information_model);
+
+		// Spread from the youngest time, unless the geometry is reverse reconstructed below, which sets
+		// the geometry import time to the reconstruction time. Either way, changing the times later
+		// doesn't shift the flowline (its position at any reconstruction time).
+		GPlatesAppLogic::FlowlineUtils::set_default_geometry_import_time(feature->reference());
 
 		if (name != bp::object()/*Py_None*/)
 		{
@@ -3808,9 +3817,8 @@ namespace GPlatesApi
 		// Call python since Feature.set_times is implemented in python code...
 		feature_object.attr("set_times")(times, verify_information_model);
 
-		// Set the reconstruction method to by-plate-id.
-		// Call python since Feature.set_reconstruction_method is implemented in python code...
-		feature_object.attr("set_reconstruction_method")("ByPlateId", verify_information_model);
+		// Note: No reconstruction method is set, since a motion path is reconstructed by its plate IDs
+		//       whatever its reconstruction method (GPlates doesn't set one either).
 
 		if (name != bp::object()/*Py_None*/)
 		{
@@ -3872,13 +3880,38 @@ void
 export_feature()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::PropertyReturn::Value>("PropertyReturn")
+	bp::enum_<GPlatesApi::PropertyReturn::Value>(
+			"PropertyReturn",
+			"How many matching properties (or property values, or geometries) a query returns.\n"
+			"\n"
+			"  Accepted by :meth:`Feature.get`, :meth:`Feature.get_value`, :meth:`Feature.get_geometry` and the other :class:`Feature` methods that query properties.\n"
+			"\n"
+			"  ========================== ==============\n"
+			"  Value                      Description\n"
+			"  ========================== ==============\n"
+			"  PropertyReturn.exactly_one Return the single match only if *exactly one* property matches the query, otherwise return ``None``.\n"
+			"  PropertyReturn.first       Return the first match, or ``None`` if nothing matches. Note that a feature is an *unordered* collection of properties, so this is only meaningful when the order does not matter.\n"
+			"  PropertyReturn.all         Return a ``list`` of all matches (empty if nothing matches).\n"
+			"  ========================== ==============\n")
 			.value("exactly_one", GPlatesApi::PropertyReturn::EXACTLY_ONE)
 			.value("first", GPlatesApi::PropertyReturn::FIRST)
 			.value("all", GPlatesApi::PropertyReturn::ALL);
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::CoverageReturn::Value>("CoverageReturn")
+	bp::enum_<GPlatesApi::CoverageReturn::Value>(
+			"CoverageReturn",
+			"Whether to return geometries only, or geometries together with their per-point scalar values (coverages).\n"
+			"\n"
+			"  Accepted by :meth:`Feature.get_geometry`, :meth:`Feature.get_geometries` and :meth:`Feature.get_all_geometries`.\n"
+			"\n"
+			"  A *coverage* is a geometry (the coverage *domain*) together with a ``dict`` mapping each :class:`ScalarType` to a ``list`` of scalar values (the coverage *range*), with one scalar value per point in the geometry.\n"
+			"\n"
+			"  =================================== ==============\n"
+			"  Value                               Description\n"
+			"  =================================== ==============\n"
+			"  CoverageReturn.geometry_only        Return just the geometry (the default).\n"
+			"  CoverageReturn.geometry_and_scalars Return a 2-tuple of the geometry and the ``dict`` of scalar values.\n"
+			"  =================================== ==============\n")
 			.value("geometry_only", GPlatesApi::CoverageReturn::GEOMETRY_ONLY)
 			.value("geometry_and_scalars", GPlatesApi::CoverageReturn::GEOMETRY_AND_SCALARS);
 
@@ -4036,12 +4069,12 @@ export_feature()
 				"  Create a new feature instance that is (initially) empty (has no properties).\n"
 				"\n"
 				"  :param feature_type: the type of feature\n"
-				"  :type feature_type: :class:`FeatureType`\n"
+				"  :type feature_type: FeatureType\n"
 				"  :param feature_id: the feature identifier\n"
-				"  :type feature_id: :class:`FeatureId`\n"
+				"  :type feature_id: FeatureId\n"
 				"  :param verify_information_model: whether to check *feature_type* with the information model (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *feature_type* is not a recognised feature type\n"
 				"\n"
 				"  See :class:`FeatureType` for a list of available feature types.\n"
@@ -4075,7 +4108,7 @@ export_feature()
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 		.def("__len__", &GPlatesModel::FeatureHandle::size)
 		.def("__getitem__", &GPlatesApi::feature_handle_get_item)
-		// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch.
+		// Disabled until the 'feature/pygplates-model-revisions' branch lands (see 'feature_handle_set_item').
 #if 0
 		.def("__setitem__", &GPlatesApi::feature_handle_set_item)
 #endif
@@ -4087,7 +4120,7 @@ export_feature()
 				"clone()\n"
 				"  Create a duplicate of this feature instance.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  This creates a new :class:`Feature` instance with cloned versions of this feature's properties. "
 				"And the cloned feature is created with its own unique :class:`FeatureId`.\n")
@@ -4104,32 +4137,29 @@ export_feature()
 				"create_total_reconstruction_sequence(fixed_plate_id, moving_plate_id, total_reconstruction_pole, "
 				"[name], [description], [other_properties], [feature_id], "
 				"[verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a rotation feature for a fixed/moving plate pair.\n"
+				"  Create a rotation feature for a fixed/moving plate pair.\n"
 				"\n"
 				"  :param fixed_plate_id: the fixed plate id\n"
 				"  :type fixed_plate_id: int\n"
 				"  :param moving_plate_id: the moving plate id\n"
 				"  :type moving_plate_id: int\n"
 				"  :param total_reconstruction_pole: the time-sequence of rotations\n"
-				"  :type total_reconstruction_pole: :class:`GpmlIrregularSampling` of :class:`GpmlFiniteRotation`\n"
+				"  :type total_reconstruction_pole: GpmlIrregularSampling of GpmlFiniteRotation\n"
 				"  :param name: the name or names, if not specified then no "
 				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
-				"  :type name: string, or sequence of string\n"
+				"  :type name: str, or sequence of str\n"
 				"  :param description: the description, if not specified then a "
 				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
-				"  :type description: string\n"
+				"  :type description: str\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
-				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
-				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :type other_properties: a sequence (eg, list or tuple) of (PropertyName, "
+				"PropertyValue or sequence of PropertyValue)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
-				"  :type feature_id: :class:`FeatureId`\n"
+				"  :type feature_id: FeatureId\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  This function creates a rotation feature containing a "
 				":meth:`total reconstruction pole<get_total_reconstruction_pole>` (a time sequence of "
@@ -4172,29 +4202,27 @@ export_feature()
 				"create_reconstructable_feature(feature_type, geometry, [name], [description], [valid_time], "
 				"[reconstruction_plate_id], [conjugate_plate_id], [other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a reconstructable feature.\n"
+				"  Create a reconstructable feature.\n"
 				"\n"
 				"  :param feature_type: the type of feature to create\n"
-				"  :type feature_type: :class:`FeatureType`\n"
-				"  :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages) - "
+				"  :type feature_type: FeatureType\n"
+				"  :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages - "
+				"see :meth:`set_geometry` for the coverage forms) - "
 				"if geometry is not present-day geometry then the created feature will need to be reverse "
 				"reconstructed to present day (using either the *reverse_reconstruct* parameter or "
 				":func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time\n"
-				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
-				"of :class:`GeometryOnSphere` (or a coverage or a sequence of coverages - :meth:`set_geometry`)\n"
+				"  :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) "
+				"of GeometryOnSphere (or a coverage or a sequence of coverages)\n"
 				"  :param name: the name or names, if not specified then no "
 				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
-				"  :type name: string, or sequence of string\n"
+				"  :type name: str, or sequence of str\n"
 				"  :param description: the description, if not specified then a "
 				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
-				"  :type description: string\n"
+				"  :type description: str\n"
 				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
 				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
 				"property is not added\n"
-				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)\n"
 				"  :param reconstruction_plate_id: the reconstruction plate id, if not specified then a "
 				"`pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added\n"
 				"  :type reconstruction_plate_id: int\n"
@@ -4207,24 +4235,24 @@ export_feature()
 				"  :type conjugate_plate_id: int, or sequence of int\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
-				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
-				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :type other_properties: a sequence (eg, list or tuple) of (PropertyName, "
+				"PropertyValue or sequence of PropertyValue)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
-				"  :type feature_id: :class:`FeatureId`\n"
+				"  :type feature_id: FeatureId\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
 				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
 				"if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed "
 				"using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - "
 				"this is only required if *geometry* is not present day - "
 				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
-				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
+				"  :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :rtype: :class:`Feature`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :rtype: Feature\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *feature_type* is not a `reconstructable feature "
 				"<http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature>`_.\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time\n"
 				"\n"
 				"  This function creates a feature of :class:`type<FeatureType>` that falls in the category "
 				"of a `reconstructable feature <http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature>`_ - "
@@ -4350,36 +4378,33 @@ export_feature()
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_topological_feature(feature_type, topological_geometry, [name], [description], [valid_time], "
 				"[other_properties], [feature_id], [verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a topological feature.\n"
+				"  Create a topological feature.\n"
 				"\n"
 				"  :param feature_type: the type of feature to create\n"
-				"  :type feature_type: :class:`FeatureType`\n"
+				"  :type feature_type: FeatureType\n"
 				"  :param topological_geometry: the topological geometry or geometries\n"
-				"  :type topological_geometry: :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or "
-				":class:`GpmlTopologicalNetwork`, or a sequence (eg, ``list`` or ``tuple``) of them\n"
+				"  :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or "
+				"GpmlTopologicalNetwork, or a sequence (eg, list or tuple) of them\n"
 				"  :param name: the name or names, if not specified then no "
 				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
-				"  :type name: string, or sequence of string\n"
+				"  :type name: str, or sequence of str\n"
 				"  :param description: the description, if not specified then a "
 				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
-				"  :type description: string\n"
+				"  :type description: str\n"
 				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
 				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
 				"property is not added\n"
-				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
-				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
-				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :type other_properties: a sequence (eg, list or tuple) of (PropertyName, "
+				"PropertyValue or sequence of PropertyValue)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
-				"  :type feature_id: :class:`FeatureId`\n"
+				"  :type feature_id: FeatureId\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :rtype: :class:`Feature`\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :rtype: Feature\n"
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time\n"
 				"\n"
 				"  .. note:: A topological feature really only differs from a reconstructable feature in that it has "
 				"a *topological* geometry instead of a regular geometry (ie, internally it calls :meth:`set_topological_geometry` "
@@ -4434,25 +4459,22 @@ export_feature()
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_topological_network_feature(topological_network_geometry, [network_feature_type=pygplates.FeatureType.gpml_topological_network], "
 				"[name], [description], [valid_time], [rift_parameters], [other_properties], [feature_id], [verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a topological *network* feature.\n"
+				"  Create a topological *network* feature.\n"
 				"\n"
 				"  :param topological_network_geometry: the topological *network* geometry\n"
-				"  :type topological_network_geometry: :class:`GpmlTopologicalNetwork`\n"
+				"  :type topological_network_geometry: GpmlTopologicalNetwork\n"
 				"  :param network_feature_type: The type of *network* feature to create. Defaults to ``pygplates.FeatureType.gpml_topological_network``.\n"
-				"  :type network_feature_type: :class:`FeatureType`\n"
+				"  :type network_feature_type: FeatureType\n"
 				"  :param name: the name or names, if not specified then no "
 				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
-				"  :type name: string, or sequence of string\n"
+				"  :type name: str, or sequence of str\n"
 				"  :param description: the description, if not specified then a "
 				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
-				"  :type description: string\n"
+				"  :type description: str\n"
 				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
 				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
 				"property is not added\n"
-				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)\n"
 				"  :param rift_parameters: An optional tuple containing between 2 and 5 rift parameters. If a tuple is specified, then the first two parameters must be specified, and "
 				"are the rift's conjugate left/right plate IDs (it doesn't matter which is left or right; can swap them). These 2 parameters will add the feature properties "
 				"``gpml:riftLeftPlate``/``gpml:riftRightPlate``. The remaining 3 rift parameters are optional and are equivalent to the 3 rift parameters in "
@@ -4468,14 +4490,14 @@ export_feature()
 				"  :type rift_parameters: tuple\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
-				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
-				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :type other_properties: a sequence (eg, list or tuple) of (PropertyName, "
+				"PropertyValue or sequence of PropertyValue)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
-				"  :type feature_id: :class:`FeatureId`\n"
+				"  :type feature_id: FeatureId\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :rtype: :class:`Feature`\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :rtype: Feature\n"
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time\n"
 				"\n"
 				"  This function is a specialised version of :meth:`create_topological_feature` designed for topological *network* features. "
 				"Whereas :meth:`create_topological_feature` can be used for topological lines, boundaries or networks.\n"
@@ -4536,30 +4558,28 @@ export_feature()
 				"[reconstruction_plate_id], [conjugate_plate_id], [left_plate], [right_plate], [reconstruction_method], "
 				"[other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a tectonic section feature.\n"
+				"  Create a tectonic section feature.\n"
 				"\n"
 				"  :param feature_type: the type of feature to create\n"
-				"  :type feature_type: :class:`FeatureType`\n"
-				"  :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages) - "
+				"  :type feature_type: FeatureType\n"
+				"  :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages - "
+				"see :meth:`set_geometry` for the coverage forms) - "
 				"if geometry is not present-day geometry then the created feature will need to be reverse "
 				"reconstructed to present day (using either the *reverse_reconstruct* parameter or "
 				":func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary "
 				"reconstruction time\n"
-				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
-				"of :class:`GeometryOnSphere` (or a coverage or a sequence of coverages - :meth:`set_geometry`)\n"
+				"  :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) "
+				"of GeometryOnSphere (or a coverage or a sequence of coverages)\n"
 				"  :param name: the name or names, if not specified then no "
 				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
-				"  :type name: string, or sequence of string\n"
+				"  :type name: str, or sequence of str\n"
 				"  :param description: the description, if not specified then a "
 				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
-				"  :type description: string\n"
+				"  :type description: str\n"
 				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
 				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
 				"property is not added\n"
-				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)\n"
 				"  :param reconstruction_plate_id: the reconstruction plate id, if not specified then a "
 				"`pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added\n"
 				"  :type reconstruction_plate_id: int\n"
@@ -4577,26 +4597,26 @@ export_feature()
 				"property is not added (note that a missing property essentially defaults to 'ByPlateId' behaviour) "
 				"- note that 'HalfStageRotationVersion3' is the latest and most accurate half-stage method and should "
 				"generally be used unless backward compatibility with old GPlates versions is required\n"
-				"  :type reconstruction_method: string  (see `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_)\n"
+				"  :type reconstruction_method: str  (see `supported values <http://www.gplates.org, or docs, or gpgim/#gpml:ReconstructionMethodEnumeration>`_)\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
-				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
-				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :type other_properties: a sequence (eg, list or tuple) of (PropertyName, "
+				"PropertyValue or sequence of PropertyValue)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
-				"  :type feature_id: :class:`FeatureId`\n"
+				"  :type feature_id: FeatureId\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
 				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
 				"if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using "
 				"those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required "
 				"if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
-				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
+				"  :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :rtype: :class:`Feature`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :rtype: Feature\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *feature_type* is not a `tectonic section "
 				"<http://www.gplates.org/docs/gpgim/#gpml:TectonicSection>`_.\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time\n"
 				"\n"
 				"  This function creates a feature of :class:`type<FeatureType>` that falls in the category "
 				"of a `tectonic section <http://www.gplates.org/docs/gpgim/#gpml:TectonicSection>`_ - "
@@ -4687,28 +4707,25 @@ export_feature()
 				"create_flowline(seed_geometry, times, [name], [description], [valid_time], "
 				"[left_plate], [right_plate], [other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a flowline feature.\n"
+				"  Create a flowline feature.\n"
 				"\n"
 				"  :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry "
 				"is not present-day geometry then the created feature will need to be reverse reconstructed "
 				"to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) "
 				"before the feature can be reconstructed to an arbitrary reconstruction time\n"
-				"  :type seed_geometry: :class:`PointOnSphere` or :class:`MultiPointOnSphere`\n"
+				"  :type seed_geometry: PointOnSphere or MultiPointOnSphere\n"
 				"  :param times: the list of times\n"
-				"  :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`\n"
+				"  :type times: sequence (eg, list or tuple) of float or GeoTimeInstant\n"
 				"  :param name: the name or names, if not specified then no "
 				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
-				"  :type name: string, or sequence of string\n"
+				"  :type name: str, or sequence of str\n"
 				"  :param description: the description, if not specified then a "
 				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
-				"  :type description: string\n"
+				"  :type description: str\n"
 				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
 				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
 				"property is not added\n"
-				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)\n"
 				"  :param left_plate: the left plate id, if not specified then a "
 				"`pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property is not added\n"
 				"  :type left_plate: int\n"
@@ -4717,28 +4734,53 @@ export_feature()
 				"  :type right_plate: int\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
-				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
-				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :type other_properties: a sequence (eg, list or tuple) of (PropertyName, "
+				"PropertyValue or sequence of PropertyValue)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
-				"  :type feature_id: :class:`FeatureId`\n"
+				"  :type feature_id: FeatureId\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) "
 				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
 				"if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using "
 				"those parameters and any specified feature properties (eg, *left_plate*) - this is only required if *seed_geometry* "
 				"is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
-				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
+				"  :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :rtype: :class:`Feature`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :rtype: Feature\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time\n"
 				"\n"
-				"  This function calls :meth:`set_geometry`. It optionally calls :meth:`set_times`, :meth:`set_name`, "
-				":meth:`set_description`, :meth:`set_valid_time`, :meth:`set_left_plate`, "
-				":meth:`set_right_plate`, :meth:`set_reconstruction_method` and :meth:`add`. "
+				"  This function calls :meth:`set_geometry`, :meth:`set_times`, "
+				":meth:`set_reconstruction_method` and :meth:`set_geometry_import_time`. It optionally "
+				"calls :meth:`set_name`, :meth:`set_description`, :meth:`set_valid_time`, "
+				":meth:`set_left_plate`, :meth:`set_right_plate` and :meth:`add`. "
 				"The :class:`feature type<FeatureType>` is a `flowline "
 				"<http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_.\n"
+				"\n"
+				"  The seed point is on the *left* plate: it is where the spreading centre was at the "
+				"flowline's :meth:`geometry import time<set_geometry_import_time>`, carried to present day "
+				"by the left plate. Reverse reconstructing *seed_geometry* (with *reverse_reconstruct*) "
+				"sets the geometry import time to the reconstruction time, otherwise it is set to the "
+				"youngest of the *times*. The flowline spreads from there along both plates (like a "
+				"'HalfStageRotationVersion3' mid-ocean ridge, so forward in time at times younger than the "
+				"geometry import time), and has a point at each of the *times*. So changing the *times* "
+				"doesn't shift the flowline (at any reconstruction time it stays where it was, only gaining "
+				"or losing points), and pieces of a flowline with the same seed point and geometry "
+				"import time join up (as for motion paths). Both are exact unless a plate's rotation changes "
+				"pole (at a rotation sample time) between two of the *times*, or outside them, where one "
+				"step spans from the nearest of them: each half-stage step uses only the rotations at its "
+				"two ends, so the flowline then depends on which *times* it has (slightly between them, more "
+				"so far outside them), and slightly on the reconstruction time, which also ends a step. At a "
+				"reconstruction time younger than the youngest time, each half "
+				"starts at that time (not at the seed point, which is where the "
+				"spreading centre is at the reconstruction time). At (or older than) the oldest time there "
+				"is no flowline, so :func:`reconstruct` returns none for it (as for a motion path), but its "
+				"seed point is still where the spreading centre is: add older *times* (which doesn't shift "
+				"the flowline) to follow it there. So outside its "
+				"*times* a flowline keeps spreading, which needs rotations of both plates there: use "
+				"*valid_time* if the flowline should not be visible then. A flowline without a geometry "
+				"import time spreads from its youngest time.\n"
 				"\n"
 				"  Create a flowline feature:\n"
 				"  ::\n"
@@ -4798,8 +4840,18 @@ export_feature()
 				"        seed_geometry_at_50Ma,\n"
 				"        reverse_reconstruct=(rotation_model, 50))\n"
 				"\n"
-				"  .. note:: In the above example we needed to call :meth:`set_reconstruction_method` to "
-				"set up a half-stage rotation since that is what :meth:`create_flowline` calls internally.\n")
+				"  .. note:: In the above example we called :meth:`set_reconstruction_method` only because "
+				":meth:`create_flowline` does. A flowline is always reconstructed like "
+				"'HalfStageRotationVersion3' (spreading from its geometry import time, which reverse "
+				"reconstructing sets), whatever its reconstruction method.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Sets the geometry import time, and the flowline spreads from it (previously from its "
+				"youngest time, as a flowline without a geometry import time still does, so existing "
+				"flowlines stay where they were). A flowline is also reconstructed at times younger than its "
+				"youngest time (previously only between its youngest and oldest times), and its two halves "
+				"start at the seed point even when the left and right plates don't coincide at its "
+				"geometry import time.\n")
 		.staticmethod("create_flowline")
 		.def("create_motion_path",
 				&GPlatesApi::feature_handle_create_motion_path,
@@ -4817,28 +4869,25 @@ export_feature()
 				"create_motion_path(seed_geometry, times, [name], [description], [valid_time], "
 				"[relative_plate], [reconstruction_plate_id], [other_properties], [feature_id], "
 				"[reverse_reconstruct], [verify_information_model=VerifyInformationModel.yes])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Create a motion path feature.\n"
+				"  Create a motion path feature.\n"
 				"\n"
 				"  :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry "
 				"is not present-day geometry then the created feature will need to be reverse reconstructed "
 				"to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) "
 				"before the feature can be reconstructed to an arbitrary reconstruction time\n"
-				"  :type seed_geometry: :class:`PointOnSphere` or :class:`MultiPointOnSphere`\n"
+				"  :type seed_geometry: PointOnSphere or MultiPointOnSphere\n"
 				"  :param times: the list of times\n"
-				"  :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`\n"
+				"  :type times: sequence (eg, list or tuple) of float or GeoTimeInstant\n"
 				"  :param name: the name or names, if not specified then no "
 				"`pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added\n"
-				"  :type name: string, or sequence of string\n"
+				"  :type name: str, or sequence of str\n"
 				"  :param description: the description, if not specified then a "
 				"`pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added\n"
-				"  :type description: string\n"
+				"  :type description: str\n"
 				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a "
 				"`pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ "
 				"property is not added\n"
-				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)\n"
 				"  :param relative_plate: the relative plate id, if not specified then a "
 				"`pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_ property is not added\n"
 				"  :type relative_plate: int\n"
@@ -4847,26 +4896,26 @@ export_feature()
 				"  :type reconstruction_plate_id: int\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
-				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
-				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :type other_properties: a sequence (eg, list or tuple) of (PropertyName, "
+				"PropertyValue or sequence of PropertyValue)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
-				"  :type feature_id: :class:`FeatureId`\n"
+				"  :type feature_id: FeatureId\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) "
 				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
 				"if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using "
 				"those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if "
 				"*seed_geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
-				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
+				"  :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :rtype: :class:`Feature`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :rtype: Feature\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.\n"
-				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
+				"  :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if *valid_time* has begin time later than end time\n"
 				"\n"
-				"  This function calls :meth:`set_geometry`. It optionally calls :meth:`set_times`, :meth:`set_name`, "
-				":meth:`set_description`, :meth:`set_valid_time`, :meth:`set_relative_plate`, "
-				":meth:`set_reconstruction_plate_id`, :meth:`set_reconstruction_method` and :meth:`add`. "
+				"  This function calls :meth:`set_geometry` and :meth:`set_times`. It optionally calls "
+				":meth:`set_name`, :meth:`set_description`, :meth:`set_valid_time`, :meth:`set_relative_plate`, "
+				":meth:`set_reconstruction_plate_id` and :meth:`add`. "
 				"The :class:`feature type<FeatureType>` is a `motion path "
 				"<http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_.\n"
 				"\n"
@@ -4935,16 +4984,16 @@ export_feature()
 				"  Adds a property (or properties) to this feature.\n"
 				"\n"
 				"  :param property_name: the name of the property (or properties) to add\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param property_value: the value (or values) of the property (or properties) to add\n"
-				"  :type property_value: :class:`PropertyValue`, or sequence (eg, ``list`` or ``tuple``) "
-				"of :class:`PropertyValue`\n"
+				"  :type property_value: PropertyValue, or sequence (eg, list or tuple) "
+				"of PropertyValue\n"
 				"  :param verify_information_model: whether to check the information model before adding (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :returns: the property (or properties) added to the feature\n"
-				"  :rtype: :class:`Property`, or list of :class:`Property` depending on whether *property_value* "
-				"is a :class:`PropertyValue` or sequence of :class:`PropertyValue`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :returns: the property added to the feature, or a ``list`` of properties added if "
+				"*property_value* is a sequence of property values\n"
+				"  :rtype: Property, or list[Property]\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is not a recognised property name or is not supported by the feature type, "
 				"or if *property_value* does not have a property value type supported by *property_name*\n"
 				"\n"
@@ -4970,13 +5019,13 @@ export_feature()
 				"  Adds properties to this feature.\n"
 				"\n"
 				"  :param properties: the property name/value pairs to add\n"
-				"  :type properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
-				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :type properties: a sequence (eg, list or tuple) of (PropertyName, "
+				"PropertyValue or sequence of PropertyValue)\n"
 				"  :param verify_information_model: whether to check the information model before adding (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel\n"
 				"  :returns: the list of properties added to the feature\n"
-				"  :rtype: ``list`` of :class:`Property`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :rtype: list of Property\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and any of the property names are not recognised property names or not supported by the feature type, "
 				"or if any property value type is not supported by its associated property name\n"
 				"\n"
@@ -5010,10 +5059,10 @@ export_feature()
 				"\n"
 				"  :param property_query: one or more property names, property instances or predicate functions "
 				"that determine which properties to remove\n"
-				"  :type property_query: :class:`PropertyName`, or :class:`Property`, or callable "
-				"(accepting single :class:`Property` argument), or a sequence (eg, ``list`` or ``tuple``) "
+				"  :type property_query: PropertyName, or Property, or callable "
+				"(accepting single Property argument), or a sequence (eg, list or tuple) "
 				"of any combination of them\n"
-				"  :raises: ValueError if any specified :class:`Property` is not currently a property in this feature\n"
+				"  :raises ValueError: if any specified :class:`Property` is not currently a property in this feature\n"
 				"\n"
 				"  All feature properties matching any :class:`PropertyName` or predicate callable (if any specified) will "
 				"be removed. Any specified :class:`PropertyName` or predicate callable that does not match a property "
@@ -5064,16 +5113,16 @@ export_feature()
 				"  Sets a property (or properties) to this feature.\n"
 				"\n"
 				"  :param property_name: the name of the property (or properties) to set\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param property_value: the value (or values) of the property (or properties) to set\n"
-				"  :type property_value: :class:`PropertyValue`, or sequence (eg, ``list`` or ``tuple``) "
-				"of :class:`PropertyValue`\n"
+				"  :type property_value: PropertyValue, or sequence (eg, list or tuple) "
+				"of PropertyValue\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :returns: the property (or properties) set in the feature\n"
-				"  :rtype: :class:`Property`, or list of :class:`Property` depending on whether *property_value* "
-				"is a :class:`PropertyValue` or sequence of :class:`PropertyValue`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :returns: the property set in the feature, or a ``list`` of properties set if "
+				"*property_value* is a sequence of property values\n"
+				"  :rtype: Property, or list[Property]\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is not a recognised property name or is not supported by the feature type, "
 				"or if *property_name* does not support the number of property values in *property_value*, "
 				"or if *property_value* does not have a property value type supported by *property_name*\n"
@@ -5105,11 +5154,11 @@ export_feature()
 				"\n"
 				"  :param property_query: the property name (or predicate function) that matches the property "
 				"(or properties) to get\n"
-				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
+				"  :type property_query: PropertyName, or callable (accepting single Property argument)\n"
 				"  :param property_return: whether to return exactly one property, the first property or "
 				"all matching properties\n"
-				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
-				"  :rtype: :class:`Property`, or ``list`` of :class:`Property`, or None\n"
+				"  :type property_return: PropertyReturn\n"
+				"  :rtype: Property, or list of Property, or None\n"
 				"\n"
 				"  This method is similar to :meth:`get_value` except it returns properties instead "
 				"of property *values*.\n"
@@ -5158,13 +5207,13 @@ export_feature()
 				"\n"
 				"  :param property_query: the property name (or predicate function) that matches the property "
 				"(or properties) to get\n"
-				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
+				"  :type property_query: PropertyName, or callable (accepting single Property argument)\n"
 				"  :param time: the time to extract value (defaults to present day)\n"
-				"  :type time: float or :class:`GeoTimeInstant`\n"
+				"  :type time: float or GeoTimeInstant\n"
 				"  :param property_return: whether to return exactly one property, the first property or "
 				"all matching properties\n"
-				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
-				"  :rtype: :class:`PropertyValue`, or ``list`` of :class:`PropertyValue`, or None\n"
+				"  :type property_return: PropertyReturn\n"
+				"  :rtype: PropertyValue, or list of PropertyValue, or None\n"
 				"\n"
 				"  This method is essentially the same as :meth:`get` except it also calls "
 				":meth:`Property.get_value` on each property.\n"
@@ -5219,42 +5268,40 @@ export_feature()
 				"reverse reconstructed to present day using (using either the *reverse_reconstruct* "
 				"parameter or :func:`reverse_reconstruct`) before this feature can be reconstructed to "
 				"an arbitrary reconstruction time\n"
-				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
-				"of :class:`GeometryOnSphere` (or a coverage or a sequence of coverages - see below)\n"
+				"  :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) "
+				"of GeometryOnSphere (or a coverage or a sequence of coverages - see below)\n"
 				"  :param property_name: the optional property name of the geometry property or properties to set, "
 				"if not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` "
 				"associated with this feature's :class:`type<FeatureType>` is used instead\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
 				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
 				"if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using "
 				"those parameters and this feature's existing properties (eg, reconstruction plate id) - this is only required if "
 				"*geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
-				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
+				"  :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel\n"
 				"  :returns: the geometry property or properties set in the feature (or 2-tuple of geometry property and "
 				"scalars property, or list of those, if a coverage or coverages was specified for *geometry*)\n"
-				"  :rtype: :class:`Property` or list of :class:`Property` depending on whether *geometry* "
-				"is a :class:`GeometryOnSphere` or sequence of :class:`GeometryOnSphere` (or 2-tuple of :class:`Property` "
-				"or list of 2-tuple of :class:`Property` if *geometry* is a coverage or list of coverage - see below)\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :rtype: Property, or list[Property], or tuple[Property, Property], or list[tuple[Property, Property]]\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is specified but is not a recognised property name or is not supported by "
 				"this feature's :class:`type<FeatureType>`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and multiple geometries (if specified in *geometry*) are not supported by *property_name* "
 				"(or the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` if *property_name* not specified)\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and any :class:`geometry type<GeometryOnSphere>` in *geometry* is not supported for "
 				"*property_name* (or the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` if *property_name* not specified)\n"
-				"  :raises: InformationModelError if *property_name* is not specified and a default geometry property "
+				"  :raises InformationModelError: if *property_name* is not specified and a default geometry property "
 				"is not associated with this feature's :class:`type<FeatureType>` (this normally should not happen)\n"
-				"  :raises: AmbiguousGeometryCoverageError if multiple coverages are specified (in *geometry*) "
+				"  :raises AmbiguousGeometryCoverageError: if multiple coverages are specified (in *geometry*) "
 				"and more than one has the same number of points (or scalar values) - the ambiguity is due to not being able to "
 				"subsequently determine which coverage range property is associated with which coverage domain property\n"
-				"  :raises: ValueError if *geometry* is one or more coverages where the number of points in a coverage "
+				"  :raises ValueError: if *geometry* is one or more coverages where the number of points in a coverage "
 				"geometry is not equal to the number of scalar values associated with it\n"
-				"  :raises: ValueError if *geometry* is one or more coverages where the scalar values are "
+				"  :raises ValueError: if *geometry* is one or more coverages where the scalar values are "
 				"incorrectly specified - see :meth:`GmlDataBlock.__init__` for details\n"
 				"\n"
 				"  This is a convenience method to make setting geometry easier.\n"
@@ -5384,15 +5431,17 @@ export_feature()
 				":meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this "
 				"feature's :class:`type<FeatureType>` is used instead. And if there are no default geometry properties then "
 				"non-default geometry properties are queried instead.\n"
-				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
+				"  :type property_query: PropertyName, or callable (accepting single Property argument)\n"
 				"  :param property_return: whether to return exactly one geometry, the first geometry or all geometries\n"
-				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
+				"  :type property_return: PropertyReturn\n"
 				"  :param coverage_return: whether to return geometry(s) only (the default), or coverage(s) "
 				"(where a coverage is a geometry and associated per-point scalar values)\n"
-				"  :type coverage_return: *CoverageReturn.geometry_only* or *CoverageReturn.geometry_and_scalars*\n"
-				"  :rtype: :class:`GeometryOnSphere` or list of :class:`GeometryOnSphere` (or 2-tuple of "
-				":class:`GeometryOnSphere` and `dict` of scalar values, or list of those, if "
-				"*CoverageReturn.geometry_and_scalars* specified) or None\n"
+				"  :type coverage_return: CoverageReturn\n"
+				"  :returns: the geometry, or ``list`` of geometries, or ``None`` (depending on *property_return* - see table below). "
+				"If *CoverageReturn.geometry_and_scalars* is specified then each geometry is instead a *coverage* - a 2-tuple "
+				"of geometry and a ``dict`` mapping :class:`ScalarType` to a ``list`` of scalar values.\n"
+				"  :rtype: GeometryOnSphere, or list[GeometryOnSphere], or tuple[GeometryOnSphere, dict[ScalarType, list[float]]], "
+				"or list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]], or None\n"
 				"\n"
 				"  This is a convenience method to make geometry retrieval easier.\n"
 				"\n"
@@ -5537,12 +5586,13 @@ export_feature()
 				":meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this "
 				"feature's :class:`type<FeatureType>` is used instead. And if there are no default geometry properties then "
 				"non-default geometry properties are queried instead.\n"
-				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
+				"  :type property_query: PropertyName, or callable (accepting single Property argument)\n"
 				"  :param coverage_return: whether to return geometries only (the default), or coverages "
 				"(where a coverage is a geometry and associated per-point scalar values)\n"
-				"  :type coverage_return: *CoverageReturn.geometry_only* or *CoverageReturn.geometry_and_scalars*\n"
-				"  :rtype: list of :class:`GeometryOnSphere` (or list of 2-tuple of :class:`GeometryOnSphere` and "
-				"`dict` of scalar values if *CoverageReturn.geometry_and_scalars* specified)\n"
+				"  :type coverage_return: CoverageReturn\n"
+				"  :returns: the geometries - or coverages (2-tuples of geometry and a ``dict`` mapping :class:`ScalarType` "
+				"to a ``list`` of scalar values) if *CoverageReturn.geometry_and_scalars* is specified\n"
+				"  :rtype: list[GeometryOnSphere], or list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]]\n"
 				"\n"
 				"  | This is a convenient alternative to :meth:`get_geometry` that returns a ``list`` "
 				"of matching geometries without having to specify ``pygplates.PropertyReturn.all``.\n"
@@ -5573,9 +5623,10 @@ export_feature()
 				"\n"
 				"  :param coverage_return: whether to return geometries only (the default), or coverages "
 				"(where a coverage is a geometry and associated per-point scalar values)\n"
-				"  :type coverage_return: *CoverageReturn.geometry_only* or *CoverageReturn.geometry_and_scalars*\n"
-				"  :rtype: list of :class:`GeometryOnSphere` (or list of 2-tuple of :class:`GeometryOnSphere` and "
-				"`dict` of scalar values if *CoverageReturn.geometry_and_scalars* specified)\n"
+				"  :type coverage_return: CoverageReturn\n"
+				"  :returns: the geometries - or coverages (2-tuples of geometry and a ``dict`` mapping :class:`ScalarType` "
+				"to a ``list`` of scalar values) if *CoverageReturn.geometry_and_scalars* is specified\n"
+				"  :rtype: list[GeometryOnSphere], or list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]]\n"
 				"\n"
 				"  | This is a convenient alternative to :meth:`get_geometries` that returns a ``list`` "
 				"of *all* geometries regardless of their :class:`property names<PropertyName>`.\n"
@@ -5600,27 +5651,27 @@ export_feature()
 				"  Set the topological geometry (or geometries) of this feature.\n"
 				"\n"
 				"  :param topological_geometry: the topological geometry or geometries to set\n"
-				"  :type topological_geometry: :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or "
-				":class:`GpmlTopologicalNetwork`, or a sequence (eg, ``list`` or ``tuple``) of them\n"
+				"  :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or "
+				"GpmlTopologicalNetwork, or a sequence (eg, list or tuple) of them\n"
 				"  :param property_name: the optional property name of the topological geometry property or properties to set, "
 				"if not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` "
 				"associated with this feature's :class:`type<FeatureType>` is used instead\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :returns: the topological geometry property (or properties) set in the feature\n"
-				"  :rtype: :class:`Property`, or list of :class:`Property` depending on whether *topological_geometry* "
-				"is a single topological geometry or sequence of them\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :type verify_information_model: VerifyInformationModel\n"
+				"  :returns: the topological geometry property set in the feature, or a ``list`` of properties set "
+				"if *topological_geometry* is a sequence\n"
+				"  :rtype: Property, or list[Property]\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is specified but is not a recognised property name or is not supported by "
 				"this feature's :class:`type<FeatureType>`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and multiple topological geometries (if specified in *topological_geometry*) are not supported by *property_name* "
 				"(or the default geometry property name if *property_name* not specified)\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and any topological geometry type in *topological_geometry* is not supported for "
 				"*property_name* (or the default geometry property name if *property_name* not specified)\n"
-				"  :raises: InformationModelError if *property_name* is not specified and a default geometry property "
+				"  :raises InformationModelError: if *property_name* is not specified and a default geometry property "
 				"is not associated with this feature's :class:`type<FeatureType>` (this normally should not happen)\n"
 				"\n"
 				"  This is a convenience method to make setting topological geometry easier.\n"
@@ -5672,10 +5723,10 @@ export_feature()
 				":meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this "
 				"feature's :class:`type<FeatureType>` is used instead. And if there are no default topological geometry properties then "
 				"non-default topological geometry properties are queried instead.\n"
-				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
+				"  :type property_query: PropertyName, or callable (accepting single Property argument)\n"
 				"  :param property_return: whether to return exactly one topological geometry, the first geometry or all topological geometries\n"
-				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
-				"  :rtype: :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`, or list of them, or None\n"
+				"  :type property_return: PropertyReturn\n"
+				"  :rtype: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or list of them, or None\n"
 				"\n"
 				"  This is a convenience method to make topological geometry retrieval easier.\n"
 				"\n"
@@ -5744,8 +5795,8 @@ export_feature()
 				":meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this "
 				"feature's :class:`type<FeatureType>` is used instead. And if there are no default topological geometry properties then "
 				"non-default topological geometry properties are queried instead.\n"
-				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
-				"  :rtype: list of :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`\n"
+				"  :type property_query: PropertyName, or callable (accepting single Property argument)\n"
+				"  :rtype: list of GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork\n"
 				"\n"
 				"  | This is a convenient alternative to :meth:`get_topological_geometry` that returns a ``list`` "
 				"of matching topological geometries without having to specify ``pygplates.PropertyReturn.all``.\n"
@@ -5775,7 +5826,7 @@ export_feature()
 				"get_all_topological_geometries()\n"
 				"  Return a list of all topological geometries of this feature (regardless of their property names).\n"
 				"\n"
-				"  :rtype: list of :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`\n"
+				"  :rtype: list of GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork\n"
 				"\n"
 				"  | This is a convenient alternative to :meth:`get_topological_geometries` that returns a ``list`` "
 				"of *all* topological geometries regardless of their :class:`property names<PropertyName>`.\n"
@@ -5800,14 +5851,14 @@ export_feature()
 				"  Sets the enumeration content associated with *property_name*.\n"
 				"\n"
 				"  :param property_name: the property name of the enumeration property\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param enumeration_content: the enumeration content (value of enumeration)\n"
-				"  :type enumeration_content: string\n"
+				"  :type enumeration_content: str\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel\n"
 				"  :returns: the property containing the enumeration\n"
-				"  :rtype: :class:`Property`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` "
+				"  :rtype: Property\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` "
 				"does not support an enumeration property named *property_name*, or *enumeration_content* is not a recognised enumeration content value "
 				"for the enumeration type associated with *property_name*.\n"
 				"\n"
@@ -5829,13 +5880,13 @@ export_feature()
 				"  Returns the enumeration content associated with *property_name*.\n"
 				"\n"
 				"  :param property_name: the property name of the enumeration property\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param default: the default enumeration content value (defaults to None)\n"
-				"  :type default: string or None\n"
+				"  :type default: str or None\n"
 				"  :returns: the enumeration content value if exactly one :class:`enumeration<Enumeration>` property "
 				"named *property_name* is found with the expected :class:`enumeration type<EnumerationType>` "
 				"associated with *property_name*, otherwise *default* is returned\n"
-				"  :rtype: string, or type(*default*)\n"
+				"  :rtype: str, or type(default)\n"
 				"\n"
 				"  This is a convenience method that wraps :meth:`get_value` for :class:`Enumeration` properties.\n"
 				"\n"
@@ -5856,14 +5907,14 @@ export_feature()
 				"  Sets the boolean property value associated with *property_name*.\n"
 				"\n"
 				"  :param property_name: the property name of the boolean property\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param boolean: the boolean or booleans\n"
-				"  :type boolean: bool, or sequence of bools\n"
+				"  :type boolean: bool, or sequence of bool\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel\n"
 				"  :returns: the property containing the boolean, or properties containing the booleans\n"
-				"  :rtype: :class:`Property`, or list of :class:`Property`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :rtype: Property, or list of Property\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is not a recognised property name or is not supported by the feature type, "
 				"or if *property_name* does not support a :class:`boolean<XsBoolean>` property value type.\n"
 				"\n"
@@ -5886,13 +5937,13 @@ export_feature()
 				"  Returns the boolean property value associated with *property_name*.\n"
 				"\n"
 				"  :param property_name: the property name of the boolean property (or properties)\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param default: the default boolean value (defaults to False), or default boolean values\n"
 				"  :type default: bool or list or None\n"
 				"  :param property_return: whether to return exactly one boolean, the first boolean or "
 				"all matching booleans\n"
-				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
-				"  :rtype: bool, or list of bools, or type(*default*)\n"
+				"  :type property_return: PropertyReturn\n"
+				"  :rtype: bool, or list of bool, or type(default)\n"
 				"\n"
 				"  This is a convenience method that wraps :meth:`get_value` for :class:`XsBoolean` properties.\n"
 				"\n"
@@ -5926,14 +5977,14 @@ export_feature()
 				"  Sets the floating-point (double) property value associated with *property_name*.\n"
 				"\n"
 				"  :param property_name: the property name of the float property\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param double: the float or floats\n"
-				"  :type double: float, or sequence of floats\n"
+				"  :type double: float, or sequence of float\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel\n"
 				"  :returns: the property containing the float, or properties containing the floats\n"
-				"  :rtype: :class:`Property`, or list of :class:`Property`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :rtype: Property, or list of Property\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is not a recognised property name or is not supported by the feature type, "
 				"or if *property_name* does not support a :class:`double<XsDouble>` property value type.\n"
 				"\n"
@@ -5956,13 +6007,13 @@ export_feature()
 				"  Returns the floating-point (double) property value associated with *property_name*.\n"
 				"\n"
 				"  :param property_name: the property name of the float property (or properties)\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param default: the default float value (defaults to 0.0), or default float values\n"
 				"  :type default: float or list or None\n"
 				"  :param property_return: whether to return exactly one float, the first float or "
 				"all matching floats\n"
-				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
-				"  :rtype: float, or list of floats, or type(*default*)\n"
+				"  :type property_return: PropertyReturn\n"
+				"  :rtype: float, or list of float, or type(default)\n"
 				"\n"
 				"  This is a convenience method that wraps :meth:`get_value` for :class:`XsDouble` properties.\n"
 				"\n"
@@ -5996,14 +6047,14 @@ export_feature()
 				"  Sets the integer property value associated with *property_name*.\n"
 				"\n"
 				"  :param property_name: the property name of the integer property\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param integer: the integer or integers\n"
-				"  :type integer: integer, or sequence of integers\n"
+				"  :type integer: int, or sequence of int\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel\n"
 				"  :returns: the property containing the integer, or properties containing the integers\n"
-				"  :rtype: :class:`Property`, or list of :class:`Property`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :rtype: Property, or list of Property\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is not a recognised property name or is not supported by the feature type, "
 				"or if *property_name* does not support an :class:`integer<XsInteger>` property value type.\n"
 				"\n"
@@ -6026,13 +6077,13 @@ export_feature()
 				"  Returns the integer property value associated with *property_name*.\n"
 				"\n"
 				"  :param property_name: the property name of the integer property (or properties)\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param default: the default integer value (defaults to zero), or default integer values\n"
-				"  :type default: integer or list or None\n"
+				"  :type default: int or list or None\n"
 				"  :param property_return: whether to return exactly one integer, the first integer or "
 				"all matching integers\n"
-				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
-				"  :rtype: integer, or list of integers, or type(*default*)\n"
+				"  :type property_return: PropertyReturn\n"
+				"  :rtype: int, or list of int, or type(default)\n"
 				"\n"
 				"  This is a convenience method that wraps :meth:`get_value` for :class:`XsInteger` properties.\n"
 				"\n"
@@ -6066,14 +6117,14 @@ export_feature()
 				"  Sets the string property value associated with *property_name*.\n"
 				"\n"
 				"  :param property_name: the property name of the string property\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param string: the string or strings\n"
-				"  :type string: string, or sequence of string\n"
+				"  :type string: str, or sequence of str\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
-				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :type verify_information_model: VerifyInformationModel\n"
 				"  :returns: the property containing the string, or properties containing the strings\n"
-				"  :rtype: :class:`Property`, or list of :class:`Property`\n"
-				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"  :rtype: Property, or list of Property\n"
+				"  :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is not a recognised property name or is not supported by the feature type, "
 				"or if *property_name* does not support a :class:`string<XsString>` property value type.\n"
 				"\n"
@@ -6096,13 +6147,13 @@ export_feature()
 				"  Returns the string property value associated with *property_name*.\n"
 				"\n"
 				"  :param property_name: the property name of the string property (or properties)\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :type property_name: PropertyName\n"
 				"  :param default: the default string value (defaults to an empty string), or default string values\n"
-				"  :type default: string or list or None\n"
+				"  :type default: str or list or None\n"
 				"  :param property_return: whether to return exactly one string, the first string or "
 				"all matching strings\n"
-				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
-				"  :rtype: string, or list of strings, or type(*default*)\n"
+				"  :type property_return: PropertyReturn\n"
+				"  :rtype: str, or list of str, or type(default)\n"
 				"\n"
 				"  This is a convenience method that wraps :meth:`get_value` for :class:`XsString` properties.\n"
 				"\n"
@@ -6135,7 +6186,7 @@ export_feature()
 				"  Determine if this feature is valid at the specified time.\n"
 				"\n"
 				"  :param time: the time\n"
-				"  :type time: float or :class:`GeoTimeInstant`\n"
+				"  :type time: float or GeoTimeInstant\n"
 				"  :rtype: bool\n"
 				"\n"
 				"  A feature is valid at *time* if *time* lies within the time period returned by "
@@ -6158,14 +6209,14 @@ export_feature()
 				"get_feature_type()\n"
 				"  Returns the feature type.\n"
 				"\n"
-				"  :rtype: :class:`FeatureType`\n")
+				"  :rtype: FeatureType\n")
 		.def("get_feature_id",
 				&GPlatesModel::FeatureHandle::feature_id,
 				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_feature_id()\n"
 				"  Returns the feature identifier.\n"
 				"\n"
-				"  :rtype: :class:`FeatureId`\n")
+				"  :rtype: FeatureId\n")
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

@@ -141,9 +141,9 @@ namespace GPlatesModel
 		 *
 		 * Returns an iterator that points to the new element in the collection.
 		 *
-		 * NOTE: this function may make a clone of the parameter @a new_child to
-		 * insert into the model. Therefore, you must not use the parameter after
-		 * this call; use the returned iterator instead.
+		 * NOTE: for a FeatureHandle (TopLevelProperty children) @a new_child is stored directly
+		 * rather than deep-cloned, so pass a freshly created property or a clone() - see the
+		 * comment on FeatureHandle::set().
 		 *
 		 * After the child has been appended, the "end" iterator will have
 		 * advanced -- the length of the sequence will have increased by 1, so what was the

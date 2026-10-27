@@ -102,10 +102,15 @@ namespace GPlatesAppLogic
 			operator()(
 					const ResolvedTopologicalBoundary::non_null_ptr_type &rtb) const
 			{
+				const GPlatesMaths::PolygonOnSphere &rtb_polygon = *rtb->resolved_topology_boundary();
 				const GPlatesMaths::BoundingSmallCircle &rtb_bounding_small_circle =
-						rtb->resolved_topology_boundary()->get_bounding_small_circle();
+						rtb_polygon.get_bounding_small_circle();
 
-				return intersect(rtb_bounding_small_circle, *d_geometry_points_bounding_small_circle);
+				// Points outside the boundary's circle can still be inside it, if it wraps round the
+				// globe so far that its interior reaches past its outline's bounding circle.
+				return intersect(rtb_bounding_small_circle, *d_geometry_points_bounding_small_circle) ||
+						!rtb_polygon.is_outside_bounding_small_circle_outside_polygon(
+								rtb_bounding_small_circle);
 			}
 
 		private:
@@ -131,11 +136,16 @@ namespace GPlatesAppLogic
 			operator()(
 					const ResolvedTopologicalNetwork::non_null_ptr_type &rtn) const
 			{
+				const GPlatesMaths::PolygonOnSphere &rtn_polygon =
+						*rtn->get_triangulation_network().get_boundary_polygon();
 				const GPlatesMaths::BoundingSmallCircle &rtn_bounding_small_circle =
-						rtn->get_triangulation_network().get_boundary_polygon()
-								->get_bounding_small_circle();
+						rtn_polygon.get_bounding_small_circle();
 
-				return intersect(rtn_bounding_small_circle, *d_geometry_points_bounding_small_circle);
+				// Points outside the network's circle can still be inside it, if it wraps round the
+				// globe so far that its interior reaches past its outline's bounding circle.
+				return intersect(rtn_bounding_small_circle, *d_geometry_points_bounding_small_circle) ||
+						!rtn_polygon.is_outside_bounding_small_circle_outside_polygon(
+								rtn_bounding_small_circle);
 			}
 
 		private:
@@ -3312,7 +3322,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::is_delta_velocity_
 
 	// If the distance from the previous point to the previous polygon boundary exceeds the threshold
 	// then the current point remains active.
-	if (GPlatesMaths::AngularExtent::PI == minimum_distance(
+	if (!minimum_distance(
 			prev_point,
 			*prev_topology_boundary,
 			false/*polygon_interior_is_solid*/,

@@ -27,7 +27,7 @@
 #include <QScrollBar>
 
 #include "HellingerDialog.h"
-#include "HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 #include "HellingerPickWidget.h"
 
 namespace{
@@ -164,21 +164,21 @@ namespace{
 	 */
 	QString
 	translate_segment_type(
-			GPlatesQtWidgets::HellingerPlateIndex type)
+			GPlatesAppLogic::HellingerPlateIndex type)
 	{
 		switch(type)
 		{
-		case GPlatesQtWidgets::PLATE_ONE_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_ONE_PICK_TYPE:
-			return QString::number(GPlatesQtWidgets::PLATE_ONE_PICK_TYPE);
+		case GPlatesAppLogic::PLATE_ONE_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_ONE_PICK_TYPE:
+			return QString::number(GPlatesAppLogic::PLATE_ONE_PICK_TYPE);
 			break;
-		case GPlatesQtWidgets::PLATE_TWO_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_TWO_PICK_TYPE:
-			return QString::number(GPlatesQtWidgets::PLATE_TWO_PICK_TYPE);
+		case GPlatesAppLogic::PLATE_TWO_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_TWO_PICK_TYPE:
+			return QString::number(GPlatesAppLogic::PLATE_TWO_PICK_TYPE);
 			break;
-		case GPlatesQtWidgets::PLATE_THREE_PICK_TYPE:
-		case GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE:
-			return QString::number(GPlatesQtWidgets::PLATE_THREE_PICK_TYPE);
+		case GPlatesAppLogic::PLATE_THREE_PICK_TYPE:
+		case GPlatesAppLogic::DISABLED_PLATE_THREE_PICK_TYPE:
+			return QString::number(GPlatesAppLogic::PLATE_THREE_PICK_TYPE);
 			break;
 		default:
 			return QString();
@@ -190,7 +190,7 @@ namespace{
 			QTreeWidget *tree,
 			QTreeWidgetItem *parent_item,
 			const int &segment_number,
-			const GPlatesQtWidgets::HellingerPick &pick,
+			const GPlatesAppLogic::HellingerPick &pick,
 			GPlatesQtWidgets::HellingerPickWidget::tree_items_collection_type &tree_indices,
 			bool set_as_selected)
 	{
@@ -224,7 +224,7 @@ namespace{
 	void
 	add_pick_to_tree(
 			const int &segment_number,
-			const GPlatesQtWidgets::HellingerPick &pick,
+			const GPlatesAppLogic::HellingerPick &pick,
 			QTreeWidget *tree,
 			GPlatesQtWidgets::HellingerPickWidget::tree_items_collection_type &tree_indices,
 			bool set_as_selected_pick)
@@ -270,7 +270,7 @@ namespace{
 
 GPlatesQtWidgets::HellingerPickWidget::HellingerPickWidget(
 		GPlatesQtWidgets::HellingerDialog *hellinger_dialog,
-		GPlatesQtWidgets::HellingerModel *hellinger_model):
+		GPlatesAppLogic::HellingerModel *hellinger_model):
 	QWidget(hellinger_dialog),
 	d_hellinger_dialog_ptr(hellinger_dialog),
 	d_hellinger_model_ptr(hellinger_model),
@@ -365,7 +365,7 @@ GPlatesQtWidgets::HellingerPickWidget::set_selected_segment(
 
 void
 GPlatesQtWidgets::HellingerPickWidget::set_selected_pick(
-		const hellinger_model_type::const_iterator &it)
+		const GPlatesAppLogic::hellinger_model_type::const_iterator &it)
 {
 	d_selected_pick = it;
 }
@@ -388,7 +388,7 @@ GPlatesQtWidgets::HellingerPickWidget::selected_row()
 	return selected_row_from_tree_widget(tree_widget);
 }
 
-boost::optional<GPlatesQtWidgets::hellinger_model_type::const_iterator>
+boost::optional<GPlatesAppLogic::hellinger_model_type::const_iterator>
 GPlatesQtWidgets::HellingerPickWidget::selected_pick()
 {
 	return d_selected_pick;
@@ -688,7 +688,7 @@ GPlatesQtWidgets::HellingerPickWidget::update_tree_from_model()
 	tree_widget->clear();
 
 	d_tree_items.clear();
-	hellinger_model_type::const_iterator
+	GPlatesAppLogic::hellinger_model_type::const_iterator
 			iter = d_hellinger_model_ptr->begin(),
 			end = d_hellinger_model_ptr->end();
 
@@ -842,7 +842,7 @@ GPlatesQtWidgets::HellingerPickWidget::renumber_segments()
 
 void
 GPlatesQtWidgets::HellingerPickWidget::update_after_new_or_edited_pick(
-		const hellinger_model_type::const_iterator &it,
+		const GPlatesAppLogic::hellinger_model_type::const_iterator &it,
 		const int segment_number)
 {
 	set_selected_pick(it);

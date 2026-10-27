@@ -54,7 +54,7 @@ namespace
 
 		// See if active or not.
 		boost::optional<GPlatesPropertyValues::XsBoolean::non_null_ptr_to_const_type> is_active_property_value =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsBoolean>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsBoolean>(
 						feature, is_active_property_name);
 		if (is_active_property_value)
 		{
@@ -134,7 +134,7 @@ namespace
 			GPlatesModel::PropertyName::create_gpml("dipSlip");
 
 		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> dipslip_property_value =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(
 						feature, dipslip_property_name);
 		if (dipslip_property_value)
 		{
@@ -157,7 +157,7 @@ namespace
 						GPlatesModel::PropertyName::create_gpml("subcategory");
 
 					boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> subcategory_property_value =
-							GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+							GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 									feature, subcategory_property_name);
 					if (subcategory_property_value)
 					{
@@ -178,7 +178,7 @@ namespace
 			GPlatesModel::PropertyName::create_gpml("strikeSlip");
 
 		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> strike_slip_property_value =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(
 						feature, strike_slip_property_name);
 		if (strike_slip_property_value)
 		{
@@ -383,7 +383,7 @@ namespace
 			GPlatesModel::PropertyName::create_gpml("subductionPolarity");
 
 		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> subduction_polarity_property_value =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(
 						feature, subduction_polarity_property_name);
 		if (subduction_polarity_property_value)
 		{
@@ -414,7 +414,7 @@ namespace
 
 		// See if active or not.
 		boost::optional<GPlatesPropertyValues::XsBoolean::non_null_ptr_to_const_type> is_active_property_value =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsBoolean>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsBoolean>(
 						feature, is_active_property_name);
 		if (is_active_property_value)
 		{

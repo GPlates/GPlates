@@ -23,15 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/static_assert.hpp>
 #include <QMessageBox>
 
 #include "ChangePropertyWidget.h"
 
 #include "ChoosePropertyWidget.h"
 #include "QtWidgetUtils.h"
-
-#include "global/CompilerWarnings.h"
 
 #include "gui/FeatureFocus.h"
 
@@ -140,10 +137,6 @@ GPlatesQtWidgets::ChangePropertyWidget::populate(
 }
 
 
-// For the BOOST_STATIC_ASSERT below with GCC 4.2.
-PUSH_GCC_WARNINGS
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 void
 GPlatesQtWidgets::ChangePropertyWidget::process(
 		GPlatesModel::FeatureHandle::iterator &new_focused_geometry_property)
@@ -196,6 +189,4 @@ GPlatesQtWidgets::ChangePropertyWidget::process(
 		}
 	}
 }
-
-POP_GCC_WARNINGS
 

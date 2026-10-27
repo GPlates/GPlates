@@ -34,11 +34,15 @@
 
 // For magic defaults:-
 #include <QDir>
+#include <QEventLoop>
+#include <QNetworkAccessManager>
 #include <QNetworkProxyQuery>
 #include <QNetworkProxyFactory>
 #include <QNetworkProxy>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QObject>
 #include <QStandardPaths>
-#include <QtNetwork>
 #include <QUrl>
 
 

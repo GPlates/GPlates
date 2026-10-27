@@ -1,0 +1,194 @@
+# Builds pyGPlates and runs its test suite on Linux, macOS and Windows.
+#
+# Dependencies come from the conda environment files in the repository root
+# (env.Linux.yml, env.macOS.yml, env.Windows.yml), which are the same files documented in
+# BUILD-Linux.md, BUILD-macOS.md and BUILD-Windows.md. So CI builds pyGPlates the same way a
+# developer does, and a dependency change only has to be made in one place.
+#
+# This uses the CMake build tree (rather than 'pip install .') because the tests are registered
+# with CTest there: 'pygplates-test' runs pygplates/test/test.py with PYTHONPATH pointing at the
+# build directory, and 'pygplates-stub-test' checks the generated .pyi stub is up to date.
+#
+# Compilation goes through 'sccache' so that a push only recompiles what actually changed. A full
+# build takes ~30-60 minutes depending on platform, and is essentially the entire cost of a run
+# (configure is seconds, the tests are seconds).
+name: pygplates build and test
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      # Documentation and repository metadata cannot affect the build or the tests.
+      # Note '.gitattributes' is deliberately NOT listed: it controls the line endings of
+      # every checked-out source file.
+      - '**.md'
+      - '.claude/**'
+      - 'COPYING'
+  pull_request:
+    branches: [ "main" ]
+    paths-ignore:
+      # Documentation and repository metadata cannot affect the build or the tests.
+      # Note '.gitattributes' is deliberately NOT listed: it controls the line endings of
+      # every checked-out source file.
+      # Caveat: GitHub does not synthesise a skipped-but-successful check for a
+      # path-filtered trigger - the run simply never happens. That is fine while
+      # these workflows are not *required* status checks (they are not: the rulesets in
+      # 'docs/design/versioning/README.md' section 13 require none). If they are ever made
+      # required, a docs-only PR would wait forever on a check that cannot run;
+      # the usual fix is to move the filter into a job-level 'if' instead.
+      - '**.md'
+      - '.claude/**'
+      - 'COPYING'
+  workflow_dispatch:
+
+# Superseded runs are cancelled rather than left to finish (a build takes ~30-60 minutes).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+
+    strategy:
+      # Run every platform to completion, so one platform failing still reports the others.
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            environment-file: env.Linux.yml
+            shell: bash -el {0}
+          - name: macOS
+            os: macos-latest
+            environment-file: env.macOS.yml
+            shell: bash -el {0}
+          - name: Windows
+            os: windows-latest
+            environment-file: env.Windows.yml
+            # Windows uses cmd because the conda 'vs2022_win-64' package sets up the MSVC compiler
+            # environment with .bat activation scripts, which only take effect in a cmd shell.
+            # Under bash or PowerShell the Ninja generator fails with "No CMAKE_C_COMPILER could be
+            # found" (see BUILD-Windows.md).
+            shell: cmd /C call {0}
+
+    env:
+      # Kept inside the workspace because the 'runner' context (and so 'runner.temp') is not available
+      # in a job-level 'env' block, only from the step level onwards.
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+      # A safety ceiling rather than an expected size: a full build measures 38 MiB on macOS, 67 MiB
+      # on Linux and 114 MiB on Windows, so this only binds if a build grows by an order of
+      # magnitude. It matters because the whole repository shares a 10 GB Actions cache budget with
+      # LRU eviction, and the wheel and installer workflows will want their share of it.
+      SCCACHE_CACHE_SIZE: 2G
+      # Never let the server time out mid-build.
+      SCCACHE_IDLE_TIMEOUT: 0
+
+    defaults:
+      run:
+        # Conda only activates in a login shell (bash) or an explicitly declared cmd shell.
+        # Without this the environment is created but never activated, and the build silently
+        # falls back to the system Python and system libraries.
+        shell: ${{ matrix.shell }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          # Whole history and all tags: the version is counted from the distance to the
+          # nearest release tag (see 'cmake/modules/VersionFromGit.cmake'), and a shallow
+          # clone is refused rather than allowed to produce a smaller, plausible-looking
+          # number.
+          fetch-depth: 0
+
+      - name: Restore compiler cache
+        # 'restore-keys' is what makes this useful: the primary key includes the commit SHA and so
+        # never hits, and the prefix fallback restores the most recent cache for this platform.
+        # A pull request can read caches written on its base branch, so PRs start warm from the
+        # last push to 'main'.
+        #
+        # The keys are namespaced 'sccache-pygplates-*', and the GPlates workflow's
+        # 'sccache-gplates-*': the two builds share no cache entries at all (every shared
+        # translation unit differs in -fPIC and in the GPLATES_PYTHON_EMBEDDING compile
+        # definition), and 'main' is the repository's default branch, so caches saved there are
+        # visible to every ref. Distinct prefixes stop either workflow from downloading the
+        # other's (useless to it) cache.
+        id: restore-compiler-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: sccache-pygplates-${{ matrix.name }}-${{ github.sha }}
+          restore-keys: sccache-pygplates-${{ matrix.name }}-
+
+      - name: Install dependencies (conda)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          # Miniforge defaults to conda-forge, matching the 'channels' in the environment files.
+          miniforge-version: latest
+          environment-file: ${{ matrix.environment-file }}
+          # All three environment files declare 'name: gplates'.
+          activate-environment: gplates
+          # Python is deliberately left unpinned in the environment files (conda-forge picks the
+          # latest). Building every supported Python version belongs in the wheel-building
+          # workflow, not here.
+
+      - name: Install sccache
+        # Deliberately not added to the env.*.yml files: those are the developer dependency manifest
+        # and this is a CI-only tool. sccache (rather than ccache) because it treats MSVC as a
+        # first-class target, so one configuration works unchanged on all three platforms.
+        run: conda install --yes sccache
+
+      - name: Configure
+        # No -DCMAKE_PREFIX_PATH or -DBoost_ROOT: the top-level CMakeLists.txt detects the active
+        # conda environment from CONDA_PREFIX. The configure output should report
+        # "Detected active conda environment ..." - if it does not, activation above has failed.
+        #
+        # The compiler launchers are honoured by the Ninja and Makefile generators (all our
+        # documented builds use Ninja). Note this relies on GPLATES_USE_PRECOMPILED_HEADERS staying
+        # at its default of FALSE - sccache cannot cache translation units that use a precompiled
+        # header, so enabling PCH here would quietly gut the hit rate.
+        run: >
+          cmake -S . -B build-pygplates -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DGPLATES_BUILD_GPLATES=FALSE
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+      - name: Build
+        run: cmake --build build-pygplates
+
+      - name: Compiler cache statistics
+        # Always reported, so the hit rate is visible in the log rather than assumed - it is the only
+        # way to tell whether the cache is earning its keep. Stopping the server flushes it to disk
+        # before the save step below.
+        if: always()
+        run: sccache --show-stats && sccache --stop-server
+
+      - name: Save compiler cache
+        # Only on push. A cache written by a pull request run is scoped to that pull request: the base
+        # branch and every other pull request cannot see it. Later runs of that same pull request can,
+        # but they gain little, because the base-branch cache already covers everything the pull
+        # request did not change - a re-run only recompiles the PR's own modified files either way.
+        # Pushes to 'main' warm the cache; pull requests restore from it.
+        # 'always()' rather than 'success()', so that a failed build still saves the objects it
+        # did compile - and so does one that hits 'timeout-minutes', which the runner delivers as
+        # a cancellation. The restore-outcome guard is what a bare 'always()' would be missing:
+        # the concurrency group above can cancel a run before or during the restore step, and an
+        # unguarded save would then write a near-empty directory under a newer key. Since
+        # 'restore-keys' matches the most recently created cache, that fragment would shadow the
+        # complete one for every later run. (A restore that finds no cache to restore still
+        # succeeds, so a cold build salvages normally.)
+        if: >-
+          always() && steps.restore-compiler-cache.outcome == 'success' &&
+          github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: sccache-pygplates-${{ matrix.name }}-${{ github.sha }}
+
+      - name: Test
+        # '-C Release' names the configuration this tree was built with. The tests are registered
+        # in every configuration, so on this single-config tree CTest would find them without it.
+        run: ctest --test-dir build-pygplates -C Release --output-on-failure

@@ -243,7 +243,8 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 	{
 		throw ErrorWritingFeatureCollectionToFileFormatException(
 				GPLATES_EXCEPTION_SOURCE,
-				"Cannot write plate ids exceeding 4 digits to PLATES line format files.");
+				"Cannot write plate ids exceeding 4 digits to PLATES line format files.",
+				true/*file_written_to*/);
 	}
 
 	// Second line of the PLATES4 header.

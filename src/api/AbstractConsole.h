@@ -73,6 +73,10 @@ namespace GPlatesApi
 		/**
 		 * Prompts the user for a line of input.
 		 *
+		 * The returned line is terminated by a newline. An empty string (with no
+		 * newline) means the user declined to enter a line, and is passed on to
+		 * Python as end-of-file on stdin.
+		 *
 		 * Any implementation of this function must be thread-safe.
 		 */
 		virtual

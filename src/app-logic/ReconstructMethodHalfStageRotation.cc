@@ -29,6 +29,7 @@
 #include "ReconstructMethodHalfStageRotation.h"
 
 #include "GeometryUtils.h"
+#include "PlateVelocityUtils.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructMethodFiniteRotation.h"
 #include "ReconstructUtils.h"
@@ -582,8 +583,16 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 		return;
 	}
 
-	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
-			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
+	// If we can't get left/right plate IDs then use plate ID zero, since that's what
+	// RotationUtils::get_half_stage_rotation() (below) does.
+	const std::pair<double, double> time_range =
+			PlateVelocityUtils::get_half_stage_rotation_velocity_time_range(
+					reconstruction_feature_properties.get_left_plate_id().get_value_or(0),
+					reconstruction_feature_properties.get_right_plate_id().get_value_or(0),
+					context.reconstruction_tree_creator,
+					reconstruction_time,
+					velocity_delta_time,
+					velocity_delta_time_type);
 
 	// Iterate over the feature's present day geometries and rotate each one.
 	std::vector<Geometry> present_day_geometries;

@@ -216,7 +216,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         # There are now no *default* geometries.
         default_geometry_property_name = self.feature.get_feature_type().get_default_geometry_property_name()
         self.assertFalse(self.feature.get_geometry(default_geometry_property_name, property_return=pygplates.PropertyReturn.all))  # empty list
-        self.assertFalse(self.feature.get_geometry(default_geometry_property_name, property_return=pygplates.PropertyReturn.first))
+        self.assertTrue(self.feature.get_geometry(default_geometry_property_name, property_return=pygplates.PropertyReturn.first) is None)
         self.assertFalse(self.feature.get_geometry(default_geometry_property_name))
         # However there is still a non-default geometry 'gpml:position' and the original 'gpml:centerLineOf'.
         self.assertTrue(len(self.feature.get_geometries()) == 2)  # won't find default geometry so will return all non-default geometries
@@ -232,6 +232,11 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 property_return=pygplates.PropertyReturn.all, coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
         self.assertTrue(coverages == self.feature.get_geometries(coverage_return=pygplates.CoverageReturn.geometry_and_scalars))
         self.assertTrue(not coverages)
+        # No coverage with the property name: 'first' returns None.
+        self.assertTrue(self.feature.get_geometry(
+                pygplates.PropertyName.create_gpml('noSuchGeometry'),
+                pygplates.PropertyReturn.first,
+                pygplates.CoverageReturn.geometry_and_scalars) is None)
         
         # Add a coverage range (scalar values) with number of scalars matching points in geometry (ie, one).
         velocity_colat_type = pygplates.ScalarType.create_gpml('VelocityColat')
@@ -392,6 +397,9 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(isinstance(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary), pygplates.GpmlTopologicalPolygon))
         self.assertTrue(isinstance(self.feature.get_topological_geometry(
             pygplates.PropertyName.gpml_boundary, property_return=pygplates.PropertyReturn.first), pygplates.GpmlTopologicalPolygon))
+        # No topological geometry with the property name: 'first' returns None.
+        self.assertTrue(self.feature.get_topological_geometry(
+            pygplates.PropertyName.create_gpml('noSuchTopology'), property_return=pygplates.PropertyReturn.first) is None)
         self.assertTrue(list(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary).get_boundary_sections()) == self.topological_sections)
         self.assertTrue(list(self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary).get_exterior_sections()) == self.topological_sections)
         self.assertTrue(len(self.feature.get_topological_geometry(lambda property: True, pygplates.PropertyReturn.all)) == 3) # There are three topological geometries in total.
@@ -1120,6 +1128,46 @@ class GetPropertyValueCase(unittest.TestCase):
         # Outside time range.
         self.assertFalse(self.gpml_irregular_sampling.get_value(20))
 
+    def test_get_single_sample(self):
+        # One enabled sample (the other is disabled) only has a value at its own time.
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.XsDouble(100), 5),
+                pygplates.GpmlTimeSample(pygplates.XsDouble(200), 10, is_enabled=False)])
+        value = gpml_irregular_sampling.get_value(5)
+        self.assertTrue(value)
+        self.assertAlmostEqual(value.get_double(), 100)
+        # The returned value is not the time sample's value.
+        value.set_double(300)
+        self.assertAlmostEqual(gpml_irregular_sampling[0].get_value().get_double(), 100)
+        self.assertFalse(gpml_irregular_sampling.get_value(4))
+        self.assertFalse(gpml_irregular_sampling.get_value(6))
+        # Times are compared with a tolerance (0.1 + 0.2 is not exactly 0.3).
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.XsDouble(100), 0.3)])
+        self.assertTrue(gpml_irregular_sampling.get_value(0.1 + 0.2))
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.XsDouble(100), 0.3),
+                pygplates.GpmlTimeSample(pygplates.XsDouble(200), 1)])
+        self.assertTrue(gpml_irregular_sampling.get_value(0.1 + 0.2))
+        self.assertTrue(gpml_irregular_sampling.get_value(1 + 1e-15))
+        # A finite rotation too.
+        finite_rotation = pygplates.FiniteRotation(pygplates.PointOnSphere(0, 1, 0), 0.5)
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(finite_rotation), 10)])
+        value = gpml_irregular_sampling.get_value(10)
+        self.assertTrue(value)
+        self.assertTrue(pygplates.FiniteRotation.are_equal(value.get_finite_rotation(), finite_rotation))
+
+    def test_get_duplicate_sample_times(self):
+        # Two samples at the same time (previously an XsDouble gave None there).
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.XsDouble(100), 5),
+                pygplates.GpmlTimeSample(pygplates.XsDouble(100), 5),
+                pygplates.GpmlTimeSample(pygplates.XsDouble(200), 10)])
+        value = gpml_irregular_sampling.get_value(5)
+        self.assertTrue(value)
+        self.assertAlmostEqual(value.get_double(), 100)
+
 
 class GetTimeSamplesCase(unittest.TestCase):
     def setUp(self):
@@ -1153,6 +1201,17 @@ class GetTimeSamplesCase(unittest.TestCase):
         self.assertTrue(self.gpml_irregular_sampling.get_time_samples_bounding_time(0.5, True))
         # Time is outside time samples range.
         self.assertFalse(self.gpml_irregular_sampling.get_time_samples_bounding_time(3.5, True))
+
+    def test_bounding_single_sample(self):
+        # Only sample 3 is enabled after disabling sample 1.
+        self.gpml_irregular_sampling[1].set_disabled()
+        bounding_enabled_samples = self.gpml_irregular_sampling.get_time_samples_bounding_time(3)
+        self.assertTrue(bounding_enabled_samples)
+        first_bounding_enabled_sample, second_bounding_enabled_sample = bounding_enabled_samples
+        self.assertAlmostEqual(first_bounding_enabled_sample.get_value().get_double(), 3)
+        self.assertAlmostEqual(second_bounding_enabled_sample.get_value().get_double(), 3)
+        self.assertFalse(self.gpml_irregular_sampling.get_time_samples_bounding_time(2.5))
+        self.assertFalse(self.gpml_irregular_sampling.get_time_samples_bounding_time(3.5))
 
     def test_set(self):
         self.assertRaises(ValueError,

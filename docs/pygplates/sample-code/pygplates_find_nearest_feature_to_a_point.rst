@@ -1,0 +1,137 @@
+.. _pygplates_find_nearest_feature_to_a_point:
+
+Find nearest reconstructed feature to a point
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This example iterates over a collection of reconstructed features and finds the feature that is nearest to a point.
+
+.. contents::
+   :local:
+   :depth: 2
+
+Data files
+""""""""""
+
+``rotations.rot``
+    A rotation file. It must contain rotations for the plate IDs of the features in ``features.gpml``.
+
+``features.gpml``
+    Reconstructable features, each with a reconstruction plate ID and one or more geometries.
+
+Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
+
+Sample code
+"""""""""""
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+
+Details
+"""""""
+
+The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: load-rotations
+
+The reconstructable features are loaded into a :class:`pygplates.FeatureCollection`.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: load-features
+
+The features are reconstructed to their 10Ma positions.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: reconstruction-time
+
+| The test point has zero latitude and zero longitude.
+| All features are tested to see which one is closest to this :class:`point<pygplates.PointOnSphere>`.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: point
+
+| All features are reconstructed to 10Ma in a :class:`pygplates.ReconstructSnapshot`.
+| We ask the snapshot for its :meth:`reconstructed features<pygplates.ReconstructSnapshot.get_reconstructed_features>`
+  (rather than its reconstructed geometries) so that our
+  :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>`
+  are grouped with their :class:`feature<pygplates.Feature>`. This isn't strictly necessary
+  in this particular example though.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: reconstruct
+
+| Initially we don't have a minimum distance of the point to all features.
+| This value is also used as the threshold to the :meth:`distance()<pygplates.GeometryOnSphere.distance>`
+  method and initially this will be ``None`` which means no threshold.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: initial-minimum-distance
+
+Each item in the *reconstructed_features* list is a tuple containing a feature and its associated
+reconstructed geometries.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: iterate-features
+
+A feature can have more than one geometry and hence will have more than one *reconstructed* geometry.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: iterate-geometries
+
+| Calculate the minimum distance from the point to a reconstructed feature geometry using the point's :meth:`distance()<pygplates.GeometryOnSphere.distance>` method.
+| *min_distance_to_all_features* is specified as the distance threshold since we're only interested
+  in geometries that are nearer than the closest geometry encountered so far.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: distance
+
+| If ``None`` was returned then the distance was greater than *min_distance_to_all_features*.
+| So a valid returned value means the current geometry is the nearest geometry encountered so far.
+| In this case we record the nearest feature and the new minimum distance.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: nearest-so-far
+
+Once we've tested all features (if any were in the file) we print out the nearest feature and its
+(minimum) distance to the point.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: print-nearest
+
+Advanced
+""""""""
+
+If we also want to find the nearest position on the nearest feature then we can specify
+``return_closest_positions`` as ``True`` when calculating the geometry distance:
+::
+
+    nearest_point_on_nearest_feature = None
+    
+    ...
+    
+    min_distance_to_feature_and_closest_positions = point.distance(
+            feature_reconstructed_geometry.get_reconstructed_geometry(),
+            min_distance_to_all_features,
+            return_closest_positions=True)
+
+| When ``return_closest_positions`` is ``True`` the :meth:`distance()<pygplates.GeometryOnSphere.distance>`
+  method returns a 3-tuple of (distance, closest point on the geometry it's called on, closest point on the other geometry).
+| If the geometry distance is below the threshold then we can extract that tuple into its individual elements.
+
+::
+
+    if min_distance_to_feature_and_closest_positions is not None:
+        min_distance_to_all_features, _, nearest_point_on_nearest_feature = min_distance_to_feature_and_closest_positions
+        nearest_feature = feature
+
+| ...where the ``_`` is just a placeholder to ignore the second element of the tuple returned
+  by the :meth:`distance()<pygplates.GeometryOnSphere.distance>` method.
+| We ignore it because it's the closest distance to the test point which is just the test point itself.
+  And we are only interested in the closest point on the feature's geometry.
+
+See also
+""""""""
+
+- Reference: :class:`pygplates.ReconstructSnapshot`, :meth:`pygplates.ReconstructSnapshot.get_reconstructed_features`,
+  :meth:`pygplates.GeometryOnSphere.distance`, :class:`pygplates.PointOnSphere`
+- Sample code: :ref:`pygplates_find_features_overlapping_a_polygon`,
+  :ref:`pygplates_find_overriding_plate_of_closest_subducting_line`

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A WFS response carrying the member types the GeoSciML reader translates (UnclassifiedFeature,
+  RockUnit_*, FossilCollection_*), one it does not (gsml:MappedFeature, which it must skip
+  without losing the members after it), and the three geometry kinds it handles. Coordinates
+  in gml:posList are longitude latitude, which the reader swaps; a gml:pos is read as the
+  GPML order, latitude longitude. The reader expects a gml:posList directly under gml:Polygon.
+  The last member is a three-dimensional line in another SRS, which the reader reads in
+  triples (it drops the height, and does not transform the SRS).
+  Used by GeoscimlReaderTest.cc.
+-->
+<wfs:FeatureCollection
+    xmlns:wfs="http://www.opengis.net/wfs"
+    xmlns:gml="http://www.opengis.net/gml"
+    xmlns:gsml="urn:cgi:xmlns:CGI:GeoSciML:2.0"
+    xmlns:gpml="http://www.gplates.org/gplates"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
+  <gml:featureMember>
+    <gsml:UnclassifiedFeature gml:id="line">
+      <gml:name>Line feature</gml:name>
+      <gml:description>Three vertices along a diagonal</gml:description>
+      <gml:validTime>
+        <gml:TimePeriod>
+          <gml:begin>
+            <gml:TimeInstant>
+              <gml:timePosition gml:frame="http://gplates.org/TRS/flat">100</gml:timePosition>
+            </gml:TimeInstant>
+          </gml:begin>
+          <gml:end>
+            <gml:TimeInstant>
+              <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+            </gml:TimeInstant>
+          </gml:end>
+        </gml:TimePeriod>
+      </gml:validTime>
+      <gsml:shape>
+        <gml:LineString srsName="EPSG:4326">
+          <gml:posList srsDimension="2">10 20 15 25 20 30</gml:posList>
+        </gml:LineString>
+      </gsml:shape>
+    </gsml:UnclassifiedFeature>
+  </gml:featureMember>
+  <gml:featureMember>
+    <gsml:UnclassifiedFeature gml:id="point">
+      <gml:name>Point feature</gml:name>
+      <gsml:shape>
+        <gml:Point srsName="EPSG:4326">
+          <gml:pos>45 -30</gml:pos>
+        </gml:Point>
+      </gsml:shape>
+    </gsml:UnclassifiedFeature>
+  </gml:featureMember>
+  <gml:featureMember>
+    <gsml:MappedFeature gml:id="unsupported">
+      <gml:name>Mapped feature the reader does not translate</gml:name>
+      <gsml:observationMethod xlink:href="urn:cgi:classifier:CGI:ObservationMethod:2009:digitised"/>
+      <gsml:shape>
+        <gml:Point srsName="EPSG:4326">
+          <gml:pos>0 0</gml:pos>
+        </gml:Point>
+      </gsml:shape>
+    </gsml:MappedFeature>
+  </gml:featureMember>
+  <gml:featureMember>
+    <gsml:UnclassifiedFeature gml:id="polygon">
+      <gml:name>Polygon feature</gml:name>
+      <gml:name>Polygon alias</gml:name>
+      <gsml:shape>
+        <gml:Polygon srsName="EPSG:4326">
+          <gml:posList srsDimension="2">0 0 10 0 10 10 0 10</gml:posList>
+        </gml:Polygon>
+      </gsml:shape>
+    </gsml:UnclassifiedFeature>
+  </gml:featureMember>
+  <gml:featureMember>
+    <gpml:RockUnit_siliciclastic gml:id="rock-unit">
+      <gml:name>Rock unit</gml:name>
+      <gsml:shape>
+        <gml:Point srsName="EPSG:4326">
+          <gml:pos>-20 140</gml:pos>
+        </gml:Point>
+      </gsml:shape>
+      <gpml:rock_type>sandstone</gpml:rock_type>
+      <gpml:rock_max_thick>12.5</gpml:rock_max_thick>
+      <gpml:rock_min_thick>3</gpml:rock_min_thick>
+    </gpml:RockUnit_siliciclastic>
+  </gml:featureMember>
+  <gml:featureMember>
+    <gpml:FossilCollection_large gml:id="fossils">
+      <gml:name>Fossil collection</gml:name>
+      <gsml:shape>
+        <gml:Point srsName="EPSG:4326">
+          <gml:pos>-33 151</gml:pos>
+        </gml:Point>
+      </gsml:shape>
+      <gpml:fossil_diversity>7</gpml:fossil_diversity>
+    </gpml:FossilCollection_large>
+  </gml:featureMember>
+  <gml:featureMember>
+    <gsml:UnclassifiedFeature gml:id="line3d">
+      <gml:name>Three-dimensional line</gml:name>
+      <gsml:shape>
+        <gml:LineString srsName="EPSG:4979">
+          <gml:posList srsDimension="3">10 20 100 15 25 200 20 30 300</gml:posList>
+        </gml:LineString>
+      </gsml:shape>
+    </gsml:UnclassifiedFeature>
+  </gml:featureMember>
+</wfs:FeatureCollection>

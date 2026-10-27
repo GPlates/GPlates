@@ -358,8 +358,9 @@ namespace GPlatesAppLogic
 			 *
 			 * Note: Only those rigid plates that contributed net rotation are included.
 			 *
-			 * Note: Topological boundaries (rigid plates) that don't have a plate ID are excluded altogether
-			 *       because we cannot determine a stage rotation from them.
+			 * Note: A topological boundary (rigid plate) that doesn't have a plate ID is
+			 *       included, and its stage rotation is that of plate ID zero (which can still be
+			 *       a non-identity rotation if the anchor plate ID is non-zero).
 			 */
 			const topological_boundary_net_rotation_map_type &
 			get_topological_boundary_net_rotation_map() const
@@ -384,7 +385,8 @@ namespace GPlatesAppLogic
 			 * Note: Networks are no longer required to have a plate ID because it doesn't make sense
 			 *       (network is deforming, not rigidly rotated by plate ID). If a deforming network
 			 *       doesn't have a plate ID then it will be grouped under plate ID 'none'.
-			 *       Note that topological boundaries (rigid plates) that don't have a plate ID are excluded altogether.
+			 *       So is a topological boundary (rigid plate) that doesn't have a plate ID,
+			 *       although its stage rotation is that of plate ID zero.
 			 */
 			const plate_id_net_rotation_map_type &
 			get_plate_id_net_rotation_map() const
@@ -466,7 +468,6 @@ namespace GPlatesAppLogic
 			double d_time;
 			double d_velocity_delta_time;
 			VelocityDeltaTime::Type d_velocity_delta_time_type;
-			std::pair<double/*older*/, double/*younger*/> d_velocity_time_period;
 			//! How the points, to calculate net rotation, are distributed across the globe.
 			point_distribution_type d_point_distribution;
 			GPlatesModel::integer_plate_id_type d_anchor_plate_id;

@@ -34,12 +34,10 @@
 #include <QDebug>
 
 #include "GeometryUtils.h"
+#include "GeometryFinder.h"
+#include "GeometryTypeFinder.h"
 #include "ReconstructedFeatureGeometryFinder.h"
 #include "ReconstructionTree.h"
-
-#include "feature-visitors/GeometryFinder.h"
-#include "feature-visitors/GeometryTypeFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -52,9 +50,10 @@
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/FeatureVisitor.h"
-#include "model/PropertyName.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlLineString.h"
@@ -1559,7 +1558,7 @@ GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(
 				feature_properties_iter;
 		++feature_properties_iter;
 
-		if (GPlatesFeatureVisitors::is_geometry_property(
+		if (GPlatesAppLogic::is_geometry_property(
 					*current_feature_properties_iter))
 		{
 			feature_ref->remove(current_feature_properties_iter);

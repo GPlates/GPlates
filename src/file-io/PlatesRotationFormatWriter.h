@@ -64,11 +64,14 @@ namespace GPlatesFileIO
 		 * is prefixed by "999 0.0 0.0 0.0 0.0 999 !" on lines that don't already contain a rotation pole.
 		 * This is because the old-style PLATES4 rotation file format requires every line to contain
 		 * a rotation pole (the '999' indicating a commented out pole).
+		 *
+		 * There is deliberately no default. A '.grot' file written with the PLATES4 syntax reads back
+		 * wrongly: the '.grot' reader takes each disabled pole as an enabled pole of plate 999.
 		 */
 		explicit
 		PlatesRotationFormatWriter(
 				const FileInfo &file_info,
-				bool grot_format = false);
+				bool grot_format);
 
 	protected:
 

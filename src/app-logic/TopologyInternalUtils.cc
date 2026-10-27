@@ -47,8 +47,6 @@
 #include "ResolvedTopologicalLine.h"
 #include "TopologyReconstructedFeatureGeometry.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -61,8 +59,9 @@
 #include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
-#include "model/PropertyName.h"
 #include "model/ModelUtils.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -872,7 +871,7 @@ namespace
 						<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
 					static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
 					boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-							GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+							GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 									feature_ref, prop);
 					if (name)
 					{
@@ -948,7 +947,7 @@ namespace
 					<< GPlatesUtils::make_qstring_from_icu_string( found_feature_ref.get()->feature_id().get() );
 				static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
 				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 								found_feature_ref.get(), prop);
 				if (name)
 				{

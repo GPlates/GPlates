@@ -31,6 +31,7 @@
 
 #include <utility>
 #include <map>
+#include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <QRect>
@@ -247,6 +248,33 @@ namespace GPlatesFileIO
 				FormatHandler format_handler);
 
 
+		/**
+		 * Creates the reader implementation for the @a RGBA formats (BMP, GIF, JPEG, PNG, SVG).
+		 *
+		 * Arguments are the filename, the owning @a RasterReader and the read errors (may be NULL).
+		 * The returned implementation is owned by the @a RasterReader.
+		 */
+		typedef boost::function<
+				RasterReaderImpl *(const QString &, RasterReader *, ReadErrorAccumulation *)>
+				rgba_reader_factory_type;
+
+		/**
+		 * Registers the factory used to read the @a RGBA formats.
+		 *
+		 * The RGBA reader (@a RgbaRasterReader) decodes images with Qt Gui, which the pygplates
+		 * module does not link, so - like @a OgrReader::set_property_mapper - it is injected by
+		 * GPlates (see @a GPlatesPresentation::Application) rather than referenced from here.
+		 * When no factory is registered an RGBA raster file is reported as an unrecognised
+		 * raster file type and the @a RasterReader has no implementation (every accessor then
+		 * returns its "cannot read" default). This is harmless: pyGPlates has no raster API and
+		 * only meets rasters through the @a GmlFile of a loaded GPML, which still loads and
+		 * round-trips. The GDAL-read formats (GeoTIFF, NetCDF, GMT grids, ...) are unaffected.
+		 */
+		static
+		void
+		set_rgba_reader_factory(
+				const rgba_reader_factory_type &rgba_reader_factory);
+
 	private:
 
 		RasterReader(
@@ -255,6 +283,8 @@ namespace GPlatesFileIO
 
 		boost::scoped_ptr<RasterReaderImpl> d_impl;
 		QString d_filename;
+
+		static rgba_reader_factory_type s_rgba_reader_factory;
 	};
 
 

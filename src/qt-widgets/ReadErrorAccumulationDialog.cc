@@ -391,7 +391,7 @@ QTreeWidgetItem *
 GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_type_summary_item(
 		const GPlatesFileIO::ReadErrorOccurrence &error,
 		const QIcon &occurrence_icon,
-		size_t quantity)
+		std::size_t quantity)
 {
 	// Create node with a summary of the error description and how many there are.
 	QTreeWidgetItem *summary_item = new QTreeWidgetItem();

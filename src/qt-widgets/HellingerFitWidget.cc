@@ -27,7 +27,7 @@
 
 #include "utils/ComponentManager.h"
 #include "HellingerDialog.h"
-#include "HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 #include "HellingerFitWidget.h"
 
 const double INITIAL_SEARCH_RADIUS = 0.2;
@@ -36,7 +36,7 @@ const double INITIAL_ROTATION_ANGLE = 5.;
 
 GPlatesQtWidgets::HellingerFitWidget::HellingerFitWidget(
 		GPlatesQtWidgets::HellingerDialog *hellinger_dialog,
-		GPlatesQtWidgets::HellingerModel *hellinger_model):
+		GPlatesAppLogic::HellingerModel *hellinger_model):
 	QWidget(hellinger_dialog),
 	d_hellinger_dialog_ptr(hellinger_dialog),
 	d_hellinger_model_ptr(hellinger_model),
@@ -98,7 +98,7 @@ GPlatesQtWidgets::HellingerFitWidget::initialise_widgets()
 void
 GPlatesQtWidgets::HellingerFitWidget::update_buttons()
 {
-	bool two_plate_fit = d_hellinger_model_ptr->get_fit_type() == TWO_PLATE_FIT_TYPE;
+	bool two_plate_fit = d_hellinger_model_ptr->get_fit_type() == GPlatesAppLogic::TWO_PLATE_FIT_TYPE;
 
 	bool estimates_ok = false;
 	if (two_plate_fit)
@@ -247,7 +247,7 @@ GPlatesQtWidgets::HellingerFitWidget::update_fit_widgets_from_model()
 	spinbox_grid_iterations->setValue(d_hellinger_model_ptr->get_hellinger_com_file_struct().d_number_of_grid_iterations);
 
 	bool three_plate_fit = d_three_way_fitting_is_enabled &&
-			(d_hellinger_model_ptr->get_fit_type(true) == THREE_PLATE_FIT_TYPE);
+			(d_hellinger_model_ptr->get_fit_type(true) == GPlatesAppLogic::THREE_PLATE_FIT_TYPE);
 
 	bool enable_12_result_boxes = static_cast<bool>(d_hellinger_model_ptr->get_fit_12());
 
@@ -275,9 +275,9 @@ GPlatesQtWidgets::HellingerFitWidget::update_fit_widgets_from_model()
 	checkbox_show_result_23->setEnabled(enable_13_and_23_result_boxes);
 	button_clipboard_23->setEnabled(enable_13_and_23_result_boxes);
 
-	boost::optional<HellingerFitStructure> fit12 = d_hellinger_model_ptr->get_fit_12();
-	boost::optional<HellingerFitStructure> fit13 = d_hellinger_model_ptr->get_fit_13();
-	boost::optional<HellingerFitStructure> fit23 = d_hellinger_model_ptr->get_fit_23();
+	boost::optional<GPlatesAppLogic::HellingerFitStructure> fit12 = d_hellinger_model_ptr->get_fit_12();
+	boost::optional<GPlatesAppLogic::HellingerFitStructure> fit13 = d_hellinger_model_ptr->get_fit_13();
+	boost::optional<GPlatesAppLogic::HellingerFitStructure> fit23 = d_hellinger_model_ptr->get_fit_23();
 
 	if (fit12)
 	{
@@ -301,7 +301,7 @@ GPlatesQtWidgets::HellingerFitWidget::update_fit_widgets_from_model()
 	checkbox_grid_search->setEnabled(!three_plate_fit);
 
 	line_edit_amoeba_tolerance->setText(QString::number(
-											(d_hellinger_model_ptr->get_fit_type() == TWO_PLATE_FIT_TYPE) ?
+											(d_hellinger_model_ptr->get_fit_type() == GPlatesAppLogic::TWO_PLATE_FIT_TYPE) ?
 												d_last_used_two_way_tolerance :
 												d_last_used_three_way_tolerance));
 
@@ -324,13 +324,13 @@ GPlatesQtWidgets::HellingerFitWidget::update_model_from_fit_widgets()
 	d_hellinger_model_ptr->set_search_radius(spinbox_radius->value());
 
 
-	HellingerComFileStructure com_file_struct;
+	GPlatesAppLogic::HellingerComFileStructure com_file_struct;
 
 	com_file_struct.d_estimate_12.d_lat = spinbox_lat_estimate_12->value();
 	com_file_struct.d_estimate_12.d_lon = spinbox_lon_estimate_12->value();
 	com_file_struct.d_estimate_12.d_angle = spinbox_rho_estimate_12->value();
 
-	if (d_hellinger_model_ptr->get_fit_type() == THREE_PLATE_FIT_TYPE)
+	if (d_hellinger_model_ptr->get_fit_type() == GPlatesAppLogic::THREE_PLATE_FIT_TYPE)
 	{
 		com_file_struct.d_estimate_13.d_lat = spinbox_lat_estimate_13->value();
 		com_file_struct.d_estimate_13.d_lon = spinbox_lon_estimate_13->value();
@@ -352,7 +352,7 @@ GPlatesQtWidgets::HellingerFitWidget::update_model_from_fit_widgets()
 	double tolerance = line_edit_amoeba_tolerance->text().toDouble(&tolerance_ok);
 	if (tolerance_ok)
 	{
-		if (d_hellinger_model_ptr->get_fit_type() == THREE_PLATE_FIT_TYPE)
+		if (d_hellinger_model_ptr->get_fit_type() == GPlatesAppLogic::THREE_PLATE_FIT_TYPE)
 		{
 			com_file_struct.d_amoeba_three_way_tolerance = tolerance;
 		}
@@ -369,7 +369,7 @@ GPlatesQtWidgets::HellingerFitWidget::update_model_from_fit_widgets()
 	d_hellinger_model_ptr->set_com_file_structure(com_file_struct);
 	qDebug() << "tolerance in model: " << d_hellinger_model_ptr->get_amoeba_tolerance();
 
-	if (d_hellinger_model_ptr->get_fit_type() == TWO_PLATE_FIT_TYPE)
+	if (d_hellinger_model_ptr->get_fit_type() == GPlatesAppLogic::TWO_PLATE_FIT_TYPE)
 	{
 		d_last_used_two_way_tolerance = tolerance;
 	}
@@ -391,7 +391,7 @@ GPlatesQtWidgets::HellingerFitWidget::update_enabled_state_of_estimate_widgets(
 		bool enable)
 {
 	bool three_plate_fit = d_three_way_fitting_is_enabled &&
-			(d_hellinger_model_ptr->get_fit_type(true) == THREE_PLATE_FIT_TYPE);
+			(d_hellinger_model_ptr->get_fit_type(true) == GPlatesAppLogic::THREE_PLATE_FIT_TYPE);
 
 	spinbox_lat_estimate_12->setEnabled(enable);
 	spinbox_lon_estimate_12->setEnabled(enable);
@@ -426,10 +426,10 @@ GPlatesQtWidgets::HellingerFitWidget::stop_progress_bar()
 	progress_bar->setMaximum(1.);
 }
 
-GPlatesQtWidgets::HellingerPoleEstimate
+GPlatesAppLogic::HellingerPoleEstimate
 GPlatesQtWidgets::HellingerFitWidget::estimate_12() const
 {
-	return HellingerPoleEstimate(
+	return GPlatesAppLogic::HellingerPoleEstimate(
 				spinbox_lat_estimate_12->value(),
 				spinbox_lon_estimate_12->value(),
 				spinbox_rho_estimate_12->value());
@@ -437,7 +437,7 @@ GPlatesQtWidgets::HellingerFitWidget::estimate_12() const
 
 void
 GPlatesQtWidgets::HellingerFitWidget::set_estimate_12(
-		const GPlatesQtWidgets::HellingerPoleEstimate &estimate)
+		const GPlatesAppLogic::HellingerPoleEstimate &estimate)
 {
 	spinbox_lat_estimate_12->setValue(estimate.d_lat);
 	spinbox_lon_estimate_12->setValue(estimate.d_lon);
@@ -446,17 +446,17 @@ GPlatesQtWidgets::HellingerFitWidget::set_estimate_12(
 
 void
 GPlatesQtWidgets::HellingerFitWidget::set_estimate_13(
-		const GPlatesQtWidgets::HellingerPoleEstimate &estimate)
+		const GPlatesAppLogic::HellingerPoleEstimate &estimate)
 {
 	spinbox_lat_estimate_13->setValue(estimate.d_lat);
 	spinbox_lon_estimate_13->setValue(estimate.d_lon);
 	spinbox_rho_estimate_13->setValue(estimate.d_angle);
 }
 
-GPlatesQtWidgets::HellingerPoleEstimate
+GPlatesAppLogic::HellingerPoleEstimate
 GPlatesQtWidgets::HellingerFitWidget::estimate_13() const
 {
-	return HellingerPoleEstimate(
+	return GPlatesAppLogic::HellingerPoleEstimate(
 				spinbox_lat_estimate_13->value(),
 				spinbox_lon_estimate_13->value(),
 				spinbox_rho_estimate_13->value());

@@ -35,7 +35,6 @@
 #include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
-#include "gui/ColourProxy.h"
 
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolygonProximityHitDetail.h"
@@ -50,7 +49,7 @@ namespace GPlatesViewOperations
 	public:
 		RenderedColouredPolygonOnSphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
-				const std::vector<GPlatesGui::ColourProxy> &point_colours,
+				const std::vector<GPlatesGui::Colour> &point_colours,
 				float line_width_hint) :
 		d_polygon_on_sphere(polygon_on_sphere),
 		d_point_colours(point_colours),
@@ -95,7 +94,7 @@ namespace GPlatesViewOperations
 			return d_polygon_on_sphere;
 		}
 
-		const std::vector<GPlatesGui::ColourProxy> &
+		const std::vector<GPlatesGui::Colour> &
 		get_point_colours() const
 		{
 			return d_point_colours;
@@ -109,7 +108,7 @@ namespace GPlatesViewOperations
 
 	private:
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type d_polygon_on_sphere;
-		std::vector<GPlatesGui::ColourProxy> d_point_colours;
+		std::vector<GPlatesGui::Colour> d_point_colours;
 		float d_line_width_hint;
 	};
 }

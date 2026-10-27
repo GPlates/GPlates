@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDebug>
 #include <QtGlobal>
 
 #include "FeatureCollectionFileIO.h"
@@ -222,12 +223,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::create_file(
 }
 
 
-// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-// It has been deprecated since Qt 5.13.
-//
-// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-
 int
 GPlatesAppLogic::FeatureCollectionFileIO::count_features_in_xml_data(
 		QByteArray &data)
@@ -253,9 +248,14 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 	using namespace GPlatesFileIO;
 	ReadErrorAccumulation read_errors;
 
-	//create temp file
+	// The features come from 'data'; the file is created only so that the loaded feature
+	// collection has a real path to be named by, and is never read back. So failing to
+	// create it costs the collection its name, not its contents.
 	QFile tmp_file(filename);
-	tmp_file.open(QIODevice::ReadWrite | QIODevice::Text);
+	if (!tmp_file.open(QIODevice::ReadWrite | QIODevice::Text))
+	{
+		qWarning() << "Could not create" << filename << ":" << tmp_file.errorString();
+	}
 	tmp_file.close();
 
 	const FileInfo file_info(filename);
@@ -275,7 +275,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 //qDebug() << "FeatureCollectionFileIO::load_xml_data() END =========";
 }
 
-#endif  // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 
 
 GPlatesAppLogic::FeatureCollectionFileIO::file_seq_type

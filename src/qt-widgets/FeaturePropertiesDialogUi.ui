@@ -14,7 +14,7 @@
    <string>Feature Properties</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gnome_edit_find_16.png</normaloff>:/gnome_edit_find_16.png</iconset>
   </property>
   <property name="sizeGripEnabled">
@@ -65,7 +65,7 @@
      </property>
      <widget class="QWidget" name="tab_dummy">
       <attribute name="icon">
-       <iconset resource="../qt-resources/qt_widgets.qrc">
+       <iconset resource="../qt-resources/qt_resources.qrc">
         <normaloff>:/gnome_edit_find_16.png</normaloff>:/gnome_edit_find_16.png</iconset>
       </attribute>
       <attribute name="title">
@@ -87,7 +87,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections>
   <connection>

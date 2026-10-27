@@ -24,7 +24,6 @@
  */
 
 #include <QLocale>
-#include <QRegExp>
 #include <QTextStream>
 
 #include "DeformationExport.h"

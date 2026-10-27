@@ -106,11 +106,14 @@ namespace GPlatesFileIO
 			 *
 			 * This is useful when you want to save the file with a different filename or change the
 			 * read/write options.
+			 *
+			 * There is deliberately no default for @a file_configuration: one of boost::none silently
+			 * dropped the configuration of a caller that only meant to change the file info.
 			 */
 			void
 			set_file_info(
 					const FileInfo &file_info,
-					boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration = boost::none)
+					boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration)
 			{
 				d_file_info = file_info;
 				d_file_configuration = file_configuration;

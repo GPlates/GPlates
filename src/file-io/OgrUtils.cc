@@ -25,14 +25,17 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#include <QDebug>
+#include <QObject>
 #include <QtGlobal>
-#include <QMessageBox>
 #include <QVariant>
 
 #include "boost/foreach.hpp"
 
-#include "feature-visitors/KeyValueDictionaryFinder.h"
-#include "feature-visitors/ToQvariantConverter.h"
+#include "app-logic/FlowlineUtils.h"
+
+#include "model/KeyValueDictionaryFinder.h"
+#include "model/ToQvariantConverter.h"
 #include "model/GpgimProperty.h"
 #include "model/GpgimStructuralType.h"
 #include "property-values/Enumeration.h"
@@ -43,6 +46,8 @@
 #include "property-values/XsInteger.h"
 #include "property-values/XsDouble.h"
 #include "OgrUtils.h"
+#include "ReadErrorAccumulation.h"
+#include "ReadErrorOccurrence.h"
 #include "ShapefileXmlWriter.h"
 
 namespace
@@ -107,15 +112,31 @@ GPlatesFileIO::OgrUtils::make_ogr_xml_filename(
 void
 GPlatesFileIO::OgrUtils::save_attribute_map_as_xml_file(
 		const QString &filename,
-		const QMap<QString,QString> &model_to_attribute_map)
+		const QMap<QString,QString> &model_to_attribute_map,
+		ReadErrorAccumulation *read_errors)
 {
 	GPlatesFileIO::ShapefileXmlWriter writer;
-	if (!writer.write_file(filename,model_to_attribute_map))
+	if (writer.write_file(filename, model_to_attribute_map))
 	{
-		QMessageBox::warning(0,QObject::tr("ShapefileXmlWriter"),
-			QObject::tr("Cannot write to file %1.")
-			.arg(filename));
-	};
+		return;
+	}
+
+	if (read_errors)
+	{
+		read_errors->d_warnings.push_back(
+			ReadErrorOccurrence(
+				boost::shared_ptr<DataSource>(
+					new LocalFileDataSource(filename, DataFormats::Ogr)),
+				// The failure is not tied to a line - LineNumber is the only location type.
+				boost::shared_ptr<LocationInDataSource>(new LineNumber(0)),
+				ReadErrors::ErrorWritingOgrMappingFile,
+				ReadErrors::MappingNotSavedForFile));
+	}
+	else
+	{
+		// The write path has no error accumulator to report through.
+		qWarning() << QObject::tr("Cannot write attribute mapping file %1.").arg(filename);
+	}
 }
 
 const GPlatesFileIO::OgrUtils::feature_map_type &
@@ -208,7 +229,7 @@ GPlatesFileIO::OgrUtils::create_default_kvd_from_collection(
 		for ( ; iter != end; ++iter)
 		{
 			// FIXME: Replace this kvd-finder with the new PropertyValueFinder.
-			GPlatesFeatureVisitors::KeyValueDictionaryFinder finder;
+			GPlatesModel::KeyValueDictionaryFinder finder;
 			finder.visit_feature(iter);
 			if (finder.number_of_found_dictionaries() != 0)
 			{
@@ -295,7 +316,7 @@ GPlatesFileIO::OgrUtils::add_plate_id_to_kvd(
 
 	// If we found a plate id, add it. 
 	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 					feature, plate_id_property_name);
 	if (recon_plate_id)
     {
@@ -553,7 +574,7 @@ GPlatesFileIO::OgrUtils::add_begin_and_end_time_to_kvd(
 	double end_time = -999.;
 
 	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 					feature, valid_time_property_name);
     if (time_period)
     {
@@ -606,7 +627,7 @@ GPlatesFileIO::OgrUtils::add_name_to_kvd(
 			GPlatesPropertyValues::XsString::create("");
 
 	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 					feature, name_property_name);
     if (name)
     {
@@ -641,7 +662,7 @@ GPlatesFileIO::OgrUtils::add_description_to_kvd(
 			GPlatesPropertyValues::XsString::create("");
 
 	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> description =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 					feature, desc_property_name);
 	if (description)
 	{
@@ -705,7 +726,7 @@ GPlatesFileIO::OgrUtils::add_conjugate_plate_id_to_kvd(
 
 	// If we found a plate id, add it.
 	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 					feature, property_name);
 	if (plate_id)
 	{
@@ -744,7 +765,7 @@ GPlatesFileIO::OgrUtils::add_left_plate_to_kvd(
 
 	// If we found a plate id, add it.
 	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 					feature, property_name);
 	if (plate_id)
 	{
@@ -781,7 +802,7 @@ GPlatesFileIO::OgrUtils::add_right_plate_to_kvd(
 
 	// If we found a plate id, add it.
 	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 					feature, property_name);
 	if (plate_id)
 	{
@@ -816,7 +837,7 @@ GPlatesFileIO::OgrUtils::add_reconstruction_method_to_kvd(
 
 	// If we found a reconstruction method, add it.
 	boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> reconstruction_method =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(
 					feature, reconstruction_method_property_name);
 	if (reconstruction_method)
 	{
@@ -849,7 +870,7 @@ GPlatesFileIO::OgrUtils::add_spreading_asymmetry_to_kvd(
 
 	// If we found a spreading asymmetry, add it.
 	boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> spreading_asymmetry =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::XsDouble>(
 					feature, spreading_asymmetry_property_name);
 	if (spreading_asymmetry)
 	{
@@ -881,12 +902,18 @@ GPlatesFileIO::OgrUtils::add_geometry_import_time_to_kvd(
 	double geometry_import_time = 0.0;
 
 	boost::optional<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type> time_instant =
-			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimeInstant>(
+			GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimeInstant>(
 					feature, geometry_import_time_property_name);
     if (time_instant)
     {
 		geometry_import_time = get_time_from_time_instant(*time_instant.get());
     }
+	else if (const boost::optional<double> flowline_geometry_import_time =
+			GPlatesAppLogic::FlowlineUtils::get_default_geometry_import_time(feature))
+	{
+		// A flowline without one spreads from its youngest time.
+		geometry_import_time = flowline_geometry_import_time.get();
+	}
 
 	GPlatesPropertyValues::XsDouble::non_null_ptr_type value =
 			GPlatesPropertyValues::XsDouble::create(geometry_import_time);
@@ -931,7 +958,7 @@ QVariant
 GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(
 		const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
 {
-	GPlatesFeatureVisitors::ToQvariantConverter converter;
+	GPlatesModel::ToQvariantConverter converter;
 
 	element.value()->accept_visitor(converter);
 

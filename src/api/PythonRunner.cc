@@ -39,7 +39,7 @@
 #include "app-logic/ApplicationState.h"
 
 #include "global/CompilerWarnings.h"
-#include "global/python.h"  // PY_MAJOR_VERSION
+#include "global/python.h"
 
 #include "gui/PythonManager.h"
 
@@ -62,11 +62,7 @@ GPlatesApi::PythonRunner::PythonRunner(
 		PyRun_SimpleString("del code");
 
 		object builtin_module =
-#if PY_MAJOR_VERSION >= 3
 			import("builtins");
-#else
-			import("__builtin__");
-#endif
 		d_compile = builtin_module.attr("compile");
 		d_eval = builtin_module.attr("eval");
 	}
@@ -209,34 +205,16 @@ GPlatesApi::PythonRunner::exec_file(
 		// Python expects the file to end with a newline.
 		file_contents.append("\n");
 
-		// Encode the filename using the given encoding.
 		PythonInterpreterLocker interpreter_locker;
-		str encoded_filename;
-		try
-		{
-			encoded_filename = str(unicode_filename.attr("encode")(
-					filename_encoding.toUtf8().constData()));
-		}
-		catch (const error_already_set &)
-		{
-			try
-			{
-				encoded_filename = str(unicode_filename.attr("encode")("ascii", "replace"));
-			}
-			catch (const error_already_set &)
-			{
-				// We should never get here, but just in case...
-				qWarning() << GPlatesApi::PythonUtils::get_error_message();
-				PySys_WriteStderr("Fatal error: script not executed.\n");
-				if(monitor)
-					monitor->signal_exec_finished();
-				return;
-			}
-		}
+		str script_filename;
+		// Python 3 'compile()' takes the file name as a Unicode 'str', so pass it through
+		// unencoded. Encoding gives 'bytes', and wrapping that in 'str' would name the
+		// script "b'...'" wherever the file name is shown, such as in a traceback.
+		script_filename = str(unicode_filename);
 
 		try
 		{
-			object code = d_compile(file_contents.constData(), encoded_filename, "exec");
+			object code = d_compile(file_contents.constData(), script_filename, "exec");
 			d_console.attr("runcode")(code);
 		}
 		catch (const error_already_set &)
@@ -416,11 +394,7 @@ GPlatesApi::PythonRunner::handle_system_exit(
 	{
 		object value = object(handle<>(value_ptr));
 		object code = value.attr("code");
-#if PY_MAJOR_VERSION < 3
-        bool is_int = static_cast<bool>(PyInt_Check(code.ptr()));
-#else
         bool is_int = static_cast<bool>(PyLong_Check(code.ptr()));
-#endif 
 		bool is_none = (code.ptr() == Py_None);
 
 		int exit_status;

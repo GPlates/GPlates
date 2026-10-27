@@ -74,11 +74,7 @@ namespace
 		bp::object eval_object = bp::object(bp::handle<>(
 				// Returns a new reference so no need for 'bp::borrowed'...
 				PyEval_EvalCode(
-#if PY_MAJOR_VERSION < 3
-						reinterpret_cast<PyCodeObject *>(compiled_object.ptr()),
-#else
 						compiled_object.ptr(),
-#endif
 						// Note that the 'globals' and 'locals' arguments to 'PyEval_EvalCode()' should
 						// be the *same* object because we are executing the code as if it were embedded
 						// in the 'pygplates' *module* and according the docs for 'exec'...

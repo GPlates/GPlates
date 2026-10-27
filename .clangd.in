@@ -1,0 +1,18 @@
+# GENERATED FILE - DO NOT EDIT.
+#
+# CMake writes this file (from '.clangd.in', see 'cmake/modules/ClangdConfig.cmake') each time you
+# configure a build tree inside this source directory, and git ignores it. To change it, edit
+# '.clangd.in' and re-configure. To turn the generation off, configure with
+# '-DGPLATES_WRITE_CLANGD_CONFIG=FALSE' (your hand-written '.clangd', if any, is then left alone).
+#
+# Configured for: @GPLATES_CLANGD_TARGET@
+#
+CompileFlags:
+  # The compilation database emitted by the '@GPLATES_CLANGD_COMPILATION_DATABASE@' build tree, so clangd resolves
+  # the project's real include paths, defines and flags. The path is relative to this file's
+  # directory, so it also works in a git worktree.
+  #
+  # This is whichever build tree you configured most recently. Configuring another tree (eg,
+  # 'cmake -S . -B build-gplates ...' after 'cmake -S . -B build-pygplates ...') re-points clangd at
+  # that one - which is the point: the GPlates and pyGPlates trees have different compile commands.
+  CompilationDatabase: @GPLATES_CLANGD_COMPILATION_DATABASE@

@@ -31,7 +31,7 @@
 #include <boost/function.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/optional.hpp>
-#include <QApplication>
+#include <QCoreApplication>
 #include <QEvent>
 #include <QMutex>
 #include <QWaitCondition>
@@ -228,7 +228,7 @@ namespace GPlatesUtils
 		 * If called from a thread other than the GUI thread:
 		 *
 		 * Constructs a @a DeferredCallEvent with the given @a deferred_call and posts
-		 * it to the @a QApplication instance living in the main GUI thread. This then
+		 * it to the @a QCoreApplication instance living in the main GUI thread. This then
 		 * blocks the calling thread until the GUI thread has completed execution and
 		 * returns the return value from the function call.
 		 *
@@ -263,7 +263,7 @@ namespace GPlatesUtils
 				event_type *ev = new event_type(deferred_call, mutex, condition, result);
 
 				mutex.lock();
-				QApplication::postEvent(qApp, ev);
+				QCoreApplication::postEvent(qApp, ev);
 				//in case I forget, http://en.wikipedia.org/wiki/Spurious_wakeup
 				//we need to check if the return result is really ready.
 				condition.wait(&mutex);
@@ -282,7 +282,7 @@ namespace GPlatesUtils
 		 * If called from a thread other than the GUI thread:
 		 *
 		 * Constructs a @a DeferredCallEvent with the given @a deferred_call and posts
-		 * it to the @a QApplication instance living in the main GUI thread. This
+		 * it to the @a QCoreApplication instance living in the main GUI thread. This
 		 * returns immediately without waiting for the GUI thread to finish execution.
 		 * If @a blocking is true, the calling thread is blocked until the GUI thread
 		 * has completed execution.
@@ -316,14 +316,14 @@ namespace GPlatesUtils
 					BlockingDeferredCallEvent *ev = new BlockingDeferredCallEvent(deferred_call, mutex, condition);
 
 					mutex.lock();
-					QApplication::postEvent(qApp, ev);
+					QCoreApplication::postEvent(qApp, ev);
 					condition.wait(&mutex);
 					mutex.unlock();
 				}
 			}
 			else
 			{
-				QApplication::postEvent(qApp, new DeferredCallEvent(deferred_call));
+				QCoreApplication::postEvent(qApp, new DeferredCallEvent(deferred_call));
 			}
 		}
 	};

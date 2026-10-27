@@ -14,7 +14,7 @@
    <string>Configure Animation</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gplates_logo_16.png</normaloff>:/gplates_logo_16.png</iconset>
   </property>
   <property name="sizeGripEnabled">
@@ -379,7 +379,7 @@
            <string>&amp;Reset</string>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/seek_beginning_22.png</normaloff>:/seek_beginning_22.png</iconset>
           </property>
           <property name="iconSize">
@@ -399,7 +399,7 @@
            <string>&amp;Play</string>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/gnome_media_playback_start_22.png</normaloff>:/gnome_media_playback_start_22.png</iconset>
           </property>
           <property name="iconSize">
@@ -466,7 +466,7 @@
   <tabstop>checkbox_Loop</tabstop>
  </tabstops>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections>
   <connection>

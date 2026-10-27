@@ -27,7 +27,11 @@
 #define GPLATES_GUI_EVENTBLACKOUT_H
 
 #include <set>
-#include <QWidget>
+#include <QEvent>
+#include <QObject>
+
+// Forward declaration.
+class QWidget;
 
 
 namespace GPlatesGui

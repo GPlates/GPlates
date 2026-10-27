@@ -576,7 +576,49 @@ class LocalCartesianCase(unittest.TestCase):
         vectors = ((1,0,0), (0,0,1))
         ned_vectors = [pygplates.Vector3D(0,0,-1), pygplates.Vector3D(0,0,-1)]
         self.assertTrue(pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(local_origins, vectors) == ned_vectors)
-    
+
+    def test_convert_matches_methods(self):
+        # Each 'convert_...' function (a different origin for each vector) gives the same result as
+        # the matching method of a LocalCartesian at each origin, as its docstring says.
+        local_origins = [pygplates.PointOnSphere(lat, lon) for lat, lon in ((0, 0), (30, 60), (-45, -120), (80, 10))]
+        vectors = [pygplates.Vector3D(1, 2, 3), pygplates.Vector3D(-1, 0, 2), pygplates.Vector3D(0, -3, 1), pygplates.Vector3D(2, 2, -1)]
+        local_coordinates = [(1, 0.5, 0.1), (2, 3, -0.2), (0.5, 6, 0), (3, 1, 1.2)]
+        for convert, method, values in (
+                (pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down, 'from_geocentric_to_north_east_down', vectors),
+                (pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric, 'from_north_east_down_to_geocentric', vectors),
+                (pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric, 'from_magnitude_azimuth_inclination_to_geocentric', local_coordinates)):
+            self.assertEqual(
+                    convert(local_origins, values),
+                    [getattr(pygplates.LocalCartesian(local_origin), method)(value) for local_origin, value in zip(local_origins, values)])
+        for converted, expected in zip(
+                pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins, vectors),
+                [pygplates.LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(vector) for local_origin, vector in zip(local_origins, vectors)]):
+            assert_almost_equal_tuple(self, converted, expected)
+
+    def test_convert_deprecated_single_origin(self):
+        # The deprecated single-origin forms still work: positionally (handled by the sequence
+        # overload, as the single-origin overload did when it was tried first), by keyword names
+        # and with separate components.
+        expected = self.local_cartesian.from_geocentric_to_north_east_down(1, 0, 1)
+        convert = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down
+        self.assertTrue(convert(self.point, (1, 0, 1)) == expected)
+        self.assertTrue(convert(local_origin=self.point, vector=(1, 0, 1)) == expected)
+        self.assertTrue(convert(self.point, 1, 0, 1) == expected)
+        # One origin and one vector, both given as sequences, are a single origin (as before).
+        self.assertTrue(convert([0, 0], (1, 0, 0)) == pygplates.Vector3D(0, 0, -1))
+        # But a one-element sequence of origins is a sequence.
+        self.assertTrue(convert([(0, 0)], [(1, 0, 0)]) == [pygplates.Vector3D(0, 0, -1)])
+        local_coordinate = self.local_cartesian.from_geocentric_to_magnitude_azimuth_inclination(1, 0, 1)
+        self.assertTrue(
+                pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(self.point, local_coordinate) ==
+                pygplates.Vector3D(1, 0, 1))
+        self.assertRaises(TypeError, convert, 'not points', [(1, 0, 0)])
+        # Each docstring appears once (the deprecated overloads add nothing to it).
+        for name in ('convert_from_geocentric_to_north_east_down', 'convert_from_north_east_down_to_geocentric',
+                     'convert_from_geocentric_to_magnitude_azimuth_inclination',
+                     'convert_from_magnitude_azimuth_inclination_to_geocentric'):
+            self.assertEqual(getattr(pygplates.LocalCartesian, name).__doc__.count(name + '(local_origins,'), 1)
+
     def test_convert_from_north_east_down_to_geocentric(self):
         self.assertTrue(self.local_cartesian.from_north_east_down_to_geocentric(pygplates.Vector3D(1, 0, 0)) == self.local_cartesian.get_north())
         self.assertTrue(pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(self.point, pygplates.Vector3D(1, 0, 0)) == self.local_cartesian.get_north())
@@ -693,7 +735,33 @@ class Vector3DCase(unittest.TestCase):
         self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(2,0,0), (1,0,0)) == pygplates.Vector3D(0,0,0))
         self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(2,0,0), (0,1,0)) == pygplates.Vector3D(0,0,2))
         self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(0,1,0), (2,0,0)) == pygplates.Vector3D(0,0,-2))
-    
+
+    def test_angle_between_dot_cross_call_forms(self):
+        x_axis = pygplates.Vector3D(1, 0, 0)
+        y_axis = pygplates.Vector3D(0, 1, 0)
+        # Called on a vector, and (as when they were static methods) on the class.
+        self.assertAlmostEqual(x_axis.angle_between(y_axis), math.pi / 2)
+        self.assertAlmostEqual(x_axis.angle_between((0, 1, 0)), math.pi / 2)
+        self.assertAlmostEqual(x_axis.dot((2, 3, 4)), 2)
+        self.assertTrue(x_axis.cross(y_axis) == pygplates.Vector3D(0, 0, 1))
+        self.assertTrue(y_axis.cross(x_axis) == pygplates.Vector3D(0, 0, -1))
+        self.assertTrue(pygplates.Vector3D.cross(x_axis, y_axis) == pygplates.Vector3D(0, 0, 1))
+        # Keyword arguments, including for the vector that it's called on (an undocumented keyword,
+        # but the binding must name it: see 'export_vector_3d()').
+        self.assertAlmostEqual(pygplates.Vector3D.dot(vector=x_axis, other_vector=(2, 3, 4)), 2)
+        self.assertAlmostEqual(x_axis.dot(other_vector=(2, 3, 4)), 2)
+        self.assertAlmostEqual(x_axis.angle_between(other_vector=y_axis), math.pi / 2)
+        self.assertTrue(x_axis.cross(other_vector=y_axis) == pygplates.Vector3D(0, 0, 1))
+        # The argument names they had as static methods still work...
+        self.assertAlmostEqual(pygplates.Vector3D.dot(vector1=x_axis, vector2=(2, 3, 4)), 2)
+        self.assertAlmostEqual(pygplates.Vector3D.angle_between(vector1=(1, 0, 0), vector2=y_axis), math.pi / 2)
+        self.assertTrue(pygplates.Vector3D.cross(vector1=x_axis, vector2=y_axis) == pygplates.Vector3D(0, 0, 1))
+        self.assertTrue(x_axis.cross(vector2=y_axis) == pygplates.Vector3D(0, 0, 1))
+        # ...but cannot be mixed with the new names.
+        self.assertRaises(
+                TypeError,  # Boost.Python.ArgumentError
+                pygplates.Vector3D.dot, vector1=x_axis, other_vector=y_axis)
+
     def test_magnitude(self):
         self.assertTrue(pygplates.Vector3D(0,0,0).is_zero_magnitude())
         self.assertTrue(not pygplates.Vector3D(2,0,0).is_zero_magnitude())

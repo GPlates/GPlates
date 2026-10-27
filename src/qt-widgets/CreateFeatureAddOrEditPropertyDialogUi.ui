@@ -23,7 +23,7 @@
    <string>Add/Edit Property</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gnome_gtk_edit_16.png</normaloff>:/gnome_gtk_edit_16.png</iconset>
   </property>
   <property name="sizeGripEnabled">
@@ -122,8 +122,8 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections>
   <connection>

@@ -20,7 +20,7 @@
    <string>Generate CitcomS Velocity Domain Points</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gnome_run_22.png</normaloff>:/gnome_run_22.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -146,7 +146,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/human_gtk_about_16.png</normaloff>:/human_gtk_about_16.png</iconset>
           </property>
          </widget>
@@ -223,7 +223,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/human_gtk_about_16.png</normaloff>:/human_gtk_about_16.png</iconset>
           </property>
          </widget>
@@ -259,8 +259,8 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>

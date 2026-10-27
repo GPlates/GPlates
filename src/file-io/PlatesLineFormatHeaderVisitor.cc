@@ -27,11 +27,10 @@
 #include "PlatesLineFormatHeaderVisitor.h"
 #include "PlatesFormatUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
 #include "model/FeatureHandle.h"
+#include "model/PropertyValueFinder.h"
 #include "model/TopLevelPropertyInline.h"
 
 #include "property-values/XsBoolean.h"

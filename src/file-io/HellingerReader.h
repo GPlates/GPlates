@@ -26,7 +26,7 @@
 #ifndef GPLATES_FILEIO_PICKFILEREADER_H
 #define GPLATES_FILEIO_PICKFILEREADER_H
 
-#include "qt-widgets/HellingerModel.h"
+#include "app-logic/HellingerModel.h"
 #include "ReadErrorAccumulation.h"
 
 namespace GPlatesFileIO
@@ -56,28 +56,28 @@ namespace GPlatesFileIO
 		bool
 		read_pick_file(
 				const QString &filename,
-				GPlatesQtWidgets::HellingerModel &hellinger_model,
+				GPlatesAppLogic::HellingerModel &hellinger_model,
 				ReadErrorAccumulation &read_errors);
 
 		static
 		bool
 		read_com_file(
 				const QString &filename,
-				GPlatesQtWidgets::HellingerModel& hellinger_model,
+				GPlatesAppLogic::HellingerModel& hellinger_model,
 				ReadErrorAccumulation &read_errors);
 
 		static
 		void
 		read_error_ellipse(
 				const QString &filename,
-				GPlatesQtWidgets::HellingerModel& hellinger_model,
-				const GPlatesQtWidgets::HellingerPlatePairType &type = GPlatesQtWidgets::PLATES_1_2_PAIR_TYPE);
+				GPlatesAppLogic::HellingerModel& hellinger_model,
+				const GPlatesAppLogic::HellingerPlatePairType &type = GPlatesAppLogic::PLATES_1_2_PAIR_TYPE);
 
 		static
 		void
 		read_fit_results_from_temporary_fit_file(
 				const QString &filename,
-				GPlatesQtWidgets::HellingerModel& hellinger_model);
+				GPlatesAppLogic::HellingerModel& hellinger_model);
 	};
 
 }

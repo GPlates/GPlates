@@ -240,12 +240,6 @@ namespace GPlatesFileIO
 			}
 
 
-			// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-			// It has been deprecated since Qt 5.13.
-			//
-			// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-
 			/**
 			 * Reads a GSML feature collection.
 			 */
@@ -262,7 +256,6 @@ namespace GPlatesFileIO
 						contains_unsaved_changes);
 			}
 
-#endif  // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 
 			/**
 			 * Creates a GPML feature visitor writer.
@@ -330,17 +323,26 @@ namespace GPlatesFileIO
 						boost::dynamic_pointer_cast<const RotationFileConfiguration>(*cfg);
 					boost::shared_ptr<RotationFileConfiguration> rotation_cfg = 
 						boost::const_pointer_cast<RotationFileConfiguration>(rotation_cfg_const);
-					if(rotation_cfg)
+					// The configuration holds the file's line-by-line copy, which keeps its layout
+					// and comments. Save that copy only while it holds the same poles as the model:
+					// it follows only the edits made through the rotation dialogs, so after any
+					// other edit it would silently lose that edit. Then the model is written instead.
+					if (rotation_cfg)
 					{
-						boost::shared_ptr<GrotWriterWithCfg> writer = 
-							rotation_cfg->get_rotation_file_proxy().create_file_writer(file_ref);
-						if(writer)
+						PlatesRotationFileProxy &proxy = rotation_cfg->get_rotation_file_proxy();
+						if (proxy.matches_model(*file_ref.get_feature_collection()))
 						{
-							return boost::dynamic_pointer_cast<GPlatesModel::ConstFeatureVisitor>(writer);
+							proxy.save_file(file_ref);
+
+							// Written, so there is nothing to visit. (The copy is written here rather
+							// than by a visitor: a visitor has no step after the last feature, and a
+							// destructor can't report a failure.)
+							return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
+									new GPlatesModel::ConstFeatureVisitor());
 						}
 					}
 				}
-				
+
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 						new GrotWriterWithoutCfg(file_ref));
 			}
@@ -592,13 +594,22 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 
 	const FileFormatInfo &file_format_info = get_file_format_info(file_format.get());
 
-	// If there's no reader then don't read anything.
+	// A format with no reader (eg, '.xy') is an error, not an empty collection. The GPlates open
+	// dialog only offers readable formats, but a filename can come from anywhere (eg, pyGPlates).
 	if (!file_format_info.read_feature_collection_function)
 	{
-		// We shouldn't really get here since the caller should have checked 'does_file_format_support_reading()'.
-		qWarning() << "Reading feature collections from file's with extension '."
-			<< file_format_info.filename_extensions.front() << "' is not currently supported.";
-		return;
+		read_errors.d_failures_to_begin.push_back(
+				make_read_error_occurrence(
+					file_ref.get_file_info().get_qfileinfo().filePath(),
+					DataFormats::Unspecified,
+					0/*line_num*/,
+					ReadErrors::FileFormatNotSupported,
+					ReadErrors::FileNotLoaded));
+
+		throw FileFormatNotSupportedException(
+				GPLATES_EXCEPTION_SOURCE,
+				("Reading is not supported for this file format: " +
+					file_ref.get_file_info().get_display_name(true)).toStdString().c_str());
 	}
 	const read_feature_collection_function_type &read_feature_collection_function =
 			file_format_info.read_feature_collection_function.get();
@@ -685,13 +696,14 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::write_feature_collection(
 
 	const FileFormatInfo &file_format_info = get_file_format_info(file_format.get());
 
-	// If there's no writer then don't write anything.
+	// A format with no writer (eg, '.vgp') is an error. Returning quietly would let the caller
+	// believe the file was saved (GPlates would clear its unsaved changes).
 	if (!file_format_info.create_feature_collection_writer_function)
 	{
-		// We shouldn't really get here since the caller should have checked 'does_file_format_support_writing()'.
-		qWarning() << "Writing feature collections to file's with extension '."
-			<< file_format_info.filename_extensions.front() << "' is not currently supported.";
-		return;
+		throw FileFormatNotSupportedException(
+				GPLATES_EXCEPTION_SOURCE,
+				("Writing is not supported for this file format: " +
+					file_ref.get_file_info().get_display_name(true)).toStdString().c_str());
 	}
 	const create_feature_collection_writer_function_type &create_feature_collection_writer_function =
 			file_format_info.create_feature_collection_writer_function.get();
@@ -967,12 +979,6 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			// No configuration options yet for this file format...
 			boost::none);
 
-	// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-	// It has been deprecated since Qt 5.13.
-	//
-	// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-
 	classifications_type gsml_classification;
 	gsml_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 	register_file_format(
@@ -988,5 +994,4 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			// No configuration options yet for this file format...
 			boost::none);
 
-#endif  // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 }

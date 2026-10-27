@@ -52,7 +52,8 @@ class _InterpolateVisitor(PropertyValueVisitor):
     def visit_xs_double(self, xs_double1):
         # Use the epsilon comparison implicitly provided by GeoTimeInstant.
         if self.time2 == self.time1:
-            return xs_double1
+            self.interpolated_property_value = XsDouble(xs_double1.get_double())
+            return
         
         interpolation = (self.target_time.get_value() - self.time1.get_value()) / (
                 self.time2.get_value() - self.time1.get_value())
@@ -77,8 +78,8 @@ def property_value_get_value(property_value, time=0):
     Extracts the value, of this possibly time-dependent property value, at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`PropertyValue` or None
+    :type time: float or GeoTimeInstant
+    :rtype: PropertyValue or None
     
     If this property value is a time-dependent property (:class:`GpmlConstantValue`,
     :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`) then a nested property
@@ -120,8 +121,8 @@ def gpml_constant_value_get_value(gpml_constant_value, time=0):
     Extracts the constant value contained within.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`PropertyValue` or None
+    :type time: float or GeoTimeInstant
+    :rtype: PropertyValue or None
     
     Since the contained property value is constant, the *time* parameter is ignored.
     
@@ -146,8 +147,8 @@ def gpml_piecewise_aggregation_get_value(gpml_piecewise_aggregation, time=0):
     Extracts the value at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`PropertyValue` or None
+    :type time: float or GeoTimeInstant
+    :rtype: PropertyValue or None
     
     Returns ``None`` if *time* is outside the time ranges of all :meth:`time windows<get_time_windows>`.
     
@@ -171,14 +172,14 @@ def gpml_piecewise_aggregation_set_value(gpml_piecewise_aggregation, property_va
     Sets the value in the specified time window.
     
     :param property_value: the property value to set
-    :type property_value: :class:`PropertyValue`
+    :type property_value: PropertyValue
     :param begin_time: the begin time of the time window for the new property value
-    :type begin_time: float or :class:`GeoTimeInstant`
+    :type begin_time: float or GeoTimeInstant
     :param end_time: the end time of the time window for the new property value
-    :type end_time: float or :class:`GeoTimeInstant`
+    :type end_time: float or GeoTimeInstant
     :returns: the time window that is inserted into the time window sequence
-    :rtype: :class:`GpmlTimeWindow`
-    :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
+    :rtype: GpmlTimeWindow
+    :raises GmlTimePeriodBeginTimeLaterThanEndTimeError: if begin time is later than end time
 
     Any existing :meth:`time windows<get_time_windows>` that overlap the new time window
     (*begin_time*, *end_time*) are clipped, removed or split (depending on how they overlap) such
@@ -271,8 +272,8 @@ def gpml_piecewise_aggregation_get_time_window_containing_time(gpml_piecewise_ag
     Return the :class:`time window<GpmlTimeWindow>` that contains *time*.
     
     :param time: the time
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`GpmlTimeWindow` or None
+    :type time: float or GeoTimeInstant
+    :rtype: GpmlTimeWindow or None
 
     Returns ``None`` if *time* is outside the time ranges of all time windows.
     """
@@ -294,9 +295,9 @@ def gpml_irregular_sampling_get_value(gpml_irregular_sampling, time=0):
     Extracts the value at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: :class:`PropertyValue` or None
-    :raises: InterpolationError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
+    :type time: float or GeoTimeInstant
+    :rtype: PropertyValue or None
+    :raises InterpolationError: if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
     :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
     Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`.
@@ -344,16 +345,16 @@ def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, t
     Sets the value at the reconstruction *time*.
     
     :param property_value: the property value to set
-    :type property_value: :class:`PropertyValue`
+    :type property_value: PropertyValue
     :param time: the time to set the value
-    :type time: float or :class:`GeoTimeInstant`
+    :type time: float or GeoTimeInstant
     :param description: description of the time sample
-    :type description: string or None
+    :type description: str or None
     :param is_enabled: whether time sample is enabled
     :type is_enabled: bool or None
     :returns: the time sample that is modified, or inserted into the time sequence
-    :rtype: :class:`GpmlTimeSample`
-    :raises: ValueError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
+    :rtype: GpmlTimeSample
+    :raises ValueError: if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
     :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
     If an existing :meth:`time sample<get_time_samples>` matches *time* then it will be modified,
@@ -410,14 +411,15 @@ def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampli
     Return the two adjacent :class:`time samples<GpmlTimeSample>` that surround *time*.
     
     :param time: the time
-    :type time: float or :class:`GeoTimeInstant`
+    :type time: float or GeoTimeInstant
     :param include_disabled_samples: if True then disabled time samples are included in the search
     :type include_disabled_samples: bool
-    :rtype: the tuple (:class:`GpmlTimeSample`, :class:`GpmlTimeSample`), or None
-    :return: the two time samples surrounding *time*, or None
+    :returns: the two time samples surrounding *time*, or ``None``
+    :rtype: tuple[GpmlTimeSample, GpmlTimeSample], or None
 
     Returns ``None`` if *time* is outside the range of times (later than the most recent time sample
-    or earlier than the least recent time sample).
+    or earlier than the least recent time sample). If there is only one time sample then *time* must
+    equal its time, and that sample is returned as both samples.
     
     *Note:* The returned time samples are ordered forward in time (the first sample is further in the past than the second sample).
     This is opposite the typical ordering of time samples in a :class:`GpmlIrregularSampling` (which are progressively further
@@ -432,7 +434,11 @@ def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampli
     
     if not time_samples:
         return
-    
+
+    # Compare times using the epsilon comparison provided by GeoTimeInstant
+    # (the time sample times are 'float' and so is *time*, if not already a GeoTimeInstant).
+    time = GeoTimeInstant(time)
+
     # GpmlIrregularSampling should already be sorted most recent to least recent
     # (ie, backwards in time from present to past times).
     # But create a reversed list if need be.
@@ -442,6 +448,12 @@ def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampli
     # If the requested time is later than the first (most-recent) time sample then
     # it is outside the time range of the time sample sequence.
     if time < time_samples[0].get_time():
+        return
+    
+    # A single time sample only bounds its own time (so it is returned as both samples).
+    if len(time_samples) == 1:
+        if time == time_samples[0].get_time():
+            return (time_samples[0], time_samples[0])
         return
     
     # Find adjacent time samples that span the requested time.

@@ -345,7 +345,7 @@
                  <string>&amp;Add Export...</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="../qt-resources/qt_widgets.qrc">
+                 <iconset resource="../qt-resources/qt_resources.qrc">
                   <normaloff>:/tango_list_add_16.png</normaloff>:/tango_list_add_16.png</iconset>
                 </property>
                 <property name="toolButtonStyle">
@@ -365,7 +365,7 @@
                  <string>&amp;Remove </string>
                 </property>
                 <property name="icon">
-                 <iconset resource="../qt-resources/qt_widgets.qrc">
+                 <iconset resource="../qt-resources/qt_resources.qrc">
                   <normaloff>:/tango_list_remove_16.png</normaloff>:/tango_list_remove_16.png</iconset>
                 </property>
                 <property name="toolButtonStyle">
@@ -379,7 +379,7 @@
                  <string>Edit...</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="../qt-resources/qt_widgets.qrc">
+                 <iconset resource="../qt-resources/qt_resources.qrc">
                   <normaloff>:/gnome_gtk_edit_16.png</normaloff>:/gnome_gtk_edit_16.png</iconset>
                 </property>
                 <property name="toolButtonStyle">
@@ -484,7 +484,7 @@
                <string>Begin Export</string>
               </property>
               <property name="icon">
-               <iconset resource="../qt-resources/qt_widgets.qrc">
+               <iconset resource="../qt-resources/qt_resources.qrc">
                 <normaloff>:/tango_document_save_22.png</normaloff>:/tango_document_save_22.png</iconset>
               </property>
               <property name="iconSize">
@@ -504,7 +504,7 @@
                <string>Abort Export</string>
               </property>
               <property name="icon">
-               <iconset resource="../qt-resources/qt_widgets.qrc">
+               <iconset resource="../qt-resources/qt_resources.qrc">
                 <normaloff>:/tango_process_stop_22.png</normaloff>:/tango_process_stop_22.png</iconset>
               </property>
               <property name="iconSize">
@@ -717,7 +717,7 @@
                  <string>&amp;Add Export...</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="../qt-resources/qt_widgets.qrc">
+                 <iconset resource="../qt-resources/qt_resources.qrc">
                   <normaloff>:/tango_list_add_16.png</normaloff>:/tango_list_add_16.png</iconset>
                 </property>
                 <property name="toolButtonStyle">
@@ -737,7 +737,7 @@
                  <string>&amp;Remove</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="../qt-resources/qt_widgets.qrc">
+                 <iconset resource="../qt-resources/qt_resources.qrc">
                   <normaloff>:/tango_list_remove_16.png</normaloff>:/tango_list_remove_16.png</iconset>
                 </property>
                 <property name="toolButtonStyle">
@@ -751,7 +751,7 @@
                  <string>Edit...</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="../qt-resources/qt_widgets.qrc">
+                 <iconset resource="../qt-resources/qt_resources.qrc">
                   <normaloff>:/gnome_gtk_edit_16.png</normaloff>:/gnome_gtk_edit_16.png</iconset>
                 </property>
                 <property name="toolButtonStyle">
@@ -836,7 +836,7 @@
                <string>&amp;Export Snapshot</string>
               </property>
               <property name="icon">
-               <iconset resource="../qt-resources/qt_widgets.qrc">
+               <iconset resource="../qt-resources/qt_resources.qrc">
                 <normaloff>:/tango_document_save_22.png</normaloff>:/tango_document_save_22.png</iconset>
               </property>
               <property name="iconSize">
@@ -907,7 +907,7 @@
   <tabstop>button_abort</tabstop>
  </tabstops>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections>
   <connection>

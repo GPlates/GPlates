@@ -40,7 +40,6 @@
 #include <QTransform>
 
 #include "gui/Colour.h"
-#include "gui/ColourScheme.h"
 #include "gui/Map.h"
 
 #include "opengl/GLContext.h"
@@ -92,7 +91,6 @@ namespace GPlatesQtWidgets
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesGui::ViewportZoom &viewport_zoom,
-				const GPlatesGui::ColourScheme::non_null_ptr_type &colour_scheme,
 				QWidget *parent_ = NULL);
 
 		~MapCanvas();

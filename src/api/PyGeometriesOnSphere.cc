@@ -253,6 +253,14 @@ namespace GPlatesApi
 		GPlatesMaths::AngularExtent threshold_storage = GPlatesMaths::AngularExtent::PI/*dummy value*/;
 		if (distance_threshold_radians)
 		{
+			// A NaN threshold would otherwise be silently ignored (it compares as within any range,
+			// and nothing compares as exceeding its NaN cosine).
+			if (distance_threshold_radians->is_nan())
+			{
+				PyErr_SetString(PyExc_ValueError, "Distance threshold must not be NaN.");
+				bp::throw_error_already_set();
+			}
+
 			// Clamp to the range [0, PI].
 			if (distance_threshold_radians->is_precisely_less_than(0))
 			{
@@ -263,7 +271,20 @@ namespace GPlatesApi
 				distance_threshold_radians.get() = GPlatesMaths::PI;
 			}
 
-			threshold_storage = GPlatesMaths::AngularExtent::create_from_angle(distance_threshold_radians.get());
+			// The threshold given to GPlatesMaths::minimum_distance() is slightly larger than the
+			// caller's, and the caller's threshold is applied exactly to the returned distance
+			// (below).
+			//
+			// minimum_distance() compares cosines exactly, but the caller sees the distance in
+			// radians: the cosine of a threshold in radians can differ from the cosine of the same
+			// distance by a few ULPs, so a distance passed back as a threshold could be excluded by
+			// itself. Also, a distance within epsilon of zero is returned as exactly 0.0 (below),
+			// and must not exceed a threshold of 0.0.
+			// The margin covers both (epsilon is 1e-12 on the cosine).
+			const double generous_threshold_cosine =
+					std::cos(distance_threshold_radians->dval()) - 2 * GPlatesMaths::EPSILON;
+			threshold_storage = GPlatesMaths::AngularExtent::create_from_cosine(
+					(generous_threshold_cosine < -1.0) ? -1.0 : generous_threshold_cosine);
 			minimum_distance_threshold = threshold_storage;
 		}
 
@@ -282,14 +303,14 @@ namespace GPlatesApi
 
 		// Reference closest point or segment indices on each geometry if requested.
 		boost::optional< boost::tuple<unsigned int &/*geometry1*/, unsigned int &/*geometry2*/> > closest_indices;
-		unsigned int closest_index1;
-		unsigned int closest_index2;
+		unsigned int closest_index1 = 0/*dummy value*/;
+		unsigned int closest_index2 = 0/*dummy value*/;
 		if (return_closest_indices)
 		{
 			closest_indices = boost::make_tuple(boost::ref(closest_index1), boost::ref(closest_index2));
 		}
 
-		const GPlatesMaths::AngularDistance angular_distance =
+		const boost::optional<GPlatesMaths::AngularDistance> angular_distance =
 				GPlatesMaths::minimum_distance(
 						geometry1,
 						geometry2,
@@ -300,26 +321,31 @@ namespace GPlatesApi
 						closest_indices);
 
 		// If a threshold was requested and was exceeded then return Py_None.
-		if (minimum_distance_threshold &&
-			angular_distance == GPlatesMaths::AngularDistance::PI)
+		if (!angular_distance)
 		{
 			return bp::object()/*Py_None*/;
 		}
 
 		// The distance (in radians).
 		//
-		// NOTE: We clamp to zero if the angular distance is equal to zero within epsilon.
-		// This is done because the same epsilon comparison tests are done in GPlatesMaths::minimum_distance()
-		// and so it's possible that 'angular_distance' is very small (but non-zero) and yet still compares
-		// equal to AngularDistance::ZERO. An example is polygon-to-polygon distance with solid set to true -
-		// in this case if the polygon outlines are close enough then it will avoid doing the solid tests and
-		// just return the non-zero result (even though the solid tests would have returned AngularDistance::ZERO,
-		// ie, exactly 0.0). Client C++ code will be fine here because it (epsilon) tests against AngularDistance::ZERO,
-		// but Python code typically tests exactly for 0.0 and so we need to set anything to 0.0 that (epsilon) compares
-		// equal to AngularDistance::ZERO.
-		const GPlatesMaths::real_t distance = (angular_distance != GPlatesMaths::AngularDistance::ZERO /*epsilon comparison*/)
-				? angular_distance.calculate_angle()
+		// NOTE: We clamp to zero if the angular distance is equal to zero within epsilon (a cosine
+		// within 1e-12 of 1, about 1.4e-6 radians). Python code typically tests exactly for 0.0,
+		// but geometries that touch (eg, share a vertex) can come out a tiny non-zero distance when
+		// rounding hides the contact (the smallest non-zero distance from a cosine is about 1.5e-8
+		// radians). Intersections, and geometries inside a solid polygon, are exactly zero already.
+		// The clamp is user-visible (pyGPlates 1.0 had it).
+		const GPlatesMaths::real_t distance =
+				(angular_distance.get() != GPlatesMaths::AngularDistance::ZERO /*epsilon test*/)
+				? angular_distance->calculate_angle()
 				: 0.0;
+
+		// Apply the caller's threshold exactly, to the distance the caller sees
+		// (minimum_distance() was given a slightly larger threshold, above).
+		if (distance_threshold_radians &&
+			distance.is_precisely_greater_than(distance_threshold_radians->dval()))
+		{
+			return bp::object()/*Py_None*/;
+		}
 
 		//
 		// If returning closest positions and/or closest indices then return a python tuple.
@@ -391,10 +417,15 @@ export_geometry_on_sphere()
 				"clone()\n"
 				"  Create a duplicate of this geometry (derived) instance.\n"
 				"\n"
-				"  :rtype: :class:`GeometryOnSphere`\n"
+				"  :rtype: GeometryOnSphere\n"
 				"\n"
 				"  .. deprecated:: 0.30\n"
 				"     Geometry is immutable so there's no need to clone (instead you can just share the geometry).\n")
+		// Define the deprecated 'distance' overload first since we want it to have lowest priority
+		// (later definitions get higher priority). It differs from the overload below only in its
+		// argument names (the names it had as a static method), so it's chosen only when called
+		// with those old keyword names.
+		// Also exclude a docstring for it, since we don't want it documented anymore...
 		.def("distance",
 				&GPlatesApi::geometry_on_sphere_distance,
 				(bp::arg("geometry1"), bp::arg("geometry2"),
@@ -402,22 +433,35 @@ export_geometry_on_sphere()
 						bp::arg("return_closest_positions") = false,
 						bp::arg("return_closest_indices") = false,
 						bp::arg("geometry1_is_solid") = false,
-						bp::arg("geometry2_is_solid") = false),
-				"distance(geometry1, geometry2, [distance_threshold_radians], "
+						bp::arg("geometry2_is_solid") = false))
+		// Not a static method, so it can be called on a geometry
+		// ('geometry.distance(other_geometry)') and also, as before, on the class
+		// ('GeometryOnSphere.distance(geometry, other_geometry)').
+		//
+		// The geometry it's called on must be named ('geometry'), although that name is
+		// undocumented. A call with the old keyword names reaches this overload first, and with
+		// keywords Boost.Python fills each argument not passed positionally by looking up its name:
+		// an unnamed one crashes it (instead of rejecting this overload).
+		.def("distance",
+				&GPlatesApi::geometry_on_sphere_distance,
+				(bp::arg("geometry"), bp::arg("other_geometry"),
+						bp::arg("distance_threshold_radians") =
+								boost::optional<GPlatesMaths::real_t>(),
+						bp::arg("return_closest_positions") = false,
+						bp::arg("return_closest_indices") = false,
+						bp::arg("geometry_is_solid") = false,
+						bp::arg("other_geometry_is_solid") = false),
+				"distance(other_geometry, [distance_threshold_radians], "
 				"[return_closest_positions=False], [return_closest_indices=False], "
-				"[geometry1_is_solid=False], [geometry2_is_solid=False])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns the (minimum) distance between two geometries (in radians).\n"
+				"[geometry_is_solid=False], [other_geometry_is_solid=False])\n"
+				"  Returns the (minimum) distance between this geometry and another geometry "
+				"(in radians).\n"
 				"\n"
-				"  :param geometry1: the first geometry\n"
-				"  :type geometry1: :class:`GeometryOnSphere`\n"
-				"  :param geometry2: the second geometry\n"
-				"  :type geometry2: :class:`GeometryOnSphere`\n"
+				"  :param other_geometry: the other geometry\n"
+				"  :type other_geometry: GeometryOnSphere\n"
 				"  :param distance_threshold_radians: optional distance threshold in radians - "
 				"threshold is clamped to the range [0, PI] if specified\n"
-				"  :type distance_threshold_radians: float or None\n"
+				"  :type distance_threshold_radians: float, or None\n"
 				"  :param return_closest_positions: whether to also return the closest point on each "
 				"geometry - default is ``False``\n"
 				"  :type return_closest_positions: bool\n"
@@ -425,57 +469,52 @@ export_geometry_on_sphere()
 				":class:`point<PointOnSphere>` (for multi-points) or the index of the closest "
 				":class:`segment<GreatCircleArc>` (for polylines and polygons) - default is ``False``\n"
 				"  :type return_closest_indices: bool\n"
-				"  :param geometry1_is_solid: whether the interior of *geometry1* is solid "
-				"or not - this parameter is ignored if *geometry1* is not a :class:`PolygonOnSphere` "
-				"- default is ``False``\n"
-				"  :type geometry1_is_solid: bool\n"
-				"  :param geometry2_is_solid: whether the interior of *geometry2* is solid "
-				"or not - this parameter is ignored if *geometry2* is not a :class:`PolygonOnSphere` "
-				"- default is ``False``\n"
-				"  :type geometry2_is_solid: bool\n"
-				"  :returns: distance (in radians), or a tuple containing distance and the "
-				"closest point on each geometry if *return_closest_positions* is ``True``, or a tuple "
-				"containing distance and the indices of the closest :class:`point<PointOnSphere>` "
-				"(for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) "
-				"on each geometry if *return_closest_indices* is ``True``, or a tuple containing distance "
-				"and the closest point on each geometry and the indices of the closest :class:`point<PointOnSphere>` "
-				"(for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) "
-				"on each geometry if both *return_closest_positions* and *return_closest_indices* are ``True``, "
-				"or ``None`` if *distance_threshold_radians* is specified and exceeded\n"
-				"  :rtype: float, or tuple (float, :class:`PointOnSphere`, :class:`PointOnSphere`) if "
-				"*return_closest_positions* is True, or tuple (float, int, int) if *return_closest_indices* "
-				"is True, or tuple (float, :class:`PointOnSphere`, :class:`PointOnSphere`, int, int) "
-				"if both *return_closest_positions* and *return_closest_indices* are True, or None\n"
+				"  :param geometry_is_solid: whether the interior of this geometry is solid or not "
+				"- this parameter is ignored if this geometry is not a :class:`PolygonOnSphere` - "
+				"default is ``False``\n"
+				"  :type geometry_is_solid: bool\n"
+				"  :param other_geometry_is_solid: whether the interior of *other_geometry* is "
+				"solid or not - this parameter is ignored if *other_geometry* is not a "
+				":class:`PolygonOnSphere` - default is ``False``\n"
+				"  :type other_geometry_is_solid: bool\n"
+				"  :returns: distance (in radians), or a tuple containing distance and the closest "
+				"point on this geometry and on *other_geometry* if *return_closest_positions* is "
+				"``True``, or a tuple containing distance and the indices of the closest "
+				":class:`point<PointOnSphere>` (for multi-points) or "
+				":class:`segment<GreatCircleArc>` (for polylines and polygons) on this geometry "
+				"and on *other_geometry* if *return_closest_indices* is ``True``, or a tuple "
+				"containing distance and the closest point on each geometry and the indices of the "
+				"closest :class:`point<PointOnSphere>` (for multi-points) or "
+				":class:`segment<GreatCircleArc>` (for polylines and polygons) on each geometry if "
+				"both *return_closest_positions* and *return_closest_indices* are ``True``, or "
+				"``None`` if *distance_threshold_radians* is specified and exceeded\n"
+				"  :rtype: float, or tuple[float, PointOnSphere, PointOnSphere], or tuple[float, int, int], "
+				"or tuple[float, PointOnSphere, PointOnSphere, int, int], or None\n"
+				"  :raises ValueError: if *distance_threshold_radians* is NaN\n"
 				"\n"
-				"  The returned distance is the shortest path between *geometry1* and *geometry2* along the "
-				"surface of the sphere (great circle arc path). To convert the distance from radians "
-				"(distance on a unit radius sphere) to real distance you will need to multiply it by "
-				"the Earth's radius (see :class:`Earth`).\n"
+				"  The returned distance is the shortest path between this geometry and "
+				"*other_geometry* along the surface of the sphere (great circle arc path). To "
+				"convert the distance from radians (distance on a unit radius sphere) to real "
+				"distance you will need to multiply it by the Earth's radius (see "
+				":class:`Earth`).\n"
 				"\n"
-				"  Each geometry (*geometry1* and *geometry2*) can be any of the four geometry types "
+				"  This geometry and *other_geometry* can each be any of the four geometry types "
 				"(:class:`PointOnSphere`, :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and "
-				":class:`PolygonOnSphere`) allowing all combinations of distance calculations:\n"
+				":class:`PolygonOnSphere`) allowing all combinations of distance calculations. "
+				"For example:\n"
 				"  ::\n"
 				"\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(point1, point2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(point1, multi_point2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(point1, polyline2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(point1, polygon2)\n"
+				"    distance_radians = point.distance(other_point)\n"
+				"    distance_radians = point.distance(polygon)\n"
+				"    distance_radians = multi_point.distance(polyline)\n"
+				"    distance_radians = polygon.distance(other_polygon)\n"
 				"\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, point2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, multi_point2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, polyline2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, polygon2)\n"
+				"  This method can also be called on the :class:`GeometryOnSphere` class, passing "
+				"this geometry as the first argument. So the following two calls are equivalent:\n"
+				"  ::\n"
 				"\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(polyline1, point2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(polyline1, multi_point2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(polyline1, polyline2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(polyline1, polygon2)\n"
-				"\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(polygon1, point2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(polygon1, multi_point2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(polygon1, polyline2)\n"
-				"    distance_radians = pygplates.GeometryOnSphere.distance(polygon1, polygon2)\n"
+				"    distance_radians = polyline.distance(polygon)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(polyline, polygon)\n"
 				"\n"
 				"  If *distance_threshold_radians* is specified and the (minimum) distance between the "
 				"two geometries exceeds this threshold then ``None`` is returned.\n"
@@ -484,8 +523,9 @@ export_geometry_on_sphere()
 				"    # Perform a region-of-interest query between two geometries to see if\n"
 				"    # they are within 1 degree of each other.\n"
 				"    #\n"
-				"    # Note that we explicitly test against None because a distance of zero is equilavent to False.\n"
-				"    if pygplates.GeometryOnSphere.distance(geometry1, geometry2, math.radians(1)) is not None:\n"
+				"    # Note that we explicitly test against None because a distance of zero is "
+				"equivalent to False.\n"
+				"    if geometry.distance(other_geometry, math.radians(1)) is not None:\n"
 				"        ...\n"
 				"\n"
 				"  Note that it is more efficient to specify a distance threshold parameter (as shown "
@@ -497,30 +537,34 @@ export_geometry_on_sphere()
 				"distance threshold) **if**:\n"
 				"\n"
 				"  * both geometries are a polyline/polygon and they intersect each other, or\n"
-				"  * *geometry1_is_solid* is ``True`` and *geometry1* is a :class:`PolygonOnSphere` "
-				"and *geometry2* overlaps the interior of the polygon (even if it doesn't intersect the "
-				"polygon boundary) - similarly for *geometry2_is_solid*. However note that "
-				"*geometry1_is_solid* is ignored if *geometry1* is not a :class:`PolygonOnSphere` - "
-				"similarly for *geometry2_is_solid*.\n"
+				"  * *geometry_is_solid* is ``True`` and this geometry is a "
+				":class:`PolygonOnSphere` and *other_geometry* overlaps the interior of the "
+				"polygon (even if it doesn't intersect the polygon boundary) - similarly for "
+				"*other_geometry_is_solid*. However note that *geometry_is_solid* is ignored if "
+				"this geometry is not a :class:`PolygonOnSphere` - similarly for "
+				"*other_geometry_is_solid*.\n"
 				"\n"
-				"  If *return_closest_positions* is ``True`` then the closest point on each geometry "
-				"is returned (unless the distance threshold is exceeded, if specified). "
-				"Note that for polygons the closest point is always on the polygon boundary regardless "
-				"of whether the polygon is solid or not (see *geometry1_is_solid* and *geometry2_is_solid*). "
-				"Also note that the closest position on a polyline/polygon can be anywhere along any of its "
-				":class:`segments<GreatCircleArc>`. In other words it's not the nearest vertex of the "
-				"polyline/polygon - it's the nearest point *on* the polyline/polygon itself. "
-				"If both geometries are polyline/polygon and they intersect then the intersection point "
-				"is returned (same point for both geometries). If both geometries are polyline/polygon and "
-				"they intersect more than once then any intersection point can be returned (but the same "
-				"point is returned for both geometries). If one geometry is a solid :class:`PolygonOnSphere` "
-				"and the other geometry is a :class:`MultiPointOnSphere` with more than one of its points "
-				"inside the interior of the polygon then the closest point in the multi-point could be any "
-				"of those inside points.\n"
+				"  If *return_closest_positions* is ``True`` then the closest point on each "
+				"geometry is returned (unless the distance threshold is exceeded, if specified). "
+				"Note that for polygons the closest point is always on the polygon boundary "
+				"regardless of whether the polygon is solid or not (see *geometry_is_solid* and "
+				"*other_geometry_is_solid*). Also note that the closest position on a "
+				"polyline/polygon can be anywhere along any of its "
+				":class:`segments<GreatCircleArc>`. In other words it's not the nearest vertex of "
+				"the polyline/polygon - it's the nearest point *on* the polyline/polygon itself. "
+				"If both geometries are polyline/polygon and they intersect then the intersection "
+				"point is returned (same point for both geometries). If both geometries are "
+				"polyline/polygon and they intersect more than once then any intersection point "
+				"can be returned (but the same point is returned for both geometries). If one "
+				"geometry is a solid :class:`PolygonOnSphere` and the other geometry is a "
+				":class:`MultiPointOnSphere` with more than one of its points inside the interior "
+				"of the polygon then the closest point in the multi-point could be any of those "
+				"inside points.\n"
 				"  ::\n"
 				"\n"
-				"    distance_radians, closest_point_on_geometry1, closest_point_on_geometry2 = \\\n"
-				"        pygplates.GeometryOnSphere.distance(geometry1, geometry2, return_closest_positions=True)\n"
+				"    distance_radians, closest_point_on_geometry, closest_point_on_other_geometry "
+				"= \\\n"
+				"        geometry.distance(other_geometry, return_closest_positions=True)\n"
 				"\n"
 				"  If *return_closest_indices* is ``True`` then the index of the closest :class:`point<PointOnSphere>` "
 				"(for multi-points) or the index of the closest :class:`segment<GreatCircleArc>` "
@@ -532,7 +576,7 @@ export_geometry_on_sphere()
 				"  ::\n"
 				"\n"
 				"    distance_radians, closest_point_index_on_multipoint, closest_segment_index_on_polyline = \\\n"
-				"        pygplates.GeometryOnSphere.distance(multipoint, polyline, return_closest_indices=True)\n"
+				"        multipoint.distance(polyline, return_closest_indices=True)\n"
 				"\n"
 				"    closest_point_on_multipoint = multipoint[closest_point_index_on_multipoint]\n"
 				"    closest_segment_on_polyline = polyline.get_segments()[closest_segment_index_on_polyline]\n"
@@ -543,16 +587,30 @@ export_geometry_on_sphere()
 				"\n"
 				"    # Distance between a polyline and a solid polygon.\n"
 				"    distance_radians, polyline_point, polygon_point, polyline_segment_index, polygon_segment_index = \\\n"
-				"        pygplates.GeometryOnSphere.distance(\n"
-				"            polyline,\n"
+				"        polyline.distance(\n"
 				"            polygon,\n"
 				"            return_closest_positions=True,\n"
 				"            return_closest_indices=True,\n"
-				"            geometry2_is_solid=True)\n"
+				"            other_geometry_is_solid=True)\n"
 				"\n"
 				".. versionchanged:: 0.41\n"
-				"   distance threshold is clamped to the range [0, PI] to avoid an exception.\n")
-		.staticmethod("distance")
+				"   distance threshold is clamped to the range [0, PI] to avoid an exception.\n"
+				"\n"
+				".. versionchanged:: 1.1\n"
+				"   ``None`` is returned only if the distance that would be returned is greater "
+				"than *distance_threshold_radians*, so a distance equal to the threshold is "
+				"returned (eg, PI for antipodal points with a threshold of PI, or zero for "
+				"intersecting polylines and polygons with a threshold of zero). A NaN threshold "
+				"raises ``ValueError`` (it was ignored). The closest positions and indices always "
+				"belong to the same closest pair.\n"
+				"\n"
+				".. versionchanged:: 1.1\n"
+				"   Can be called on a geometry (``geometry.distance(other_geometry)``), as well "
+				"as on the :class:`GeometryOnSphere` class (it was a static method). Renamed the "
+				"arguments *geometry2*, *geometry1_is_solid* and *geometry2_is_solid* to "
+				"*other_geometry*, *geometry_is_solid* and *other_geometry_is_solid* (the old "
+				"names, including *geometry1*, still work, but cannot be mixed with the new names "
+				"in the same call).\n")
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
@@ -986,10 +1044,10 @@ export_point_on_sphere()
 				"  Create a *PointOnSphere* instance from a (x,y,z) or (latitude,longitude) point.\n"
 				"\n"
 				"  :param point: (x,y,z) point, or (latitude,longitude) point (in degrees)\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"  :type point: PointOnSphere or LatLonPoint or "
 				"tuple (float,float,float) or tuple (float,float)\n"
-				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
-				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
+				"  :raises InvalidLatLonError: if *latitude* or *longitude* is invalid\n"
+				"  :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude\n"
 				"\n"
 				"  The following example shows a few different ways to use this method:\n"
 				"  ::\n"
@@ -1015,7 +1073,7 @@ export_point_on_sphere()
 				"  :type latitude: float\n"
 				"  :param longitude: the longitude (in degrees)\n"
 				"  :type longitude: float\n"
-				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+				"  :raises InvalidLatLonError: if *latitude* or *longitude* is invalid\n"
 				"\n"
 				"  .. note:: *latitude* must satisfy :meth:`LatLonPoint.is_valid_latitude` and "
 				"*longitude* must satisfy :meth:`LatLonPoint.is_valid_longitude`, otherwise "
@@ -1043,9 +1101,9 @@ export_point_on_sphere()
 				"  :param normalise: whether to normalise (to unit-length magnitude) the "
 				"vector (x,y,z) - defaults to ``False``\n"
 				"  :type normalise: bool\n"
-				"  :raises: ViolatedUnitVectorInvariantError if *normalise* is ``False`` and "
+				"  :raises ViolatedUnitVectorInvariantError: if *normalise* is ``False`` and "
 				"the resulting vector does not have unit magnitude\n"
-				"  :raises: UnableToNormaliseZeroVectorError if *normalise* is ``True`` and "
+				"  :raises UnableToNormaliseZeroVectorError: if *normalise* is ``True`` and "
 				"the resulting vector is (0,0,0) (ie, has zero magnitude)\n"
 				"\n"
 				"  **NOTE:** If the length of the 3D vector (x,y,z) is not 1.0 then you should set "
@@ -1101,14 +1159,14 @@ export_point_on_sphere()
 				"  This is also useful for performing vector dot and cross products:\n"
 				"  ::\n"
 				"\n"
-				"    dot_product = pygplates.Vector3D.dot(point1.to_xyz(), point2.to_xyz())\n"
-				"    cross_product = pygplates.Vector3D.cross(point1.to_xyz(), point2.to_xyz())\n")
+				"    dot_product = pygplates.Vector3D(point1.to_xyz()).dot(point2.to_xyz())\n"
+				"    cross_product = pygplates.Vector3D(point1.to_xyz()).cross(point2.to_xyz())\n")
 		.def("to_lat_lon_point",
 				&GPlatesApi::point_on_sphere_to_lat_lon_point,
 				"to_lat_lon_point()\n"
 				"  Returns the (latitude,longitude) equivalent of this :class:`PointOnSphere`.\n"
 				"\n"
-				"  :rtype: :class:`LatLonPoint`\n")
+				"  :rtype: LatLonPoint\n")
 		.def("to_lat_lon",
 				&GPlatesApi::point_on_sphere_to_lat_lon,
 				"to_lat_lon()\n"
@@ -1126,7 +1184,7 @@ export_point_on_sphere()
 				"get_centroid()\n"
 				"  Simply returns this point.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"\n"
 				"  .. note:: This method is only here so that ``get_centroid()`` can be called for all "
 				":class:`geometry types<GeometryOnSphere>` (points, multi-points, polylines and polygons).\n"
@@ -1374,11 +1432,11 @@ export_multi_point_on_sphere()
 				"  Create a multi-point from a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
 				"  :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"  :type points: any sequence of PointOnSphere or LatLonPoint or "
 				"tuple (float,float,float) or tuple (float,float)\n"
-				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
-				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
-				"  :raises: InsufficientPointsForMultiPointConstructionError if point sequence is empty\n"
+				"  :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid\n"
+				"  :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude\n"
+				"  :raises InsufficientPointsForMultiPointConstructionError: if point sequence is empty\n"
 				"\n"
 				"  .. note:: The sequence must contain at least one point, otherwise "
 				"*InsufficientPointsForMultiPointConstructionError* will be raised.\n"
@@ -1435,7 +1493,7 @@ export_multi_point_on_sphere()
 				"  Create a multipoint from a :class:`GeometryOnSphere`.\n"
 				"\n"
 				"  :param geometry: The point, multi-point, polyline or polygon geometry to convert from.\n"
-				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :type geometry: GeometryOnSphere\n"
 				"\n"
 				"  To create a MultiPointOnSphere from any geometry type:\n"
 				"  ::\n"
@@ -1455,7 +1513,7 @@ export_multi_point_on_sphere()
 				"get_centroid()\n"
 				"  Returns the centroid of this multi-point.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"\n"
 				"  The centroid is calculated as the sum of the points of the multi-point with the "
 				"result normalized to a vector of unit length.\n")
@@ -2123,13 +2181,39 @@ void
 export_polyline_on_sphere()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesMaths::FlattenLongitudeOverlaps::Value>("FlattenLongitudeOverlaps")
+	bp::enum_<GPlatesMaths::FlattenLongitudeOverlaps::Value>(
+			"FlattenLongitudeOverlaps",
+			"Whether, and how, to remove longitude overlaps between the two polylines interpolated by :meth:`PolylineOnSphere.rotation_interpolate`.\n"
+			"\n"
+			"  Longitudes are measured in the reference frame in which the rotation pole is the North pole. Where a point in *from_polyline* and the point at the same latitude in *to_polyline* overlap in longitude, one is copied over the other:\n"
+			"\n"
+			"  ================================= ==============\n"
+			"  Value                             Description\n"
+			"  ================================= ==============\n"
+			"  FlattenLongitudeOverlaps.no       Do not flatten overlaps (the default).\n"
+			"  FlattenLongitudeOverlaps.use_from Copy the *from_polyline* points over the overlapping *to_polyline* points.\n"
+			"  FlattenLongitudeOverlaps.use_to   Copy the *to_polyline* points over the overlapping *from_polyline* points.\n"
+			"  ================================= ==============\n"
+			"\n"
+			"  .. seealso:: :meth:`PolylineOnSphere.rotation_interpolate` for a diagram of longitude flattening.\n")
 			.value("no", GPlatesMaths::FlattenLongitudeOverlaps::NO)
 			.value("use_from", GPlatesMaths::FlattenLongitudeOverlaps::USE_FROM)
 			.value("use_to", GPlatesMaths::FlattenLongitudeOverlaps::USE_TO);
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::PolylineConversion::Value>("PolylineConversion")
+	bp::enum_<GPlatesApi::PolylineConversion::Value>(
+			"PolylineConversion",
+			"What to do with a geometry that is not a :class:`PolylineOnSphere` when a polyline is required.\n"
+			"\n"
+			"  Accepted by :meth:`PolylineOnSphere.join` and :meth:`PolylineOnSphere.rotation_interpolate`.\n"
+			"\n"
+			"  ======================================== ==============\n"
+			"  Value                                    Description\n"
+			"  ======================================== ==============\n"
+			"  PolylineConversion.convert_to_polyline   Convert the geometry to a polyline from its points (as if by ``pygplates.PolylineOnSphere(geometry)``).\n"
+			"  PolylineConversion.ignore_non_polyline   Silently ignore the geometry (the default). For :meth:`PolylineOnSphere.rotation_interpolate` this means returning ``None``.\n"
+			"  PolylineConversion.raise_if_non_polyline Raise :class:`GeometryTypeError`.\n"
+			"  ======================================== ==============\n")
 			.value("convert_to_polyline", GPlatesApi::PolylineConversion::CONVERT_TO_POLYLINE)
 			.value("ignore_non_polyline", GPlatesApi::PolylineConversion::IGNORE_NON_POLYLINE)
 			.value("raise_if_non_polyline", GPlatesApi::PolylineConversion::RAISE_IF_NON_POLYLINE);
@@ -2273,11 +2357,11 @@ export_polyline_on_sphere()
 				"  Create a polyline from a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
 				"  :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type points: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"  :type points: any sequence of PointOnSphere or LatLonPoint or "
 				"tuple (float,float,float) or tuple (float,float)\n"
-				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
-				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
-				"  :raises: InvalidPointsForPolylineConstructionError if sequence has less than two points "
+				"  :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid\n"
+				"  :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude\n"
+				"  :raises InvalidPointsForPolylineConstructionError: if sequence has less than two points "
 				"or if any two points (adjacent in the *points* sequence) are antipodal to each other "
 				"(on opposite sides of the globe)\n"
 				"\n"
@@ -2347,13 +2431,13 @@ export_polyline_on_sphere()
 				"  Create a polyline from a :class:`GeometryOnSphere`.\n"
 				"\n"
 				"  :param geometry: The point, multi-point, polyline or polygon geometry to convert from.\n"
-				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :type geometry: GeometryOnSphere\n"
 				"  :param allow_one_point: Whether *geometry* is allowed to be a :class:`PointOnSphere` or "
 				"a :class:`MultiPointOnSphere` containing only a single point - if allowed then that single "
 				"point is duplicated since a PolylineOnSphere requires at least two points - "
 				"default is ``True``.\n"
 				"  :type allow_one_point: bool\n"
-				"  :raises: InvalidPointsForPolylineConstructionError if *geometry* is a "
+				"  :raises InvalidPointsForPolylineConstructionError: if *geometry* is a "
 				":class:`PointOnSphere` (and *allow_one_point* is ``False``), or a "
 				":class:`MultiPointOnSphere` with one point (and *allow_one_point* is ``False``), or "
 				"if any two consecutive points in a :class:`MultiPointOnSphere` are antipodal to each "
@@ -2415,17 +2499,14 @@ export_polyline_on_sphere()
 				"[maximum_distance_threshold_radians], "
 				"[flatten_longitude_overlaps=FlattenLongitudeOverlaps.no], "
 				"[polyline_conversion=PolylineConversion.ignore_non_polyline])\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Interpolates between two polylines about a rotation pole.\n"
+				"  Interpolates between two polylines about a rotation pole.\n"
 				"\n"
 				"  :param from_polyline: the polyline to interpolate *from*\n"
-				"  :type from_polyline: :class:`GeometryOnSphere`\n"
+				"  :type from_polyline: GeometryOnSphere\n"
 				"  :param to_polyline: the polyline to interpolate *to*\n"
-				"  :type to_polyline: :class:`GeometryOnSphere`\n"
+				"  :type to_polyline: GeometryOnSphere\n"
 				"  :param rotation_pole: the rotation axis to interpolate around\n"
-				"  :type rotation_pole: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type rotation_pole: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :param interpolate: if a single number then *interpolate* is the interval spacing, in radians, "
 				"between *from_polyline* and *to_polyline* at which to generate interpolated polylines - "
@@ -2442,19 +2523,17 @@ export_polyline_on_sphere()
 				"  :type maximum_distance_threshold_radians: float - default is no threshold detection\n"
 				"  :param flatten_longitude_overlaps: whether or not to ensure *from_polyline* and *to_polyline* "
 				"do not overlap in longitude (in North pole reference frame of *rotation_pole*) and how to "
-				"correct the overlap\n"
-				"  :type flatten_longitude_overlaps: *FlattenLongitudeOverlaps.no*, *FlattenLongitudeOverlaps.use_from* "
-				"or *FlattenLongitudeOverlaps.use_to* - defaults to *FlattenLongitudeOverlaps.no*\n"
+				"correct the overlap (defaults to *FlattenLongitudeOverlaps.no*)\n"
+				"  :type flatten_longitude_overlaps: FlattenLongitudeOverlaps\n"
 				"  :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore "
 				"*from_polyline* and *to_polyline* if they are not :class:`PolylineOnSphere` (ignoring equates "
 				"to returning ``None``) - defaults to *PolylineConversion.ignore_non_polyline*\n"
-				"  :type polyline_conversion: *PolylineConversion.convert_to_polyline*, "
-				"*PolylineConversion.ignore_non_polyline* or *PolylineConversion.raise_if_non_polyline*\n"
+				"  :type polyline_conversion: PolylineConversion\n"
 				"  :returns: list of interpolated polylines - or ``None`` if polylines do not have overlapping "
 				"latitude ranges or if maximum distance threshold exceeded or if either polyline is not a "
 				":class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.ignore_non_polyline*)\n"
-				"  :rtype: list of :class:`PolylineOnSphere` or None\n"
-				"  :raises: GeometryTypeError if *from_polyline* or *to_polyline* are not of type "
+				"  :rtype: list of PolylineOnSphere or None\n"
+				"  :raises GeometryTypeError: if *from_polyline* or *to_polyline* are not of type "
 				":class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)\n"
 				"\n"
 				"  If *interpolate* is a single number then it is the distance interval spacing, in radians, "
@@ -2645,7 +2724,7 @@ export_polyline_on_sphere()
 				"get_segments()\n"
 				"  Returns a *read-only* sequence of :class:`segments<GreatCircleArc>` in this polyline.\n"
 				"\n"
-				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
+				"  :rtype: a read-only sequence of GreatCircleArc\n"
 				"\n"
 				"  The following operations for accessing the great circle arcs in the returned "
 				"read-only sequence are supported:\n"
@@ -2698,7 +2777,7 @@ export_polyline_on_sphere()
 				"get_centroid()\n"
 				"  Returns the centroid of this polyline.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"\n"
 				"  The centroid is calculated as a weighted average of the mid-points of the "
 				":class:`great circle arcs<GreatCircleArc>` of this polyline with weighting "
@@ -2711,8 +2790,8 @@ export_polyline_on_sphere()
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
-				"  :rtype: :class:`PolylineOnSphere`\n"
-				"  :raises: ValueError if *tessellate_radians* is negative or zero\n"
+				"  :rtype: PolylineOnSphere\n"
+				"  :raises ValueError: if *tessellate_radians* is negative or zero\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polyline) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"
@@ -2751,8 +2830,8 @@ export_polyline_on_sphere()
 				"  :returns: list of points, or (if *return_segment_informations* is ``True``) a 2-tuple containing a list of points and "
 				"a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, "
 				"and where the point is located *on* that segment in the range [0,1])\n"
-				"  :rtype: list of :class:`PointOnSphere`, or tuple (list of :class:`PointOnSphere`, list of tuple (int, float)) if *return_segment_informations* is ``True``\n"
-				"  :raises: ValueError if *point_spacing_radians* is negative or zero\n"
+				"  :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[tuple[int, float]]]\n"
+				"  :raises ValueError: if *point_spacing_radians* is negative or zero\n"
 				"\n"
 				"  .. note:: The distance (along the polyline) between the last uniform point and the last vertex "
 				"of the polyline can be less than *point_spacing_radians* (since the length of the polyline "
@@ -3869,15 +3948,15 @@ export_polygon_on_sphere()
 				"is a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
 				"  :param exterior_ring: Exterior ring sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type exterior_ring: any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"  :type exterior_ring: any sequence of PointOnSphere or LatLonPoint or "
 				"tuple (float,float,float) or tuple (float,float).\n"
 				"  :param interior_rings: Optional sequence of interior rings where each ring is a sequence of "
 				"(x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type interior_rings: Any sequence of rings (where ring is any sequence of :class:`PointOnSphere` "
-				"or :class:`LatLonPoint` or tuple (float,float,float) or tuple (float,float)), or None.\n"
-				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
-				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
-				"  :raises: InvalidPointsForPolygonConstructionError if any ring has less than three points "
+				"  :type interior_rings: Any sequence of rings (where ring is any sequence of PointOnSphere "
+				"or LatLonPoint or tuple (float,float,float) or tuple (float,float)), or None.\n"
+				"  :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid\n"
+				"  :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude\n"
+				"  :raises InvalidPointsForPolygonConstructionError: if any ring has less than three points "
 				"or if any two points (adjacent in a ring) are antipodal to each other (on opposite sides of the globe)\n"
 				"\n"
 				"  .. note:: Each ring must contain at least three points in order for the polygon to be valid, "
@@ -3969,13 +4048,13 @@ export_polygon_on_sphere()
 				"  Create a polygon from a :class:`GeometryOnSphere`.\n"
 				"\n"
 				"  :param geometry: The point, multi-point, polyline or polygon geometry to convert from.\n"
-				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :type geometry: GeometryOnSphere\n"
 				"  :param allow_one_or_two_points: Whether *geometry* is allowed to be a :class:`PointOnSphere` or "
 				"a :class:`MultiPointOnSphere` containing only one or two points - if allowed then one of those "
 				"points is duplicated since a PolygonOnSphere requires at least three points - "
 				"default is ``True``.\n"
 				"  :type allow_one_or_two_points: bool\n"
-				"  :raises: InvalidPointsForPolygonConstructionError if *geometry* is a "
+				"  :raises InvalidPointsForPolygonConstructionError: if *geometry* is a "
 				":class:`PointOnSphere`, or a :class:`MultiPointOnSphere` with one or two points "
 				"(and *allow_one_or_two_points* is ``False``), or if any two consecutive points in a "
 				":class:`MultiPointOnSphere` are antipodal to each other (on opposite sides of the globe)\n"
@@ -4023,7 +4102,7 @@ export_polygon_on_sphere()
 				"  Returns a *read-only* sequence of **all** :class:`segments<GreatCircleArc>` in this polygon "
 				"(exterior ring followed by interior rings if any).\n"
 				"\n"
-				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
+				"  :rtype: a read-only sequence of GreatCircleArc\n"
 				"\n"
 				"  The following operations for accessing the great circle arcs in the returned "
 				"read-only sequence are supported:\n"
@@ -4065,7 +4144,7 @@ export_polygon_on_sphere()
 				"get_exterior_ring_segments()\n"
 				"  Returns a *read-only* sequence of :class:`segments<GreatCircleArc>` in the *exterior* ring.\n"
 				"\n"
-				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
+				"  :rtype: a read-only sequence of GreatCircleArc\n"
 				"\n"
 				"  The following operations for accessing the great circle arcs in the returned "
 				"read-only sequence are supported:\n"
@@ -4106,7 +4185,7 @@ export_polygon_on_sphere()
 				"get_exterior_ring_points()\n"
 				"  Returns a *read-only* sequence of :class:`points<PointOnSphere>` in the *exterior* ring.\n"
 				"\n"
-				"  :rtype: a read-only sequence of :class:`PointOnSphere`\n"
+				"  :rtype: a read-only sequence of PointOnSphere\n"
 				"\n"
 				"  The following operations for accessing the points in the returned read-only sequence are supported:\n"
 				"\n"
@@ -4153,7 +4232,7 @@ export_polygon_on_sphere()
 				"\n"
 				"  :param interior_ring_index: Index of interior ring (must be less than :meth:`get_number_of_interior_rings`).\n"
 				"  :type interior_ring_index: int\n"
-				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
+				"  :rtype: a read-only sequence of GreatCircleArc\n"
 				"\n"
 				"  The following operations for accessing the great circle arcs in the returned "
 				"read-only sequence are supported:\n"
@@ -4199,7 +4278,7 @@ export_polygon_on_sphere()
 				"\n"
 				"  :param interior_ring_index: Index of interior ring (must be less than :meth:`get_number_of_interior_rings`).\n"
 				"  :type interior_ring_index: int\n"
-				"  :rtype: a read-only sequence of :class:`PointOnSphere`\n"
+				"  :rtype: a read-only sequence of PointOnSphere\n"
 				"\n"
 				"  The following operations for accessing the points in the returned read-only sequence are supported:\n"
 				"\n"
@@ -4245,7 +4324,10 @@ export_polygon_on_sphere()
 				"\n"
 				"  :rtype: float\n"
 				"\n"
-				"  The area is essentially the absolute value of the :meth:`signed area<get_signed_area>`.\n"
+				"  The area is essentially the absolute value of the :meth:`signed area<get_signed_area>`. "
+				"It is the area of the polygon's interior, the same interior as :meth:`is_point_in_polygon` "
+				"(each ring's smaller side), so a polygon whose rings don't cross themselves has an area of at "
+				"most half the sphere (2*pi steradians).\n"
 				"\n"
 				"  To convert the area from steradians (square radians) to square kms, multiply by the square of the :class:`Earth's radius<Earth>`:\n"
 				"  ::\n"
@@ -4253,7 +4335,15 @@ export_polygon_on_sphere()
 				"    area_in_square_kms = polygon.get_area() * pygplates.Earth.mean_radius_in_kms**2\n"
 				"\n"
 				"  .. note:: The interior rings reduce the absolute area of the exterior ring "
-				"(regardless of their orientation) because they are holes in the polygon.\n")
+				"(regardless of their orientation) because they are holes in the polygon. "
+				"That is exact when the interior rings are inside the exterior ring and don't overlap each other. "
+				"Otherwise the area differs from the region :meth:`is_point_in_polygon` counts as inside, "
+				"which includes the part of an interior ring outside the exterior ring, and the overlap of two "
+				"interior rings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     The area of the polygon's smaller side, even if it wraps round the globe "
+				"(see :meth:`is_point_in_polygon`).\n")
 		.def("get_signed_area",
 				&GPlatesMaths::PolygonOnSphere::get_signed_area,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -4264,6 +4354,8 @@ export_polygon_on_sphere()
 				"\n"
 				"  If this polygon is clockwise (when viewed from above the surface of the sphere) "
 				"then the returned area will be negative, otherwise it will be positive. "
+				"Clockwise means that the exterior ring goes clockwise round the polygon's interior, which is "
+				"the ring's smaller side (see :meth:`is_point_in_polygon`). "
 				"However if you only want to determine the orientation of this polygon then "
 				":meth:`get_orientation` is more efficient than comparing the sign of the area.\n"
 				"\n"
@@ -4273,9 +4365,15 @@ export_polygon_on_sphere()
 				"  .. note:: The interior rings reduce the absolute area of the exterior ring "
 				"(regardless of their orientation) because they are holes in the polygon. "
 				"So if the signed area of exterior ring is positive then any interior rings will reduce that, "
-				"and if it's negative then any interior rings will make it less negative.\n"
+				"and if it's negative then any interior rings will make it less negative. "
+				"That is exact only when the interior rings are inside the exterior ring and don't overlap each other "
+				"(see :meth:`get_area`).\n"
 				"\n"
-				"  .. seealso:: :meth:`get_area`\n")
+				"  .. seealso:: :meth:`get_area`\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     The signed area of the polygon's smaller side, even if it wraps round the globe "
+				"(see :meth:`is_point_in_polygon`).\n")
 		.def("get_orientation",
 				&GPlatesMaths::PolygonOnSphere::get_orientation,
 				"get_orientation()\n"
@@ -4294,8 +4392,15 @@ export_polygon_on_sphere()
 				"    else:\n"
 				"      print 'Orientation is counter-clockwise'\n"
 				"\n"
+				"  Clockwise means that the exterior ring goes clockwise round the polygon's interior, which is the "
+				"ring's smaller side (see :meth:`is_point_in_polygon`).\n"
+				"\n"
 				"  .. note:: The orientation is determined by the sign of the :meth:`signed area<get_signed_area>` "
-				"(with an optimization to make it more efficient in most cases).\n")
+				"(with an optimization to make it more efficient in most cases).\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     The orientation round the polygon's smaller side, even if it wraps round the globe "
+				"(see :meth:`is_point_in_polygon`).\n")
 		.def("is_point_in_polygon",
 				&GPlatesApi::polygon_on_sphere_is_point_in_polygon,
 				(bp::arg("point")),
@@ -4303,7 +4408,7 @@ export_polygon_on_sphere()
 				"  Determines whether the specified point lies within the interior of this polygon.\n"
 				"\n"
 				"  :param point: the point to be tested\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
 				"  :rtype: bool\n"
 				"\n"
@@ -4316,7 +4421,28 @@ export_polygon_on_sphere()
 				"\n"
 				"  .. note:: If a polygon has one or more non-intersecting interior rings contained fully within its "
 				"exterior ring and the test point is inside any interior ring then the test point is considered to be "
-				"*outside* the polygon. This is because the interior rings subtract area from the exterior ring.\n")
+				"*outside* the polygon. This is because the interior rings subtract area from the exterior ring.\n"
+				"\n"
+				"  A point on the polygon's outline, or within about 9 metres (1.4e-6 radians) of it, is *inside*. "
+				"So a point on a boundary shared by two adjacent polygons (eg, two topological plates) is inside both.\n"
+				"\n"
+				"  A point is inside the polygon if it is inside an odd number of the polygon's rings (exterior and "
+				"interior alike). So the order (clockwise or counter-clockwise) of a ring's points does not matter, and in "
+				"a polygon whose interior ring crosses its exterior ring, the part of the interior ring outside the "
+				"exterior ring is inside the polygon.\n"
+				"\n"
+				"  The inside of a ring is its smaller side, the side with less than half the area of the sphere, even if "
+				"the ring wraps round the globe. So a polygon cannot cover more than half the sphere: a ring round a larger "
+				"region means the region outside it. A ring that halves the sphere (to within about 1e-8 steradians, as "
+				"four points on the equator do) has its inside to its left, so reversing its points swaps its inside and "
+				"outside. In a ring that crosses itself, a region is inside if the number of times the ring winds round it "
+				"differs by an odd number from the ring's average winding number, rounded to the nearest whole number. "
+				"So in a ring that crosses itself only slightly (with a small twist or loop), every lobe is inside, "
+				"whichever way it is wound.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     The inside of each ring is its smaller side. Previously it was the side away from the antipode of "
+				":meth:`get_boundary_centroid`, so a ring that wraps round the globe could be inside out.\n")
 		.def("partition",
 				&GPlatesApi::polygon_on_sphere_partition,
 				(bp::arg("geometry"),
@@ -4326,13 +4452,13 @@ export_polygon_on_sphere()
 				"  Partition a geometry into optional inside/outside lists of partitioned geometry pieces.\n"
 				"\n"
 				"  :param geometry: the geometry to be partitioned\n"
-				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :type geometry: GeometryOnSphere\n"
 				"  :param partitioned_geometries_inside: optional list of geometries partitioned *inside* this polygon "
 				"(note that the list is *not* cleared first)\n"
-				"  :type partitioned_geometries_inside: ``list`` of :class:`GeometryOnSphere`, or None\n"
+				"  :type partitioned_geometries_inside: list of GeometryOnSphere, or None\n"
 				"  :param partitioned_geometries_outside: optional list of geometries partitioned *outside* this polygon "
 				"(note that the list is *not* cleared first)\n"
-				"  :type partitioned_geometries_outside: ``list`` of :class:`GeometryOnSphere`, or None\n"
+				"  :type partitioned_geometries_outside: list of GeometryOnSphere, or None\n"
 				"  :rtype: PolygonOnSphere.PartitionResult\n"
 				"\n"
 				"  The returned result is:\n"
@@ -4395,7 +4521,7 @@ export_polygon_on_sphere()
 				"get_boundary_centroid()\n"
 				"  Returns the *boundary* centroid of this polygon.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"\n"
 				"  The *boundary* centroid is calculated as a weighted average of the mid-points of the "
 				":class:`great circle arcs<GreatCircleArc>` of the *exterior* ring of this polygon with "
@@ -4408,24 +4534,30 @@ export_polygon_on_sphere()
 				"get_interior_centroid()\n"
 				"  Returns the *interior* centroid of this polygon.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"\n"
-				"  The *interior* centroid is calculated as a weighted average of the centroids of "
-				"spherical triangles formed by all :class:`great circle arcs<GreatCircleArc>` of this polygon "
-				"with weighting proportional to the signed area of each individual spherical triangle. "
-				"The interior rings change the spherical area weighting because they are holes in the polygon "
-				"and essentially cut out the internal area of the exterior ring.\n"
+				"  The *interior* centroid is the centre of mass of the polygon's interior (the same interior as "
+				":meth:`is_point_in_polygon`), projected onto the sphere. "
+				"The interior rings change it because they are holes in the polygon "
+				"and essentially cut out the internal area of the exterior ring. "
+				"It is exact for a polygon wider than about 0.01 radians. For a smaller polygon it is a weighted "
+				"average of the centroids of the spherical triangles formed by the polygon's "
+				":class:`great circle arcs<GreatCircleArc>` and :meth:`get_boundary_centroid`.\n"
 				"\n"
 				"  This centroid is useful when the centre-of-mass of the polygon interior is desired. "
 				"For example, the *interior* centroid of a bottom-heavy, pear-shaped polygon will be "
-				"closer to the bottom of the polygon. This centroid is not exactly at the centre-of-mass, "
-				"but it will be a lot closer to the real centre-of-mass than :meth:`get_boundary_centroid`.\n")
+				"closer to the bottom of the polygon than :meth:`get_boundary_centroid`.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Exact for a polygon wider than about 0.01 radians (previously it used the triangle approximation for "
+				"every polygon, which is off by up to about 0.3 degrees for a polygon one radian across), and of the "
+				"polygon's smaller side, even if it wraps round the globe.\n")
 		.def("get_centroid",
 				&GPlatesApi::polygon_on_sphere_get_interior_centroid,
 				"get_centroid()\n"
 				"  Returns the centroid of this polygon (equivalent to calling :meth:`get_interior_centroid`).\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"\n"
 				"  .. seealso:: :meth:`get_interior_centroid`\n"
 				"\n"
@@ -4438,8 +4570,8 @@ export_polygon_on_sphere()
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
-				"  :rtype: :class:`PolygonOnSphere`\n"
-				"  :raises: ValueError if *tessellate_radians* is negative or zero\n"
+				"  :rtype: PolygonOnSphere\n"
+				"  :raises ValueError: if *tessellate_radians* is negative or zero\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polygon) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"
@@ -4478,8 +4610,8 @@ export_polygon_on_sphere()
 				"  :returns: list of points, or (if *return_segment_informations* is ``True``) a 2-tuple containing a list of points and "
 				"a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, "
 				"and where the point is located *on* that segment in the range [0,1])\n"
-				"  :rtype: list of :class:`PointOnSphere`, or tuple (list of :class:`PointOnSphere`, list of tuple (int, float)) if *return_segment_informations* is ``True``\n"
-				"  :raises: ValueError if *point_spacing_radians* is negative or zero\n"
+				"  :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[tuple[int, float]]]\n"
+				"  :raises ValueError: if *point_spacing_radians* is negative or zero\n"
 				"\n"
 				"  .. note:: | The distance (along a polygon ring) between the last uniform point of a ring and the last vertex "
 				"of the ring (also its first vertex) can be less than *point_spacing_radians* (since the length of the ring "
@@ -4540,7 +4672,18 @@ export_polygon_on_sphere()
 	//       However pickle was then unable to find it because the type was still recorded as 'pygplates.Orientation'
 	//       instead of 'pygplates.PolygonOnSphere.Orientation'. So now we define it at the module level, so pickle
 	//       can find it, and explicitly add a 'Orientation' attribute to 'PolygonOnSphere' for pygplates users.
-	bp::enum_<GPlatesMaths::PolygonOrientation::Orientation>("PolygonOnSphereOrientation")
+	bp::enum_<GPlatesMaths::PolygonOrientation::Orientation>(
+			"PolygonOnSphereOrientation",
+			"The orientation of a polygon ring, as viewed from above the globe.\n"
+			"\n"
+			"  Returned by :meth:`PolygonOnSphere.get_orientation` and accepted wherever a polygon orientation can be forced (for example :meth:`ReconstructSnapshot.export_reconstructed_geometries`). Also available as ``PolygonOnSphere.Orientation``.\n"
+			"\n"
+			"  ============================================ ==============\n"
+			"  Value                                        Description\n"
+			"  ============================================ ==============\n"
+			"  PolygonOnSphereOrientation.clockwise         The ring winds clockwise.\n"
+			"  PolygonOnSphereOrientation.counter_clockwise The ring winds counter-clockwise.\n"
+			"  ============================================ ==============\n")
 			.value("clockwise", GPlatesMaths::PolygonOrientation::CLOCKWISE)
 			.value("counter_clockwise", GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE);
 	// Nest enumeration within python class PolygonOnSphere (as 'PolygonOnSphere.Orientation').
@@ -4555,7 +4698,19 @@ export_polygon_on_sphere()
 	//       However pickle was then unable to find it because the type was still recorded as 'pygplates.PartitionResult'
 	//       instead of 'pygplates.PolygonOnSphere.PartitionResult'. So now we define it at the module level, so pickle
 	//       can find it, and explicitly add a 'PartitionResult' attribute to 'PolygonOnSphere' for pygplates users.
-	bp::enum_<GPlatesMaths::PolygonPartitioner::Result>("PolygonOnSpherePartitionResult")
+	bp::enum_<GPlatesMaths::PolygonPartitioner::Result>(
+			"PolygonOnSpherePartitionResult",
+			"The result of :meth:`partitioning <PolygonOnSphere.partition>` a geometry with a polygon.\n"
+			"\n"
+			"  Also available as ``PolygonOnSphere.PartitionResult``.\n"
+			"\n"
+			"  =========================================== ==============\n"
+			"  Value                                       Description\n"
+			"  =========================================== ==============\n"
+			"  PolygonOnSpherePartitionResult.inside       The geometry is entirely inside the polygon.\n"
+			"  PolygonOnSpherePartitionResult.outside      The geometry is entirely outside the polygon.\n"
+			"  PolygonOnSpherePartitionResult.intersecting The geometry crosses the polygon boundary, so parts of it are inside and parts are outside.\n"
+			"  =========================================== ==============\n")
 			.value("inside", GPlatesMaths::PolygonPartitioner::GEOMETRY_INSIDE)
 			.value("outside", GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
 			.value("intersecting", GPlatesMaths::PolygonPartitioner::GEOMETRY_INTERSECTING);

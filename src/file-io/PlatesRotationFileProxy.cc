@@ -25,22 +25,42 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <limits>
+#include <algorithm>
+#include <cmath>
+#include <utility>
+#include <vector>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
-#include <fstream>
 #include <sstream>
 #include <string>
 #include <QBuffer>
 #include <QFile>
+#include <QTextStream>
 
 #include "PlatesRotationFileProxy.h"
 
 #include "FeatureCollectionFileFormatConfigurations.h"
+#include "ErrorOpeningFileForWritingException.h"
+#include "ErrorWritingFeatureCollectionToFileFormatException.h"
 
 #include "global/LogException.h"
+
+#include "maths/FiniteRotation.h"
+#include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
+#include "maths/UnitQuaternion3D.h"
+
+#include "model/FeatureType.h"
+#include "model/FeatureVisitor.h"
 #include "model/ModelUtils.h"
+#include "model/PropertyName.h"
 
 #include "property-values/GpmlPlateId.h"
+#include "property-values/GmlTimeInstant.h"
+#include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlFiniteRotation.h"
@@ -65,179 +85,240 @@ const QString GPlatesFileIO::RotationFileReaderV2::MPRS_HEADER_REGEXP = "^\\s*>"
 
 namespace
 {
+	// The rest of this file relies on these too (an unnamed namespace's using-directives reach
+	// its enclosing scope).
 	using namespace GPlatesModel;
 	using namespace GPlatesPropertyValues;
 	using namespace GPlatesFileIO;
 
-	class GetGpmlFiniteRotations :
-		public GPlatesModel::ConstFeatureVisitor
+	/**
+	 * Whether the reader accepts @a pole
+	 * (see PopulateReconstructionFeatureCollection::validate_pole).
+	 */
+	bool
+	is_valid_pole(
+			const GPlatesFileIO::RotationPoleData &pole)
+	{
+		return pole.moving_plate_id != pole.fix_plate_id &&
+				GPlatesMaths::LatLonPoint::is_valid_latitude(pole.lat) &&
+				GPlatesMaths::LatLonPoint::is_valid_longitude(pole.lon);
+	}
+
+
+	/**
+	 * A pole as both the proxy and the model can describe it, for comparing the two.
+	 */
+	struct ComparablePole
+	{
+		ComparablePole(
+				GPlatesModel::integer_plate_id_type moving_plate_id_,
+				GPlatesModel::integer_plate_id_type fixed_plate_id_,
+				const double &time_,
+				bool disabled_,
+				bool has_comment_,
+				const GPlatesMaths::UnitQuaternion3D &rotation) :
+			moving_plate_id(moving_plate_id_),
+			fixed_plate_id(fixed_plate_id_),
+			time(time_),
+			disabled(disabled_),
+			has_comment(has_comment_),
+			w(rotation.w().dval()),
+			x(rotation.x().dval()),
+			y(rotation.y().dval()),
+			z(rotation.z().dval())
+		{
+			// A quaternion and its negation are the same rotation: pick one sign, for sorting.
+			if (w < 0 || (w == 0 && (x < 0 || (x == 0 && (y < 0 || (y == 0 && z < 0))))))
+			{
+				w = -w;
+				x = -x;
+				y = -y;
+				z = -z;
+			}
+		}
+
+		GPlatesModel::integer_plate_id_type moving_plate_id;
+		GPlatesModel::integer_plate_id_type fixed_plate_id;
+		double time;
+		bool disabled;
+		bool has_comment;
+		double w, x, y, z;
+	};
+
+
+	/**
+	 * Orders by every compared field, the rotation included, so that two poles of one plate pair
+	 * and time (a file can hold both) pair up the same way on both sides. Times are compared to a
+	 * millionth of a million years, so that times equal within @a are_equivalent's tolerance sort
+	 * together.
+	 */
+	bool
+	operator<(
+			const ComparablePole &lhs,
+			const ComparablePole &rhs)
+	{
+		return boost::make_tuple(
+						lhs.moving_plate_id, lhs.fixed_plate_id, std::llround(lhs.time * 1e6),
+						lhs.disabled, lhs.has_comment, lhs.w, lhs.x, lhs.y, lhs.z) <
+				boost::make_tuple(
+						rhs.moving_plate_id, rhs.fixed_plate_id, std::llround(rhs.time * 1e6),
+						rhs.disabled, rhs.has_comment, rhs.w, rhs.x, rhs.y, rhs.z);
+	}
+
+
+	/**
+	 * Whether two poles are the same: plate IDs, disabled flag and comment exactly, and the time
+	 * and each quaternion component within @a epsilon.
+	 *
+	 * The quaternions are compared rather than the pole's latitude, longitude and angle, which
+	 * describe the same rotation in more than one way (a negated axis and angle, any axis for a
+	 * zero angle, longitude -180 and 180). A quaternion is only ambiguous in its sign, which the
+	 * constructor normalised (both signs are still accepted, for a quaternion with w near zero).
+	 */
+	bool
+	are_equivalent(
+			const ComparablePole &lhs,
+			const ComparablePole &rhs,
+			const double &epsilon)
+	{
+		if (lhs.moving_plate_id != rhs.moving_plate_id ||
+			lhs.fixed_plate_id != rhs.fixed_plate_id ||
+			lhs.disabled != rhs.disabled ||
+			lhs.has_comment != rhs.has_comment ||
+			std::fabs(lhs.time - rhs.time) > epsilon)
+		{
+			return false;
+		}
+
+		const bool same_sign =
+				std::fabs(lhs.w - rhs.w) <= epsilon && std::fabs(lhs.x - rhs.x) <= epsilon &&
+				std::fabs(lhs.y - rhs.y) <= epsilon && std::fabs(lhs.z - rhs.z) <= epsilon;
+		const bool opposite_sign =
+				std::fabs(lhs.w + rhs.w) <= epsilon && std::fabs(lhs.x + rhs.x) <= epsilon &&
+				std::fabs(lhs.y + rhs.y) <= epsilon && std::fabs(lhs.z + rhs.z) <= epsilon;
+		return same_sign || opposite_sign;
+	}
+
+
+	/**
+	 * Collects the poles of the features the model-based '.grot' writer writes (total
+	 * reconstruction sequences and absolute reference frames, with fixed and moving plate IDs and
+	 * an irregularly sampled total reconstruction pole), so the comparison sees what a save would
+	 * write.
+	 */
+	class ModelPoleCollector :
+			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
+
+		explicit
+		ModelPoleCollector(
+				std::vector<ComparablePole> &poles) :
+			d_poles(poles)
+		{  }
+
+	protected:
+
+		bool
+		initialise_pre_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle) override
+		{
+			static const GPlatesModel::FeatureType TOTAL_RECONSTRUCTION_SEQUENCE =
+					GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence");
+			static const GPlatesModel::FeatureType ABSOLUTE_REFERENCE_FRAME =
+					GPlatesModel::FeatureType::create_gpml("AbsoluteReferenceFrame");
+
+			d_moving_plate_id = boost::none;
+			d_fixed_plate_id = boost::none;
+			d_sampling = boost::none;
+			return feature_handle.feature_type() == TOTAL_RECONSTRUCTION_SEQUENCE ||
+					feature_handle.feature_type() == ABSOLUTE_REFERENCE_FRAME;
+		}
+
 		void
-		visit_gpml_irregular_sampling(
-				gpml_irregular_sampling_type &gpml_irregular_sampling)
+		finalise_post_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle) override
 		{
-			BOOST_FOREACH(
-					GpmlTimeSample::non_null_ptr_to_const_type sample,
-					gpml_irregular_sampling.time_samples())
+			if (!d_moving_plate_id || !d_fixed_plate_id || !d_sampling)
 			{
-				const GpmlFiniteRotation* fr = dynamic_cast<const GpmlFiniteRotation*>(sample->value().get());
-				if(fr)
-				{
-					d_finite_rotations.push_back(fr);
-				}
+				return;
 			}
-		}
-		
-		std::vector<const GpmlFiniteRotation*>
-		gpml_finite_rotations()
-		{
-			return d_finite_rotations;
-		}
-	private:
-		std::vector<const GpmlFiniteRotation*> d_finite_rotations;;
-	};
 
-
-	std::vector<const GpmlFiniteRotation*>
-	get_finite_rotations(	
-			FeatureCollectionHandle::weak_ref fc)
-	{
-		GetGpmlFiniteRotations visitor;
-		for(FeatureCollectionHandle::iterator it = fc->begin(); it != fc->end(); it++)
-		{
-			visitor.visit_feature(it);
-		}
-		return visitor.gpml_finite_rotations();
-	}
-
-
-	template<class SegmentType>
-	std::vector<SegmentType*>
-	filter(	
-			const RotationFileSegmentContainer& segs)
-	{
-		std::vector<SegmentType*> ret;
-		BOOST_FOREACH(boost::shared_ptr<RotationFileSegment> seg, segs)
-		{
-			SegmentType* pole = dynamic_cast<SegmentType*>(seg.get());
-			if(pole)
+			for (const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type &sample :
+					d_sampling.get()->time_samples())
 			{
-				ret.push_back(pole);
-			}
-		}
-		return ret;
-	}
-
-	bool
-	operator==(
-			const RotationPoleSegment& pole_seg,
-			const GpmlFiniteRotation& gpml_rot)
-	{
-		
-		return true;
-	}
-
-	bool
-	operator!=(
-			const RotationPoleSegment& pole_seg,
-			const GpmlFiniteRotation& gpml_rot)
-	{
-		return !(pole_seg == gpml_rot);
-	}
-
-	bool
-	operator!=(
-			const GpmlFiniteRotation& gpml_rot,
-			const RotationPoleSegment& pole_seg)
-	{
-		return !(pole_seg == gpml_rot);
-	}
-
-	struct Modifications
-	{
-		std::vector<RotationPoleSegment*>  deleted;
-		std::vector<const GpmlFiniteRotation*> added;
-		std::vector<RotationPoleSegment*> modified;
-	};
-
-
-	int 
-	find(
-			const std::vector<RotationPoleSegment*>& segs,
-			const GpmlFiniteRotation* gpml_fr)
-	{
-		int ret = -1, count = -1;
-		BOOST_FOREACH(RotationPoleSegment* pole_seg, segs)
-		{
-			count++;
-			if(pole_seg->finite_rotation() == gpml_fr)
-			{
-				ret = count;
-				break;
-			}
-		}
-		return ret;
-	}
-
-	int 
-	find(
-		const std::vector<const GpmlFiniteRotation*>& gpml_frs,
-		const RotationPoleSegment* rotation_seg)
-	{
-		int ret = -1, count = -1;
-		BOOST_FOREACH(const GpmlFiniteRotation* fr, gpml_frs)
-		{
-			count++;
-			if(rotation_seg->finite_rotation() == fr)
-			{
-				ret = count;
-				break;
-			}
-		}
-		return ret;
-	}
-
-
-	Modifications
-	check_modification(
-			const RotationFileSegmentContainer& segs,
-			FeatureCollectionHandle::weak_ref fc)
-	{
-		Modifications ret;
-		std::vector<RotationPoleSegment*> poles = filter<RotationPoleSegment>(segs);
-		std::vector<const GpmlFiniteRotation*> frs = get_finite_rotations(fc);
-		BOOST_FOREACH(RotationPoleSegment* pole_seg, poles)
-		{
-			int idx = find(frs, pole_seg);
-			if(-1 != idx)
-			{
-				if(*frs[idx] != *pole_seg)
-				{
-					ret.modified.push_back(pole_seg);
-				}
-				else
+				const GPlatesPropertyValues::GpmlFiniteRotation *finite_rotation =
+						dynamic_cast<const GPlatesPropertyValues::GpmlFiniteRotation *>(
+								sample->value().get());
+				if (!finite_rotation)
 				{
 					continue;
 				}
-			}
-			else
-			{
-				ret.deleted.push_back(pole_seg);
+
+				// The '.grot' reader gives a pole no description (its comment is a 'C' attribute,
+				// in the pole's metadata), and the Total Reconstruction Sequences dialog gives each
+				// pole its Comment cell's text, empty unless typed: only a typed comment counts.
+				const bool has_comment =
+						sample->description() &&
+						!sample->description().get()->get_value().get().isEmpty();
+
+				d_poles.push_back(
+						ComparablePole(
+								d_moving_plate_id.get(),
+								d_fixed_plate_id.get(),
+								sample->valid_time()->get_time_position().value(),
+								sample->is_disabled(),
+								has_comment,
+								finite_rotation->get_finite_rotation().unit_quat()));
 			}
 		}
 
-		BOOST_FOREACH(const GpmlFiniteRotation* fr, frs)
+		void
+		visit_gpml_constant_value(
+				gpml_constant_value_type &gpml_constant_value) override
 		{
-			int idx = find(poles, fr);
-			if(-1 == idx)
+			gpml_constant_value.value()->accept_visitor(*this);
+		}
+
+		void
+		visit_gpml_irregular_sampling(
+				gpml_irregular_sampling_type &gpml_irregular_sampling) override
+		{
+			static const GPlatesModel::PropertyName TOTAL_RECONSTRUCTION_POLE =
+					GPlatesModel::PropertyName::create_gpml("totalReconstructionPole");
+
+			if (*current_top_level_propname() == TOTAL_RECONSTRUCTION_POLE)
 			{
-				ret.added.push_back(fr);
+				d_sampling = &gpml_irregular_sampling;
 			}
 		}
 
-		return ret;
-	}
+		void
+		visit_gpml_plate_id(
+				gpml_plate_id_type &gpml_plate_id) override
+		{
+			static const GPlatesModel::PropertyName FIXED_REFERENCE_FRAME =
+					GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame");
+			static const GPlatesModel::PropertyName MOVING_REFERENCE_FRAME =
+					GPlatesModel::PropertyName::create_gpml("movingReferenceFrame");
+
+			if (*current_top_level_propname() == FIXED_REFERENCE_FRAME)
+			{
+				d_fixed_plate_id = gpml_plate_id.get_value();
+			}
+			else if (*current_top_level_propname() == MOVING_REFERENCE_FRAME)
+			{
+				d_moving_plate_id = gpml_plate_id.get_value();
+			}
+		}
+
+	private:
+
+		std::vector<ComparablePole> &d_poles;
+		boost::optional<GPlatesModel::integer_plate_id_type> d_moving_plate_id;
+		boost::optional<GPlatesModel::integer_plate_id_type> d_fixed_plate_id;
+		boost::optional<const GPlatesPropertyValues::GpmlIrregularSampling *> d_sampling;
+	};
 }
 
 const double GPlatesFileIO::PlatesRotationFileProxy::ROTATION_EPSILON = 1.0e-6;
@@ -264,11 +345,13 @@ GPlatesFileIO::PlatesRotationFileProxy::init(
 
 
 GPlatesFileIO::RotationFileReaderV2::RotationFileReaderV2() :
-	d_commnet_line_rx(COMMENT_LINE_REGEXP),
-	d_pole_rx(ROTATION_POLE_REGEXP),
-	d_attr_rx(ATTRIBUTE_LINE_REGEXP),
+	// Rotation files are user data, so match "\s" and "\d" against Unicode whitespace and digits
+	// (as QRegExp did) rather than the ASCII-only default of QRegularExpression.
+	d_commnet_line_rx(COMMENT_LINE_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
+	d_pole_rx(ROTATION_POLE_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
+	d_attr_rx(ATTRIBUTE_LINE_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
 	d_multi_line_attr_rx(MULTI_LINE_ATTR_REGEXP),
-	d_mprs_header_rx(MPRS_HEADER_REGEXP),
+	d_mprs_header_rx(MPRS_HEADER_REGEXP, QRegularExpression::UseUnicodePropertiesOption),
 	d_last_moving_pid(0),
 	d_processing_mprs(false)
 {
@@ -342,7 +425,7 @@ GPlatesFileIO::RotationFileReaderV2::read(
 		RegExpVector::iterator begin = d_regexp_vec.begin(), end = d_regexp_vec.end();
 		for(;begin != end; begin++)
 		{
-			if( -1 != (*begin)->indexIn(next_line))
+			if((*begin)->match(next_line).hasMatch())
 			{
 				(this->*d_function_map[*begin])(rot_file, d_segmetns);
 				break;
@@ -386,15 +469,35 @@ GPlatesFileIO::RotationFileReaderV2::process_attribute_line(
 {
 	QString buf = file.readLine();
 	
-	//if the attribute is multi-line, read until reach the second separator.
-	if(-1 != buf.indexOf(ATTR_LONG_VALUE_SEPARATOR))
+	// If a multi-line attribute is left open on this line, read until the line that closes it.
+	//
+	// Count the separators, over all the lines read, rather than look for one: an attribute that
+	// opens and closes on one line must not swallow the next line (which may be a pole), and a line
+	// can close one attribute and open another.
+	//
+	// And stop at the end of the input: 'file' can be a buffer holding only the rest of a pole line,
+	// and 'readLine()' returns an empty string forever at the end, so an unclosed attribute would
+	// never stop reading. Nor can it take the rest of the input with it (every pole after it would
+	// be lost), so it is kept to its own line, which then reads as plain text.
+	if (buf.count(ATTR_LONG_VALUE_SEPARATOR) % 2 == 1)
 	{
-		QString line = file.readLine();
-		buf += line;
-		while(-1 == line.indexOf(ATTR_LONG_VALUE_SEPARATOR))
+		const qint64 end_of_first_line = file.pos();
+
+		QString lines = buf;
+		while (lines.count(ATTR_LONG_VALUE_SEPARATOR) % 2 == 1 && !file.atEnd())
 		{
-			line = file.readLine();
-			buf += line;
+			lines += file.readLine();
+		}
+
+		if (lines.count(ATTR_LONG_VALUE_SEPARATOR) % 2 == 0)
+		{
+			buf = lines;
+		}
+		else
+		{
+			qWarning() << "A multi-line attribute in a rotation file is not closed with"
+					<< ATTR_LONG_VALUE_SEPARATOR << ":" << buf.trimmed();
+			file.seek(end_of_first_line);
 		}
 	}
 
@@ -412,25 +515,26 @@ GPlatesFileIO::RotationFileReaderV2::process_attribute_line(
 		}
 	}
 
+	static const QRegularExpression attr_rx(ATTRIBUTE_REGEXP);
+
 	while(-1 != buf.indexOf(ATTRIBUTE_LEADING_CHARACTER))
 	{
-		QRegExp rx (ATTRIBUTE_REGEXP);
 		bool is_multi_line_attr=false;
-		int idx = rx.indexIn(buf);
-		if(-1 == idx)// no simple attribute
+		QRegularExpressionMatch match = attr_rx.match(buf);
+		if(!match.hasMatch())// no simple attribute
 		{
-			rx = d_multi_line_attr_rx;
-			idx = rx.indexIn(buf);
-			if(-1 == idx) // no multiple line attribute either
+			match = d_multi_line_attr_rx.match(buf);
+			if(!match.hasMatch()) // no multiple line attribute either
 				break;
 			else
 				is_multi_line_attr = true;
 		}
 
 		//get the matched strings
-		QString attr_str = rx.cap(0);
-		QString attr_name = rx.cap(1);
-		QString attr_value = rx.cap(2);
+		int idx = match.capturedStart(0);
+		QString attr_str = match.captured(0);
+		QString attr_name = match.captured(1);
+		QString attr_value = match.captured(2);
 		container.push_back(boost::shared_ptr<RotationFileSegment>(
 				new AttributeSegment(attr_name, attr_value, is_multi_line_attr)));
 
@@ -554,11 +658,7 @@ bool
 GPlatesFileIO::RotationFileReaderV2::is_valid_rotation_pole_line(
 		const QString& str)
 {
-	QRegExp rx(ROTATION_POLE_REGEXP);
-	if(-1 == rx.indexIn(str))
-		return false;
-	else
-		return true;
+	return d_pole_rx.match(str).hasMatch();
 }
 
 bool
@@ -571,18 +671,17 @@ GPlatesFileIO::RotationFileReaderV2::parse_rotation_pole_line(
 	if(line.startsWith(COMMENT_LEADING_CHARACTER))
 		data.disabled = true;
 
-	QRegExp rx(ROTATION_POLE_REGEXP);
-	
-	if(-1 == rx.indexIn(str))
+	const QRegularExpressionMatch match = d_pole_rx.match(str);
+	if(!match.hasMatch())
 		return false;
-	
-	data.text = rx.cap(0);
-	data.moving_plate_id = rx.cap(1).toInt(); 
-	data.time = rx.cap(2).toDouble();
-	data.lat = rx.cap(3).toDouble();
-	data.lon = rx.cap(4).toDouble();
-	data.angle = rx.cap(5).toDouble();
-	data.fix_plate_id = rx.cap(6).toInt();
+
+	data.text = match.captured(0);
+	data.moving_plate_id = match.captured(1).toInt();
+	data.time = match.captured(2).toDouble();
+	data.lat = match.captured(3).toDouble();
+	data.lon = match.captured(4).toDouble();
+	data.angle = match.captured(5).toDouble();
+	data.fix_plate_id = match.captured(6).toInt();
 	return true;
 }
 
@@ -692,7 +791,8 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 {
 	const RotationPoleData& data = seg.data();
 	//qDebug() << seg.to_qstring();
-	if(!validate_pole(data))
+	d_current_pole_accepted = validate_pole(data);
+	if(!d_current_pole_accepted)
 	{
 		return;
 	}
@@ -704,8 +804,6 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 	if(d_current_sampling)
 	{
 		d_current_sample = create_time_sample(data);
-		GPlatesModel::PropertyValue::non_null_ptr_type fr = d_current_sample.get()->value();
-		seg.set_finite_rotation(fr.get());
 	}
 		
 	d_last_pole =data;
@@ -716,6 +814,14 @@ void
 GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 		RotationPoleLine& seg)
 {
+	// A rejected pole line adds nothing: 'd_current_sample' is still the previous pole's, and the
+	// line's attributes are the rejected pole's.
+	if(!d_current_pole_accepted)
+	{
+		d_attrs.clear();
+		return;
+	}
+
 	if(d_current_sample)
 	{
 		GPlatesPropertyValues::GpmlFiniteRotation* trp = 
@@ -792,19 +898,10 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::validate_pole(
 		const RotationPoleData& current,
 		boost::optional<const RotationPoleData&> pre)
 {
-	if(current.fix_plate_id == current.moving_plate_id)
+	if (!is_valid_pole(current))
 	{
-		qWarning() << "moving plate id equals fixed plate id. ignore this pole.";
-		return false;
-	}
-	if ( ! GPlatesMaths::LatLonPoint::is_valid_latitude(current.lat))
-	{
-		qWarning() << "invalid latitude.";
-		return false;
-	}
-	if ( ! GPlatesMaths::LatLonPoint::is_valid_longitude(current.lon))
-	{
-		qWarning() << "invalid longitude.";
+		qWarning() << "Ignoring a rotation pole whose moving plate ID equals its fixed plate ID, "
+				"or whose latitude or longitude is invalid:" << current.to_string().trimmed();
 		return false;
 	}
 	if(pre)
@@ -984,28 +1081,6 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::finalize()
 }
 
 void
-GPlatesFileIO::GrotWriterWithCfg::finalise_post_feature_properties(
-		const GPlatesModel::FeatureHandle &feature_handle)
-{
-	//qDebug() << "finalise_post_feature_properties in RotationFileWriter";
-	const boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> cfg = 
-		d_file_ref.get_file_configuration();
-	if(cfg)
-	{
-		boost::shared_ptr<const FeatureCollectionFileFormat::RotationFileConfiguration> rotation_cfg_const =
-			boost::dynamic_pointer_cast<const FeatureCollectionFileFormat::RotationFileConfiguration>(*cfg);
-		boost::shared_ptr<FeatureCollectionFileFormat::RotationFileConfiguration> rotation_cfg =
-			boost::const_pointer_cast< FeatureCollectionFileFormat::RotationFileConfiguration>(rotation_cfg_const);
-		if(rotation_cfg)
-		{
-			rotation_cfg->get_rotation_file_proxy().save_feature(feature_handle,d_file_ref);
-		}
-
-	}
-}
-
-
-void
 GPlatesFileIO::RotationPoleLine::accept_visitor(
 		RotationFileSegmentVisitor& v) 
 {
@@ -1025,13 +1100,33 @@ GPlatesFileIO::GrotWriterWithoutCfg::visit_gpml_metadata(
 	gpml_metadata.get_data().serialize(buf);
 	d_output_stream->seek(0);
 	
-	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
-	std::ifstream ifs(d_file_ref.get_file_info().get_qfileinfo().filePath().toStdString().c_str());
-	std::string str(
-			(std::istreambuf_iterator<char>(ifs)),
-			std::istreambuf_iterator<char>());
+	// Read the file through QFile rather than std::ifstream so that paths containing
+	// non-ASCII characters work. QString::toStdString() encodes as UTF-8, but the narrow
+	// std::ifstream constructor interprets its path using the process' ANSI code page on
+	// Windows, so any path outside that code page silently failed to open and the existing
+	// file contents were dropped from the output.
+	QString existing_contents;
+	QFile existing_file(d_file_ref.get_file_info().get_qfileinfo().filePath());
+	if (existing_file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		QTextStream existing_stream(&existing_file);
+		// Match the UTF-8 encoding that the output stream is written with.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		existing_stream.setEncoding(QStringConverter::Utf8);
+#else
+		existing_stream.setCodec("UTF-8");
+#endif
+		existing_contents = existing_stream.readAll();
+	}
+	else
+	{
+		// Not fatal, but the existing contents are about to be dropped from the output, so
+		// don't let that happen silently.
+		qWarning() << "Failed to open file for reading -- "
+				+ d_file_ref.get_file_info().get_qfileinfo().absoluteFilePath();
+	}
 	(*d_output_stream) << buf;
-	(*d_output_stream) << str.c_str();
+	(*d_output_stream) << existing_contents;
 }
 
 
@@ -1124,6 +1219,103 @@ GPlatesFileIO::PlatesRotationFileProxy::get_segments()
 		throw GPlatesGlobal::LogException(
 			GPLATES_EXCEPTION_SOURCE,
 			"Rotation file reader has not been initialized yet.");
+	}
+}
+
+
+bool
+GPlatesFileIO::PlatesRotationFileProxy::matches_model(
+		const GPlatesModel::FeatureCollectionHandle &feature_collection)
+{
+	// The poles of this copy, as the reader turned them into the model: it skips invalid ones.
+	std::vector<ComparablePole> proxy_poles;
+	for (const boost::shared_ptr<RotationFileSegment> &segment : get_segments())
+	{
+		const RotationPoleLine *pole_line = dynamic_cast<const RotationPoleLine *>(segment.get());
+		if (!pole_line)
+		{
+			continue;
+		}
+
+		const RotationPoleData pole = pole_line->get_rotation_pole_data();
+		if (!is_valid_pole(pole))
+		{
+			continue;
+		}
+
+		// The rotation as the reader makes it (GpmlFiniteRotation::create from a pole). This copy
+		// can't hold a comment typed in the Total Reconstruction Sequences dialog, so a pole with
+		// one doesn't match: the model is written, and keeps it.
+		const GPlatesMaths::FiniteRotation finite_rotation = GPlatesMaths::FiniteRotation::create(
+				GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(pole.lat, pole.lon)),
+				GPlatesMaths::convert_deg_to_rad(pole.angle));
+		proxy_poles.push_back(
+				ComparablePole(
+						pole.moving_plate_id,
+						pole.fix_plate_id,
+						pole.time,
+						pole.disabled,
+						false/*has_comment*/,
+						finite_rotation.unit_quat()));
+	}
+
+	std::vector<ComparablePole> model_poles;
+	ModelPoleCollector model_pole_collector(model_poles);
+	for (GPlatesModel::FeatureCollectionHandle::const_iterator iter = feature_collection.begin();
+		iter != feature_collection.end();
+		++iter)
+	{
+		model_pole_collector.visit_feature(iter);
+	}
+
+	if (proxy_poles.size() != model_poles.size())
+	{
+		return false;
+	}
+
+	// Regardless of order: an edit through the Total Reconstruction Sequences dialog can insert a
+	// pole into the model and into this copy at different positions.
+	std::sort(proxy_poles.begin(), proxy_poles.end());
+	std::sort(model_poles.begin(), model_poles.end());
+
+	// Much finer than the four decimal places a pole is written with, and much coarser than the
+	// rounding in a round trip between a quaternion and a pole's latitude, longitude and angle.
+	const double epsilon = 1.0e-9;
+	for (std::size_t n = 0; n < proxy_poles.size(); ++n)
+	{
+		if (!are_equivalent(proxy_poles[n], model_poles[n], epsilon))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
+void
+GPlatesFileIO::PlatesRotationFileProxy::save_file(
+		File::Reference &file_ref)
+{
+	QFile rot_file(file_ref.get_file_info().get_qfileinfo().absoluteFilePath());
+	if (!rot_file.open(QFile::WriteOnly | QFile::Text))
+	{
+		throw ErrorOpeningFileForWritingException(
+				GPLATES_EXCEPTION_SOURCE,
+				file_ref.get_file_info().get_qfileinfo().filePath());
+	}
+
+	for (const boost::shared_ptr<RotationFileSegment> &segment : get_segments())
+	{
+		const QByteArray line = segment->to_qstring().toUtf8();
+		if (rot_file.write(line) != line.size())
+		{
+			// The file is already truncated, so it is partly written.
+			throw ErrorWritingFeatureCollectionToFileFormatException(
+					GPLATES_EXCEPTION_SOURCE,
+					"Failed to write the rotation file (eg, the disk is full).",
+					true/*file_written_to*/);
+		}
 	}
 }
 
@@ -1651,9 +1843,12 @@ GPlatesFileIO::PlatesRotationFileProxy::update_pole(
 
 			if(pole_line_ptr)
 			{
-				if(old_pole.moving_plate_id == pole_line_ptr->get_rotation_pole_data().moving_plate_id)
+				// The fixed plate too (as 'delete_pole' does): at a crossover, two sequences of one
+				// moving plate have a pole at the same time.
+				if(old_pole.moving_plate_id == pole_line_ptr->get_rotation_pole_data().moving_plate_id &&
+					old_pole.fix_plate_id == pole_line_ptr->get_rotation_pole_data().fix_plate_id)
 				{
-					if(std::fabs(pole_line_ptr->get_rotation_pole_data().time - old_pole.time) 
+					if(std::fabs(pole_line_ptr->get_rotation_pole_data().time - old_pole.time)
 						< ROTATION_EPSILON)
 					{
 						pole_line_ptr->get_rotation_pole_data() = new_pole;

@@ -129,12 +129,17 @@ namespace GPlatesModel
 		/**
 		 * Makes a clone of this feature.
 		 *
-		 * The returned feature has a new feature ID
-		 * and revision. The clone shares property objects with this feature, but
-		 * that is fine, because property objects in the model are immutable; if a
-		 * property were to be changed in this feature, the clone would point to the
-		 * old property object, while this feature would point to the new property
-		 * object. Hence, there is no need for a "deep clone" method.
+		 * The returned feature has a new feature ID and revision.
+		 *
+		 * This is a SHALLOW clone: the clone shares its TopLevelProperty objects with this
+		 * feature. That was safe when property objects were immutable, but an in-place
+		 * property-value setter (via BubbleUpRevisionHandler) now mutates the shared object -
+		 * and hence both features - without going through FeatureHandle::set(). Until
+		 * FeatureHandle joins the bubble-up revisioning system (see the
+		 * 'feature/pygplates-model-revisions' branch) a caller wanting an independent copy must
+		 * clone each property itself (TopLevelProperty::clone() is deep), as
+		 * GPlatesViewOperations::CloneOperation::clone_focused_feature() and
+		 * GPlatesApi::feature_handle_clone() do.
 		 *
 		 * The new feature is not in a feature collection. The caller of this function
 		 * is responsible for placing the feature in a feature collection, if that is
@@ -146,12 +151,8 @@ namespace GPlatesModel
 		/**
 		 * Makes a clone of this feature.
 		 *
-		 * The returned feature has a new feature ID and revision.
-		 * The clone shares property objects with this feature, but
-		 * that is fine, because property objects in the model are immutable; if a
-		 * property were to be changed in this feature, the clone would point to the
-		 * old property object, while this feature would point to the new property
-		 * object. Hence, there is no need for a "deep clone" method.
+		 * The returned feature has a new feature ID and revision. This is a SHALLOW clone -
+		 * see the first clone() overload.
 		 *
 		 * The new feature is added to @a feature_collection and a weak_ref to the
 		 * new feature is returned.
@@ -164,12 +165,8 @@ namespace GPlatesModel
 		 * Makes a clone of this feature (but only the property values for which
 		 * the given predicate @a clone_properties_predicate returns true).
 		 *
-		 * The returned feature has a new feature ID and revision.
-		 * The clone shares property objects with this feature, but
-		 * that is fine, because property objects in the model are immutable; if a
-		 * property were to be changed in this feature, the clone would point to the
-		 * old property object, while this feature would point to the new property
-		 * object. Hence, there is no need for a "deep clone" method.
+		 * The returned feature has a new feature ID and revision. This is a SHALLOW clone -
+		 * see the first clone() overload.
 		 *
 		 * The new feature is not in a feature collection. The caller of this function
 		 * is responsible for placing the feature in a feature collection, if that is
@@ -183,12 +180,8 @@ namespace GPlatesModel
 		 * Makes a clone of this feature (but only the property values for which
 		 * the given predicate @a clone_properties_predicate returns true).
 		 *
-		 * The returned feature has a new feature ID and revision.
-		 * The clone shares property objects with this feature, but
-		 * that is fine, because property objects in the model are immutable; if a
-		 * property were to be changed in this feature, the clone would point to the
-		 * old property object, while this feature would point to the new property
-		 * object. Hence, there is no need for a "deep clone" method.
+		 * The returned feature has a new feature ID and revision. This is a SHALLOW clone -
+		 * see the first clone() overload.
 		 *
 		 * The new feature is added to @a feature_collection and a weak_ref to the
 		 * new feature is returned.
@@ -220,6 +213,23 @@ namespace GPlatesModel
 
 		/**
 		 * Changes the child pointed to by iterator @a iter into @a new_child.
+		 *
+		 * @a new_child is stored directly - it is not cloned (the pre-pyGPlates-merge model
+		 * deep-cloned it here and in add()). So pass a property that nothing else holds a
+		 * reference to (a freshly created one, or a clone()), otherwise a later in-place
+		 * property-value edit would alias. This is no longer enforced centrally; each caller is
+		 * responsible. Reinstating a clone-before-store here and in add() was considered and
+		 * rejected: in-place bubble-up edits bypass set() anyway, and the
+		 * 'feature/pygplates-model-revisions' branch supersedes it.
+		 *
+		 * There is also no longer an "unchanged" check (the old model compared instance IDs
+		 * and skipped): every call notifies model listeners and flags unsaved changes. So never
+		 * call this from a read path (eg, to normalise a property while displaying it) - only
+		 * when the property has actually changed.
+		 *
+		 * This is the only way to replace a property through an iterator: '*iter = new_child'
+		 * compiles but silently does nothing
+		 * (see HandleTraits<FeatureHandle>::iterator_value_type).
 		 */
 		void
 		set(

@@ -14,7 +14,7 @@
    <string>Log</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gnome_dialog_warning_16.png</normaloff>:/gnome_dialog_warning_16.png</iconset>
   </property>
   <property name="sizeGripEnabled">
@@ -124,7 +124,7 @@
         <string>Cop&amp;y to clipboard</string>
        </property>
        <property name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/gnome_clipboard_16.png</normaloff>:/gnome_clipboard_16.png</iconset>
        </property>
        <property name="iconSize">
@@ -156,7 +156,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections>
   <connection>

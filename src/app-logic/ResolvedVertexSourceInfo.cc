@@ -107,6 +107,12 @@ GPlatesAppLogic::ResolvedVertexSourceInfo::create_source_from_reconstruction_pro
 	// If it's not reconstructed by half stage rotations (which includes flowlines) then it defaults to by-plate-ID.
 	//
 	// Note that the topology builder tools now only allow RFGs by-plate-id and by-half-stage-rotation.
+	//
+	// NOTE: This is the one place a flowline's 'gpml:reconstructionMethod' is read (its own
+	// reconstruction ignores it, see FlowlineUtils): a flowline used as a topological section gets
+	// its vertex velocities from the generic half-stage rotation, which for
+	// 'HalfStageRotationVersion3' spreads from the geometry import time (as the flowline itself
+	// does), but in 10My steps. So flowlines must keep being written with that method.
 	if (reconstruction_properties->get_reconstruct_method_type() == ReconstructMethod::HALF_STAGE_ROTATION ||
 		reconstruction_properties->get_reconstruct_method_type() == ReconstructMethod::FLOWLINE)
 	{
@@ -158,10 +164,18 @@ GPlatesMaths::FiniteRotation
 GPlatesAppLogic::ResolvedVertexSourceInfo::CalcStageRotationVisitor::operator()(
 		const HalfStageRotationProperties &source) const
 {
-	const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
-			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
-
 	const ReconstructionFeatureProperties &source_reconstruction_params = source.get_reconstruction_params();
+
+	// If we can't get left/right plate IDs then use plate ID zero, since that's what
+	// RotationUtils::get_half_stage_rotation() (below) does.
+	const std::pair<double, double> time_range =
+			PlateVelocityUtils::get_half_stage_rotation_velocity_time_range(
+					source_reconstruction_params.get_left_plate_id().get_value_or(0),
+					source_reconstruction_params.get_right_plate_id().get_value_or(0),
+					source.reconstruction_tree_creator,
+					reconstruction_time,
+					velocity_delta_time,
+					velocity_delta_time_type);
 
 	return GPlatesMaths::calculate_stage_rotation(
 			RotationUtils::get_half_stage_rotation(

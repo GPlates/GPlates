@@ -34,15 +34,17 @@
 #include <QMap>
 #include <QString>
 
+#include "ErrorWritingFeatureCollectionToFileFormatException.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileInfo.h"
 #include "OgrException.h"
 #include "PropertyMapper.h"
 #include "OgrUtils.h"
-#include "feature-visitors/GeometryTypeFinder.h"
-#include "feature-visitors/KeyValueDictionaryFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
-#include "feature-visitors/ToQvariantConverter.h"
+#include "app-logic/FlowlineUtils.h"
+#include "app-logic/GeometryTypeFinder.h"
+#include "model/KeyValueDictionaryFinder.h"
+#include "model/PropertyValueFinder.h"
+#include "model/ToQvariantConverter.h"
 
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -512,7 +514,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
 
 		boost::optional<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_to_const_type> old_plates_header =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
 						feature_handle.reference(), old_plates_header_property_name);
 		if (old_plates_header)
 		{
@@ -654,7 +656,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature, plate_id_property_name);
 		if (recon_plate_id)
 		{
@@ -696,7 +698,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> conjugate_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature, conjugate_plate_id_property_name);
 		if (conjugate_plate_id)
 		{
@@ -736,7 +738,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("leftPlate");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> left_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature, left_plate_id_property_name);
 		if (left_plate_id)
 		{
@@ -775,7 +777,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("rightPlate");
 
 		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> right_plate_id =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 						feature, right_plate_id_property_name);
 		if (right_plate_id)
 		{
@@ -816,7 +818,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 
 		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> recon_method =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(
 						feature, recon_method_property_name);
 		if (recon_method)
 		{
@@ -856,7 +858,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("spreadingAsymmetry");
 
 		boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> spreading_asymmetry =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsDouble>(
 						feature, spreading_asymmetry_property_name);
 		if (spreading_asymmetry)
 		{
@@ -894,16 +896,28 @@ namespace
 		static const GPlatesModel::PropertyName geometry_import_time_property_name =
 				GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 
+		boost::optional<double> geometry_import_time;
 		boost::optional<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type> time_instant =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimeInstant>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimeInstant>(
 						feature, geometry_import_time_property_name);
 		if (time_instant)
 		{
+			geometry_import_time = get_time_from_time_instant(*time_instant.get());
+		}
+		else
+		{
+			// A flowline without one spreads from its youngest time. Write that, rather than no
+			// value, since the flowline's times aren't written: read back, it then keeps spreading
+			// from there whatever times it is given. (No value is read back as none, except by
+			// OGR-GMT, which can't store it and reads back 0.)
+			geometry_import_time =
+					GPlatesAppLogic::FlowlineUtils::get_default_geometry_import_time(feature);
+		}
 
-			const double geometry_import_time = get_time_from_time_instant(*time_instant.get());
-
+		if (geometry_import_time)
+		{
 			GPlatesPropertyValues::XsDouble::non_null_ptr_type value =
-					GPlatesPropertyValues::XsDouble::create(geometry_import_time);
+					GPlatesPropertyValues::XsDouble::create(geometry_import_time.get());
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::GEOMETRY_IMPORT_TIME]);
@@ -1016,7 +1030,7 @@ namespace
 				GPlatesModel::PropertyName::create_gml("validTime");
 
 		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
 						feature, valid_time_property_name);
 		if (time_period)
 		{
@@ -1084,7 +1098,7 @@ namespace
 				GPlatesModel::PropertyName::create_gml("name");
 
 		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 						feature, name_property_name);
 		if (name)
 		{
@@ -1124,7 +1138,7 @@ namespace
 				GPlatesModel::PropertyName::create_gml("description");
 
 		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> description =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 						feature, description_property_name);
 		if (description)
 		{
@@ -1575,7 +1589,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 
 	// Check what types of geometries exist in the feature collection.
 
-	GPlatesFeatureVisitors::GeometryTypeFinder finder;
+	GPlatesAppLogic::GeometryTypeFinder finder;
 
 	GPlatesModel::FeatureCollectionHandle::const_iterator
 			iter = feature_collection_ref->begin(),
@@ -1584,6 +1598,18 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	for ( ; iter != end ; ++iter)
 	{
 		finder.visit_feature(iter);
+	}
+
+	// With no geometry to write (eg, an empty collection, or only topological features) no file is
+	// created, so say so rather than returning as if the file had been written. Throw before
+	// creating the OgrWriter, which would otherwise remove an existing file of the same name.
+	if (!finder.has_found_geometries())
+	{
+		throw ErrorWritingFeatureCollectionToFileFormatException(
+				GPLATES_EXCEPTION_SOURCE,
+				"There are no point, multi-point, polyline or polygon geometries to write "
+				"(topological geometries are not written to this file format).",
+				false/*file_written_to*/);
 	}
 
 	// Set up an appropriate OgrWriter.

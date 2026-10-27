@@ -13,11 +13,16 @@ library) from source on Windows, using [conda](https://docs.conda.io/) to instal
 2. [Install the dependencies with conda](#install-the-dependencies-with-conda)
 3. [Build GPlates](#build-gplates)
 4. [Build pyGPlates](#build-pygplates)
-5. [Developers](#developers)
+5. [Run the tests](#run-the-tests)
+   - [GPlates](#gplates)
+   - [pyGPlates](#pygplates)
+   - [Reading the result](#reading-the-result)
+6. [Developers](#developers)
    - [Choosing a terminal](#choosing-a-terminal)
+   - [Switching between conda environments](#switching-between-conda-environments)
    - [Using PowerShell](#using-powershell)
    - [Using the Visual Studio IDE](#using-the-visual-studio-ide)
-6. [Code intelligence (clangd)](#code-intelligence-clangd)
+7. [Code intelligence (clangd)](#code-intelligence-clangd)
 
 ## Prerequisites
 
@@ -48,7 +53,7 @@ conda activate gplates
 Alternatively, create the environment directly:
 
 ```bat
-conda create -n gplates -c conda-forge cmake ninja vs2022_win-64 python numpy "libblas=*=*openblas" qt6-main qwt libboost-devel libboost-python-devel libgdal proj cgal-cpp gmp mpfr glew zlib
+conda create -n gplates -c conda-forge cmake ninja vs2022_win-64 python numpy "libblas=*=*openblas" qt6-main qwt libboost-devel libboost-python-devel libgdal proj cgal-cpp gmp mpfr glew zlib gtest
 conda activate gplates
 ```
 
@@ -61,9 +66,10 @@ Keep this environment activated for all the build commands below. While it is ac
 auto-detects the conda environment and adds both `%CONDA_PREFIX%` and its `%CONDA_PREFIX%\Library`
 sub-directory to the dependency search path, so you do **not** need to pass `-DCMAKE_PREFIX_PATH`.
 
-> **Note:** In a plain Command Prompt / Anaconda Prompt, `conda deactivate` may not fully restore
-> `PATH` afterward (a known interaction with the `vs2022_win-64` compiler activation) — this doesn't
-> affect the build itself, but if you need a clean shell afterward, just close and reopen the terminal.
+> **Note:** In a Command Prompt (including the Anaconda Prompt), `conda deactivate` does not restore
+> `PATH` — the `vs2022_win-64` compiler activation leaves the environment's directories on it. This
+> doesn't affect building, but it matters if you switch to another environment in the same shell (a
+> Qt5 one, say): see [Switching between conda environments](#switching-between-conda-environments).
 
 ## Build GPlates
 
@@ -88,7 +94,9 @@ with conda builds.
 cmake --build build-gplates
 ```
 
-This produces `gplates.exe` under `build-gplates`.
+This produces `gplates.exe` under `build-gplates\bin`.
+
+To check the build, run the unit tests — see [Run the tests](#run-the-tests).
 
 ### Install (standalone)
 
@@ -125,10 +133,105 @@ A `pygplates` package should then be importable in the environment (`python -m p
 > ```
 >
 > then `cmake --build build-pygplates`. Using a separate build directory (rather than reusing
-> `build-gplates`) avoids mixing up which tree was configured for which target.
+> `build-gplates`) avoids mixing up which tree was configured for which target. This tree is also
+> what the pyGPlates tests run from — see [Run the tests](#run-the-tests).
 
 > Python binary wheels can also be built for distribution to other computers — see
 > `pygplates/wheel/README.md`.
+
+## Run the tests
+
+Both products have a test suite, run with
+[CTest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) from the build tree, which is the
+quickest way to confirm that a from-source build works. Two rules apply to every test run:
+
+- **Any build configuration works.** A Release tree is the natural one to test, since it is what
+  you would install, but a Debug or RelWithDebInfo tree runs the same tests. Pass `ctest` the
+  configuration you built with `-C`, as in the commands below: the single-configuration Ninja
+  generator used above finds the tests without it, but the
+  [Visual Studio generator](#using-the-visual-studio-ide) builds every configuration from one tree,
+  and `-C` is what selects the one to test.
+- **Run `ctest` from the shell you built in**, with the `gplates` environment activated: the test
+  executables and the built `pygplates` module find the dependency DLLs through `PATH`, and a shell
+  in which another environment was activated earlier resolves the wrong ones — see
+  [Switching between conda environments](#switching-between-conda-environments), which describes
+  that failure for `ctest`.
+
+> A Debug or RelWithDebInfo build uses the same *release* C runtime as a Release build. The conda
+> dependencies are built against it and have no debug builds, and a process that mixes the two
+> runtimes crashes before a single test runs — so `cmake/modules/ConfigDefault.cmake` selects it
+> for you. If you have built debug versions of the dependencies yourself, configure with
+> `-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL`.
+
+### GPlates
+
+The unit tests are a separate executable, `gplates-unit-test`, which a plain `cmake --build` does
+not build. Build it by name, then run the tests:
+
+```bat
+cmake --build build-gplates --target gplates-unit-test
+ctest --test-dir build-gplates -C Release --output-on-failure
+```
+
+Each test case is registered with CTest individually, so `ctest -R <pattern>` runs a subset and
+`ctest -j <N>` runs them in parallel.
+
+> The `gplates-unit-test` target only exists if CMake found GoogleTest when the tree was configured
+> (the `gtest` conda package, in the dependency list above). Without it there are no GPlates tests
+> at all: the configure output says `Warning: GoogleTest (gtest) not found so GPlates unit-test
+> executable gplates-unit-test will not be available` (the message is suppressed when building a
+> release version), and the build command above fails with an unknown target. Install the package
+> and re-configure.
+
+> A failed assertion aborts a Debug or RelWithDebInfo build of GPlates, so that a debugger stops
+> where it failed. The unit-test executable makes it throw instead, which is what lets the tests
+> that check error handling pass in every configuration. To stop in the debugger after all, set the
+> environment variable `GPLATES_UNIT_TEST_ABORT_ON_ASSERT` before running `gplates-unit-test`.
+
+> **Visual Studio tree** ([Using the Visual Studio IDE](#using-the-visual-studio-ide)): the same
+> commands work with `build-gplates-vs`, with the configuration named on the build too —
+> `cmake --build build-gplates-vs --config Release --target gplates-unit-test` (or build the
+> `gplates-unit-test` project in the IDE with the Release configuration selected), then
+> `ctest --test-dir build-gplates-vs -C Release --output-on-failure`. This generator builds every
+> configuration from one tree, and the test cases are discovered for whichever configuration you
+> built, so pass that same configuration to `-C`.
+
+### pyGPlates
+
+The pyGPlates tests run against a **build tree**, not against the package that `pip install .`
+installs (`pip` builds in a fresh temporary directory). So they need the separate `build-pygplates`
+tree from the Developers note under [Build pyGPlates](#build-pygplates), configured with
+`-DGPLATES_BUILD_GPLATES=FALSE`. Build it, then run the tests:
+
+```bat
+cmake --build build-pygplates
+ctest --test-dir build-pygplates -C Release --output-on-failure
+```
+
+This runs the Python test suite (`pygplates-test`) against the module just built, plus three checks
+that the built module is what the repository says it should be: `pygplates-stub-test` (the
+committed type stub `pygplates/stub/__init__.pyi` still matches the module), and
+`pygplates-source-closure-test` and `pygplates-linkage-test` (the module was compiled from, and
+links against, only what it should).
+
+> `pygplates-linkage-test` lists the module's DLL dependencies with `dumpbin`, which is on `PATH`
+> only in a shell with the MSVC compiler set up — the Anaconda Prompt with the environment
+> activated, or "Developer PowerShell for VS 2022" (see [Choosing a
+> terminal](#choosing-a-terminal)) — which is to say the shells that can build in the first place.
+> Elsewhere it fails with `could not run the dependency lister` rather than passing.
+
+### Reading the result
+
+One test, `version-resolver-test`, belongs to neither product and is registered by every tree for
+every configuration (it checks the version resolver's own logic, and needs nothing built). So if
+`ctest` reports **only that test** — `100% tests passed, 0 tests failed out of 1` — nothing else
+was selected, and the run says nothing about your build. With the Ninja generator used above, that
+happens in a GPlates tree when GoogleTest was not found at configure time (see the notes under
+[GPlates](#gplates)).
+
+A GPlates tree whose `gplates-unit-test` target has *not been built* is louder: `ctest` reports a
+single *failing* placeholder test, `gplates-unit-test_NOT_BUILT`. Build the target and run `ctest`
+again.
 
 ## Developers
 
@@ -137,19 +240,46 @@ A `pygplates` package should then be importable in the environment (`python -m p
 The build commands on this page assume the **Anaconda Prompt** (Command Prompt) — the default below.
 Which terminal you use matters on Windows, because the MSVC compiler is activated differently in each:
 
-| Terminal | Ninja build (needs MSVC on `PATH`) | `devenv` available |
-|---|---|---|
-| Anaconda Prompt (cmd) — *the documented default* | ✅ conda `vs2022_win-64` sets up MSVC | ✅ |
-| Plain Command Prompt | ✅ conda `vs2022_win-64` sets up MSVC | ✅ |
-| Plain PowerShell / Anaconda PowerShell Prompt | ❌ conda can't propagate the MSVC env | ❌ |
-| Developer PowerShell for VS 2022 | ✅ VS sets up MSVC | ✅ |
-| Developer Command Prompt for VS 2022 | ✅ VS sets up MSVC | ✅ |
+| Terminal | Ninja build (needs MSVC on `PATH`) | `devenv` available | `conda deactivate` restores `PATH` |
+|---|---|---|---|
+| Anaconda Prompt (cmd) — *the documented default* | ✅ conda `vs2022_win-64` sets up MSVC | ✅ | ❌ |
+| Plain Command Prompt | ✅ conda `vs2022_win-64` sets up MSVC | ✅ | ❌ |
+| Plain PowerShell / Anaconda PowerShell Prompt | ❌ conda can't propagate the MSVC env | ❌ | ✅ |
+| Developer PowerShell for VS 2022 | ✅ VS sets up MSVC | ✅ | ✅ |
+| Developer Command Prompt for VS 2022 | ✅ VS sets up MSVC | ✅ | ❌ |
 
 In short: use the **Anaconda Prompt**, or — if you prefer PowerShell — **"Developer PowerShell for VS
 2022"** (see [Using PowerShell](#using-powershell)). A *plain* PowerShell can't configure a Ninja build
 at all. In every working terminal, activate the conda environment (`conda activate gplates`) so the
 dependency libraries are on `PATH`; outside the Anaconda Prompt this first needs conda hooked into the
 shell (`conda init cmd.exe` or `conda init powershell`).
+
+The last column only matters if you switch between conda environments in one shell — see
+[Switching between conda environments](#switching-between-conda-environments).
+
+### Switching between conda environments
+
+If you keep more than one environment — a Qt6 `gplates` and a Qt5 one, say — **open a fresh
+terminal for each**, rather than `conda deactivate` / `conda activate` in the same shell. In any
+Command Prompt the two environments' directories end up mixed on `PATH`, and the one activated
+*first* wins.
+
+The cause is the `vs2022_win-64` package. Its activation script
+(`etc\conda\activate.d\vs2022_compiler_vars.bat`) prepends `%CONDA_PREFIX%`,
+`%CONDA_PREFIX%\Library\bin` etc. to `PATH` after running `vcvarsall.bat`, and ships no deactivation
+script, so conda — which only undoes the `PATH` entries it added itself — leaves them behind on
+`conda deactivate`, and `conda activate <other>` then prepends the other environment's directories in
+front of the leftovers. Compiling is unaffected (CMake locates the dependencies through
+`CONDA_PREFIX`, which conda does update), but anything that *runs* from that shell resolves
+same-named DLLs through `PATH`: a Qt5 `gplates.exe` or `ctest` run with a Qt6 environment's
+`Library\bin` still ahead on `PATH` picks up that environment's `qwt.dll` (Qwt 6.3 instead of 6.2) and
+dies at startup with "The procedure entry point ??0QwtPointSeriesData@@ ... could not be located".
+The symptom looks like a broken build; it is a stale shell.
+
+PowerShell terminals are immune, because conda runs only `.ps1` activation scripts there and the
+package ships only the `.bat` — which is also why a plain PowerShell never sees the compiler. Even
+so, one terminal per environment is the simplest rule and is what these instructions assume. This is a
+Windows-only quirk of the `vs2022_win-64` activation script; macOS and Linux are not affected.
 
 ### Using PowerShell
 
@@ -206,20 +336,34 @@ Editors and IDEs that use [clangd](https://clangd.llvm.org/) (including the Clau
 plugin) provide code navigation, diagnostics and completion. clangd needs a `compile_commands.json`
 compilation database, which the **Ninja** build generates automatically:
 `CMAKE_EXPORT_COMPILE_COMMANDS` is enabled by default (override with
-`-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF`). The committed `.clangd` at the repo root points clangd at the
-`build-gplates` tree, so once you have configured the Ninja `build-gplates` (above) there is nothing
-else to set up. clangd understands the MSVC (`cl.exe`) command lines that CMake records.
+`-DCMAKE_EXPORT_COMPILE_COMMANDS=OFF`). Configuring a build tree *also* writes a `.clangd` file at the
+repo root that points clangd at that tree, so once you have configured `build-gplates` (above) there
+is nothing else to set up. clangd understands the MSVC (`cl.exe`) command lines that CMake records,
+and locates the Visual Studio and Windows SDK headers itself (it does not need a developer command
+prompt).
 
-- **clangd binary:** install LLVM — `winget install LLVM.LLVM` (then add its `bin` to `PATH`) or
-  download from the [LLVM releases](https://github.com/llvm/llvm-project/releases). Or from
-  conda-forge: `conda install clangdev`.
-- The database lives inside the (git-ignored) `build-gplates` directory and is refreshed on each
-  configure/build. It is portable across git worktrees (the `.clangd` path is relative).
-- To edit against the pyGPlates tree instead, change `CompilationDatabase` in `.clangd` to
-  `build-pygplates`.
+- **clangd binary:** `winget install LLVM.clangd` installs the standalone clangd (a ~50 MB download)
+  and adds it to your `PATH` - restart your terminal, and your editor, afterwards. Use
+  `winget install LLVM.LLVM` instead if you also want the rest of the LLVM tools (clang-tidy,
+  clang-format); it is a much larger download. Prefer either of these to installing clangd into the
+  conda environment: the `clangd-lsp` plugin launches `clangd` from `PATH`, so a binary that lives in
+  the `gplates` environment is only found when that environment happens to be activated.
+- **Which build tree:** `.clangd` is generated (from the committed `.clangd.in`) every time you
+  configure, and points at the tree you configured *most recently* - so it follows
+  `GPLATES_BUILD_GPLATES` by itself. Configure `build-pygplates` with `-DGPLATES_BUILD_GPLATES=FALSE`
+  and clangd switches to the pyGPlates compile commands; re-configure `build-gplates` to switch back.
+  Re-configuring an already-configured tree is enough (`cmake -S . -B build-pygplates`, a second or
+  two), and the generated file names the target it was written for, so its header tells you which one
+  is currently active. Only build trees *inside* the source directory are used, so a `pip install .`
+  (or `conda build`) - which configures into a temporary directory - never clobbers your setting.
+- The database lives inside the (git-ignored) build directory and is refreshed on each
+  configure/build. The path recorded in `.clangd` is relative, so it works in any git worktree.
+- `.clangd` is git-ignored because it is generated. To hand-maintain your own instead, configure with
+  `-DGPLATES_WRITE_CLANGD_CONFIG=FALSE` and CMake will leave the file alone.
 
 > **Visual Studio generator caveat:** the optional `build-gplates-vs` tree
 > ([Using the Visual Studio IDE](#using-the-visual-studio-ide)) uses the "Visual Studio 17 2022"
-> generator, which does **not** emit `compile_commands.json` — the flag above only affects the Ninja
-> (and Makefile) generators. That is fine: keep a Ninja `build-gplates` configured for clangd, and use
-> Visual Studio's own IntelliSense inside the IDE.
+> generator, which does **not** emit `compile_commands.json` - the flag above only affects the Ninja
+> (and Makefile) generators. Configuring it therefore leaves `.clangd` pointing at your last Ninja
+> tree rather than at a tree with no database. Keep a Ninja `build-gplates` configured for clangd, and
+> use Visual Studio's own IntelliSense inside the IDE.

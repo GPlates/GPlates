@@ -45,14 +45,12 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::MapRenderedGeometryCollectionP
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		ColourScheme::non_null_ptr_type colour_scheme,
 		int device_pixel_ratio) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_gl_visual_layers(gl_visual_layers),
 	d_visual_layers(visual_layers),
 	d_layer_painter(gl_visual_layers, device_pixel_ratio, map_projection),
-	d_colour_scheme(colour_scheme),
 	d_scale(1.0f)
 {  }
 
@@ -111,8 +109,7 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::visit_rendered_geometry_layer(
 			rendered_geometry_layer,
 			d_gl_visual_layers,
 			d_paint_params->d_inverse_viewport_zoom_factor,
-			d_paint_params->d_device_independent_pixel_to_map_space_ratio,
-			d_colour_scheme);
+			d_paint_params->d_device_independent_pixel_to_map_space_ratio);
 	rendered_geom_layer_painter.set_scale(d_scale);
 
 	// Paint the layer.

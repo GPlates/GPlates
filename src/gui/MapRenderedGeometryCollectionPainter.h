@@ -30,7 +30,6 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "ColourScheme.h"
 #include "LayerPainter.h"
 
 #include "opengl/GLContext.h"
@@ -77,7 +76,6 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				ColourScheme::non_null_ptr_type colour_scheme,
 				int device_pixel_ratio);
 
 		/**
@@ -172,9 +170,6 @@ namespace GPlatesGui
 
 		//! Used to paint the layers.
 		LayerPainter d_layer_painter;
-
-		//! For assigning colours to RenderedGeometry
-		ColourScheme::non_null_ptr_type d_colour_scheme;
 
 		//! When rendering globes that are meant to be a scale copy of another
 		float d_scale;

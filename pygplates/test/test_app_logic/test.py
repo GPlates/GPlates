@@ -7,6 +7,7 @@ import os
 import sys
 import pickle
 import shutil
+import tempfile
 import unittest
 import pygplates
 
@@ -94,6 +95,58 @@ class CrossoverTestCase(unittest.TestCase):
             self.assertTrue(len(crossover_results) == 123)
         
         # TODO: Add more tests.
+
+    def test_synchronise_crossovers_writes_only_if_synchronised(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_rot_filename = os.path.join(tmp_dir, 'rotations.rot')
+            shutil.copyfile(os.path.join(FIXTURES, 'rotations.rot'), tmp_rot_filename)
+            with open(tmp_rot_filename, 'rb') as tmp_rot_file:
+                original_contents = tmp_rot_file.read()
+            
+            # Record the files written (rather than relying on a read-only file failing to be written,
+            # which it does not when the tests run as root).
+            written_filenames = []
+            original_write = pygplates.FeatureCollection.write
+            def write(feature_collection, filename, *args, **kwargs):
+                written_filenames.append(filename)
+                return original_write(feature_collection, filename, *args, **kwargs)
+            
+            def synchronise_crossovers():
+                del written_filenames[:]
+                crossover_results = []
+                pygplates.FeatureCollection.write = write
+                try:
+                    pygplates.synchronise_crossovers(
+                            tmp_rot_filename,
+                            lambda crossover: crossover.time < 600,
+                            0.01,
+                            pygplates.CrossoverType.synch_old_crossover_and_stages,
+                            crossover_results)
+                finally:
+                    pygplates.FeatureCollection.write = original_write
+                self.assertTrue(len(crossover_results) == 123)
+                synchronised = any(result == pygplates.CrossoverResult.synchronised for _, result in crossover_results)
+                with open(tmp_rot_filename, 'rb') as tmp_rot_file:
+                    return (synchronised, list(written_filenames), tmp_rot_file.read())
+            
+            # Some crossovers need synchronising, so the file is written.
+            synchronised, written, contents = synchronise_crossovers()
+            self.assertTrue(synchronised)
+            self.assertTrue(len(written) == 1 and os.path.samefile(written[0], tmp_rot_filename))
+            self.assertTrue(contents != original_contents)
+            
+            # Writing rounds the rotations in the file, which can take a crossover out of synch again.
+            # So synchronise until no crossover needs it, and then the file is not written.
+            for _ in range(5):
+                previous_contents = contents
+                synchronised, written, contents = synchronise_crossovers()
+                if not synchronised:
+                    break
+                self.assertTrue(len(written) == 1 and os.path.samefile(written[0], tmp_rot_filename))
+            else:
+                self.fail('Crossovers did not stay synchronised')
+            self.assertFalse(written)
+            self.assertTrue(contents == previous_contents)
 
 
 class InterpolateTotalReconstructionSequenceTestCase(unittest.TestCase):
@@ -773,7 +826,377 @@ class ReconstructTestCase(unittest.TestCase):
             # First point in left/right flowline is reconstructed seed point.
             self.assertTrue(reconstructed_flowline.get_left_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
             self.assertTrue(reconstructed_flowline.get_right_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
-        
+
+    @staticmethod
+    def _flowline_rotation_model():
+        # Plate 201 moves relative to the anchor; 701 has a non-identity present day rotation; and
+        # 801 spreads from 201 at a varying rate about a moving pole.
+        def sequence(fixed_plate, moving_plate, samples):
+            return pygplates.Feature.create_total_reconstruction_sequence(
+                fixed_plate,
+                moving_plate,
+                pygplates.GpmlIrregularSampling([
+                    pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(pygplates.FiniteRotation(pole, math.radians(angle))),
+                        time)
+                    for time, pole, angle in samples]))
+        return pygplates.RotationModel([
+            sequence(0, 201, [(0, (0, 90), 0), (100, (0, 90), 50)]),
+            sequence(0, 701, [(0, (10, 20), 3), (100, (10, 20), 40)]),
+            sequence(201, 801, [(0, (30, 40), 0), (10, (30, 40), 5), (20, (50, 60), 30),
+                                (40, (60, 80), 40), (100, (60, 80), 100)]),
+        ])
+
+    def _reconstruct_flowline(self, flowline_feature, rotation_model, reconstruction_time):
+        reconstructed_flowlines = []
+        pygplates.reconstruct(
+                flowline_feature, rotation_model, reconstructed_flowlines, reconstruction_time,
+                reconstruct_type=pygplates.ReconstructType.flowline)
+        self.assertTrue(len(reconstructed_flowlines) <= 1)
+        return reconstructed_flowlines[0] if reconstructed_flowlines else None
+
+    def _assert_seed_velocity_follows_seed(self, flowline_feature, rotation_model, reconstruction_time):
+        # The seed point velocity should match how the reconstructed seed point actually moves.
+        delta_time = 0.01
+        reconstructed_flowline = self._reconstruct_flowline(flowline_feature, rotation_model, reconstruction_time)
+        next_reconstructed_flowline = self._reconstruct_flowline(
+                flowline_feature, rotation_model, reconstruction_time + delta_time)
+        # From the older position to the younger one (the velocity is forward in time).
+        expected_velocity = (
+                pygplates.Vector3D(reconstructed_flowline.get_reconstructed_seed_point().to_xyz()) -
+                pygplates.Vector3D(next_reconstructed_flowline.get_reconstructed_seed_point().to_xyz())
+            ) * (pygplates.Earth.mean_radius_in_kms / delta_time)
+        velocity = reconstructed_flowline.get_reconstructed_seed_point_velocity(velocity_delta_time=delta_time)
+        self.assertLess((velocity - expected_velocity).get_magnitude(), 0.01 * expected_velocity.get_magnitude())
+
+    def test_reconstruct_flowline_left_right_plates_not_coinciding(self):
+        # The two halves of a flowline start at its seed point even when the left and right plates
+        # don't coincide at the flowline's youngest time.
+        rotation_model = self._flowline_rotation_model()
+        seed_point = pygplates.PointOnSphere(20, 10)
+        for times, right_plate, reconstruction_time in (
+                ([10, 20, 30, 40], 801, 15),  # youngest time is not present day
+                ([0, 10, 20, 30, 40], 701, 5),  # right plate's present day rotation is not identity
+                ([10, 20, 30, 40], 701, 15)):  # both
+            flowline_feature = pygplates.Feature.create_flowline(
+                    seed_point, times, left_plate=201, right_plate=right_plate)
+            reconstructed_flowline = self._reconstruct_flowline(flowline_feature, rotation_model, reconstruction_time)
+            self.assertTrue(reconstructed_flowline.get_left_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
+            self.assertTrue(reconstructed_flowline.get_right_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
+            self._assert_seed_velocity_follows_seed(flowline_feature, rotation_model, reconstruction_time)
+
+    def _assert_same_points(self, points, expected_points):
+        self.assertEqual(len(points), len(expected_points))
+        for point, expected_point in zip(points, expected_points):
+            self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(point, expected_point), 0)
+
+    def test_flowline_geometry_import_time(self):
+        # A flowline spreads from its geometry import time.
+        rotation_model = self._flowline_rotation_model()
+        seed_point = pygplates.PointOnSphere(20, 10)
+        times = [10, 20, 30, 40]
+        # Reverse reconstructing sets it to the reconstruction time...
+        flowline_feature = pygplates.Feature.create_flowline(
+                seed_point, times, left_plate=201, right_plate=801, reverse_reconstruct=(rotation_model, 15))
+        self.assertEqual(flowline_feature.get_geometry_import_time(None), 15)
+        flowline_feature.set_geometry(seed_point, reverse_reconstruct=(rotation_model, 25))
+        self.assertEqual(flowline_feature.get_geometry_import_time(None), 25)
+        pygplates.reverse_reconstruct(flowline_feature, rotation_model, 35)
+        self.assertEqual(flowline_feature.get_geometry_import_time(None), 35)
+        # ...otherwise create_flowline() sets it to the youngest time.
+        flowline_feature = pygplates.Feature.create_flowline(seed_point, times, left_plate=201, right_plate=801)
+        self.assertEqual(flowline_feature.get_geometry_import_time(None), times[0])
+        # A flowline without one (which spreads from its youngest time) gets one there when its times change.
+        flowline_feature = pygplates.Feature(pygplates.FeatureType.gpml_flowline)
+        flowline_feature.set_times(times)
+        self.assertIsNone(flowline_feature.get_geometry_import_time(None))
+        flowline_feature.set_times([5] + times)
+        self.assertEqual(flowline_feature.get_geometry_import_time(None), times[0])
+
+    def test_flowline_geometry_import_time_in_ogr_formats(self):
+        # These formats don't store a flowline's times, but store its geometry import time. A flowline
+        # without one spreads from its youngest time, so that is what they store, not no value (which
+        # OGR-GMT reads back as 0).
+        times = [10, 20, 30, 40]
+        legacy_flowline_feature = pygplates.Feature(pygplates.FeatureType.gpml_flowline)
+        legacy_flowline_feature.set_times(times)
+        legacy_flowline_feature.set_left_plate(201)
+        legacy_flowline_feature.set_right_plate(801)
+        legacy_flowline_feature.set_geometry(pygplates.PointOnSphere(20, 10))
+        flowline_feature = pygplates.Feature.create_flowline(
+                pygplates.PointOnSphere(20, 10), times, left_plate=201, right_plate=801)
+        flowline_feature.set_geometry_import_time(15)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            for extension in ('shp', 'geojson', 'gpkg', 'gmt'):
+                for index, (feature, geometry_import_time) in enumerate(
+                        ((legacy_flowline_feature, times[0]), (flowline_feature, 15))):
+                    # A new file each time (overwriting prints a GDAL error for some formats).
+                    filename = os.path.join(temp_dir, 'flowline{}.{}'.format(index, extension))
+                    pygplates.FeatureCollection([feature]).write(filename)
+                    read_feature, = pygplates.FeatureCollection(filename)
+                    self.assertEqual(read_feature.get_geometry_import_time(None), geometry_import_time)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_reconstruct_flowline_changing_times(self):
+        # Changing the times of a flowline doesn't shift it at any reconstruction time (only changes
+        # which vertices it has), since it
+        # spreads from its geometry import time. So pieces of a flowline join up, as for motion paths.
+        rotation_model = self._flowline_rotation_model()
+        seed_point = pygplates.PointOnSphere(20, 10)
+        times = [10, 20, 30, 40]
+        for right_plate in (801, 701):
+            # Digitised at 15 Ma, between two of the times.
+            flowline_feature, whole_flowline_feature = (
+                pygplates.Feature.create_flowline(
+                        seed_point, flowline_times, left_plate=201, right_plate=right_plate, name='flowline',
+                        reverse_reconstruct=(rotation_model, 15))
+                for flowline_times in (times, [0] + times))
+            # A younger piece, digitised at the same time and point (older than its own oldest time).
+            younger_flowline_feature = pygplates.Feature.create_flowline(
+                    seed_point, [0, times[0]], left_plate=201, right_plate=right_plate,
+                    reverse_reconstruct=(rotation_model, 15))
+            for reconstruction_time in (0, 5, 10, 12, 15, 25, 35):
+                reconstructed_flowline = self._reconstruct_flowline(flowline_feature, rotation_model, reconstruction_time)
+                whole_flowline = self._reconstruct_flowline(whole_flowline_feature, rotation_model, reconstruction_time)
+                self._assert_same_points(
+                        [reconstructed_flowline.get_reconstructed_seed_point()],
+                        [whole_flowline.get_reconstructed_seed_point()])
+                if reconstruction_time < times[0]:
+                    # Each half starts at the youngest time (not at the seed point), where the
+                    # younger piece of the flowline ends.
+                    younger_flowline = self._reconstruct_flowline(
+                            younger_flowline_feature, rotation_model, reconstruction_time)
+                    self._assert_same_points(
+                            reconstructed_flowline.get_left_flowline(), whole_flowline.get_left_flowline()[1:])
+                    self._assert_same_points(
+                            reconstructed_flowline.get_right_flowline(), whole_flowline.get_right_flowline()[1:])
+                    self._assert_same_points(
+                            [reconstructed_flowline.get_left_flowline()[0], reconstructed_flowline.get_right_flowline()[0]],
+                            [younger_flowline.get_left_flowline()[-1], younger_flowline.get_right_flowline()[-1]])
+                    self._assert_same_points(
+                            [younger_flowline.get_reconstructed_seed_point()],
+                            [whole_flowline.get_reconstructed_seed_point()])
+                else:
+                    self._assert_same_points(
+                            reconstructed_flowline.get_left_flowline(), whole_flowline.get_left_flowline())
+                    self._assert_same_points(
+                            reconstructed_flowline.get_right_flowline(), whole_flowline.get_right_flowline())
+
+                # Reverse reconstruction is the inverse of reconstruction.
+                reverse_reconstructed_flowline_feature = pygplates.Feature.create_flowline(
+                        seed_point, times, left_plate=201, right_plate=right_plate,
+                        reverse_reconstruct=(rotation_model, reconstruction_time))
+                self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(
+                        self._reconstruct_flowline(
+                                reverse_reconstructed_flowline_feature, rotation_model, reconstruction_time
+                        ).get_reconstructed_seed_point(),
+                        seed_point), 0)
+
+            # Spreading forward in time (younger than the geometry import time) and backward.
+            for reconstruction_time in (5, 25):
+                self._assert_seed_velocity_follows_seed(flowline_feature, rotation_model, reconstruction_time)
+
+            # Exported vertex times start at the youngest time.
+            temp_dir = tempfile.mkdtemp()
+            try:
+                export_filename = os.path.join(temp_dir, 'flowline.xy')
+                pygplates.reconstruct(flowline_feature, rotation_model, export_filename, 5,
+                        reconstruct_type=pygplates.ReconstructType.flowline)
+                with open(export_filename) as export_file:
+                    vertex_times = [float(line.split()[2]) for line in export_file
+                            if line.strip() and not line.startswith('>')]
+                self.assertEqual(vertex_times, times + times)
+            finally:
+                shutil.rmtree(temp_dir)
+
+    def test_reconstruct_flowline_vertices(self):
+        # The seed point and vertices, against the design computed independently: the seed point is
+        # stored at present day in the left plate's frame, and spreads by half-stage rotations from the
+        # geometry import time to the reconstruction time, and each half from there to its vertices.
+        # Each step ends at one of the flowline's times, the import time or the reconstruction time.
+        rotation_model = self._flowline_rotation_model()
+        seed_point = pygplates.PointOnSphere(20, 10)
+        times = [10, 20, 30, 40]
+
+        def half_stage_rotation(from_time, to_time, fixed_plate, moving_plate):
+            # Moving plate relative to fixed plate, from 'from_time' to 'to_time', in the fixed plate's frame.
+            stage_rotation = (rotation_model.get_rotation(to_time, fixed_plate).get_inverse() *
+                    rotation_model.get_rotation(to_time, moving_plate) *
+                    rotation_model.get_rotation(from_time, moving_plate).get_inverse() *
+                    rotation_model.get_rotation(from_time, fixed_plate))
+            pole, angle = stage_rotation.get_euler_pole_and_angle()
+            return pygplates.FiniteRotation(pole, angle / 2)
+
+        def spread(point, from_time, to_time, step_times, fixed_plate, moving_plate):
+            inner_times = sorted(time for time in step_times if min(from_time, to_time) < time < max(from_time, to_time))
+            if to_time < from_time:
+                inner_times.reverse()
+            step_ends = [from_time] + inner_times + [to_time]
+            for step_from_time, step_to_time in zip(step_ends[:-1], step_ends[1:]):
+                point = half_stage_rotation(step_from_time, step_to_time, fixed_plate, moving_plate) * point
+            return point
+
+        for right_plate in (801, 701):
+            for geometry_import_time in (3, 15, 50):
+                flowline_feature = pygplates.Feature.create_flowline(
+                        seed_point, times, left_plate=201, right_plate=right_plate,
+                        reverse_reconstruct=(rotation_model, geometry_import_time))
+                stored_seed_point = flowline_feature.get_geometry()
+                right_stored_seed_point = (rotation_model.get_rotation(geometry_import_time, right_plate).get_inverse() *
+                        rotation_model.get_rotation(geometry_import_time, 201) * stored_seed_point)
+                for reconstruction_time in (0, 5, 10, 15, 25, 39.9):
+                    halves = []
+                    for plate, other_plate, stored_point in (
+                            (201, right_plate, stored_seed_point), (right_plate, 201, right_stored_seed_point)):
+                        point = spread(stored_point, geometry_import_time, reconstruction_time, times, plate, other_plate)
+                        vertices = [point] if reconstruction_time >= times[0] else []
+                        for time in times:
+                            if time > reconstruction_time:
+                                vertices.append(spread(
+                                        point, reconstruction_time, time, times + [geometry_import_time],
+                                        plate, other_plate))
+                        rotation = rotation_model.get_rotation(reconstruction_time, plate)
+                        halves.append([rotation * vertex for vertex in vertices])
+                    expected_seed_point = rotation_model.get_rotation(reconstruction_time, 201) * spread(
+                            stored_seed_point, geometry_import_time, reconstruction_time, times, 201, right_plate)
+
+                    reconstructed_flowline = self._reconstruct_flowline(
+                            flowline_feature, rotation_model, reconstruction_time)
+                    self._assert_same_points(
+                            [reconstructed_flowline.get_reconstructed_seed_point()], [expected_seed_point])
+                    self._assert_same_points(reconstructed_flowline.get_left_flowline(), halves[0])
+                    self._assert_same_points(reconstructed_flowline.get_right_flowline(), halves[1])
+
+    def test_reconstruct_flowline_rotations_younger_than_geometry_import_time(self):
+        # Rotations younger than a flowline's geometry import time don't change it at (and older than) that
+        # time, and the seed point there moves only with the left plate (as for HalfStageRotationVersion3 ridges).
+        def sequence(fixed_plate, moving_plate, samples):
+            return pygplates.Feature.create_total_reconstruction_sequence(
+                fixed_plate,
+                moving_plate,
+                pygplates.GpmlIrregularSampling([
+                    pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(pygplates.FiniteRotation(pole, math.radians(angle))), time)
+                    for time, pole, angle in samples]))
+        left_sequence = sequence(0, 201, [(0, (0, 90), 0), (100, (0, 90), 50)])
+        older_samples = [(10, (30, 40), 5), (20, (50, 60), 30), (40, (60, 80), 40), (100, (60, 80), 100)]
+        rotation_model = pygplates.RotationModel([left_sequence, sequence(201, 801, [(0, (30, 40), 0)] + older_samples)])
+        other_rotation_models = [
+            # No rotations younger than 10 Ma.
+            pygplates.RotationModel([left_sequence, sequence(201, 801, older_samples)]),
+            # Different motion younger than 10 Ma.
+            pygplates.RotationModel([left_sequence, sequence(201, 801, [(0, (0, 0), 0), (5, (10, 0), 8)] + older_samples)])]
+        seed_point = pygplates.PointOnSphere(20, 10)
+        times = [10, 20, 30, 40]
+
+        def flowline_points(rotation_model_, reconstruction_time):
+            # Digitised at 10 Ma.
+            reconstructed_flowline = self._reconstruct_flowline(
+                    pygplates.Feature.create_flowline(
+                            seed_point, times, left_plate=201, right_plate=801,
+                            reverse_reconstruct=(rotation_model_, 10)),
+                    rotation_model_,
+                    reconstruction_time)
+            return ([reconstructed_flowline.get_reconstructed_seed_point()] +
+                    list(reconstructed_flowline.get_left_flowline()) + list(reconstructed_flowline.get_right_flowline()))
+
+        for other_rotation_model in other_rotation_models:
+            for reconstruction_time in (10, 15, 25):
+                self._assert_same_points(
+                        flowline_points(other_rotation_model, reconstruction_time),
+                        flowline_points(rotation_model, reconstruction_time))
+
+        # Changing the right plate's rotation at the geometry import time doesn't shift the seed point at that time.
+        flowline_feature = pygplates.Feature.create_flowline(
+                seed_point, times, left_plate=201, right_plate=801, reverse_reconstruct=(rotation_model, 10))
+        changed_rotation_model = pygplates.RotationModel([
+                left_sequence,
+                sequence(201, 801, [(0, (30, 40), 0), (10, (30, 40), 7)] + older_samples[1:])])
+        self._assert_same_points(
+                [self._reconstruct_flowline(flowline_feature, changed_rotation_model, 10).get_reconstructed_seed_point()],
+                [seed_point])
+
+    def test_reconstruct_flowline_without_geometry_import_time(self):
+        # A flowline without a geometry import time spreads from its youngest time.
+        rotation_model = self._flowline_rotation_model()
+        seed_point = pygplates.PointOnSphere(20, 10)
+        times = [10, 20, 30, 40]
+        flowline_feature = pygplates.Feature(pygplates.FeatureType.gpml_flowline)
+        flowline_feature.set_times(times)
+        flowline_feature.set_left_plate(201)
+        flowline_feature.set_right_plate(801)
+        flowline_feature.set_geometry(seed_point)
+        self.assertIsNone(flowline_feature.get_geometry_import_time(None))
+        # The same as one with a geometry import time at its youngest time.
+        flowline_feature_with_import_time = pygplates.Feature.create_flowline(
+                seed_point, times, left_plate=201, right_plate=801)
+        for reconstruction_time in (0, 5, 10, 15, 30):
+            reconstructed_flowline = self._reconstruct_flowline(flowline_feature, rotation_model, reconstruction_time)
+            expected_reconstructed_flowline = self._reconstruct_flowline(
+                    flowline_feature_with_import_time, rotation_model, reconstruction_time)
+            self._assert_same_points(
+                    [reconstructed_flowline.get_reconstructed_seed_point()] +
+                        list(reconstructed_flowline.get_left_flowline()) + list(reconstructed_flowline.get_right_flowline()),
+                    [expected_reconstructed_flowline.get_reconstructed_seed_point()] +
+                        list(expected_reconstructed_flowline.get_left_flowline()) +
+                        list(expected_reconstructed_flowline.get_right_flowline()))
+        # At its youngest time the seed point has only moved with the left plate.
+        self._assert_same_points(
+                [self._reconstruct_flowline(flowline_feature, rotation_model, times[0]).get_reconstructed_seed_point()],
+                [rotation_model.get_rotation(times[0], 201) * seed_point])
+
+    def test_reconstruct_flowline_older_than_oldest_time(self):
+        rotation_model = self._flowline_rotation_model()
+        seed_point = pygplates.PointOnSphere(20, 10)
+        times = [10, 20, 30, 40]
+        flowline_feature = pygplates.Feature.create_flowline(seed_point, times, left_plate=201, right_plate=801)
+        # There's no flowline at (or older than) the oldest time, only a seed point.
+        for reconstruction_time in (40, 50):
+            self.assertFalse(self._reconstruct_flowline(flowline_feature, rotation_model, reconstruction_time))
+        # The seed point (reverse reconstructed here) is continuous across the oldest time.
+        stored_seed_points = [
+            pygplates.Feature.create_flowline(
+                    seed_point, times, left_plate=201, right_plate=801,
+                    reverse_reconstruct=(rotation_model, reconstruction_time)).get_geometry()
+            for reconstruction_time in (39.999, 40.001)]
+        self.assertTrue(math.degrees(pygplates.GeometryOnSphere.distance(*stored_seed_points)) < 0.01)
+        # Digitised older than the oldest time: the flowline spreads from there, as it does from any
+        # geometry import time, so the stored seed point is where it was digitised, carried to present
+        # day by the left plate...
+        flowline_feature = pygplates.Feature.create_flowline(
+                seed_point, times, left_plate=201, right_plate=801, reverse_reconstruct=(rotation_model, 50))
+        self._assert_same_points(
+                [flowline_feature.get_geometry()],
+                [rotation_model.get_rotation(50, 201).get_inverse() * seed_point])
+        # ...and it joins an older piece digitised at the same time and point.
+        older_flowline_feature = pygplates.Feature.create_flowline(
+                seed_point, [times[-1], 50, 60], left_plate=201, right_plate=801,
+                reverse_reconstruct=(rotation_model, 50))
+        whole_flowline_feature = pygplates.Feature.create_flowline(
+                seed_point, times + [50, 60], left_plate=201, right_plate=801,
+                reverse_reconstruct=(rotation_model, 50))
+        for reconstruction_time in (15, 35):
+            reconstructed_flowline = self._reconstruct_flowline(flowline_feature, rotation_model, reconstruction_time)
+            whole_flowline = self._reconstruct_flowline(whole_flowline_feature, rotation_model, reconstruction_time)
+            self._assert_same_points(
+                    [reconstructed_flowline.get_reconstructed_seed_point()],
+                    [whole_flowline.get_reconstructed_seed_point()])
+            num_points = len(reconstructed_flowline.get_left_flowline())
+            self._assert_same_points(
+                    reconstructed_flowline.get_left_flowline(), whole_flowline.get_left_flowline()[:num_points])
+            self._assert_same_points(
+                    reconstructed_flowline.get_right_flowline(), whole_flowline.get_right_flowline()[:num_points])
+        for reconstruction_time in (45, 55):
+            older_flowline = self._reconstruct_flowline(older_flowline_feature, rotation_model, reconstruction_time)
+            whole_flowline = self._reconstruct_flowline(whole_flowline_feature, rotation_model, reconstruction_time)
+            self._assert_same_points(
+                    [older_flowline.get_reconstructed_seed_point()],
+                    [whole_flowline.get_reconstructed_seed_point()])
+            self._assert_same_points(older_flowline.get_left_flowline(), whole_flowline.get_left_flowline())
+            self._assert_same_points(older_flowline.get_right_flowline(), whole_flowline.get_right_flowline())
+
     def test_reconstruct_motion_path(self):
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
         reconstruction_time = 15
@@ -825,6 +1248,33 @@ class ReconstructTestCase(unittest.TestCase):
             self.assertTrue(len(reconstructed_motion_path.get_motion_path()) == 4)
             # Last point in motion path is reconstructed seed point.
             self.assertTrue(reconstructed_motion_path.get_motion_path()[-1] == reconstructed_motion_path.get_reconstructed_seed_point())
+
+    def test_reconstruct_export_name(self):
+        # Exported flowlines and motion paths both include the feature's name.
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        features = (
+            (pygplates.Feature.create_flowline(
+                    pygplates.PointOnSphere(0, 0), [0, 10, 20], left_plate=201, right_plate=801,
+                    name='a flowline'),
+                pygplates.ReconstructType.flowline),
+            (pygplates.Feature.create_motion_path(
+                    pygplates.PointOnSphere(0, 0), [0, 10, 20], relative_plate=201, reconstruction_plate_id=801,
+                    name='a motion path'),
+                pygplates.ReconstructType.motion_path))
+        temp_dir = tempfile.mkdtemp()
+        try:
+            for index, (feature, reconstruct_type) in enumerate(features):
+                for extension in ('xy', 'geojson'):
+                    # A new file each time (overwriting prints a GDAL error for some formats).
+                    export_filename = os.path.join(temp_dir, 'export{}.{}'.format(index, extension))
+                    pygplates.reconstruct(feature, rotation_model, export_filename, 5, reconstruct_type=reconstruct_type)
+                    with open(export_filename) as export_file:
+                        export_contents = export_file.read()
+                    self.assertTrue(feature.get_name() in export_contents)
+                    if extension == 'xy':
+                        self.assertTrue('Times: 0,10,20' in export_contents)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_reconstruct_export_files(self):
         reconstruct_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'volcanoes.gpml')) 
@@ -984,6 +1434,11 @@ class NetRotationTestCase(unittest.TestCase):
             if resolved_topology_net_rotation:
                 total_net_rotation_accumulator += resolved_topology_net_rotation
         self.assertTrue(total_net_rotation.get_finite_rotation() == total_net_rotation_accumulator.get_finite_rotation())
+        # The dict is in the order of the resolved topologies (boundaries, then networks) that contribute net rotation.
+        self.assertEqual(
+                list(net_rotation_snapshot.get_net_rotation().keys()),
+                [resolved_topology for resolved_topology in net_rotation_snapshot.get_topological_snapshot().get_resolved_topologies()
+                    if net_rotation_snapshot.get_net_rotation(resolved_topology)])
     
     def test_net_rotation_samples(self):
         # Create equal net rotation samples from a finite rotation (over 1Myr) and from an equivalent rotation rate vector.
@@ -1049,6 +1504,141 @@ class NetRotationTestCase(unittest.TestCase):
         self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)
         self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
         self.assertAlmostEqual(total_angle_degrees, 0.014637, places=6)
+
+    def test_default_arguments(self):
+        # The velocity delta time and its type default to 1 Myr and [t+dt, t].
+        net_rotation_model = pygplates.NetRotationModel(self.topological_model)
+        self.assertTrue(net_rotation_model.net_rotation_snapshot(10).get_total_net_rotation().get_finite_rotation() ==
+                        self.net_rotation_model.net_rotation_snapshot(10).get_total_net_rotation().get_finite_rotation())
+        net_rotation_snapshot = pygplates.NetRotationSnapshot(self.topological_model.topological_snapshot(10))
+        self.assertTrue(net_rotation_snapshot.get_total_net_rotation().get_finite_rotation() ==
+                        self.net_rotation_model.net_rotation_snapshot(10).get_total_net_rotation().get_finite_rotation())
+
+    def test_invalid_arguments(self):
+        topological_snapshot = self.topological_model.topological_snapshot(10)
+        for velocity_delta_time in (0, -1, float('nan')):
+            self.assertRaises(ValueError, pygplates.NetRotationModel, self.topological_model, velocity_delta_time)
+            self.assertRaises(ValueError, pygplates.NetRotationSnapshot, topological_snapshot, velocity_delta_time)
+        # A point distribution with no points.
+        for point_distribution in (0, []):
+            self.assertRaises(ValueError, pygplates.NetRotationModel, self.topological_model, point_distribution=point_distribution)
+            self.assertRaises(ValueError, pygplates.NetRotationSnapshot, topological_snapshot, point_distribution=point_distribution)
+
+
+class VelocityTimeIntervalTestCase(unittest.TestCase):
+    # The time interval of a velocity is moved when a plate has no rotation at one end of it
+    # (in the future at present day, or older than the oldest rotation of the plate).
+    def setUp(self):
+        # Plate 1 rotates about the North pole at 1 degree per Myr, with rotations from 0 to 100 Ma.
+        rotation_feature = pygplates.Feature.create_total_reconstruction_sequence(
+            0, 1, pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((90, 0), math.radians(time))), time)
+                for time in (0, 100)]))
+        self.rotation_model = pygplates.RotationModel(rotation_feature)
+        self.velocity_delta_time_types = (
+            pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
+            pygplates.VelocityDeltaTimeType.t_to_t_minus_delta_t,
+            pygplates.VelocityDeltaTimeType.t_plus_minus_half_delta_t)
+
+    def test_half_stage_rotation_velocities(self):
+        # A mid-ocean ridge on the equator, between plate 1 and the anchor plate, moves at half the
+        # rate of plate 1. So does one whose right plate (999) is missing from the rotation model,
+        # since a missing plate counts as the identity rotation (like the anchor plate).
+        expected_speed = 0.5 * math.radians(1) * pygplates.Earth.mean_radius_in_kms
+        for right_plate in (0, 999):
+            mid_ocean_ridge_feature = pygplates.Feature.create_tectonic_section(
+                pygplates.FeatureType.gpml_mid_ocean_ridge,
+                pygplates.PolylineOnSphere([(0, 0), (0, 10)]),
+                left_plate=1,
+                right_plate=right_plate,
+                reconstruction_method='HalfStageRotationVersion3')
+            # Present day, and the oldest rotation of plate 1, are the two ends of its rotations.
+            for reconstruction_time in (0, 50, 100):
+                reconstructed_feature_geometries = pygplates.ReconstructSnapshot(
+                    mid_ocean_ridge_feature, self.rotation_model, reconstruction_time).get_reconstructed_geometries()
+                self.assertEqual(len(reconstructed_feature_geometries), 1)
+                for velocity_delta_time_type in self.velocity_delta_time_types:
+                    velocities = reconstructed_feature_geometries[0].get_reconstructed_geometry_point_velocities(
+                        velocity_delta_time_type=velocity_delta_time_type)
+                    for velocity in velocities:
+                        self.assertAlmostEqual(velocity.get_magnitude(), expected_speed, places=6)
+
+    def test_net_rotation(self):
+        # A rigid plate (plate 1) covering the northern hemisphere, from a single polygon section.
+        polygon_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PolygonOnSphere([(0, -180), (0, -90), (0, 0), (0, 90)]),
+            reconstruction_plate_id=1)
+        topological_feature = pygplates.Feature.create_topological_feature(
+            pygplates.FeatureType.gpml_topological_closed_plate_boundary,
+            pygplates.GpmlTopologicalPolygon([
+                pygplates.GpmlTopologicalSection.create(polygon_feature, topological_geometry_type=pygplates.GpmlTopologicalPolygon)]))
+        topological_feature.set_reconstruction_plate_id(1)
+        topological_model = pygplates.TopologicalModel([topological_feature, polygon_feature], self.rotation_model)
+        # The plate rotates at the same rate at all times, so its net rotation has the same angle
+        # (to within the sampling of the plate, which moves relative to the sample points).
+        expected_angle = pygplates.NetRotationModel(topological_model).net_rotation_snapshot(50) \
+            .get_total_net_rotation().get_finite_rotation().get_euler_pole_and_angle()[1]
+        self.assertGreater(expected_angle, 0)
+        for velocity_delta_time_type in self.velocity_delta_time_types:
+            net_rotation_model = pygplates.NetRotationModel(topological_model, velocity_delta_time_type=velocity_delta_time_type)
+            for reconstruction_time in (0, 50, 100):
+                total_net_rotation = net_rotation_model.net_rotation_snapshot(reconstruction_time).get_total_net_rotation()
+                self.assertAlmostEqual(total_net_rotation.get_finite_rotation().get_euler_pole_and_angle()[1], expected_angle, delta=1e-2 * expected_angle)
+
+    def test_invalid_velocity_delta_time(self):
+        # Every function and method that calculates velocities needs a positive time interval.
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        topological_snapshot = pygplates.TopologicalSnapshot(os.path.join(FIXTURES, 'topologies.gpml'), rotation_model, 10)
+        point = pygplates.PointOnSphere(0, 0)
+        reconstructed_feature_geometry = pygplates.ReconstructSnapshot(
+            pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature, point, reconstruction_plate_id=801),
+            rotation_model, 10).get_reconstructed_geometries()[0]
+        reconstructed_flowline = pygplates.ReconstructSnapshot(
+            pygplates.Feature.create_flowline(point, [0, 10, 20], left_plate=201, right_plate=801),
+            rotation_model, 10).get_reconstructed_geometries(pygplates.ReconstructType.flowline)[0]
+        reconstructed_motion_path = pygplates.ReconstructSnapshot(
+            pygplates.Feature.create_motion_path(point, [0, 10, 20], relative_plate=201, reconstruction_plate_id=801),
+            rotation_model, 10).get_reconstructed_geometries(pygplates.ReconstructType.motion_path)[0]
+
+        velocity_functions = [
+            lambda velocity_delta_time: pygplates.calculate_velocities([point], pygplates.FiniteRotation((90, 0), 0.01), velocity_delta_time),
+            lambda velocity_delta_time: pygplates.ReconstructSnapshot(reconstructed_feature_geometry.get_feature(), rotation_model, 10)
+                .get_point_velocities([point], velocity_delta_time=velocity_delta_time),
+            lambda velocity_delta_time: topological_snapshot.get_point_velocities([point], velocity_delta_time=velocity_delta_time),
+            lambda velocity_delta_time: reconstructed_feature_geometry.get_reconstructed_geometry_point_velocities(velocity_delta_time=velocity_delta_time),
+            lambda velocity_delta_time: reconstructed_flowline.get_reconstructed_seed_point_velocity(velocity_delta_time=velocity_delta_time),
+            lambda velocity_delta_time: reconstructed_motion_path.get_reconstructed_seed_point_velocity(velocity_delta_time=velocity_delta_time),
+        ]
+        resolved_topology_types = set()
+        for resolved_topology in topological_snapshot.get_resolved_topologies(
+                pygplates.ResolveTopologyType.line | pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network):
+            resolved_topology_types.add(type(resolved_topology))
+            velocity_functions.append(
+                lambda velocity_delta_time, resolved_topology=resolved_topology:
+                    resolved_topology.get_resolved_geometry_point_velocities(velocity_delta_time=velocity_delta_time))
+            if not isinstance(resolved_topology, pygplates.ResolvedTopologicalLine):
+                velocity_functions.append(
+                    lambda velocity_delta_time, resolved_topology=resolved_topology:
+                        resolved_topology.get_point_velocity(point, velocity_delta_time=velocity_delta_time))
+            for sub_segment in resolved_topology.get_geometry_sub_segments() if isinstance(resolved_topology, pygplates.ResolvedTopologicalLine) \
+                    else resolved_topology.get_boundary_sub_segments():
+                velocity_functions.append(
+                    lambda velocity_delta_time, sub_segment=sub_segment:
+                        sub_segment.get_resolved_geometry_point_velocities(velocity_delta_time=velocity_delta_time))
+        self.assertEqual(resolved_topology_types,
+                         {pygplates.ResolvedTopologicalLine, pygplates.ResolvedTopologicalBoundary, pygplates.ResolvedTopologicalNetwork})
+        for resolved_topological_section in topological_snapshot.get_resolved_topological_sections():
+            for shared_sub_segment in resolved_topological_section.get_shared_sub_segments():
+                velocity_functions.append(
+                    lambda velocity_delta_time, shared_sub_segment=shared_sub_segment:
+                        shared_sub_segment.get_resolved_geometry_point_velocities(velocity_delta_time=velocity_delta_time))
+
+        for velocity_function in velocity_functions:
+            velocity_function(1.0)  # a positive interval is fine
+            for velocity_delta_time in (0, -1, float('nan')):
+                self.assertRaises(ValueError, velocity_function, velocity_delta_time)
 
 
 class PlatePartitionerTestCase(unittest.TestCase):
@@ -1192,6 +1782,74 @@ class PlatePartitionerTestCase(unittest.TestCase):
         self.assertTrue(partitioned_inside_geometries[0][0].get_feature().get_reconstruction_plate_id() == 0)
         self.assertTrue(partitioned_inside_geometries[1][0].get_feature().get_reconstruction_plate_id() == 1)
         self.assertTrue(partitioned_inside_geometries[2][0].get_feature().get_reconstruction_plate_id() == 2)
+
+    def test_partition_features_anchor_plate(self):
+        # Partitioning plates resolved with a non-zero anchor plate.
+        anchor_plate_id = 701
+        reconstruction_time = 10
+        resolved_topologies = pygplates.TopologicalSnapshot(
+                self.topological_features, self.rotation_features, reconstruction_time,
+                anchor_plate_id=anchor_plate_id).get_resolved_topologies()
+        # A point inside the first partitioning plate.
+        point = resolved_topologies[0].get_resolved_boundary().get_interior_centroid()
+        point_feature = pygplates.Feature()
+        point_feature.set_geometry(point)
+
+        def distance_from_point_after_reverse_reconstruction(plate_partitioner):
+            partitioned_features = plate_partitioner.partition_features(point_feature)
+            self.assertTrue(len(partitioned_features) == 1)
+            # Reconstruct the partitioned feature with the anchor plate of the partitioning plates.
+            reconstructed_feature_geometries = pygplates.ReconstructSnapshot(
+                    partitioned_features, self.rotation_features, reconstruction_time, anchor_plate_id).get_reconstructed_geometries()
+            self.assertTrue(len(reconstructed_feature_geometries) == 1)
+            return pygplates.GeometryOnSphere.distance(reconstructed_feature_geometries[0].get_reconstructed_geometry(), point)
+
+        # The partitioned feature is reverse reconstructed with the anchor plate given explicitly, or as the
+        # default anchor plate of the rotation model, so reconstructing it with that anchor plate gives back the point.
+        self.assertAlmostEqual(distance_from_point_after_reverse_reconstruction(
+                pygplates.PlatePartitioner(resolved_topologies, self.rotation_features, anchor_plate_id=anchor_plate_id)), 0)
+        self.assertAlmostEqual(distance_from_point_after_reverse_reconstruction(
+                pygplates.PlatePartitioner(
+                        resolved_topologies,
+                        pygplates.RotationModel(self.rotation_features, default_anchor_plate_id=anchor_plate_id))), 0)
+        # But not when the anchor plate is left as the default (zero) anchor plate of the rotation model.
+        self.assertTrue(distance_from_point_after_reverse_reconstruction(
+                pygplates.PlatePartitioner(resolved_topologies, self.rotation_features)) > 1e-3)
+
+        # Partitioning plates resolved from features, with the anchor plate given explicitly, or as the
+        # default anchor plate of the rotation model.
+        for plate_partitioner in (
+                pygplates.PlatePartitioner(
+                        self.topological_features, self.rotation_features, reconstruction_time,
+                        anchor_plate_id=anchor_plate_id),
+                pygplates.PlatePartitioner(
+                        self.topological_features,
+                        pygplates.RotationModel(self.rotation_features, default_anchor_plate_id=anchor_plate_id),
+                        reconstruction_time)):
+            # The plates are resolved with that anchor plate (the same plates as the topological snapshot's).
+            partitioning_plate = plate_partitioner.partition_point(point)
+            self.assertTrue(partitioning_plate)
+            snapshot_plate = next(
+                    resolved_topology for resolved_topology in resolved_topologies
+                    if resolved_topology.get_feature().get_feature_id() == partitioning_plate.get_feature().get_feature_id())
+            self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(
+                    partitioning_plate.get_resolved_boundary().get_interior_centroid(),
+                    snapshot_plate.get_resolved_boundary().get_interior_centroid()), 0)
+            # And partitioned features are reverse reconstructed with it.
+            self.assertAlmostEqual(distance_from_point_after_reverse_reconstruction(plate_partitioner), 0)
+        # But not when the anchor plate is left as the default (zero) anchor plate of the rotation model.
+        self.assertTrue(distance_from_point_after_reverse_reconstruction(
+                pygplates.PlatePartitioner(self.topological_features, self.rotation_features, reconstruction_time)) > 1e-3)
+
+        # 'partition_into_plates()' passes its anchor plate to the plate partitioner.
+        partitioned_features = pygplates.partition_into_plates(
+                self.topological_features, self.rotation_features, point_feature,
+                reconstruction_time=reconstruction_time, anchor_plate_id=anchor_plate_id)
+        reconstructed_feature_geometries = pygplates.ReconstructSnapshot(
+                partitioned_features, self.rotation_features, reconstruction_time, anchor_plate_id).get_reconstructed_geometries()
+        self.assertTrue(len(reconstructed_feature_geometries) == 1)
+        self.assertAlmostEqual(
+                pygplates.GeometryOnSphere.distance(reconstructed_feature_geometries[0].get_reconstructed_geometry(), point), 0)
 
     def test_partition_features(self):
         plate_partitioner = pygplates.PlatePartitioner(self.topological_features, self.rotation_features)
@@ -3381,6 +4039,19 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 for point_feature in resolved_geometry_point_features:
                     self.assertTrue(point_feature.get_name().startswith('section'))
 
+        # Every resolved topology type has 'get_geometry_sub_segments()' as an alias of its own sub-segments method.
+        resolved_topology_types = set()
+        for resolved_topology in snapshot.get_resolved_topologies(
+                pygplates.ResolveTopologyType.line | pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network):
+            resolved_topology_types.add(type(resolved_topology))
+            sub_segments = (resolved_topology.get_line_sub_segments()
+                    if isinstance(resolved_topology, pygplates.ResolvedTopologicalLine)
+                    else resolved_topology.get_boundary_sub_segments())
+            self.assertTrue(sub_segments)
+            self.assertEqual(resolved_topology.get_geometry_sub_segments(), sub_segments)
+        self.assertEqual(resolved_topology_types,
+                         {pygplates.ResolvedTopologicalLine, pygplates.ResolvedTopologicalBoundary, pygplates.ResolvedTopologicalNetwork})
+
     def test_resolved_topological_shared_sub_segments(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),
@@ -3401,7 +4072,36 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 self.assertTrue(resolved_geometry_point_velocities == [pygplates.Vector3D.zero] * len(resolved_geometry_point_velocities))
                 for point_feature in resolved_geometry_point_features:
                     self.assertTrue(point_feature.get_name().startswith('section'))
-    
+
+        # Unsorted, the sections are in the order they are first found along the boundaries of the resolved
+        # boundaries and then networks (not in an order that can change from run to run).
+        # A section is its reconstructed or resolved geometry (one per geometry property in a snapshot).
+        sections_in_order_found = []
+        for resolved_topology in snapshot.get_resolved_topologies(
+                pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network):
+            for sub_segment in resolved_topology.get_boundary_sub_segments():
+                section = sub_segment.get_topological_section()
+                if section not in sections_in_order_found:
+                    sections_in_order_found.append(section)
+        self.assertEqual(
+                [resolved_topological_section.get_topological_section()
+                    for resolved_topological_section in resolved_topological_sections],
+                sections_in_order_found)
+
+        # Unsorted, the resolved topologies are grouped by type (lines, boundaries, networks), each type in feature order.
+        all_resolve_topology_types = (pygplates.ResolveTopologyType.line |
+                pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network)
+        resolved_topology_type_order = [
+                pygplates.ResolvedTopologicalLine, pygplates.ResolvedTopologicalBoundary, pygplates.ResolvedTopologicalNetwork]
+        # The expected order comes from the sorted order (the network 'topology3' is between boundaries in the file),
+        # grouped by type. Python's sort is stable, so each type stays in feature order.
+        resolved_topologies_in_feature_order = snapshot.get_resolved_topologies(
+                all_resolve_topology_types, same_order_as_topological_features=True)
+        self.assertEqual(
+                snapshot.get_resolved_topologies(all_resolve_topology_types),
+                sorted(resolved_topologies_in_feature_order,
+                       key=lambda resolved_topology: resolved_topology_type_order.index(type(resolved_topology))))
+
     def test_point_locations_velocities_strain_rates(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),
@@ -3453,7 +4153,36 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         # Both velocities and strain rates are zero.
         self.assertTrue(point_velocities == [pygplates.Vector3D.zero] * len(points))
         self.assertTrue(point_strain_rates == [pygplates.StrainRate.zero] * len(points))
-    
+
+    def test_network_velocities_are_tangential(self):
+        # A network whose boundary is fixed (plate 0) and whose interior point (plate 1) rotates about
+        # the North pole, so velocities are interpolated between vertices with different velocities.
+        rotation_model = pygplates.RotationModel(pygplates.Feature.create_total_reconstruction_sequence(
+            0, 1, pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((90, 0), math.radians(time))), time)
+                for time in (0, 100)])))
+        boundary_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PolygonOnSphere([(0, 0), (0, 20), (20, 20), (20, 0)]),
+            reconstruction_plate_id=0)
+        interior_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PointOnSphere(10, 10),
+            reconstruction_plate_id=1)
+        network_feature = pygplates.Feature.create_topological_feature(
+            pygplates.FeatureType.gpml_topological_network,
+            pygplates.GpmlTopologicalNetwork(
+                [pygplates.GpmlTopologicalSection.create(boundary_feature, topological_geometry_type=pygplates.GpmlTopologicalNetwork)],
+                [pygplates.GpmlTopologicalSection.create_network_interior(interior_feature)]))
+        snapshot = pygplates.TopologicalSnapshot([network_feature, boundary_feature, interior_feature], rotation_model, 10)
+        points = [pygplates.PointOnSphere(lat, lon) for lat in (3, 8, 15) for lon in (4, 9, 17)]
+        point_velocities = snapshot.get_point_velocities(points)
+        for point, velocity in zip(points, point_velocities):
+            self.assertTrue(velocity is not None)
+            self.assertGreater(velocity.get_magnitude(), 0)
+            radial_velocity = pygplates.Vector3D.dot(velocity, pygplates.Vector3D(point.to_xyz()))
+            self.assertAlmostEqual(radial_velocity / velocity.get_magnitude(), 0, places=12)
+
     def test_reconstruct_points(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),
@@ -3754,6 +4483,20 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                 else:
                     self.assertTrue(shared_sub_segment_stat.boundary_feature.get_name() == shared_sub_feature_name)
 
+        # The dict is in the order of the sections' features, then of the shared sub-segments along each section.
+        shared_sub_segments_in_order = [
+                shared_sub_segment
+                for resolved_topological_section in snapshot.get_resolved_topological_sections(same_order_as_topological_features=True)
+                for shared_sub_segment in resolved_topological_section.get_shared_sub_segments()]
+        self.assertEqual(
+                list(plate_boundary_stats_dict.keys()),
+                [shared_sub_segment for shared_sub_segment in shared_sub_segments_in_order if shared_sub_segment in plate_boundary_stats_dict])
+        # And the list is in the same order as the dict.
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True)
+        self.assertEqual(
+                [stat.boundary_point for stat in plate_boundary_stats],
+                [stat.boundary_point for stats in plate_boundary_stats_dict.values() for stat in stats])
+
         # Filter boundary sections by feature type.
         plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
                                                                                  include_network_boundaries=True,
@@ -3811,7 +4554,8 @@ def suite():
             RotationModelTestCase,
             StrainTestCase,
             TopologicalModelTestCase,
-            TopologicalSnapshotTestCase
+            TopologicalSnapshotTestCase,
+            VelocityTimeIntervalTestCase
         ]
 
     for test_case in test_cases:

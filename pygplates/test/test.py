@@ -48,8 +48,8 @@ class HashableCase(unittest.TestCase):
         property_name_clone = pygplates.PropertyName.create_from_qualified_string(property_name.to_qualified_string())
 
         # Should be able to insert hashable types into dictionary without raising TypeError.
-        # And also retrieve them properly (this will fail if __eq__ is defined but __hash__
-        # is left to default implementation based on 'id()' - in python 2.7 anyway).
+        # And also retrieve them properly (defining __eq__ without __hash__ makes a type
+        # unhashable).
         d = {}
         
         # Insert originals.
@@ -186,12 +186,49 @@ class VersionCase(unittest.TestCase):
             self.assertTrue(version == pickle.loads(pickle.dumps(version)))
 
 
+class PackageCase(unittest.TestCase):
+    """
+    Tests of the 'pygplates' Python package itself (as opposed to the API it exposes).
+
+    Note that these tests require 'pygplates' to be imported as a package (which is how it is both built and
+    installed) - that is, the directory on 'sys.path' should be the one *containing* the 'pygplates/' package,
+    not the package directory itself.
+    """
+
+    def test_private_module(self):
+        # The pygplates shared library (C++) is a module *inside* the 'pygplates' package, and so the classes
+        # it defines report a '__module__' of 'pygplates.pygplates'. Since Boost.Python pickles classes by
+        # reference, that name is embedded in every pickle we write, and hence must not change (it's a file
+        # format). For the full rationale see 'cmake/modules/Install.cmake'.
+        module_name = type(pygplates.FiniteRotation((0,0), 0)).__module__
+        self.assertEqual(module_name, 'pygplates.pygplates',
+                         "pygplates should be imported as a package (see this test case's docstring)")
+
+        # And the private module must remain reachable as an *attribute* of the 'pygplates' package, since that
+        # is how 'dill' resolves a dotted module name (unlike the standard library 'pickle', which goes through
+        # 'sys.modules' and so wouldn't notice the attribute disappearing).
+        #
+        # Note: this mimics 'dill/_dill.py::_import_module' rather than using 'dill' itself, so that we don't
+        #       add a test dependency on dill.
+        parent_module_name, _, child_module_name = module_name.rpartition('.')
+        module = getattr(__import__(parent_module_name, None, None, [child_module_name]), child_module_name)
+        self.assertIs(module, sys.modules[module_name])
+        self.assertIs(module.FiniteRotation, pygplates.FiniteRotation)
+
+    def test_post_import(self):
+        # The pygplates package '__init__.py' calls this to tell the shared library (C++) where it was imported
+        # from, and the type stub ('pygplates/stub/__init__.pyi') declares it - so it must be importable from
+        # the package (note that "import *" skips names with a leading underscore).
+        self.assertTrue(callable(pygplates._post_import))
+
+
 def suite():
     suite = unittest.TestSuite()
     
     # Add test cases from this module.
     test_cases = [
             HashableCase,
+            PackageCase,
             VersionCase
         ]
 
@@ -210,8 +247,30 @@ def suite():
     
     return suite
 
+# The lower bound on the number of tests the run must contain.
+#
+# The suite is assembled from hand-maintained lists (the 'test_cases' and 'test_modules' lists in
+# 'suite()' above, and the equivalent lists in the sibling test modules), so a test case - or an
+# entire module - can drop out of the run without anything failing. An empty suite is the extreme
+# case: 'unittest' prints "NO TESTS RAN", but 'wasSuccessful()' is still True and the exit status
+# is still 0, so the run passes having tested nothing.
+#
+# This is a floor, *not* an exact count, and is deliberately not meant to be updated whenever a
+# test is added. At the time of writing the suite holds 441 tests (223 from 'test_model', 134 from
+# 'test_maths', 77 from 'test_app_logic' and 7 from this module), so this catches an empty run and
+# the loss of any one of the three sibling modules. It cannot catch a single unregistered test
+# case; only raise it if it stops being a useful lower bound.
+MINIMUM_EXPECTED_TESTS = 400
+
 if __name__ == "__main__":
     test_result = unittest.TextTestRunner().run(suite())
+    if test_result.testsRun < MINIMUM_EXPECTED_TESTS:
+        # Note: this is reported separately from the 'unittest' verdict because it is not a failing
+        # test - it means tests that should have run were never registered in the first place.
+        sys.stderr.write(
+                "Only %d tests ran, expected at least %d. A test case or module is probably missing "
+                "from the lists in 'suite()'.\n" % (test_result.testsRun, MINIMUM_EXPECTED_TESTS))
+        sys.exit(1)
     if test_result.wasSuccessful():
         sys.exit(0)
     else:

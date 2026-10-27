@@ -614,6 +614,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list reconstructed_geometry_point_velocities_list;
 
 		GPlatesAppLogic::ReconstructedFeatureGeometry::velocity_seq_type reconstructed_geometry_point_velocities_;
@@ -663,7 +670,7 @@ export_reconstructed_feature_geometry()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ReconstructedFeatureGeometry`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  .. note:: Multiple :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` can "
 				"be associated with the same :class:`feature<Feature>` if that feature has multiple geometry properties.\n")
@@ -673,7 +680,7 @@ export_reconstructed_feature_geometry()
 				"  Returns the feature property containing the present day (unreconstructed) geometry "
 				"associated with this :class:`ReconstructedFeatureGeometry`.\n"
 				"\n"
-				"  :rtype: :class:`Property`\n"
+				"  :rtype: Property\n"
 				"\n"
 				"  This is the :class:`Property` that the :meth:`present day geometry<get_present_day_geometry>` "
 				"and the :meth:`reconstructed geometry<get_reconstructed_geometry>` are obtained from.\n")
@@ -682,19 +689,19 @@ export_reconstructed_feature_geometry()
 				"get_present_day_geometry()\n"
 				"  Returns the present day geometry.\n"
 				"\n"
-				"  :rtype: :class:`GeometryOnSphere`\n")
+				"  :rtype: GeometryOnSphere\n")
 		.def("get_reconstructed_geometry",
 				&GPlatesApi::reconstructed_feature_geometry_get_reconstructed_geometry,
 				"get_reconstructed_geometry()\n"
 				"  Returns the reconstructed geometry.\n"
 				"\n"
-				"  :rtype: :class:`GeometryOnSphere`\n")
+				"  :rtype: GeometryOnSphere\n")
 		.def("get_reconstructed_geometry_points",
 				&GPlatesApi::reconstructed_feature_geometry_get_reconstructed_geometry_points,
 				"get_reconstructed_geometry_points()\n"
 				"  Returns the points of the :meth:`reconstructed geometry <get_reconstructed_geometry>`.\n"
 				"\n"
-				"  :rtype: list of :class:`PointOnSphere`\n"
+				"  :rtype: list of PointOnSphere\n"
 				"\n"
 				"  This method is *essentially* equivalent to:\n"
 				"  ::\n"
@@ -720,14 +727,14 @@ export_reconstructed_feature_geometry()
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: list of :class:`Vector3D`\n"
+				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a reconstructed feature geometry):\n"
 				"  ::\n"
@@ -825,6 +832,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		return reconstructed_motion_path.reconstructed_seed_point_velocity(
 				velocity_delta_time,
 				velocity_delta_time_type,
@@ -877,7 +891,7 @@ export_reconstructed_motion_path()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ReconstructedMotionPath`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  .. note:: Multiple :class:`reconstructed motion paths<ReconstructedMotionPath>` "
 				"can be associated with the same motion path :class:`feature<Feature>` if its seed geometry "
@@ -888,7 +902,7 @@ export_reconstructed_motion_path()
 				"  Returns the feature property containing the seed point associated with this "
 				":class:`ReconstructedMotionPath`.\n"
 				"\n"
-				"  :rtype: :class:`Property`\n"
+				"  :rtype: Property\n"
 				"\n"
 				"  This is the :class:`Property` that the :meth:`present day seed point<get_present_day_seed_point>` "
 				"and the :meth:`reconstructed seed point<get_reconstructed_seed_point>` are obtained from.\n")
@@ -897,7 +911,7 @@ export_reconstructed_motion_path()
 				"get_present_day_seed_point()\n"
 				"  Returns the present day seed point.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"\n"
 				"  .. note:: This is just one of the seed points in this :meth:`feature's<get_feature>` "
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
@@ -907,7 +921,7 @@ export_reconstructed_motion_path()
 				"get_reconstructed_seed_point()\n"
 				"  Returns the reconstructed seed point.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"\n"
 				"  .. note:: This is just one of the seed points in this :meth:`feature's<get_feature>` "
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
@@ -928,14 +942,14 @@ export_reconstructed_motion_path()
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocity as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: :class:`Vector3D`\n"
+				"  :rtype: Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
 		.def("get_motion_path",
@@ -943,7 +957,7 @@ export_reconstructed_motion_path()
 				"get_motion_path()\n"
 				"  Returns the motion path.\n"
 				"\n"
-				"  :rtype: :class:`PolylineOnSphere`\n"
+				"  :rtype: PolylineOnSphere\n"
 				"\n"
 				"  The returned points plot the history of motion of the "
 				":meth:`seed point<get_present_day_seed_point>` on the plate associated with "
@@ -1036,6 +1050,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		return reconstructed_flowline.reconstructed_seed_point_velocity(
 				velocity_delta_time,
 				velocity_delta_time_type,
@@ -1088,7 +1109,7 @@ export_reconstructed_flowline()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ReconstructedFlowline`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  .. note:: Multiple :class:`reconstructed flowlines<ReconstructedFlowline>` "
 				"can be associated with the same flowline :class:`feature<Feature>` if its seed geometry "
@@ -1099,7 +1120,7 @@ export_reconstructed_flowline()
 				"  Returns the feature property containing the seed point associated with this "
 				":class:`ReconstructedFlowline`.\n"
 				"\n"
-				"  :rtype: :class:`Property`\n"
+				"  :rtype: Property\n"
 				"\n"
 				"  This is the :class:`Property` that the :meth:`present day seed point<get_present_day_seed_point>` "
 				"and the :meth:`reconstructed seed point<get_reconstructed_seed_point>` are obtained from.\n")
@@ -1108,7 +1129,7 @@ export_reconstructed_flowline()
 				"get_present_day_seed_point()\n"
 				"  Returns the present day seed point.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"\n"
 				"  .. note:: This is just one of the seed points in this :meth:`feature's<get_feature>` "
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
@@ -1118,7 +1139,7 @@ export_reconstructed_flowline()
 				"get_reconstructed_seed_point()\n"
 				"  Returns the reconstructed seed point.\n"
 				"\n"
-				"  :rtype: :class:`PointOnSphere`\n"
+				"  :rtype: PointOnSphere\n"
 				"\n"
 				"  .. note:: This is just one of the seed points in this :meth:`feature's<get_feature>` "
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
@@ -1139,14 +1160,14 @@ export_reconstructed_flowline()
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocity as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: :class:`Vector3D`\n"
+				"  :rtype: Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  .. versionadded:: 0.50\n")
 		.def("get_left_flowline",
@@ -1154,7 +1175,7 @@ export_reconstructed_flowline()
 				"get_left_flowline()\n"
 				"  Returns the flowline spread along the *left* plate from the reconstructed seed point.\n"
 				"\n"
-				"  :rtype: :class:`PolylineOnSphere`\n"
+				"  :rtype: PolylineOnSphere\n"
 				"\n"
 				"  The returned points are on the *left* plate associated with "
 				"``get_feature().get_left_plate()``\n"
@@ -1162,6 +1183,11 @@ export_reconstructed_flowline()
 				"  The first point in the returned :class:`PolylineOnSphere` is the "
 				":meth:`reconstructed seed point<get_reconstructed_seed_point>` and subsequent points "
 				"are progressively further in the geological past.\n"
+				"\n"
+				"  .. note:: At a reconstruction time younger than the youngest of the feature's "
+				"times (see :meth:`Feature.get_times`), the first point is instead the point at that "
+				"youngest time, and the :meth:`reconstructed seed point<get_reconstructed_seed_point>` "
+				"is not in the flowline.\n"
 				"\n"
 				"  .. note:: This is just one of the *left* flowlines associated with this "
 				":meth:`feature's<get_feature>` seed geometry if that seed geometry is a "
@@ -1177,7 +1203,7 @@ export_reconstructed_flowline()
 				"get_right_flowline()\n"
 				"  Returns the flowline spread along the *right* plate from the reconstructed seed point.\n"
 				"\n"
-				"  :rtype: :class:`PolylineOnSphere`\n"
+				"  :rtype: PolylineOnSphere\n"
 				"\n"
 				"  The returned points are on the *right* plate associated with "
 				"``get_feature().get_right_plate()``\n"
@@ -1185,6 +1211,11 @@ export_reconstructed_flowline()
 				"  The first point in the returned :class:`PolylineOnSphere` is the "
 				":meth:`reconstructed seed point<get_reconstructed_seed_point>` and subsequent points "
 				"are progressively further in the geological past.\n"
+				"\n"
+				"  .. note:: At a reconstruction time younger than the youngest of the feature's "
+				"times (see :meth:`Feature.get_times`), the first point is instead the point at that "
+				"youngest time, and the :meth:`reconstructed seed point<get_reconstructed_seed_point>` "
+				"is not in the flowline.\n"
 				"\n"
 				"  .. note:: This is just one of the *right* flowlines associated with this "
 				":meth:`feature's<get_feature>` seed geometry if that seed geometry is a "
@@ -1272,6 +1303,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list resolved_geometry_point_velocities_list;
 
 		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
@@ -1423,7 +1461,7 @@ export_resolved_topological_line()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalLine`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  .. note:: The returned feature is what was used to generate this :class:`ResolvedTopologicalLine` "
 				"via :class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies`.\n"
@@ -1435,7 +1473,7 @@ export_resolved_topological_line()
 				"  Returns the feature property containing the topological line property associated with "
 				"this :class:`ResolvedTopologicalLine`.\n"
 				"\n"
-				"  :rtype: :class:`Property`\n"
+				"  :rtype: Property\n"
 				"\n"
 				"  This is the :class:`Property` that the :meth:`get_resolved_line` and "
 				":meth:`get_resolved_geometry` are obtained from.\n")
@@ -1444,7 +1482,7 @@ export_resolved_topological_line()
 				"get_resolved_line()\n"
 				"  Returns the resolved line geometry.\n"
 				"\n"
-				"  :rtype: :class:`PolylineOnSphere`\n")
+				"  :rtype: PolylineOnSphere\n")
 		.def("get_resolved_geometry",
 				&GPlatesApi::resolved_topological_line_get_resolved_geometry,
 				"get_resolved_geometry()\n"
@@ -1454,7 +1492,7 @@ export_resolved_topological_line()
 				"get_resolved_geometry_points()\n"
 				"  Returns the points of the :meth:`resolved geometry <get_resolved_geometry>`.\n"
 				"\n"
-				"  :rtype: list of :class:`PointOnSphere`\n"
+				"  :rtype: list of PointOnSphere\n"
 				"\n"
 				"  This method is *essentially* equivalent to:\n"
 				"  ::\n"
@@ -1480,14 +1518,14 @@ export_resolved_topological_line()
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: list of :class:`Vector3D`\n"
+				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a resolved topological line):\n"
 				"  ::\n"
@@ -1506,7 +1544,7 @@ export_resolved_topological_line()
 				"get_resolved_geometry_point_features()\n"
 				"  Returns the source feature associated with each point in the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
 				"\n"
-				"  :rtype: list of :class:`Feature`\n"
+				"  :rtype: list of Feature\n"
 				"\n"
 				"  The motion of each point in the resolved geometry is determined by its source feature. "
 				"And the source features are the building blocks from which topologies are assembled and resolved.\n"
@@ -1530,7 +1568,7 @@ export_resolved_topological_line()
 				"get_resolved_feature()\n"
 				"  Returns a feature containing the resolved line geometry.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  The returned feature contains the static :meth:`resolved geometry<get_resolved_geometry>`. "
 				"Unlike :meth:`get_feature` it cannot be used to generate a :class:`ResolvedTopologicalLine` "
@@ -1550,7 +1588,7 @@ export_resolved_topological_line()
 				"  Returns the :class:`sub-segments<ResolvedTopologicalSubSegment>` that make up the "
 				"line of this resolved topological line.\n"
 				"\n"
-				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`\n"
+				"  :rtype: list of ResolvedTopologicalSubSegment\n"
 				"\n"
 				"  To get a list of the *unreversed* sub-segment geometries:\n"
 				"  ::\n"
@@ -1666,6 +1704,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list resolved_geometry_point_velocities_list;
 
 		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
@@ -1817,6 +1862,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		// See if point is inside the resolved topological boundary.
 		if (!resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
 		{
@@ -1963,7 +2015,7 @@ export_resolved_topological_boundary()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalBoundary`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  .. note:: The returned feature is what was used to generate this :class:`ResolvedTopologicalBoundary` "
 				"via :class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies`.\n"
@@ -1975,7 +2027,7 @@ export_resolved_topological_boundary()
 				"  Returns the feature property containing the topological boundary property associated with "
 				"this :class:`ResolvedTopologicalBoundary`.\n"
 				"\n"
-				"  :rtype: :class:`Property`\n"
+				"  :rtype: Property\n"
 				"\n"
 				"  This is the :class:`Property` that the :meth:`get_resolved_boundary` and "
 				":meth:`get_resolved_geometry` are obtained from.\n")
@@ -1984,7 +2036,7 @@ export_resolved_topological_boundary()
 				"get_resolved_boundary()\n"
 				"  Returns the resolved boundary geometry.\n"
 				"\n"
-				"  :rtype: :class:`PolygonOnSphere`\n")
+				"  :rtype: PolygonOnSphere\n")
 		.def("get_resolved_geometry",
 				&GPlatesApi::resolved_topological_boundary_get_resolved_geometry,
 				"get_resolved_geometry()\n"
@@ -1994,7 +2046,7 @@ export_resolved_topological_boundary()
 				"get_resolved_geometry_points()\n"
 				"  Returns the points of the :meth:`resolved geometry <get_resolved_geometry>`.\n"
 				"\n"
-				"  :rtype: list of :class:`PointOnSphere`\n"
+				"  :rtype: list of PointOnSphere\n"
 				"\n"
 				"  This method is *essentially* equivalent to:\n"
 				"  ::\n"
@@ -2020,14 +2072,14 @@ export_resolved_topological_boundary()
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: list of :class:`Vector3D`\n"
+				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a resolved topological boundary):\n"
 				"  ::\n"
@@ -2046,7 +2098,7 @@ export_resolved_topological_boundary()
 				"get_resolved_geometry_point_features()\n"
 				"  Returns the source feature associated with each point in the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
 				"\n"
-				"  :rtype: list of :class:`Feature`\n"
+				"  :rtype: list of Feature\n"
 				"\n"
 				"  The motion of each point in the resolved geometry is determined by its source feature. "
 				"And the source features are the building blocks from which topologies are assembled and resolved.\n"
@@ -2070,7 +2122,7 @@ export_resolved_topological_boundary()
 				"get_resolved_feature()\n"
 				"  Returns a feature containing the resolved boundary geometry.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  The returned feature contains the static :meth:`resolved geometry<get_resolved_geometry>`. "
 				"Unlike :meth:`get_feature` it cannot be used to generate a :class:`ResolvedTopologicalBoundary` "
@@ -2090,7 +2142,7 @@ export_resolved_topological_boundary()
 				"  Returns the :class:`sub-segments<ResolvedTopologicalSubSegment>` that make up the "
 				"boundary of this resolved topological boundary.\n"
 				"\n"
-				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`\n"
+				"  :rtype: list of ResolvedTopologicalSubSegment\n"
 				"\n"
 				"  To get a list of the *unreversed* boundary sub-segment geometries:\n"
 				"  ::\n"
@@ -2136,8 +2188,8 @@ export_resolved_topological_boundary()
 				"  Determines whether the specified point lies within this resolved topological boundary.\n"
 				"\n"
 				"  :param point: the point to be tested\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-				"  :rtype: :class:`TopologyPointLocation`\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :rtype: TopologyPointLocation\n"
 				"\n"
 				"  If the point lies within this resolved topological boundary then :meth:`TopologyPointLocation.located_in_resolved_boundary` will return this "
 				"resolved topological boundary, otherwise it will return ``None`` (in addition to :meth:`TopologyPointLocation.not_located_in_resolved_topology` "
@@ -2176,19 +2228,19 @@ export_resolved_topological_boundary()
 				"  Returns the velocity of the specified point (if it lies within this resolved topological boundary).\n"
 				"\n"
 				"  :param point: the point to calculate velocity at\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).\n"
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocity as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: :class:`Vector3D` or ``None``\n"
+				"  :rtype: Vector3D or None\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  If the point lies within this resolved topological boundary then a velocity vector will be returned, otherwise ``None`` will be returned.\n"
 				"\n"
@@ -2224,8 +2276,8 @@ export_resolved_topological_boundary()
 				"  Returns zero strain rate (if the specified point lies within this resolved topological boundary).\n"
 				"\n"
 				"  :param point: the point to calculate strain rate at\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-				"  :rtype: :class:`StrainRate` or ``None``\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :rtype: StrainRate or None\n"
 				"\n"
 				"  If the point lies within this resolved topological boundary then ``pygplates.StrainRate.zero`` will be returned (since this is a *rigid* plate), "
 				"otherwise ``None`` will be returned (to indicate the *point* is outside this resolved topological boundary).\n"
@@ -2253,12 +2305,12 @@ export_resolved_topological_boundary()
 				"\n"
 				"  :param point: The point to reconstruct. It is the position at the "
 				":meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>`.\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the "
 				":meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>`.\n"
-				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-				"  :rtype: :class:`PointOnSphere` or ``None``\n"
-				"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
+				"  :type reconstruction_time: float or GeoTimeInstant\n"
+				"  :rtype: PointOnSphere or None\n"
+				"  :raises ValueError: if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
 				"\n"
 				"  If the point lies within this resolved topological boundary then it is reconstructed **from** the "
 				":meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>` "
@@ -2382,6 +2434,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list resolved_geometry_point_velocities_list;
 
 		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
@@ -2490,6 +2549,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		boost::optional< std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
 				velocity = resolved_topological_network->get_triangulation_network().calculate_velocity(
 						point,
@@ -2679,7 +2745,7 @@ export_resolved_topological_network()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  .. note:: The returned feature is what was used to generate this :class:`ResolvedTopologicalNetwork` "
 				"via :class:`TopologicalModel`, :class:`TopologicalSnapshot` or :func:`resolve_topologies`.\n"
@@ -2691,7 +2757,7 @@ export_resolved_topological_network()
 				"  Returns the feature property containing the topological network property associated with "
 				"this :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
-				"  :rtype: :class:`Property`\n"
+				"  :rtype: Property\n"
 				"\n"
 				"  This is the :class:`Property` that the :meth:`get_resolved_boundary` is obtained from.\n")
 		.def("get_resolved_boundary",
@@ -2705,7 +2771,7 @@ export_resolved_topological_network()
 				"Defaults to ``False``.\n"
 				"  :type include_rigid_blocks_as_interior_holes: bool\n"
 				"\n"
-				"  :rtype: :class:`PolygonOnSphere`\n"
+				"  :rtype: PolygonOnSphere\n"
 				"\n"
 				"  .. versionchanged:: 0.49\n"
 				"     Added *include_rigid_blocks_as_interior_holes* argument.\n")
@@ -2727,7 +2793,7 @@ export_resolved_topological_network()
 				":meth:`interior rigid block <get_rigid_blocks>` polygons (if any) in the returned points. "
 				"Defaults to ``False``.\n"
 				"  :type include_rigid_blocks_as_interior_holes: bool\n"
-				"  :rtype: list of :class:`PointOnSphere`\n"
+				"  :rtype: list of PointOnSphere\n"
 				"\n"
 				"  This method is *essentially* equivalent to:\n"
 				"  ::\n"
@@ -2762,14 +2828,14 @@ export_resolved_topological_network()
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: list of :class:`Vector3D`\n"
+				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a resolved topological network):\n"
 				"  ::\n"
@@ -2794,7 +2860,7 @@ export_resolved_topological_network()
 				"Defaults to ``False``.\n"
 				"  :type include_rigid_blocks_as_interior_holes: bool\n"
 				"\n"
-				"  :rtype: list of :class:`Feature`\n"
+				"  :rtype: list of Feature\n"
 				"\n"
 				"  The motion of each point in the resolved geometry is determined by its source feature. "
 				"And the source features are the building blocks from which topologies are assembled and resolved.\n"
@@ -2818,7 +2884,7 @@ export_resolved_topological_network()
 				"get_resolved_feature()\n"
 				"  Returns a feature containing the resolved boundary geometry.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  The returned feature contains the static :meth:`resolved geometry<get_resolved_geometry>`. "
 				"Unlike :meth:`get_feature` it cannot be used to generate a :class:`ResolvedTopologicalNetwork` "
@@ -2838,7 +2904,7 @@ export_resolved_topological_network()
 				"  Returns the :class:`sub-segments<ResolvedTopologicalSubSegment>` that make up the "
 				"boundary of this resolved topological network.\n"
 				"\n"
-				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`\n"
+				"  :rtype: list of ResolvedTopologicalSubSegment\n"
 				"\n"
 				"  To get a list of the *unreversed* boundary sub-segment geometries:\n"
 				"  ::\n"
@@ -2873,12 +2939,21 @@ export_resolved_topological_network()
 				"            resolved_boundary_points.extend(sub_segment_points)\n"
 				"\n"
 				"        return pygplates.PolygonOnSphere(resolved_boundary_points)\n")
+		.def("get_geometry_sub_segments",
+				&GPlatesApi::resolved_topological_network_get_boundary_sub_segments,
+				"get_geometry_sub_segments()\n"
+				"  Same as :meth:`get_boundary_sub_segments`.\n"
+				"\n"
+				"  These are the sub-segments of the network's boundary, which is its :meth:`resolved geometry <get_resolved_geometry>`. "
+				"The network's interior geometries and :meth:`rigid blocks <get_rigid_blocks>` have no sub-segments.\n"
+				"\n"
+				"  .. versionadded:: 1.1\n")
 		.def("get_rigid_blocks",
 				&GPlatesApi::resolved_topological_network_get_rigid_blocks,
 				"get_rigid_blocks()\n"
 				"Returns the interior rigid blocks (if any) inside this resolved topological network.\n"
 				"\n"
-				"  :rtype: list of :class:`ReconstructedFeatureGeometry`\n"
+				"  :rtype: list of ReconstructedFeatureGeometry\n"
 				"\n"
 				"  Each rigid block represents a rigid interior island within the deforming region. And as such, each rigid block will have a "
 				":meth:`reconstructed geometry <ReconstructedFeatureGeometry.get_reconstructed_geometry>` that is a :class:`polygon <PolygonOnSphere>`.\n"
@@ -2893,7 +2968,7 @@ export_resolved_topological_network()
 				"get_network_triangulation()\n"
 				"Returns the triangulation of this resolved topological network.\n"
 				"\n"
-				"  :rtype: :class:`NetworkTriangulation`\n"
+				"  :rtype: NetworkTriangulation\n"
 				"\n"
 				"  .. seealso:: :ref:`pygplates_primer_network_triangulation` in the *Primer* documentation."
 				"\n"
@@ -2905,8 +2980,8 @@ export_resolved_topological_network()
 				"  Determines whether the specified point lies within this resolved topological network.\n"
 				"\n"
 				"  :param point: the point to be tested\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-				"  :rtype: :class:`TopologyPointLocation`\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :rtype: TopologyPointLocation\n"
 				"\n"
 				"  If the point lies within this resolved topological network then :meth:`TopologyPointLocation.located_in_resolved_network` will return this "
 				"resolved topological network, otherwise it will return ``None`` (in addition to :meth:`TopologyPointLocation.not_located_in_resolved_topology` "
@@ -2966,19 +3041,19 @@ export_resolved_topological_network()
 				"  Returns the velocity of the specified point (if it lies within this resolved topological network).\n"
 				"\n"
 				"  :param point: the point to calculate velocity at\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).\n"
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocity as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: :class:`Vector3D` or ``None``\n"
+				"  :rtype: Vector3D or None\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  If the point lies within this resolved topological network (which can be either its deforming region or one of its rigid blocks) "
 				"then a velocity vector will be returned, otherwise ``None`` will be returned.\n"
@@ -3021,8 +3096,8 @@ export_resolved_topological_network()
 				"  Returns the strain rate of the specified point (if it lies within this resolved topological network).\n"
 				"\n"
 				"  :param point: the point to calculate strain rate at\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-				"  :rtype: :class:`StrainRate` or ``None``\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :rtype: StrainRate or None\n"
 				"\n"
 				"  If the point lies within this resolved topological network (which can be either its deforming region or one of its rigid blocks) "
 				"then a strain rate will be returned, otherwise ``None`` will be returned.\n"
@@ -3067,15 +3142,15 @@ export_resolved_topological_network()
 				"\n"
 				"  :param point: The point to reconstruct. It is the position at the "
 				":meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>`.\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the "
 				":meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>`.\n"
-				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :type reconstruction_time: float or GeoTimeInstant\n"
 				"  :param use_natural_neighbour_interpolation: If ``True`` and *point* lies within the deforming region, then the reconstructed point is the interpolation of "
 				"the natural neighbour deformed triangulation vertex positions (otherwise barycentric interpolation is used). Defaults to ``True``.\n"
 				"  :type use_natural_neighbour_interpolation: bool\n"
-				"  :rtype: :class:`PointOnSphere` or ``None``\n"
-				"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
+				"  :rtype: PointOnSphere or None\n"
+				"  :raises ValueError: if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
 				"\n"
 				"  If the point lies within this resolved topological network (which can be either its deforming region or one of its rigid blocks) "
 				"then it is reconstructed **from** the :meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>` "
@@ -3208,6 +3283,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list resolved_geometry_point_velocities_list;
 
 		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
@@ -3381,7 +3463,7 @@ export_resolved_topological_geometry_sub_segment()
 				"get_resolved_feature()\n"
 				"  Returns a feature containing the resolved sub-segment geometry.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  The returned feature contains the :meth:`resolved geometry<get_resolved_geometry>`.\n"
 				"\n"
@@ -3407,7 +3489,7 @@ export_resolved_topological_geometry_sub_segment()
 				"get_resolved_geometry()\n"
 				"  Returns the geometry containing the sub-segment vertices.\n"
 				"\n"
-				"  :rtype: :class:`PolylineOnSphere`\n"
+				"  :rtype: PolylineOnSphere\n"
 				"\n"
 				"  .. note:: These are the *unreversed* vertices. They are in the same order as the "
 				"geometry of :meth:`get_topological_section_geometry`. If you need a reversed version "
@@ -3420,7 +3502,7 @@ export_resolved_topological_geometry_sub_segment()
 				"get_resolved_geometry_points()\n"
 				"  Returns the points of the :meth:`resolved geometry <get_resolved_geometry>`.\n"
 				"\n"
-				"  :rtype: list of :class:`PointOnSphere`\n"
+				"  :rtype: list of PointOnSphere\n"
 				"\n"
 				"  This method is *essentially* equivalent to:\n"
 				"  ::\n"
@@ -3446,14 +3528,14 @@ export_resolved_topological_geometry_sub_segment()
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: list of :class:`Vector3D`\n"
+				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a sub-segment):\n"
 				"  ::\n"
@@ -3472,7 +3554,7 @@ export_resolved_topological_geometry_sub_segment()
 				"get_resolved_geometry_point_features()\n"
 				"  Returns the source feature associated with each point in the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
 				"\n"
-				"  :rtype: list of :class:`Feature`\n"
+				"  :rtype: list of Feature\n"
 				"\n"
 				"  The motion of each point in the resolved geometry is determined by its source feature. "
 				"And the source features are the building blocks from which topologies are assembled and resolved.\n"
@@ -3501,7 +3583,7 @@ export_resolved_topological_geometry_sub_segment()
 				"get_topological_section()\n"
 				"  Returns the topological section that the sub-segment was obtained from.\n"
 				"\n"
-				"  :rtype: :class:`ReconstructionGeometry`\n"
+				"  :rtype: ReconstructionGeometry\n"
 				"\n"
 				"  .. note:: This represents the **entire** geometry of the topological section, not just "
 				"the part that contributes to the sub-segment.\n"
@@ -3520,7 +3602,7 @@ export_resolved_topological_geometry_sub_segment()
 				"get_topological_section_geometry()\n"
 				"  Returns the topological section *geometry* that the sub-segment was obtained from.\n"
 				"\n"
-				"  :rtype: :class:`PolylineOnSphere`\n"
+				"  :rtype: PolylineOnSphere\n"
 				"\n"
 				"  .. note:: This is the **entire** geometry of the topological section, not just "
 				"the part that contributes to the sub-segment.\n"
@@ -3531,7 +3613,7 @@ export_resolved_topological_geometry_sub_segment()
 				"get_topological_section_feature()\n"
 				"  Returns the feature referenced by the topological section.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  .. note:: The geometry in the returned feature represents the **entire** "
 				"geometry of the topological section, not just the "
@@ -3559,7 +3641,7 @@ export_resolved_topological_geometry_sub_segment()
 				"return the child :class:`sub-segments<ResolvedTopologicalSubSegment>` of the topological line "
 				"contributing to this sub-segment, otherwise return ``None``.\n"
 				"\n"
-				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`, or ``None``\n"
+				"  :rtype: list of ResolvedTopologicalSubSegment, or None\n"
 				"\n"
 				"  To see if a sub-segment is from a topological line and then iterate over its child sub-segments:\n"
 				"  ::\n"
@@ -3656,6 +3738,13 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms)
 	{
+		// Velocity delta time must be positive.
+		if (!(velocity_delta_time > 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
 		bp::list resolved_geometry_point_velocities_list;
 
 		std::vector<GPlatesMaths::Vector3D> resolved_geometry_point_velocities_;
@@ -3919,7 +4008,7 @@ export_resolved_topological_shared_sub_segment()
 				"get_resolved_feature()\n"
 				"  Returns a feature containing the resolved sub-segment geometry.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  The returned feature contains the :meth:`resolved geometry<get_resolved_geometry>`.\n"
 				"\n"
@@ -3937,7 +4026,7 @@ export_resolved_topological_shared_sub_segment()
 				"get_resolved_geometry()\n"
 				"  Returns the geometry containing the shared sub-segment vertices.\n"
 				"\n"
-				"  :rtype: :class:`PolylineOnSphere`\n"
+				"  :rtype: PolylineOnSphere\n"
 				"\n"
 				"  .. note:: These are the *unreversed* vertices. They are in the same order as the "
 				"geometry of :meth:`get_topological_section_geometry`. If you need a reversed version "
@@ -3951,7 +4040,7 @@ export_resolved_topological_shared_sub_segment()
 				"get_resolved_geometry_points()\n"
 				"  Returns the points of the :meth:`resolved geometry <get_resolved_geometry>`.\n"
 				"\n"
-				"  :rtype: list of :class:`PointOnSphere`\n"
+				"  :rtype: list of PointOnSphere\n"
 				"\n"
 				"  This method is *essentially* equivalent to:\n"
 				"  ::\n"
@@ -3977,14 +4066,14 @@ export_resolved_topological_shared_sub_segment()
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
 				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
-				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :type velocity_delta_time_type: VelocityDeltaTimeType\n"
 				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 				"*centimetres per year* (defaults to *kilometres per million years*)\n"
-				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :type velocity_units: VelocityUnits\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :rtype: list of :class:`Vector3D`\n"
+				"  :rtype: list of Vector3D\n"
+				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  To associate each velocity with its point (in a sub-segment):\n"
 				"  ::\n"
@@ -4003,7 +4092,7 @@ export_resolved_topological_shared_sub_segment()
 				"get_resolved_geometry_point_features()\n"
 				"  Returns the source feature associated with each point in the :meth:`resolved geometry points <get_resolved_geometry_points>`.\n"
 				"\n"
-				"  :rtype: list of :class:`Feature`\n"
+				"  :rtype: list of Feature\n"
 				"\n"
 				"  The motion of each point in the resolved geometry is determined by its source feature. "
 				"And the source features are the building blocks from which topologies are assembled and resolved.\n"
@@ -4032,7 +4121,7 @@ export_resolved_topological_shared_sub_segment()
 				"get_topological_section()\n"
 				"  Returns the topological section that the shared sub-segment was obtained from.\n"
 				"\n"
-				"  :rtype: :class:`ReconstructionGeometry`\n"
+				"  :rtype: ReconstructionGeometry\n"
 				"\n"
 				"  .. note:: This represents the **entire** geometry of the topological section, not just "
 				"the part that contributes to the shared sub-segment.\n"
@@ -4048,7 +4137,7 @@ export_resolved_topological_shared_sub_segment()
 				"get_topological_section_geometry()\n"
 				"  Returns the topological section *geometry* that the shared sub-segment was obtained from.\n"
 				"\n"
-				"  :rtype: :class:`PolylineOnSphere`\n"
+				"  :rtype: PolylineOnSphere\n"
 				"\n"
 				"  .. note:: This is the **entire** geometry of the topological section, not just "
 				"the part that contributes to the shared sub-segment.\n"
@@ -4059,7 +4148,7 @@ export_resolved_topological_shared_sub_segment()
 				"get_topological_section_feature()\n"
 				"  Returns the feature referenced by the topological section.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  .. note:: The geometry in the returned feature represents the **entire** "
 				"geometry of the topological section, not just the "
@@ -4081,7 +4170,7 @@ export_resolved_topological_shared_sub_segment()
 				"get_sharing_resolved_topologies()\n"
 				"  Returns a list of resolved topologies sharing this sub-segment.\n"
 				"\n"
-				"  :rtype: list of :class:`ReconstructionGeometry`\n"
+				"  :rtype: list of ReconstructionGeometry\n"
 				"\n"
 				"  .. note:: | The resolved topologies (that share this sub-segment) can be "
 				":class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.\n"
@@ -4143,7 +4232,7 @@ export_resolved_topological_shared_sub_segment()
 				"return the child :class:`sub-segments<ResolvedTopologicalSubSegment>` of the topological line "
 				"contributing to this sub-segment, otherwise return ``None``.\n"
 				"\n"
-				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`, or ``None``\n"
+				"  :rtype: list of ResolvedTopologicalSubSegment, or None\n"
 				"\n"
 				"  To see if a shared sub-segment is from a topological line and then iterate over its child sub-segments:\n"
 				"  ::\n"
@@ -4323,7 +4412,7 @@ export_resolved_topological_section()
 				"get_topological_section_feature()\n"
 				"  Returns the feature referenced by the topological section.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
+				"  :rtype: Feature\n"
 				"\n"
 				"  .. note:: The geometry in the returned feature represents the **entire** geometry of the "
 				"topological section, not just the parts that contribute to resolved topological boundaries.\n"
@@ -4346,7 +4435,7 @@ export_resolved_topological_section()
 				"get_topological_section()\n"
 				"  Returns the topological section.\n"
 				"\n"
-				"  :rtype: :class:`ReconstructionGeometry`\n"
+				"  :rtype: ReconstructionGeometry\n"
 				"\n"
 				"  .. note:: This represents the **entire** geometry of the topological section, not just "
 				"the parts that contribute to resolved topological boundaries.\n"
@@ -4362,7 +4451,7 @@ export_resolved_topological_section()
 				"get_topological_section_geometry()\n"
 				"  Returns the topological section *geometry*.\n"
 				"\n"
-				"  :rtype: :class:`PolylineOnSphere`\n"
+				"  :rtype: PolylineOnSphere\n"
 				"\n"
 				"  .. note:: This is the **entire** geometry of the topological section, not just "
 				"the parts that contribute to resolved topological boundaries.\n"
@@ -4374,7 +4463,7 @@ export_resolved_topological_section()
 				"  Returns a list of sub-segments on this topological section that are *shared* by "
 				"one or more resolved topologies.\n"
 				"\n"
-				"  :rtype: list of :class:`ResolvedTopologicalSharedSubSegment`\n"
+				"  :rtype: list of ResolvedTopologicalSharedSubSegment\n"
 				"\n"
 				"  .. note:: The order of returned sub-segments is from the *start* to the *end* "
 				"of this :meth:`topological section geometry <get_topological_section_geometry>`. "

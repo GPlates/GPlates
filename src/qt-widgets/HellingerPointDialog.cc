@@ -38,7 +38,7 @@ const double INITIAL_UNCERTAINTY = 5.;
 
 GPlatesQtWidgets::HellingerPointDialog::HellingerPointDialog(
 		HellingerDialog *hellinger_dialog,
-		HellingerModel *hellinger_model,
+		GPlatesAppLogic::HellingerModel *hellinger_model,
 		bool create_new_pick):
 	QDialog(hellinger_dialog,Qt::CustomizeWindowHint |
 			Qt::WindowTitleHint |
@@ -92,7 +92,7 @@ void
 GPlatesQtWidgets::HellingerPointDialog::update_pick_from_model(
 		const int &segment, const int &row)
 {
-	hellinger_model_type::const_iterator it = d_hellinger_model_ptr->get_pick(segment,row);
+	GPlatesAppLogic::hellinger_model_type::const_iterator it = d_hellinger_model_ptr->get_pick(segment,row);
 
 	if(it != d_hellinger_model_ptr->end())
 	{
@@ -101,19 +101,19 @@ GPlatesQtWidgets::HellingerPointDialog::update_pick_from_model(
 		d_segment = segment;
 		d_row = row;
 
-		HellingerPick pick = it->second;
+		GPlatesAppLogic::HellingerPick pick = it->second;
 
 		spinbox_segment->setValue(segment);
 
 		switch(pick.d_segment_type)
 		{
-		case PLATE_ONE_PICK_TYPE:
+		case GPlatesAppLogic::PLATE_ONE_PICK_TYPE:
 			radio_plate_index_1->setChecked(true);
 			break;
-		case PLATE_TWO_PICK_TYPE:
+		case GPlatesAppLogic::PLATE_TWO_PICK_TYPE:
 			radio_plate_index_2->setChecked(true);
 			break;
-		case PLATE_THREE_PICK_TYPE:
+		case GPlatesAppLogic::PLATE_THREE_PICK_TYPE:
 			radio_plate_index_3->setChecked(true);
 			break;
 		default:
@@ -161,7 +161,7 @@ void GPlatesQtWidgets::HellingerPointDialog::set_active(bool active)
 	label_segment->setEnabled(active);
 }
 
-const GPlatesQtWidgets::HellingerPick &
+const GPlatesAppLogic::HellingerPick &
 GPlatesQtWidgets::HellingerPointDialog::current_pick() const
 {
 	return d_pick;
@@ -190,7 +190,7 @@ GPlatesQtWidgets::HellingerPointDialog::handle_apply()
 		d_hellinger_model_ptr->remove_pick(d_segment,d_row);
 	}
 
-	hellinger_model_type::const_iterator it =
+	GPlatesAppLogic::hellinger_model_type::const_iterator it =
 			d_hellinger_model_ptr->add_pick(
 				d_pick,
 				segment_number);
@@ -218,15 +218,15 @@ void GPlatesQtWidgets::HellingerPointDialog::update_pick_from_widgets()
 	d_pick.d_uncertainty = spinbox_uncert->value();
 	if (radio_plate_index_1->isChecked())
 	{
-		d_pick.d_segment_type = PLATE_ONE_PICK_TYPE;
+		d_pick.d_segment_type = GPlatesAppLogic::PLATE_ONE_PICK_TYPE;
 	}
 	else if (radio_plate_index_2->isChecked())
 	{
-		d_pick.d_segment_type = PLATE_TWO_PICK_TYPE;
+		d_pick.d_segment_type = GPlatesAppLogic::PLATE_TWO_PICK_TYPE;
 	}
 	else
 	{
-		d_pick.d_segment_type = PLATE_THREE_PICK_TYPE;
+		d_pick.d_segment_type = GPlatesAppLogic::PLATE_THREE_PICK_TYPE;
 	}
 }
 

@@ -24,7 +24,6 @@
  */
 
 #include <cmath>
-#include <QProgressBar>
 
 #include "GenerateVelocityDomainTerra.h"
 

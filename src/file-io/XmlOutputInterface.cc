@@ -44,9 +44,9 @@ namespace
 
 
 GPlatesFileIO::XmlOutputInterface::ElementPairStackFrame::ElementPairStackFrame(
-		XmlOutputInterface &interface,
+		XmlOutputInterface &interface_,
 		const GPlatesUtils::UnicodeString &elem_name):
-	d_interface_ptr(&interface),
+	d_interface_ptr(&interface_),
 	d_elem_name(elem_name) {
 	d_interface_ptr->write_opening_element(d_elem_name);
 }

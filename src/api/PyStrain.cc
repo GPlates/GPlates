@@ -152,7 +152,19 @@ void
 export_strain()
 {
 	// An enumeration for the type of principal angle.
-	bp::enum_<GPlatesApi::PrincipalAngleType>("PrincipalAngleType")
+	bp::enum_<GPlatesApi::PrincipalAngleType>(
+			"PrincipalAngleType",
+			"How the angle of the major principal axis returned by :meth:`Strain.get_principal_strain` is measured.\n"
+			"\n"
+			"  ================================ ==============\n"
+			"  Value                            Description\n"
+			"  ================================ ==============\n"
+			"  PrincipalAngleType.major_south   The major principal axis points South when the angle is zero. The angle ranges from :math:`-\\pi` to :math:`\\pi` radians **anti**-clockwise (observed from above the globe).\n"
+			"  PrincipalAngleType.major_east    The major principal axis points East when the angle is zero. The angle ranges from :math:`-\\pi` to :math:`\\pi` radians **anti**-clockwise (observed from above the globe). This is equivalent to *MajorAngle* in the GPlates deformation export.\n"
+			"  PrincipalAngleType.major_azimuth The major principal axis points North when the angle is zero. The angle ranges from :math:`0` to :math:`2\\pi` radians **clockwise** (observed from above the globe). This is equivalent to *MajorAzimuth* in the GPlates deformation export.\n"
+			"  ================================ ==============\n"
+			"\n"
+			"  .. note:: Regardless of the value, the direction of the *minimum* principal axis is always an **anti-clockwise** rotation of :math:`\\frac{\\pi}{2}` radians (90 degrees) of the *major* principal axis (observed from above the globe).\n")
 			.value("major_south", GPlatesApi::PrincipalAngleType::MAJOR_SOUTH)
 			.value("major_east", GPlatesApi::PrincipalAngleType::MAJOR_EAST)
 			.value("major_azimuth", GPlatesApi::PrincipalAngleType::MAJOR_AZIMUTH);
@@ -622,27 +634,11 @@ export_strain()
 				"\n"
 				"  :param principal_angle_type: how the angle of the major principal axis is defined relative to the local coordinate system "
 				"(defaults to *PrincipalAngleType.major_south*)\n"
-				"  :type principal_angle_type: *PrincipalAngleType.major_south*, *PrincipalAngleType.major_east* or *PrincipalAngleType.major_azimuth*\n"
+				"  :type principal_angle_type: PrincipalAngleType\n"
 				"  :returns: the tuple of maximum strain, minimum strain and major axis angle :math:`(e_{(1)}, e_{(2)}, \\alpha)`\n"
 				"  :rtype: tuple (float, float, float)\n"
 				"\n"
-				"  *principal_angle_type* supports the following enumeration types:\n"
-				"\n"
-				"  ================================= ==============\n"
-				"  Value                              Description\n"
-				"  ================================= ==============\n"
-				"  PrincipalAngleType.major_south    The major principal axis points South when the angle is zero. "
-				"The angle ranges from :math:`-\\pi` to :math:`\\pi` radians **anti**-clockwise (observed from above the globe).\n"
-				"  PrincipalAngleType.major_east     The major principal axis points East when the angle is zero. "
-				"The angle ranges from :math:`-\\pi` to :math:`\\pi` radians **anti**-clockwise (observed from above the globe). "
-				"This is equivalent to *MajorAngle* in the GPlates deformation export.\n"
-				"  PrincipalAngleType.major_azimuth  The major principal axis points North when the angle is zero. "
-				"The angle ranges from :math:`0` to :math:`2\\pi` radians **clockwise** (observed from above the globe). "
-				"This is equivalent to *MajorAzimuth* in the GPlates deformation export.\n"
-				"  ================================= ==============\n"
-				"\n"
-				"  .. note:: Regardless of the value of *principal_angle_type*, the direction of the *minimum* principal axis is always an **anti-clockwise** rotation "
-				"of :math:`\\frac{\\pi}{2}` radians (90 degrees) of the *major* principal axis (observed from above the globe).\n"
+				"  See :class:`PrincipalAngleType` for how each value defines the angle (and the direction of the *minimum* principal axis).\n"
 				"\n"
 				"  The principal strains are the maximum and minimum strains that occur along the principal axes (where shear strain is zero). "
 				"The principal axes are the coordinate axes rotated anti-clockwise (when observed from above the globe) by an angle :math:`\\alpha` "
@@ -696,27 +692,24 @@ export_strain()
 				&GPlatesAppLogic::accumulate_strain,
 				(bp::arg("previous_strain"), bp::arg("previous_strain_rate"), bp::arg("current_strain_rate"), bp::arg("time_increment")),
 				"accumulate(previous_strain, previous_strain_rate, current_strain_rate, time_increment)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Accumulate previous strain using both previous and current strain rates (in units of :math:`second^{-1}`) "
+				"  Accumulate previous strain using both previous and current strain rates (in units of :math:`second^{-1}`) "
 				"over a time increment (in units of :math:`second`).\n"
 				"\n"
 				"  :param previous_strain: the *previous* strain\n"
-				"  :type previous_strain: :class:`Strain`\n"
+				"  :type previous_strain: Strain\n"
 				"  :param previous_strain_rate: the *previous* strain rate\n"
-				"  :type previous_strain_rate: :class:`StrainRate`\n"
+				"  :type previous_strain_rate: StrainRate\n"
 				"  :param current_strain_rate: the *current* strain rate\n"
-				"  :type current_strain_rate: :class:`StrainRate`\n"
+				"  :type current_strain_rate: StrainRate\n"
 				"  :param time_increment: the time increment to accumulate strain over (in units of :math:`second^{-1}`)\n"
 				"  :type time_increment: float\n"
 				"  :returns: the *current* strain (accumulated from *previous* strain)\n"
-				"  :rtype: :class:`Strain`\n"
+				"  :rtype: Strain\n"
 				"\n"
 				"  To accumulate strain from an initial undeformed state at 100Ma to its final deformed strain at present day:\n"
 				"  ::\n"
 				"\n"
-				"    time_increment_1myr_in_seconds = 1e6 * 365 * 24 * 60 * 60\n"
+				"    time_increment_1myr_in_seconds = 1e6 * 365.25 * 24 * 60 * 60\n"
 				"    previous_strain = pygplates.Strain.identity\n"
 				"    previous_strain_rate = pygplates.StrainRate.zero\n"
 				"\n"

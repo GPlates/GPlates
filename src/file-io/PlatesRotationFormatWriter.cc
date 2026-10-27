@@ -247,26 +247,24 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 			}
 		}
 
-		// Print the '@NAME"""' part.
-		print_non_rotation_pole_line(
-				os,
-				QString("@") + attribute->get_name() + attribute_content_quote,
-				grot_format);
-
-		// Print the individual content lines.
+		// Print the content lines, with '@NAME"""' before the first and '"""' after the last.
+		//
+		// The quotes share lines with the content because the reader takes everything between them
+		// as the content: on lines of their own, each save would add a newline at each end.
 		for (int n = 0; n < attribute_content_lines.size(); ++n)
 		{
-			print_non_rotation_pole_line(
-					os,
-					attribute_content_lines[n],
-					grot_format);
-		}
+			QString line = attribute_content_lines[n];
+			if (n == 0)
+			{
+				line.prepend(QString("@") + attribute->get_name() + attribute_content_quote);
+			}
+			if (n == attribute_content_lines.size() - 1)
+			{
+				line.append(attribute_content_quote);
+			}
 
-		// Print the closing quote '"""' part.
-		print_non_rotation_pole_line(
-				os,
-				attribute_content_quote,
-				grot_format);
+			print_non_rotation_pole_line(os, line, grot_format);
+		}
 	}
 
 	int moving_plate_id_or_comment = moving_plate_id.get();
@@ -319,7 +317,24 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 	}
 	else if (reconstruction_pole_data.comment)
 	{
-		os << reconstruction_pole_data.comment->qstring();
+		if (grot_format)
+		{
+			// A GROT comment is the 'C' attribute. Written bare, straight after the fixed plate ID,
+			// a comment starting with digits would read back as part of that plate ID.
+			//
+			// An attribute value can't contain a double quote, or span lines, or be empty.
+			QString comment = reconstruction_pole_data.comment->qstring();
+			comment.replace('"', '\'');
+			comment = comment.simplified();
+			if (!comment.isEmpty())
+			{
+				os << " @C\"" << comment << "\"";
+			}
+		}
+		else
+		{
+			os << reconstruction_pole_data.comment->qstring();
+		}
 	}
 
 

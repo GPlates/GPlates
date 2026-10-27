@@ -39,7 +39,6 @@
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/test/unit_test.hpp>
 #include <boost/variant.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QDataStream>
@@ -60,8 +59,6 @@
 #include "scribe/Transcribe.h"
 #include "scribe/TranscribeContext.h"
 #include "scribe/TranscribeEnumProtocol.h"
-
-#include "unit-test/GPlatesTestSuite.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -1145,40 +1142,6 @@ namespace GPlatesUnitTest
 			GPlatesScribe::Scribe &scribe,
 			TranscribeRawTest::Enum &e,
 			bool transcribed_construct_data);
-
-
-	//
-	// To run only Transcribe test suite:
-	//
-	// gplates-unit-test.exe --G_test_to_run=*/Transcribe
-	//
-	class TranscribeTestSuite :
-		public GPlatesUnitTest::GPlatesTestSuite
-	{
-	public:
-		TranscribeTestSuite(
-				unsigned depth);
-
-	protected:
-		void
-		construct_maps();
-
-	private:
-		void
-		construct_transcribe_primitives_test();
-
-		void
-		construct_transcribe_untracked_test();
-
-		void
-		construct_transcribe_inheritance_test();
-
-		void
-		construct_transcribe_compatibility_test();
-
-		void
-		construct_transcribe_raw_test();
-	};
 }
 
 namespace GPlatesScribe

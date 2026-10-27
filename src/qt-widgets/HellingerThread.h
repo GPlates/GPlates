@@ -29,6 +29,11 @@
 #include <string>
 #include <QThread>
 
+namespace GPlatesAppLogic
+{
+	class HellingerModel;
+}
+
 namespace GPlatesQtWidgets
 {
 	enum ThreadType
@@ -42,7 +47,6 @@ namespace GPlatesQtWidgets
 	};
 
 	class HellingerDialog;
-	class HellingerModel;
 
 	class HellingerThread:
 			public QThread
@@ -52,7 +56,7 @@ namespace GPlatesQtWidgets
 
 		HellingerThread(
 				HellingerDialog *hellinger_dialog,
-				HellingerModel *hellinger_model);
+				GPlatesAppLogic::HellingerModel *hellinger_model);
 
 
 		void
@@ -104,7 +108,7 @@ namespace GPlatesQtWidgets
 		calculate_three_way_uncertainties();
 
 		HellingerDialog *d_hellinger_dialog_ptr;
-		HellingerModel *d_hellinger_model_ptr;
+		GPlatesAppLogic::HellingerModel *d_hellinger_model_ptr;
 
 		ThreadType d_thread_type;
 

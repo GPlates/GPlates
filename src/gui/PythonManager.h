@@ -201,34 +201,11 @@ namespace GPlatesGui
 		}
 
 		
-		bool
-		show_init_fail_dlg() const
-		{
-			return d_show_python_init_fail_dlg;
-		}
-
-		
 		const QString&
 		python_version() const
 		{
 			return d_python_version;
 		}
-
-
-		const QString&
-		python_home() const
-		{
-			return d_python_home;
-		}
-
-
-		void
-		find_python();
-		
-
-		void
-		set_show_init_fail_dlg(
-				bool b);
 
 
 		void
@@ -238,10 +215,6 @@ namespace GPlatesGui
 
 		void
 		set_python_prefix();
-
-
-		QString
-		get_python_prefix_from_preferences();
 
 
 		void
@@ -266,30 +239,6 @@ namespace GPlatesGui
 
 		void
 		check_python_capability();
-		
-
-		bool
-		validate_python_home()
-		{
-			return validate_python_home(d_python_home);
-		}
-
-		bool
-		validate_python_home(
-				const QString& new_home)
-		{
-#ifndef Q_OS_WIN
-			QString path_of_code_py = 
-				new_home + "/lib/python" +
-				d_python_version + "/os.py"; //use this file as hint to find python home.
-#else
-			QString path_of_code_py = 
-				new_home + "/Lib/os.py"; 
-#endif
-			//qDebug() << path_of_code_py;
-			QFileInfo file_hint(path_of_code_py);
-			return file_hint.isFile();
-		}
 
 
 		class PythonExecGuard
@@ -396,10 +345,8 @@ namespace GPlatesGui
 		*/
 		GPlatesGui::EventBlackout d_event_blackout;
 
-		bool d_show_python_init_fail_dlg, d_clear_python_prefix_flag;
+		bool d_clear_python_prefix_flag;
 
-		QString d_python_home;
-		
 		QString d_python_version;
 
 		/*

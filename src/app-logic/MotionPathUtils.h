@@ -232,6 +232,11 @@ namespace GPlatesAppLogic
 			visit_gpml_plate_id(
 				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
+			virtual
+			void
+			visit_xs_string(
+				const GPlatesPropertyValues::XsString &xs_string);
+
 			bool d_feature_is_defined_at_recon_time;
 			bool d_has_geometry;
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_reconstruction_time;

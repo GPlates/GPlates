@@ -36,7 +36,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 
 #include "maths/MultiPointOnSphere.h"
 
@@ -49,7 +49,7 @@ namespace GPlatesViewOperations
 	public:
 		RenderedColouredMultiPointOnSphere(
 				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere,
-				const std::vector<GPlatesGui::ColourProxy> &point_colours,
+				const std::vector<GPlatesGui::Colour> &point_colours,
 				float point_size_hint) :
 		d_multi_point_on_sphere(multi_point_on_sphere),
 		d_point_colours(point_colours),
@@ -92,7 +92,7 @@ namespace GPlatesViewOperations
 			return d_multi_point_on_sphere;
 		}
 
-		const std::vector<GPlatesGui::ColourProxy> &
+		const std::vector<GPlatesGui::Colour> &
 		get_point_colours() const
 		{
 			return d_point_colours;
@@ -106,7 +106,7 @@ namespace GPlatesViewOperations
 
 	private:
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type d_multi_point_on_sphere;
-		std::vector<GPlatesGui::ColourProxy> d_point_colours;
+		std::vector<GPlatesGui::Colour> d_point_colours;
 		float d_point_size_hint;
 	};
 }

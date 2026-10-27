@@ -37,7 +37,6 @@ namespace GPlatesUtils
 		enum ComponentTypes
 		{
 			DATA_MINING = 0,
-			PYTHON,
 			SYMBOLOGY,
 			HELLINGER_THREE_PLATE,
 			COMP_NUM
@@ -52,13 +51,6 @@ namespace GPlatesUtils
 			data_mining()
 			{
 				return Component(ComponentManager::DATA_MINING);
-			}
-
-			static
-			Component
-			python()
-			{
-				return Component(ComponentManager::PYTHON);
 			}
 
 			static
@@ -122,9 +114,7 @@ namespace GPlatesUtils
 	private:
 		ComponentManager() :
 			d_switchs() //by default, all 0s. set default value here.
-		{
-			enable(Component::python()); // enable python by default
-		}
+		{  }
 
 		ComponentManager(const ComponentManager&);
 		ComponentManager& operator=(const ComponentManager&);

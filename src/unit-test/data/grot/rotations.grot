@@ -1,0 +1,15 @@
+@GPLATESROTATIONFILE:version"1.0"
+@GPLATESROTATIONFILE:documentation"Rotations for GrotFileTest"
+@DC:namespace"http://purl.org/dc/elements/1.1/"
+
+# A free-text comment. Only a save that writes the file's own line-by-line copy keeps it.
+
+> @MPRS:pid"801" @MPRS:code"AUS" @MPRS:name"Australia"
+801    0.0000   90.0000    0.0000    0.0000  000  @C"present day"
+801   10.0000   10.0000   20.0000    5.0000  000  @C"ten"
+#801   20.0000   11.0000   21.0000    9.0000  000  @C"disabled"
+801   30.0000   12.0000   22.0000   13.0000  000
+
+> @MPRS:pid"701" @MPRS:code"AFR" @MPRS:name"Africa"
+701    0.0000   90.0000    0.0000    0.0000  000
+701   40.0000   30.0000   40.0000   20.0000  000

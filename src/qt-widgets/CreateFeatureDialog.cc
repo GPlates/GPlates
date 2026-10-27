@@ -55,15 +55,13 @@
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/FlowlineUtils.h"
+#include "app-logic/GeometrySetter.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/TopologyGeometryType.h"
 #include "app-logic/TopologyUtils.h"
-
-#include "feature-visitors/GeometrySetter.h"
-#include "feature-visitors/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -81,6 +79,7 @@
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 #include "model/types.h"
 
 #include "presentation/ViewState.h"
@@ -492,7 +491,7 @@ namespace
 			}
 
 			boost::optional<typename PropertyValueType::non_null_ptr_to_const_type> derived_property_value =
-					GPlatesFeatureVisitors::get_property_value<PropertyValueType>(*property_value.get());
+					GPlatesModel::get_property_value<PropertyValueType>(*property_value.get());
 			if (!derived_property_value)
 			{
 				continue;
@@ -967,14 +966,17 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 	if (should_offer_reconstruct_method_prop(d_feature_type, d_geometry_property_type))
 	{
 		// Force flowline feature type to be reconstructed as HALF_STAGE_ROTATION.
+		// That sets up its left and right plates; a flowline is reconstructed the same way whatever its
+		// reconstruction method (spreading from its geometry import time, like HalfStageRotationVersion3).
 		if (d_feature_type.get() == GPlatesModel::FeatureType::create_gpml("Flowline"))
 		{
 			d_recon_method_combobox->setEnabled(false); // Prevent user from changing option.
 			d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
 		}
 		// Force motion path feature type to be reconstructed as BY_PLATE_ID.
-		// (Later we should allow changing to HALF_STAGE_ROTATION; the MotionPathGeometryPopulator
-		// won't currently handle this correctly, so disable this option until we do handle it).
+		// That sets up its reconstruction plate ID and relative plate (and removes the reconstruction
+		// method property); a motion path is reconstructed by its plate IDs whatever its reconstruction
+		// method.
 		else if (d_feature_type.get() == GPlatesModel::FeatureType::create_gpml("MotionPath"))
 		{
 			d_recon_method_combobox->setEnabled(false); // Prevent user from changing option.
@@ -1382,6 +1384,10 @@ GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_propertie
 		// import time and then perform ridge-spreading from there. This enables the user to subsequently change
 		// the spreading asymmetry without significantly affecting the ridge position (with no effect at the import time)
 		//
+		// Flowline features spread from it too (see FlowlineUtils::fill_seed_point_rotations). The common
+		// properties are in the feature before its geometry is reverse reconstructed (and before the
+		// flowline end-point correction), so the seed point is stored relative to this time.
+		//
 		// Also used when a feature's geometry is reconstructed using topologies
 		// (instead of using the feature's properties, eg, reconstruction plate ID).
 		// This enables paleo-geometries to be used (eg, fracture zones prior to subduction) and masked by topologies
@@ -1667,7 +1673,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 			if (prop_value_maybe) {
 				// We know the name (should be) an XsString.
 				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> prop_value_string =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(*prop_value_maybe.get());
+						GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(*prop_value_maybe.get());
 				if (!prop_value_string)
 				{
 					continue;
@@ -1696,7 +1702,7 @@ GPlatesQtWidgets::CreateFeatureDialog::generate_conjugate_properties_from_all_pr
 			if (prop_value_maybe) {
 				// We know the quality (should be) an Enumeration.
 				boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> prop_value_enum =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(*prop_value_maybe.get());
+						GPlatesModel::get_property_value<GPlatesPropertyValues::Enumeration>(*prop_value_maybe.get());
 				if (!prop_value_enum)
 				{
 					continue;
@@ -2593,7 +2599,7 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 	// Note: Cannot use '*geometry_property_iterator = ...' since dereferencing a feature
 	// properties iterator returns a temporary pointer (so assigning to it does nothing) -
 	// instead set the property via the feature.
-	GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
+	GPlatesAppLogic::GeometrySetter geometry_setter(present_day_geometry);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone =
 			(*geometry_property_iterator)->clone();
 	geometry_setter.set_geometry(geometry_property_clone.get());

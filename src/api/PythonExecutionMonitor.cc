@@ -24,7 +24,7 @@
  */
 #include <boost/bind/bind.hpp>
 #include <QEvent>
-#include <QApplication>
+#include <QCoreApplication>
 #include <QThread>
 #include <QDebug>
 

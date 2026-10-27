@@ -73,7 +73,7 @@ namespace GPlatesFileIO
 			 * The element will be named @a elem_name.
 			 */
 			ElementPairStackFrame(
-					XmlOutputInterface &interface,
+					XmlOutputInterface &interface_,
 					const GPlatesUtils::UnicodeString &elem_name);
 
 			/**
@@ -113,7 +113,7 @@ namespace GPlatesFileIO
 			 */
 			template<typename F>
 			ElementPairStackFrame(
-					XmlOutputInterface &interface,
+					XmlOutputInterface &interface_,
 					const GPlatesUtils::UnicodeString &elem_name,
 					F attrs_pair_begin,
 					F attrs_pair_end);
@@ -419,11 +419,11 @@ namespace GPlatesFileIO
 	template<typename F>
 	inline
 	XmlOutputInterface::ElementPairStackFrame::ElementPairStackFrame(
-			XmlOutputInterface &interface,
+			XmlOutputInterface &interface_,
 			const GPlatesUtils::UnicodeString &elem_name,
 			F attrs_pair_begin,
 			F attrs_pair_end):
-		d_interface_ptr(&interface),
+		d_interface_ptr(&interface_),
 		d_elem_name(elem_name) {
 		d_interface_ptr->write_opening_element_with_attributes(elem_name, attrs_pair_begin, attrs_pair_end);
 	}

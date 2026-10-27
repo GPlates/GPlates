@@ -36,15 +36,15 @@
 #include "OgrGeometryExporter.h"
 #include "OgrUtils.h"
 
+#include "app-logic/GeometryTypeFinder.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ResolvedTopologicalSection.h"
 
-#include "feature-visitors/GeometryTypeFinder.h"
-#include "feature-visitors/KeyValueDictionaryFinder.h"
-#include "feature-visitors/PropertyValueFinder.h"
+#include "model/KeyValueDictionaryFinder.h"
+#include "model/PropertyValueFinder.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsDouble.h"
@@ -100,7 +100,7 @@ namespace
 		GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(QString("FILE"), referenced_files, kvd_for_export);
 		GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(QString("RECONFILE"), active_reconstruction_files, kvd_for_export);
 
-		GPlatesFeatureVisitors::KeyValueDictionaryFinder kvd_finder;
+		GPlatesModel::KeyValueDictionaryFinder kvd_finder;
 		if (export_per_collection)
 		{
 			kvd_finder.visit_feature(feature_ref);
@@ -148,7 +148,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 		bool wrap_to_dateline)
 {
 	// Iterate through the reconstructed geometries and check which geometry types we have.
-	GPlatesFeatureVisitors::GeometryTypeFinder finder;
+	GPlatesAppLogic::GeometryTypeFinder finder;
 
 	std::list<feature_geometry_group_type>::const_iterator feature_iter;
 	for (feature_iter = feature_geometry_group_seq.begin();

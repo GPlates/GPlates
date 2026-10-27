@@ -803,6 +803,55 @@ namespace GPlatesModel
 	}
 
 
+	/**
+	 * INTERIM (GPlates issue #38) - remove this specialisation, together with
+	 * TopLevelProperty::accept_visitor_and_detect_modification(), once FeatureHandle is a
+	 * RevisionContext (see the 'feature/pygplates-model-revisions' branch) and the model emits
+	 * these events itself.
+	 *
+	 * A non-const feature visitor can modify a top-level property, but the bubble-up revisioning
+	 * chain currently terminates at the top-level property (FeatureHandle is not a RevisionContext),
+	 * so the feature - and hence the feature collection - is never notified of the modification.
+	 * Without that notification the feature collection is not flagged as having unsaved changes and
+	 * no reconstruction is triggered.
+	 *
+	 * Unlike the pre-pyGPlates-merge code (the deleted "FeatureVisitor.cc") this does *not* deep
+	 * clone every visited property: it re-sets the property only when the visit created a new
+	 * revision, so read-only visitors pay only a pointer copy and a comparison. Detection is exact,
+	 * since the top-level property is currently the root of the bubble-up chain.
+	 *
+	 * Re-setting the *same* pointer is safe (and needs no clone, as no new sharing is introduced):
+	 * BasicRevision::set() just reassigns the child slot, and RevisionAwareIterator re-reads the
+	 * revision on each dereference, so the enclosing visit_feature_properties() loop stays valid.
+	 *
+	 * Only TotalReconstructionSequenceRotationInserter (Modify Reconstruction Pole -> Apply) needs
+	 * this; the other non-const visitors either run on detached collections, have no callers, or
+	 * are non-const only to obtain non-const references.
+	 *
+	 * The model-revisions branch leaves visit_feature_property() as the plain in-place call, so
+	 * this specialisation must be removed *deliberately* when that work lands - a merge will not.
+	 */
+	template<>
+	inline
+	void
+	FeatureVisitorBase<FeatureHandle>::visit_feature_property(
+			const feature_iterator_type &feature_iterator)
+	{
+		const TopLevelProperty::non_null_ptr_type feature_property = *feature_iterator;
+
+		if (feature_property->accept_visitor_and_detect_modification(*this))
+		{
+			// Re-set the property on the feature in order to notify the model listeners
+			// (unsaved changes, reconstruction, etc).
+			const FeatureHandle::weak_ref feature_ref = feature_iterator.handle_weak_ref();
+			if (feature_ref.is_valid())
+			{
+				feature_ref->set(feature_iterator, feature_property);
+			}
+		}
+	}
+
+
 	template<class FeatureHandleType>
 	const boost::optional<typename FeatureVisitorBase<FeatureHandleType>::feature_iterator_type> &
 	FeatureVisitorBase<FeatureHandleType>::current_top_level_propiter() const

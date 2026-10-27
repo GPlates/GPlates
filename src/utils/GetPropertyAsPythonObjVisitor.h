@@ -39,8 +39,6 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
 
-#include "utils/FeatureUtils.h"
-
 
 namespace bp=boost::python;
 

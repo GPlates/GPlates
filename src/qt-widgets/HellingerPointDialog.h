@@ -29,10 +29,14 @@
 #include "ui_HellingerPointDialogUi.h"
 #include "HellingerDialog.h"
 
+namespace GPlatesAppLogic
+{
+	class HellingerModel;
+}
+
 namespace GPlatesQtWidgets
 {
 	class HellingerDialog;
-	class HellingerModel;
 
 	class HellingerPointDialog:
 			public QDialog,
@@ -43,7 +47,7 @@ namespace GPlatesQtWidgets
 
 		HellingerPointDialog(
 				HellingerDialog *hellinger_dialog,
-				HellingerModel *hellinger_model,
+				GPlatesAppLogic::HellingerModel *hellinger_model,
 				bool create_new_point = false);
 
 		void
@@ -67,7 +71,7 @@ namespace GPlatesQtWidgets
 		set_active(
 				bool active);
 
-		const HellingerPick &
+		const GPlatesAppLogic::HellingerPick &
 		current_pick() const;
 
 		void
@@ -110,14 +114,14 @@ namespace GPlatesQtWidgets
 		set_initial_values();
 
 		HellingerDialog *d_hellinger_dialog_ptr;
-		HellingerModel *d_hellinger_model_ptr;
+		GPlatesAppLogic::HellingerModel *d_hellinger_model_ptr;
 
 		int d_segment;
 		int d_row;
 
 		bool d_create_new_pick;
 
-		HellingerPick d_pick;
+		GPlatesAppLogic::HellingerPick d_pick;
 
 		QButtonGroup d_radio_button_group;
 	};

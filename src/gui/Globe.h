@@ -32,7 +32,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Colour.h"
-#include "ColourScheme.h"
 #include "GlobeRenderedGeometryCollectionPainter.h"
 #include "OpaqueSphere.h"
 #include "SphericalGrid.h"
@@ -87,15 +86,6 @@ namespace GPlatesGui
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				const GlobeVisibilityTester &visibility_tester,
-				ColourScheme::non_null_ptr_type colour_scheme,
-				int device_pixel_ratio);
-
-		//! To clone a Globe
-		Globe(
-				Globe &existing_globe,
-				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-				const GlobeVisibilityTester &visibility_tester,
-				ColourScheme::non_null_ptr_type colour_scheme,
 				int device_pixel_ratio);
 
 		~Globe()

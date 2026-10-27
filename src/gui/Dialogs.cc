@@ -58,19 +58,12 @@
 #include "qt-widgets/CalculateReconstructionPoleDialog.h"
 #include "qt-widgets/FiniteRotationCalculatorDialog.h"
 #include "qt-widgets/ChooseFeatureCollectionDialog.h"
-#include "qt-widgets/ColouringDialog.h"
 #include "qt-widgets/ConfigureCanvasToolGeometryRenderParametersDialog.h"
 #include "qt-widgets/ConfigureGraticulesDialog.h"
 #include "qt-widgets/ConfigureTextOverlayDialog.h"
 #include "qt-widgets/ConfigureVelocityLegendOverlayDialog.h"
 
-// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-// It has been deprecated since Qt 5.13.
-//
-// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 #include "qt-widgets/ConnectWFSDialog.h"
-#endif // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 
 #include "qt-widgets/CreateVGPDialog.h"
 #include "qt-widgets/DrawStyleDialog.h"
@@ -254,32 +247,6 @@ GPlatesGui::Dialogs::choose_feature_collection_dialog()
 }
 
 
-GPlatesQtWidgets::ColouringDialog &
-GPlatesGui::Dialogs::colouring_dialog()
-{
-	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
-	const DialogType dialog_type = DIALOG_COLOURING;
-	typedef GPlatesQtWidgets::ColouringDialog dialog_typename;
-
-	if (d_dialogs[dialog_type].isNull())
-	{
-		d_dialogs[dialog_type] = new dialog_typename(
-				view_state(),
-				viewport_window().reconstruction_view_widget().globe_and_map_widget(),
-				read_error_accumulation_dialog(),
-				&viewport_window());
-	}
-
-	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
-}
-
-void
-GPlatesGui::Dialogs::pop_up_colouring_dialog()
-{
-	colouring_dialog().pop_up();
-}
-
-
 GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog &
 GPlatesGui::Dialogs::configure_canvas_tool_geometry_render_parameters_dialog()
 {
@@ -377,12 +344,6 @@ GPlatesGui::Dialogs::pop_up_configure_velocity_legend_overlay_dialog()
 	}
 }
 
-// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-// It has been deprecated since Qt 5.13.
-//
-// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-
 GPlatesQtWidgets::ConnectWFSDialog &
 GPlatesGui::Dialogs::connect_wfs_dialog()
 {
@@ -404,7 +365,6 @@ GPlatesGui::Dialogs::pop_up_connect_wfs_dialog()
 	connect_wfs_dialog().pop_up();
 }
 
-#endif // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 
 
 GPlatesQtWidgets::CreateVGPDialog &

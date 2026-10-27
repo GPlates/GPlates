@@ -24,7 +24,8 @@
 # ::
 # 
 #   PROJ_INCLUDE_DIRS   - where to find proj.h, etc.
-#   PROJ_BINARY_DIRS    - where to find projinfo, etc.
+#   PROJ_BINARY_DIRS    - where to find projinfo, etc. Only defined if the 'proj' executable was
+#                         found, which is not required - see the note on PROJ_EXE below.
 #   PROJ_LIBRARY_DIRS   - where to find proj.lib, etc.
 #   PROJ_LIBRARIES      - List of libraries when using PROJ.
 #   PROJ_FOUND          - True if PROJ found.
@@ -75,7 +76,7 @@ if (PROJ4_FOUND)
   else()
     # There was a CONFIG package but it defined a 'proj' target instead of a 'PROJ4::proj' target.
     # So make 'PROJ::proj' alias 'proj'.
-    # But before we can do this we first need to promote 'proj' to global visibility (requires CMake 3.11 or above).
+    # But before we can do this we first need to promote 'proj' to global visibility.
     set_target_properties(proj PROPERTIES IMPORTED_GLOBAL TRUE)
     # Also it seems that, while the 'proj' target has set the library import location, it doesn't set the location of the include directories.
     set_target_properties(proj PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${PROJ4_INCLUDE_DIRS}")
@@ -102,7 +103,7 @@ endif()
 
 #
 # Proj does not have a CONFIG package (at least not all platforms were installed as a CMake package) but more recent versions should.
-# Note that Proj 4.9 is still used by Ubuntu Bionic (18.04).
+# Note that our minimum supported Ubuntu release (Jammy 22.04) ships Proj via apt without a CMake CONFIG package.
 #
 
 if (PROJ_VERBOSE)
@@ -111,68 +112,28 @@ endif()
 
 # Find the PROJ header location.
 find_path(PROJ_INCLUDE_DIR
-  NAMES proj.h proj_api.h
-  PATHS
-    # Macports stores Proj in locations that are difficult for CMake to find without some help
-    # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH or via the PATH environment variable)...
-    /opt/local/lib/proj9/include
-    /opt/local/lib/proj8/include
-    /opt/local/lib/proj7/include
-    /opt/local/lib/proj6/include
-    /opt/local/lib/proj5/include
-    /opt/local/lib/proj49/include
-    # Homebrew...
-    /usr/local/opt/proj9/include
-    /usr/local/opt/proj8/include
-    /usr/local/opt/proj7/include
-    /usr/local/opt/proj6/include
-    /usr/local/opt/proj5/include
-    /usr/local/opt/proj49/include)
+  NAMES proj.h proj_api.h)
 
 # Find the PROJ library.
 find_library(PROJ_LIBRARY
   NAMES proj proj_i
-  NAMES_PER_DIR
-  PATHS
-    # Macports stores Proj in locations that are difficult for CMake to find without some help
-    # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH or via the PATH environment variable)...
-    /opt/local/lib/proj9/lib
-    /opt/local/lib/proj8/lib
-    /opt/local/lib/proj7/lib
-    /opt/local/lib/proj6/lib
-    /opt/local/lib/proj5/lib
-    /opt/local/lib/proj49/lib
-    # Homebrew...
-    /usr/local/opt/proj9/lib
-    /usr/local/opt/proj8/lib
-    /usr/local/opt/proj7/lib
-    /usr/local/opt/proj6/lib
-    /usr/local/opt/proj5/lib
-    /usr/local/opt/proj49/lib)
+  NAMES_PER_DIR)
 
-# Find the 'proj' executable.
+# Find the 'proj' executable (optional - see below).
 find_program(PROJ_EXE
     NAMES proj
-    NAMES_PER_DIR
-    PATHS
-        # Macports stores Proj in locations that are difficult for CMake to find without some help
-        # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH or via the PATH environment variable)...
-        /opt/local/lib/proj9/bin
-        /opt/local/lib/proj8/bin
-        /opt/local/lib/proj7/bin
-        /opt/local/lib/proj6/bin
-        /opt/local/lib/proj5/bin
-        /opt/local/lib/proj49/bin
-        # Homebrew...
-        /usr/local/opt/proj9/bin
-        /usr/local/opt/proj8/bin
-        /usr/local/opt/proj7/bin
-        /usr/local/opt/proj6/bin
-        /usr/local/opt/proj5/bin
-        /usr/local/opt/proj49/bin)
+    NAMES_PER_DIR)
 
 # Make sure we found the PROJ include header location and library.
-find_package_handle_standard_args(PROJ REQUIRED_VARS PROJ_LIBRARY PROJ_INCLUDE_DIR PROJ_EXE)
+#
+# Note: PROJ_EXE is deliberately *not* required. Nothing uses it directly; it only seeds
+#       PROJ_BINARY_DIRS, which 'Install.cmake' searches for 'projinfo' when building a standalone
+#       bundle - and that check is reported at *install* time precisely so that it does not turn
+#       away someone who only wants to compile and run from their build tree. Requiring it here did
+#       exactly that: distributions package the PROJ command-line tools separately (on Ubuntu,
+#       'proj-bin', which arrives only as a Recommends of 'libgdal30'), and a PROJ without them
+#       stopped at "Could NOT find PROJ (missing: PROJ_EXE)".
+find_package_handle_standard_args(PROJ REQUIRED_VARS PROJ_LIBRARY PROJ_INCLUDE_DIR)
 
 mark_as_advanced(PROJ_INCLUDE_DIR PROJ_LIBRARY PROJ_EXE)
 
@@ -180,7 +141,9 @@ mark_as_advanced(PROJ_INCLUDE_DIR PROJ_LIBRARY PROJ_EXE)
 set(PROJ_INCLUDE_DIRS ${PROJ_INCLUDE_DIR})
 set(PROJ_LIBRARIES ${PROJ_LIBRARY})
 get_filename_component(PROJ_LIBRARY_DIRS ${PROJ_LIBRARY} DIRECTORY)
-get_filename_component(PROJ_BINARY_DIRS ${PROJ_EXE} DIRECTORY)
+if (PROJ_EXE)
+  get_filename_component(PROJ_BINARY_DIRS ${PROJ_EXE} DIRECTORY)
+endif()
 
 if (PROJ_VERBOSE)
   message(STATUS "FindPROJ: located PROJ_INCLUDE_DIRS: ${PROJ_INCLUDE_DIRS}")

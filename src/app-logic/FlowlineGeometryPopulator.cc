@@ -32,7 +32,6 @@
 #include "FlowlineGeometryPopulator.h"
 #include "FlowlineUtils.h"
 
-#include "Reconstruction.h"
 #include "ReconstructedFlowline.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
@@ -58,38 +57,6 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 
-namespace
-{
-
-	void
-	fill_times_vector(
-		std::vector<double> &times,
-		const double &reconstruction_time,
-		const std::vector<double> &time_samples)
-	{
-
-
-		times.push_back(reconstruction_time);
-
-		std::vector<double>::const_iterator
-			samples_iter = time_samples.begin(),
-			samples_end = time_samples.end();
-
-		// Get to the first time which is older than our current reconstruction time. 
-		while ((samples_iter != samples_end) && (*samples_iter <= reconstruction_time))
-		{
-			++samples_iter;
-		}	
-
-		// Add the remaining times. 
-		while (samples_iter != samples_end)
-		{
-			times.push_back(*samples_iter);
-			++samples_iter;
-		}	
-	}
-}
-
 GPlatesAppLogic::FlowlineGeometryPopulator::FlowlineGeometryPopulator(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -98,7 +65,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::FlowlineGeometryPopulator(
 	d_reconstruction_tree_creator(reconstruction_tree_creator),
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(reconstruction_time)),
 	d_flowline_property_finder(
-		new GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder(reconstruction_time))
+		new GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder(reconstruction_time)),
+	d_omit_seed_point_vertex(false)
 {  }
 
 bool
@@ -109,6 +77,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
     d_right_rotations.clear();
     d_left_seed_point_rotations.clear();
     d_right_seed_point_rotations.clear();
+    d_left_to_right_plate_frame_rotation = boost::none;
+    d_omit_seed_point_vertex = false;
 
     //Detect Flowline features.
     FlowlineUtils::DetectFlowlineFeatures detector;
@@ -134,90 +104,72 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 
 		//GPlatesModel::integer_plate_id_type anchor = reconstruction_tree->get_anchor_plate_id();
 		double current_time = reconstruction_tree->get_reconstruction_time();
-		std::vector<double> times = d_flowline_property_finder->get_times();
 
-		std::vector<double>::const_iterator
-			t_iter = times.begin();
-			//t_prev_iter = times.begin();
+		const std::vector<double> &times = d_flowline_property_finder->get_times();
+		const GPlatesModel::integer_plate_id_type left_plate_id =
+			d_flowline_property_finder->get_left_plate().get();
+		const GPlatesModel::integer_plate_id_type right_plate_id =
+			d_flowline_property_finder->get_right_plate().get();
 
-		++t_iter;
+		// The flowline spreads from its geometry import time (or its youngest time if it has none),
+		// whatever its times, which only decide which vertices are drawn.
+		const double spreading_start_time = d_flowline_property_finder->get_spreading_start_time();
 
-		if ((current_time > times.back()) ||
-			(current_time < times.front()))
-		{
-			return true;
-		}
-
+		// The current time need not lie between the flowline's youngest and oldest times.
+		// Younger, each half is built out from the seed point as usual, but starts at the youngest
+		// time (the seed point vertex is omitted). Older, there are no flowline rotations, so
+		// there's only a seed point (where the spreading centre is).
 		FlowlineUtils::fill_seed_point_rotations(
 			current_time,
 			times,
-			*d_flowline_property_finder->get_left_plate(),
-			*d_flowline_property_finder->get_right_plate(),
+			spreading_start_time,
+			left_plate_id,
+			right_plate_id,
 			d_reconstruction_tree_creator,
 			d_left_seed_point_rotations);
 
 		FlowlineUtils::fill_seed_point_rotations(
 			current_time,
 			times,
-			*d_flowline_property_finder->get_right_plate(),
-			*d_flowline_property_finder->get_left_plate(),
+			spreading_start_time,
+			right_plate_id,
+			left_plate_id,
 			d_reconstruction_tree_creator,
 			d_right_seed_point_rotations);
 
-		// This will now hold the times we need to use for flowline rotations, from the current reconstruction time to
-		// the oldest time in the flowline.
-		times.clear();
+		// The seed point is stored in the left plate's frame, but the right-hand half of the
+		// flowline is built up in the right plate's frame, so we'll need to move the seed point
+		// between the two frames.
+		d_left_to_right_plate_frame_rotation =
+			FlowlineUtils::get_left_to_right_plate_frame_rotation(
+				spreading_start_time,
+				left_plate_id,
+				right_plate_id,
+				d_reconstruction_tree_creator);
 
-		FlowlineUtils::fill_times_vector(
-			times,
+		// The rotations that build each half out from the seed point, one per vertex older than the
+		// current time.
+		FlowlineUtils::fill_flowline_rotations(
 			current_time,
-			d_flowline_property_finder->get_times());
+			times,
+			spreading_start_time,
+			left_plate_id/*fixed*/,
+			right_plate_id/*moving*/,
+			d_reconstruction_tree_creator,
+			d_left_rotations);
 
-		// We'll work from the current time, backwards in time.
-		std::vector<double>::const_iterator
-			iter = times.begin(),
-			end = times.end();
+		FlowlineUtils::fill_flowline_rotations(
+			current_time,
+			times,
+			spreading_start_time,
+			right_plate_id/*fixed*/,
+			left_plate_id/*moving*/,
+			d_reconstruction_tree_creator,
+			d_right_rotations);
 
-		// Save the "previous" tree for use in the loop.
-		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_prev_time_ptr =
-				d_reconstruction_tree_creator.get_reconstruction_tree(*iter);
-
-		// Step forward beyond the current time
-		++iter;
-
-		for (; iter != end ; ++iter)
-		{
-
-			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_at_time_t_ptr =
-				d_reconstruction_tree_creator.get_reconstruction_tree(*iter);
-
-
-			// The stage pole for the right plate w.r.t. the left plate
-			GPlatesMaths::FiniteRotation stage_pole_left =
-				GPlatesAppLogic::RotationUtils::get_stage_pole(
-				*tree_at_prev_time_ptr,
-				*tree_at_time_t_ptr,
-				*d_flowline_property_finder->get_right_plate(),
-				*d_flowline_property_finder->get_left_plate());
-
-
-			GPlatesMaths::FiniteRotation stage_pole_right =
-				GPlatesAppLogic::RotationUtils::get_stage_pole(
-				*tree_at_prev_time_ptr,
-				*tree_at_time_t_ptr,
-				*d_flowline_property_finder->get_left_plate(),
-				*d_flowline_property_finder->get_right_plate());
-
-			// Halve the stage poles, and store them.
-			FlowlineUtils::get_half_angle_rotation(stage_pole_left);
-			FlowlineUtils::get_half_angle_rotation(stage_pole_right);
-
-			d_left_rotations.push_back(stage_pole_left);
-			d_right_rotations.push_back(stage_pole_right);
-
-			tree_at_prev_time_ptr = tree_at_time_t_ptr;
-
-		}
+		// Younger than the flowline's youngest time, the first vertex (the seed point) is not at one
+		// of the flowline's times.
+		d_omit_seed_point_vertex = current_time < times.front();
     }
     return true;
 
@@ -243,37 +195,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 
 	if (d_flowline_property_finder->can_process_flowline())
 	{
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
-			FlowlineUtils::reconstruct_flowline_seed_points(gml_multi_point.get_multipoint(),
-			d_recon_time.value(),
-			d_reconstruction_tree_creator,
-			(current_top_level_propiter()->handle_weak_ref()));
-
-		boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>
-				reconstructed_seed_multipoint_geometry =
-						GPlatesAppLogic::GeometryUtils::get_multi_point_on_sphere(*reconstructed_seed_geometry);
-		// It should be a multipoint geometry with the same number of points.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				reconstructed_seed_multipoint_geometry &&
-					reconstructed_seed_multipoint_geometry.get()->number_of_points() ==
-						gml_multi_point.get_multipoint()->number_of_points(),
-				GPLATES_ASSERTION_SOURCE);
-
-		GPlatesMaths::MultiPointOnSphere::const_iterator 
-			seed_multipoint_iter = gml_multi_point.get_multipoint()->begin(),
-			seed_multipoint_end = gml_multi_point.get_multipoint()->end();
-		GPlatesMaths::MultiPointOnSphere::const_iterator 
-			reconstructed_seed_multipoint_iter = reconstructed_seed_multipoint_geometry.get()->begin();
-
-		for ( ;
-			seed_multipoint_iter != seed_multipoint_end;
-			++seed_multipoint_iter, ++reconstructed_seed_multipoint_iter)
-		{
-			create_flowline_geometry(
-					*seed_multipoint_iter,
-					*reconstructed_seed_multipoint_iter,
-					reconstructed_seed_geometry);	
-		}
+		reconstruct_flowline(gml_multi_point.get_multipoint());
 	}
 	else
 	{
@@ -303,24 +225,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_point(
 
 	if (d_flowline_property_finder->can_process_flowline())
 	{
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
-			FlowlineUtils::reconstruct_flowline_seed_points(
-				gml_point.get_point().get_geometry_on_sphere(),
-				d_recon_time.value(),
-				d_reconstruction_tree_creator,
-				(current_top_level_propiter()->handle_weak_ref()));
-
-		boost::optional<const GPlatesMaths::PointOnSphere &> reconstructed_seed_point =
-				GPlatesAppLogic::GeometryUtils::get_point_on_sphere(*reconstructed_seed_geometry);
-		// It should be a point geometry.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				reconstructed_seed_point,
-				GPLATES_ASSERTION_SOURCE);
-
-		create_flowline_geometry(
-				gml_point.get_point(),
-				reconstructed_seed_point.get(),
-				reconstructed_seed_geometry);	
+		reconstruct_flowline(gml_point.get_point().get_geometry_on_sphere());
 	}
 	else
 	{
@@ -343,25 +248,33 @@ void
 GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon_plate_id(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry)
 {
-	// We end up here if no times are defined in the flowline, or if the 
-	// recon-time is outwith the flowline time periods. We don't have enough information
+	// We end up here if no times are defined in the flowline, or if it has no left or right
+	// plate ids. We don't have enough information
 	// to do a proper flowline reconstruction, but we want to represent the seed point in some
-	// way. We can reconsruct the seedpoint with the plate-id. 
+	// way. We can reconsruct the seedpoint with the plate-id.
 
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom = present_day_seed_geometry;
 
-	// The reconstruction tree for the current reconstruction time.
-	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-			d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value());
-
 	if (d_flowline_property_finder->get_reconstruction_plate_id())
 	{
-		geom = reconstruction_tree->get_composed_absolute_rotation(
-				d_flowline_property_finder->get_reconstruction_plate_id().get()) *
+		geom = d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value())
+				->get_composed_absolute_rotation(
+						d_flowline_property_finder->get_reconstruction_plate_id().get()) *
 			    geom;
 	}
 
+	create_seed_geometry(geom, d_flowline_property_finder->get_reconstruction_plate_id());
+}
 
+
+void
+GPlatesAppLogic::FlowlineGeometryPopulator::create_seed_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry,
+		const boost::optional<GPlatesModel::integer_plate_id_type> &plate_id)
+{
+	// The reconstruction tree for the current reconstruction time.
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value());
 
 	try{
 
@@ -371,9 +284,9 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon
 				d_reconstruction_tree_creator,
 				*(current_top_level_propiter()->handle_weak_ref()),
 				*(current_top_level_propiter()),
-				geom,
+				reconstructed_seed_geometry,
 				ReconstructMethod::FLOWLINE,
-				d_flowline_property_finder->get_reconstruction_plate_id());
+				plate_id);
 
 	    d_reconstructed_feature_geometries.push_back(seed_point_rfg);
 
@@ -385,9 +298,81 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon
 	catch (...)
 	{
 		// We failed creating a seed_point rfg for whatever reason.
-		qWarning() << "GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon_plate_id: Unknown error";
+		qWarning() << "GPlatesAppLogic::FlowlineGeometryPopulator::create_seed_geometry: Unknown error";
 	}
 
+}
+
+
+void
+GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_flowline(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry)
+{
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
+		FlowlineUtils::reconstruct_flowline_seed_points(
+			present_day_seed_geometry,
+			d_recon_time.value(),
+			d_reconstruction_tree_creator,
+			(current_top_level_propiter()->handle_weak_ref()));
+
+	// At or older than the flowline's oldest time (or with only one time) there are not enough
+	// flowline rotations for a flowline (it would have only one vertex), just its seed point(s).
+	// They're given the left plate's ID, since they're stored in its frame.
+	if (d_left_rotations.size() < (d_omit_seed_point_vertex ? 2u : 1u))
+	{
+		create_seed_geometry(
+				reconstructed_seed_geometry,
+				d_flowline_property_finder->get_left_plate());
+		return;
+	}
+
+	boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>
+			present_day_seed_multipoint =
+					GPlatesAppLogic::GeometryUtils::get_multi_point_on_sphere(*present_day_seed_geometry);
+	if (present_day_seed_multipoint)
+	{
+		boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>
+				reconstructed_seed_multipoint_geometry =
+						GPlatesAppLogic::GeometryUtils::get_multi_point_on_sphere(
+								*reconstructed_seed_geometry);
+		// It should be a multipoint geometry with the same number of points.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				reconstructed_seed_multipoint_geometry &&
+					reconstructed_seed_multipoint_geometry.get()->number_of_points() ==
+						present_day_seed_multipoint.get()->number_of_points(),
+				GPLATES_ASSERTION_SOURCE);
+
+		GPlatesMaths::MultiPointOnSphere::const_iterator
+			seed_multipoint_iter = present_day_seed_multipoint.get()->begin(),
+			seed_multipoint_end = present_day_seed_multipoint.get()->end();
+		GPlatesMaths::MultiPointOnSphere::const_iterator
+			reconstructed_seed_multipoint_iter = reconstructed_seed_multipoint_geometry.get()->begin();
+
+		for ( ;
+			seed_multipoint_iter != seed_multipoint_end;
+			++seed_multipoint_iter, ++reconstructed_seed_multipoint_iter)
+		{
+			create_flowline_geometry(
+					*seed_multipoint_iter,
+					*reconstructed_seed_multipoint_iter,
+					reconstructed_seed_geometry);
+		}
+		return;
+	}
+
+	boost::optional<const GPlatesMaths::PointOnSphere &> present_day_seed_point =
+			GPlatesAppLogic::GeometryUtils::get_point_on_sphere(*present_day_seed_geometry);
+	boost::optional<const GPlatesMaths::PointOnSphere &> reconstructed_seed_point =
+			GPlatesAppLogic::GeometryUtils::get_point_on_sphere(*reconstructed_seed_geometry);
+	// It should be a point geometry.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			present_day_seed_point && reconstructed_seed_point,
+			GPLATES_ASSERTION_SOURCE);
+
+	create_flowline_geometry(
+			present_day_seed_point.get(),
+			reconstructed_seed_point.get(),
+			reconstructed_seed_geometry);
 }
 
 
@@ -403,9 +388,19 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 			present_day_seed_point,
 			d_left_seed_point_rotations);
 
+		// The seed point is stored in the left plate's frame, so it can be used as-is to seed the
+		// left-hand half of the flowline (above), but it must first be moved into the right plate's
+		// frame to seed the right-hand half. Without this the two halves of the flowline start from
+		// different places whenever the left and right plates do not coincide at the flowline's
+		// spreading start time.
+		const GPlatesMaths::PointOnSphere right_plate_seed_point =
+			d_left_to_right_plate_frame_rotation
+			? *d_left_to_right_plate_frame_rotation * present_day_seed_point
+			: present_day_seed_point;
+
 		const GPlatesMaths::PointOnSphere reconstructed_right_seed_point =
 			FlowlineUtils::reconstruct_seed_point(
-			present_day_seed_point,
+			right_plate_seed_point,
 			d_right_seed_point_rotations);
 
 
@@ -426,6 +421,12 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 			right_flowline,
 			d_reconstruction_tree_creator,
 			d_right_rotations);
+
+		if (d_omit_seed_point_vertex)
+		{
+			left_flowline.erase(left_flowline.begin());
+			right_flowline.erase(right_flowline.begin());
+		}
 
 		// The reconstruction tree for the current reconstruction time.
 		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
@@ -465,6 +466,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 				right_flowline_points,
 				*d_flowline_property_finder->get_left_plate(),
 				*d_flowline_property_finder->get_right_plate(),
+				d_flowline_property_finder->get_times(),
+				d_flowline_property_finder->get_spreading_start_time(),
 				*(current_top_level_propiter()->handle_weak_ref()),
 				*(current_top_level_propiter()),
 				reconstructed_seed_geometry);

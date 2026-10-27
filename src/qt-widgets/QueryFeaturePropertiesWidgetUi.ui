@@ -13,7 +13,7 @@
    <string>Query Feature Properties</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/info_sign_16.png</iconset>
+   <iconset resource="../qt-resources/qt_resources.qrc" >:/info_sign_16.png</iconset>
   </property>
   <layout class="QVBoxLayout" >
    <item>
@@ -256,7 +256,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_resources.qrc" />
  </resources>
  <connections/>
 </ui>

@@ -156,6 +156,8 @@ namespace GPlatesMaths
 		 *
 		 * If the polygon outline is completely outside the small circle *and*
 		 * the polygon surrounds the small circle then 'INTERSECTING_BOUNDS' is returned.
+		 * Likewise if the outline is completely inside the small circle but the polygon's interior
+		 * reaches past it (see PolygonOnSphere::is_outside_bounding_small_circle_outside_polygon).
 		 */
 		Result
 		test_filled_polygon(
@@ -509,7 +511,7 @@ namespace GPlatesMaths
 		add(
 				const GreatCircleArc &gca)
 		{
-			const AngularDistance max_distance_to_gca = maximum_distance(d_small_circle_centre, gca);
+			const AngularDistance max_distance_to_gca = maximum_distance(d_small_circle_centre, gca).get();
 			if (max_distance_to_gca.is_precisely_greater_than(d_maximum_distance))
 			{
 				d_maximum_distance = max_distance_to_gca;
@@ -743,6 +745,9 @@ namespace GPlatesMaths
 		 *
 		 * If the polygon outline is completely outside the outer small circle *and*
 		 * the polygon surrounds the outer small circle then 'INTERSECTING_BOUNDS' is returned.
+		 * Likewise if the outline is completely inside the inner small circle but the polygon's
+		 * interior reaches past it (see
+		 * PolygonOnSphere::is_outside_bounding_small_circle_outside_polygon).
 		 */
 		Result
 		test_filled_polygon(
@@ -1253,13 +1258,13 @@ namespace GPlatesMaths
 		add(
 				const GreatCircleArc &gca)
 		{
-			const AngularDistance min_distance_to_gca = minimum_distance(d_small_circle_centre, gca);
+			const AngularDistance min_distance_to_gca = minimum_distance(d_small_circle_centre, gca).get();
 			if (min_distance_to_gca.is_precisely_less_than(d_minimum_distance))
 			{
 				d_minimum_distance = min_distance_to_gca;
 			}
 
-			const AngularDistance max_distance_to_gca = maximum_distance(d_small_circle_centre, gca);
+			const AngularDistance max_distance_to_gca = maximum_distance(d_small_circle_centre, gca).get();
 			if (max_distance_to_gca.is_precisely_greater_than(d_maximum_distance))
 			{
 				d_maximum_distance = max_distance_to_gca;
@@ -1417,7 +1422,7 @@ namespace GPlatesMaths
 
 		const GreatCircleArc &first_gca = *great_circle_arc_begin;
 
-		const AngularDistance min_distance_to_first_gca = minimum_distance(d_small_circle_centre, first_gca);
+		const AngularDistance min_distance_to_first_gca = minimum_distance(d_small_circle_centre, first_gca).get();
 		if (min_distance_to_first_gca.is_precisely_greater_than(d_angular_extent))
 		{
 			// The first GCA is fully outside the bound.
@@ -1430,7 +1435,7 @@ namespace GPlatesMaths
 			{
 				const GreatCircleArc &gca = *great_circle_arc_iter;
 
-				const AngularDistance min_gca_distance = minimum_distance(d_small_circle_centre, gca);
+				const AngularDistance min_gca_distance = minimum_distance(d_small_circle_centre, gca).get();
 
 				if (min_gca_distance.is_precisely_less_than(d_angular_extent))
 				{
@@ -1441,7 +1446,7 @@ namespace GPlatesMaths
 			return OUTSIDE_BOUNDS;
 		}
 
-		const AngularDistance max_distance_to_first_gca = maximum_distance(d_small_circle_centre, first_gca);
+		const AngularDistance max_distance_to_first_gca = maximum_distance(d_small_circle_centre, first_gca).get();
 		if (max_distance_to_first_gca.is_precisely_less_than(d_angular_extent))
 		{
 			// The first GCA is fully inside the bound.
@@ -1454,7 +1459,7 @@ namespace GPlatesMaths
 			{
 				const GreatCircleArc &gca = *great_circle_arc_iter;
 
-				const AngularDistance max_gca_distance = maximum_distance(d_small_circle_centre, gca);
+				const AngularDistance max_gca_distance = maximum_distance(d_small_circle_centre, gca).get();
 
 				if (max_gca_distance.is_precisely_greater_than(d_angular_extent))
 				{
@@ -1499,7 +1504,7 @@ namespace GPlatesMaths
 
 		const GreatCircleArc &first_gca = *great_circle_arc_begin;
 
-		const AngularDistance min_distance_to_first_gca = minimum_distance(d_outer_small_circle.d_small_circle_centre, first_gca);
+		const AngularDistance min_distance_to_first_gca = minimum_distance(d_outer_small_circle.d_small_circle_centre, first_gca).get();
 		if (min_distance_to_first_gca.is_precisely_greater_than(d_outer_small_circle.d_angular_extent))
 		{
 			// The first GCA is fully outside the outer bound.
@@ -1513,7 +1518,7 @@ namespace GPlatesMaths
 				const GreatCircleArc &gca = *great_circle_arc_iter;
 
 				const AngularDistance min_gca_distance =
-						minimum_distance(d_outer_small_circle.d_small_circle_centre, gca);
+						minimum_distance(d_outer_small_circle.d_small_circle_centre, gca).get();
 
 				if (min_gca_distance.is_precisely_less_than(d_outer_small_circle.d_angular_extent))
 				{
@@ -1524,7 +1529,7 @@ namespace GPlatesMaths
 			return OUTSIDE_OUTER_BOUNDS;
 		}
 
-		const AngularDistance max_distance_to_first_gca = maximum_distance(d_outer_small_circle.d_small_circle_centre, first_gca);
+		const AngularDistance max_distance_to_first_gca = maximum_distance(d_outer_small_circle.d_small_circle_centre, first_gca).get();
 		if (max_distance_to_first_gca.is_precisely_less_than(d_inner_angular_extent))
 		{
 			// The first GCA is fully inside the inner bound.
@@ -1538,7 +1543,7 @@ namespace GPlatesMaths
 				const GreatCircleArc &gca = *great_circle_arc_iter;
 
 				const AngularDistance max_gca_distance =
-						maximum_distance(d_outer_small_circle.d_small_circle_centre, gca);
+						maximum_distance(d_outer_small_circle.d_small_circle_centre, gca).get();
 
 				if (max_gca_distance.is_precisely_greater_than(d_inner_angular_extent))
 				{

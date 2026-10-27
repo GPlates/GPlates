@@ -72,16 +72,6 @@ namespace GPlatesGui
 		~ColourScheme()
 		{  }
 
-		/**
-		 * Returns a colour for a particular @a reconstruction_geometry, or
-		 * boost::none if it does not have the necessary parameters or if the
-		 * reconstruction geometry should not be drawn for some other reason
-		 */
-		virtual
-		boost::optional<Colour>
-		get_colour(
-				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const = 0;
-
 		virtual
 		boost::optional<Colour>
 		get_colour(

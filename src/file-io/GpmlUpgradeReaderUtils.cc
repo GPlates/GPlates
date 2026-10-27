@@ -34,13 +34,12 @@
 #include "GpmlReaderUtils.h"
 #include "GpmlStructuralTypeReaderUtils.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "model/FeatureVisitor.h"
 #include "model/GpgimProperty.h"
 #include "model/GpgimStructuralType.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 #include "model/TopLevelProperty.h"
 #include "model/XmlNodeUtils.h"
 
@@ -794,7 +793,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 			{
 				boost::optional<GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_to_const_type>
 						topological_line_section =
-								GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlTopologicalLineSection>(
+								GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlTopologicalLineSection>(
 										*interior_topological_section);
 				if (topological_line_section)
 				{
@@ -805,7 +804,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 				{
 					boost::optional<GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_to_const_type>
 							topological_point =
-									GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlTopologicalPoint>(
+									GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlTopologicalPoint>(
 											*interior_topological_section);
 					if (topological_point)
 					{
@@ -914,7 +913,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::con
 			if (range_property_value_base)
 			{
 				boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_to_const_type> range_property_value =
-						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlDataBlock>(*range_property_value_base.get());
+						GPlatesModel::get_property_value<GPlatesPropertyValues::GmlDataBlock>(*range_property_value_base.get());
 				if (range_property_value)
 				{
 					// See if contains crustal thinning factors, and if so then return converted values.

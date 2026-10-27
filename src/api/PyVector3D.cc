@@ -299,8 +299,8 @@ export_vector_3d()
 				"__init__(vector)\n"
 				"  Create a *Vector3D* instance from an (x,y,z) sequence (or *Vector3D*).\n"
 				"\n"
-				"  :param point: (x,y,z) vector\n"
-				"  :type point: sequence, such as list or tuple, of (float,float,float), or :class:`Vector3D`\n"
+				"  :param vector: (x,y,z) vector\n"
+				"  :type vector: sequence (such as list or tuple) of float, or Vector3D\n"
 				"\n"
 				"  The following example shows a few different ways to use this method:\n"
 				"  ::\n"
@@ -336,133 +336,166 @@ export_vector_3d()
 		// Static property 'pygplates.Vector3D.z_axis'...
 		.def_readonly("z_axis", GPlatesApi::vector_z_axis)
 
+		// 'angle_between', 'dot' and 'cross' are not static methods, so they can be called on a
+		// vector ('vector.dot(other_vector)') and also, as before, on the class
+		// ('Vector3D.dot(vector, other_vector)').
+		//
+		// Each defines a deprecated overload first since we want it to have lowest priority (later
+		// definitions get higher priority). It differs from the overload after it only in its
+		// argument names (the names it had as a static method), so it's chosen only when called
+		// with those old keyword names. Also exclude a docstring for it, since we don't want it
+		// documented anymore...
+		//
+		// The vector it's called on must be named ('vector'), although that name is undocumented. A
+		// call with the old keyword names reaches the non-deprecated overload first, and with
+		// keywords Boost.Python fills each argument not passed positionally by looking up its name:
+		// an unnamed one crashes it (instead of rejecting that overload).
 		.def("angle_between",
 				&GPlatesApi::vector_angle_between,
-				(bp::arg("vector1"), bp::arg("vector2")),
-				"angle_between(vector1, vector2)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns the angle between two vectors (in radians).\n"
+				(bp::arg("vector1"), bp::arg("vector2")))
+		.def("angle_between",
+				&GPlatesApi::vector_angle_between,
+				(bp::arg("vector"), bp::arg("other_vector")),
+				"angle_between(other_vector)\n"
+				"  Returns the angle between this vector and another vector (in radians).\n"
 				"\n"
-				"  :param vector1: the first vector\n"
-				"  :type vector1: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
-				"  :param vector2: the second vector\n"
-				"  :type vector2: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :param other_vector: the other vector\n"
+				"  :type other_vector: Vector3D, or sequence (such as list or tuple) of float\n"
 				"  :rtype: float\n"
-				"  :raises: UnableToNormaliseZeroVectorError if either *vector1* or *vector2* is (0,0,0) "
-				"(ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
+				"  :raises UnableToNormaliseZeroVectorError: if either this vector or "
+				"*other_vector* is (0,0,0) (ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
 				"\n"
 				"  Note that the angle between a vector (``vec``) and its opposite (``-vec``) is ``math.pi`` "
 				"(and not zero) even though both vectors are parallel. This is because they point in "
 				"opposite directions.\n"
 				"\n"
-				"  The following example shows a few different ways to use this function:\n"
+				"  The following example shows a few different ways to use this method:\n"
 				"  ::\n"
 				"\n"
 				"    vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)\n"
 				"    vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)\n"
-				"    angle = pygplates.Vector3D.angle_between(vec1, vec2)\n"
+				"    angle = vec1.angle_between(vec2)\n"
 				"    \n"
-				"    angle = pygplates.Vector3D.angle_between((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))\n"
-				"    \n"
-				"    angle = pygplates.Vector3D.angle_between(vec1, (-1.1, -2.2, -3.3))\n"
-				"    \n"
-				"    angle = pygplates.Vector3D.angle_between((1.1, 2.2, 3.3), vec2)\n"
+				"    angle = vec1.angle_between((-1.1, -2.2, -3.3))\n"
 				"\n"
-				"  This function is the equivalent of:\n"
+				"  This method can also be called on the :class:`Vector3D` class, passing this "
+				"vector as the first argument:\n"
 				"  ::\n"
 				"\n"
-				"    if not vector1.is_zero_magnitude() and not vector2.is_zero_magnitude():\n"
+				"    angle = pygplates.Vector3D.angle_between(vec1, vec2)\n"
+				"\n"
+				"  This method is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if not vector.is_zero_magnitude() and not other_vector.is_zero_magnitude():\n"
 				"        angle_between = math.acos(\n"
-				"            pygplates.Vector3D.dot(vector1.to_normalised(), vector2.to_normalised()))\n"
+				"            vector.to_normalised().dot(other_vector.to_normalised()))\n"
 				"    else:\n"
-				"        raise pygplates.UnableToNormaliseZeroVectorError\n")
-		.staticmethod("angle_between")
+				"        raise pygplates.UnableToNormaliseZeroVectorError\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Can be called on a vector (``vector.angle_between(other_vector)``), as well "
+				"as on the :class:`Vector3D` class (it was a static method). Renamed the argument "
+				"*vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, "
+				"but cannot be mixed with the new name in the same call).\n")
 
 		.def("dot",
 				&GPlatesApi::vector_dot,
-				(bp::arg("vector1"), bp::arg("vector2")),
-				"dot(vector1, vector2)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns the dot product of two vectors.\n"
+				(bp::arg("vector1"), bp::arg("vector2")))
+		.def("dot",
+				&GPlatesApi::vector_dot,
+				(bp::arg("vector"), bp::arg("other_vector")),
+				"dot(other_vector)\n"
+				"  Returns the dot product of this vector and another vector.\n"
 				"\n"
-				"  :param vector1: the first vector\n"
-				"  :type vector1: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
-				"  :param vector2: the second vector\n"
-				"  :type vector2: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :param other_vector: the other vector\n"
+				"  :type other_vector: Vector3D, or sequence (such as list or tuple) of float\n"
 				"  :rtype: float\n"
 				"\n"
-				"  The following example shows a few different ways to use this function:\n"
+				"  The following example shows a few different ways to use this method:\n"
 				"  ::\n"
 				"\n"
 				"    vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)\n"
 				"    vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)\n"
+				"    dot_product = vec1.dot(vec2)\n"
+				"    \n"
+				"    dot_product = vec1.dot((-1.1, -2.2, -3.3))\n"
+				"\n"
+				"  This method can also be called on the :class:`Vector3D` class, passing this "
+				"vector as the first argument:\n"
+				"  ::\n"
+				"\n"
 				"    dot_product = pygplates.Vector3D.dot(vec1, vec2)\n"
-				"    \n"
-				"    dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))\n"
-				"    \n"
-				"    dot_product = pygplates.Vector3D.dot(vec1, (-1.1, -2.2, -3.3))\n"
-				"    \n"
-				"    dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), vec2)\n"
 				"\n"
 				"  The dot product is the equivalent of:\n"
 				"  ::\n"
 				"\n"
 				"    dot_product = (\n"
-				"        vector1.get_x() * vector2.get_x() +\n"
-				"        vector1.get_y() * vector2.get_y() +\n"
-				"        vector1.get_z() * vector2.get_z())\n")
-		.staticmethod("dot")
+				"        vector.get_x() * other_vector.get_x() +\n"
+				"        vector.get_y() * other_vector.get_y() +\n"
+				"        vector.get_z() * other_vector.get_z())\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Can be called on a vector (``vector.dot(other_vector)``), as well as on the "
+				":class:`Vector3D` class (it was a static method). Renamed the argument *vector2* "
+				"to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot "
+				"be mixed with the new name in the same call).\n")
 
 		.def("cross",
 				&GPlatesApi::vector_cross,
-				(bp::arg("vector1"), bp::arg("vector2")),
-				"cross(vector1, vector2)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns the cross product of two vectors.\n"
+				(bp::arg("vector1"), bp::arg("vector2")))
+		.def("cross",
+				&GPlatesApi::vector_cross,
+				(bp::arg("vector"), bp::arg("other_vector")),
+				"cross(other_vector)\n"
+				"  Returns the cross product of this vector and another vector.\n"
 				"\n"
-				"  :param vector1: the first vector\n"
-				"  :type vector1: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
-				"  :param vector2: the second vector\n"
-				"  :type vector2: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
-				"  :rtype: :class:`Vector3D`\n"
+				"  :param other_vector: the other vector\n"
+				"  :type other_vector: Vector3D, or sequence (such as list or tuple) of float\n"
+				"  :rtype: Vector3D\n"
 				"\n"
-				"  The following example shows a few different ways to use this function:\n"
+				"  The cross product is a new vector (this vector is not modified, since a "
+				":class:`Vector3D` is immutable). The order matters: ``vec1.cross(vec2)`` is the "
+				"opposite of ``vec2.cross(vec1)``.\n"
+				"\n"
+				"  The following example shows a few different ways to use this method:\n"
 				"  ::\n"
 				"\n"
 				"    vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)\n"
 				"    vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)\n"
+				"    cross_product = vec1.cross(vec2)\n"
+				"    \n"
+				"    cross_product = vec1.cross((-1.1, -2.2, -3.3))\n"
+				"\n"
+				"  This method can also be called on the :class:`Vector3D` class, passing this "
+				"vector as the first argument:\n"
+				"  ::\n"
+				"\n"
 				"    cross_product = pygplates.Vector3D.cross(vec1, vec2)\n"
-				"    \n"
-				"    cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))\n"
-				"    \n"
-				"    cross_product = pygplates.Vector3D.cross(vec1, (-1.1, -2.2, -3.3))\n"
-				"    \n"
-				"    cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), vec2)\n"
 				"\n"
 				"  The cross product is the equivalent of:\n"
 				"  ::\n"
 				"\n"
 				"    cross_product = pygplates.Vector3D(\n"
-				"        vector1.get_y() * vector2.get_z() - vector1.get_z() * vector2.get_y(),\n"
-				"        vector1.get_z() * vector2.get_x() - vector1.get_x() * vector2.get_z(),\n"
-				"        vector1.get_x() * vector2.get_y() - vector1.get_y() * vector2.get_x())\n")
-		.staticmethod("cross")
+				"        vector.get_y() * other_vector.get_z() - vector.get_z() * "
+				"other_vector.get_y(),\n"
+				"        vector.get_z() * other_vector.get_x() - vector.get_x() * "
+				"other_vector.get_z(),\n"
+				"        vector.get_x() * other_vector.get_y() - vector.get_y() * "
+				"other_vector.get_x())\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Can be called on a vector (``vector.cross(other_vector)``), as well as on "
+				"the :class:`Vector3D` class (it was a static method). Renamed the argument "
+				"*vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, "
+				"but cannot be mixed with the new name in the same call).\n")
 
 		.def("create_normalised",
 				&GPlatesApi::vector_get_normalised,
 				(bp::arg("xyz")),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				"create_normalised(...)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"[*staticmethod*] Returns a new vector that is a normalised (unit length) version of another.\n"
+				"Returns a new vector that is a normalised (unit length) version of another.\n"
 				"\n"
 				"This function can be called in more than one way...\n"
 				"\n"
@@ -471,9 +504,9 @@ export_vector_3d()
 				"  Returns a new vector that is a normalised (unit length) version of *vector*.\n"
 				"\n"
 				"  :param xyz: the vector (x,y,z) components\n"
-				"  :type xyz: sequence (such as list or tuple) of (float,float,float), or :class:`Vector3D`\n"
-				"  :rtype: :class:`Vector3D`\n"
-				"  :raises: UnableToNormaliseZeroVectorError if *xyz* is (0,0,0) "
+				"  :type xyz: sequence (such as list or tuple) of float, or Vector3D\n"
+				"  :rtype: Vector3D\n"
+				"  :raises UnableToNormaliseZeroVectorError: if *xyz* is (0,0,0) "
 				"(ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
 				"\n"
 				"  ::\n"
@@ -499,8 +532,8 @@ export_vector_3d()
 				"  :type y: float\n"
 				"  :param z: the *z* component of the 3D vector\n"
 				"  :type z: float\n"
-				"  :rtype: :class:`Vector3D`\n"
-				"  :raises: UnableToNormaliseZeroVectorError if (x,y,z) is (0,0,0) "
+				"  :rtype: Vector3D\n"
+				"  :raises UnableToNormaliseZeroVectorError: if (x,y,z) is (0,0,0) "
 				"(ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
 				"\n"
 				"  ::\n"
@@ -515,10 +548,7 @@ export_vector_3d()
 				&GPlatesApi::vector_get_normalised,
 				(bp::arg("vector")),
 				"create_normalized(...)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"[*staticmethod*] See :meth:`create_normalised`.\n")
+				"See :meth:`create_normalised`.\n")
 		.def("create_normalized",
 				&GPlatesApi::vector_get_normalised_from_xyz,
 				(bp::arg("x"), bp::arg("y"), bp::arg("z")),
@@ -530,8 +560,8 @@ export_vector_3d()
 				"to_normalised()\n"
 				"  Returns a new vector that is a normalised (unit length) version of this vector.\n"
 				"\n"
-				"  :rtype: :class:`Vector3D`\n"
-				"  :raises: UnableToNormaliseZeroVectorError if this vector is (0,0,0) "
+				"  :rtype: Vector3D\n"
+				"  :raises UnableToNormaliseZeroVectorError: if this vector is (0,0,0) "
 				"(ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
 				"\n"
 				"  If a vector is not :meth:`zero magnitude<is_zero_magnitude>` then it can return "

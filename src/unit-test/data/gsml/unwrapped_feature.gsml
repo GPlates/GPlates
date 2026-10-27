@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A GeoSciML feature with no gml:featureMember around it. When a document has no feature
+  members at all the reader takes the first child of the document element to be the feature.
+  Used by GeoscimlReaderTest.cc.
+-->
+<gml:FeatureCollection
+    xmlns:gml="http://www.opengis.net/gml"
+    xmlns:gsml="urn:cgi:xmlns:CGI:GeoSciML:2.0">
+  <gsml:UnclassifiedFeature gml:id="unwrapped">
+    <gml:name>Unwrapped feature</gml:name>
+    <gsml:shape>
+      <gml:LineString srsName="EPSG:4326">
+        <gml:posList srsDimension="2">100 -10 110 -20</gml:posList>
+      </gml:LineString>
+    </gsml:shape>
+  </gsml:UnclassifiedFeature>
+</gml:FeatureCollection>

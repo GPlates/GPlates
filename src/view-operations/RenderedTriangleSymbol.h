@@ -29,7 +29,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesViewOperations
@@ -46,7 +46,7 @@ namespace GPlatesViewOperations
 
 		RenderedTriangleSymbol(
 			const GPlatesMaths::PointOnSphere &centre,
-			const GPlatesGui::ColourProxy &colour,
+			const GPlatesGui::Colour &colour,
 			unsigned int size,
                         bool filled,
                         float line_width_hint) :
@@ -83,7 +83,7 @@ namespace GPlatesViewOperations
 		}
 		
 
-		const GPlatesGui::ColourProxy &
+		const GPlatesGui::Colour &
 		get_colour() const
 		{
 			return d_colour;
@@ -111,7 +111,7 @@ namespace GPlatesViewOperations
 
 		GPlatesMaths::PointOnSphere d_centre;
 
-		GPlatesGui::ColourProxy d_colour;
+		GPlatesGui::Colour d_colour;
 		unsigned int d_size;
                 bool d_is_filled;
                 float d_line_width_hint;

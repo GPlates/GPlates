@@ -13,7 +13,7 @@
    <string>Information</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_gtk_about_16.png</iconset>
+   <iconset resource="../qt-resources/qt_resources.qrc" >:/human_gtk_about_16.png</iconset>
   </property>
   <layout class="QVBoxLayout" >
    <property name="spacing" >
@@ -102,7 +102,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_resources.qrc" />
  </resources>
  <connections>
   <connection>

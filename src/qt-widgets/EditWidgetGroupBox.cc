@@ -53,11 +53,10 @@
 
 #include "app-logic/ApplicationState.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "model/Gpgim.h"
 #include "model/GpgimEnumerationType.h"
 #include "model/GpgimProperty.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ViewState.h"
 

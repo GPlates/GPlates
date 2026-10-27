@@ -1124,6 +1124,13 @@ namespace GPlatesMaths
 				location_type *location_added = NULL)
 		{
 			const BoundingSmallCircle &bounding_small_circle = polygon_on_sphere.get_bounding_small_circle();
+			// A polygon that wraps round the globe can have an interior reaching past its outline's
+			// bounding circle, so (for its fill) it goes at the root.
+			if (!polygon_on_sphere.is_outside_bounding_small_circle_outside_polygon(bounding_small_circle))
+			{
+				add_unpartitioned(element, location_added);
+				return;
+			}
 			add(
 					element,
 					bounding_small_circle.get_centre(),
@@ -1146,6 +1153,13 @@ namespace GPlatesMaths
 		{
 			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
 			const BoundingSmallCircle &bounding_small_circle = polygon_on_sphere.get_bounding_small_circle();
+			// A polygon that wraps round the globe can have an interior reaching past its outline's
+			// bounding circle, so (for its fill) it goes at the root.
+			if (!polygon_on_sphere.is_outside_bounding_small_circle_outside_polygon(bounding_small_circle))
+			{
+				add_unpartitioned(element, location_added);
+				return;
+			}
 			add(
 					element,
 					bounding_small_circle.get_centre(),
@@ -1168,6 +1182,13 @@ namespace GPlatesMaths
 				location_type *location_added = NULL)
 		{
 			const BoundingSmallCircle &bounding_small_circle = polygon_on_sphere.get_bounding_small_circle();
+			// A polygon that wraps round the globe can have an interior reaching past its outline's
+			// bounding circle, so (for its fill) it goes at the root.
+			if (!polygon_on_sphere.is_outside_bounding_small_circle_outside_polygon(bounding_small_circle))
+			{
+				add_unpartitioned(element, location_added);
+				return;
+			}
 			add(
 					element,
 					bounding_small_circle.get_centre(),
@@ -1191,6 +1212,13 @@ namespace GPlatesMaths
 		{
 			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
 			const BoundingSmallCircle &bounding_small_circle = polygon_on_sphere.get_bounding_small_circle();
+			// A polygon that wraps round the globe can have an interior reaching past its outline's
+			// bounding circle, so (for its fill) it goes at the root.
+			if (!polygon_on_sphere.is_outside_bounding_small_circle_outside_polygon(bounding_small_circle))
+			{
+				add_unpartitioned(element, location_added);
+				return;
+			}
 			add(
 					element,
 					bounding_small_circle.get_centre(),

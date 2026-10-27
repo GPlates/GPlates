@@ -45,16 +45,15 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructUtils.h"
-
-#include "feature-visitors/PropertyValueFinder.h"
-#include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
-#include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
+#include "app-logic/TotalReconstructionSequencePlateIdFinder.h"
+#include "app-logic/TotalReconstructionSequenceTimePeriodFinder.h"
 
 #include "global/LogException.h"
 
 #include "maths/MathsUtils.h"
 
 #include "model/ModelUtils.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ViewState.h"
 
@@ -735,7 +734,7 @@ namespace
 
         // Obtain the IrregularSampling that contains the TimeSamples.
 		boost::optional<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlIrregularSampling>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlIrregularSampling>(
 						feature_ref, 
 						totalReconstructionPole_prop_name());
         if (!irreg_sampling)
@@ -818,10 +817,8 @@ namespace
             GPlatesQtWidgets::TotalReconstructionSequencesSearchIndex::File *file,
             GPlatesQtWidgets::tree_item_to_feature_map_type &tree_item_to_feature_map)
     {
-        using namespace GPlatesFeatureVisitors;
-
-        TotalReconstructionSequencePlateIdFinder plate_id_finder;
-        TotalReconstructionSequenceTimePeriodFinder time_period_finder(false);
+        GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder plate_id_finder;
+        GPlatesAppLogic::TotalReconstructionSequenceTimePeriodFinder time_period_finder(false);
 
         GPlatesModel::FeatureCollectionHandle::iterator iter = fc->begin();
         GPlatesModel::FeatureCollectionHandle::iterator end = fc->end();
@@ -1692,9 +1689,29 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_current_sequence(
     trs_finder.visit_feature(feature_ref);
     if (trs_finder.can_process_trs())
     {
-        **trs_finder.irregular_sampling_property_iterator() = trs;	
-        **trs_finder.moving_ref_frame_property_iterator() = moving_plate_id;
-        **trs_finder.fixed_ref_frame_property_iterator() = fix_plate_id;
+        // Note: Cannot use '**trs_finder.<...>_property_iterator() = ...' since dereferencing a
+        // feature properties iterator returns a temporary pointer (so assigning to it does nothing) -
+        // instead set the property via the feature (which also notifies model listeners, eg, to
+        // flag unsaved changes).
+        const FeatureHandle::iterator irregular_sampling_iter =
+                *trs_finder.irregular_sampling_property_iterator();
+        const FeatureHandle::iterator moving_ref_frame_iter =
+                *trs_finder.moving_ref_frame_property_iterator();
+        const FeatureHandle::iterator fixed_ref_frame_iter =
+                *trs_finder.fixed_ref_frame_property_iterator();
+
+        if (irregular_sampling_iter.is_still_valid())
+        {
+            feature_ref->set(irregular_sampling_iter, trs);
+        }
+        if (moving_ref_frame_iter.is_still_valid())
+        {
+            feature_ref->set(moving_ref_frame_iter, moving_plate_id);
+        }
+        if (fixed_ref_frame_iter.is_still_valid())
+        {
+            feature_ref->set(fixed_ref_frame_iter, fix_plate_id);
+        }
     }
 
 	//Step 2: update the pole data in PlatesRotationFileProxy
@@ -1721,10 +1738,11 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_current_sequence(
             }
             if(std::fabs(iter_new->time - iter_old->time) < std::numeric_limits<double>::epsilon())
             {
-                if(!((*iter_old) == (*iter_new)))
-                {
-                    proxy->update_pole(*iter_old, *iter_new);
-                }
+                // Update every pole, not only those that compare unequal: RotationPoleData's
+                // operator== compares to four significant figures, so a smaller edit (45.123 to
+                // 45.124) would leave the file's copy stale, and the save would rewrite the file
+                // from the model, losing its layout. Updating an unchanged pole changes nothing.
+                proxy->update_pole(*iter_old, *iter_new);
                 iter_new++; iter_old++;
             }
             else if(iter_new->time > iter_old->time)
@@ -1783,12 +1801,11 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_pole_data_from_feature
         GPlatesModel::FeatureHandle::weak_ref feature_ref)
 {
     using namespace GPlatesModel;
-    using namespace GPlatesFeatureVisitors;
     using namespace GPlatesPropertyValues;
     using namespace GPlatesFileIO;
 
     std::vector<RotationPoleData> ret;
-    TotalReconstructionSequencePlateIdFinder id_finder;
+    GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder id_finder;
     id_finder.visit_feature(feature_ref);
     integer_plate_id_type 
         moving_plate_id = id_finder.moving_ref_frame_plate_id() ?  
@@ -1797,7 +1814,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_pole_data_from_feature
 			*id_finder.fixed_ref_frame_plate_id() : 0;
 
 	boost::optional<GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling =
-			get_property_value<GpmlIrregularSampling>(
+			GPlatesModel::get_property_value<GpmlIrregularSampling>(
 					feature_ref, 
 					totalReconstructionPole_prop_name());
     if (irreg_sampling)
@@ -1910,7 +1927,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_seq_disabled(
 	if(feature_ref.is_valid())
 	{
 		boost::optional<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling_const =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlIrregularSampling>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlIrregularSampling>(
 						feature_ref,
 						totalReconstructionPole_prop_name());
 		if (irreg_sampling_const)
@@ -1928,7 +1945,6 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 		bool flag)
 {
 	using namespace GPlatesPropertyValues;
-	using namespace GPlatesFeatureVisitors;
 	using namespace GPlatesModel;
 	if(!feature_ref.is_valid())
 	{
@@ -1939,9 +1955,12 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 	trs_finder.visit_feature(feature_ref);
 	if (trs_finder.can_process_trs())
 	{
+		const FeatureHandle::iterator irregular_sampling_iter =
+			*trs_finder.irregular_sampling_property_iterator();
+
 		TopLevelProperty::non_null_ptr_type
-			trs = (**trs_finder.irregular_sampling_property_iterator())->clone();
-		boost::optional<PropertyValue::non_null_ptr_type> trs_value = 
+			trs = (*irregular_sampling_iter)->clone();
+		boost::optional<PropertyValue::non_null_ptr_type> trs_value =
 			ModelUtils::get_property_value(*trs);
 		if(trs_value)
 		{
@@ -1952,7 +1971,15 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 				irreg_sampling->set_disabled(flag);
 			}
 		}
-		(**trs_finder.irregular_sampling_property_iterator()) = trs;
+
+		// Note: Cannot use '(**trs_finder.irregular_sampling_property_iterator()) = trs' since
+		// dereferencing a feature properties iterator returns a temporary pointer (so assigning to
+		// it does nothing) - instead set the property via the feature (which also notifies model
+		// listeners, eg, to flag unsaved changes).
+		if (irregular_sampling_iter.is_still_valid())
+		{
+			feature_ref->set(irregular_sampling_iter, trs);
+		}
 	}
 	
 	//step 2: update the pole metadata in PlatesRotationFileProxy so that
@@ -1961,7 +1988,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 	if(proxy)
 	{
 		boost::optional<GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling_const =
-				get_property_value<GpmlIrregularSampling>(
+				GPlatesModel::get_property_value<GpmlIrregularSampling>(
 						feature_ref, 
 						totalReconstructionPole_prop_name());
 		if (!irreg_sampling_const)
@@ -1969,7 +1996,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 			qWarning() << "Failed to get GpmlIrregularSampling value. This is an impossible situation.";
 			return;
 		}
-		TotalReconstructionSequencePlateIdFinder plate_id_finder;
+		GPlatesAppLogic::TotalReconstructionSequencePlateIdFinder plate_id_finder;
 		plate_id_finder.reset();
 		plate_id_finder.visit_feature(feature_ref);
 		if (( ! plate_id_finder.fixed_ref_frame_plate_id()) ||

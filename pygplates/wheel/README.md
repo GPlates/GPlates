@@ -1,143 +1,504 @@
 # Building Wheels
 
-Build Python wheels for pyGPlates on macOS, Windows and Linux (manylinux).
+PyGPlates wheels are built with [cibuildwheel](https://cibuildwheel.pypa.io/) - both in CI and
+locally. Cibuildwheel drives the whole per-wheel pipeline: build pyGPlates for each Python
+version, repair the wheel (copy the dependency shared libraries into it and give them unique
+names - `auditwheel` on Linux, `delocate` on macOS, `delvewheel` on Windows) and run the
+pyGPlates test suite against the repaired wheel.
 
-## Building wheels on macOS
+The pieces fit together like this:
 
-Building wheels on macOS involves running the `build_macos_wheels.sh` script.
+| Piece | What it does |
+|---|---|
+| `[tool.cibuildwheel]` in the root `pyproject.toml` | The wheel configuration: Python versions, dependency images, hooks, CMake defines, test command. |
+| `versions.sh` (this directory) | The dependency version pins, and the SHA-256 of each archive downloaded - the single source of truth shared by all three platforms. |
+| `download.sh` (this directory) | Downloads and extracts a dependency's source archive, trying each listed host in turn and failing unless the archive matches its pinned SHA-256 (sourced by the dockerfile and the two scripts below). |
+| `manylinux_2_28.dockerfile` (this directory) | Docker image with the pyGPlates dependency libraries, that the Linux wheels are built inside. |
+| `build_macos_deps.sh` (this directory) | Builds the pyGPlates dependency libraries on macOS (run automatically by cibuildwheel, once per machine; cached in CI). |
+| `build_windows_deps.sh` (this directory) | The same on Windows. |
+| `vcpkg.json` (this directory) | The subset of the Windows dependency libraries that vcpkg supplies, and the vcpkg baseline that pins their versions. |
+| `msvc_env.sh` (this directory) | Puts the MSVC toolchain into the environment: the two Windows scripts above source it (they build with `b2` and `nmake`, which cannot find Visual Studio for themselves), and the CI job runs it to set up the environment Ninja compiles in. |
+| `build_boost_python.sh` (this directory) | Builds Boost.Python against each wheel's Python version, on macOS and Windows (run automatically by cibuildwheel before each wheel build). |
+| `check_wheel_contents.py` (this directory) | Checks each repaired wheel carries the data PROJ and GDAL read at run time (run automatically by cibuildwheel, after the test suite). |
+| `.github/workflows/build-wheel-images.yml` | Builds the Docker images (natively, per architecture) and pushes them to GHCR. |
+| `.github/workflows/build-wheels.yml` | CI builds of the sdist and the wheels (full matrix on release tags and manual dispatch; two-Python smoke test on pull requests touching the wheel machinery). On a release tag it also publishes to PyPI - see [Publishing a release](#publishing-a-release). |
 
-This will build the wheels for each currently supported Python minor version, test them and then copy them to the
-`wheelhouse` sub-directory of the root source directory.
+## Building a wheel locally
 
-The script assumes you've used Macports to install the dependencies of pyGPlates, and
-as such you need to run it with root priveleges (eg, using sudo).
+Run cibuildwheel from the root source directory, selecting a single build with `--only`
+(otherwise it builds every Python version). For example:
+
+```
+pipx run cibuildwheel==4.3.* --only cp313-manylinux_x86_64
+```
+
+...or `--only cp313-macosx_arm64` on Apple Silicon (`cp313-macosx_x86_64` on Intel), or
+`--only cp313-win_amd64` on Windows. The repaired (and tested) wheel ends up in the `wheelhouse`
+sub-directory of the root source directory.
+
+On Linux, cibuildwheel runs the build inside Docker (so Docker must be installed) using the
+dependency image described below - it pulls the image from GHCR automatically, or uses your
+locally built copy if you have one (see the next section).
+
+For a Linux build, export the versions first. cibuildwheel *copies* the project into the
+container, and the images do not install git, so nothing in there can count a version for
+itself (`environment-pass` in `pyproject.toml` forwards these two in):
+
+```
+export PYGPLATES_PEP440_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake pygplates)
+export GPLATES_SEMANTIC_VERSION=$(cmake -P cmake/modules/VersionFromGit.cmake gplates)
+```
+
+Both, even though this builds pyGPlates: `src/global/Version.cc` is compiled into the module
+and carries the GPlates version too (exported shapefiles record it). macOS and Windows builds
+run in the checkout itself, so they resolve both from git without this - unless the checkout
+is shallow, which is refused rather than counted wrongly.
+
+On macOS, the first run builds the dependency libraries into `~/pygplates-wheel-deps` (about
+an hour - later runs reuse them; see the macOS section below). Xcode command line tools,
+`python3` and `cmake` must be installed.
+
+On Windows, the first run builds them into `C:\pygplates-wheel-deps` (see the Windows section
+below), and Visual Studio 2022 - or its Build Tools - with the C++ x64 toolset, Git for Windows
+(which provides the `bash` those scripts are written for), Python and CMake must be installed.
+Start it from an **"x64 Native Tools Command Prompt for VS 2022"**: the wheels are built with
+Ninja, which compiles with whatever `cl` the environment provides, and neither cibuildwheel nor
+scikit-build-core sets that environment up (see "Ninja and the compiler cache" below).
+
+## The Linux dependency image
+
+Linux wheels are `manylinux_2_28` wheels (AlmaLinux 8, glibc 2.28+), which work on every
+non-EOL mainstream distribution. `manylinux_2_28.dockerfile` extends the official
+`quay.io/pypa/manylinux_2_28` image with the pyGPlates dependency libraries. Qt is built from
+source in the image because EL8 has no Qt6 packages; Boost.Python is built once per supported
+Python version against the interpreters the base image provides in `/opt/python`.
+
+Only Qt **Core** is built, and it is configured with `FEATURE_gui`, `FEATURE_glib`,
+`FEATURE_dbus` and `FEATURE_icu` off. The module links `Qt6Core` and nothing else
+(`cmake/check_linkage.py` fails the build if that changes), so a Gui Qt meant building - and
+installing two dozen X11 development packages for - libraries no wheel ever loads. Turning GLib
+off is what removes the wheel's last system dependency: it now imports on a bare
+`python:3.x-slim` container with no packages installed at all, which
+`.github/workflows/build-wheels.yml` proves on every run.
+
+There is one image per architecture, both built by `.github/workflows/build-wheel-images.yml`:
+
+- `ghcr.io/gplates/pygplates-manylinux_2_28_x86_64`
+- `ghcr.io/gplates/pygplates-manylinux_2_28_aarch64`
+
+Each push is tagged `latest` (what wheel builds pull, as configured in
+`[tool.cibuildwheel.linux]` in `pyproject.toml`) and with the commit SHA it was built from
+(so older images remain pullable, eg, to rebuild an old release or bisect a dependency
+problem).
+
+### Rebuilding the image
+
+The images only need rebuilding when a dependency changes (ie, when the dockerfile or the
+version pins in `versions.sh` change). In CI that happens automatically: the workflow triggers
+on any push to the `main` branch that touches either file (and can also be dispatched
+manually).
+
+To build the image locally instead (eg, to test a dockerfile change before pushing):
+
+```
+docker build -t ghcr.io/gplates/pygplates-manylinux_2_28_x86_64:latest -f manylinux_2_28.dockerfile .
+```
+
+...from this directory (add `--build-arg ARCH=aarch64` and adjust the tag when building on an
+arm64 machine, eg, Apple Silicon). Using the GHCR name as the local tag means a subsequent
+local `cibuildwheel` run uses your local image rather than pulling from GHCR.
 
 > [!NOTE]
-> You may need to modify how the script activates the boost library variant associated with the current Python version
-> if you have a different boost version (eg, `port activate boost176 @1.76.0_10+no_single+no_static+python${cp_version}`).
+> The GHCR packages must be *public* for unauthenticated pulls (eg, local cibuildwheel runs).
+> This is a one-time manual step after the first push of a new package:
+> GitHub organization -> Packages -> package settings -> Change visibility.
+> (The CI wheel builds log in with `GITHUB_TOKEN`, so they work either way.)
 
-Also, it's a good idea to set the macOS deployment target using the MACOSX_DEPLOYMENT_TARGET environment variable.
-This can be set to a macOS version earlier than your build machine (so users on older systems can still use the wheel).
+### Proving a dockerfile change before it is merged
 
-> [!NOTE]
-> If you do this then you'll also need the same deployment target set in your dependency libraries.
->
-> For example, with Macports you can specify the following in your `/opt/local/etc/macports/macports.conf` file (prior to installing the ports):
->
->>```
->>    buildfromsource            always
->>    macosx_deployment_target   11.0
->>```
->
-> This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.  
-> For Apple Silicon, targeting 11.0 is sufficient (since M1/arm64 wasn't introduced until macOS 11.0).  
-> For Apple Intel, 10.15 (Catalina) is sufficient.
-
-> [!NOTE]
-MACOSX_DEPLOYMENT_TARGET is used by scikit-build-core (see pyproject.toml) to determine the wheel tag.
-And CMake will use MACOSX_DEPLOYMENT_TARGET to set the default value for CMAKE_OSX_DEPLOYMENT_TARGET.
-
-For example, to build wheels supporting macOS 11.0 (and above):
+A dockerfile change is only really proved by building wheels inside the image it produces - and
+that image does not become `latest` until the change is merged. Two `workflow_dispatch` inputs
+close that gap without any temporary edit to either workflow:
 
 ```
-sudo -H MACOSX_DEPLOYMENT_TARGET=11.0 ./build_macos_wheels.sh
+gh workflow run build-wheel-images.yml --ref <branch> -f push-latest=false
+gh workflow run build-wheels.yml --ref <branch> -f linux-image-tag=<that run's commit SHA>
 ```
 
-The final wheels are in the `wheelhouse` sub-directory of the root source directory.
+Until that second run exists, a pull request that changes the dockerfile is expected to fail
+the wheel workflow's "Check the Linux wheel imports with no system packages installed" step: the
+automatic run builds inside `latest`, which is the image built from the *merged* dockerfile, so
+that step is testing the old image. It says as much when it fails.
 
-> [!NOTE]
-> By default all available CPU cores will be used when building pyGPlates. You can change this by adding
-> the CMAKE_BUILD_PARALLEL_LEVEL environment variable (set to the desired number of cores to use).
-> For example, `sudo -H CMAKE_BUILD_PARALLEL_LEVEL=4 ...`.
+The first command builds both architectures and pushes only the `:<SHA>` tag, leaving `latest`
+on the merged image that everything else pulls. The second builds the full wheel matrix against
+the image that tag names (cibuildwheel reads the image from the environment in preference to
+`pyproject.toml`, so the file stays the authoritative default for every other run). Build the
+image locally first, though - see above - because a CI round costs tens of minutes and a local
+one is the only place a dockerfile should ever be iterated on.
 
-## Building wheels on Windows
+## The macOS dependency libraries
 
-Building wheels on Windows involves running the `build_windows_wheels.bat` batch file in a Command Prompt.
+macOS wheels are thin (single-architecture) `macosx_11_0_arm64` and `macosx_11_0_x86_64`
+wheels, built natively on each architecture. There is no dependency image on macOS - instead
+cibuildwheel runs `build_macos_deps.sh` (its `before-all` hook) once per machine, which
+installs the dependency libraries into a single prefix, `~/pygplates-wheel-deps`:
 
-This will build the wheels for each currently supported Python minor version, test them and then copy them to the
-`wheelhouse` sub-directory of the root source directory.
+- Qt comes as the official binaries (downloaded with [aqtinstall](https://github.com/miurahr/aqtinstall)),
+  with each framework library thinned from universal to the build architecture - halving what
+  delocate later vendors into the wheels. Only the `qtbase` archive is downloaded; it is the
+  smallest aqt offers, and of the modules in it only QtCore is ever linked or vendored.
+- Boost, PROJ, GDAL, GMP, MPFR and CGAL are built from source (macOS has no
+  system package manager, and Homebrew binaries must not leak into the wheels - see below).
+  The versions come from `versions.sh`, shared with the Linux image - so the platforms
+  cannot drift apart.
+- Boost.Python is the exception: it must match each wheel's Python version, so cibuildwheel
+  runs `build_boost_python.sh` (its `before-build` hook) with each build's Python on PATH,
+  reusing the Boost source tree that `build_macos_deps.sh` leaves in the prefix. Each version
+  is built only once (about a minute) and then reused.
 
-The script assumes you've installed the currently supported Python versions (to be accessed using `py -<version> ...`, eg, `py -3.10 ...`)
-and that you've installed the dependencies of pyGPlates.
+In CI the whole prefix is cached (`.github/workflows/build-wheels.yml`), keyed on the hash of
+`versions.sh`, `download.sh` and the two scripts plus the deployment target - so bumping a
+dependency version rebuilds the cache automatically, and runs with an up-to-date cache spend
+about a minute restoring it instead of about an hour building dependencies. `build_macos_deps.sh` is
+idempotent (each dependency is stamped once installed), so a partial cache saved by a failed
+run is completed by the next run, not rebuilt from scratch.
 
-To build the wheels, run the following in a Command Prompt:
+## The Windows dependency libraries
 
-```
-cmd /c build_windows_wheels.bat
-```
+Windows wheels are `win_amd64` wheels. As on macOS there is no dependency image - cibuildwheel
+runs `build_windows_deps.sh` (its `before-all` hook) once per machine, which installs the
+dependency libraries into a single prefix, `C:\pygplates-wheel-deps` (a short path at the root of
+the drive, because the dependency builds nest deeply enough to run into the 260-character Windows
+path limit):
 
-## Building wheels on Linux
+- Qt comes as the official binaries, downloaded with aqtinstall, as on macOS. The debug symbols
+  that the official MSVC packages carry - most of their size - are deleted afterwards. The debug
+  libraries themselves stay, unused: Qt's CMake package declares a Debug configuration for every
+  imported target and CMake checks that each file it names is there.
+- zlib, PROJ, GDAL, GMP and MPFR come from [vcpkg](https://vcpkg.io) (see `vcpkg.json`).
+  PROJ's and GDAL's run-time data - the coordinate reference system database and GDAL's driver
+  data, which the build copies into the wheel - are named explicitly in `pyproject.toml`, since
+  vcpkg installs a port's tools apart from its libraries and `projinfo`, which the build asks
+  where PROJ's data is, would otherwise answer for a directory layout that is not this one.
+  GMP and MPFR are the reason vcpkg is here at all: they have no MSVC build system. PROJ and GDAL
+  come along with them because they are a deep stack that vcpkg already knows how to build on
+  Windows. These versions are pinned by the vcpkg baseline commit in `vcpkg.json` rather than by
+  `versions.sh` - but the `versions.sh` pins for PROJ and GDAL are kept equal to what the
+  baseline supplies, so every platform's wheels ship the same versions of the libraries a user
+  can feel (CRS handling, datum grids, driver behaviour). Bump the baseline and those two pins
+  together, as one act, with vcpkg setting the cadence; `build_windows_deps.sh` compares what
+  vcpkg installed against `versions.sh` and fails if they have drifted apart.
+- Boost and CGAL are built from source against the `versions.sh` pins, as on the other
+  platforms.
+- Boost.Python is per-Python-version, so - as on macOS - cibuildwheel runs
+  `build_boost_python.sh` (its `before-build` hook) with each build's Python on PATH, reusing the
+  Boost source tree left in the prefix.
 
-Building wheels on Linux generates manylinux2014 wheels that should work on all Linux systems compatible with CentOS 7 (glibc 2.17).
+Boost's `b2` is not a CMake build, so it cannot locate Visual Studio for itself. The script
+therefore sources `msvc_env.sh`, which runs `vcvarsall.bat` in a cmd shell and imports the
+environment it produces. That is what lets it run under cibuildwheel, whose hooks run in a plain
+cmd shell, instead of requiring an "x64 Native Tools Command Prompt".
 
-This involves first building a Docker image using `manylinux.dockerfile` and then running it to build manylinux2014 wheels
-for currently supported Python versions.
+In CI the prefix is cached exactly as on macOS. The CI job does not run from a developer command
+prompt either - it imports the same environment with `msvc_env.sh` before running cibuildwheel,
+which is the one thing a local build has to arrange for itself.
 
-The final wheels are in the `wheelhouse` sub-directory of the root source directory.
+## Why the wheels are configured the way they are
 
-### Build the pyGPlates manylinux Docker image
+These are the reasons behind the non-obvious `[tool.cibuildwheel]` settings in
+`pyproject.toml` (learned the hard way with the pre-cibuildwheel wheel scripts).
 
-The dockerfile `manylinux.dockerfile` is used to build a Docker image that extends `quay.io/pypa/manylinux2014_x86_64`
-by installing the pyGPlates dependency libraries. It can be built using something like:
+### `GPLATES_INSTALL_FOR_WHEEL_REPAIR=TRUE`
 
-```
-docker build --build-arg NUM_CORES=4 -t pygplates-manylinux -f ./manylinux.dockerfile .
-```
+The wheel is a standalone bundle like any other `GPLATES_INSTALL_STANDALONE` install (the
+default when building with scikit-build-core outside conda): it carries the GDAL and PROJ data,
+and the module looks for them there. What differs is who copies the dependency libraries in:
+`auditwheel` (or `delocate`/`delvewheel`), which runs afterwards to repair the wheel and gives
+them unique names, rather than the install. So the install must not copy them itself.
 
-...from this directory to produce the docker image `pygplates-manylinux`.
-And where NUM_CORES specifies the number of CPU cores used to compile the dependency libraries (of pyGPlates).
+Two measures assume the repair has happened. On macOS the option compiles in a `qt.conf` (see
+`src/qt-resources/CMakeLists.txt`). And at run time, any standalone bundle with GDAL's data but
+no GDAL plugins ignores a host's `GDAL_DRIVER_PATH` (`src/file-io/StandaloneBundle.cc`), which
+is right only if the bundle carries its own GDAL. So a wheel built with the option is only meant
+as the input to a repair: installed unrepaired, it would use the environment's libraries.
 
-When building on an Arm64 architecture (eg, Apple Silicon), you'll need to specify a different architecture
-(the default is `x86_64`). This can be done by adding the ARCH variable (set to `aarch64`):
+It replaced `GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES`, which said the same thing
+the other way round (`FALSE` for a wheel). A pyGPlates build still accepts the old `FALSE`, with
+a deprecation warning, but ignores the old `TRUE` (its default, so possibly a leftover in a build
+tree's cache), with a warning if that leaves the new option on.
 
-```
-docker build --build-arg ARCH=aarch64 ...
-```
+### `OpenGL_GL_PREFERENCE=LEGACY` (Linux) - retired
 
-...to build a Docker image that extends `quay.io/pypa/manylinux2014_aarch64`.
+Neither the wheels nor the dependency image builds against OpenGL any more, so this variable is
+set nowhere. It is recorded here because what it prevented was expensive to diagnose and cheap
+to reintroduce.
 
-### Create pyGPlates manylinux wheels
+The problem was two copies of `libGLdispatch` in one process, which segfaulted `import
+pygplates` (a null jump in `__glDispatchInit`, reproduced under gdb). It arose whenever
+something on the link line reached GLVND's `libOpenGL`: auditwheel vendored that into the wheel
+along with its `libGLdispatch`, while Qt reached the *system* `libGLdispatch` through the
+whitelisted `libGL` - and GLVND dispatches every OpenGL call through one table, so two tables is
+one too many. Setting `OpenGL_GL_PREFERENCE=LEGACY` made CMake's `FindOpenGL` choose the
+whitelisted `libGL` instead, and the same reasoning kept EL8's `glew-devel` package (which links
+GLVND) and Qt's `FEATURE_egl` (which drags in `libGLdispatch`) out of the image.
 
-Using the above Docker image you can then build the manylinux wheels for pyGPlates using something like:
+None of that applies now: the module links only `Qt6Core`, and the image builds neither GLEW,
+Qwt, QtSvg nor Qt Gui. What remains is the guard, in three places, because the failure is
+silent until a user's `import` crashes:
 
-```
-docker run --rm --mount type=bind,source=$(pwd)/../../,target=/io pygplates-manylinux
-```
+- `cmake/check_linkage.py` - the module's *direct* dependencies, run as the
+  `pygplates-linkage-test` CTest and again over the module inside each repaired wheel
+  (`--installed`, from the wheel `test-command`).
+- `pygplates/wheel/check_wheel_contents.py` - every library the repair step vendored, which is
+  where a GL library arriving through a dependency's dependency would show up.
+- The dependency image's final layer - the `NEEDED` list of `libQt6Core`, and the absence of
+  `libQt6Gui`, `libqwt` and `libGLEW`.
 
-...from this directory and it will build wheels using this source code (ie, `$(pwd)/../../` is the root source directory).
-The mount option binds the host directory `$(pwd)/../../` to the Docker container directory `/io/`
-(which is referenced by the wheel-building script `build_manylinux_wheels.sh` within the Docker container).
-On Windows this command-line should work in PowerShell (command-line console).
+The full account is in the git history: PRs #49, #59, #60 and #63, and the commit that removed
+this section.
 
-This will build the wheels for each currently supported Python minor version, test them and then copy them to the
-`wheelhouse` sub-directory of the root source directory (ie, `$(pwd)/../../wheelhouse/`) on the host (ie, outside Docker container).
+### `CMAKE_INSTALL_RPATH` (macOS)
 
-By default all available CPU cores will be used when building pyGPlates. You can change this by adding
-the CMAKE_BUILD_PARALLEL_LEVEL environment variable (set to the desired number of cores to use).
-For example:
+The Qt frameworks and the CMake-built dependencies (PROJ, GDAL) have `@rpath/...` install
+names, and delocate resolves those through the rpaths recorded in the binaries that reference
+them. But CMake *strips* the build rpaths from the pygplates module when it installs it (and
+the pyGPlates build system doesn't set an install rpath of its own) - leaving delocate unable
+to resolve any `@rpath/...` dependency. So `pyproject.toml` passes `CMAKE_INSTALL_RPATH`
+(pointing at the deps prefix's `lib` and Qt `lib` directories) to the pyGPlates build, and
+`build_macos_deps.sh` does the equivalent for the dependencies' own dependencies (PROJ's rpath
+in GDAL, and Boost's in the Boost libraries). The rpaths only need to be valid on the *build*
+machine: delocate follows them to find the libraries, copies the libraries into the wheel, and
+rewrites every reference to `@loader_path/...`.
 
-```
-docker run --env CMAKE_BUILD_PARALLEL_LEVEL=4 ...
-```
+### No Homebrew, no libpython (macOS)
 
-The final wheels are in the `wheelhouse` sub-directory of the root source directory.
+The GitHub macOS runners carry a large Homebrew installation, and any dependency configured
+against it would get Homebrew libraries vendored into the wheels - libraries built for the
+runner's macOS version (much newer than `MACOSX_DEPLOYMENT_TARGET`) that can change ABI
+whenever the runner image updates. So the source builds only look in the deps prefix and the
+macOS SDK (GDAL's other optional dependencies are explicitly disabled - it uses its internal
+copies), and `build_macos_deps.sh` ends with a sanity check that fails the run if anything
+links a Homebrew path.
+
+Similarly, `libboost_python` must not link `libpython`: delocate would vendor a second Python
+runtime into the wheel. `build_boost_python.sh` gives b2 no Python library to link against -
+Boost.Python's Python symbols resolve at import time (`-undefined dynamic_lookup`, standard
+practice for anything loaded into a Python process) - and fails if the built library links a
+Python runtime anyway.
+
+### Checking the wheel, not just the code
+
+`test-command` runs the pyGPlates test suite, then `check_wheel_contents.py`, then
+`cmake/check_linkage.py --installed`. The last two check the wheel rather than the code, and they
+are in the wheel test command rather than in CTest because at CTest time there is no wheel: the
+repair step (auditwheel/delocate/delvewheel) rewrites what the module depends on and vendors a
+set of libraries around it, and none of that exists in the build tree.
+
+`check_wheel_contents.py` confirms the wheel carries PROJ's coordinate reference system database
+and GDAL's driver data, and lists every library the repair step vendored, with its size - which
+is both the record of what a wheel actually ships and the check that no GUI, rendering or system
+library got in. `check_linkage.py --installed` is the CTest of the same name, re-run over the
+module inside the wheel. The Linux job also imports the wheel in a bare `python:3.x-slim`
+container, which is the only place the "needs no system packages" claim is actually tested.
+
+The suite cannot stand in for that check, because it passes either way. `cmake/modules/Install.cmake`
+locates both data directories while configuring, and used to report failure as a CMake warning and
+carry on - so the Windows wheels were built, repaired, tested and reported green for as long as the
+Windows job existed while shipping neither, with PROJ printing `Cannot find proj.db` to stderr and
+coordinate reference systems quietly failing to resolve.
+
+Those warnings are now errors, raised when the bundle is *installed* rather than when it is
+configured - the same way the code signing and Qt version checks at the top of that file work. That
+stops a broken bundle being produced without stopping a build: `GPLATES_INSTALL_STANDALONE` is on by
+default for Windows and macOS GPlates builds too, and someone who only wants to compile and run from
+their build tree should not have to satisfy it. Building a wheel runs `cmake --install`, so the
+wheels are covered either way.
+
+That much covers the causes the build can see. `check_wheel_contents.py` covers the rest of the
+path, since the data still has to survive installation and the repair step to reach the user.
+
+### Ninja and the compiler cache (Windows)
+
+pyGPlates is built with Ninja on every platform, Windows included (`CMAKE_GENERATOR` in
+`[tool.cibuildwheel.windows.environment]`). The Visual Studio generator would locate the compiler
+by itself, which is convenient, but it ignores `CMAKE_<LANG>_COMPILER_LAUNCHER` - so there would
+be no compiler cache, and each of the seven Python versions would pay a full compile of about
+20 minutes (measured on the CI runner, 2026-10).
+
+What Ninja costs is that it compiles with whatever `cl` the environment provides, and neither
+cibuildwheel nor scikit-build-core arranges one (scikit-build-core sets the MSVC environment up
+only for "Visual Studio" generators). So a local wheel build must be started from an "x64 Native
+Tools Command Prompt for VS 2022", and the CI job imports the same environment with `msvc_env.sh`
+before running cibuildwheel. The dependency scripts are unaffected either way - they source
+`msvc_env.sh` themselves, because as cibuildwheel hooks they cannot set up the environment of the
+process that runs them.
+
+Ninja also means CMake has to *find* a compiler, rather than being told one by the generator - and
+what it finds on a machine with Visual Studio installed is the LLVM that Visual Studio bundles, in
+`VC/Tools/Llvm`. So the wheel would be built with clang against a Qt, Boost and vcpkg stack built
+with MSVC. `CMAKE_C_COMPILER`/`CMAKE_CXX_COMPILER` in the `config-settings` therefore name `cl`.
+
+The cache earns it. Only about a hundred of the thousand-odd sources include Python's own
+headers, so the second and later Python versions reuse around 90% of the first's object files -
+measured on Linux and macOS, where the same arrangement cut the second wheel from 33 to 14
+minutes. Windows is therefore one job per platform like everything else, rather than a
+dependency job followed by one wheel job per Python version.
+
+For that reuse to happen at all, every Python version must build in the *same* directory: sccache
+keys on preprocessor output, which names the path of every header included, so a per-version
+build directory makes each source that includes a generated header (`config.h`, Qt's moc and ui
+output) hash differently for no reason. Hence `build-dir` in the cibuildwheel `config-settings`,
+together with the `before-build` that empties it - the emptying is what keeps a shared directory
+from also being an incremental build across Python versions.
+
+### `delvewheel --add-path` (Windows)
+
+Windows has no rpath: a DLL records only the *name* of each DLL it needs, which is then searched
+for in a list of directories. So delvewheel cannot follow the pyGPlates module's own dependency
+chain to the dependency libraries the way delocate does on macOS, and `repair-wheel-command` in
+`pyproject.toml` names the directories they are in (Boost's, Qt's and vcpkg's) instead.
+
+Windows is also where Boost.Python *does* link a Python library (`python313.lib` and friends):
+an extension module resolves its Python symbols at link time here, rather than leaving them to
+the interpreter at load time as on macOS and Linux. That is expected - delvewheel excludes the
+Python DLL from what it vendors, so the wheel still runs against the interpreter's own runtime.
 
 ## Updating Python versions
 
-Wheels are built for the [currently supported Python versions](https://devguide.python.org/versions/).
-As those versions change, the Python versions specified in the build scripts will need to be updated.
+Wheels are built for the [currently supported Python versions](https://devguide.python.org/versions/)
+that NumPy ships wheels for (we build against the NumPy C API, so a Python version without
+NumPy wheels is not usable anyway). To add or remove a version:
 
-### macOS
+1. Update the `build` list in `[tool.cibuildwheel]` in `pyproject.toml`
+   (and `requires-python`/classifiers in `[project]` if the floor changed).
+2. Update `PYTHON_VERSIONS` in `versions.sh` to match, and rebuild the Linux images
+   (a push of the change rebuilds them automatically). The `sdist` job fails if the two lists
+   disagree, so this cannot be forgotten quietly.
+   (macOS and Windows need no equivalent step: `build_boost_python.sh` builds Boost.Python for
+   whatever Python version each wheel build brings.)
 
-The script that builds the pyGPlates wheels is `build_macos_wheels.sh`.
-To update the Python versions just specify them in the line containing `for cp_version in ...` in that script.
+## Wheels for a development version
 
-### Windows
+A development build handed to someone - a wheel to try a fix before the release - is built by
+the same workflow, dispatched by hand, and never published. Tag the commit with the version it
+resolves to (`cmake -P cmake/modules/VersionFromGit.cmake pygplates` prints it), push the tag,
+then dispatch the workflow from that tag - *Run workflow* on the Actions page with the tag under
+*Use workflow from*, or:
 
-The batch file that builds the pyGPlates wheels is `build_windows_wheels.bat`.
-To update the Python versions just specify them in the line containing `for %%v in (...)` in that batch file.
+```
+gh workflow run build-wheels.yml --ref PyGPlates-1.2.0.dev12
+```
 
-### Linux
+The tag is what makes the commit findable later from the version string alone
+(`docs/design/versioning/README.md`, section 10), and it is also the handle the dispatch
+needs: the ref menu takes a branch or a tag, never a commit hash. Pushing the tag starts nothing,
+since the push trigger excludes `.dev` tags. The dispatch is a full run - every Python version on
+every platform - and the wheels and the sdist are downloaded from the run's artifacts. (Its
+*two-python-versions* input limits it to two versions per platform, as a pull request run is:
+that is for a build that only tests the machinery, such as a new dependency image, not for wheels
+to hand to someone.) Nothing reaches PyPI: the publish jobs run only for a *pushed* release tag,
+and the sdist job's tag check, which rejects development versions, applies only to a pushed tag
+for the same reason. A dispatch from a *release* tag is safe too: runs are grouped per event as
+well as per ref, so it cannot cancel that tag's release run waiting at the approval gate.
 
-The script that builds the pyGPlates wheels is `build_manylinux_wheels.sh` (it is copied into the Docker image).
-To update the Python versions just specify them in the line containing `for cp_version in ...` in that script and rebuild the Docker image.
+## Publishing a release
+
+Releasing to [PyPI](https://pypi.org/p/pygplates) is part of `build-wheels.yml`: pushing a
+release tag builds the full matrix and then publishes it, with two safeguards between building
+and the real index. Nothing holds an API token - the publish jobs authenticate with
+[Trusted Publishing](https://docs.pypi.org/trusted-publishers/), where the index trusts short-lived
+OIDC tokens GitHub mints for this specific workflow file.
+
+The flow, end to end:
+
+1. Set the release version in `cmake/modules/VersionRelease.cmake` (`PYGPLATES_RELEASE_VERSION`),
+   and commit. Development versions are counted from git, so this is the only pyGPlates version
+   anyone writes; on the release tag itself the counted part vanishes and the version is exactly
+   what was set here. For a first pass at a release, use an `rc` version (eg, `1.1.0rc1`): pip
+   ignores release candidates by default, so it exercises this whole pipeline - the tag check, the
+   rehearsal, the approval gate, a real PyPI upload - with low stakes. A second candidate just
+   means setting the target to `1.1.0rc2`; commits on the release branch then count up from the
+   `rc1` tag as `1.1.0rc2.devN`. The release itself is its last candidate plus this one commit,
+   which changes only the target and the changelog heading: a fix found in a candidate makes
+   another candidate. Until that commit is tagged the resolver refuses it, since `1.1.0.devN`
+   would sort below the candidate (once a release tag has it in its history, the refusal becomes
+   a warning, so that the commit stays buildable).
+
+   The commit that cuts the release series branch also freezes GPlates there: it replaces
+   `GPLATES_RELEASE_VERSION` with `GPLATES_FROZEN_VERSION`, set to what
+   `cmake -P cmake/modules/VersionFromGit.cmake gplates` gives on the commit the branch is cut
+   from. GPlates is not released from a pyGPlates series branch, and without the freeze a later
+   GPlates release on its own series branch would stop every configure here, this branch's
+   release tags included (`VersionRelease.cmake` has the details).
+2. Tag that commit `PyGPlates-<version>` (exactly the version string), check that
+   `cmake -P cmake/modules/VersionFromGit.cmake pygplates` now gives exactly `<version>`, run
+   `python pygplates/wheel/check_release_commit.py PyGPlates-<version> <version>`, and push the
+   tag. A local tag starts nothing; the push does. The run fails in its first minute if GPlates
+   is not frozen (the resolver refuses the release tag), and then - in `check_release_commit.py`,
+   the same check as the local run - if the tag and the version disagree, if the version is a
+   `.dev` one, if it does not sort above every earlier release in its history, or if a final
+   release is not its last candidate unchanged (the script says how to override the last of
+   those). A
+   release is tagged on the release series branch `release/pygplates-<major>.<minor>`, and so is
+   every release candidate before it and every patch release after it - release tags belong on
+   the series branches and nowhere else. The root `README.md` has the branching model.
+3. The run builds the sdist and every wheel (about 2.5 hours warm, 4.5 cold), then uploads the
+   sdist plus one platform's wheels to [TestPyPI](https://test.pypi.org/p/pygplates) - a
+   rehearsal that catches anything the index itself would reject (metadata, most of all)
+   before the real upload.
+4. The run then sits at **waiting** until a maintainer approves the `pypi` deployment (repo
+   page -> the run -> "Review deployments"). This is the moment to eyeball the TestPyPI
+   project page. Approval waits expire after 30 days.
+5. On approval the whole matrix - one sdist, one wheel per Python version per platform, counted
+   before upload - goes to PyPI, each file with a [PEP 740](https://peps.python.org/pep-0740/)
+   attestation.
+6. Create the GitHub Release for the tag (`gh release create PyGPlates-<version>`, with
+   `--prerelease` for a candidate). The releases page is where the getting-started docs send
+   people to find the latest release tag, and nothing creates the entry for them.
+
+The conda-forge package is updated afterwards, by hand and from the sdist this run published -
+see `pygplates/conda/README.md`.
+
+Recovery paths, should something fail:
+
+- **A build failed**: "Re-run failed jobs" - only the failed platform runs again (from its
+  dependency cache), and the publish jobs then start as if the run had been green all along.
+  They upload what the run's artifacts hold, so this works within the artifact retention
+  window - 90 days.
+- **An upload failed partway**: also "Re-run failed jobs". `skip-existing` on the publish steps
+  skips the files that made it and uploads the rest - without that, the index's refusal to
+  accept a filename twice would wedge the release permanently.
+- **Something is wrong with the release itself**: don't approve; cancel the run, fix, bump the
+  version, re-tag. PyPI reserves every uploaded filename forever (deleting a release does not
+  free its names), which is why a suspect release should be stopped *before* approval.
+
+Housekeeping to be aware of:
+
+- PyPI's default project quota is 10 GiB, and a full release is ~1.2 GiB - about seven releases'
+  worth. File a [size-limit increase](https://docs.pypi.org/project-management/storage-limits/)
+  before it becomes urgent, and delete superseded `rc` releases (deletion does free quota - it's
+  only the *filenames* that stay reserved).
+- TestPyPI has the same quota and rehearsals accrete there too; delete old ones now and then.
+
+### One-time setup (already done - recorded for when it must be redone)
+
+The trusted-publisher registrations bind to this repository **and the workflow filename**, so
+renaming `build-wheels.yml` (or moving the repository) silently breaks publishing until the
+registrations are updated to match. The order below matters: a workflow run referencing a
+deployment environment that does not exist *auto-creates it unprotected*, so the environments
+must exist - with their protection rules - before the first tag push.
+
+1. Create the `pypi` [environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
+   in the repository settings: required reviewers = the release maintainer(s); deployment
+   branches/tags restricted to tags matching `PyGPlates-*`. Leave "prevent self-review" off -
+   a lone maintainer must be able to approve their own release.
+2. Create the `testpypi` environment (no reviewers - the rehearsal is what runs unattended).
+3. On **TestPyPI** (separate account from PyPI, 2FA required): pygplates doesn't exist there,
+   so register a [pending publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/):
+   owner `GPlates`, repository `GPlates`, workflow `build-wheels.yml`, environment `testpypi`.
+   (A pending publisher doesn't reserve the name, so do this close to first use; it becomes a
+   normal publisher on the first upload.)
+4. On **PyPI**, in the pygplates project -> Settings -> Publishing, add the trusted publisher:
+   owner `GPlates`, repository `GPlates`, workflow `build-wheels.yml`, environment `pypi`.
+5. After the first successful trusted publish, revoke any remaining pygplates API tokens.

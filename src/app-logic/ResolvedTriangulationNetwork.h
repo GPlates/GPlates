@@ -1080,8 +1080,11 @@ namespace GPlatesAppLogic
 				d_reconstruction_time(reconstruction_time),
 				d_network_boundary_polygon(network_boundary_polygon),
 				d_rigid_blocks(rigid_blocks_begin_, rigid_blocks_end_),
+				// The projection is singular only at the antipode of its centre, so centre it on the
+				// antipode of the boundary's outside point (its boundary centroid, unless the network wraps
+				// round the globe), putting the singular point outside the network and far from it.
 				d_projection(
-						GPlatesMaths::PointOnSphere(network_boundary_polygon->get_boundary_centroid()),
+						GPlatesMaths::PointOnSphere(-network_boundary_polygon->get_outside_point()),
 						1e3 * GPlatesUtils::Earth::MEAN_RADIUS_KMS/*Earth radius in metres*/),
 				d_build_info(delaunay_points_begin, delaunay_points_end, topology_network_params, rift),
 				// Set the number of cached velocity maps (eg, for different velocity delta time parameters).

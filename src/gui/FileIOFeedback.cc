@@ -1026,7 +1026,11 @@ GPlatesGui::FileIOFeedback::save_file(
 	//
 	// Setting the file info will cause the filenames (ManageFeatureCollectionsDialog) to get re-populated.
 	// TODO: Find a better way to do this.
-	file.set_file_info(file.get_file().get_file_info());
+	//
+	// Pass the file configuration back too, or it's cleared (it defaults to none) and the next save
+	// loses it (eg, an OGR file's dateline wrapping and spatial reference system, or the '.grot'
+	// configuration). The OGR attribute mapping isn't in it: that is kept on the feature collection.
+	file.set_file_info(file.get_file().get_file_info(), file.get_file().get_file_configuration());
 
 	return true;
 }
@@ -1122,8 +1126,12 @@ GPlatesGui::FileIOFeedback::save_file(
 	}
 	catch (GPlatesFileIO::ErrorWritingFeatureCollectionToFileFormatException &exc)
 	{
-		// Remove the file on disk in case it was partially written.
-		QFile(file_ref.get_file_info().get_qfileinfo().filePath()).remove();
+		// Remove the file on disk in case it was partially written. But not if the writer never
+		// opened it: then it is the user's previous file, untouched.
+		if (exc.was_file_written_to())
+		{
+			QFile(file_ref.get_file_info().get_qfileinfo().filePath()).remove();
+		}
 
 		QString message;
 		QTextStream(&message)
@@ -1173,6 +1181,21 @@ GPlatesGui::FileIOFeedback::save_files(
 		if (only_unsaved_changes && !feature_collection_ref->contains_unsaved_changes())
 		{
 			continue;
+		}
+
+		// Skip a file without changes in a format that can't be written (eg, '.vgp'): saving it
+		// would only report an error (eg, for each such row in Save Selected). With changes, the
+		// error is reported, so that the user knows to save them with Save As.
+		if (!feature_collection_ref->contains_unsaved_changes())
+		{
+			const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format =
+					d_file_format_registry_ptr->get_file_format(
+							file.get_file().get_file_info().get_qfileinfo());
+			if (file_format &&
+				!d_file_format_registry_ptr->does_file_format_support_writing(file_format.get()))
+			{
+				continue;
+			}
 		}
 
 		// Previously we only saved the file if there were unsaved changes.

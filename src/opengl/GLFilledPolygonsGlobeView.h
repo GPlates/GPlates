@@ -320,7 +320,8 @@ namespace GPlatesOpenGL
 					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none);
 
 			/**
-			 * Adds a polygon ring as a fan mesh (with the polygon centroid as the fan apex).
+			 * Adds a polygon ring as a fan mesh, with apex @a centroid (for a polygon, the antipode of
+			 * its outside point, so that the fill by parity agrees with point-in-polygon).
 			 *
 			 * Adds a sequence of @a PointOnSphere points as vertices/indices in global vertex array.
 			 */

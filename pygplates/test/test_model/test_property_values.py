@@ -1083,7 +1083,70 @@ class GpmlTopologicalSectionCase(unittest.TestCase):
         self.assertTrue(another_boundary_section.get_property_delegate().get_property_name() == pygplates.PropertyName.gpml_center_line_of)
         self.assertTrue(another_boundary_section.get_property_delegate().get_property_type() == pygplates.GpmlTopologicalLine)
         self.assertTrue(another_boundary_section.get_reverse_orientation() == True)
-        
+
+        # Create a topological section that references a polygon (it's a line section).
+        referenced_polygon_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PolygonOnSphere([(0, 0), (10, 10), (20, 20)]))
+        polygon_boundary_section = pygplates.GpmlTopologicalSection.create(
+            referenced_polygon_feature, reverse_order=True, topological_geometry_type=pygplates.GpmlTopologicalPolygon)
+        self.assertTrue(isinstance(polygon_boundary_section, pygplates.GpmlTopologicalLineSection))
+        self.assertTrue(polygon_boundary_section.get_property_delegate().get_feature_id() == referenced_polygon_feature.get_feature_id())
+        self.assertTrue(polygon_boundary_section.get_property_delegate().get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+        # The property type is 'gml:LinearRing' (as GPlates uses) but there's no Python equivalent for that (like there is for 'gml:Polygon').
+        self.assertTrue(polygon_boundary_section.get_property_delegate().get_property_type() is None)
+        self.assertTrue(polygon_boundary_section.get_reverse_orientation() == True)
+
+        # A feature with two geometries under the same property name.
+        referenced_two_lines_feature = pygplates.Feature(pygplates.FeatureType.gpml_unclassified_feature)
+        referenced_two_lines_feature.set_geometry([
+            pygplates.PolylineOnSphere([(0, 20), (10, 20)]),
+            pygplates.PolylineOnSphere([(0, 30), (10, 30)])])
+        # By default there must be exactly one.
+        self.assertFalse(pygplates.GpmlTopologicalSection.create(referenced_two_lines_feature))
+        self.assertFalse(pygplates.GpmlTopologicalSection.create(
+            referenced_two_lines_feature, property_return=pygplates.PropertyReturn.exactly_one))
+        # But the first one found can be asked for.
+        two_lines_section = pygplates.GpmlTopologicalSection.create(
+            referenced_two_lines_feature, property_return=pygplates.PropertyReturn.first)
+        self.assertTrue(isinstance(two_lines_section, pygplates.GpmlTopologicalLineSection))
+        self.assertTrue(two_lines_section.get_property_delegate().get_feature_id() == referenced_two_lines_feature.get_feature_id())
+        self.assertTrue(two_lines_section.get_property_delegate().get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+        self.assertTrue(two_lines_section.get_property_delegate().get_property_type() == pygplates.GmlLineString)
+        # A section cannot distinguish geometries with the same property name, so 'all' is not supported.
+        self.assertRaises(ValueError,
+            pygplates.GpmlTopologicalSection.create, referenced_two_lines_feature, property_return=pygplates.PropertyReturn.all)
+
+        # A feature with two topological lines under the same property name.
+        referenced_two_topological_lines_feature = pygplates.Feature(pygplates.FeatureType.gpml_subduction_zone)
+        referenced_two_topological_lines_feature.set_topological_geometry([topological_line, topological_line])
+        self.assertFalse(pygplates.GpmlTopologicalSection.create(
+            referenced_two_topological_lines_feature, topological_geometry_type=pygplates.GpmlTopologicalPolygon))
+        two_topological_lines_section = pygplates.GpmlTopologicalSection.create(
+            referenced_two_topological_lines_feature,
+            topological_geometry_type=pygplates.GpmlTopologicalPolygon,
+            property_return=pygplates.PropertyReturn.first)
+        self.assertTrue(isinstance(two_topological_lines_section, pygplates.GpmlTopologicalLineSection))
+        self.assertTrue(two_topological_lines_section.get_property_delegate().get_property_type() == pygplates.GpmlTopologicalLine)
+
+        # A feature type that's not in the information model has no default geometry property name,
+        # so (without a geometry property name) there is nothing to reference, even though it has a geometry.
+        unknown_type_feature = pygplates.Feature(
+            pygplates.FeatureType.create_gpml('NotAFeatureType'),
+            verify_information_model=pygplates.VerifyInformationModel.no)
+        unknown_type_feature.add(
+            pygplates.PropertyName.create_gpml('notAGeometryProperty'),
+            pygplates.GmlLineString(pygplates.PolylineOnSphere([(0, 20), (10, 20)])),
+            verify_information_model=pygplates.VerifyInformationModel.no)
+        self.assertTrue(unknown_type_feature.get_geometry() is not None)
+        self.assertTrue(pygplates.GpmlTopologicalSection.create(unknown_type_feature) is None)
+        self.assertTrue(pygplates.GpmlTopologicalSection.create_network_interior(unknown_type_feature) is None)
+        # ...but it can be referenced by its geometry property name.
+        self.assertTrue(isinstance(
+            pygplates.GpmlTopologicalSection.create(
+                unknown_type_feature, pygplates.PropertyName.create_gpml('notAGeometryProperty')),
+            pygplates.GpmlTopologicalLineSection))
+
         # Create a topological network interior that references a point.
         network_point_interior = pygplates.GpmlTopologicalSection.create_network_interior(referenced_point_feature)
         self.assertTrue(isinstance(network_point_interior, pygplates.GpmlPropertyDelegate))
@@ -1092,9 +1155,6 @@ class GpmlTopologicalSectionCase(unittest.TestCase):
         self.assertTrue(network_point_interior.get_property_type() == pygplates.GmlPoint)
         
         # Create a topological network interior that references a polygon.
-        referenced_polygon_feature = pygplates.Feature.create_reconstructable_feature(
-            pygplates.FeatureType.gpml_unclassified_feature,
-            pygplates.PolygonOnSphere([(0, 0), (10, 10), (20, 20)]))
         network_polygon_interior = pygplates.GpmlTopologicalSection.create_network_interior(referenced_polygon_feature)
         self.assertTrue(isinstance(network_polygon_interior, pygplates.GpmlPropertyDelegate))
         self.assertTrue(network_polygon_interior.get_feature_id() == referenced_polygon_feature.get_feature_id())
@@ -1108,6 +1168,20 @@ class GpmlTopologicalSectionCase(unittest.TestCase):
         self.assertTrue(network_topological_line_interior.get_feature_id() == referenced_topological_line_feature.get_feature_id())
         self.assertTrue(network_topological_line_interior.get_property_name() == pygplates.PropertyName.gpml_center_line_of)
         self.assertTrue(network_topological_line_interior.get_property_type() == pygplates.GpmlTopologicalLine)
+
+        # Network interiors from a feature with two geometries under the same property name.
+        self.assertFalse(pygplates.GpmlTopologicalSection.create_network_interior(referenced_two_lines_feature))
+        network_two_lines_interior = pygplates.GpmlTopologicalSection.create_network_interior(
+            referenced_two_lines_feature, property_return=pygplates.PropertyReturn.first)
+        self.assertTrue(isinstance(network_two_lines_interior, pygplates.GpmlPropertyDelegate))
+        self.assertTrue(network_two_lines_interior.get_feature_id() == referenced_two_lines_feature.get_feature_id())
+        self.assertTrue(network_two_lines_interior.get_property_type() == pygplates.GmlLineString)
+        self.assertRaises(ValueError,
+            pygplates.GpmlTopologicalSection.create_network_interior, referenced_two_lines_feature,
+            property_return=pygplates.PropertyReturn.all)
+        self.assertFalse(pygplates.GpmlTopologicalSection.create_network_interior(referenced_two_topological_lines_feature))
+        self.assertTrue(pygplates.GpmlTopologicalSection.create_network_interior(
+            referenced_two_topological_lines_feature, property_return=pygplates.PropertyReturn.first))
 
     def test_get(self):
         self.assertTrue(self.topological_line_section.get_property_delegate() == self.line_property_delegate)

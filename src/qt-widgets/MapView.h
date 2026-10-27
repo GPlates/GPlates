@@ -36,7 +36,6 @@
 #include <QOpenGLWidget>
 #include <QMouseEvent>
 
-#include "gui/ColourScheme.h"
 
 #include "maths/LatLonPoint.h"
 
@@ -113,7 +112,6 @@ namespace GPlatesQtWidgets
 		 */
 		MapView(
 				GPlatesPresentation::ViewState &view_state,
-				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent,
 				const QOpenGLWidget *share_gl_widget,
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &share_gl_context,

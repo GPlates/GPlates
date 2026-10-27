@@ -300,10 +300,10 @@ namespace
 			for (unsigned int i = 0; i != num_pixels; ++i)
 			{
 				const GPlatesGui::Colour src_pixel(
-						static_cast<GLfloat>(src_rgba_pixels[4 * i + 0]),
-						static_cast<GLfloat>(src_rgba_pixels[4 * i + 1]),
-						static_cast<GLfloat>(src_rgba_pixels[4 * i + 2]),
-						static_cast<GLfloat>(src_rgba_pixels[4 * i + 3]));
+						static_cast<float>(src_rgba_pixels[4 * i + 0]),
+						static_cast<float>(src_rgba_pixels[4 * i + 1]),
+						static_cast<float>(src_rgba_pixels[4 * i + 2]),
+						static_cast<float>(src_rgba_pixels[4 * i + 3]));
 
 				// Takes care of clamping the floating-point range to [0.0, 1.0] and converting
 				// to integer range [0, 255].

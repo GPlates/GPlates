@@ -27,7 +27,7 @@
 #define GPLATES_FILEIO_PICKFILEWRITER_H
 
 
-namespace GPlatesQtWidgets
+namespace GPlatesAppLogic
 {
 	class HellingerModel;
 }
@@ -45,7 +45,7 @@ namespace GPlatesFileIO
 		static
 		void
 		write_pick_file(QString &filename,
-						GPlatesQtWidgets::HellingerModel& hellinger_model,
+						GPlatesAppLogic::HellingerModel& hellinger_model,
 						bool export_disabled_picks = true,
 						bool add_missing_pick_extension = false);
 
@@ -53,7 +53,7 @@ namespace GPlatesFileIO
 		void
 		write_com_file(
 				QString &filename,
-				GPlatesQtWidgets::HellingerModel& hellinger_model);
+				GPlatesAppLogic::HellingerModel& hellinger_model);
 
 	};
 

@@ -89,6 +89,20 @@ namespace GPlatesApi
 
 
 	/**
+	 * Enumeration to determine how properties are returned.
+	 */
+	namespace PropertyReturn
+	{
+		enum Value
+		{
+			EXACTLY_ONE, // Returns a single element only if there's one match to the query.
+			FIRST,       // Returns the first element that matches the query.
+			ALL          // Returns all elements that matches the query.
+		};
+	};
+
+
+	/**
 	 * Wrapping an enumeration instead of boolean since 'CoverageReturn.geometry_only' documents
 	 * Python code better than a boolean.
 	 */

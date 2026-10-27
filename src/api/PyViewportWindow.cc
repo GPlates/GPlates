@@ -42,7 +42,6 @@
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/SceneView.h"
 
-#include "utils/FeatureUtils.h"
 
 
 namespace bp = boost::python;

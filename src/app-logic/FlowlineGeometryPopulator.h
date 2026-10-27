@@ -114,6 +114,26 @@ namespace GPlatesAppLogic
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry);
 
 		/**
+		 * Add a reconstructed feature geometry of the already reconstructed seed point(s)
+		 * @a reconstructed_seed_geometry (and no flowline) to the reconstruction geometry collection,
+		 * with the plate ID @a plate_id that the seed point(s) were reconstructed with.
+		 */
+		void
+		create_seed_geometry(
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry,
+			const boost::optional<GPlatesModel::integer_plate_id_type> &plate_id);
+
+		/**
+		 * Reconstruct the seed point(s) @a present_day_seed_geometry as a flowline, and add the
+		 * flowline of each seed point to the reconstruction geometry collection - or, at or older
+		 * than the flowline's oldest time (where it has no flowline), just the reconstructed seed
+		 * point(s).
+		 */
+		void
+		reconstruct_flowline(
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry);
+
+		/**
 		 * Create a reconstructed flowline (incorporating both left- and right-hand parts) from the point given
 		 * by @a present_day_seed_point, and add this to the reconstruction geometry collection.
 		 *
@@ -150,10 +170,24 @@ namespace GPlatesAppLogic
 		std::vector<GPlatesMaths::FiniteRotation> d_right_rotations;
 		
 		/**
-		 * Rotations for moving the seed point prior to building the rest of the flowline.                                                                    
+		 * Rotations for moving the seed point prior to building the rest of the flowline.
 		 */
 		std::vector<GPlatesMaths::FiniteRotation> d_left_seed_point_rotations;
 		std::vector<GPlatesMaths::FiniteRotation> d_right_seed_point_rotations;
+
+		/**
+		 * Moves the seed point from the left plate's frame (the frame it is stored in) into the
+		 * right plate's frame, before the right-hand half of the flowline is built up.
+		 *
+		 * See FlowlineUtils::get_left_to_right_plate_frame_rotation().
+		 */
+		boost::optional<GPlatesMaths::FiniteRotation> d_left_to_right_plate_frame_rotation;
+
+		/**
+		 * Whether to omit the first vertex (the seed point) of each half of the flowline, which
+		 * happens younger than the flowline's youngest time (where the halves start at that time).
+		 */
+		bool d_omit_seed_point_vertex;
 
 	};
 }

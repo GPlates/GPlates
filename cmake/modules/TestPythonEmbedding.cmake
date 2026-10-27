@@ -19,8 +19,8 @@
 # interpreter. This example code is known to fail if the Python library that we
 # link against is different to the Python library used to build Boost.Python.
 # This problem manifests itself especially on macOS, where there is the
-# system version of Python and the version of Python installed by Macports, if
-# Boost is installed via Macports.
+# system version of Python and the version of Python installed by a package
+# manager (eg, conda), if Boost is installed by that same package manager.
 
 FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
 	"#include <boost/python.hpp>\n"
@@ -32,11 +32,7 @@ FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embe
 	"int main() {\n"
 	"	try {\n"
 	"		char MODULE_NAME[] = \"testmodule\";\n"
-	"		#if PY_MAJOR_VERSION >= 3\n"
-	"			PyImport_AppendInittab(MODULE_NAME, &PyInit_testmodule);\n"
-	"		#else\n"
-	"			PyImport_AppendInittab(MODULE_NAME, &inittestmodule);\n"
-	"		#endif\n"
+	"		PyImport_AppendInittab(MODULE_NAME, &PyInit_testmodule);\n"
 	"		Py_Initialize();\n"
 	"		object main_module(handle<>(borrowed(PyImport_AddModule(\"__main__\"))));\n"
 	"		object main_namespace = main_module.attr(\"__dict__\");\n"
@@ -56,17 +52,9 @@ SET(python_embedding_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 # with Visual Studio 2019 (which causes auto-linking to look for Boost libs with 'vc142' in their name) and hence cannot find
 # the Boost libs with 'vc140' in their name (built with the 2015 compiler).
 list(APPEND python_embedding_LIBS Boost::disable_autolinking)
-if (TARGET Python3::Python)
-	# We used the Python3 find module.
-	list(APPEND python_embedding_LIBS ${Python3_LIBRARIES})
-	list(APPEND python_embedding_LIB_DIRS ${Python3_LIBRARY_DIRS})
-	list(APPEND python_embedding_INCLUDE_DIRS ${Python3_INCLUDE_DIRS})
-else()  # TARGET Python2::Python
-	# We used the Python2 find module.
-	list(APPEND python_embedding_LIBS ${Python2_LIBRARIES})
-	list(APPEND python_embedding_LIB_DIRS ${Python2_LIBRARY_DIRS})
-	list(APPEND python_embedding_INCLUDE_DIRS ${Python2_INCLUDE_DIRS})
-endif()
+list(APPEND python_embedding_LIBS ${Python3_LIBRARIES})
+list(APPEND python_embedding_LIB_DIRS ${Python3_LIBRARY_DIRS})
+list(APPEND python_embedding_INCLUDE_DIRS ${Python3_INCLUDE_DIRS})
 
 # According to the docs...
 # Projects built by try_compile() and try_run() are built synchronously during the CMake configuration step.
@@ -130,9 +118,8 @@ if (NOT CMAKE_CROSSCOMPILING)
 			"Check that the Python and Boost.Python libraries are in your system path."
 			"If you have multiple Python installations, make sure that the version of "
 			"Python that GPlates is being linked against is the same version of Python "
-			"that Boost.Python was built against. In particular, on macOS, if "
-			"Boost.Python was installed using MacPorts, provide the following CMake flag: "
-			"-DCMAKE_FRAMEWORK_PATH=/opt/local/Library/Frameworks")
+			"that Boost.Python was built against. In particular, make sure you have "
+			"activated the correct conda environment before configuring (see BUILD-macOS.md).")
 	ENDIF(PYTHON_EMBEDDING_RUNS EQUAL 1 OR PYTHON_EMBEDDING_RUNS STREQUAL FAILED_TO_RUN)
 endif()
 

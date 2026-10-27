@@ -1,12 +1,9 @@
 #
 # List the non-generated source files (*.h, *.cc, *.ui, *.qrc).
 #
-# You can either explicitly add/remove source files here, or
-# run 'python cmake/add_sources.py' to automatically list them (here).
-#
-# Note that CMake discourages use of the 'file(GLOB)' CMake command to automatically collect source files.
-# One of the reasons is if source files are added or removed, CMake is not automatically re-run,
-# so the build is unaware of the change.
+# Add and remove source files here by hand, keeping the list in alphabetical order.
+# (CMake discourages 'file(GLOB)': if source files are added or removed, CMake is not
+# automatically re-run, so the build would be unaware of the change.)
 #
 set(srcs
     AddClickedGeometriesToFeatureTable.cc
@@ -27,7 +24,6 @@ set(srcs
     ChooseCanvasToolUndoCommand.h
     Colour.cc
     Colour.h
-    ColourFilter.h
     ColourNameSet.cc
     ColourNameSet.h
     ColourPalette.h
@@ -36,17 +32,12 @@ set(srcs
     ColourPaletteUtils.cc
     ColourPaletteUtils.h
     ColourPaletteVisitor.h
-    ColourProxy.cc
-    ColourProxy.h
+    ColourQt.cc
+    ColourQt.h
     ColourRawRaster.h
     ColourScaleGenerator.cc
     ColourScaleGenerator.h
     ColourScheme.h
-    ColourSchemeContainer.cc
-    ColourSchemeContainer.h
-    ColourSchemeDelegator.cc
-    ColourSchemeDelegator.h
-    ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
     CommandServer.cc
@@ -136,6 +127,8 @@ set(srcs
     FileIODirectoryConfigurations.h
     FileIOFeedback.cc
     FileIOFeedback.h
+    FromQvariantConverter.cc
+    FromQvariantConverter.h
     FullScreenMode.cc
     FullScreenMode.h
     GenericColourScheme.h
@@ -217,8 +210,6 @@ set(srcs
     SessionMenu.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
-    SingleColourScheme.cc
-    SingleColourScheme.h
     SmallCircleCanvasToolWorkflow.cc
     SmallCircleCanvasToolWorkflow.h
     SphericalGrid.cc
@@ -235,6 +226,8 @@ set(srcs
     TopologyCanvasToolWorkflow.h
     TopologySectionsContainer.cc
     TopologySectionsContainer.h
+    TopologySectionsFinder.cc
+    TopologySectionsFinder.h
     TopologySectionsTable.cc
     TopologySectionsTable.h
     TopologySectionsTableColumns.cc
@@ -264,5 +257,35 @@ set(srcs
     VisualLayersProxy.h
 )
 
-# Add the source files to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})
+if (TARGET gplates-lib)
+    # Add the source files to the gplates static library.
+    target_sources(gplates-lib PRIVATE ${srcs})
+else()
+    # The pygplates module takes only these dependency-free value types (colours,
+    # palettes and the mipmapper used by the raster property values) - the include
+    # closure of the pyGPlates API (see "cmake/pygplates_source_closure.py" and its
+    # GUI_ALLOWLIST; the pygplates-source-closure test fails if this list drifts).
+    # A new "gui/" file therefore defaults to GPlates-only, the safe direction.
+    set(pygplates_srcs
+        Colour.cc
+        Colour.h
+        ColourPalette.h
+        ColourPaletteAdapter.h
+        ColourPaletteVisitor.h
+        ColourRawRaster.h
+        ColourSpectrum.cc
+        ColourSpectrum.h
+        Mipmapper.cc
+        Mipmapper.h
+        RasterColourPalette.cc
+        RasterColourPalette.h
+    )
+    # Guard against stale entries (eg, after a file rename).
+    foreach(pygplates_src ${pygplates_srcs})
+        if (NOT pygplates_src IN_LIST srcs)
+            message(FATAL_ERROR "'${pygplates_src}' is not in srcs")
+        endif()
+    endforeach()
+    # Add the source files to the pygplates extension module.
+    target_sources(pygplates PRIVATE ${pygplates_srcs})
+endif()

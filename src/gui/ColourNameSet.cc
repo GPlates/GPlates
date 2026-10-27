@@ -52,9 +52,9 @@ GPlatesGui::ColourNameSet::insert_colour(
 	colours.insert(std::make_pair(
 				name,
 				Colour(
-					static_cast<GLfloat>(r) / 255.0f,
-					static_cast<GLfloat>(g) / 255.0f,
-					static_cast<GLfloat>(b) / 255.0f)));
+					static_cast<float>(r) / 255.0f,
+					static_cast<float>(g) / 255.0f,
+					static_cast<float>(b) / 255.0f)));
 
 	std::vector<int> v;
 	using namespace boost::assign; 

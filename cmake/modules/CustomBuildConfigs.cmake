@@ -24,7 +24,6 @@
 #
 
 # Determine if the current generator is multi-configuration (Visual Studio and XCode), or not (Makefile).
-# CMake 3.9 introduced a robust way to detect a multi-config generator (and our min. CMake requirement exceeds 3.9).
 get_property(_GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 #

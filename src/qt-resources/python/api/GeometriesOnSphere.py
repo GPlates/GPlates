@@ -16,10 +16,12 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-import itertools
+# Aliased with a leading underscore so they do not become public attributes of the
+# 'pygplates' module (this file is exec'd into the module namespace).
+import itertools as _itertools
 # Import numpy if it's available...
 try:
-    import numpy
+    import numpy as _numpy
 except ImportError:
     pass
 
@@ -28,7 +30,7 @@ def geometry_on_sphere_get_points(geometry):
     """get_points()
     Returns a *read-only* sequence of :class:`points<PointOnSphere>` in this geometry.
     
-    :rtype: a read-only sequence of :class:`PointOnSphere`
+    :rtype: a read-only sequence of PointOnSphere
     
     The following operations for accessing the points in the returned read-only sequence are supported:
     
@@ -119,8 +121,9 @@ def geometry_on_sphere_to_lat_lon_array(geometry):
     """to_lat_lon_array()
     Returns the sequence of points, in this geometry, as a numpy array of (latitude,longitude) pairs (in degrees).
     
-    :returns: an array of (latitude,longitude) pairs (in degrees)
-    :rtype: 2D numpy array with number of points as outer dimension and an inner dimension of two
+    :returns: a 2D array of (latitude,longitude) pairs (in degrees), with the number of points as the
+              outer dimension and an inner dimension of two
+    :rtype: numpy.ndarray
     
     .. warning:: This method should only be called if the ``numpy`` module is available.
     
@@ -142,7 +145,7 @@ def geometry_on_sphere_to_lat_lon_array(geometry):
       geometry.to_lat_lon_array().flatten()
     """
     
-    return numpy.array(geometry.to_lat_lon_list())
+    return _numpy.array(geometry.to_lat_lon_list())
 
 # Add the module function as a class method.
 GeometryOnSphere.to_lat_lon_array = geometry_on_sphere_to_lat_lon_array
@@ -154,7 +157,7 @@ def geometry_on_sphere_to_lat_lon_point_list(geometry):
     """to_lat_lon_point_list()
     Returns the sequence of points, in this geometry, as :class:`lat lon points<LatLonPoint>`.
     
-    :rtype: list of :class:`LatLonPoint`
+    :rtype: list of LatLonPoint
     
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
@@ -197,8 +200,9 @@ def geometry_on_sphere_to_xyz_array(geometry):
     """to_xyz_array()
     Returns the sequence of points, in this geometry, as a numpy array of (x,y,z) triplets.
     
-    :returns: an array of (x,y,z) triplets
-    :rtype: 2D numpy array with number of points as outer dimension and an inner dimension of three
+    :returns: a 2D array of (x,y,z) triplets, with the number of points as the outer dimension and
+              an inner dimension of three
+    :rtype: numpy.ndarray
     
     .. warning:: This method should only be called if the ``numpy`` module is available.
     
@@ -214,7 +218,7 @@ def geometry_on_sphere_to_xyz_array(geometry):
     by its interior rings (if any).
     """
     
-    return numpy.array(geometry.to_xyz_list())
+    return _numpy.array(geometry.to_xyz_list())
 
 # Add the module function as a class method.
 GeometryOnSphere.to_xyz_array = geometry_on_sphere_to_xyz_array
@@ -265,18 +269,17 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
     Joins geometries that have end points closer than a distance threshold.
     
     :param geometries: the geometries to join
-    :type geometries: sequence (eg, ``list`` or ``tuple``) of :class:`GeometryOnSphere`
+    :type geometries: sequence (eg, list or tuple) of GeometryOnSphere
     :param distance_threshold_radians: optional closeness distance threshold in radians for joining to occur \
     (if not specified then end point *equality* is used)
     :type distance_threshold_radians: float
     :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore \
     those geometries in *geometries* that are not :class:`PolylineOnSphere` - defaults to \
     *PolylineConversion.ignore_non_polyline*
-    :type polyline_conversion: *PolylineConversion.convert_to_polyline*, *PolylineConversion.ignore_non_polyline* \
-    or *PolylineConversion.raise_if_non_polyline*
+    :type polyline_conversion: PolylineConversion
     :returns: a list of joined polylines
-    :rtype: list of :class:`PolylineOnSphere`
-    :raises: GeometryTypeError if *polyline_conversion* is *PolylineConversion.raise_if_non_polyline* and \
+    :rtype: list of PolylineOnSphere
+    :raises GeometryTypeError: if *polyline_conversion* is *PolylineConversion.raise_if_non_polyline* and \
     any geometry in *geometries* is not a :class:`PolylineOnSphere`
     
     All pairs of geometries are tested for joining and only those with end points closer than *distance_threshold_radians*
@@ -362,30 +365,30 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
             if min_dist is None:
                 if polyline1[0] == polyline2[0]:
                     join_polylines = (
-                        itertools.chain(
+                        _itertools.chain(
                             # Remove the last point of first joined polyline (since is duplicate)...
-                            itertools.islice(reversed(polyline2), len(polyline2)-1),
+                            _itertools.islice(reversed(polyline2), len(polyline2)-1),
                             polyline1),
                         polyline2_index)
                 elif polyline1[0] == polyline2[-1]:
                     join_polylines = (
-                        itertools.chain(
+                        _itertools.chain(
                             # Remove the last point of first joined polyline (since is duplicate)...
-                            itertools.islice(polyline2, len(polyline2)-1),
+                            _itertools.islice(polyline2, len(polyline2)-1),
                             polyline1),
                         polyline2_index)
                 elif polyline1[-1] == polyline2[0]:
                     join_polylines = (
-                        itertools.chain(
+                        _itertools.chain(
                             # Remove the last point of first joined polyline (since is duplicate)...
-                            itertools.islice(polyline1, len(polyline1)-1),
+                            _itertools.islice(polyline1, len(polyline1)-1),
                             polyline2),
                         polyline2_index)
                 elif polyline1[-1] == polyline2[-1]:
                     join_polylines = (
-                        itertools.chain(
+                        _itertools.chain(
                             # Remove the last point of first joined polyline (since is duplicate)...
-                            itertools.islice(polyline1, len(polyline1)-1),
+                            _itertools.islice(polyline1, len(polyline1)-1),
                             reversed(polyline2)),
                         polyline2_index)
                 continue
@@ -406,43 +409,43 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
                 if dist == dist00:
                     if polyline1[0] == polyline2[0]:
                         join_polylines = (
-                            itertools.chain(
+                            _itertools.chain(
                                 # Remove the last point of first joined polyline (since is duplicate)...
-                                itertools.islice(reversed(polyline2), len(polyline2)-1),
+                                _itertools.islice(reversed(polyline2), len(polyline2)-1),
                                 polyline1),
                             polyline2_index)
                     else:
-                        join_polylines = (itertools.chain(reversed(polyline2), polyline1), polyline2_index)
+                        join_polylines = (_itertools.chain(reversed(polyline2), polyline1), polyline2_index)
                 elif dist == dist01:
                     if polyline1[0] == polyline2[-1]:
                         join_polylines = (
-                            itertools.chain(
+                            _itertools.chain(
                                 # Remove the last point of first joined polyline (since is duplicate)...
-                                itertools.islice(polyline2, len(polyline2)-1),
+                                _itertools.islice(polyline2, len(polyline2)-1),
                                 polyline1),
                             polyline2_index)
                     else:
-                        join_polylines = (itertools.chain(polyline2, polyline1), polyline2_index)
+                        join_polylines = (_itertools.chain(polyline2, polyline1), polyline2_index)
                 elif dist == dist10:
                     if polyline1[-1] == polyline2[0]:
                         join_polylines = (
-                            itertools.chain(
+                            _itertools.chain(
                                 # Remove the last point of first joined polyline (since is duplicate)...
-                                itertools.islice(polyline1, len(polyline1)-1),
+                                _itertools.islice(polyline1, len(polyline1)-1),
                                 polyline2),
                             polyline2_index)
                     else:
-                        join_polylines = (itertools.chain(polyline1, polyline2), polyline2_index)
+                        join_polylines = (_itertools.chain(polyline1, polyline2), polyline2_index)
                 else:
                     if polyline1[-1] == polyline2[-1]:
                         join_polylines = (
-                            itertools.chain(
+                            _itertools.chain(
                                 # Remove the last point of first joined polyline (since is duplicate)...
-                                itertools.islice(polyline1, len(polyline1)-1),
+                                _itertools.islice(polyline1, len(polyline1)-1),
                                 reversed(polyline2)),
                             polyline2_index)
                     else:
-                        join_polylines = (itertools.chain(polyline1, reversed(polyline2)), polyline2_index)
+                        join_polylines = (_itertools.chain(polyline1, reversed(polyline2)), polyline2_index)
             
         if join_polylines:
             # Replace 'polyline1' with the joined polyline.

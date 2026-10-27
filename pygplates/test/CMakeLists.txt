@@ -1,17 +1,91 @@
 # Add the test of the pygplates module.
 add_test(
 	NAME pygplates-test
-	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/test.py"
-	# We only test non-debug builds because GPlatesGlobal::Assert<> statements in C++ code throw an exception in
-	# non-debug builds but abort in debug builds. These exceptions get translated to their equivalent in Python.
-	# Some of our tests purposefully check that these exceptions are raised (and that will only happen in non-debug builds).
-	CONFIGURATIONS Release MinSizeRel)
+	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/test.py")
+
+# Add the source-closure test: the pygplates module must compile exactly the include closure
+# of the pyGPlates API (see "cmake/pygplates_source_closure.py" and
+# "docs/design/architecture/README.md"). This is what stops a new file, or a new #include
+# in a shared translation unit, silently re-fattening the module - and what keeps the
+# committed dependency matrix honest ("--check-doc" fails if it is stale, the way
+# pygplates-stub-test fails on a stale type stub). "pygplates_sources.txt" is written at
+# generate time by the pygplates target in 'src/CMakeLists.txt' - one file per configuration,
+# "pygplates_sources_<config>.txt", for a multi-config generator (eg, Visual Studio). That is
+# where the file name is decided, and it passes it here in a global property.
+get_property(_pygplates_sources_file GLOBAL PROPERTY GPLATES_PYGPLATES_SOURCES_FILE)
+if (NOT _pygplates_sources_file)
+	message(FATAL_ERROR "GPLATES_PYGPLATES_SOURCES_FILE is not set (by the pygplates target in 'src/CMakeLists.txt').")
+endif()
+add_test(
+	NAME pygplates-source-closure-test
+	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/pygplates_source_closure.py"
+		--check-sources "${_pygplates_sources_file}"
+		--check-doc "${PROJECT_SOURCE_DIR}/docs/design/architecture/dependency-matrix.md")
+unset(_pygplates_sources_file)
+
+# Add the linkage test: the built module's *direct* shared-library dependencies must not
+# include any of GPlates' GUI/rendering libraries (Qt Widgets, Qt Svg, the Qt OpenGL
+# modules, Qwt, GLEW). The binary-level complement of pygplates-source-closure-test above.
+#
+# The script lives in 'cmake/' beside the source-closure tracer rather than here: both
+# check the build graph rather than the pyGPlates API, which is what the tests in this
+# directory are for.
+#
+# Note: on Windows the dependency lister is dumpbin, so (like the build itself) this test
+# must run from an MSVC-enabled environment; the script fails loudly rather than silently
+# passing if the lister is unavailable.
+#
+# The wheel builds run this script a second time, over the module inside the repaired wheel
+# ("check_linkage.py --installed" in 'test-command', root 'pyproject.toml'), because the wheel
+# is a different artifact from the build tree this test sees. A check added in either place is
+# worth considering for the other - and the wheels also run
+# 'pygplates/wheel/check_wheel_contents.py', which has no CTest counterpart because there is no
+# wheel to check at CTest time.
+add_test(
+	NAME pygplates-linkage-test
+	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/cmake/check_linkage.py" "$<TARGET_FILE:pygplates>")
+
+# Add the sample-code test: every script under 'docs/pygplates/sample-code/' must run. The scripts
+# are the code of the documentation's sample pages (each page includes its script rather than
+# repeating it - see the 'sample-code' directive in 'docs/pygplates/conf.py.in'), so this is what
+# keeps the published samples runnable. Each runs in a temporary directory seeded with 'fixtures/'.
+add_test(
+	NAME pygplates-sample-code-test
+	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/sample_code_test.py"
+		"${PROJECT_SOURCE_DIR}/docs/pygplates/sample-code"
+		"${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
+
+# Add the release-commit test: 'pygplates/wheel/check_release_commit.py' is what refuses a bad
+# release tag, but the wheel workflow runs it only on a pushed tag, so a mistake in it would
+# otherwise be found at a release. It runs on synthetic repositories, with a copy of the real
+# changelog.
+add_test(
+	NAME pygplates-release-commit-test
+	COMMAND ${GPLATES_PYTHON_EXECUTABLE} "${PROJECT_SOURCE_DIR}/pygplates/wheel/check_release_commit_test.py")
 
 # Set test properties.
-set_tests_properties(pygplates-test PROPERTIES
+set_tests_properties(pygplates-test pygplates-sample-code-test PROPERTIES
 	# Set the PYTHONPATH used in the test environment.
 	# PYTHONPATH should have precedence over everything including 'site-packages' (but not the directory containing "test.py").
-	# Set it to the location of the pygplates build output.
-	ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:pygplates>"
-	# If 'FAIL' is anywhere in the output then the test failed.
-	FAIL_REGULAR_EXPRESSION "FAIL|Fail|fail")
+	#
+	# Set it to the *parent* of the built 'pygplates' package directory, since that is what needs to be on 'sys.path'
+	# in order to "import pygplates". Note that "$<TARGET_FILE_DIR:pygplates>" is the package directory itself
+	# (the pygplates library is built into a 'pygplates/' sub-directory of the build output directory - see the
+	# pygplates target in 'src/CMakeLists.txt'), so we go up one level from it.
+	ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:pygplates>/..")
+
+# Note: we deliberately do NOT set FAIL_REGULAR_EXPRESSION here, matching 'pygplates-stub-test'
+# (see pygplates/stub/CMakeLists.txt). Pass/fail is by exit code only.
+#
+# "test.py" exits non-zero whenever a sub-test fails, and 'unittest' prints its "FAILED (...)"
+# verdict under exactly the condition that makes it exit non-zero, so a regex over the output can
+# never fail a run that the exit code would not have failed anyway. It can only add false
+# positives - and it did: the broad "FAIL|Fail|fail" this replaces also matched output from
+# neither the tests nor pygplates, so an OpenMP runtime warning on stderr ("Can't set size of
+# /tmp file failed", emitted when /tmp is not writable) failed a run in which all 441 sub-tests
+# passed. Matching the verdict line instead is no better, only quieter: Python 3.14 writes it as
+# "FAILED" and " (...)" with colour escapes in between, so a "FAILED \(" regex silently stops
+# matching whenever colour is enabled - a guard that fails open.
+#
+# What neither mechanism catches is tests that never ran (an empty suite reports "NO TESTS RAN"
+# yet still exits 0), so "test.py" guards that itself - see MINIMUM_EXPECTED_TESTS there.

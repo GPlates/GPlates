@@ -199,7 +199,7 @@ namespace GPlatesMaths
 		 * @a calculate_closest_position_on_great_circle will throw an exception when attempting
 		 * to normalise a zero length vector.
 		 */
-		AngularDistance
+		boost::optional<AngularDistance>
 		minimum_distance_for_position_inside_arc_lune(
 				const UnitVector3D &position_vector,
 				const UnitVector3D &arc_plane_normal,
@@ -208,43 +208,9 @@ namespace GPlatesMaths
 		{
 			const real_t position_dot_arc_normal = dot(position_vector, arc_plane_normal);
 
-			// If there's a threshold and it's less than 90 degrees then we can quickly
-			// reject positions with a single dot product before we do more expensive calculations.
-			if (minimum_distance_threshold
-				&& is_strictly_positive(minimum_distance_threshold->get_cosine()))
-			{
-				// Instead of testing closeness to the GCA we test closeness to the GCA poles.
-				const real_t closeness_to_gca_poles = abs(position_dot_arc_normal);
-
-				// If close enough to the GCA poles then it means we've exceeded threshold distance
-				// to the GCA itself so return the maximum possible distance (PI) to signal this.
-				if (closeness_to_gca_poles.is_precisely_greater_than(minimum_distance_threshold->get_sine().dval()))
-				{
-					return AngularDistance::PI;
-				}
-			}
-			// Else either there's no threshold or the threshold is greater than 90 degrees.
-			// In the latter case the position will always be less than the threshold distance from
-			// the GCA because it's within the GCA's lune and all positions within the lune are
-			// within 90 degrees of the GCA. So we don't need to test the threshold again.
-
-			// Set caller's closest position *after* passing threshold test (if any).
-			if (closest_position_on_great_circle_arc)
-			{
-				// Set the caller's closest point.
-				closest_position_on_great_circle_arc.get() =
-						calculate_closest_position_on_great_circle(
-								position_vector,
-								arc_plane_normal,
-								position_dot_arc_normal);
-
-				return AngularDistance::create_from_cosine(
-						dot(position_vector, closest_position_on_great_circle_arc.get()));
-			}
-			// We don't need to calculate the closed point...
-
-			// It's cheaper to calculate sine of minimum angular distance and then convert to cosine.
-			// This still requires a 'sqrt', but it's better than calculating cosine as:
+			// The distance is calculated from its sine, whether or not the closest point is
+			// requested, so that requesting the closest point cannot change the distance.
+			// This is also cheaper than calculating the cosine as:
 			//
 			// dot(
 			//     position_vector,
@@ -253,19 +219,41 @@ namespace GPlatesMaths
 			//           arc_plane_normal))
 			//
 			// ...which requires two dot products, a sqrt and a division.
-
 			const real_t &sine_min_angular_distance = position_dot_arc_normal;
-			const real_t cosine_min_angular_distance =
-					sqrt(1 - sine_min_angular_distance * sine_min_angular_distance);
+			const AngularDistance min_distance = AngularDistance::create_from_cosine(
+					sqrt(1 - sine_min_angular_distance * sine_min_angular_distance));
 
-			return AngularDistance::create_from_cosine(cosine_min_angular_distance);
+			// Test the threshold exactly on the distance itself.
+			//
+			// Note: Don't reject earlier by comparing the sine (the dot product above) with the
+			// sine of the threshold. It is not exact: near zero distance many sines give the same
+			// cosine, so it can reject a distance equal to the threshold, and no fixed margin on
+			// the sine fixes that. It would only save this sqrt (and the threshold's sine costs a
+			// sqrt too, whenever the threshold changes).
+			if (minimum_distance_threshold &&
+				min_distance.is_precisely_greater_than(minimum_distance_threshold.get()))
+			{
+				return boost::none;
+			}
+
+			// Set caller's closest position *after* passing threshold test (if any).
+			if (closest_position_on_great_circle_arc)
+			{
+				closest_position_on_great_circle_arc.get() =
+						calculate_closest_position_on_great_circle(
+								position_vector,
+								arc_plane_normal,
+								position_dot_arc_normal);
+			}
+
+			return min_distance;
 		}
 
 		/**
 		 * Returns the minimum distance of a position to a great circle arc, where the position
 		 * is outside the lune of the (non-zero length) great circle arc.
 		 */
-		AngularDistance
+		boost::optional<AngularDistance>
 		minimum_distance_for_position_outside_arc_lune(
 				const UnitVector3D &position_vector,
 				const UnitVector3D &arc_start_position,
@@ -281,12 +269,11 @@ namespace GPlatesMaths
 
 			if (distance_to_arc_start.is_precisely_less_than(distance_to_arc_end))
 			{
-				// If there's a threshold and the minimum distance is greater than the threshold then
-				// return the maximum possible distance (PI) to signal this.
+				// If there's a threshold and the minimum distance is greater than the threshold.
 				if (minimum_distance_threshold &&
 					distance_to_arc_start.is_precisely_greater_than(minimum_distance_threshold.get()))
 				{
-					return AngularDistance::PI;
+					return boost::none;
 				}
 
 				// Set caller's closest position *after* passing threshold test (if any).
@@ -298,12 +285,11 @@ namespace GPlatesMaths
 				return distance_to_arc_start;
 			}
 
-			// If there's a threshold and the minimum distance is greater than the threshold then
-			// return the maximum possible distance (PI) to signal this.
+			// If there's a threshold and the minimum distance is greater than the threshold.
 			if (minimum_distance_threshold &&
 				distance_to_arc_end.is_precisely_greater_than(minimum_distance_threshold.get()))
 			{
-				return AngularDistance::PI;
+				return boost::none;
 			}
 
 			// Set caller's closest position *after* passing threshold test (if any).
@@ -313,6 +299,59 @@ namespace GPlatesMaths
 			}
 
 			return distance_to_arc_end;
+		}
+
+		/**
+		 * Returns true if @a point is within the lune of the (non-zero length) great circle arc.
+		 *
+		 * This is the same test as in GeometryIntersect (but on a GreatCircleArc).
+		 */
+		bool
+		is_in_arc_lune(
+				const UnitVector3D &point,
+				const GreatCircleArc &arc)
+		{
+			const Vector3D point_cross_arc_plane = cross(point, arc.rotation_axis());
+
+			return dot(point_cross_arc_plane, arc.start_point().position_vector()).dval() >= 0 &&
+					dot(point_cross_arc_plane, arc.end_point().position_vector()).dval() <= 0;
+		}
+
+		/**
+		 * Returns the point on @a arc (non-zero length) where it crosses the plane, given the
+		 * signed distances of its start and end points from that plane (which must have opposite
+		 * signs), or none if the arc is too close to a half circle to interpolate along its chord.
+		 *
+		 * The point is a combination of the arc's end points, so it is on the arc's great circle,
+		 * and it has zero signed distance from the plane, to within rounding - however small the
+		 * angle between the arc's plane and the other plane (unlike the cross product of the two
+		 * planes' normals, whose error grows as the angle shrinks). This is the method
+		 * GeometryIntersect uses.
+		 */
+		boost::optional<UnitVector3D>
+		interpolate_plane_crossing(
+				const GreatCircleArc &arc,
+				const double &start_point_dot_plane,
+				const double &end_point_dot_plane)
+		{
+			const UnitVector3D &start_point = arc.start_point().position_vector();
+			const UnitVector3D &end_point = arc.end_point().position_vector();
+
+			// Make sure the start and end points are not close to being antipodal.
+			// NOTE: We're avoiding the more expensive square-root calculation here.
+			const Vector3D chord_mid_point_unnormalised =
+					Vector3D(start_point) + Vector3D(end_point);
+			if (chord_mid_point_unnormalised.magSqrd().dval() <= 1e-6 /*a magnitude of 1e-3*/)
+			{
+				return boost::none;
+			}
+
+			// Not zero, since the start and end points are on opposite sides of the plane.
+			const double inv_denom = 1.0 / (start_point_dot_plane - end_point_dot_plane);
+
+			return ((start_point_dot_plane * inv_denom) * end_point -
+					(end_point_dot_plane * inv_denom) * start_point)
+				.get_normalisation();
 		}
 	}
 }
@@ -831,24 +870,28 @@ GPlatesMaths::intersect(
 		// the other arc (and vice versa) and the start (or end) point of one arc is in the positive
 		// half-space of the other arc (and the opposite true for the other arc).
 
-		const bool arc1_start_point_on_positive_side_of_arc2 = dot(
+		const double arc1_start_dot_arc2_plane = dot(
 				arc1.start_point().position_vector(),
-				arc2.rotation_axis()).dval() >= 0;
-		const bool arc1_end_point_on_positive_side_of_arc2 = dot(
+				arc2.rotation_axis()).dval();
+		const double arc1_end_dot_arc2_plane = dot(
 				arc1.end_point().position_vector(),
-				arc2.rotation_axis()).dval() >= 0;
+				arc2.rotation_axis()).dval();
+		const bool arc1_start_point_on_positive_side_of_arc2 = arc1_start_dot_arc2_plane >= 0;
+		const bool arc1_end_point_on_positive_side_of_arc2 = arc1_end_dot_arc2_plane >= 0;
 		if (arc1_start_point_on_positive_side_of_arc2 == arc1_end_point_on_positive_side_of_arc2)
 		{
 			// No intersection found.
 			return false;
 		}
 
-		const bool arc2_start_point_on_positive_side_of_arc1 = dot(
+		const double arc2_start_dot_arc1_plane = dot(
 				arc2.start_point().position_vector(),
-				arc1.rotation_axis()).dval() >= 0;
-		const bool arc2_end_point_on_positive_side_of_arc1 = dot(
+				arc1.rotation_axis()).dval();
+		const double arc2_end_dot_arc1_plane = dot(
 				arc2.end_point().position_vector(),
-				arc1.rotation_axis()).dval() >= 0;
+				arc1.rotation_axis()).dval();
+		const bool arc2_start_point_on_positive_side_of_arc1 = arc2_start_dot_arc1_plane >= 0;
+		const bool arc2_end_point_on_positive_side_of_arc1 = arc2_end_dot_arc1_plane >= 0;
 		if (arc2_start_point_on_positive_side_of_arc1 == arc2_end_point_on_positive_side_of_arc1)
 		{
 			// No intersection found.
@@ -879,36 +922,76 @@ GPlatesMaths::intersect(
 			}
 			else
 			{
-				// Both arcs are on the same great circle since have same (or opposite) rotation axis...
+				// Both arcs are on the same great circle, within numerical tolerance (since they
+				// have the same, or opposite, rotation axis), so the cross product of the rotation
+				// axes is too inaccurate.
+				//
+				// Instead interpolate along the chord of one arc, using the signed distances of its
+				// end points from the other arc's plane. Use the arc whose end points differ most
+				// in signed distance (the better conditioned). The interpolated point is on both
+				// arcs' great circles (to within rounding), but its position *along* them is less
+				// certain the smaller the angle between their planes (GeometryIntersect bounds this
+				// with its *thick* planes, but these sign tests are exact), so it must also be
+				// within both arcs.
+				auto interpolate_along_arc1 = [&]()
+				{
+					return interpolate_plane_crossing(
+							arc1, arc1_start_dot_arc2_plane, arc1_end_dot_arc2_plane);
+				};
+				auto interpolate_along_arc2 = [&]()
+				{
+					return interpolate_plane_crossing(
+							arc2, arc2_start_dot_arc1_plane, arc2_end_dot_arc1_plane);
+				};
+				const bool arc1_is_better_conditioned =
+						std::fabs(arc1_start_dot_arc2_plane - arc1_end_dot_arc2_plane) >=
+						std::fabs(arc2_start_dot_arc1_plane - arc2_end_dot_arc1_plane);
+				boost::optional<UnitVector3D> interpolated_intersection = arc1_is_better_conditioned
+						? interpolate_along_arc1()
+						: interpolate_along_arc2();
+				if (!interpolated_intersection)
+				{
+					// The chosen arc is too close to a half circle, so try the other arc.
+					interpolated_intersection = arc1_is_better_conditioned
+							? interpolate_along_arc2()
+							: interpolate_along_arc1();
+				}
 
-				// See if arc1's start point is on arc2...
-				if (dot(arc2.start_point().position_vector(), arc1.start_point().position_vector())
-						.is_precisely_greater_than(arc2.dot_of_endpoints().dval()) &&
-					dot(arc2.end_point().position_vector(), arc1.start_point().position_vector())
-						.is_precisely_greater_than(arc2.dot_of_endpoints().dval()))
+				if (interpolated_intersection &&
+					is_in_arc_lune(interpolated_intersection.get(), arc1) &&
+					is_in_arc_lune(interpolated_intersection.get(), arc2))
 				{
-					intersection.get() = arc1.start_point().position_vector();
-				}
-				// See if arc1's end point is on arc2...
-				else if (dot(arc2.start_point().position_vector(), arc1.end_point().position_vector())
-						.is_precisely_greater_than(arc2.dot_of_endpoints().dval()) &&
-					dot(arc2.end_point().position_vector(), arc1.end_point().position_vector())
-						.is_precisely_greater_than(arc2.dot_of_endpoints().dval()))
-				{
-					intersection.get() = arc1.end_point().position_vector();
-				}
-				// See if arc2's start point is on arc1...
-				else if (dot(arc1.start_point().position_vector(), arc2.start_point().position_vector())
-						.is_precisely_greater_than(arc1.dot_of_endpoints().dval()) &&
-					dot(arc1.end_point().position_vector(), arc2.start_point().position_vector())
-						.is_precisely_greater_than(arc1.dot_of_endpoints().dval()))
-				{
-					intersection.get() = arc2.start_point().position_vector();
+					intersection.get() = interpolated_intersection.get();
 				}
 				else
 				{
-					// If we get here then arc2's end point must be on arc1.
-					intersection.get() = arc2.end_point().position_vector();
+					// The planes are so close that the interpolated point fell outside an arc, in
+					// which case any point where the arcs overlap is within rounding of both arcs.
+					// Or neither arc could be interpolated (both are close to half circles), in
+					// which case an end point can be off the other arc by about half its length
+					// times the angle between the planes (under 2e-6 radians). Either way, use the
+					// end point (of either arc) that is closest to the other arc.
+					const UnitVector3D *end_points[4] =
+					{
+						&arc1.start_point().position_vector(),
+						&arc1.end_point().position_vector(),
+						&arc2.start_point().position_vector(),
+						&arc2.end_point().position_vector()
+					};
+					unsigned int closest_end_point_index = 0;
+					AngularDistance closest_end_point_distance = AngularDistance::PI;
+					for (unsigned int e = 0; e < 4; ++e)
+					{
+						const AngularDistance end_point_distance =
+								minimum_distance(*end_points[e], (e < 2) ? arc2 : arc1).get();
+						if (e == 0 ||
+							end_point_distance.is_precisely_less_than(closest_end_point_distance))
+						{
+							closest_end_point_index = e;
+							closest_end_point_distance = end_point_distance;
+						}
+					}
+					intersection.get() = *end_points[closest_end_point_index];
 				}
 			}
 		}
@@ -966,7 +1049,7 @@ GPlatesMaths::intersect(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const GreatCircleArc &arc1,
 		const GreatCircleArc &arc2,
@@ -976,19 +1059,6 @@ GPlatesMaths::minimum_distance(
 	//
 	// First see if the arcs intersect each other.
 	//
-
-	// If the minimum distance threshold is zero then return the (maximum possible) distance
-	// to signify that the minimum distance cannot be less than zero.
-	//
-	// Note: We do this before intersection testing (which would otherwise return a distance of zero).
-	//       An example of this is two polylines intersecting twice and the first intersection has
-	//       already been detected (here), resulting in the min. distance threshold being set to zero.
-	//       Then when the next intersection is detected (here) we will ignore it.
-	if (minimum_distance_threshold &&
-		minimum_distance_threshold.get() == AngularDistance::ZERO)
-	{
-		return AngularDistance::PI;
-	}
 
 	// If the caller has requested the closest points on the arcs then this
 	// will be the intersection point (if any).
@@ -1001,7 +1071,13 @@ GPlatesMaths::minimum_distance(
 		intersection = closest_position_on_arc1;
 	}
 
-	if (intersect(arc1, arc2, intersection))
+	// Only for arcs that are not zero length. A zero-length arc can only "intersect" by lying on
+	// the other arc, which the end point distances (below) find exactly, whereas intersect()
+	// decides it with epsilon tests (reporting points up to about 1.4e-6 radians apart as
+	// intersecting).
+	if (!arc1.is_zero_length() &&
+		!arc2.is_zero_length() &&
+		intersect(arc1, arc2, intersection))
 	{
 		// The closest point on each arc is the same point - the intersection point.
 		if (intersection)
@@ -1035,104 +1111,94 @@ GPlatesMaths::minimum_distance(
 	// Note that after each (point-to-arc minimum distance) calculation we update the threshold
 	// with the updated minimum distance.
 	//
-	// This avoids overwriting the closest point on an arc (so far) with a point that is
-	// further away. For example, if the closest point on arc2 was requested by the caller and
-	// arc1's end point (second calculated) is further away from arc2 than arc1's start point
-	// (first calculation) then, without using the distance from arc1's start point to arc2
-	// (the current minimum distance) as a threshold, the closest point would be overridden.
-	//
-	// This is also an optimisation that can avoid calculating the closest point on an arc
+	// This is an optimisation that can avoid calculating the closest point on an arc
 	// (if the caller has requested the closest points) in some situations where the next
 	// point-to-arc distance is greater than the current minimum distance.
 	AngularExtent min_point_to_arc_distance_threshold = minimum_distance_threshold
 			? minimum_distance_threshold.get()
 			: AngularExtent::PI;
 
-	// The (maximum possible) distance to return if shortest distance between both arcs
-	// is not within the minimum distance threshold (if any).
-	AngularDistance min_point_to_arc_distance = AngularDistance::PI;
+	// Remains none if the shortest distance between both arcs is not within the minimum distance
+	// threshold (if any).
+	//
+	// Note that "exceeded" cannot be signalled by a distance of PI, since two arcs can be exactly
+	// PI apart (eg, two zero-length arcs at antipodal points).
+	boost::optional<AngularDistance> min_point_to_arc_distance;
 
-	// Calculate minimum distance from arc1's start point to arc2.
-	const AngularDistance min_distance_arc1_start_point_to_arc2 =
-			minimum_distance(
-					arc1.start_point().position_vector(),
-					arc2,
-					min_point_to_arc_distance_threshold,
-					closest_position_on_arc2);
-	// If shortest distance so far (within threshold)...
-	if (min_distance_arc1_start_point_to_arc2.is_precisely_less_than(min_point_to_arc_distance))
+	// The closest point on the other arc is first stored here, and only copied to the caller's
+	// closest point when the candidate is recorded. A point-to-arc distance can equal the minimum
+	// so far (the threshold is not exceeded by a distance equal to it), and such a candidate is not
+	// recorded, so writing straight into the caller's closest point would pair the closest point on
+	// one arc from one candidate with the closest point on the other arc from another.
+	UnitVector3D candidate_closest_position_on_other_arc = UnitVector3D::xBasis()/*dummy value*/;
+	boost::optional<UnitVector3D &> candidate_closest_position_on_other_arc_ref;
+	if (closest_positions_on_arcs)
 	{
-		min_point_to_arc_distance = min_distance_arc1_start_point_to_arc2;
-		min_point_to_arc_distance_threshold = AngularExtent(min_point_to_arc_distance);
-
-		if (closest_position_on_arc1)
-		{
-			closest_position_on_arc1.get() = arc1.start_point().position_vector();
-		}
+		candidate_closest_position_on_other_arc_ref = candidate_closest_position_on_other_arc;
 	}
 
-	// Calculate minimum distance from arc1's end point to arc2.
-	const AngularDistance min_distance_arc1_end_point_to_arc2 =
-			minimum_distance(
-					arc1.end_point().position_vector(),
-					arc2,
-					min_point_to_arc_distance_threshold,
-					closest_position_on_arc2);
-	// If shortest distance so far (within threshold)...
-	if (min_distance_arc1_end_point_to_arc2.is_precisely_less_than(min_point_to_arc_distance))
+	// Calculate the minimum distance from an end point of one arc to the other arc, and record it
+	// if it is the shortest distance so far (within threshold).
+	auto update_min_point_to_arc_distance = [&](
+			const UnitVector3D &end_point,
+			const GreatCircleArc &other_arc,
+			const boost::optional<UnitVector3D &> &closest_position_on_end_point_arc,
+			const boost::optional<UnitVector3D &> &closest_position_on_other_arc)
 	{
-		min_point_to_arc_distance = min_distance_arc1_end_point_to_arc2;
-		min_point_to_arc_distance_threshold = AngularExtent(min_point_to_arc_distance);
-
-		if (closest_position_on_arc1)
+		const boost::optional<AngularDistance> candidate_distance =
+				minimum_distance(
+						end_point,
+						other_arc,
+						min_point_to_arc_distance_threshold,
+						candidate_closest_position_on_other_arc_ref);
+		if (!candidate_distance)
 		{
-			closest_position_on_arc1.get() = arc1.end_point().position_vector();
+			return;
 		}
-	}
 
-	// Calculate minimum distance from arc2's start point to arc1.
-	const AngularDistance min_distance_arc2_start_point_to_arc1 =
-			minimum_distance(
-					arc2.start_point().position_vector(),
-					arc1,
-					min_point_to_arc_distance_threshold,
-					closest_position_on_arc1);
-	// If shortest distance so far (within threshold)...
-	if (min_distance_arc2_start_point_to_arc1.is_precisely_less_than(min_point_to_arc_distance))
-	{
-		min_point_to_arc_distance = min_distance_arc2_start_point_to_arc1;
-		min_point_to_arc_distance_threshold = AngularExtent(min_point_to_arc_distance);
-
-		if (closest_position_on_arc2)
+		if (!min_point_to_arc_distance ||
+			candidate_distance->is_precisely_less_than(min_point_to_arc_distance.get()))
 		{
-			closest_position_on_arc2.get() = arc2.start_point().position_vector();
-		}
-	}
+			min_point_to_arc_distance = candidate_distance;
+			min_point_to_arc_distance_threshold = AngularExtent(min_point_to_arc_distance.get());
 
-	// Calculate minimum distance from arc2's end point to arc1.
-	const AngularDistance min_distance_arc2_end_point_to_arc1 =
-			minimum_distance(
-					arc2.end_point().position_vector(),
-					arc1,
-					min_point_to_arc_distance_threshold,
-					closest_position_on_arc1);
-	// If shortest distance so far (within threshold)...
-	if (min_distance_arc2_end_point_to_arc1.is_precisely_less_than(min_point_to_arc_distance))
-	{
-		min_point_to_arc_distance = min_distance_arc2_end_point_to_arc1;
-		min_point_to_arc_distance_threshold = AngularExtent(min_point_to_arc_distance);
-
-		if (closest_position_on_arc2)
-		{
-			closest_position_on_arc2.get() = arc2.end_point().position_vector();
+			if (closest_position_on_end_point_arc)
+			{
+				closest_position_on_end_point_arc.get() = end_point;
+			}
+			if (closest_position_on_other_arc)
+			{
+				closest_position_on_other_arc.get() = candidate_closest_position_on_other_arc;
+			}
 		}
-	}
+	};
+
+	update_min_point_to_arc_distance(
+			arc1.start_point().position_vector(),
+			arc2,
+			closest_position_on_arc1,
+			closest_position_on_arc2);
+	update_min_point_to_arc_distance(
+			arc1.end_point().position_vector(),
+			arc2,
+			closest_position_on_arc1,
+			closest_position_on_arc2);
+	update_min_point_to_arc_distance(
+			arc2.start_point().position_vector(),
+			arc1,
+			closest_position_on_arc2,
+			closest_position_on_arc1);
+	update_min_point_to_arc_distance(
+			arc2.end_point().position_vector(),
+			arc1,
+			closest_position_on_arc2,
+			closest_position_on_arc1);
 
 	return min_point_to_arc_distance;
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::minimum_distance(
 		const UnitVector3D &position_vector,
 		const GreatCircleArc &arc,
@@ -1141,23 +1207,33 @@ GPlatesMaths::minimum_distance(
 {
 	if (arc.is_zero_length())
 	{
-		// Arc start and end points are the same - arbitrarily pick either as the closest point.
+		// The arc has no rotation axis, so use the closer of its end points. They can still be up
+		// to about 1e-6 radians apart (the zero-length threshold), so don't just use the start
+		// point: the end point of a polyline's last segment would never be measured (other end
+		// points are the start points of the next segment).
+		const UnitVector3D &arc_start_position = arc.start_point().position_vector();
+		const UnitVector3D &arc_end_position = arc.end_point().position_vector();
+		const AngularDistance distance_to_arc_start =
+				AngularDistance::create_from_cosine(dot(position_vector, arc_start_position));
+		const AngularDistance distance_to_arc_end =
+				AngularDistance::create_from_cosine(dot(position_vector, arc_end_position));
+		const bool start_is_closer =
+				!distance_to_arc_end.is_precisely_less_than(distance_to_arc_start);
+		const AngularDistance &min_distance =
+				start_is_closer ? distance_to_arc_start : distance_to_arc_end;
 
-		const AngularDistance min_distance =
-				AngularDistance::create_from_cosine(dot(position_vector, arc.start_point().position_vector()));
-
-		// If there's a threshold and the minimum distance is greater than the threshold then
-		// return the maximum possible distance (PI) to signal this.
+		// If there's a threshold and the minimum distance is greater than the threshold.
 		if (minimum_distance_threshold &&
 			min_distance.is_precisely_greater_than(minimum_distance_threshold.get()))
 		{
-			return AngularDistance::PI;
+			return boost::none;
 		}
 
 		// Set caller's closest position *after* passing threshold test (if any).
 		if (closest_position_on_great_circle_arc)
 		{
-			closest_position_on_great_circle_arc.get() = arc.start_point().position_vector();
+			closest_position_on_great_circle_arc.get() =
+					start_is_closer ? arc_start_position : arc_end_position;
 		}
 
 		return min_distance;
@@ -1199,7 +1275,7 @@ GPlatesMaths::minimum_distance(
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::maximum_distance(
 		const GreatCircleArc &arc1,
 		const GreatCircleArc &arc2,
@@ -1220,12 +1296,18 @@ GPlatesMaths::maximum_distance(
 		minimum_distance_threshold = minimum_distance_threshold_storage.get();
 	}
 
-	const AngularDistance min_distance =
+	const boost::optional<AngularDistance> min_distance =
 			minimum_distance(
 					arc1,
 					GreatCircleArc::create_antipodal_arc(arc2),
 					minimum_distance_threshold,
 					furthest_positions_on_arcs);
+	if (!min_distance)
+	{
+		// The maximum distance is less than the threshold (and the furthest positions were not
+		// stored).
+		return boost::none;
+	}
 
 	if (furthest_positions_on_arcs)
 	{
@@ -1235,11 +1317,11 @@ GPlatesMaths::maximum_distance(
 	}
 
 	// Convert from minimum distance to maximum distance.
-	return (AngularExtent::PI - min_distance).get_angular_distance();
+	return (AngularExtent::PI - min_distance.get()).get_angular_distance();
 }
 
 
-GPlatesMaths::AngularDistance
+boost::optional<GPlatesMaths::AngularDistance>
 GPlatesMaths::maximum_distance(
 		const UnitVector3D &position_vector,
 		const GreatCircleArc &arc,
@@ -1264,7 +1346,7 @@ GPlatesMaths::maximum_distance(
 		minimum_distance_threshold = minimum_distance_threshold_storage.get();
 	}
 
-	const AngularDistance min_distance =
+	const boost::optional<AngularDistance> min_distance =
 			minimum_distance(
 					-position_vector,
 					arc,
@@ -1272,9 +1354,14 @@ GPlatesMaths::maximum_distance(
 					// Note that furthest position on arc from original point is same as
 					// closest position on arc to antipodal point...
 					furthest_position_on_great_circle_arc);
+	if (!min_distance)
+	{
+		// The maximum distance is less than the threshold.
+		return boost::none;
+	}
 
 	// Convert from minimum distance to maximum distance.
-	return (AngularExtent::PI - min_distance).get_angular_distance();
+	return (AngularExtent::PI - min_distance.get()).get_angular_distance();
 }
 
 

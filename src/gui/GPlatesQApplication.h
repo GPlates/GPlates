@@ -66,6 +66,27 @@ namespace GPlatesGui
 				int argc,
 				char* argv[]);
 
+		/**
+		 * Installs a @a std::terminate handler that logs the in-flight exception before aborting.
+		 *
+		 * This is the counterpart to @a call_main and @a notify for exceptions that those two
+		 * cannot catch. An exception thrown from a destructor, or from any function that is
+		 * (explicitly or implicitly) 'noexcept', invokes 'std::terminate' *immediately* - the stack
+		 * is never unwound and no handler is ever searched for. Without this, such a failure shows
+		 * up as a bare OS crash with an empty log, and adding a try/catch around the offending code
+		 * makes no difference at all.
+		 *
+		 * The handler logs the exception type, message and (for GPlatesGlobal::Exception) its call
+		 * stack trace with the currently installed Qt message handler, then aborts. It does not pop
+		 * up a dialog, since no unwinding has taken place and we may not be on the Qt event thread.
+		 *
+		 * Note: Install this as early as possible in 'main()'. Anything logged before the Qt message
+		 * handler adds its log file handler goes to stderr only.
+		 */
+		static
+		void
+		install_terminate_handler();
+
 	protected:
 
 		virtual

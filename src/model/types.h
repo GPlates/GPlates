@@ -28,6 +28,8 @@
 #ifndef GPLATES_MODEL_TYPES_H
 #define GPLATES_MODEL_TYPES_H
 
+#include <cstddef>
+
 namespace GPlatesModel
 {
 	/**
@@ -41,7 +43,7 @@ namespace GPlatesModel
 	 * define this (rather than using the appropriate container<T>::size_type in each different
 	 * context) to avoid circular header includes and to simplify code in general.
 	 */
-	typedef size_t container_size_type;
+	typedef std::size_t container_size_type;
 
 	/**
 	 * This is the value used to indicate an invalid index.  We define this as a constant here

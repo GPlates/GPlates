@@ -24,7 +24,6 @@
  */
 
 #include <QDebug>
-#include <QRegExp>
 #include <QSet>
 #include <QtGlobal>
 

@@ -33,7 +33,6 @@
 
 #include "GeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
-#include "Reconstruction.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
@@ -42,8 +41,6 @@
 #include "TopologyInternalUtils.h"
 #include "TopologyNetworkResolver.h"
 #include "TopologyUtils.h"
-
-#include "feature-visitors/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -55,6 +52,7 @@
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"

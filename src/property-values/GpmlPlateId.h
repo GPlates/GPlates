@@ -28,16 +28,16 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLPLATEID_H
 #define GPLATES_PROPERTYVALUES_GPMLPLATEID_H
 
-#include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueFinder.h"
 #include "model/types.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"
 
 
-// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
+// Enable GPlatesModel::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPlateId, visit_gpml_plate_id)

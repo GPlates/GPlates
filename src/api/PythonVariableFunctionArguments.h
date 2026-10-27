@@ -383,10 +383,14 @@ namespace GPlatesApi
 				return boost::none;
 			}
 
+			// Copy the python object out of the map entry before erasing it (the entry cannot
+			// be referenced after it is erased).
+			const boost::python::object python_argument = keywords_args_iter->second;
+
 			keyword_args.erase(keywords_args_iter);
 
 			return GPlatesApi::VariableArguments::extract<ArgumentType>(
-					keywords_args_iter->second,
+					python_argument,
 					argument_name);
 		}
 
@@ -403,10 +407,14 @@ namespace GPlatesApi
 				return default_argument;
 			}
 
+			// Copy the python object out of the map entry before erasing it (the entry cannot
+			// be referenced after it is erased).
+			const boost::python::object python_argument = keywords_args_iter->second;
+
 			keyword_args.erase(keywords_args_iter);
 
 			return GPlatesApi::VariableArguments::extract<ArgumentType>(
-					keywords_args_iter->second,
+					python_argument,
 					argument_name);
 		}
 

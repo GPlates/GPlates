@@ -38,9 +38,8 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/GenerateVelocityDomainCitcoms.h"
+#include "app-logic/GeometryFinder.h"
 #include "app-logic/ReconstructGraph.h"
-
-#include "feature-visitors/GeometryFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"

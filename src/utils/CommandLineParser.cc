@@ -24,11 +24,27 @@
  */
 
 #include <iostream>
-#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
 #include <boost/bind/bind.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
+#include <QByteArray>
+#include <QFile>
+#include <QIODevice>
+#include <QString>
 #include <QtGlobal>
+
+#if defined(Q_OS_WIN)
+// Note: Prevent windows.h from defining min/max macros since these interfere with
+//       things like 'std::numeric_limits<int>::max()'.
+#ifndef NOMINMAX
+#	define NOMINMAX
+#endif
+#include <windows.h>
+#include <shellapi.h>
+#endif
 
 #include "CommandLineParser.h"
 
@@ -90,19 +106,21 @@ namespace
 
 
 	/**
-	* Parse the command-line arguments defined by @a argc and @a argv.
+	* Parse the command-line arguments in @a args (which excludes the program name).
 	*/
 	void
 	parse_command_line(
 			boost::program_options::variables_map &vm,
-			int argc,
-			char* argv[],
+			const std::vector<std::string> &args,
 			const boost::program_options::options_description &cmdline_options,
 			const boost::program_options::positional_options_description &positional_options,
 			int command_line_style)
 	{
 		// Setup the parser for the command-line.
-		boost::program_options::command_line_parser command_line_parser(argc, argv);
+		//
+		// Note: This overload of 'command_line_parser', unlike the (argc, argv) overload, does
+		// not skip a leading program name, so @a args must not contain one.
+		boost::program_options::command_line_parser command_line_parser(args);
 		command_line_parser.extra_parser(at_option_parser);
 
 		// Set the command-line style of processing.
@@ -156,7 +174,7 @@ namespace
 	/**
 	* Parses a file containing configuration options.
 	*
-	* @param config_filename the name of config file to parse
+	* @param config_filename the name of config file to parse (UTF-8 encoded)
 	* @param config_file_options the options to looks for in the config file
 	* @param vm the place to store configuration values found
 	*/
@@ -166,14 +184,21 @@ namespace
 			const boost::program_options::options_description &config_file_options,
 			boost::program_options::variables_map &vm)
 	{
-		// Load the file and tokenize it.
-		std::ifstream config_file(config_filename.c_str());
-		if (!config_file)
+		// Open the file with QFile rather than std::ifstream: the narrow std::ifstream
+		// constructor interprets its path using the process' ANSI code page on Windows, so any
+		// path outside that code page failed to open.
+		const QString config_qfilename = QString::fromStdString(config_filename);
+
+		QFile config_qfile(config_qfilename);
+		if (!config_qfile.open(QIODevice::ReadOnly | QIODevice::Text))
 		{
 			throw GPlatesFileIO::ErrorOpeningFileForReadingException(
 				GPLATES_EXCEPTION_SOURCE,
-				config_filename.c_str());
+				config_qfilename);
 		}
+
+		// Load the file and tokenize it (boost::program_options parses from a std::istream).
+		std::istringstream config_file(config_qfile.readAll().toStdString());
 
 		// Parse the file and store the options.
 		boost::program_options::store(
@@ -220,9 +245,11 @@ namespace
 			// The main exception handler will print an error message but
 			// it's not so easy to read so print it here also to make it obvious
 			// to the program user.
+			// Note: Encode the filename for the console rather than as UTF-8, otherwise a
+			// non-ASCII filename is printed as mojibake.
 			std::cerr
 				<< "Error opening config file '"
-				<< exc.filename().toStdString().c_str()
+				<< exc.filename().toLocal8Bit().constData()
 				<< "' for reading."
 				<< std::endl;
 
@@ -246,23 +273,23 @@ namespace
 			return std::vector<std::string>();
 		}
 
-		// Get the response filename.
-		const std::string &response_filename =
-			vm[RESPONSE_FILE_OPTION_NAME].as<std::string>();
+		// Get the response filename (UTF-8 encoded).
+		const QString response_qfilename =
+			QString::fromStdString(vm[RESPONSE_FILE_OPTION_NAME].as<std::string>());
 
-		// Load the file and tokenize it.
-		std::ifstream response_file(response_filename.c_str());
-		if (!response_file)
+		// Open the file with QFile rather than std::ifstream: the narrow std::ifstream
+		// constructor interprets its path using the process' ANSI code page on Windows, so any
+		// path outside that code page failed to open.
+		QFile response_qfile(response_qfilename);
+		if (!response_qfile.open(QIODevice::ReadOnly | QIODevice::Text))
 		{
 			throw GPlatesFileIO::ErrorOpeningFileForReadingException(
 				GPLATES_EXCEPTION_SOURCE,
-				response_filename.c_str());
+				response_qfilename);
 		}
 
 		// Read the whole file into a string.
-		std::ostringstream ostr_stream;
-		ostr_stream << response_file.rdbuf();
-		const std::string response_file_content = ostr_stream.str();
+		const std::string response_file_content = response_qfile.readAll().toStdString();
 
 		// Split the file content
 		boost::char_separator<char> sep(" \n\r");
@@ -306,11 +333,67 @@ namespace
 	}
 }
 
+QStringList
+GPlatesUtils::CommandLineParser::get_command_line_arguments(
+		int argc,
+		char* argv[])
+{
+	QStringList command_line_arguments;
+
+#if defined(Q_OS_WIN)
+	// Ask Windows for the wide command-line, since 'argv' has already lost any character that
+	// the process' ANSI code page cannot represent.
+	int num_wide_arguments = 0;
+	wchar_t **wide_argv = ::CommandLineToArgvW(::GetCommandLineW(), &num_wide_arguments);
+	if (wide_argv)
+	{
+		for (int n = 0; n < num_wide_arguments; ++n)
+		{
+			command_line_arguments.append(QString::fromWCharArray(wide_argv[n]));
+		}
+
+		::LocalFree(wide_argv);
+
+		return command_line_arguments;
+	}
+
+	// Fall through to 'argv' in the unlikely event that Windows would not parse its own
+	// command-line (in which case non-ASCII arguments are no worse off than they were).
+#endif
+
+	for (int n = 0; n < argc; ++n)
+	{
+		const QString argument = QString::fromLocal8Bit(argv[n]);
+
+		// Warn if the argument did not survive being decoded, rather than leave the user to
+		// wonder why a file that exists cannot be opened.
+		//
+		// A filename is a byte string that need not be text in the local encoding (UTF-8 on
+		// Unix), but a QString cannot represent such bytes - each becomes a replacement
+		// character - and GPlates works with QString filenames throughout.
+		//
+		// Note: Encode the argument for the console rather than as UTF-8, otherwise a
+		// non-ASCII argument is printed as mojibake.
+		if (argument.toLocal8Bit() != QByteArray(argv[n]))
+		{
+			std::cerr
+				<< "Warning: command-line argument " << n
+				<< " is not valid in the local encoding and was read as '"
+				<< argument.toLocal8Bit().constData()
+				<< "'."
+				<< std::endl;
+		}
+
+		command_line_arguments.append(argument);
+	}
+
+	return command_line_arguments;
+}
+
 void
 GPlatesUtils::CommandLineParser::parse_command_line_options(
 		boost::program_options::variables_map &vm,
-		int argc,
-		char* argv[],
+		const QStringList &command_line_arguments,
 		const GPlatesUtils::CommandLineParser::InputOptions &input_options,
 		int command_line_style)
 {
@@ -336,11 +419,23 @@ GPlatesUtils::CommandLineParser::parse_command_line_options(
 	//   from both sources are merged together.
 	//
 
+	// Convert the arguments for boost::program_options, which works with narrow strings.
+	//
+	// UTF-8 is used so that non-ASCII option values (in particular filenames) survive - they
+	// are converted back to QString with QString::fromStdString() by the caller.
+	//
+	// Note: The first argument is the program name, which is not an option.
+	std::vector<std::string> args;
+	args.reserve(command_line_arguments.size());
+	for (int n = 1; n < command_line_arguments.size(); ++n)
+	{
+		args.push_back(command_line_arguments[n].toStdString());
+	}
+
 	// Parse the command-line.
 	parse_command_line(
 		vm,
-		argc,
-		argv,
+		args,
 		cmdline_options,
 		input_options.positional_options,
 		command_line_style);

@@ -61,10 +61,6 @@ GPlatesQtWidgets::PreferencesPanePython::PreferencesPanePython(
 	setupUi(this);
 	GPlatesAppLogic::UserPreferences &prefs = app_state.get_user_preferences();
 	
-	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(python_home, prefs,
-			"python/python_home", reset_python_home);
-	link_dir_chooser_button(python_home_button, python_home);
-		
 	// Python Script Locations UserPreferences link:-
 	
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(lineedit_python_system_script_dir, prefs,
@@ -74,11 +70,6 @@ GPlatesQtWidgets::PreferencesPanePython::PreferencesPanePython(
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(lineedit_python_user_script_dir, prefs,
 			"paths/python_user_script_dir", toolbutton_reset_python_user_script_dir);
 	link_dir_chooser_button(toolbutton_choose_python_user_script_dir, lineedit_python_user_script_dir);
-	
-	
-	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(show_python_fail_dlg, prefs,
-			"python/show_python_init_fail_dialog", reset_python_home);
-	
 }
 
 

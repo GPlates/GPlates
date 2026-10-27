@@ -225,8 +225,9 @@ namespace GPlatesApi
 		return bp::object(feature);
 	}
 
-	// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch because
-	// currently '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer).
+	// Disabled until the 'feature/pygplates-model-revisions' branch lands, because currently
+	// '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer
+	// by value - see 'HandleTraits.h').
 #if 0
 	//
 	// Support for "__setitem__".
@@ -746,7 +747,19 @@ void
 export_feature_collection()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::FeatureReturn::Value>("FeatureReturn")
+	bp::enum_<GPlatesApi::FeatureReturn::Value>(
+			"FeatureReturn",
+			"How many matching features a query on a feature collection returns.\n"
+			"\n"
+			"  Accepted by :meth:`FeatureCollection.get`.\n"
+			"\n"
+			"  ========================= ==============\n"
+			"  Value                     Description\n"
+			"  ========================= ==============\n"
+			"  FeatureReturn.exactly_one Return the single match only if *exactly one* feature matches the query, otherwise return ``None``.\n"
+			"  FeatureReturn.first       Return the first match, or ``None`` if nothing matches. Note that a feature collection is an *unordered* collection of features, so this is only meaningful when the order does not matter.\n"
+			"  FeatureReturn.all         Return a ``list`` of all matches (empty if nothing matches).\n"
+			"  ========================= ==============\n")
 			.value("exactly_one", GPlatesApi::FeatureReturn::EXACTLY_ONE)
 			.value("first", GPlatesApi::FeatureReturn::FIRST)
 			.value("all", GPlatesApi::FeatureReturn::ALL);
@@ -836,10 +849,10 @@ export_feature_collection()
 				"  Create a new feature collection instance.\n"
 				"\n"
 				"  :param features: an optional filename, or sequence of features, or a single feature\n"
-				"  :type features: string/``os.PathLike``, or a sequence (eg, ``list`` or ``tuple``) of :class:`Feature`, "
-				"or a single :class:`Feature`\n"
-				"  :raises: OpenFileForReadingError if file is not readable (if filename specified)\n"
-				"  :raises: FileFormatNotSupportedError if file format (identified by the filename "
+				"  :type features: str, or os.PathLike, or a sequence (eg, list or tuple) of Feature, "
+				"or a single Feature\n"
+				"  :raises OpenFileForReadingError: if file is not readable (if filename specified)\n"
+				"  :raises FileFormatNotSupportedError: if file format (identified by the filename "
 				"extension) does not support reading (when filename specified)\n"
 				"\n"
 				"  To create a new feature collection from a file: \n"
@@ -879,7 +892,11 @@ export_feature_collection()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Raises :class:`FileFormatNotSupportedError` for a format that is write only (such as ``.xy``), "
+				"rather than returning an empty feature collection.\n")
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -890,16 +907,13 @@ export_feature_collection()
 				&GPlatesApi::feature_collection_handle_read,
 				(bp::arg("filename")),
 				"read(filename)\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Reads one or more feature collections (from one or more files).\n"
+				"  Reads one or more feature collections (from one or more files).\n"
 				"\n"
 				"  :param filename: the name of the file (or files) to read\n"
-				"  :type filename: string/``os.PathLike``, or sequence of string/``os.PathLike``\n"
-				"  :rtype: :class:`FeatureCollection`, list of :class:`FeatureCollection`\n"
-				"  :raises: OpenFileForReadingError if any file is not readable\n"
-				"  :raises: FileFormatNotSupportedError if any file format (identified by a filename "
+				"  :type filename: str, or os.PathLike, or sequence of str/os.PathLike\n"
+				"  :rtype: FeatureCollection, list of FeatureCollection\n"
+				"  :raises OpenFileForReadingError: if any file is not readable\n"
+				"  :raises FileFormatNotSupportedError: if any file format (identified by a filename "
 				"extension) does not support reading\n"
 				"\n"
 				"  ::\n"
@@ -919,7 +933,11 @@ export_feature_collection()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Raises :class:`FileFormatNotSupportedError` for a format that is write only (such as ``.xy``), "
+				"rather than returning an empty feature collection.\n")
 		.staticmethod("read")
 		.def("write",
 				&GPlatesApi::feature_collection_handle_write,
@@ -928,10 +946,12 @@ export_feature_collection()
 				"  Writes this feature collection to the file with name *filename*.\n"
 				"\n"
 				"  :param filename: the name of the file to write\n"
-				"  :type filename: string/``os.PathLike``\n"
-				"  :raises: OpenFileForWritingError if the file is not writable\n"
-				"  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
+				"  :type filename: str, or os.PathLike\n"
+				"  :raises OpenFileForWritingError: if the file is not writable\n"
+				"  :raises FileFormatNotSupportedError: if the file format (identified by the filename "
 				"extension) does not support writing\n"
+				"  :raises GPlatesError: if the file format can store none of the features' geometries "
+				"(for example, a Shapefile or GeoJSON file of only topological features, or of no features)\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -939,13 +959,18 @@ export_feature_collection()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Raises :class:`FileFormatNotSupportedError` for a format that is read only (such as ``.vgp``), "
+				"and :class:`GPlatesError` when there are no geometries to write to a Shapefile, GeoJSON, "
+				"GeoPackage or OGR GMT file. Both used to write no file and raise nothing.\n")
 		.def("clone",
 				&GPlatesApi::feature_collection_handle_clone,
 				"clone()\n"
 				"  Create a duplicate of this feature collection instance.\n"
 				"\n"
-				"  :rtype: :class:`FeatureCollection`\n"
+				"  :rtype: FeatureCollection\n"
 				"\n"
 				"  This creates a new :class:`FeatureCollection` instance with cloned versions of this "
 				"collection's features. And the cloned features (in the cloned collection) are each "
@@ -953,8 +978,7 @@ export_feature_collection()
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureCollectionHandle>())
 		.def("__len__", &GPlatesModel::FeatureCollectionHandle::size)
 		.def("__getitem__", &GPlatesApi::feature_collection_handle_get_item)
-	// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch because
-	// currently '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer).
+	// Disabled until the 'feature/pygplates-model-revisions' branch lands (see 'feature_collection_handle_set_item').
 #if 0
 		.def("__setitem__", &GPlatesApi::feature_collection_handle_set_item)
 #endif
@@ -965,7 +989,7 @@ export_feature_collection()
 				"  Adds one or more features to this collection.\n"
 				"\n"
 				"  :param feature: one or more features to add\n"
-				"  :type feature: :class:`Feature` or sequence (eg, ``list`` or ``tuple``) of :class:`Feature`\n"
+				"  :type feature: Feature or sequence (eg, list or tuple) of Feature\n"
 				"\n"
 				"  A feature collection is an *unordered* collection of features "
 				"so there is no concept of where a feature is inserted in the sequence of features.\n"
@@ -982,10 +1006,10 @@ export_feature_collection()
 				"\n"
 				"  :param feature_query: one or more feature types, feature IDs, feature instances or "
 				"predicate functions that determine which features to remove\n"
-				"  :type feature_query: :class:`FeatureType`, or :class:`FeatureId`, or :class:`Feature`, "
-				"or callable (accepting single :class:`Feature` argument), or a sequence (eg, ``list`` or ``tuple``) "
+				"  :type feature_query: FeatureType, or FeatureId, or Feature, "
+				"or callable (accepting single Feature argument), or a sequence (eg, list or tuple) "
 				"of any combination of them\n"
-				"  :raises: ValueError if any specified :class:`Feature` is not currently a feature in this collection\n"
+				"  :raises ValueError: if any specified :class:`Feature` is not currently a feature in this collection\n"
 				"\n"
 				"  All features matching any :class:`FeatureType`, :class:`FeatureId` or predicate callable "
 				"(if any specified) will be removed. Any specified :class:`FeatureType`, :class:`FeatureId` "
@@ -1034,12 +1058,12 @@ export_feature_collection()
 				"\n"
 				"  :param feature_query: the feature type, feature id or predicate function that matches the feature "
 				"(or features) to get\n"
-				"  :type feature_query: :class:`FeatureType`, or :class:`FeatureId`, or callable "
-				"(accepting single :class:`Feature` argument)\n"
+				"  :type feature_query: FeatureType, or FeatureId, or callable "
+				"(accepting single Feature argument)\n"
 				"  :param feature_return: whether to return exactly one feature, the first feature or "
 				"all matching features\n"
-				"  :type feature_return: *FeatureReturn.exactly_one*, *FeatureReturn.first* or *FeatureReturn.all*\n"
-				"  :rtype: :class:`Feature`, or ``list`` of :class:`Feature`, or None\n"
+				"  :type feature_return: FeatureReturn\n"
+				"  :rtype: Feature, or list of Feature, or None\n"
 				"\n"
 				"  The following table maps *feature_return* values to return values:\n"
 				"\n"

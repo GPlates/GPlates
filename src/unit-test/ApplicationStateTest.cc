@@ -1,10 +1,10 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -22,35 +22,36 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <iostream>
+#include <gtest/gtest.h>
 
-#include <QDebug>
+#include "app-logic/ApplicationState.h"
 
-#include "unit-test/ApplicationStateTest.h"
+#include "model/FeatureCollectionHandle.h"
+#include "model/Model.h"
+#include "model/ModelInterface.h"
 
-GPlatesUnitTest::ApplicationStateTestSuite::ApplicationStateTestSuite(
-		unsigned level) :
-	GPlatesUnitTest::GPlatesTestSuite(
-			"ApplicationStateTestSuite")
+
+// Constructing (and, just as importantly, destroying) an ApplicationState requires a
+// QCoreApplication - its UserPreferences member uses QSettings - which the test main()
+// provides. Historically no application object existed in the unit-test executable, so
+// ApplicationState was untestable (its destructor segfaulted); this test also serves to
+// verify that that constraint is gone.
+TEST(ApplicationStateTest, construct_and_get_model_interface)
 {
-	init(level);
-} 
+	GPlatesAppLogic::ApplicationState application_state;
 
-void 
-GPlatesUnitTest::ApplicationStateTest::test_get_model_interface()
-{
-	BOOST_TEST_MESSAGE( "Testing get_model_interface()...." );
-	//BOOST_CHECK(false==true);
-	BOOST_TEST_MESSAGE( "End of testing get_model_interface()!" );
-	return;
+	GPlatesModel::ModelInterface model = application_state.get_model_interface();
+
+	// The model's feature store root should exist and be empty.
+	ASSERT_TRUE(model->root().is_valid());
+	EXPECT_EQ(model->root()->size(), 0u);
+
+	// The model should be usable: create a feature collection in the feature store root.
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
+			GPlatesModel::FeatureCollectionHandle::create(model->root());
+	EXPECT_TRUE(feature_collection.is_valid());
+	EXPECT_EQ(model->root()->size(), 1u);
+
+	// ~ApplicationState runs at end of scope - the historical crash site (QSettings in
+	// ~UserPreferences) - so simply completing this test without crashing is part of the test.
 }
-
-void
-GPlatesUnitTest::ApplicationStateTestSuite::construct_maps()
-{
-	boost::shared_ptr<ApplicationStateTest> instance(
-		new ApplicationStateTest());
-
-	ADD_TESTCASE(ApplicationStateTest,test_get_model_interface);
-}
-

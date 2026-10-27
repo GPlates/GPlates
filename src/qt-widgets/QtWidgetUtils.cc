@@ -41,6 +41,8 @@
 
 #include "QtWidgetUtils.h"
 
+#include "gui/ColourQt.h"
+
 
 void
 GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
@@ -120,13 +122,13 @@ GPlatesQtWidgets::QtWidgetUtils::get_colour_with_alpha(
 	// QColorDialog::getRgba() is deprecated; note also that the dialog when
 	// invoked using this function resets the alpha value to 255.
 	QColor new_colour = QColorDialog::getColor(
-			initial,
+			GPlatesGui::qcolor_from_colour(initial),
 			parent,
 			"" /* use default title */,
 			QColorDialog::ShowAlphaChannel);
 	if (new_colour.isValid())
 	{
-		return GPlatesGui::Colour(new_colour);
+		return GPlatesGui::colour_from_qcolor(new_colour);
 	}
 	return boost::none;
 }

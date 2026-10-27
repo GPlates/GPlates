@@ -77,7 +77,7 @@ namespace GPlatesViewOperations
 			public:
 				CreateRenderedGeometryFromGeometryOnSphere(
 					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
-					const GPlatesGui::ColourProxy &colour,
+					const GPlatesGui::Colour &colour,
 					float point_size_hint,
 					float line_width_hint,
 					bool fill_polygon,
@@ -161,7 +161,7 @@ namespace GPlatesViewOperations
 				}
 
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geom_on_sphere;
-				const GPlatesGui::ColourProxy &d_colour;
+				const GPlatesGui::Colour &d_colour;
 				float d_point_size_hint;
 				float d_line_width_hint;
 				bool d_fill_polygon;
@@ -181,7 +181,7 @@ namespace GPlatesViewOperations
 			public:
 				CreateRenderedGeometryFromColouredGeometryOnSphere(
 					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
-					const std::vector<GPlatesGui::ColourProxy> &point_colours,
+					const std::vector<GPlatesGui::Colour> &point_colours,
 					float point_size_hint,
 					float line_width_hint,
 					const boost::optional<GPlatesGui::Symbol> &symbol_ = boost::none) :
@@ -262,7 +262,7 @@ namespace GPlatesViewOperations
 				}
 
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geom_on_sphere;
-				std::vector<GPlatesGui::ColourProxy> d_point_colours;
+				std::vector<GPlatesGui::Colour> d_point_colours;
 				float d_point_size_hint;
 				float d_line_width_hint;
 				const boost::optional<GPlatesGui::Symbol> &d_symbol;
@@ -276,7 +276,7 @@ namespace GPlatesViewOperations
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		float point_size_hint,
 		float line_width_hint,
 		bool fill_polygon,
@@ -302,7 +302,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphe
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
 		const GPlatesMaths::PointOnSphere &point_on_sphere,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		float point_size_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedPointOnSphere(
@@ -314,7 +314,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_multi_point_on_sphere(
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		float point_size_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedMultiPointOnSphere(
@@ -326,7 +326,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_multi_point_on_s
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		float line_width_hint,
 		bool filled,
 		const GPlatesGui::Colour &fill_modulate_colour)
@@ -345,7 +345,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polyline_on_sphe
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		float line_width_hint,
 		bool filled,
 		const GPlatesGui::Colour &fill_modulate_colour)
@@ -365,7 +365,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_spher
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_geometry_on_sphere(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
-		const std::vector<GPlatesGui::ColourProxy> &point_colours,
+		const std::vector<GPlatesGui::Colour> &point_colours,
 		float point_size_hint,
 		float line_width_hint,
 		const boost::optional<GPlatesGui::Symbol> &symbol)
@@ -386,7 +386,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_geometr
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_multi_point_on_sphere(
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere,
-		const std::vector<GPlatesGui::ColourProxy> &point_colours,
+		const std::vector<GPlatesGui::Colour> &point_colours,
 		float point_size_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedColouredMultiPointOnSphere(
@@ -399,7 +399,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_multi_p
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_polyline_on_sphere(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
-		const std::vector<GPlatesGui::ColourProxy> &point_colours,
+		const std::vector<GPlatesGui::Colour> &point_colours,
 		float line_width_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
@@ -415,7 +415,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_polylin
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
-		const std::vector<GPlatesGui::ColourProxy> &point_colours,
+		const std::vector<GPlatesGui::Colour> &point_colours,
 		float line_width_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
@@ -505,7 +505,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow
 		const GPlatesMaths::PointOnSphere &start,
 		const GPlatesMaths::Vector3D &arrow_direction,
 		const float ratio_unit_vector_direction_to_globe_radius,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		const float ratio_arrowhead_size_to_globe_radius,
 		const float globe_view_ratio_arrowline_width_to_arrowhead_size,
 		const float map_view_arrowline_width_hint)
@@ -537,10 +537,10 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
 		float arrow_projected_length,
 		float arrowhead_projected_size,
 		float ratio_arrowline_width_to_arrowhead_size,
-		const GPlatesGui::ColourProxy &arrow_colour,
+		const GPlatesGui::Colour &arrow_colour,
 		RenderedRadialArrow::SymbolType symbol_type,
 		float symbol_size,
-		const GPlatesGui::ColourProxy &symbol_colour)
+		const GPlatesGui::Colour &symbol_colour)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
 			new RenderedRadialArrow(
@@ -581,7 +581,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_multi_reconstruc
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
 		const GPlatesMaths::SmallCircle &small_circle,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		const float line_width_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
@@ -593,7 +593,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle_arc(
 		const GPlatesMaths::SmallCircleArc &small_circle_arc,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		const float line_width_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
@@ -608,7 +608,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_ellipse(
 		const GPlatesMaths::Real &semi_major_axis_radians,
 		const GPlatesMaths::Real &semi_minor_axis_radians,
 		const GPlatesMaths::GreatCircle &axis,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		float line_width_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedEllipse(
@@ -621,8 +621,8 @@ GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_string(
 		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		const QString &string,
-		const GPlatesGui::ColourProxy &colour,
-		const GPlatesGui::ColourProxy &shadow_colour,
+		const GPlatesGui::Colour &colour,
+		boost::optional<GPlatesGui::Colour> shadow_colour,
 		int x_offset,
 		int y_offset,
 		const QFont &font)
@@ -642,7 +642,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_string(
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrowed_polyline(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type points,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		const float arrowhead_size_in_pixels,
 		const float arrowline_width_hint)
 {
@@ -657,7 +657,7 @@ GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_subduction_teeth_polyline(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline,
 		bool subduction_polarity_is_left,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		float line_width_hint,
 		float teeth_width_in_pixels,
 		float teeth_spacing_to_width_ratio,
@@ -681,7 +681,7 @@ GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_symbol(
 		const GPlatesMaths::PointOnSphere &centre,
 		const GPlatesGui::Symbol &symbol,
-		const GPlatesGui::ColourProxy &colour,
+		const GPlatesGui::Colour &colour,
 		float line_width_hint)
 {
 	switch (symbol.d_symbol_type)
@@ -712,7 +712,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_symbol(
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_triangle_symbol(
 	const GPlatesMaths::PointOnSphere &centre,
-        const GPlatesGui::ColourProxy &colour,
+        const GPlatesGui::Colour &colour,
 	const unsigned int size,
         bool filled,
         const float line_width_hint)
@@ -726,7 +726,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_triangle_symbol(
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_square_symbol(
 	const GPlatesMaths::PointOnSphere &centre,
-	const GPlatesGui::ColourProxy &colour,
+	const GPlatesGui::Colour &colour,
 	const unsigned int size,
 	bool filled,
 	const float line_width_hint)
@@ -740,7 +740,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_square_symbol(
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_circle_symbol(
 	const GPlatesMaths::PointOnSphere &centre,
-	const GPlatesGui::ColourProxy &colour,
+	const GPlatesGui::Colour &colour,
 	const unsigned int size,
 	bool filled,
 	const float line_width_hint)
@@ -754,7 +754,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_circle_symbol(
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_cross_symbol(
 	const GPlatesMaths::PointOnSphere &centre,
-	const GPlatesGui::ColourProxy &colour,
+	const GPlatesGui::Colour &colour,
 	const unsigned int size,
 	const float line_width_hint)
 {

@@ -58,7 +58,8 @@ namespace GPlatesApi
 			FeatureCollectionSequenceFunctionArgument partitioning_features_argument,
 			RotationModelFunctionArgument rotation_model_argument,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
-			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates)
+			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates,
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
 	{
 		// Time must not be distant past/future.
 		if (!reconstruction_time.is_real())
@@ -117,7 +118,16 @@ namespace GPlatesApi
 		}
 
 		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
-		RotationModel::non_null_ptr_type rotation_model = rotation_model_argument.get_rotation_model();
+
+		// Extract the rotation model from the function argument and adapt it to a new one that has
+		// 'anchor_plate_id' as its default (which if none, then uses default anchor plate of extracted
+		// rotation model instead). This ensures we reconstruct/resolve the partitioning plates, and
+		// later reverse reconstruct (if reconstruction time is not present day), using the correct
+		// anchor plate.
+		RotationModel::non_null_ptr_type rotation_model = RotationModel::create(
+				rotation_model_argument.get_rotation_model(),
+				1/*reconstruction_tree_cache_size*/,
+				anchor_plate_id);
 
 		return PlatePartitionerWrapper(
 				boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter>(
@@ -137,7 +147,8 @@ namespace GPlatesApi
 	plate_partitioner_create_from_reconstruction_geometries(
 			bp::object partitioning_plates, // Any python sequence (eg, list, tuple).
 			RotationModelFunctionArgument rotation_model_argument,
-			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates)
+			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates,
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
 	{
 		const char *partitioning_plates_type_error_string = "Expected a sequence of ReconstructionGeometry";
 
@@ -215,9 +226,15 @@ namespace GPlatesApi
 			}
 		}
 
-		// Extract the rotation model.
-		// It'll be used to reverse reconstruct (if reconstruction time is not present day).
-		RotationModel::non_null_ptr_type rotation_model = rotation_model_argument.get_rotation_model();
+		// Extract the rotation model from the function argument and adapt it to a new one that has
+		// 'anchor_plate_id' as its default (which if none, then uses default anchor plate of extracted
+		// rotation model instead). It'll be used to reverse reconstruct (if reconstruction time is not
+		// present day), and so must use the anchor plate that the partitioning plates were
+		// reconstructed/resolved with.
+		RotationModel::non_null_ptr_type rotation_model = RotationModel::create(
+				rotation_model_argument.get_rotation_model(),
+				1/*reconstruction_tree_cache_size*/,
+				anchor_plate_id);
 
 		return PlatePartitionerWrapper(
 				boost::shared_ptr<GPlatesAppLogic::GeometryCookieCutter>(
@@ -397,7 +414,18 @@ void
 export_plate_partitioner()
 {
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::PartitionMethod::Value>("PartitionMethod")
+	bp::enum_<GPlatesApi::PartitionMethod::Value>(
+			"PartitionMethod",
+			"How a feature is partitioned when it overlaps one or more partitioning plates.\n"
+			"\n"
+			"  Accepted by :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates`.\n"
+			"\n"
+			"  ====================================== ==============\n"
+			"  Value                                  Description\n"
+			"  ====================================== ==============\n"
+			"  PartitionMethod.split_into_plates      Split each feature into the partitioning plates, and into unpartitioned parts that are outside all partitioning plates (if the plates do not have global coverage). For example, a feature that overlaps two plates is cloned twice, each clone getting the part of the original geometry inside its plate, and any part outside all plates becomes a third clone containing the unpartitioned geometry. The partitioned clones have properties copied from their partitioning plate features (as determined by *properties_to_copy*); the unpartitioned clone has none copied.\n"
+			"  PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the length of polyline or polygon geometry inside each plate (or the number of points for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.\n"
+			"  ====================================== ==============\n")
 			.value("split_into_plates", GPlatesApi::PartitionMethod::SPLIT_INTO_PLATES)
 			.value("most_overlapping_plate", GPlatesApi::PartitionMethod::MOST_OVERLAPPING_PLATE);
 
@@ -406,7 +434,20 @@ export_plate_partitioner()
 
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::PartitionProperty::Value>("PartitionProperty")
+	bp::enum_<GPlatesApi::PartitionProperty::Value>(
+			"PartitionProperty",
+			"A property to copy from a partitioning plate's feature to each feature partitioned by it.\n"
+			"\n"
+			"  Used in the *properties_to_copy* argument of :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates`, where each entry is one of these values or a :class:`PropertyName`.\n"
+			"\n"
+			"  ========================================= ==============\n"
+			"  Value                                     Description\n"
+			"  ========================================= ==============\n"
+			"  PartitionProperty.reconstruction_plate_id The reconstruction plate ID. This is an alternative to specifying the property name ``PropertyName.gpml_reconstruction_plate_id``.\n"
+			"  PartitionProperty.valid_time_period       The valid time period. This is an alternative to specifying the property name ``PropertyName.gml_valid_time``.\n"
+			"  PartitionProperty.valid_time_begin        Only the *begin* time of the partitioning feature's valid time period is copied (the *end* time is unchanged). If the *begin* time is later than (has a smaller value than) the *end* time then it is set to the *end* time. There is no equivalent way to specify this using a :class:`PropertyName`.\n"
+			"  PartitionProperty.valid_time_end          Only the *end* time of the partitioning feature's valid time period is copied (the *begin* time is unchanged). If the *end* time is earlier than (has a larger value than) the *begin* time then it is set to the *begin* time. There is no equivalent way to specify this using a :class:`PropertyName`.\n"
+			"  ========================================= ==============\n")
 			.value("reconstruction_plate_id", GPlatesApi::PartitionProperty::RECONSTRUCTION_PLATE_ID)
 			.value("valid_time_period", GPlatesApi::PartitionProperty::VALID_TIME_PERIOD)
 			.value("valid_time_begin", GPlatesApi::PartitionProperty::VALID_TIME_BEGIN)
@@ -417,7 +458,17 @@ export_plate_partitioner()
 
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::PartitionReturn::Value>("PartitionReturn")
+	bp::enum_<GPlatesApi::PartitionReturn::Value>(
+			"PartitionReturn",
+			"How :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` return the partitioned and unpartitioned features.\n"
+			"\n"
+			"  ====================================================== ==============\n"
+			"  Value                                                  Return value\n"
+			"  ====================================================== ==============\n"
+			"  PartitionReturn.combined_partitioned_and_unpartitioned A single ``list`` of :class:`Feature` containing both the partitioned and the unpartitioned features.\n"
+			"  PartitionReturn.separate_partitioned_and_unpartitioned A 2-tuple whose first element is a ``list`` of the partitioned :class:`features <Feature>` and whose second element is a ``list`` of the unpartitioned features.\n"
+			"  PartitionReturn.partitioned_groups_and_unpartitioned   A 2-tuple whose first element is a ``list`` of partitioned groups and whose second element is a ``list`` of the unpartitioned features. Each partitioned group is a 2-tuple of a :class:`partitioning plate <ReconstructionGeometry>` and a ``list`` of the features partitioned by that plate.\n"
+			"  ====================================================== ==============\n")
 			.value("combined_partitioned_and_unpartitioned", GPlatesApi::PartitionReturn::COMBINED_PARTITIONED_AND_UNPARTITIONED)
 			.value("separate_partitioned_and_unpartitioned", GPlatesApi::PartitionReturn::SEPARATE_PARTITIONED_AND_UNPARTITIONED)
 			.value("partitioned_groups_and_unpartitioned", GPlatesApi::PartitionReturn::PARTITIONED_GROUPS_AND_UNPARTITIONED);
@@ -427,7 +478,25 @@ export_plate_partitioner()
 
 
 	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesApi::SortPartitioningPlates::Value>("SortPartitioningPlates")
+	bp::enum_<GPlatesApi::SortPartitioningPlates::Value>(
+			"SortPartitioningPlates",
+			"The order in which partitioning plates are searched when partitioning.\n"
+			"\n"
+			"  Accepted by :meth:`PlatePartitioner.__init__` and :func:`partition_into_plates`. The order matters when partitioning plates overlap each other, because the first plate found to contain a geometry (or part of it) wins. Resolved topologies do not tend to overlap, but reconstructed static polygons do (at reconstruction times other than present day), so their order affects the result. Grouping by partition type searches resolved topological networks first, because they usually overlay the resolved topological boundaries.\n"
+			"\n"
+			"  ======================================================== ==============\n"
+			"  Value                                                    Description\n"
+			"  ======================================================== ==============\n"
+			"  SortPartitioningPlates.by_partition_type                 Group in order of resolved topological networks, then resolved topological boundaries, then reconstructed static polygons, with no sorting within each group (the ordering within each group is unchanged).\n"
+			"  SortPartitioningPlates.by_partition_type_then_plate_id   Same as *by_partition_type*, but also sort by plate ID (from highest to lowest) within each group. This is the default because it always gives deterministic results.\n"
+			"  SortPartitioningPlates.by_partition_type_then_plate_area Same as *by_partition_type*, but also sort by plate area (from highest to lowest) within each group.\n"
+			"  SortPartitioningPlates.by_plate_id                       Sort by plate ID (from highest to lowest), with no grouping by partition type.\n"
+			"  SortPartitioningPlates.by_plate_area                     Sort by plate area (from highest to lowest), with no grouping by partition type.\n"
+			"  ======================================================== ==============\n"
+			"\n"
+			"  .. note:: To leave the partitioning plates in their original order, explicitly pass ``None`` (omitting the argument selects the default).\n"
+			"\n"
+			"  Partitioning *points* is faster when plates are sorted by area, because a point is more likely to be found in a large plate first, letting the remaining plates be skipped. Since resolved topologies do not tend to overlap, sorting them by area (rather than by plate ID) still gives deterministic results (though less robustly, since editing a plate's geometry changes its area but not its plate ID), so *by_partition_type_then_plate_area* is a good choice when partitioning many points into topological plates and networks.\n")
 			.value("by_partition_type", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE)
 			.value("by_partition_type_then_plate_id", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)
 			.value("by_partition_type_then_plate_area", GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_AREA)
@@ -457,31 +526,14 @@ export_plate_partitioner()
 						(bp::arg("partitioning_plates"),
 								bp::arg("rotation_model"),
 								bp::arg("sort_partitioning_plates") =
-										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)),
+										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID,
+								bp::arg("anchor_plate_id") =
+										boost::optional<GPlatesModel::integer_plate_id_type>())),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				"__init__(...)\n"
 				"A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...\n"
 				"\n"
-				"  This table maps the values of the *sort_partitioning_plates* parameter to the "
-				"sorting criteria used for the partitioning plates:\n"
-				"\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
-				"  |  Value                                                   | Description                                                                          |\n"
-				"  +==========================================================+======================================================================================+\n"
-				"  | SortPartitioningPlates.by_partition_type                 | Group in order of resolved topological networks then resolved topological boundaries |\n"
-				"  |                                                          | then reconstructed static polygons, but with no sorting within each group            |\n"
-				"  |                                                          | (ordering within each group is unchanged).                                           |\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
-				"  | SortPartitioningPlates.by_partition_type_then_plate_id   | Same as *by_partition_type*, but also sort by plate ID (from highest to lowest)      |\n"
-				"  |                                                          | within each partition type group.                                                    |\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
-				"  | SortPartitioningPlates.by_partition_type_then_plate_area | Same as *by_partition_type*, but also sort by plate area (from highest to lowest)    |\n"
-				"  |                                                          | within each partition type group.                                                    |\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
-				"  | SortPartitioningPlates.by_plate_id                       | Sort by plate ID (from highest to lowest), but no grouping by partition type.        |\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
-				"  | SortPartitioningPlates.by_plate_area                     | Sort by plate area (from highest to lowest), but no grouping by partition type.      |\n"
-				"  +----------------------------------------------------------+--------------------------------------------------------------------------------------+\n"
+				"  The *sort_partitioning_plates* parameter determines the order in which the partitioning plates are searched. See :class:`SortPartitioningPlates` for the sorting criteria of each value, and why the order matters when plates overlap.\n"
 				"\n"
 				"  .. note:: If you don't want to sort the partitioning plates (for example, if you have already sorted them) "
 				"then you'll need to explicitly specify ``None`` for the *sort_partitioning_plates* parameter "
@@ -489,17 +541,8 @@ export_plate_partitioner()
 				"This is because not specifying anything defaults to *SortPartitioningPlates.by_partition_type_then_plate_id* "
 				"(since this always gives deterministic partitioning results).\n"
 				"\n"
-				"  If the partitioning plates overlap each other then their final ordering  determines the partitioning results. "
-				"Resolved topologies do not tend to overlap, but reconstructed static polygons do overlap "
-				"(for non-zero reconstruction times) and hence the sorting order becomes relevant.\n"
-				"\n"
-				"  Partitioning of points is more efficient if you sort by plate *area* because an arbitrary "
-				"point is likely to be found sooner when testing against larger partitioning polygons first "
-				"(and hence more remaining partitioning polygons can be skipped). Since resolved topologies don't tend "
-				"to overlap you don't need to sort them by plate *ID* to get deterministic partitioning results. "
-				"So we are free to sort by plate *area* (well, plate area is also deterministic but not as deterministic "
-				"as sorting by plate *ID* since modifications to the plate geometries change their areas but not their plate IDs). "
-				"Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:\n"
+				"  When partitioning many *points* into topological plates and networks, sorting by plate *area* is faster "
+				"(and still deterministic since resolved topologies do not tend to overlap):\n"
 				"  ::\n"
 				"\n"
 				"    plate_partitioner = pygplates.PlatePartitioner(..., "
@@ -514,19 +557,26 @@ export_plate_partitioner()
 				"\n"
 
 				// Specific overload signature...
-				"__init__(partitioning_plates, rotation_model, [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])\n"
+				"__init__(partitioning_plates, rotation_model, "
+				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id], "
+				"[anchor_plate_id])\n"
 				"  Create a partitioner from a sequence of reconstructed/resolved plates.\n"
 				"\n"
 				"  :param partitioning_plates: A sequence of reconstructed/resolved plates to partition with.\n"
-				"  :type partitioning_plates: Any sequence of :class:`ReconstructionGeometry`\n"
+				"  :type partitioning_plates: Any sequence of ReconstructionGeometry\n"
 				"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
 				"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
-				"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
-				"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
+				"  :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, "
+				"or Feature, or sequence of Feature, or sequence of any combination of those four types\n"
 				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
 				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
-				"  :type sort_partitioning_plates: One of the values in the *SortPartitioningPlates* table above, or None\n"
-				"  :raises: DifferentTimesInPartitioningPlatesError if all partitioning plates do not have the same "
+				"  :type sort_partitioning_plates: SortPartitioningPlates, or None\n"
+				"  :param anchor_plate_id: The anchored plate id that *partitioning_plates* were "
+				"reconstructed/resolved with (and that is used to reverse reconstruct in "
+				":meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* "
+				"(or zero if *rotation_model* is not a :class:`RotationModel`).\n"
+				"  :type anchor_plate_id: int\n"
+				"  :raises DifferentTimesInPartitioningPlatesError: if all partitioning plates do not have the same "
 				":meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`\n"
 				"\n"
 				"  The *partitioning_plates* sequence can be generated by "
@@ -546,11 +596,17 @@ export_plate_partitioner()
 				"\n"
 				"  .. note:: *rotation_model* should be the same rotation model used to reconstruct/resolve "
 				"the partitioning plates. This enables partitioned feature geometries to be reverse-reconstructed "
-				"correctly in :meth:`partition_features` for non-zero reconstruction times.\n"
+				"correctly in :meth:`partition_features` for non-zero reconstruction times. For the same "
+				"reason, *anchor_plate_id* should be the anchor plate used to reconstruct/resolve the "
+				"partitioning plates (for example, the *anchor_plate_id* of the :class:`TopologicalSnapshot` "
+				"that resolved them).\n"
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Added the *anchor_plate_id* argument.\n")
 		//
 		// NOTE: We define this *after* the '__init__' associated with 'plate_partitioner_create_from_reconstruction_geometries()'
 		// because boost-python matches most recently defined functions first and this function has a tighter
@@ -564,26 +620,34 @@ export_plate_partitioner()
 								bp::arg("rotation_model"),
 								bp::arg("reconstruction_time") = GPlatesPropertyValues::GeoTimeInstant(0),
 								bp::arg("sort_partitioning_plates") =
-										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)),
+										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID,
+								bp::arg("anchor_plate_id") =
+										boost::optional<GPlatesModel::integer_plate_id_type>())),
 				// Specific overload signature...
 				"__init__(partitioning_features, rotation_model, [reconstruction_time=0], "
-				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])\n"
+				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id], "
+				"[anchor_plate_id])\n"
 				"  Create a partitioner by reconstructing/resolving plates from a sequence of plate features.\n"
 				"\n"
 				"  :param partitioning_features: A sequence of plate features to partition with.\n"
-				"  :type partitioning_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
-				"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
+				"  :type partitioning_features: FeatureCollection, or str, or os.PathLike, or Feature, "
+				"or sequence of Feature, or sequence of any combination of those four types\n"
 				"  :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, "
 				"or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.\n"
-				"  :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, "
-				"or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
+				"  :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, "
+				"or Feature, or sequence of Feature, or sequence of any combination of those four types\n"
 				"  :param reconstruction_time: the specific geological time to reconstruct/resolve the "
 				"*partitioning_features* to (defaults to zero)\n"
-				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :type reconstruction_time: float or GeoTimeInstant\n"
 				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
 				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
-				"  :type sort_partitioning_plates: One of the values in the *SortPartitioningPlates* table above, or None\n"
-				"  :raises: ValueError if *reconstruction_time* is "
+				"  :type sort_partitioning_plates: SortPartitioningPlates, or None\n"
+				"  :param anchor_plate_id: The anchored plate id used to reconstruct/resolve "
+				"*partitioning_features* (and that is used to reverse reconstruct in "
+				":meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* "
+				"(or zero if *rotation_model* is not a :class:`RotationModel`).\n"
+				"  :type anchor_plate_id: int\n"
+				"  :raises ValueError: if *reconstruction_time* is "
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 				"\n"
@@ -598,7 +662,10 @@ export_plate_partitioner()
 				"\n"
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
-				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Added the *anchor_plate_id* argument.\n")
 		.def("partition_geometry",
 				&GPlatesApi::plate_partitioner_partition_geometry,
 				(bp::arg("geometry"),
@@ -608,15 +675,15 @@ export_plate_partitioner()
 				"  Partitions one or more geometries into partitioning plates.\n"
 				"\n"
 				"  :param geometry: the geometry, or geometries, to partition\n"
-				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
-				"of :class:`GeometryOnSphere`\n"
+				"  :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) "
+				"of GeometryOnSphere\n"
 				"  :param partitioned_inside_geometries: optional list of geometries partitioned *inside* "
 				"the partitioning plates (note that the list is *not* cleared first)\n"
-				"  :type partitioned_inside_geometries: ``list`` of 2-tuple "
-				"(:class:`ReconstructionGeometry`, ``list`` of :class:`GeometryOnSphere`), or None\n"
+				"  :type partitioned_inside_geometries: list of 2-tuple "
+				"(ReconstructionGeometry, list of GeometryOnSphere), or None\n"
 				"  :param partitioned_outside_geometries: optional list of geometries partitioned *outside* "
 				"all partitioning plates (note that the list is *not* cleared first)\n"
-				"  :type partitioned_outside_geometries: ``list`` of :class:`GeometryOnSphere`, or None\n"
+				"  :type partitioned_outside_geometries: list of GeometryOnSphere, or None\n"
 				"  :rtype: bool\n"
 				"\n"
 				"  If *geometry* is inside any partitioning plates (even partially) "
@@ -624,6 +691,11 @@ export_plate_partitioner()
 				"*partitioned_inside_geometries* (if specified) and the outside parts appended to "
 				"*partitioned_outside_geometries* (if specified). Otherwise ``False`` is returned "
 				"and *geometry* is appended to *partitioned_outside_geometries* (if specified).\n"
+				"\n"
+				"  *geometry* is assumed to be at the reconstruction time of this plate partitioner "
+				"(the time of the partitioning plates), and in the reference frame of its anchor plate "
+				"(the *anchor_plate_id* it was created with). It is *not* reconstructed before testing "
+				"for overlap/intersection with the partitioning plates.\n"
 				"\n"
 				"  .. note:: Each element in *partitioned_inside_geometries* is a 2-tuple "
 				"consisting of a partitioning :class:`ReconstructionGeometry` and a list of the "
@@ -659,10 +731,15 @@ export_plate_partitioner()
 				"partitioning plate (if any) containing the point.\n"
 				"\n"
 				"  :param point: the point to partition\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-				"  :rtype: :class:`ReconstructionGeometry` or None\n"
+				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :rtype: ReconstructionGeometry or None\n"
 				"\n"
 				"  .. note:: ``None`` is returned if *point* is not contained by any partitioning plates.\n"
+				"\n"
+				"  *point* is assumed to be at the reconstruction time of this plate partitioner "
+				"(the time of the partitioning plates), and in the reference frame of its anchor plate "
+				"(the *anchor_plate_id* it was created with). It is *not* reconstructed before testing "
+				"whether the partitioning plates contain it.\n"
 				"\n"
 				"  To find the plate ID of the reconstructed static polygon containing latitude/longitude (0,0):\n"
 				"  ::\n"

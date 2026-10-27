@@ -33,7 +33,7 @@
    <item>
     <widget class="QToolButton" name="cancel_button">
      <property name="icon">
-      <iconset resource="../qt-resources/qt_widgets.qrc">
+      <iconset resource="../qt-resources/qt_resources.qrc">
        <normaloff>:/tango_process_stop_22.png</normaloff>:/tango_process_stop_22.png</iconset>
      </property>
      <property name="autoRaise">
@@ -44,7 +44,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>

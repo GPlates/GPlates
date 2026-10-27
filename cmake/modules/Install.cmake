@@ -87,13 +87,7 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # For Windows and macOS this just means Qt 6.4 (or above) should be installed if you want to deploy.
     #
-    # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
-    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
-    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
-    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
-    #         However, fortunately pyGPlates doesn't need the Qt plugins, so we'll leave them out (until/if this changes in the future).
-    #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
-    #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which uses 'qt.conf' (via QCoreApplication) to find the plugins.
+    # Only GPlates installs Qt plugins (see "Install Qt plugins" below for why pyGPlates does not).
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
         install(
                 CODE "
@@ -199,64 +193,96 @@ else()  # pyGPlates ...
     ########################################################################################################################
     #
     # This is because pygplates is a "Python package" where the pygplates module library is in the *base* 'pygplates/' directory as well as '__init__.py'.
-    set(PYGPLATES_INIT_PY "${CMAKE_CURRENT_BINARY_DIR}/__init__.py")
+    #
+    # We generate it into the build tree *beside* the built pygplates library (whose output directory is a 'pygplates/'
+    # sub-directory of the build output directory - see the pygplates target in 'src/CMakeLists.txt') and install it from
+    # there. So the build tree is the very same Python package that we install, which means our tests, and the type stub
+    # generator, exercise the layout that actually ships.
+    #
+    # Note that "$<TARGET_FILE_DIR:pygplates>" is that 'pygplates/' package directory, and file(GENERATE) writes a
+    # separate file per build configuration (which is what we want, since that directory is configuration-specific
+    # for a multi-config generator such as Visual Studio).
     #
     # Notes for the "__init__.py" source code:
     #
-    # Previously, once we imported symbols from the pygplates shared library (C++) into the namespace of this package (also called pygplates),
-    # we used to delete 'pygplates.pygplates' (after renaming it to something more private with a leading underscore).
-    # However we no longer do this because the '__module__' attribute of objects in pygplates remain as 'pygplates.pygplates'
-    # (since 'pygplates.{pyd,so}' is in 'pygplates/' package). And the '__module__' attribute is used during pickling
-    # (at least 'dill' appears to use it), so deleting what it references interferes with pickling (at least for 'dill').
+    # Once the symbols from the pygplates shared library (C++) are imported into the namespace of this package (which is
+    # also called pygplates) we have both 'pygplates.<symbol>' and 'pygplates.pygplates.<symbol>'. The former is the
+    # public API. We used to delete the latter (by renaming 'pygplates.pygplates' to something private with a leading
+    # underscore), but we no longer do - it turns out to be load-bearing, for the following reasons.
     #
-    # This does mean we have both pygplates.<symbol> and pygplates.pygplates.<symbol>. The former being the public API.
+    # 1) Pickling. Boost.Python's 'pickle_suite' (see 'src/api/PythonPickle.h') pickles our classes *by reference*, so a
+    #    pickle stream records each class' '__module__', and that is 'pygplates.pygplates' (because the pygplates shared
+    #    library 'pygplates.{pyd,so}' lives *inside* the 'pygplates/' package).
     #
-    # We could change the name of the module to '_pygplates' (so that we have pygplates.<symbol> and pygplates._pygplates.<symbol>) but it would
-    # require a lot of potentially confusing changes. For example, pygplates tests run on the build target (rather than the installed Python package),
-    # which would be '_pygplates'.{pyd,so}, and therefore the tests would need to 'import _pygplates' instead of 'import pygplates'.
-    # Also GPlates embeds 'pygplates' (not '_pygplates') and so we'd need to use a module name of 'pygplates' when building GPlates
-    # and '_pygplates' when building pyGPlates. So it's easier just to keep it as 'pygplates' (instead of '_pygplates').
+    #    - The standard library 'pickle' resolves that name through 'sys.modules', and so would survive a rename. This is
+    #      why our pickle round-trip tests stayed green throughout the attempt to rename it to '_impl' (commit 622931ac6,
+    #      reverted by f015a03d4).
+    #    - However 'dill' resolves a dotted module name as 'getattr(__import__(parent, None, None, [child]), child)' (see
+    #      '_import_module' in 'dill/_dill.py') - an *attribute* lookup on the parent package. Deleting or renaming that
+    #      attribute makes the lookup raise (and note that re-importing does *not* restore a deleted attribute), whereupon
+    #      dill falls back to pickling the class by value, which cannot work for a Boost.Python class.
+    #    - And a rename would invalidate every pickle written by an already released pyGPlates, since those streams embed
+    #      'pygplates.pygplates.<Class>' (and 'pygplates.pygplates.PickleBytes'). So it is a file format break, not just
+    #      a rename.
+    #
+    #    The 'pygplates-test' ctest guards this (see 'pygplates/test/test.py') - which it is only able to do because the
+    #    build tree is the very same 'pygplates/' package that we install (see above).
+    #
+    # 2) Exception names. 'src/api/PyExceptions.cc' derives the qualified name of each pygplates exception from the live
+    #    module '__name__', so a rename would change the text of every user-visible traceback.
+    #
+    # 3) GPlates embeds 'pygplates' (not '_pygplates') via 'PyImport_AppendInittab' (see 'src/gui/PythonManager.cc'), so
+    #    a rename would mean using a module name of 'pygplates' when building GPlates and '_pygplates' when building
+    #    pyGPlates.
+    #
+    # Note that '_post_import' is imported explicitly (like '__version__' and '__doc__') because "import *" skips names
+    # with a leading underscore. This also makes it available as 'pygplates._post_import', which is what the type stub
+    # 'pygplates/stub/__init__.pyi' declares.
     #
     # Note that we allow no indentation in the file content to avoid Python 'unexpected indent' errors.
-    file(WRITE "${PYGPLATES_INIT_PY}" [[
+    file(GENERATE
+        OUTPUT "$<TARGET_FILE_DIR:pygplates>/__init__.py"
+        CONTENT [[
 # Import the pygplates shared library (C++).
 from .pygplates import *
 # Import any private symbols (with leading underscore).
 from .pygplates import __version__
 from .pygplates import __doc__
+from .pygplates import _post_import
 
 # Let the pygplates shared library (C++) know of its imported location.
 import os.path
-pygplates._post_import(os.path.dirname(__file__))
+_post_import(os.path.dirname(__file__))
 ]])
-    install(FILES "${PYGPLATES_INIT_PY}" DESTINATION ${PYGPLATES_PYTHON_PACKAGE_DIR})
+    install(FILES "$<TARGET_FILE_DIR:pygplates>/__init__.py" DESTINATION ${PYGPLATES_PYTHON_PACKAGE_DIR})
+
+    # Copy the type stub ('__init__.pyi') and PEP 561 marker ('py.typed') for pygplates into the built
+    # 'pygplates' package (beside the pygplates library and the '__init__.py' generated above), and install
+    # them from there - so the build tree is a *complete*, typed package, just like the installed one.
+    #
+    # The stub is generated by 'pygplates/stub/generate_stub.py' and committed to source control
+    # (the 'pygplates-stub-test' ctest checks it stays up-to-date with the built pygplates module).
+    #
+    # Note: file(GENERATE) is used simply to copy each file (it evaluates generator expressions in the input,
+    #       and neither file contains any), because the destination directory is configuration-specific and
+    #       so can only be named with a generator expression.
+    file(GENERATE
+        OUTPUT "$<TARGET_FILE_DIR:pygplates>/__init__.pyi"
+        INPUT "${PROJECT_SOURCE_DIR}/pygplates/stub/__init__.pyi")
+    file(GENERATE
+        OUTPUT "$<TARGET_FILE_DIR:pygplates>/py.typed"
+        INPUT "${PROJECT_SOURCE_DIR}/pygplates/stub/py.typed")
+    install(FILES
+            "$<TARGET_FILE_DIR:pygplates>/__init__.pyi"
+            "$<TARGET_FILE_DIR:pygplates>/py.typed"
+        DESTINATION ${PYGPLATES_PYTHON_PACKAGE_DIR})
 
 endif()
 
-
-#
-# Install Python scripts (but only for the gplates target).
-#
-if (GPLATES_BUILD_GPLATES)  # GPlates ...
-    foreach (_script )  # currently empty but we can add scripts here in the future if needed
-        if (EXISTS "${PROJECT_SOURCE_DIR}/scripts/${_script}")
-            if (GPLATES_INSTALL_STANDALONE)
-                # For standalone we want to bundle everything together so it's relocatable.
-                if (APPLE)
-                    install(FILES "${PROJECT_SOURCE_DIR}/scripts/${_script}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/gplates.app/Contents/Resources/scripts)
-                else()
-                    install(FILES "${PROJECT_SOURCE_DIR}/scripts/${_script}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/scripts)
-                endif()
-            else()
-                install(FILES "${PROJECT_SOURCE_DIR}/scripts/${_script}" DESTINATION share/gplates/scripts)
-            endif()
-        endif()
-    endforeach()
-endif()
 
 # Install geodata if requested (but only for the gplates target).
 #
-# The variables GPLATES_INSTALL_GEO_DATA and GPLATES_INSTALL_GEO_DATA_DIR are cache variables that the user can set to control this.
+# The variables GPLATES_INSTALL_GEO_DATA and GPLATES_INSTALL_GEO_DATA_SOURCE_DIR are cache variables that the user can set to control this.
 #
 if (GPLATES_BUILD_GPLATES)  # GPlates ...
     if (GPLATES_INSTALL_GEO_DATA)
@@ -266,7 +292,7 @@ if (GPLATES_BUILD_GPLATES)  # GPlates ...
         #   "The last component of each directory name is appended to the destination directory but
         #    a trailing slash may be used to avoid this because it leaves the last component empty"
         #
-        string(REGEX REPLACE "/+$" "" _SOURCE_GEO_DATA_DIR "${GPLATES_INSTALL_GEO_DATA_DIR}")
+        string(REGEX REPLACE "/+$" "" _SOURCE_GEO_DATA_DIR "${GPLATES_INSTALL_GEO_DATA_SOURCE_DIR}")
 
         #
         # Note: Depending on the installation location ${CMAKE_INSTALL_PREFIX} a path length limit might be
@@ -291,14 +317,17 @@ if (GPLATES_BUILD_GPLATES)  # GPlates ...
 endif()
 
 # Install Linux man page (but only for the gplates target).
+#
+# Note: the EXISTS guard skips the install *silently*, so check this path whenever the man page
+#       moves (an out-of-date path once dropped it from every Linux install unnoticed).
 if (GPLATES_BUILD_GPLATES)  # GPlates ...
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")  # Linux
-        if (EXISTS "${PROJECT_SOURCE_DIR}/doc/gplates.1.gz")
+        if (EXISTS "${PROJECT_SOURCE_DIR}/docs/gplates/man/gplates.1.gz")
             if (GPLATES_INSTALL_STANDALONE)
                 # For standalone we want to bundle everything together so it's relocatable.
-                install(FILES  "${PROJECT_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/man1)
+                install(FILES  "${PROJECT_SOURCE_DIR}/docs/gplates/man/gplates.1.gz" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/man1)
             else()
-                install(FILES  "${PROJECT_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION share/man/man1)
+                install(FILES  "${PROJECT_SOURCE_DIR}/docs/gplates/man/gplates.1.gz" DESTINATION share/man/man1)
             endif()
         endif()
     endif()
@@ -310,6 +339,7 @@ endif()
 #
 # When GPLATES_INSTALL_STANDALONE is true then we install code to fix up GPlates (or pyGPlates) for deployment to another machine
 # (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
+# A pyGPlates wheel leaves that copying to its repair tool (GPLATES_INSTALL_FOR_WHEEL_REPAIR; see 'ConfigDefault.cmake').
 # When this is false then we don't install dependencies, instead only installing the GPlates executable (or pyGPlates library) and a few non-dependency items.
 #
 if (GPLATES_INSTALL_STANDALONE)
@@ -328,9 +358,6 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # This consists of a bunch of "install(CODE ...)" commands to install code into "cmake_install.cmake" that CMake in turn
     # executes at 'install' time into the install prefix location ${CMAKE_INSTALL_PREFIX} (evaluated at 'install' time).
-    #
-    # Note: The command "install(CODE)" requires CMake 3.14 since we're using generator expressions in the code.
-    #       And using FOLLOW_SYMLINK_CHAIN in file(INSTALL) requires CMake 3.15.
     #
     # Note: When using CODE with double quotes, as with install(CODE "<code>"), variable subsitution is *enabled*.
     #       So we use this when transferring variables.
@@ -404,15 +431,32 @@ if (GPLATES_INSTALL_STANDALONE)
     # Copy the Proj library data into standalone bundle (to avoid Proj error finding 'proj.db') #
     #############################################################################################
     #
+    # Note: A bundle whose Proj cannot find 'proj.db' is broken, not merely incomplete: it fails to
+    #       resolve coordinate reference systems at run time, reporting "Cannot find proj.db" to
+    #       stderr and otherwise carrying on - which no test of ours notices, and which a warning
+    #       buried in a configure log does not get noticed either (pyGPlates shipped Windows wheels
+    #       like that). So failing to locate the data is an error rather than a warning.
+    #
+    #       It is reported at *install* time, as the code-signing and Qt version checks near the top
+    #       of this file are, so that it stops a broken bundle being produced without stopping a
+    #       build. GPLATES_INSTALL_STANDALONE defaults to true on Windows and macOS, so a
+    #       configure-time error would also turn away someone who only wants to compile and run from
+    #       their build tree. Creating the wheels runs 'cmake --install', so they are still covered.
+    #
     # Find the 'projinfo' command.
     find_program(PROJINFO_COMMAND "projinfo" PATHS ${PROJ_BINARY_DIRS})
     if (PROJINFO_COMMAND)
         # Run 'projinfo --searchpaths' to get a list of directories that Proj will look for resources in.
         # Note that 'projinfo' is new in Proj version 6.0 and the '--searchpaths' option is new in version 7.0.
+        #
+        # Its stderr is captured rather than discarded: a non-zero exit is not necessarily the old
+        # Proj that has no '--searchpaths', it can equally be a 'projinfo' that failed to start (a
+        # DLL it needs is missing, say), and reporting the former for the latter sends the reader
+        # off to upgrade Proj over something else entirely.
         execute_process(COMMAND ${PROJINFO_COMMAND} --searchpaths
             RESULT_VARIABLE _projinfo_result
             OUTPUT_VARIABLE _projinfo_output
-            ERROR_QUIET)
+            ERROR_VARIABLE _projinfo_error)
         if (NOT _projinfo_result)  # success
             # Convert 'projinfo' output to a list of lines - we do this by converting newlines to the list separator character ';'.
             string(REPLACE "\n" ";" _projinfo_search_paths "${_projinfo_output}")
@@ -425,17 +469,20 @@ if (GPLATES_INSTALL_STANDALONE)
                 endif()
             endforeach()
             if (NOT _proj_data_dir)
-                message(WARNING "Found proj resource dirs but did not find 'proj.db' - proj library data will not be included in standalone bundle.")
+                set(_proj_data_error "'${PROJINFO_COMMAND} --searchpaths' listed no directory containing 'proj.db'. Set the PROJ_DATA environment variable to the directory holding it.")
             endif()
         else()
-            message(WARNING "'projinfo' does not support '--searchpaths' option - likely using Proj version older than 7.0 - proj library data will not be included in standalone bundle.")
+            set(_proj_data_error "'${PROJINFO_COMMAND} --searchpaths' failed (exit ${_projinfo_result}): ${_projinfo_error}. Proj 7.0 or newer is needed - older versions have no '--searchpaths' - but check the message above first, since any failure to run 'projinfo' lands here.")
         endif()
     else()
-        message(WARNING "Unable to find 'projinfo' command - likely using Proj version older than 6.0 - proj library data will not be included in standalone bundle.")
+        set(_proj_data_error "Unable to find the 'projinfo' command, which is how the proj library data is located. Proj 7.0 or newer with its command line tools installed is needed; add their directory to CMAKE_PROGRAM_PATH if they are installed apart from the library.")
     endif()
     #
     # Install the Proj data.
-    if (_proj_data_dir)
+    if (NOT _proj_data_dir)
+        # Use square brackets so the message is not re-evaluated when the install script runs it.
+        install(CODE "message(FATAL_ERROR [[Cannot bundle the proj library data: ${_proj_data_error}]])")
+    else()
         # Remove the trailing '/', if there is one, so that we can then append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
         #   "The last component of each directory name is appended to the destination directory but
         #    a trailing slash may be used to avoid this because it leaves the last component empty"
@@ -457,111 +504,132 @@ if (GPLATES_INSTALL_STANDALONE)
     # (which was moved into 'proj.db' for GDAL >= 2.5, but there's other GDAL data files to bundle) #
     #################################################################################################
     #
+    # Note: An error rather than a warning, and reported at install time, for the same reasons as the
+    #       proj data above - a bundle whose GDAL cannot find its data reports "GDAL_DATA is not
+    #       defined" at run time and carries on with drivers that half work.
+    #
     if (WIN32)
         # The 'gdal-config' command is not available on Windows. Instead we're expected to use the GDAL_DATA environment variable.
         set(_gdal_data_dir $ENV{GDAL_DATA})
         if (NOT _gdal_data_dir)
-            message(WARNING "GDAL_DATA environment variable not set - GDAL library data will not be included in standalone bundle.")
+            set(_gdal_data_error "the GDAL_DATA environment variable is not set. Set it to GDAL's data directory - there is no 'gdal-config' on Windows to answer for it.")
         endif()
     else() # Apple or Linux
         # Find the 'gdal-config' command (should be able to find via PATH environment variable).
         find_program(GDAL_CONFIG_COMMAND "gdal-config")
         if (GDAL_CONFIG_COMMAND)
             # Run 'gdal-config --datadir' to get directory that GDAL will look for resources in.
+            # (Its stderr is kept, for the same reason as 'projinfo' above.)
             execute_process(COMMAND ${GDAL_CONFIG_COMMAND} --datadir
                 RESULT_VARIABLE _gdal_config_result
                 OUTPUT_VARIABLE _gdal_config_output
-                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+                ERROR_VARIABLE _gdal_config_error
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
             if (NOT _gdal_config_result)  # success
                 set(_gdal_data_dir ${_gdal_config_output})
             else()
-                message(WARNING "'gdal-config --datadir' failed - GDAL library data will not be included in standalone bundle.")
+                set(_gdal_data_error "'${GDAL_CONFIG_COMMAND} --datadir' failed (exit ${_gdal_config_result}): ${_gdal_config_error}")
             endif()
         else()
-            message(WARNING "Unable to find 'gdal-config' command - GDAL library data will not be included in standalone bundle.")
+            set(_gdal_data_error "unable to find the 'gdal-config' command, which is how GDAL's data directory is located.")
         endif()
     endif()
     #
     # Install the GDAL data.
     if (_gdal_data_dir)
         file(TO_CMAKE_PATH ${_gdal_data_dir} _gdal_data_dir)
-        if (EXISTS "${_gdal_data_dir}")
-            # Remove the trailing '/', if there is one, so that we can then append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
-            #   "The last component of each directory name is appended to the destination directory but
-            #    a trailing slash may be used to avoid this because it leaves the last component empty"
-            string(REGEX REPLACE "/+$" "" _gdal_data_dir "${_gdal_data_dir}")
-            if (GPLATES_BUILD_GPLATES)  # GPlates ...
-                if (APPLE)
-                    set(_gdal_data_rel_base gplates.app/Contents/Resources/${GPLATES_STANDALONE_GDAL_DATA_DIR})
-                else()
-                    set(_gdal_data_rel_base ${GPLATES_STANDALONE_GDAL_DATA_DIR})
-                endif()
-            else()  # pyGPlates ...
+        if (NOT EXISTS "${_gdal_data_dir}")
+            set(_gdal_data_error "the GDAL data directory \"${_gdal_data_dir}\" does not exist.")
+        endif()
+    endif()
+    if (_gdal_data_error)
+        # Use square brackets so the message is not re-evaluated when the install script runs it.
+        install(CODE "message(FATAL_ERROR [[Cannot bundle the GDAL library data: ${_gdal_data_error}]])")
+    else()
+        # Remove the trailing '/', if there is one, so that we can then append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+        #   "The last component of each directory name is appended to the destination directory but
+        #    a trailing slash may be used to avoid this because it leaves the last component empty"
+        string(REGEX REPLACE "/+$" "" _gdal_data_dir "${_gdal_data_dir}")
+        if (GPLATES_BUILD_GPLATES)  # GPlates ...
+            if (APPLE)
+                set(_gdal_data_rel_base gplates.app/Contents/Resources/${GPLATES_STANDALONE_GDAL_DATA_DIR})
+            else()
                 set(_gdal_data_rel_base ${GPLATES_STANDALONE_GDAL_DATA_DIR})
             endif()
-            install(DIRECTORY "${_gdal_data_dir}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/${_gdal_data_rel_base})
-        else()
-            message(WARNING "GDAL data directory \"${_gdal_data_dir}\" does not exist - GDAL library data will not be included in standalone bundle.")
+        else()  # pyGPlates ...
+            set(_gdal_data_rel_base ${GPLATES_STANDALONE_GDAL_DATA_DIR})
         endif()
+        install(DIRECTORY "${_gdal_data_dir}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/${_gdal_data_rel_base})
     endif()
 
-    ##########################################################################################################
-    # Copy the GDAL library plugins (eg, NetCDF) into standalone bundle (unless compiled into core library). #
-    ##########################################################################################################
     #
-    # Find the GDAL library plugins directory.
-    if (WIN32)
-        # The 'gdal-config' command is not available on Windows. Instead we're expected to use the GDAL_DRIVER_PATH environment variable.
-        set(_gdal_plugins_dir $ENV{GDAL_DRIVER_PATH})
-        if (NOT _gdal_plugins_dir)
-            message(WARNING "GDAL_DRIVER_PATH environment variable not set - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
-        endif()
-    else() # Apple or Linux
-        # Find the 'gdal-config' command (should be able to find via PATH environment variable).
-        find_program(GDAL_CONFIG_COMMAND "gdal-config")
-        if (GDAL_CONFIG_COMMAND)
-            # Run 'gdal-config --prefix' to get directory that GDAL was install into.
-            execute_process(COMMAND ${GDAL_CONFIG_COMMAND} --prefix
-                RESULT_VARIABLE _gdal_config_result
-                OUTPUT_VARIABLE _gdal_config_output
-                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-            if (NOT _gdal_config_result)  # success
-                set(_gdal_home_dir ${_gdal_config_output})
-            else()
-                message(WARNING "'gdal-config --prefix' failed - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+    # Note: This whole section is for GPlates only. Deployment for pyGPlates instead means building
+    #       wheels and running auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows) over them,
+    #       to check dependencies (manylinux), copy them into the wheel and - most importantly - give
+    #       them unique names to avoid conflicts. None of those tools copy or fix up the dependencies
+    #       of plugins. Fortunately pyGPlates does not need the GDAL drivers (plugins) installed
+    #       below, so they are left out (until/if that changes).
+    #
+    #       Skipping the section outright, rather than only the install at the end of it, is also what
+    #       stops a pyGPlates build reporting a GDAL_DRIVER_PATH it would have no use for.
+    #
+    if (GPLATES_BUILD_GPLATES)
+        ##########################################################################################################
+        # Copy the GDAL library plugins (eg, NetCDF) into standalone bundle (unless compiled into core library). #
+        ##########################################################################################################
+        #
+        # Find the GDAL library plugins directory.
+        if (WIN32)
+            # The 'gdal-config' command is not available on Windows. Instead we're expected to use the GDAL_DRIVER_PATH environment variable.
+            set(_gdal_plugins_dir $ENV{GDAL_DRIVER_PATH})
+            if (NOT _gdal_plugins_dir)
+                message(WARNING "GDAL_DRIVER_PATH environment variable not set - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
             endif()
-        else()
-            message(WARNING "Unable to find 'gdal-config' command - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
-        endif()
-
-        # The GDAL plugins directory is a sub-directory of the GDAL home directory.
-        # The exact location depends on the platform and how GDAL is installed.
-        if (APPLE)
-            # If the GDAL home directory is inside a framework then it has a different plugin path.
-            if (_gdal_home_dir MATCHES "[^/]+\\.framework/")
-                set(_gdal_plugins_dir ${_gdal_home_dir}/PlugIns)
+        else() # Apple or Linux
+            # Find the 'gdal-config' command (should be able to find via PATH environment variable).
+            find_program(GDAL_CONFIG_COMMAND "gdal-config")
+            if (GDAL_CONFIG_COMMAND)
+                # Run 'gdal-config --prefix' to get directory that GDAL was install into.
+                execute_process(COMMAND ${GDAL_CONFIG_COMMAND} --prefix
+                    RESULT_VARIABLE _gdal_config_result
+                    OUTPUT_VARIABLE _gdal_config_output
+                    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+                if (NOT _gdal_config_result)  # success
+                    set(_gdal_home_dir ${_gdal_config_output})
+                else()
+                    message(WARNING "'gdal-config --prefix' failed - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+                endif()
             else()
+                message(WARNING "Unable to find 'gdal-config' command - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+            endif()
+
+            # The GDAL plugins directory is a sub-directory of the GDAL home directory.
+            # The exact location depends on the platform and how GDAL is installed.
+            if (APPLE)
+                # If the GDAL home directory is inside a framework then it has a different plugin path.
+                if (_gdal_home_dir MATCHES "[^/]+\\.framework/")
+                    set(_gdal_plugins_dir ${_gdal_home_dir}/PlugIns)
+                else()
+                    set(_gdal_plugins_dir ${_gdal_home_dir}/lib/gdalplugins)
+                endif()
+            else()  # Linux
                 set(_gdal_plugins_dir ${_gdal_home_dir}/lib/gdalplugins)
             endif()
-        else()  # Linux
-            set(_gdal_plugins_dir ${_gdal_home_dir}/lib/gdalplugins)
         endif()
-    endif()
-    #
-    if (_gdal_plugins_dir)
-        file(TO_CMAKE_PATH ${_gdal_plugins_dir} _gdal_plugins_dir)
-        if (EXISTS "${_gdal_plugins_dir}")
-            # Remove the trailing '/' if there is one.
-            string(REGEX REPLACE "/+$" "" _gdal_plugins_dir "${_gdal_plugins_dir}")
-        else()
-            # The GDAL plugins directory does not exist. It's possible the plugins were compiled into core GDAL library though.
-            # For each specific plugin we later attempt to install we'll emit a message indicating it will not be included in standalone bundle.
+        #
+        if (_gdal_plugins_dir)
+            file(TO_CMAKE_PATH ${_gdal_plugins_dir} _gdal_plugins_dir)
+            if (EXISTS "${_gdal_plugins_dir}")
+                # Remove the trailing '/' if there is one.
+                string(REGEX REPLACE "/+$" "" _gdal_plugins_dir "${_gdal_plugins_dir}")
+            else()
+                # The GDAL plugins directory does not exist. It's possible the plugins were compiled into core GDAL library though.
+                # For each specific plugin we later attempt to install we'll emit a message indicating it will not be included in standalone bundle.
+            endif()
         endif()
-    endif()
-    #
-    # The GDAL 'plugins' install directory (relative to base install location).
-    #
-    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        #
+        # The GDAL 'plugins' install directory (relative to base install location).
+        #
         if (APPLE)
             # On macOS place in 'gplates.app/Contents/Resources/gdal_plugins/'.
             set(GDAL_PLUGINS_INSTALL_PREFIX "gplates.app/Contents/Resources/${GPLATES_STANDALONE_GDAL_PLUGINS_DIR}")
@@ -569,76 +637,67 @@ if (GPLATES_INSTALL_STANDALONE)
             # On Windows, and Linux, place in the 'gdal_plugins/' sub-directory of the directory containing the executable.
             set(GDAL_PLUGINS_INSTALL_PREFIX "${GPLATES_STANDALONE_GDAL_PLUGINS_DIR}")
         endif()
-    else()  # pyGPlates ...
-        set(GDAL_PLUGINS_INSTALL_PREFIX "${GPLATES_STANDALONE_GDAL_PLUGINS_DIR}")
-    endif()
-    #
-    # Function to install a GDAL plugin. Call as...
-    #
-    #   install_gdal_plugin(gdal_plugin_short_name)
-    #
-    # ...and the full path to installed plugin file will be added to 'GDAL_PLUGINS_INSTALLED'.
-    function(install_gdal_plugin gdal_plugin_short_name)
-        # Get the source file location of the GDAL plugin.
-        set(_gdal_plugin_path ${_gdal_plugins_dir}/gdal_${gdal_plugin_short_name})
-        if (WIN32)
-            set(_gdal_plugin_path ${_gdal_plugin_path}.dll)
-        elseif (APPLE)
-            set(_gdal_plugin_path ${_gdal_plugin_path}.dylib)
-        else()  # Linux
-            set(_gdal_plugin_path ${_gdal_plugin_path}.so)
-        endif()
+        #
+        # Function to install a GDAL plugin. Call as...
+        #
+        #   install_gdal_plugin(gdal_plugin_short_name)
+        #
+        # ...and the full path to installed plugin file will be added to 'GDAL_PLUGINS_INSTALLED'.
+        function(install_gdal_plugin gdal_plugin_short_name)
+            # Get the source file location of the GDAL plugin.
+            set(_gdal_plugin_path ${_gdal_plugins_dir}/gdal_${gdal_plugin_short_name})
+            if (WIN32)
+                set(_gdal_plugin_path ${_gdal_plugin_path}.dll)
+            elseif (APPLE)
+                set(_gdal_plugin_path ${_gdal_plugin_path}.dylib)
+            else()  # Linux
+                set(_gdal_plugin_path ${_gdal_plugin_path}.so)
+            endif()
 
-        if (NOT EXISTS "${_gdal_plugin_path}")
-            # Report message at install time since it's not an error if plugin is compiled into core GDAL library.
-            #
-            # Report a message even though it looks like an error because it's provides a debug clue if GDAL plugins exist
-            # (ie, are *not* compiled into the core GDAL library) but were nevertheless not found.
-            install(CODE "message(\"GDAL plugin ${_gdal_plugin_path} not found, so not installed (might be compiled into core GDAL library though)\")")
-            return()
-        endif()
+            if (NOT EXISTS "${_gdal_plugin_path}")
+                # Report message at install time since it's not an error if plugin is compiled into core GDAL library.
+                #
+                # Report a message even though it looks like an error because it's provides a debug clue if GDAL plugins exist
+                # (ie, are *not* compiled into the core GDAL library) but were nevertheless not found.
+                install(CODE "message(\"GDAL plugin ${_gdal_plugin_path} not found, so not installed (might be compiled into core GDAL library though)\")")
+                return()
+            endif()
 
-        # The plugin install directory (relative to ${CMAKE_INSTALL_PREFIX}).
-        set(_install_gdal_plugin_dir ${STANDALONE_BASE_INSTALL_DIR}/${GDAL_PLUGINS_INSTALL_PREFIX})
+            # The plugin install directory (relative to ${CMAKE_INSTALL_PREFIX}).
+            set(_install_gdal_plugin_dir ${STANDALONE_BASE_INSTALL_DIR}/${GDAL_PLUGINS_INSTALL_PREFIX})
 
-        # Install the GDAL plugin.
-        install(FILES "${_gdal_plugin_path}" DESTINATION ${_install_gdal_plugin_dir})
+            # Install the GDAL plugin.
+            install(FILES "${_gdal_plugin_path}" DESTINATION ${_install_gdal_plugin_dir})
 
-        # Extract plugin filename.
-        get_filename_component(_gdal_plugin_file "${_gdal_plugin_path}" NAME)
+            # Extract plugin filename.
+            get_filename_component(_gdal_plugin_file "${_gdal_plugin_path}" NAME)
 
-        # Use square brackets to avoid evaluating ${CMAKE_INSTALL_PREFIX} at configure time (should be done at install time).
-        string(CONCAT _installed_gdal_plugin
-            [[${CMAKE_INSTALL_PREFIX}/]]
-            ${_install_gdal_plugin_dir}/
-            ${_gdal_plugin_file})
+            # Use square brackets to avoid evaluating ${CMAKE_INSTALL_PREFIX} at configure time (should be done at install time).
+            string(CONCAT _installed_gdal_plugin
+                [[${CMAKE_INSTALL_PREFIX}/]]
+                ${_install_gdal_plugin_dir}/
+                ${_gdal_plugin_file})
 
-        # Add full path to installed plugin file to the plugin list.
-        set(_installed_gdal_plugin_list ${GDAL_PLUGINS_INSTALLED})
-        list(APPEND _installed_gdal_plugin_list "${_installed_gdal_plugin}")
-        # Set caller's plugin list.
-        set(GDAL_PLUGINS_INSTALLED ${_installed_gdal_plugin_list} PARENT_SCOPE)
+            # Add full path to installed plugin file to the plugin list.
+            set(_installed_gdal_plugin_list ${GDAL_PLUGINS_INSTALLED})
+            list(APPEND _installed_gdal_plugin_list "${_installed_gdal_plugin}")
+            # Set caller's plugin list.
+            set(GDAL_PLUGINS_INSTALLED ${_installed_gdal_plugin_list} PARENT_SCOPE)
 
-        # Also record the *source* plugin file. We scan the source plugins (not the installed copies)
-        # for their runtime dependencies, because some libraries (eg, from conda) use relative rpaths
-        # (eg, '@loader_path/...') that only resolve at the source location, not the install location.
-        set(_source_gdal_plugin_list ${GDAL_PLUGINS_SOURCE})
-        list(APPEND _source_gdal_plugin_list "${_gdal_plugin_path}")
-        set(GDAL_PLUGINS_SOURCE ${_source_gdal_plugin_list} PARENT_SCOPE)
-    endfunction()
-    #
-    # Install the GDAL plugins (if not already compiled into the core GDAL library).
-    #
-    # Each installed plugin (full installed path) is added to GDAL_PLUGINS_INSTALLED (which is a list variable).
-    # And each installed path has ${CMAKE_INSTALL_PREFIX} in it (to be evaluated at install time).
-    # Later we will pass GDAL_PLUGINS_INSTALLED to file(GET_RUNTIME_DEPENDENCIES) to find its dependencies and install them also.
-    #
-    # UPDATE: We only install GDAL plugins for GPlates (not pyGPlates).
-    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
-    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
-    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
-    #         However, fortunately pyGPlates doesn't need the following GDAL drivers (plugins), so we'll leave them out (until/if this changes in the future).
-    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+            # Also record the *source* plugin file. We scan the source plugins (not the installed copies)
+            # for their runtime dependencies, because some libraries (eg, from conda) use relative rpaths
+            # (eg, '@loader_path/...') that only resolve at the source location, not the install location.
+            set(_source_gdal_plugin_list ${GDAL_PLUGINS_SOURCE})
+            list(APPEND _source_gdal_plugin_list "${_gdal_plugin_path}")
+            set(GDAL_PLUGINS_SOURCE ${_source_gdal_plugin_list} PARENT_SCOPE)
+        endfunction()
+        #
+        # Install the GDAL plugins (if not already compiled into the core GDAL library).
+        #
+        # Each installed plugin (full installed path) is added to GDAL_PLUGINS_INSTALLED (which is a list variable).
+        # And each installed path has ${CMAKE_INSTALL_PREFIX} in it (to be evaluated at install time).
+        # Later we will pass GDAL_PLUGINS_INSTALLED to file(GET_RUNTIME_DEPENDENCIES) to find its dependencies and install them also.
+        #
         # NetCDF plugin.
         install_gdal_plugin(netCDF)
     endif()
@@ -656,13 +715,11 @@ if (GPLATES_INSTALL_STANDALONE)
 
     # The "qt.conf" file currently only specifies location of Qt plugins.
     #
-    # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
-    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
-    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
-    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
-    #         However, fortunately pyGPlates doesn't need the Qt plugins, so we'll leave them out (until/if this changes in the future).
-    #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
-    #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which is required to parse 'qt.conf' (via QCoreApplication).
+    # It is installed for GPlates only. pyGPlates installs no Qt plugins (see below), and a 'qt.conf'
+    # installed beside the module would not be found anyway: Qt looks for one compiled in as a
+    # resource, then (on macOS) in the main bundle, then beside the executable - and for pyGPlates
+    # the main bundle and the executable are Python's. The macOS wheels do need a 'qt.conf', for a
+    # different reason, and compile one in (see 'src/qt-resources/CMakeLists.txt').
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
         # Install the "qt.conf" file for gplates.
         if (APPLE)
@@ -746,13 +803,10 @@ if (GPLATES_INSTALL_STANDALONE)
     # And each installed path has ${CMAKE_INSTALL_PREFIX} in it (to be evaluated at install time).
     # Later we will pass QT_PLUGINS_INSTALLED to file(GET_RUNTIME_DEPENDENCIES) to find its dependencies and install them also.
     #
-    # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
-    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
-    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
-    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
-    #         However, fortunately pyGPlates doesn't need the Qt plugins, so we'll leave them out (until/if this changes in the future).
-    #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
-    #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which uses 'qt.conf' (via QCoreApplication) to find the plugins.
+    # Qt plugins are installed for GPlates only. pyGPlates uses only Qt Core, so it has none to load.
+    # Shipping any in the wheels would also mean handling them by hand: the wheel-repair tools
+    # (auditwheel/delocate/delvewheel) follow the module's links to its dependencies, and nothing
+    # links to a plugin, so they would not bring one along.
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
         # This works on Qt5.
         # But only works on Qt6 for versions 6.4 and above (according to https://bugreports.qt.io/browse/QTBUG-94066).
@@ -804,8 +858,8 @@ if (GPLATES_INSTALL_STANDALONE)
     ###################################################
     # Install dynamically linked dependency libraries #
     ###################################################
-    # Only install shared library dependencies if requested.
-    if (GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES)
+    # Unless a wheel-repair tool will copy them into the wheel instead (see GPLATES_INSTALL_FOR_WHEEL_REPAIR).
+    if (NOT GPLATES_INSTALL_FOR_WHEEL_REPAIR)
         include(InstallSharedLibraryDependencies)
     endif()
 

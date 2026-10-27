@@ -35,14 +35,13 @@
 #include <QObject>
 
 #include "TopologySectionsContainer.h"
+#include "TopologySectionsFinder.h"
 
 #include "app-logic/Layer.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/TopologyGeometryType.h"
 #include "app-logic/TopologyIntersections.h"
-
-#include "feature-visitors/TopologySectionsFinder.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"

@@ -73,5 +73,16 @@ GPlatesModel::BubbleUpRevisionHandler::commit()
 		!d_model->has_notification_guard())
 	{
 		// TODO: Emit model events.
+		//
+		// Not yet implementable: the bubble-up chain currently ends at the top-level property
+		// (FeatureHandle/BasicHandle are not RevisionContexts), so 'd_model' is always none for
+		// a property value inside a feature and there is no feature to notify. Consequently an
+		// in-place property-value edit (eg, GpmlPlateId::set_value()) does not notify the owning
+		// feature's listeners - no reconstruction, no unsaved-changes flag - whereas
+		// FeatureHandle::add()/set()/remove() do. The desktop app's non-const FeatureVisitor path
+		// bridges this gap in the interim (see FeatureVisitorBase<FeatureHandle>::visit_feature_property()
+		// in "FeatureVisitor.h"); Python-side edits of a model-attached property value do not.
+		// This becomes implementable once FeatureHandle is a RevisionContext (see the
+		// 'feature/pygplates-model-revisions' branch).
 	}
 }

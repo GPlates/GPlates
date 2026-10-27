@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  gml:coordinates, the other spelling of a gml:Point's position: one member that reads, and
+  one whose coordinates are not two numbers. The bad one used to be extracted as the point
+  (0, 0); it is now a read error, and the member carrying it is skipped.
+  Used by GeoscimlReaderTest.cc.
+-->
+<wfs:FeatureCollection
+    xmlns:wfs="http://www.opengis.net/wfs"
+    xmlns:gml="http://www.opengis.net/gml"
+    xmlns:gsml="urn:cgi:xmlns:CGI:GeoSciML:2.0">
+  <gml:featureMember>
+    <gsml:UnclassifiedFeature gml:id="coordinates">
+      <gml:name>Point by coordinates</gml:name>
+      <gsml:shape>
+        <gml:Point srsName="EPSG:4326">
+          <gml:coordinates>45,-30</gml:coordinates>
+        </gml:Point>
+      </gsml:shape>
+    </gsml:UnclassifiedFeature>
+  </gml:featureMember>
+  <gml:featureMember>
+    <gsml:UnclassifiedFeature gml:id="malformed-coordinates">
+      <gml:name>Malformed coordinates</gml:name>
+      <gsml:shape>
+        <gml:Point srsName="EPSG:4326">
+          <gml:coordinates>45</gml:coordinates>
+        </gml:Point>
+      </gsml:shape>
+    </gsml:UnclassifiedFeature>
+  </gml:featureMember>
+</wfs:FeatureCollection>

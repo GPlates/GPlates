@@ -48,9 +48,9 @@ namespace GPlatesApi
 	/*
 	 * The following to/from Python conversions are handled:
 	 *
-	 * To Python                                  str    unicode (Python 2)   bytes (Python 3)
-	 *     /\                                      /\      |                    |
-	 *     |                                       |----------------------------
+	 * To Python                                  str    bytes
+	 *     /\                                      /\      |
+	 *     |                                       |--------
 	 *     |                                       \/
 	 *     |                                     QString
 	 *     |                                       /\
@@ -65,7 +65,7 @@ namespace GPlatesApi
 	 * From Python        XmlAttributeValue EnumerationContent TextContent
 	 */
 
-// For PyString_Check below.
+// For PyUnicode_Check and PyBytes_Check below.
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 	/**
@@ -101,54 +101,13 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 			{
 				namespace bp = boost::python;
 
-#if PY_MAJOR_VERSION >= 3
-				// Python 3 supports 'str' and 'bytes' on the Python side where
-				// 'str' is now unicode (unlike Python 2) and 'bytes' is a sequence of bytes
-				// (similar to 'str' in Python 2).
-				//
-				// For Python 3 we don't need to encode our C++ unicode QString into
-				// a sequence of bytes (since Python 3 'str' is unicode).
+				// Python 'str' is unicode, so we don't need to encode our C++ unicode QString
+				// into a sequence of bytes.
 				// So we just convert our QString into std::wstring and then let boost python
 				// do its implicit conversion from std::wstring to Python 'str'.
 				//
 				bp::object unicode_string(GPlatesUtils::make_wstring_from_qstring(qstring));
 				return bp::incref(unicode_string.ptr());
-#else
-				// Python 2 supports 'str' and 'unicode' (on the Python side) where 'str' is a
-				// sequence of bytes with an implicit encoding (eg, 'latin1' or 'utf8') and
-				// 'unicode' contains the actual characters (code points) with no implicit encoding.
-				//
-				// For Python 2 we return a Python 'str' encoded as UTF8.
-				// We don't return a Python 'unicode' object (there's no boost::python::unicode object
-				// in earlier versions of boost python but there is an implicit conversion from
-				// std::wstring to 'unicode').
-				// Note we should always be consistent with the return type (ie, always return the
-				// same type rather than sometimes 'str' and sometimes 'unicode').
-				// We choose to always return 'str' (instead of 'unicode'), even though it has an implicit encoding.
-				//
-				// Maybe we should return 'unicode' though ? It's hard to decide since a user's program
-				// (if they don't use 'unicode') might then be mixing their 'str' objects with our
-				// 'unicode' types which would cause problems if their 'str' objects contained non-ascii
-				// encoded data (because then an implicit conversion from 'str' to 'unicode', perhaps due to
-				// concatenating their 'str' with our 'unicode', would trigger a unicode decoding exception
-				// assuming their default 'ascii' decoding hasn't been changed). However if we return 'str'
-				// (encoded as UTF8) then an exception would not be raised (since no need to decode to 'unicode')
-				// but their 'str' objects might use a different encoding than us (ie, not UTF8) and mixing
-				// encodings would cause problems if not taken care of.
-				// However UTF8 is the most common encoding, and it includes Ascii (7-bit), so the user
-				// just needs to know that 'str' objects returned by pyGPlates are UTF8-encoded.
-				// They can decode and re-encode to their own 'str' encoding if they use a different encoding.
-				//
-				// Also this means we're returning 'str' in both Python 2 and Python 3 which is consistent
-				// even if they represent different types internally (encoded byte stream vs unicode).
-				//
-				// So, for the above reasons, I think it's probably safer to return 'str' (as UTF8)
-				// instead of 'unicode' (for Python 2).
-				//
-				QByteArray byte_array = qstring.toUtf8();
-				bp::str byte_string(byte_array.constData());
-				return bp::incref(byte_string.ptr());
-#endif
 			};
 		};
 
@@ -159,22 +118,11 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 		{
 			namespace bp = boost::python;
 
-#if PY_MAJOR_VERSION >= 3
 			// Handle Python 'str' and  'bytes' since we can handle more than one type
 			// when converting *from* Python.
-			//
-			// Note that we use 'PyUnicode_Check' instead of 'PyString_Check' since, in Python 3,
-			// 'str' objects are unicode.
 			return (PyUnicode_Check(obj) || PyBytes_Check(obj))
 					? obj
 					: NULL;
-#else
-			// Handle Python 'str' and  'unicode' since we can handle more than one type
-			// when converting *from* Python.
-			return (PyString_Check(obj) || PyUnicode_Check(obj))
-					? obj
-					: NULL;
-#endif
 		}
 
 		static
@@ -189,17 +137,13 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 					bp::converter::rvalue_from_python_storage<QString> *>(
 							data)->storage.bytes;
 
-#if PY_MAJOR_VERSION >= 3
 			// Handle Python 'str' and  'bytes' since we can handle more than one type
 			// when converting *from* Python.
 			// Check if a Python 'str', otherwise it must be a Python 'bytes' since those are
 			// the only two types that can get here (due to 'convertible()').
-			//
-			// Note that we use 'PyUnicode_Check' instead of 'PyString_Check' since, in Python 3,
-			// 'str' objects are unicode.
 			if (PyUnicode_Check(obj))
 			{
-				// Extracting Python 'str' object (which is unicode in Python 3) directly
+				// Extracting Python 'str' object (which is unicode) directly
 				// as std::wstring is more direct than encoding and decoding as UTF8.
 				// For this we take advantage of the implicit conversion from 'unicode' to
 				// std::wstring in boost python.
@@ -211,33 +155,6 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 				// Decode as UTF8.
 				new (storage) QString(QString::fromStdString(bp::extract<std::string>(obj)));
 			}
-#else
-			// Handle Python 'str' and  'unicode' since we can handle more than one type
-			// when converting *from* Python.
-			// Check if a Python 'str', otherwise it must be a Python 'unicode' since those are
-			// the only two types that can get here (due to 'convertible()').
-			if (PyString_Check(obj))
-			{
-				// Decode as UTF8.
-				new (storage) QString(QString::fromStdString(bp::extract<std::string>(obj)));
-			}
-			else // PyUnicode_Check(obj)
-			{
-#if 1
-				// Extracting Python 'unicode' object directly as std::wstring is more direct
-				// than encoding and decoding as UTF8. For this we take advantage of the implicit
-				// conversion from 'unicode' to std::wstring in boost python.
-				new (storage) QString(
-						GPlatesUtils::make_qstring_from_wstring(bp::extract<std::wstring>(obj)));
-#else
-				// First encode as UTF8 into a Python 'str' object.
-				bp::object utf8_string = bp::object(bp::handle<>(PyUnicode_AsUTF8String(obj)));
-
-				// Then decode from UTF8 into our unicode QString.
-				new (storage) QString(QString::fromUtf8(bp::extract<const char*>(utf8_string)()));
-#endif
-			}
-#endif
 
 			data->convertible = storage;
 		}

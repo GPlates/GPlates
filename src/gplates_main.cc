@@ -34,6 +34,7 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <QtGlobal>
+#include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
@@ -66,6 +67,7 @@
 #include "opengl/GLContext.h"
 
 #include "presentation/Application.h"
+#include "presentation/FileIOInjections.h"
 
 #include "qt-widgets/PythonInitFailedDialog.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -103,7 +105,6 @@ namespace
 	public:
 		GuiCommandLineOptions() :
 			debug_gui(false),
-			enable_python(true), // Enabled by default.
 			enable_external_syncing(false),
 			enable_data_mining(true),//Enable data mining by default
 			enable_symbol_table(false),
@@ -113,7 +114,6 @@ namespace
 		boost::optional<QString> project_filename;
 		QStringList feature_collection_filenames;
 		bool debug_gui;
-		bool enable_python;
 		bool enable_external_syncing;
 		bool enable_data_mining;
 		bool enable_symbol_table;
@@ -141,9 +141,6 @@ namespace
 
 	//! Enable symbol-table feature by secret command line option.
 	const char *SYMBOL_TABLE_OPTION_NAME = "symbol-table";
-
-	//! Enable python by secret command line option.
-	const char *NO_PYTHON_OPTION_NAME = "no-python";
 
 	//! Enable communication with external programs
 	const char *ENABLE_EXTERNAL_SYNCING_OPTION_NAME = "enable-external-syncing";
@@ -265,8 +262,7 @@ namespace
 
 	GuiCommandLineOptions
 	parse_gui_command_line_options(
-			int argc, 
-			char *argv[])
+			const QStringList &command_line_arguments)
 	{
 		GPlatesUtils::CommandLineParser::InputOptions input_options;
 
@@ -314,10 +310,6 @@ namespace
 		input_options.hidden_options.add_options()
 			(SYMBOL_TABLE_OPTION_NAME, "Enable symbol feature");
 
-		//Add secret python options.
-		input_options.hidden_options.add_options()
-			(NO_PYTHON_OPTION_NAME, "Disable python");
-
 		// Add enable-external-syncing options
 		input_options.hidden_options.add_options()
 			(ENABLE_EXTERNAL_SYNCING_OPTION_NAME, "Enable external syncing.");
@@ -331,7 +323,7 @@ namespace
 		try
 		{
 			GPlatesUtils::CommandLineParser::parse_command_line_options(
-				vm, argc, argv, input_options);
+				vm, command_line_arguments, input_options);
 		}
 		catch (std::exception &exc)
 		{
@@ -378,7 +370,8 @@ namespace
 					vm[POSITIONAL_FILENAMES_OPTION_NAME].as<std::vector<std::string> >();
 			for (unsigned int i=0; i<filenames.size(); i++)
 			{
-				const QString filename = QString(filenames[i].c_str());
+				// Note: The option values are UTF-8 encoded.
+				const QString filename = QString::fromStdString(filenames[i]);
 
 				// If the filename does not belong to a project file then consider it a feature collection.
 				if (filename.endsWith(GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION, Qt::CaseInsensitive))
@@ -423,13 +416,14 @@ namespace
 			for (unsigned int i=0; i<feature_collection_filenames.size(); i++)
 			{
 				command_line_options.feature_collection_filenames.push_back(
-						feature_collection_filenames[i].c_str());
+						QString::fromStdString(feature_collection_filenames[i]));
 			}
 		}
 
 		if (vm.count(PROJECT_FILENAME_OPTION_NAME))
 		{
-			const QString project_filename = vm[PROJECT_FILENAME_OPTION_NAME].as<std::string>().c_str();
+			const QString project_filename =
+					QString::fromStdString(vm[PROJECT_FILENAME_OPTION_NAME].as<std::string>());
 
 			if (!project_filename.endsWith(
 					GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION,
@@ -493,12 +487,6 @@ namespace
 			command_line_options.enable_hellinger_three_plate = true;
 		}
 
-		// Disable python if command line option specified.
-		if (vm.count(NO_PYTHON_OPTION_NAME))
-		{
-			command_line_options.enable_python = false;
-		}
-
 		return command_line_options;
 	}
 
@@ -517,6 +505,20 @@ namespace
 		// NOTE: This enables the console (command-line) version of GPlates to pop up error message
 		// dialogs such as QMessageBox (which happens in some file I/O code, but really shouldn't).
 		GPlatesGui::GPlatesQApplication qapplication(argc, argv);
+
+		// The command-line interface never constructs a 'GPlatesPresentation::Application', so
+		// it registers the file-io injections itself (no dialog parent: the shapefile mapper
+		// stays unregistered and OgrReader falls back to a default attribute mapping).
+		GPlatesPresentation::register_file_io_injections(NULL);
+
+		// Get the command-line arguments from QCoreApplication, now that there is one, rather
+		// than from CommandLineParser::get_command_line_arguments().
+		//
+		// QApplication removes the arguments it recognises (such as '-platform' and '-style')
+		// from 'argv', and QCoreApplication::arguments() removes them from the wide Windows
+		// command-line in the same way. Otherwise they would reach the option parser below,
+		// which does not know them.
+		const QStringList command_line_arguments = QCoreApplication::arguments();
 
 		// Add some simple options.
 		GPlatesUtils::CommandLineParser::InputOptions input_options;
@@ -552,7 +554,7 @@ namespace
 		{
 			// Parse the command-line options.
 			GPlatesUtils::CommandLineParser::parse_command_line_options(
-					vm, argc, argv, input_options);
+					vm, command_line_arguments, input_options);
 		}
 		catch (std::exception &exc)
 		{
@@ -592,17 +594,17 @@ namespace
 	get_command(
 			std::string &command,
 			GPlatesCli::CommandDispatcher &command_dispatcher,
-			int argc,
-			char* argv[])
+			const QStringList &command_line_arguments)
 	{
-		if (argc < 2)
+		if (command_line_arguments.size() < 2)
 		{
 			command.clear();
 			// Is there a command-line argument to test even ?
 			return FIRST_ARG_IS_NONEXISTENT;
 		}
 
-		const std::string first_arg = argv[1];
+		const QString first_qarg = command_line_arguments[1];
+		const std::string first_arg = first_qarg.toStdString();
 		command = first_arg;
 
 		// See if the first command-line argument is a recognised command.
@@ -611,14 +613,20 @@ namespace
 			if (!first_arg.empty())
 			{
 				// See if the first argument looks like an option.
-				if (first_arg[0] == '-')
+				//
+				// Note: A leading '@' names a response file. The command-line parser turns
+				// "@filename" into the "--response-file" option wherever it appears, so it is
+				// an option here too (otherwise "gplates @filename" was rejected as an
+				// unrecognised command, unlike "gplates --file x @filename").
+				if (first_arg[0] == '-' ||
+					first_arg[0] == '@')
 				{
-					// It looks like an option since it starts with the '-' character.
+					// It looks like an option since it starts with the '-' or '@' character.
 					return FIRST_ARG_IS_OPTION;
 				}
 
 				// See if the first argument is the filename of an existing file.
-				if (QFileInfo(QString(first_arg.c_str())).exists())
+				if (QFileInfo(first_qarg).exists())
 				{
 					return FIRST_ARG_IS_FILENAME;
 				}
@@ -653,11 +661,18 @@ namespace
 		 */
 		GPlatesCli::CommandDispatcher command_dispatcher;
 
+		// Get the command-line arguments.
+		//
+		// Note: These are used in place of 'argv' since, on Windows, 'argv' cannot represent
+		// characters outside the process' ANSI code page (such as in a non-ASCII filename).
+		const QStringList command_line_arguments =
+				GPlatesUtils::CommandLineParser::get_command_line_arguments(argc, argv);
+
 		// Get the user-specified command (this is the first positional argument on the
 		// command-line).
 		std::string command;
 		const FirstCommandLineArgumentType first_arg_type =
-				get_command(command, command_dispatcher, argc, argv);
+				get_command(command, command_dispatcher, command_line_arguments);
 
 		switch (first_arg_type)
 		{
@@ -669,7 +684,7 @@ namespace
 			// GUI options (or simple options such as help and version) were specified.
 			//
 			// NOTE: This is the only case where GPlates runs as the familiar GUI application.
-			return parse_gui_command_line_options(argc, argv);
+			return parse_gui_command_line_options(command_line_arguments);
 
 		case FIRST_ARG_IS_UNRECOGNISED_COMMAND:
 			// The first command-line argument was not a recognised command or existing filename
@@ -696,36 +711,50 @@ namespace
 		throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 	}
 
-	void
+	bool
 	initialise_python(
 			GPlatesPresentation::Application *app,
 			char* argv[])
 	{
-		using namespace GPlatesGui;
-		PythonManager* mgr = PythonManager::instance();
 		try
 		{
-			mgr->initialize(argv,app);
+			GPlatesGui::PythonManager::instance()->initialize(argv,app);
 		}
-		catch(const PythonInitFailed& ex)
+		catch (const GPlatesGui::PythonInitFailed &ex)
 		{
+			//
+			// If Python initialisation failed then show a troubleshooting dialog and then exit GPlates.
+			//
+			// It's possible that Python could not be found or was not installed.
+			// However that should not happen for a binary distribution of GPlates since it
+			// should have the Python library included in the installation.
+			//
+
+			// Emit warning message (to console/log).
 			std::stringstream ss;
 			ex.write(ss);
 			qWarning() << ss.str().c_str();
-			
-			if(mgr->show_init_fail_dlg())
-			{
-				using namespace GPlatesQtWidgets;
-				boost::scoped_ptr<PythonInitFailedDialog> python_fail_dlg(
-					new PythonInitFailedDialog);
 
-				python_fail_dlg->exec();
-				mgr->set_show_init_fail_dlg(python_fail_dlg->show_again());
-			}
+			// Show dialog.
+			boost::scoped_ptr<GPlatesQtWidgets::PythonInitFailedDialog> python_fail_dlg(
+					new GPlatesQtWidgets::PythonInitFailedDialog);
+			python_fail_dlg->exec();
 
-			GPlatesUtils::ComponentManager::instance().disable(
-				GPlatesUtils::ComponentManager::Component::python());
+			// Destroy the Python manager before the caller exits the process.
+			//
+			// 'PythonManager::initialize()' starts the Python execution thread before the step
+			// that most often fails, so that thread can still be running here. Normally
+			// 'clean_up()' stops it, but the caller exits without reaching it. Destroying the
+			// manager is the part of 'clean_up()' that is safe either way: it writes a Qt
+			// preference and stops the thread, and only takes the GIL through members that
+			// exist when Python did initialise. The singleton pointer dangles afterwards, which
+			// is why this is done immediately before exiting.
+			delete GPlatesGui::PythonManager::instance();
+
+			return false;
 		}
+
+		return true;
 	}
 
 	void
@@ -736,8 +765,6 @@ namespace
 		// is called then contained objects are destroyed in correct order.
 		// Also we should be careful about excessive use of singletons because they are essentially global data.
 
-		if(GPlatesUtils::ComponentManager::instance().is_enabled(
-				GPlatesUtils::ComponentManager::Component::python()))
 		{
 			GPlatesApi::PythonInterpreterLocker lock;
 			delete GPlatesGui::DrawStyleManager::instance(); //delete draw style manager singleton.
@@ -763,8 +790,7 @@ internal_main(int argc, char* argv[])
 	Q_INIT_RESOURCE(opengl);
 	Q_INIT_RESOURCE(python);
 	Q_INIT_RESOURCE(gpgim);
-	Q_INIT_RESOURCE(qt_widgets);
-	Q_INIT_RESOURCE(python);
+	Q_INIT_RESOURCE(qt_resources);
 
 	//on Ubuntu Natty, we need to set this env variable to avoid the funny looking of spherical grid.
 	#if defined(linux) || defined(__linux__) || defined(__linux)
@@ -805,18 +831,6 @@ internal_main(int argc, char* argv[])
 	{
 		GPlatesUtils::ComponentManager::instance().enable(
 				GPlatesUtils::ComponentManager::Component::symbology());
-	}
-
-	// Enable or disable python as specified on command-line.
-	if (gui_command_line_options->enable_python)
-	{
-		GPlatesUtils::ComponentManager::instance().enable(
-			GPlatesUtils::ComponentManager::Component::python());
-	}
-	else
-	{
-		GPlatesUtils::ComponentManager::instance().disable(
-			GPlatesUtils::ComponentManager::Component::python());
 	}
 
 	// Enable or disable hellinger tool.
@@ -941,11 +955,17 @@ internal_main(int argc, char* argv[])
 	// Note that python references 'Application' so this should be instantiated before python is initialised.
 	GPlatesPresentation::Application application;
 
-	// Initialise python if it's enabled.
-	if(GPlatesUtils::ComponentManager::instance().is_enabled(
-			GPlatesUtils::ComponentManager::Component::python()))
+	// Initialise Python.
+	//
+	// GPlates requires Python, so a failure here ends the session. We exit rather than return
+	// because the normal shutdown path is not usable without an interpreter: 'clean_up()' takes
+	// the GIL, and PyGILState_Ensure() aborts the process outright when Python never initialised.
+	// The dialog explaining the failure has already been shown by 'initialise_python()', which
+	// has also stopped the Python execution thread if it managed to start one.
+	if (!initialise_python(&application, argv))
 	{
-		initialise_python(&application,argv);
+		// A non-zero value indicates error.
+		exit(1);
 	}
 
 	// Also load a project file or any feature collection files specified on the command-line.
@@ -994,6 +1014,17 @@ internal_main(int argc, char* argv[])
 int
 main(int argc, char* argv[])
 {
+	// Log any exception that reaches 'std::terminate' before the process aborts.
+	//
+	// This complements 'call_main()' below (and 'GPlatesQApplication::notify()'), which can only
+	// catch exceptions that actually unwind the stack. An exception thrown from a destructor, or
+	// from any 'noexcept' function, invokes 'std::terminate' directly - so no handler, including
+	// the one below, ever gets a chance to see it.
+	//
+	// We do this here (rather than in 'internal_main()') so that it also covers the non-GUI
+	// command-line paths and the period before QApplication exists.
+	GPlatesGui::GPlatesQApplication::install_terminate_handler();
+
 	// The first of two reasons to wrap 'main()' around 'internal_main()' is to
 	// handle any uncaught exceptions that occur in main() but outside the Qt event thread.
 	// Any uncaught exceptions occurring in the Qt event thread will get caught by the

@@ -250,12 +250,6 @@ namespace GPlatesQtWidgets
 			action_Unload_Symbol->setVisible(false);
 		}
 
-		void
-		hide_python_menu()
-		{
-			action_Open_Python_Console->setVisible(false);
-		}
-
 	protected:
 	
 		/**
@@ -444,9 +438,6 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_import_scalar_field_3d_dialog();
-
-		void
-		handle_colour_scheme_delegator_changed();
 
 		void
 		handle_visual_layer_added(

@@ -27,6 +27,8 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTEDFLOWLINE_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTEDFLOWLINE_H
 
+#include <vector>
+
 #include "ReconstructedFeatureGeometry.h"
 #include "VelocityDeltaTime.h"
 #include "VelocityUnits.h"
@@ -97,6 +99,10 @@ namespace GPlatesAppLogic
 				const flowline_geom_ptr_type &right_flowline_points,
 				const GPlatesModel::integer_plate_id_type &left_plate_id,
 				const GPlatesModel::integer_plate_id_type &right_plate_id,
+				// The flowline feature's times and spreading start time (to calculate the seed point
+				// velocity with).
+				const std::vector<double> &flowline_times,
+				const double &spreading_start_time,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator,
 				// All reconstructed seed points (not just the one referenced by this ReconstructedFlowline).
@@ -114,6 +120,8 @@ namespace GPlatesAppLogic
 							right_flowline_points,
 							left_plate_id,
 							right_plate_id,
+							flowline_times,
+							spreading_start_time,
 							feature_handle,
 							property_iterator,
 							reconstructed_geometry_),
@@ -211,6 +219,8 @@ namespace GPlatesAppLogic
 				const flowline_geom_ptr_type &right_flowline_points_,
 				const GPlatesModel::integer_plate_id_type &left_plate_id_,
 				const GPlatesModel::integer_plate_id_type &right_plate_id_,
+				const std::vector<double> &flowline_times_,
+				const double &spreading_start_time_,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator,
 				const feature_geom_ptr_type &reconstructed_geometry_):
@@ -229,7 +239,9 @@ namespace GPlatesAppLogic
 			d_left_flowline_points(left_flowline_points_),
 			d_right_flowline_points(right_flowline_points_),
 			d_left_plate_id(left_plate_id_),
-			d_right_plate_id(right_plate_id_)
+			d_right_plate_id(right_plate_id_),
+			d_flowline_times(flowline_times_),
+			d_spreading_start_time(spreading_start_time_)
 		{  }
 
 		seed_point_type d_present_day_seed_point;
@@ -237,9 +249,13 @@ namespace GPlatesAppLogic
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_left_flowline_points;
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_right_flowline_points;
 
-		// Left/Right plate ids are here purely for colouring.
+		// Left/Right plate ids, for colouring and to calculate the seed point velocity with.
 		GPlatesModel::integer_plate_id_type d_left_plate_id;
 		GPlatesModel::integer_plate_id_type d_right_plate_id;
+
+		// The flowline feature's times and spreading start time, when it was reconstructed.
+		std::vector<double> d_flowline_times;
+		double d_spreading_start_time;
 	};
 
 }

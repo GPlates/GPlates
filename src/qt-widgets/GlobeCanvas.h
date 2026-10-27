@@ -43,7 +43,6 @@
 #include <QOpenGLWidget>
 
 #include "gui/Colour.h"
-#include "gui/ColourScheme.h"
 #include "gui/Globe.h"
 #include "gui/ViewportZoom.h"
 
@@ -137,33 +136,9 @@ namespace GPlatesQtWidgets
 
 		GlobeCanvas(
 				GPlatesPresentation::ViewState &view_state,
-				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = 0);
 
 		~GlobeCanvas();
-
-	private:
-
-		//! Private constructor for use by clone()
-		GlobeCanvas(
-				GlobeCanvas *existing_globe_canvas,
-				GPlatesPresentation::ViewState &view_state_,
-				GPlatesMaths::PointOnSphere &virtual_mouse_pointer_pos_on_globe_,
-				bool mouse_pointer_is_on_globe_,
-				GPlatesGui::Globe &existing_globe_,
-				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
-				QWidget *parent_ = 0);
-
-		//! Common code for both constructors
-		void
-		init();
-
-	public:
-
-		GlobeCanvas *
-		clone(
-				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
-				QWidget *parent_ = 0);
 
 		/**
 		 * The proximity inclusion threshold is a measure of how close a geometry must be

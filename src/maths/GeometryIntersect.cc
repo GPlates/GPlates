@@ -1415,7 +1415,9 @@ double
 GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_sine()
 {
 	// Base epsilon calculations off a cosine since that usually has the least accuracy for small angles.
-	// '1 - 1e-12' in cosine corresponds to a displacement of about 1.4e-6 [=sin(acos(1 - 1e-12))].
+	// The zero-length cosine, 'cos(asin(sqrt(1e-12)))', corresponds to a displacement of about
+	// 1e-6. (This is not the point-on-polygon threshold of point-in-polygon, about 1.4e-6, whose
+	// cosine is '1 - 1e-12'.)
 	static const double THICKNESS_THRESHOLD_SINE_ = std::sin(std::acos(get_on_segment_start_threshold_cosine()));
 
 	return THICKNESS_THRESHOLD_SINE_;

@@ -25,6 +25,10 @@
 
 #include "Centroid.h"
 
+#include "GreatCircleArc.h"
+#include "SmallCircleBounds.h"
+#include "Vector3D.h"
+
 
 namespace GPlatesMaths
 {
@@ -92,6 +96,48 @@ namespace GPlatesMaths
 				}
 
 				return area_weighted_centroid;
+			}
+
+
+			/**
+			 * Calculate the area moment (the integral of position over area) of the region to the left
+			 * of a polygon ring, weighted by winding number.
+			 *
+			 * By Stokes' theorem this is half the sum, over the ring's edges, of each edge's arc length
+			 * times its unit normal (rotation axis). It is exact, and needs no apex, but it loses
+			 * precision on tiny rings: the terms (unit vectors scaled by arc lengths) round at about
+			 * epsilon each, while the moment is about the square of the ring's width, so its direction
+			 * errs by about epsilon over the width squared (measured: about 3e-7 radians for a ring
+			 * 1e-5 radians across).
+			 */
+			Vector3D
+			calculate_area_moment_of_polygon_ring(
+					const PolygonOnSphere::ring_const_iterator &ring_begin,
+					const PolygonOnSphere::ring_const_iterator &ring_end)
+			{
+				Vector3D area_moment(0, 0, 0);
+
+				for (PolygonOnSphere::ring_const_iterator ring_iter = ring_begin;
+					ring_iter != ring_end;
+					++ring_iter)
+				{
+					const GreatCircleArc &edge = *ring_iter;
+					if (edge.is_zero_length())
+					{
+						continue;
+					}
+
+					// The arc length from its sine and cosine (accurate for short arcs, unlike the cosine).
+					const UnitVector3D &start = edge.start_point().position_vector();
+					const UnitVector3D &end = edge.end_point().position_vector();
+					const double arc_length = std::atan2(
+							cross(start, end).magnitude().dval(),
+							dot(start, end).dval());
+
+					area_moment = area_moment + (0.5 * arc_length) * Vector3D(edge.rotation_axis());
+				}
+
+				return area_moment;
 			}
 		}
 	}
@@ -187,6 +233,52 @@ GPlatesMaths::Centroid::calculate_interior_centroid(
 		const PolygonOnSphere &polygon,
 		bool use_interior_rings)
 {
+	// A polygon wider than this (the radius of its outline's bounding small circle) uses its exact
+	// area moment. A smaller one sums the triangles of a fan from its boundary centroid, each
+	// weighted by its area at its vertices' (normalised) mean. That approximation is good for small
+	// triangles but not for large ones (about 0.3 degrees off for a polygon 1 radian across), while
+	// the exact moment loses precision on tiny polygons. At this size both agree to about 1e-10.
+	static const double MINIMUM_RADIUS_COSINE_FOR_FAN = std::cos(0.01);
+	if (polygon.get_bounding_small_circle().get_angular_extent().get_cosine().dval() <=
+		MINIMUM_RADIUS_COSINE_FOR_FAN)
+	{
+		// Each ring's moment is its interior's (with the sign of the ring's signed area), and the
+		// interior rings are holes, as for the area (see SphericalArea::calculate_polygon_signed_area).
+		Vector3D area_moment =
+				Implementation::calculate_area_moment_of_polygon_ring(
+						polygon.exterior_ring_begin(),
+						polygon.exterior_ring_end());
+		if (SphericalArea::calculate_polygon_exterior_ring_signed_area(polygon).is_precisely_less_than(0))
+		{
+			area_moment = -area_moment;
+		}
+
+		if (use_interior_rings)
+		{
+			const unsigned int num_interior_rings = polygon.number_of_interior_rings();
+			for (unsigned int interior_ring_index = 0;
+				interior_ring_index < num_interior_rings;
+				++interior_ring_index)
+			{
+				Vector3D interior_ring_area_moment =
+						Implementation::calculate_area_moment_of_polygon_ring(
+								polygon.interior_ring_begin(interior_ring_index),
+								polygon.interior_ring_end(interior_ring_index));
+				if (SphericalArea::calculate_polygon_interior_ring_signed_area(polygon, interior_ring_index)
+						.is_precisely_less_than(0))
+				{
+					interior_ring_area_moment = -interior_ring_area_moment;
+				}
+
+				area_moment = area_moment - interior_ring_area_moment;
+			}
+		}
+
+		return Implementation::get_normalised_centroid_or_placeholder_centroid(
+				area_moment,
+				polygon.first_exterior_ring_vertex().position_vector());
+	}
+
 	// Calculate a rough centroid of the polygon.
 	const PointOnSphere polygon_centroid(polygon.get_boundary_centroid());
 

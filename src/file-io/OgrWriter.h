@@ -154,7 +154,11 @@ namespace GPlatesFileIO
 		GdalUtils::vector_data_source_type *d_ogr_data_source_ptr;
 
 		// Data source for each of the geometry types. 
+		//
+		// Multi-points have their own, rather than a second layer beside the points: GeoJSON and
+		// OGR GMT allow only one layer in a file, and GPlates reads only the first layer of a file.
 		GdalUtils::vector_data_source_type *d_ogr_point_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_ogr_multi_point_data_source_ptr;
 		GdalUtils::vector_data_source_type *d_ogr_line_data_source_ptr;
 		GdalUtils::vector_data_source_type *d_ogr_polygon_data_source_ptr;
 

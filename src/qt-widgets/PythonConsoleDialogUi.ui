@@ -14,7 +14,7 @@
    <string>Python Console</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gplates_logo_16.png</normaloff>:/gplates_logo_16.png</iconset>
   </property>
   <property name="sizeGripEnabled">
@@ -39,7 +39,7 @@
          <string>&amp;Run Script...</string>
         </property>
         <property name="icon">
-         <iconset resource="../qt-resources/qt_widgets.qrc">
+         <iconset resource="../qt-resources/qt_resources.qrc">
           <normaloff>:/gnome_run_22.png</normaloff>:/gnome_run_22.png</iconset>
         </property>
         <property name="popupMode">
@@ -66,7 +66,7 @@
          <string>&amp;Save</string>
         </property>
         <property name="icon">
-         <iconset resource="../qt-resources/qt_widgets.qrc">
+         <iconset resource="../qt-resources/qt_resources.qrc">
           <normaloff>:/gnome_save_22.png</normaloff>:/gnome_save_22.png</iconset>
         </property>
         <property name="toolButtonStyle">
@@ -83,7 +83,7 @@
          <string>&amp;Clear</string>
         </property>
         <property name="icon">
-         <iconset resource="../qt-resources/qt_widgets.qrc">
+         <iconset resource="../qt-resources/qt_resources.qrc">
           <normaloff>:/tango_edit_clear_22.png</normaloff>:/tango_edit_clear_22.png</iconset>
         </property>
         <property name="toolButtonStyle">
@@ -123,7 +123,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>

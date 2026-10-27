@@ -26,6 +26,7 @@
 #ifndef GPLATES_SCRIBE_SCRIBEINTERNALUTILS_H
 #define GPLATES_SCRIBE_SCRIBEINTERNALUTILS_H
 
+#include <exception>
 #include <functional>
 #include <typeinfo>
 #include <utility>
@@ -55,6 +56,30 @@ namespace GPlatesScribe
 	{
 		//! Typedef for an integer identifier for a transcribed object.
 		typedef TranscriptionScribeContext::object_id_type object_id_type;
+
+
+		/**
+		 * Returns true if an exception is currently propagating (ie, the stack is being unwound).
+		 *
+		 * This is used by the destructors that report an unchecked transcribe result (see
+		 * 'Bool' and 'LoadRef<>') to avoid throwing while another exception is already in flight.
+		 * Throwing a second exception during unwinding calls 'std::terminate' and would therefore
+		 * destroy the very diagnostic information those destructors exist to provide - and, worse,
+		 * would hide the original exception (which is the more interesting one).
+		 */
+		inline
+		bool
+		is_unwinding()
+		{
+#if defined(__cpp_lib_uncaught_exceptions) && __cpp_lib_uncaught_exceptions >= 201411
+			return std::uncaught_exceptions() > 0;
+#else
+			// 'std::uncaught_exceptions()' is C++17 and GPlates currently targets C++14
+			// (see 'CXX_STANDARD 14' in 'src/CMakeLists.txt'), so fall back to the C++11
+			// singular form (which is deprecated in C++17 and removed in C++20).
+			return std::uncaught_exception();
+#endif
+		}
 
 
 		/**

@@ -27,7 +27,6 @@
 #include "ReconstructionGeometryFinder.h"
 
 #include "ReconstructedFeatureGeometry.h"
-#include "Reconstruction.h"
 #include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
 

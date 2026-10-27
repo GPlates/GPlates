@@ -173,7 +173,7 @@
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../qt-resources/qt_widgets.qrc">
+      <iconset resource="../qt-resources/qt_resources.qrc">
        <normaloff>:/gnome_folder_16.png</normaloff>:/gnome_folder_16.png</iconset>
      </property>
     </widget>
@@ -538,7 +538,7 @@
   <tabstop>button_settings</tabstop>
  </tabstops>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections>
   <connection>

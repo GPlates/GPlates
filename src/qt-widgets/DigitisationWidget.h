@@ -153,18 +153,12 @@ namespace GPlatesQtWidgets
 		handle_export();
 
 
-		// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
-		// It has been deprecated since Qt 5.13.
-		//
-		// TODO: Find a replacement library.
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 		/**
 		 * Feeds the ExportCoordinatesDialog a GeometryOnSphere, and
 		 * then displays it.
 		 */
 		void
 		handle_use_in_wfs();
-#endif
 
 		/**
 		 * The slot that gets called when the geometry inside the geometry

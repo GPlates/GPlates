@@ -48,8 +48,6 @@
 #include "app-logic/ScalarCoverageEvolution.h"
 #include "app-logic/ScalarCoverageFeatureProperties.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
@@ -63,6 +61,7 @@
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyValueFinder.h"
 
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayer.h"
@@ -243,7 +242,7 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::initialise_widgets()
 		{
 			// Get the reconstruction plate ID of the focused feature.
 			boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> gpml_reconstruction_plate_id =
-					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
 							d_feature_focus.focused_feature(),
 							GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
 			if (gpml_reconstruction_plate_id)
@@ -269,7 +268,7 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::initialise_widgets()
 	{
 		// Set the name of the focused feature in the edit widget.
 		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> gml_name =
-				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+				GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
 						d_feature_focus.focused_feature(),
 						GPlatesModel::PropertyName::create_gml("name"));
 		if (gml_name)

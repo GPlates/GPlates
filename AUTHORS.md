@@ -1,0 +1,42 @@
+# Authors
+
+The GPlates source code contains code written by the following employees of the University of
+Sydney, Australia:
+
+- James Boyden
+- James Clark
+- John Cannon
+- Enoch Lau
+- Michael Chin
+- Mike Dowman
+- James Farrow
+- Glen Fernandes
+- Hamish Ivey-Law
+- David Symonds
+- John Xu
+
+The GPlates source code contains code written by the following employees of the Geological Survey
+of Norway:
+
+- Robin Watson
+
+The GPlates source code contains code written by the following employees of the California
+Institute of Technology:
+
+- Mark Turner
+
+Other contributors are listed in the
+[commit history](https://github.com/GPlates/GPlates/commits/) of the GitHub repository.
+
+<!-- Keep the two sections below in sync with GPLATES_COPYRIGHT_STRING and
+     GPLATES_HTML_COPYRIGHT_STRING in cmake/modules/ConfigDefault.cmake (shown in the About dialog). -->
+
+The GPlates source code also contains code derived from:
+
+- ReconTreeViewer (James Boyden)
+- Boost intrusive_ptr (Peter Dimov)
+- Loki ScopeGuard (Andrei Alexandrescu, Petru Marginean, Joshua Lehrer)
+- Loki RefToValue (Richard Sposato, Peter Kummel)
+
+The GPlates source tree additionally contains icons from the GNOME desktop environment, the
+Inkscape vector graphics editor and the Tango icon library.

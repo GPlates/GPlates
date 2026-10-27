@@ -65,6 +65,25 @@ namespace GPlatesScribe
 	public:
 
 		/**
+		 * Throws Exceptions::ScribeTranscribeResultNotChecked if the boolean result was never
+		 * checked by the client (and this is the last 'Bool' referencing that result).
+		 *
+		 * NOTE: This destructor is explicitly 'noexcept(false)' because, since C++11, destructors
+		 * are implicitly 'noexcept(true)' - and an exception escaping a 'noexcept' destructor calls
+		 * 'std::terminate' immediately, without unwinding the stack. That means no handler anywhere
+		 * can catch it and nothing gets logged, which would defeat the entire purpose of this check.
+		 *
+		 * This is also why the check is done here rather than in 'CheckDeleter' (where it used to be):
+		 * the deleter is called from 'boost::detail::shared_count::~shared_count()', which is declared
+		 * without an exception-specification and hence is *also* implicitly 'noexcept(true)'
+		 * (see [class.dtor]/3). So an exception thrown by the deleter terminates inside Boost, before
+		 * it ever reaches this class. Marking this destructor 'noexcept(false)' only helps if the
+		 * throw actually originates here.
+		 */
+		~Bool() noexcept(false);
+
+
+		/**
 		 * Boolean test - don't use directly.
 		 *
 		 * Instead use (for example):

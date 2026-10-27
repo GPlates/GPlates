@@ -61,13 +61,13 @@ GPlatesMaths::BoundingSmallCircle::Result
 GPlatesMaths::BoundingSmallCircle::test(
 		const GreatCircleArc &gca) const
 {
-	const AngularDistance min_distance_to_gca = minimum_distance(d_small_circle_centre, gca);
+	const AngularDistance min_distance_to_gca = minimum_distance(d_small_circle_centre, gca).get();
 	if (min_distance_to_gca.is_precisely_greater_than(d_angular_extent))
 	{
 		return OUTSIDE_BOUNDS;
 	}
 
-	const AngularDistance max_distance_to_gca = maximum_distance(d_small_circle_centre, gca);
+	const AngularDistance max_distance_to_gca = maximum_distance(d_small_circle_centre, gca).get();
 	if (max_distance_to_gca.is_precisely_less_than(d_angular_extent))
 	{
 		return INSIDE_BOUNDS;
@@ -196,6 +196,13 @@ GPlatesMaths::BoundingSmallCircle::test_filled_polygon(
 		{
 			result = INTERSECTING_BOUNDS;
 		}
+	}
+	// If the polygon outline is inside the small circle then its interior can still reach past the
+	// circle (if the polygon wraps round the globe).
+	else if (result == INSIDE_BOUNDS &&
+		!polygon.is_outside_bounding_small_circle_outside_polygon(*this))
+	{
+		result = INTERSECTING_BOUNDS;
 	}
 
 	return result;
@@ -474,13 +481,13 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::Result
 GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 		const GreatCircleArc &gca) const
 {
-	const AngularDistance min_distance_to_gca = minimum_distance(d_outer_small_circle.d_small_circle_centre, gca);
+	const AngularDistance min_distance_to_gca = minimum_distance(d_outer_small_circle.d_small_circle_centre, gca).get();
 	if (min_distance_to_gca.is_precisely_greater_than(d_outer_small_circle.get_angular_extent()))
 	{
 		return OUTSIDE_OUTER_BOUNDS;
 	}
 
-	const AngularDistance max_distance_to_gca = maximum_distance(d_outer_small_circle.d_small_circle_centre, gca);
+	const AngularDistance max_distance_to_gca = maximum_distance(d_outer_small_circle.d_small_circle_centre, gca).get();
 	if (max_distance_to_gca.is_precisely_less_than(d_inner_angular_extent))
 	{
 		return INSIDE_INNER_BOUNDS;
@@ -615,6 +622,13 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test_filled_polygon(
 		{
 			result = INTERSECTING_BOUNDS;
 		}
+	}
+	// If the polygon outline is inside the inner small circle then its interior can still reach past
+	// the inner circle (if the polygon wraps round the globe).
+	else if (result == INSIDE_INNER_BOUNDS &&
+		!polygon.is_outside_bounding_small_circle_outside_polygon(get_inner_bounding_small_circle()))
+	{
+		result = INTERSECTING_BOUNDS;
 	}
 
 	return result;

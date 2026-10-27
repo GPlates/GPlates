@@ -31,7 +31,6 @@
 #include <cstdlib>
 
 #include <QUuid>
-#include <QtNetwork/QHostInfo>
 
 #include "UniqueId.h"
 

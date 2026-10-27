@@ -24,9 +24,9 @@
  */
 
 #include "ViewFeatureGeometriesWidget.h"
+#include "ViewFeatureGeometriesWidgetPopulator.h"
 
 #include "app-logic/ApplicationState.h"
-#include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
 #include "presentation/ViewState.h"
 #include "utils/UnicodeStringUtils.h"
 
@@ -79,7 +79,7 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::refresh_display()
 
 	if (isVisible())
 	{
-		GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
+		GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator populator(
 				d_application_state_ptr->get_current_reconstruction(),
 				*tree_geometry);
 		populator.populate(d_feature_ref, d_focused_rg);
@@ -112,7 +112,7 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::showEvent(
 {
 	if (d_populate_geometry_tree_when_visible)
 	{
-		GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
+		GPlatesQtWidgets::ViewFeatureGeometriesWidgetPopulator populator(
 				d_application_state_ptr->get_current_reconstruction(),
 				*tree_geometry);
 		populator.populate(d_feature_ref, d_focused_rg);

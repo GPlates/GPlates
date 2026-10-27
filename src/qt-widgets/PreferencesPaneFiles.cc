@@ -60,7 +60,6 @@ GPlatesQtWidgets::PreferencesPaneFiles::PreferencesPaneFiles(
 	QWidget(parent_)
 {
 	setupUi(this);
-	groupbox_scripting->setVisible(false);
 
 	QFont font_ = label_feature_collections->font();
 	font_.setBold(true);
@@ -122,17 +121,6 @@ GPlatesQtWidgets::PreferencesPaneFiles::PreferencesPaneFiles(
 			"paths/default_export_dir", toolbutton_reset_default_export_dir);
 	link_dir_chooser_button(toolbutton_choose_default_export_dir, lineedit_default_export_dir);
 
-	// Python Script Locations UserPreferences link:-
-	
-	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(lineedit_python_system_script_dir, prefs,
-			"paths/python_system_script_dir", toolbutton_reset_python_system_script_dir);
-	link_dir_chooser_button(toolbutton_choose_python_system_script_dir, lineedit_python_system_script_dir);
-
-	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(lineedit_python_user_script_dir, prefs,
-			"paths/python_user_script_dir", toolbutton_reset_python_user_script_dir);
-	link_dir_chooser_button(toolbutton_choose_python_user_script_dir, lineedit_python_user_script_dir);
-	
-	
 	// Recent Sessions UserPreferences link:-
 	
 	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(spinbox_recent_sessions_max_size, prefs,

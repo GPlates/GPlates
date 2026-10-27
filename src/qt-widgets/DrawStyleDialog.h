@@ -49,7 +49,6 @@ namespace GPlatesAppLogic
 
 namespace GPlatesGui
 {
-	class ColourSchemeContainer;
 	class DrawStyleManager;
 	class StyleCategory;
 	class StyleAdapter;

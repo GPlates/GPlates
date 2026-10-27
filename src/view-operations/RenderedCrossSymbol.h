@@ -27,7 +27,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourProxy.h"
+#include "gui/Colour.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesViewOperations
@@ -43,7 +43,7 @@ public:
 
     RenderedCrossSymbol(
 	const GPlatesMaths::PointOnSphere &centre,
-	const GPlatesGui::ColourProxy &colour,
+	const GPlatesGui::Colour &colour,
 	unsigned int size,
 	float line_width_hint) :
 	d_centre(centre),
@@ -78,7 +78,7 @@ public:
     }
 
 
-    const GPlatesGui::ColourProxy &
+    const GPlatesGui::Colour &
     get_colour() const
     {
 	return d_colour;
@@ -100,7 +100,7 @@ private:
 
     GPlatesMaths::PointOnSphere d_centre;
 
-    GPlatesGui::ColourProxy d_colour;
+    GPlatesGui::Colour d_colour;
     unsigned int d_size;
     float d_line_width_hint;
 

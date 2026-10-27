@@ -42,16 +42,6 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-// suppress bogus warning when compiling with gcc 4.3
-#if (__GNUC__ == 4 && __GNUC_MINOR__ == 3)
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#endif 
-
-//PUSH_GCC_WARNINGS
-//DISABLE_GCC_WARNING("-Wshadow")
-//DISABLE_GCC_WARNING("-Wold-style-cast")
-//DISABLE_GCC_WARNING("-Werror")
-
 PUSH_MSVC_WARNINGS
 DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <CGAL/algorithm.h>
@@ -67,10 +57,7 @@ DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <CGAL/Triangulation_hierarchy_2.h>
 #include <CGAL/Triangulation_hierarchy_vertex_base_2.h>
 #include <CGAL/Triangulation_vertex_base_2.h>
-
 POP_MSVC_WARNINGS
-
-//POP_GCC_WARNINGS
 
 #include "DeformationStrainRate.h"
 #include "ResolvedVertexSourceInfo.h"
@@ -1043,7 +1030,10 @@ namespace GPlatesAppLogic
 			theta3 = GPlatesMaths::convert_deg_to_rad( theta3 );
 
 			// Scale velocity values from cm/yr to m/s.
-			const double inv_velocity_scale = 1.0 / 3.1536e09;
+			// A year is 365.25 days, as when strain is accumulated over time (see
+			// TopologyReconstruct).
+			const double inv_velocity_scale =
+					1.0 / (100/* cm -> m */ * 365.25 * 24 * 3600/* yr -> s */);
 
 			uphi_centroid = uphi_centroid * inv_velocity_scale;
 			uphi1 = uphi1 * inv_velocity_scale;

@@ -72,9 +72,6 @@ namespace GPlatesMaths
 			 *
 			 * @param axis The axis of the circle.
 			 * @param colat The angle between axis and circumference (aka the "colatitude").
-			 * 
-			 * @image html fig_small_circle.png
-			 * @image latex fig_small_circle.eps width=2.3in
 			 *
 			 * @throws ViolatedClassInvariantException if
 			 *   @p abs(@a cos(colat)) > 1.

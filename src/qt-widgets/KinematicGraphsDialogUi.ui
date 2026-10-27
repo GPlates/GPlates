@@ -369,7 +369,7 @@
            <string>Autoscale y-axis</string>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/gnome_zoom_fit_best_16.png</normaloff>:/gnome_zoom_fit_best_16.png</iconset>
           </property>
           <property name="checkable">
@@ -395,7 +395,7 @@
            <string>Stretch y-axis</string>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/gnome_zoom_in_16.png</normaloff>:/gnome_zoom_in_16.png</iconset>
           </property>
           <property name="checkable">
@@ -421,7 +421,7 @@
            <string>Compress y-axis</string>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/gnome_zoom_out_16.png</normaloff>:/gnome_zoom_out_16.png</iconset>
           </property>
           <property name="checkable">
@@ -444,7 +444,7 @@
            <string>...</string>
           </property>
           <property name="icon">
-           <iconset resource="../qt-resources/qt_widgets.qrc">
+           <iconset resource="../qt-resources/qt_resources.qrc">
             <normaloff>:/gnome_object_flip_horizontal_purple_16.png</normaloff>:/gnome_object_flip_horizontal_purple_16.png</iconset>
           </property>
          </widget>
@@ -571,7 +571,7 @@
   <tabstop>table_results</tabstop>
  </tabstops>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>
