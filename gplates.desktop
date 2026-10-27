@@ -1,0 +1,62 @@
+[Desktop Entry]
+Type=Application
+Icon=/usr/share/pixmaps/gplates.png
+Exec=env QT_QPA_PLATFORM=xcb /usr/bin/gplates
+Terminal=false
+
+Name=GPlates
+Comment=Visualizes tectonics features through geological time
+
+Name[ar]=GPlates
+Comment[ar]=يُصوِّر ملامح الصفائح التكتونية عبر الزمن الجيولوجي
+
+Name[de]=GPlates
+Comment[de]=Visualisiert tektonische Merkmale durch die geologische Zeit
+
+Name[es]=GPlates
+Comment[es]=Visualiza características tectónicas a través del tiempo geológico
+
+Name[fr]=GPlates
+Comment[fr]=Visualise les caractéristiques tectoniques à travers le temps géologique
+
+Name[hi]=GPlates
+Comment[hi]=भूवैज्ञानिक काल के दौरान विवर्तनिक विशेषताओं को दर्शाता है
+
+Name[it]=GPlates
+Comment[it]=Visualizza le caratteristiche tettoniche nel tempo geologico
+
+Name[ja]=GPlates
+Comment[ja]=地質時代を通じてプレートテクトニクスの特徴を可視化します
+
+Name[ko]=GPlates
+Comment[ko]=지질 시대에 걸쳐 지각 구조 특징을 시각화합니다
+
+Name[nl]=GPlates
+Comment[nl]=Visualiseert tektonische kenmerken door de geologische tijd
+
+Name[pl]=GPlates
+Comment[pl]=Wizualizuje cechy tektoniczne przez czas geologiczny
+
+Name[pt]=GPlates
+Comment[pt]=Visualiza características tectônicas ao longo do tempo geológico
+
+Name[pt_BR]=GPlates
+Comment[pt_BR]=Visualiza características tectônicas ao longo do tempo geológico
+
+Name[ru]=GPlates
+Comment[ru]=Визуализирует тектонические особенности на протяжении геологического времени
+
+Name[sv]=GPlates
+Comment[sv]=Visualiserar tektoniska egenskaper genom geologisk tid
+
+Name[tr]=GPlates
+Comment[tr]=Jeolojik zaman boyunca tektonik özellikleri görselleştirir
+
+Name[uk]=GPlates
+Comment[uk]=Візуалізує тектонічні особливості протягом геологічного часу
+
+Name[zh_CN]=GPlates
+Comment[zh_CN]=通过地质时间可视化构造特征
+
+Name[zh_TW]=GPlates
+Comment[zh_TW]=透過地質時間視覺化構造特徵
