@@ -200,6 +200,26 @@
            </widget>
           </item>
           <item>
+           <widget class="QWidget" name="gradient_bar_placeholder" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="style_hint_label">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QWidget" name="widget" native="true">
             <layout class="QHBoxLayout" name="horizontalLayout_4">
              <property name="margin">
@@ -217,7 +237,10 @@
                <item>
                 <widget class="QPushButton" name="add_button">
                  <property name="text">
-                  <string>&amp;Add...</string>
+                  <string>&amp;New</string>
+                 </property>
+                 <property name="toolTip">
+                  <string>Create an editable copy of the selected style.</string>
                  </property>
                 </widget>
                </item>
