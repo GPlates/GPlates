@@ -593,7 +593,21 @@ intersection is unchanged (the two have equal keys along that geometry, so "firs
 once F7 makes the sort stable). (a) does not touch the third record of the right-angle case, the SL of
 `v` on `P`'s arriving segment: it comes from a different pair of segments and is a correct record in
 its own right, and it lies within `sqrt(2)` thicknesses of the kept LS, so the overlay's contraction
-(tolerance at least `2s`) merges the two. Write it over `(segment index, is-start)` pairs so that a self-intersection
+(tolerance at least `2s`) merges the two.
+
+**F3 (a) is wrong at an acute corner; under review (2026-10-28).** The rule has no distance test, so
+it also drops one of the two LS records when `x` is far from `v`, for example at `r = 1.2 h` to
+`3.8 h` on the bisector of a 30-degree corner (exact reference at `s`: LS on `Q` segments 0 and 3,
+both by `P`'s vertex 1). There the two records are not duplicates. They are the two crossings that
+`P` makes with the corner's edges at `r = 4.2 h` (LL on segments 0 and 3), collapsed onto `x` by the
+thickness. Together they cut `Q`'s ring into a tip piece `[x, v, x]`, which holds the original vertex
+`v`, and the rest of the ring. `v` is further than `h` from `P`, so its exact classification can
+differ from the rest of the ring's (in the probe, `v` is north of `P` and `Q`'s far vertices are
+south). Dropping a record makes the ring one piece holding both, and a test at one original vertex
+then classifies all of `Q` on one side. The overlay should keep both records: the two coincide at
+`x`, so they form one vertex with six ends, and the sector rule classifies the ends from their
+rotational order. The tip piece is classified at `v`, and its output ring `x, v` is degenerate (two
+vertices, zero area, a sliver at most `2h` wide), so it is dropped. Write it over `(segment index, is-start)` pairs so that a self-intersection
 mode can reuse it (section 3.10). Test: section 6.1, test 12.
 
 **F4. Remove the dead code and state the invariant (D5).** Delete `arcs_are_near_each_other`,
