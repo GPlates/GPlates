@@ -112,6 +112,18 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   after the developer checks the usage limit. PR A's F1, F2, F4, F5 and F7 do not depend on it;
   F3 is to be withdrawn; F6 waits for 4a.
 
+- 2026-10-29: **Phase 4a run 1 done** (Fable, high effort; `phase4a-run1.md`, tools in the planning
+  repository at 82fccd6). 463 catalogue cases, every tie order, against the oracle. Clean (0 oracle,
+  0 check, 0 repairs): V0/free (no grouping, no merge), V1b/free (identity vertices, a loop arc
+  internal, no contraction by distance; added in review), V2b/free (contraction at `2h` plus
+  same-cluster arcs). Failing: V1 (identity alone: two SS at one vertex make a loop arc), V2 (a
+  cluster wider than `2h`), and the rotational order somewhere under every variant but V2b. The
+  geometry-free rule at four-end vertices is what every clean variant has in common. Refuted: the
+  hand claim that V0 fails when `P` bends at `x`; the tangent-ray claim outside common chains (a
+  narrow neck gives exactly parallel rays at one six-end vertex). Inverting every midpoint test
+  changes nothing for V0 or V1b. Run 2: compare V0/free, V1b/free and V2b/free under the random
+  generator and perturbations, prefer the simplest that survives.
+
 - **Resume here** (2026-10-27):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). The walk-through of requirements §3.3 is complete (`overlay-walkthrough.md`,
