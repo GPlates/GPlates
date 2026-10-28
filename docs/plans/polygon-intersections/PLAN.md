@@ -107,6 +107,11 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     prototype of the overlay core on `arc_ref.py`, with a point-sampling oracle, run on a catalogue
     of cluster configurations in both tie orders and on a random cluster generator.
 
+- 2026-10-29: **Phase 4 split into 4a (the overlay core, by a Python prototype and hunt) and 4b
+  (the written design)**, developer agreed; see *Phases*. Next: the Phase 4a Fable brief, launched
+  after the developer checks the usage limit. PR A's F1, F2, F4, F5 and F7 do not depend on it;
+  F3 is to be withdrawn; F6 waits for 4a.
+
 - **Resume here** (2026-10-27):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). The walk-through of requirements §3.3 is complete (`overlay-walkthrough.md`,
@@ -361,14 +366,43 @@ requirements in hand, as the developer anticipated.
   (topology resolving uses GeometryIntersect, so a fix there can be visible in both products).
 
 ### Phase 4: partitioning design (Fable designs; Opus reviews against the code)
-- A detailed design of the chosen algorithm. It goes in the plan, not the doc.
+
+Split in two (developer, 2026-10-29). The tolerance handling is settled by experiment first, and the
+written design follows it.
+
+**Phase 4a: the core, by prototype (Fable).** A Python prototype of the overlay core in the planning
+repository's `plans/polygon-intersection-tools/`, on `arc_ref.py`'s exact records: vertices,
+pieces, classification, deduction, pairing, linking and the checks. Not a second implementation:
+the core and an oracle only.
+- **The oracle:** sample points well away from both boundaries; each is in the output exactly when
+  `f(in P, in Q)`, with the output read by parity over its rings (no grouping needed).
+- **The runs:** a catalogue of configurations with several records at or near one point (wedges,
+  a twist near `Q`, narrow necks, touching rings, D4 segments, SS clusters), then a random cluster
+  generator (vertices within 0 to `3s` of edges, vertices and each other). Every case in both tie
+  orders, and under small perturbations, since the C++'s rounding is not in `arc_ref.py`.
+- **The variants:** identity vertices with deduction only; plus contraction at linking, a cluster
+  kept as the list of its vertices; possibly a parity solve over a cluster's internal pieces.
+- **Decides:** Q4 (contraction, from the winning variant); Q5 (from the repair counts); Q3's
+  fallback (options 1 and 3 on identical rings and thin faces); deduce-first or test-first for
+  single-arc pieces; Q8 informed by cluster widths in a short cascade; the core data structures
+  (vertex, cluster, piece, ray) and so the provenance model; what `GeometryIntersect` must provide
+  (feeds PR A's F6). One run cutting by an open arc, for the `DateLineWrapper` decision.
+- **Delivers:** the results (which variant has zero oracle failures and zero repairs, and what the
+  failures of the others looked like); `overlay-walkthrough.md` section 7 rewritten as "One point,
+  several records"; the catalogue and generator, which become Phase 5's GoogleTest cases and the
+  start of its hunt; the prototype itself, as the reference to check the C++ against record for
+  record, piece for piece and class for class.
+
+**Phase 4b: the written design.** A detailed design of the chosen algorithm, the core translated
+from the prototype. It goes in the plan, not the doc.
   - Data structures, with provenance per point.
   - Holes in both polygons.
   - Rings that don't intersect. These are classified by point-in-polygon, never by
     `minimum_distance == 0`.
   - Grouping output rings into polygons, by containment or parity.
-  - Self-crossing input, including a twist lying on the other polygon: contract pieces shorter
-    than the tolerance, so that it is one vertex (requirements §3.3).
+  - Self-crossing input, including a twist lying on the other polygon, and every other case of
+    several records at or near one point: as Phase 4a decides. (This bullet said "contract pieces
+    shorter than the tolerance"; reopened 2026-10-28, see *Status*.)
   - Inside **and** outside output, both of which partitioning needs, and the other Boolean
     operations by the same keep-rule. A union (or symmetric difference) larger than a hemisphere
     must fail, not come back as its complement.
@@ -424,10 +458,12 @@ requirements in hand, as the developer anticipated.
     - Only the thin layer that stays needs an audit.
   - If no: `DateLineWrapper` stays as it is for 1.1, without an audit (it has served well). A
     later audit, with the same oracle, is the roadmap's call.
-- **Checkpoint:** the developer approves the design, the coverage policy and the coverage scope.
+- **Checkpoint:** the developer approves the design, with Phase 4a's results behind its core, the
+  coverage policy and the coverage scope.
 
 ### Phase 5: implementation (Opus implements; Fable reviews each major commit)
-- Build it in the order of the design, with GoogleTest unit tests per stage.
+- Build it in the order of the design, with GoogleTest unit tests per stage. Phase 4a's catalogue
+  supplies many of the cases, and its prototype is the reference the C++ is checked against.
 - **The oracle** needs no new exact reference, because point-in-polygon was audited in
   #106/#107. For random points `p`, `p` is inside an inside piece exactly when it is inside both
   the input and the partitioner, and the pieces are disjoint. Also, the areas of the inside and
@@ -471,7 +507,8 @@ requirements in hand, as the developer anticipated.
 | Claim checks on every doc section | Fable | errors in the developer's reading material compound |
 | Papers, DateLineWrapper, requirements, candidate algorithms | Fable | the hardest reasoning in the project, and where the choices are made |
 | Intersection audit; adversarial degenerate-case hunts | Fable | as for #104 and #106 |
-| Partitioning design | Fable, reviewed by Opus against the code | |
+| Overlay-core prototype and its hunt (Phase 4a) | Fable | the tolerance handling, where hand analysis has gone wrong twice |
+| Partitioning design (Phase 4b) | Fable, reviewed by Opus against the code | |
 | Commit reviews in Phase 5; final distillation | Fable | CLAUDE.md requires Fable for distillation |
 
 Fable agents run one at a time, with a pause for the developer to check the 5-hour limit between
