@@ -76,6 +76,13 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   Decided: the sector rule is primary (Q3, partly); always split pinched rings (Q11). Proposed for
   the anchorless fallback: the developer's idea, crossings from `R` leaving out the chain's own arc.
 
+- 2026-10-28: **Q1 decided: raise the thickness to `s`** (developer; for the R7 agreement with
+  point-in-polygon and one meaning of "the same point"). **Q9 decided: derive chains in the
+  partitioner**; the `Graph` is unchanged apart from F2 and F6. The audit's claim that `s` also
+  removes the right-angle corner wedge (D3) was wrong and is corrected in `phase3-audit.md`: the
+  thickness and the coincidence radius are one constant, so the wedge scales with it. F3 remains
+  the fix at every angle; the third (SL) record of the right-angle case is left to contraction.
+
 - **Resume here** (2026-10-27):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). The walk-through of requirements §3.3 is complete (`overlay-walkthrough.md`,
