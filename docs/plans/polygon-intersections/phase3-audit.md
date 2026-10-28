@@ -71,7 +71,9 @@ branches of `add_segments_crossing_intersection` unreachable (section 3.1).
    angle `theta` the wedge reaches `t / sin(theta / 2)` from `v`. Just beyond the coincidence disc a third
    record appears: `v` on the segment of `P` that arrives at `x`. Probe: `|x - v| = 1.018e-6` at a right
    angle gives three records; `3.8e-6` on the bisector of a 30-degree corner gives two. Raising the
-   thickness to `s` removes the right-angle case; acute corners keep it. Fix F3.
+   thickness to `s` does not remove it: the plane thickness and the coincidence radius are the same
+   constant, so the wedge only scales by `sqrt(2)` (exact reference at `s`, 2026-10-28: three records
+   for `a = 0.72 s` to `0.99 s` at a right angle). Fix F3, and contraction for the third record.
 4. **D4 (specification, not code). A segment shorter than `2t` that crosses an edge gives two touch
    records up to `2t` apart and no crossing.** Probe: a `1.5e-6` segment gives two records `1.5e-6`
    apart. The requirements file says such touches are "within `1e-6` of each other"; they are not, so a
@@ -491,8 +493,12 @@ What changes if the thickness becomes `s` (reading, exact):
 - **Coincidence becomes `dot >= 1 - 1e-12`**, which is exactly `real_t` equality of unit vectors, the
   same notion as `PointOnSphere::operator==` (`PointOnSphere.h:500-505`) and `points_are_coincident`.
   There is then one meaning of "the same point" in `src/maths`.
-- **The corner wedge of D3 at a right angle disappears**: every point within `t` of both perpendicular
-  planes is within `sqrt(2) t = s` of the corner. Acute corners keep it, over a longer wedge.
+- **The corner wedge of D3 stays, scaled by `sqrt(2)`.** (Corrected 2026-10-28: an earlier version said
+  the right-angle wedge disappears. That compared a coincidence radius of `s` with a plane thickness of
+  `t`, but `get_on_segment_start_threshold_cosine()` sets both, so they rise together. The exact
+  reference at `s` gives three records for `a` from `0.72 s` to `0.99 s` at a right angle.) Removing
+  the right-angle wedge would need a coincidence radius of `sqrt(2)` times the thickness, two
+  constants instead of one, and acute corners would keep it anyway; F3 is the fix at every angle.
 - **The R7 gap closes**: no record within `s` means no vertex of `P` within `s` of `Q`'s outline, so
   `PolygonPartitioner`'s threshold-off query for a non-intersecting geometry agrees with the inclusive
   query, and the overlay's "rings with no intersection" step is consistent with `is_point_in_polygon` as
@@ -515,12 +521,12 @@ What changes if the thickness becomes `s` (reading, exact):
   number of multiple-intersection sections does not rise". This is a deliberate correction, and needs a
   changelog entry in both products.
 
-What changes if the thickness stays `t`: nothing in the code; the R7 gap, D3's right-angle wedge and the
-`4.4e-11` margin stay, and must be documented as decisions.
+What changes if the thickness stays `t`: nothing in the code; the R7 gap and the `4.4e-11` margin stay,
+and must be documented as decisions.
 
 **Recommendation: raise it to `s`.** The system then has one tolerance for "the same point", stated once
 (`EPSILON` seen through a cosine), the partitioner's exact classification agrees with the inclusive
-query by construction, and the right-angle duplicate records vanish. The costs are a measurable, bounded
+query by construction. (D3 is not a reason either way; see above.) The costs are a measurable, bounded
 change to topology resolving and a `2s` contraction tolerance in Phase 4. If the developer prefers to
 keep `t` for PR A's "unchanged output" guarantee, D2 and D3 become documented limits and the contraction
 tolerance is `2t`, and the choice should be revisited before PR B, since the overlay's consistency
@@ -583,7 +589,11 @@ them, since they have equal keys along one geometry and bracket the corner along
 `t / sin(theta / 2)` each side, which exceeds any fixed contraction tolerance for sharp corners. Prefer
 (a). Risk: topology resolving today sees such a vertex as two or three intersections and takes its
 backward-compatible path, which uses the first along geometry 1; (a) keeps that record, so the chosen
-intersection is unchanged. Write it over `(segment index, is-start)` pairs so that a self-intersection
+intersection is unchanged (the two have equal keys along that geometry, so "first" is only defined
+once F7 makes the sort stable). (a) does not touch the third record of the right-angle case, the SL of
+`v` on `P`'s arriving segment: it comes from a different pair of segments and is a correct record in
+its own right, and it lies within `sqrt(2)` thicknesses of the kept LS, so the overlay's contraction
+(tolerance at least `2s`) merges the two. Write it over `(segment index, is-start)` pairs so that a self-intersection
 mode can reuse it (section 3.10). Test: section 6.1, test 12.
 
 **F4. Remove the dead code and state the invariant (D5).** Delete `arcs_are_near_each_other`,
@@ -665,10 +675,15 @@ nothing is axis-aligned by accident. Thresholds below mean `t` as returned by
     internal) by shaping the two geometries' sizes; assert the record sets equal a brute-force
     `intersect_segments` over all pairs (expose it in a test-only header, or compare against the
     `PolylineIntersections` cut).
-12. **Corner wedge.** `Q`'s right-angle corner `v` and a `P` vertex at `(-a, +a)` from it for `a` in
-    `0.5 t`, `0.72 t`, `0.99 t`; a 30-degree corner with the vertex on the bisector at `1.2`, `2`, `3.8`
-    and `4.2` times `t`. Expected after F1/F3: one record each for the first three and the bisector cases
-    inside the wedge, two LL for `4.2 t`. Before F3 this documents D3.
+12. **Corner wedge.** Written in units of the thickness `h` (`s` after F1), so that the cases stay in
+    the wedge whichever thickness is chosen. `Q`'s right-angle corner `v` and a `P` vertex `x` at
+    `(-a, +a)` from it, with `P` arriving from `(-0.01, 0.003)` rad as in `probe_corner.py`, for `a` in
+    `0.5 h`, `0.72 h`, `0.99 h`; a 30-degree corner with `x` on the bisector at `1.2`, `2`, `3.8` and
+    `4.2` times `h`. Expected after F3: `0.5 h` one SS; `0.72 h` and `0.99 h` two records, the SL of
+    `v` on `P`'s arriving segment and one LS of `x` (the pair on consecutive edges reduced to one); the
+    bisector cases inside the wedge (up to `h / sin(15 deg) = 3.86 h`) one LS; `4.2 h` two LL. Before
+    F3 this documents D3. (Corrected 2026-10-28: the cases were in units of `t`, which F1 would have
+    moved inside the coincidence disc, and the right-angle expectation omitted the SL record.)
 13. **Symmetry.** For every geometry pair above, `intersect(A, B)` and `intersect(B, A)` have the same
     record count, mirrored types, equal positions except SS within `t`, and the two orders swapped.
 14. **No intersection and clearing.** Disjoint geometries: returns false, `Graph` empty; a `Graph` with
