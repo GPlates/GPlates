@@ -83,6 +83,30 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   thickness and the coincidence radius are one constant, so the wedge scales with it. F3 remains
   the fix at every angle; the third (SL) record of the right-angle case is left to contraction.
 
+- 2026-10-28: **Tolerances in the overlay reopened** (the developer). Found while discussing D3,
+  not yet written into `overlay-walkthrough.md` (its section 7 is under review):
+  - The wedge's two records both sit at `P`'s vertex `x`, so they are one overlay vertex by
+    identity, not by distance. Treating them as two vertices with a zero-length piece between them
+    is wrong when `P` bends at `x`: the piece's direction is fictitious, and the result depends on
+    the unspecified tie order (one order passes the checks, the other fails; worked by hand).
+  - A twist near `Q` never produces a record at `X`, which is no vertex of either polygon. The two
+    crossings stay two LL vertices, converge as `Q`'s edge rises, coincide within rounding, and swap
+    order along `Q`. Kept as two vertices with a zero-length piece of `Q` between them, each is an
+    ordinary crossing: the piece's direction is `Q`'s plane and its class is deduced. Either tie
+    order gives a valid output. So section 7.1's two reasons for contracting (no test point, no
+    direction) fail for the twist, and 7.2's "without contraction the walk fails" is wrong.
+  - At a vertex where each polygon passes once, nothing needs the rotational order: `P` crosses
+    iff its two pieces differ in class (the check: so do `Q`'s), a missing class follows, and
+    pairing is by the sector memberships (crossing) or same-polygon (bounce, with Q11's split).
+  - What is left for contraction: clusters of distinct vertices within about `2s`, where the
+    records encode a snapped topology and the planes' directions describe the unsnapped one (the
+    right-angle wedge with its SL record; D4 when not a common chain).
+  - Proposed principle: never drop a record (withdraw F3); vertices are identities; nothing merged
+    by distance in the core; if anything is merged, at linking, as a list of member vertices;
+    output clean-up (zero-area rings, repeated positions) last. Proposed investigation: a Python
+    prototype of the overlay core on `arc_ref.py`, with a point-sampling oracle, run on a catalogue
+    of cluster configurations in both tie orders and on a random cluster generator.
+
 - **Resume here** (2026-10-27):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). The walk-through of requirements §3.3 is complete (`overlay-walkthrough.md`,
