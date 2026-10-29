@@ -174,7 +174,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     2. Apply its section 7 corrections to the design doc (§1, §4.2, §4.3) and the requirements, and
        record the decisions: `GeometryIntersect` is the primitive; `GreatCircleArc::intersect`
        stays separate for distance, with nothing ported (D5).
-    3. Fixes F1, F2 and F4 to F7 (Opus; F3 withdrawn 2026-10-30): F1 the thickness and its
+    3. Fixes F1, F2 and F4 to F7 (Opus; F3 withdrawn 2026-10-30; the developer reviewed the audit
+       and approved these fixes on 2026-10-30, so step 1 is done): F1 the thickness and its
        comments; F2 order touch records by projection; F4 delete the dead code and state the
        `sin(phi) > t` invariant; F5 document the record positions; F6 ring structure for consumers,
        and which original vertices each record names (audit F6, 2026-10-30); F7 `std::stable_sort`.
