@@ -1,7 +1,9 @@
 # Phase 4a: the prototype's variants, explained
 
 Written 2026-10-29 from the discussion of run 1's results (`phase4a-run1.md`), which are the
-evidence; this file is the explanation. When a variant is chosen (after run 2), the chosen one goes
+evidence; this file is the explanation. Sections 1 to 9 describe the variants as run 1 left them;
+sections 10 and 11 give the configuration chosen after run 2 (`phase4a-run2.md`) and what run 2
+corrected. When a variant is chosen (after run 2), the chosen one goes
 into `overlay-walkthrough.md` section 7 (to be rewritten as "One point, several records") and later
 the design doc, and the others into the design doc's rejected alternatives, with the reasons below.
 Statements marked *measured* come from the prototype (`plans/polygon-intersection-tools/` in the
@@ -190,3 +192,81 @@ All three are clean on the catalogue; V1 and V2 fail (sections 3, 4), and the ro
 somewhere under every variant but V2b. Run 2 tries to break the three with random clusters and
 perturbations, keeps the midpoint inversion on, measures sliver areas, chained-group extents and
 cluster widths, and probes six-end vertices; then the simplest survivor is chosen.
+
+## 10. After run 2: the chosen configuration
+
+Chosen by the developer, 2026-10-30, from `phase4a-run2.md` (the evidence) and
+`phase4a-section7-draft.md` (the walk-through's account). Phase 4b extends it; this section says
+what it is now and why each part is there.
+
+Run 2's random hunt broke all three of run 1's candidates. V0 and V1b broke on the order in which
+undetermined pieces were tested, which two new rules fix; V2b broke on its clusters, which nothing
+fixed. The configuration:
+
+1. **Identity vertices with the loop rule (V1b)**, as in sections 2 and 3.
+2. **The spike rule**: two consecutive single arcs of one ring, out from a vertex to another and
+   straight back (`A, B, A`), are internal. It is the loop rule's two-arc case, needs no threshold
+   for the same reason, and is the commonest way a ring revisits an identity vertex along densely
+   coincident boundaries (run 2: it fixed two of the four residual failures).
+3. **The `LL` rule (`freex`)**: at a four-end vertex that is one `LL` record, the record says the
+   two polygons cross, so each polygon's two classes must differ, one known class fixes the other
+   three, and a bounce there is a check failure. Without it, a single arc between crossings could
+   not be deduced until three neighbours were known, and went to a midpoint test (229 of 300 random
+   cases needed one; 4 with the rule). It also let two arbitrary band pieces make an `LL` vertex
+   look like a bounce, consistent and wrong (138 of 900 oracle points in `rays#81`). A touch record
+   gets no such rule, because a touch can be a crossing or a bounce. The rule reads the record kind,
+   which `GeometryIntersect` decided, so the overlay still makes no geometric decision.
+4. **Midpoint tests in order of margin**: when deduction stalls, the undetermined single arc whose
+   midpoint is farthest from the other polygon's boundary is tested first, then deduction runs
+   again. Run 1 tested in piece order. In a neck, a `1.2h` band piece came first, its arbitrary
+   class was deduced onwards through a four-end vertex, and a piece `10^4 h` long came out wrong (9
+   of 300 `six` cases; V0 likewise, 33 of 300, through its zero-length pieces). The principle: a
+   class decided inside the band must never be the source of a deduction for a piece with a
+   margin. With it, what is left to midpoint tests are band pieces, whose class is arbitrary by
+   nature.
+5. **Option 3 for anchorless chains (Q3)**: a whole-ring common chain is classified by counting
+   crossings from `R`, leaving out the chain's own arc, along a path that stays on `R`'s side of
+   that arc's great circle (run 2 found that a path through an unrestricted waypoint arrived from
+   the wrong side in about half the runs). Option 1, an offset test point, fails every thin face.
+
+**What it was tested on** (all measured, run 2): 0 oracle, check or repair failures in 1498 random
+cases of five generators, 60 chain cases, 60 shared-edge cases, the 463-case catalogue, 157 cascade
+steps, 20 anchorless cases and 600 cuts by an open arc. The same under ulp jitter of the inputs,
+under the rotational order computed in doubles, and under the fair midpoint adversary (section 11).
+
+**What is still open, for Phase 4b:**
+
+- **The bundle rule.** V1b fails 4 of 299 dense jittered shared edges (2 with the spike rule) and
+  one six-end case from another seed. Each failure is at an identity vertex with six or more ends
+  where several rays leave along one thick plane, so their order by angle is noise. The missing
+  rule treats such rays as one bundle and solves the classes of the pieces between them from the
+  vertex's parity constraints, instead of reading them off an order. The mechanism is V2b's
+  failure seen from the other side: V2b meets it at every cluster, V1b only when boundaries
+  coincide densely (vertices 4 to 11 m apart along each other).
+- **Slivers of the true answer** (section 7): up to about `8.8e3 h^2` in run 2, output by every
+  variant. Whether to merge or drop them is the distance-based output rule of section 7.
+- **Chained identity groups have no fixed bound**: `28.8h` for 65 records on an edge digitised
+  every `0.45h` along another. The output moves by the group's extent, set by the data;
+  contraction would not shorten it.
+
+## 11. What run 2 corrected in run 1's conclusions
+
+- **The midpoint inversion of run 1 was unfair.** It negated every midpoint test, including
+  reliable ones on long arcs that the free rule had failed to deduce (item 3 above). Negating a
+  reliable test is simply a wrong class, and fails the oracle. The fair adversary negates a test
+  only when the whole arc lies within `2h` of the other boundary; then it changes only slivers
+  under `0.5h` wide (section 6's conclusion, that the test does no useful work, holds only for
+  those band pieces).
+- **V0 is not clean** (33 of 300 `six` cases under run 1's rules): its zero-length pieces can only
+  ever be deduced, and testing one at its midpoint is testing a point on both boundaries.
+- **V2b is not clean** (19 of 300 `six`, 3 of 60 `chain`, 18 of 299 `shared`, in exact arithmetic,
+  under every rule and test order). Contraction joins two four-end vertices, which need no geometry,
+  into one six-end cluster, which does, and whose rays leave from different member positions, so
+  their order is not the order at any one point. It also moved the output by up to `20h`, and lost
+  anchors for common chains. An earlier merge was acceptable if it tested better (section 7); it
+  tested worse.
+- **Float rounding never mattered.** The rotational order in doubles agreed with the exact order at
+  every vertex where it was used, down to rays `1.8e-15` rad apart; two parallel rays can only swap
+  with each other, which changes nothing. The neck's coin toss of section 8 is harmless.
+- **Cascades did not grow clusters or groups** from step to step (40 cascades of three to five
+  plates).

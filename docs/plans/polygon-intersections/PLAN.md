@@ -141,6 +141,15 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   item for Phase 4b. Cascade clean with no growth; the open-arc cut works with three additions.
   Awaiting the developer's decision on the variant.
 
+- 2026-10-30: **Decided (developer): the overlay core is V1b with the spike rule, the `LL` rule
+  (`freex`) and margin-ordered midpoint tests; Q3's fallback is option 3** (crossings from `R`,
+  path on `R`'s side). The bundle rule is Phase 4b's first design item. `phase4a-variants.md`
+  sections 10 and 11 explain the chosen configuration and run 2's corrections. The section 7
+  draft gained the twist on `Q` as a worked sector example (7.8), a fuller account of the `LL`
+  rule (7.4), and a corrected 7.7 (identity vertices also need the bundle rule, but contraction
+  creates six-end vertices where identity has four-end ones); it waits for the developer's read
+  before replacing walk-through section 7.
+
 - **Resume here** (2026-10-27):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). The walk-through of requirements §3.3 is complete (`overlay-walkthrough.md`,
