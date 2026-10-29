@@ -122,7 +122,10 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   hand claim that V0 fails when `P` bends at `x`; the tangent-ray claim outside common chains (a
   narrow neck gives exactly parallel rays at one six-end vertex). Inverting every midpoint test
   changes nothing for V0 or V1b. Run 2: compare V0/free, V1b/free and V2b/free under the random
-  generator and perturbations, prefer the simplest that survives.
+  generator and perturbations, prefer the simplest that survives. **`phase4a-variants.md`**
+  explains the variants (identity vertices, the loop rule, clusters, zero area, midpoint tests,
+  slivers, six-end vertices), from the developer's questions on run 1; it feeds walk-through
+  section 7 and the design doc's rejected alternatives once a variant is chosen.
 
 - **Resume here** (2026-10-27):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
