@@ -154,8 +154,10 @@ Every variant but V2b can output slivers, of two kinds:
 Partitioning feeds Assign Plate IDs, so a sliver can become a tiny extra polygon assigned to a
 plate, which users see. **A design question for Phase 4b**: whichever variant wins, should the
 output drop or merge any region all of whose points lie within about `h` of both inputs'
-boundaries? That rule would be distance-based, but at the very end, on output regions rather than
-on records or pieces, which is where the developer wanted any merging to go if it is needed at all.
+boundaries? That rule would be distance-based, on output regions rather than on records or pieces.
+Where any merge goes is open (developer, 2026-10-29): the concern was only that removing
+information early might cause problems nobody foresaw, so an earlier merge (such as V2b's) is fine
+if the prototype's testing shows it works better.
 
 ## 8. Geometry at a vertex
 
