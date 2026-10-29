@@ -159,6 +159,12 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   (deduction across crossings; not yet run by the prototype). `phase2-requirements.md` section 3.3
   and questions 3 and 4 updated to match.
 
+- 2026-10-30: **Phase 4a finished.** The Fable claim check of `overlay-walkthrough.md` found 21
+  issues (3 high: the `LL` rule fixes only its own polygon's other class; a chained identity group's
+  rays leave from several positions; same-polygon pairing at a bounce is the split pairing), all
+  applied, with the `LL` correction carried into `phase4a-variants.md`, `phase4a-run2.md` and the
+  prototype. Next: PR A, starting with the fixes (step 3 below).
+
 - **Resume here** (updated 2026-10-30):
   - Phase 4a is done; the overlay core and Q3 are decided (entries above). Next: the developer
     reviews `phase3-audit.md` (now with a section 0, "Status after Phase 4a") and the requirements
