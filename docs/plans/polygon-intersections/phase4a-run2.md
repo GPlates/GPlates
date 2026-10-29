@@ -618,3 +618,8 @@ not reduce; whether the C++ keeps the all-vertices diagnostic (run 1's suggestio
   dismissed.
 - **The longer runs** (300-case `chain`, the 60-per-generator jitter and controls runs) did not
   finish; no process was left running.
+- **Claim check of the walk-through (2026-10-30) found an overstatement here**: section 3 and the
+  `freex` rule say one known class at an `LL` vertex "deduces the other three". It deduces only its
+  own polygon's other class (`_solve_free`, which loops over `P`'s pair and `Q`'s pair separately);
+  knowing `P`'s classes says nothing about `Q`'s. The measurements stand, since they were made with
+  the code. The `229 to 4` figures quoted in section 11 are V0's; the chosen V1b's are `218 to 1`.

@@ -209,10 +209,11 @@ fixed. The configuration:
    for the same reason, and is the commonest way a ring revisits an identity vertex along densely
    coincident boundaries (run 2: it fixed two of the four residual failures).
 3. **The `LL` rule (`freex`)**: at a four-end vertex that is one `LL` record, the record says the
-   two polygons cross, so each polygon's two classes must differ, one known class fixes the other
-   three, and a bounce there is a check failure. Without it, a single arc between crossings could
-   not be deduced until three neighbours were known, and went to a midpoint test (229 of 300 random
-   cases needed one; 4 with the rule). It also let two arbitrary band pieces make an `LL` vertex
+   two polygons cross, so each polygon's two classes must differ: one known class fixes its own
+   polygon's other class (not the other polygon's), and a bounce there is a check failure. Without
+   it, a single arc between crossings could not be deduced until three neighbours were known, and
+   went to a midpoint test (218 midpoint tests in 300 random `near` cases for V1b; 1 with the
+   rule). It also let two arbitrary band pieces make an `LL` vertex
    look like a bounce, consistent and wrong (138 of 900 oracle points in `rays#81`). A touch record
    gets no such rule, because a touch can be a crossing or a bounce. The rule reads the record kind,
    which `GeometryIntersect` decided, so the overlay still makes no geometric decision.
