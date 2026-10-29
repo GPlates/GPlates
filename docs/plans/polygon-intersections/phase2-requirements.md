@@ -360,6 +360,29 @@ Requirements met today, on first reading: R1, R2, R5, R6, R8 (zero length), R10,
 met, or met only by reconstruction in the consumer: R3, R4. Known gaps: R7 (the thickness is not
 `s`), R8 (near-antipodal planes), R9 (the near-collinear crossing position).
 
+The "Today" notes above are the first reading. The Phase 3 audit (`phase3-audit.md`, section 1.2)
+gives the verdicts, and its section 7 lists the corrections to apply here (PR A, step 2).
+
+**What Phase 4a changed in the requirements themselves** (2026-10-30; `overlay-walkthrough.md`
+section 7):
+
+- **R2 is relaxed.** Several records at one point are harmless when they name the same original
+  vertex: the overlay groups records into a vertex by the vertices they name (identity). What the
+  overlay needs is that every record names its vertices correctly, not that there is one record per
+  vertex. The corner wedge's per-edge records (audit D3) must be kept, not merged into one.
+- **R3 is not needed** (Q9 decided, 2026-10-28). The one fact the overlay reads from a record's kind
+  is that an `LL` record is a crossing.
+- **R10, last sentence, needs a qualification.** "The classification of pieces ... must never be
+  inferred from the side information of a tolerant decision": the overlay deduces a piece's class
+  across an `LL` vertex from the record's kind. That is not tolerant information. An `LL` record
+  needs every end point beyond the thickness, on opposite sides of the other segment's plane, so the
+  segments really cross; the thick test is stricter than the exact one. Touch records are tolerant,
+  and the overlay infers nothing from them beyond which vertex they name.
+- **R4 is confirmed by use**: Phase 4a derived common chains from consecutive records along both
+  rings in every catalogue and hunt case, interleaved and dense shared edges included.
+- **R5 with F2**: the prototype ordered touch records by projection throughout; it never ran the
+  chord key, so F2 is a premise of the Phase 4a results, not just a fix.
+
 ## 3. Candidate algorithms
 
 ### 3.1 Common ground

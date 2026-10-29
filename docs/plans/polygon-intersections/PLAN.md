@@ -159,27 +159,32 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   (deduction across crossings; not yet run by the prototype). `phase2-requirements.md` section 3.3
   and questions 3 and 4 updated to match.
 
-- **Resume here** (2026-10-27):
+- **Resume here** (updated 2026-10-30):
+  - Phase 4a is done; the overlay core and Q3 are decided (entries above). Next: the developer
+    reviews `phase3-audit.md` (now with a section 0, "Status after Phase 4a") and the requirements
+    (`phase2-requirements.md` section 2, with the Phase 4a amendments at its end), then PR A's
+    steps below; and a Fable claim check of `overlay-walkthrough.md` before Phase 4b builds on it.
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). The walk-through of requirements §3.3 is complete (`overlay-walkthrough.md`,
     sections 1 to 15); the developer reads it, then answers the 11 questions in
     `phase2-requirements.md` §4 (Q3 partly and Q11 already decided). Only **Q1** (thickness `t` or
     `s`) and **Q9** (derive chains in the partitioner) bear on PR A; the rest are for PR B.
-  - **What is left for PR A**, once Q1 and Q9 are answered:
+  - **What is left for PR A** (Q1 = `s` and Q9 = derive, both decided 2026-10-28):
     1. The developer reviews `phase3-audit.md`.
     2. Apply its section 7 corrections to the design doc (§1, §4.2, §4.3) and the requirements, and
        record the decisions: `GeometryIntersect` is the primitive; `GreatCircleArc::intersect`
        stays separate for distance, with nothing ported (D5).
-    3. Fixes F1 to F7 (Opus): F1 the thickness and its comments; F2 order touch records by
-       projection; F3 report a corner contact once; F4 delete the dead code and state the
-       `sin(phi) > t` invariant; F5 document the record positions; F6 ring structure for consumers;
-       F7 `std::stable_sort`.
+    3. Fixes F1, F2 and F4 to F7 (Opus; F3 withdrawn 2026-10-30): F1 the thickness and its
+       comments; F2 order touch records by projection; F4 delete the dead code and state the
+       `sin(phi) > t` invariant; F5 document the record positions; F6 ring structure for consumers,
+       and which original vertices each record names (audit F6, 2026-10-30); F7 `std::stable_sort`.
     4. GoogleTests for `GeometryIntersect` (the audit's 16 cases, §6.1; `cpp-test` skill).
     5. The hunt: extend `plans/polygon-intersection-tools/` in the planning repository (re-fed
        pieces, interior rings, real-model shared edges, tiny and high-latitude geometries; §6.2),
        and run it to zero mismatches after the fixes.
-    6. Topology resolving on a real model, before and after: unchanged if Q1 keeps `t`; every
-       change under `s` if Q1 raises it, which also needs changelog entries in both products.
+    6. Topology resolving on a real model, before and after: every change under `s`, and no rise
+       in multiple-intersection sections (Q1 raised the thickness); changelog entries in both
+       products.
     7. Doc §4.4 to §4.5 (the tolerances within §1's system; the decisions and rejected
        alternatives), with a Fable claim check.
     8. Distil what PR A completes; `ctest` on both trees, a Linux Docker run, push to `private`,

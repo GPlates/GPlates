@@ -21,6 +21,31 @@ Notation as in the requirements file: `P` is geometry 2 (the polyline cut by `pa
 are abbreviated LL (`SEGMENTS_CROSS`), SS (`SEGMENT_START_ON_SEGMENT_START`), SL
 (`SEGMENT1_START_ON_SEGMENT2`) and LS (`SEGMENT2_START_ON_SEGMENT1`).
 
+## 0. Status after Phase 4a (2026-10-30)
+
+This audit was written before the overlay's tolerance handling was settled. Phase 4a's prototype
+(`phase4a-run1.md`, `phase4a-run2.md`, explained in `phase4a-variants.md` and
+`overlay-walkthrough.md` section 7) has since changed several of its premises. Statements below that
+it overtook are corrected in place and marked *2026-10-30*. In brief:
+
+- **Q1 decided: thickness `s`** (2026-10-28). **Q9 decided: derive chains in the partitioner**
+  (2026-10-28).
+- **No contraction.** The overlay groups records into vertices by the original vertices they name
+  (identity), with no merge by distance. Every statement here about a "contraction tolerance" (`t`,
+  `2t`, `2s`) is moot.
+- **F3 is withdrawn.** D3's two touch records at a corner name the same vertex of `P`, so the overlay
+  makes them one vertex; they are not duplicates (at an acute corner they are two crossings collapsed
+  by the thickness), and dropping one breaks the output silently (run 1). D3 becomes documented
+  behaviour, pinned by test 12.
+- **D4 is wider than stated**: a segment crossing an edge gives two touches and no crossing whenever
+  both its end points are within the thickness of the edge's plane, so at a shallow angle `phi` up
+  to a length of `2h / sin(phi)`, not `2h` (run 2: `3h` at 20 degrees). The overlay handles it as a
+  common pair, or by deduction; no tolerance is involved.
+- **What the overlay needs from the `Graph`** (affects F6): which original vertices each record
+  names (derivable from its type and segment indices), whether it is an `LL` crossing (its type), and
+  the corrected keys of F2 (the prototype used projection keys throughout). Nothing else.
+- **PR A's fixes are F1, F2, F4, F5, F6 and F7.**
+
 ## 1. Summary
 
 ### 1.1 The constants, as the C++ computes them (exact, `constants.py`)
@@ -42,7 +67,7 @@ branches of `add_segments_crossing_intersection` unreachable (section 3.1).
 | Req. | Verdict | One line |
 | --- | --- | --- |
 | R1 | Met | Both segment indices and both angles are recorded (`add_intersection`, `:144-188`); the touch position is the touching vertex. |
-| R2 | **Met with caveats** | One record per shared vertex when the vertices coincide within `t` (probe, hunt). A vertex of `P` in the inner wedge of a corner of `Q`, within `t` of both edges' planes but further than `t` from the corner, gets one touch record per edge, and just beyond the coincidence disc a third (probe, exact). The SS position is not always geometry 1's vertex (reading). |
+| R2 | **Met with caveats** | One record per shared vertex when the vertices coincide within `t` (probe, hunt). A vertex of `P` in the inner wedge of a corner of `Q`, within `t` of both edges' planes but further than `t` from the corner, gets one touch record per edge, and just beyond the coincidence disc a third (probe, exact). *2026-10-30*: harmless to the overlay, which makes the per-edge records one vertex (section 0). The SS position is not always geometry 1's vertex (reading). |
 | R3 | Not provided | By design; the overlay does not need crossing/bouncing labels (section 4.2). |
 | R4 | Met | Every vertex of either geometry inside an overlap is a record, interleaved, reversed, from a shared vertex, along a zero-length segment, and round a corner (probe `probe_overlap.py`, hunt `collinear`). |
 | R5 | **Met with caveats** | Sorted by segment index then angle along every ring, indices global across rings (reading). The angle of a touch record is the chord angle to the touching vertex, which is up to `t` off the segment, so records within `sqrt(2) t` of each other near a segment's start can sort in the wrong order (probe `probe_misorder.py`). Ties sort in unspecified order. |
@@ -60,8 +85,9 @@ branches of `add_segments_crossing_intersection` unreachable (section 3.1).
    the angle of an SL or LS record as `acos(dot(vertex, segment_start))`, the chord angle to a vertex
    that is up to `t` off the segment. Near a segment's start this exceeds the along-segment angle of a
    crossing that lies further along. Probe: a vertex `3.0e-6` along and `0.99e-6` off a segment sorts
-   after a crossing `3.15e-6` along; the records are `1.0012e-6` apart, beyond the contraction tolerance
-   `t`. The misordering band is records within `sqrt(2) t` of each other. Fix F2.
+   after a crossing `3.15e-6` along; the records are `1.0012e-6` apart, too far apart for any
+   tolerance-sized grouping of nearby records to hide it. The misordering band is records within
+   `sqrt(2) t` of each other. Fix F2.
 2. **D2 (R7). The thickness is `1.0000444e-6`, the on-outline threshold is `1.4141979e-6`.** A vertex
    in between is on the outline for point-in-polygon and no record for `GeometryIntersect`. Decision Q1,
    recommended answer: raise the thickness to `s` (section 4.1). Fix F1.
@@ -73,13 +99,19 @@ branches of `add_segments_crossing_intersection` unreachable (section 3.1).
    angle gives three records; `3.8e-6` on the bisector of a 30-degree corner gives two. Raising the
    thickness to `s` does not remove it: the plane thickness and the coincidence radius are the same
    constant, so the wedge only scales by `sqrt(2)` (exact reference at `s`, 2026-10-28: three records
-   for `a = 0.72 s` to `0.99 s` at a right angle). Fix F3, and contraction for the third record.
-4. **D4 (specification, not code). A segment shorter than `2t` that crosses an edge gives two touch
-   records up to `2t` apart and no crossing.** Probe: a `1.5e-6` segment gives two records `1.5e-6`
-   apart. The requirements file says such touches are "within `1e-6` of each other"; they are not, so a
-   contraction tolerance of `t` leaves a piece lying along `Q` whose midpoint test is meaningless. The
-   contraction tolerance must be at least `2t` (or `2s`), or a piece between two consecutive touch
-   records with no crossing must be classed as common. Section 7, correction 5.
+   for `a = 0.72 s` to `0.99 s` at a right angle). *2026-10-30*: not a defect for the overlay, which
+   makes the per-edge records one vertex because they name the same vertex `x`; the third record is
+   a separate vertex, joined to it by short pieces that are deduced (`overlay-walkthrough.md`
+   sections 7.1 to 7.4). F3 is withdrawn; test 12 pins the behaviour.
+4. **D4 (specification, not code). A segment that crosses an edge with both its end points within
+   the thickness of the edge's plane gives two touch records and no crossing.** Probe: a `1.5e-6`
+   segment gives two records `1.5e-6` apart. The requirements file says such touches are "within
+   `1e-6` of each other"; they are not. *2026-10-30*: this audit said "shorter than `2t`, up to `2t`
+   apart", which holds only at right angles; at an angle `phi` the length reaches `2t / sin(phi)`
+   (Phase 4a run 2: two touches from a `3h` segment at 20 degrees). The overlay classes the piece
+   between two consecutive touches as common when it can, and otherwise deduces it
+   (`overlay-walkthrough.md` sections 7.4, 7.5); there is no contraction tolerance to set. Section 7,
+   correction 5.
 5. **D5 (dead code).** The three chord-interpolation branches of `add_segments_crossing_intersection`
    (`:233-396`) are unreachable in practice: a crossing needs `sin(phi) > t = 1.0000444e-6` between the
    planes, and the cross-product branch is taken whenever `sin(phi)^2 > EPSILON = 1e-12`. The window
@@ -141,7 +173,9 @@ rounded vertex lands near.
 
 What the duplicates do to a consumer: along `P` the two LS records have equal keys (same vertex, angle
 zero), so the piece between them is two identical points; along `Q` they bracket `v`, so `Q` has a piece
-`[x, v, x]` of length up to `2 t / sin(theta / 2)`. Both must be contracted or merged by the consumer.
+`[x, v, x]` of length up to `2 t / sin(theta / 2)`. *2026-10-30*: the overlay makes the two LS records
+one vertex, since both name `x`, so the zero-length piece along `P` never exists; `Q`'s piece
+`[x, v, x]` holds the original vertex `v` and is classified there (`overlay-walkthrough.md` 7.2).
 
 The SS position caveat (reading): `:616` uses `segment2_end_point` as the position when segment 2's last
 vertex coincides with segment 1's start, against the header's statement.
@@ -198,7 +232,7 @@ angle `x2`. They sort wrongly when `x2^2 - x^2 < y^2 <= t^2`. Measured, `P` alon
 | `3.0e-6` | `0.99e-6` | `3.15e-6` | crossing, then `v` (wrong) | `1.0012e-6` |
 | `3.0e-6` | `0.99e-6` | `3.5e-6` | `v`, then crossing (right) | |
 
-The second row is beyond the contraction tolerance `t`, so contraction at `t` would not hide it: the
+The second row's records are `1.0012e-6` apart, so no tolerance-sized grouping would hide it: the
 consumer would get a piece of `P` running backwards from `3.15e-6` to `3.0e-6`. The misordering band is
 records within `sqrt(2) t` of each other (`2.0e-6` if the thickness becomes `s`). The same key is used by
 topology resolving to order intersections within a segment (`ResolvedSubSegmentRangeInSection.h:155-160`)
@@ -209,8 +243,10 @@ Caveat 2, ties (reading): two records with equal `(segment index, angle)` sort i
 (`std::sort`). Equal keys arise for two crossings at one point (a twist on an edge: probe
 `probe_cluster.py` (c) and `probe_cluster2.py` (g), two LL records at one point, adjacent), for two
 touches by the same vertex (D3), and for records within the cosine resolution (`1.5e-8` rad near a
-segment's start). All lie within the contraction tolerance, so the consumer's contraction makes the
-order immaterial, provided it contracts by *key equality* as well as by distance.
+segment's start). *2026-10-30*: under the overlay, tied records of one identity vertex are one stop,
+and a tie between different vertices (the twist) gives a zero-length piece that is deduced either
+way; Phase 4a ran every tie order and the output's point set never depended on it
+(`overlay-walkthrough.md` 7.8).
 
 ### R6. Both polygons' interior rings participate
 
@@ -469,11 +505,9 @@ By reading, so that the fixes below do not make it harder:
    with itself (child pairs `(0,0)`, `(0,1)`, `(1,1)`); at a leaf with itself, `i < j`.
 4. The `Graph`'s two orderings become one ordering in which each record appears twice, once per segment
    index. Either keep `segment_index1`/`segment_index2` as two indices into the one geometry and let the
-   consumer merge, or add a third ordering. The post-pass of fix F3, if adopted, must then look at both
-   indices of a record when finding adjacent duplicates.
+   consumer merge, or add a third ordering.
 
-None of F1 to F4 touches these points; F3 should be written over `(segment index, is-start)` pairs rather
-than over "geometry 1" and "geometry 2" specifically.
+None of F1, F2 or F4 touches these points. (F3, which would have needed both indices, is withdrawn.)
 
 ## 4. The open questions assigned to this audit
 
@@ -498,15 +532,16 @@ What changes if the thickness becomes `s` (reading, exact):
   `t`, but `get_on_segment_start_threshold_cosine()` sets both, so they rise together. The exact
   reference at `s` gives three records for `a` from `0.72 s` to `0.99 s` at a right angle.) Removing
   the right-angle wedge would need a coincidence radius of `sqrt(2)` times the thickness, two
-  constants instead of one, and acute corners would keep it anyway; F3 is the fix at every angle.
+  constants instead of one, and acute corners would keep it anyway. *2026-10-30*: no fix is needed;
+  the overlay makes the per-edge records one vertex (section 0).
 - **The R7 gap closes**: no record within `s` means no vertex of `P` within `s` of `Q`'s outline, so
   `PolygonPartitioner`'s threshold-off query for a non-intersecting geometry agrees with the inclusive
   query, and the overlay's "rings with no intersection" step is consistent with `is_point_in_polygon` as
   users see it. pyGPlates already reports a distance below `s` as `0.0` (design doc section 1), so
   "touching" would mean the same in `distance` and in partitioning.
 - **Costs.** A crossing needs end points beyond `s`, so a segment shorter than `2s = 2.83e-6` (18 m)
-  crossing an edge is two touches, not one crossing (today `2t`, 12.7 m); the contraction tolerance of
-  the overlay must be at least `2s`. The misordering band of D1 widens to `2.0e-6` until F2 lands (F2
+  crossing an edge is two touches, not one crossing (today `2t`, 12.7 m; longer at shallow angles,
+  D4), which the overlay handles without a tolerance (section 0). The misordering band of D1 widens to `2.0e-6` until F2 lands (F2
   should land first). Bounding circles grow by `0.41e-6`, harmless. The expansion is also the default
   for `InnerOuterBoundingSmallCircleBuilder` (`SmallCircleBounds.h:1380-1401`), which point-in-polygon's
   no-set-up path widens further by `s` (design doc section 1); wider is safe there.
@@ -526,17 +561,19 @@ and must be documented as decisions.
 
 **Recommendation: raise it to `s`.** The system then has one tolerance for "the same point", stated once
 (`EPSILON` seen through a cosine), the partitioner's exact classification agrees with the inclusive
-query by construction. (D3 is not a reason either way; see above.) The costs are a measurable, bounded
-change to topology resolving and a `2s` contraction tolerance in Phase 4. If the developer prefers to
-keep `t` for PR A's "unchanged output" guarantee, D2 and D3 become documented limits and the contraction
-tolerance is `2t`, and the choice should be revisited before PR B, since the overlay's consistency
-argument (requirements section 3.3, "Agreement with `is_point_in_polygon` by construction") is only
-exact for the `s` choice.
+query by construction. (D3 is not a reason either way; see above.) The cost is a measurable, bounded
+change to topology resolving. If the developer prefers to keep `t` for PR A's "unchanged output"
+guarantee, D2 becomes a documented limit, and the choice should be revisited before PR B, since the
+overlay's consistency argument (requirements section 3.3, "Agreement with `is_point_in_polygon` by
+construction") is only exact for the `s` choice. **Decided (developer, 2026-10-28): `s`.**
 
 ### 4.2 Q9: derive crossings and chains in the partitioner, or extend the `Graph`
 
-Under the overlay (chosen), **R3 is not needed**: pieces are classified by a point-in-polygon test of
-their midpoint and common chains by the sector rule; no record is ever labelled crossing or bouncing.
+Under the overlay (chosen), **R3 is not needed**: pieces are classified by a point-in-polygon test at
+an original vertex, or by deduction from their end vertices, and common chains by the sector rule; no
+record is ever labelled crossing or bouncing. (*2026-10-30*: the one use of the record kind is that an
+`LL` record is known to be a crossing, `overlay-walkthrough.md` 7.4; the kind is already in the
+`Graph`.)
 **R4 is a derivation**: after splitting both geometries at the records, a piece of `P` between
 consecutive records `u`, `v` is common when `u` and `v` are consecutive along `Q` too and neither piece
 has an original vertex between them (requirements section 3.1 step 3). That needs the sorted orders,
@@ -553,7 +590,8 @@ caller but the partitioner.
 `GeometryIntersect` are worth making because every consumer rediscovers them: a documented helper giving
 the ring index and ring-relative segment index of a record (or a note on the `Graph` saying how to split
 the orders by ring), and the corrected ordering key (F2), without which the derivation of consecutive
-records is wrong in the misordering band.
+records is wrong in the misordering band. **Decided (developer, 2026-10-28): derive in the
+partitioner.**
 
 ## 5. Proposed fixes, ranked
 
@@ -580,7 +618,10 @@ resolving computes its interpolation ratio from the position, `ResolvedSubSegmen
 ordering changes only for records within `sqrt(2) t` of each other on one segment, which today sort
 wrongly. Test: section 6.1, test 7.
 
-**F3. Report a corner contact once (D3).** Two options. (a) A post-pass in `intersect_geometries`
+**F3. Report a corner contact once (D3). Withdrawn (2026-10-30).** The proposal is kept below with
+the reasons it fails; in short, the records are not duplicates, the overlay makes them one vertex by
+identity, and dropping one breaks the output with no check noticing (Phase 4a run 1). Two options
+were proposed. (a) A post-pass in `intersect_geometries`
 (`:1243-1270`), after sorting: for two consecutive records along one geometry that are both touches by
 the same vertex of the other geometry (same other-side segment index, both on that segment's start),
 on consecutive segments of this geometry (indices differing by one, or the ring's last and first), drop
@@ -595,7 +636,7 @@ once F7 makes the sort stable). (a) does not touch the third record of the right
 its own right, and it lies within `sqrt(2)` thicknesses of the kept LS, so the overlay's contraction
 (tolerance at least `2s`) merges the two.
 
-**F3 (a) is wrong at an acute corner; under review (2026-10-28).** The rule has no distance test, so
+**Why (a) is wrong at an acute corner** (found 2026-10-28). The rule has no distance test, so
 it also drops one of the two LS records when `x` is far from `v`, for example at `r = 1.2 h` to
 `3.8 h` on the bisector of a 30-degree corner (exact reference at `s`: LS on `Q` segments 0 and 3,
 both by `P`'s vertex 1). There the two records are not duplicates. They are the two crossings that
@@ -607,8 +648,9 @@ south). Dropping a record makes the ring one piece holding both, and a test at o
 then classifies all of `Q` on one side. The overlay should keep both records: the two coincide at
 `x`, so they form one vertex with six ends, and the sector rule classifies the ends from their
 rotational order. The tip piece is classified at `v`, and its output ring `x, v` is degenerate (two
-vertices, zero area, a sliver at most `2h` wide), so it is dropped. Write it over `(segment index, is-start)` pairs so that a self-intersection
-mode can reuse it (section 3.10). Test: section 6.1, test 12.
+vertices, zero area, a sliver at most `2h` wide), so it is dropped. Phase 4a confirmed all of this
+(run 1, sections 4.1 and 5.1): with both records kept the wedge passed in every variant, and with one
+dropped 15 of 25 cases failed the oracle while every check passed.
 
 **F4. Remove the dead code and state the invariant (D5).** Delete `arcs_are_near_each_other`,
 `arcs_are_directed_equivalent`, `arcs_are_undirected_equivalent`, `arcs_lie_on_same_great_circle`,
@@ -629,7 +671,12 @@ rule uniform.
 
 **F6. Give consumers the ring structure.** Either a note on `Graph` saying the orders must be split by
 the polygon's ring segment ranges, or a helper `ring_index_and_segment(polygon, segment_index)` on
-`PolygonOnSphere` if there is none. No risk.
+`PolygonOnSphere` if there is none. No risk. *2026-10-30*: the overlay also needs to know which
+original vertices a record names, to group records into identity vertices: an SS names both
+segments' start vertices, an SL geometry 1's segment start, an LS geometry 2's, and an LL none (with
+the fictitious last-vertex index of a polyline handled as there). That follows from the type and
+indices, so it can be a documented rule on the `Graph` or a small helper next to F6's; it should
+not change the record types or what topology resolving sees.
 
 **F7. Use `std::stable_sort` in `sort_geometry_intersections`** (`:117-137`) so that equal keys keep
 discovery order. Cosmetic; deterministic either way.
@@ -665,8 +712,10 @@ nothing is axis-aligned by accident. Thresholds below mean `t` as returned by
 5. **Zero-length segments.** A `0.5 t` segment of `P` straddling a `Q` edge's plane: two touches, no LL.
    A `P` segment of about `t` at a `Q` vertex: two SS. A zero-length `Q` edge against a crossing `P`
    segment: no LL from it; the records come from its end points.
-6. **Short crossing segment.** A `1.5 t` segment crossing an edge: two touches `1.5 t` apart and no LL
-   (pins D4 for the Phase 4 contraction tolerance). A `3 t` segment: one LL at the middle.
+6. **Short crossing segment.** A `1.5 t` segment crossing an edge at a right angle: two touches
+   `1.5 t` apart and no LL (pins D4). A `3 t` segment at a right angle: one LL at the middle. A `3 t`
+   segment at 20 degrees: two touches and no LL, since both end points are within `t` of the plane
+   (D4 at a shallow angle).
 7. **Ordering within a segment.** The D1 case: a `Q` vertex `3.0e-6` along and `0.99 t` off `P`'s first
    segment and a `Q` edge crossing it at `3.15e-6`: the orders along `P` are vertex then crossing.
    Before F2 this test fails; it is the regression test for F2. Also two records in one segment well
@@ -693,11 +742,12 @@ nothing is axis-aligned by accident. Thresholds below mean `t` as returned by
     the wedge whichever thickness is chosen. `Q`'s right-angle corner `v` and a `P` vertex `x` at
     `(-a, +a)` from it, with `P` arriving from `(-0.01, 0.003)` rad as in `probe_corner.py`, for `a` in
     `0.5 h`, `0.72 h`, `0.99 h`; a 30-degree corner with `x` on the bisector at `1.2`, `2`, `3.8` and
-    `4.2` times `h`. Expected after F3: `0.5 h` one SS; `0.72 h` and `0.99 h` two records, the SL of
-    `v` on `P`'s arriving segment and one LS of `x` (the pair on consecutive edges reduced to one); the
-    bisector cases inside the wedge (up to `h / sin(15 deg) = 3.86 h`) one LS; `4.2 h` two LL. Before
-    F3 this documents D3. (Corrected 2026-10-28: the cases were in units of `t`, which F1 would have
-    moved inside the coincidence disc, and the right-angle expectation omitted the SL record.)
+    `4.2` times `h`. Expected (F3 withdrawn, so this pins D3 as documented behaviour): `0.5 h` one
+    SS; `0.72 h` and `0.99 h` three records, the SL of `v` on `P`'s arriving segment and one LS of `x`
+    on each of the two edges, both positioned at `x`; the bisector cases inside the wedge (up to
+    `h / sin(15 deg) = 3.86 h`) two LS, both at `x`; `4.2 h` two LL. (Corrected 2026-10-28: the cases
+    were in units of `t`, which F1 would have moved inside the coincidence disc. 2026-10-30: the
+    expectation no longer assumes F3.)
 13. **Symmetry.** For every geometry pair above, `intersect(A, B)` and `intersect(B, A)` have the same
     record count, mirrored types, equal positions except SS within `t`, and the two orders swapped.
 14. **No intersection and clearing.** Disjoint geometries: returns false, `Graph` empty; a `Graph` with
@@ -778,9 +828,9 @@ Requirements file `phase2-requirements.md`:
    about `1.4e-10` rad, which is enough; the crossing position error measured zero at `pi - 1.5e-6`.
 5. Section 3.3, "Against it", fourth bullet, and section 4 question 4: "two touches within `1e-6` of each
    other, as a `1.5e-6` segment crossing an edge produces" is wrong: the touches are `1.5e-6` apart, and
-   a segment shorter than `2t` gives touches up to `2t` apart (D4). The contraction tolerance must be at
-   least twice the thickness (`2t`, or `2s` under Q1's recommended answer), and the Phase 4 design should
-   also contract by key equality (two records with equal `(segment, angle)` on one geometry).
+   a segment shorter than `2t` gives touches up to `2t` apart (D4). *2026-10-30*: superseded; the
+   requirements' section 3.3 and question 4 now describe identity vertices, with no contraction, and
+   D4's length is `2t / sin(phi)` at an angle `phi`.
 6. R9 "Today": "the known gap against `GreatCircleArc::intersect`, which is the first thing the audit
    should port" is refuted (section 3.1); nothing needs porting.
 7. Section 1.3's case table, V-intersection row: "the position is `P1`" has the D6 exception.
@@ -788,4 +838,4 @@ Requirements file `phase2-requirements.md`:
 
 `PLAN.md`, Context, "GeometryIntersect lacks its last two refinements": it does not need them
 (section 3.1); and Phase 3's "Decide and record which primitive partitioning uses": `GeometryIntersect`,
-with F1 to F3; `GreatCircleArc::intersect` stays separate for distance.
+with F1 and F2 (F3 withdrawn); `GreatCircleArc::intersect` stays separate for distance.
