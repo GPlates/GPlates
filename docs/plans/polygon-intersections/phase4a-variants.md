@@ -196,7 +196,7 @@ cluster widths, and probes six-end vertices; then the simplest survivor is chose
 ## 10. After run 2: the chosen configuration
 
 Chosen by the developer, 2026-10-30, from `phase4a-run2.md` (the evidence) and
-`phase4a-section7-draft.md` (the walk-through's account). Phase 4b extends it; this section says
+`overlay-walkthrough.md` section 7 (the walk-through's account). Phase 4b extends it; this section says
 what it is now and why each part is there.
 
 Run 2's random hunt broke all three of run 1's candidates. V0 and V1b broke on the order in which

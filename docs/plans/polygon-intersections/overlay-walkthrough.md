@@ -6,11 +6,15 @@ algorithm is understood but hard to follow on a first reading. This file explain
 start, with examples, and records what the walk-through corrected. When partitioning is
 implemented, this file becomes the basis of the design doc's section 5.3 onwards (Phase 6),
 rewritten against the code, with section 3.3 as the overview. Until then it describes a design,
-not code, so it stays in the plan (AGENTS.md, *Planning documents*).
+not code, so it stays in the plan (AGENTS.md, *Planning documents*). Section 7 was replaced on
+2026-10-30 from Phase 4a's prototype runs (`phase4a-run1.md`, `phase4a-run2.md`, explained in
+`phase4a-variants.md`): the old section 7 proposed contracting short pieces by distance, which the
+runs refuted.
 
 Notation: `P` is the geometry being cut (the subject), `Q` the polygon cutting it (the clip), `t`
-the thickness of `GeometryIntersect` (about `1e-6` radians), and `s` the point-on-outline threshold
-(about `1.414e-6` radians). FHP is Foster, Hormann and Popa 2019 (requirements section 1.3).
+the thickness of `GeometryIntersect` today (about `1e-6` radians), and `s` the point-on-outline
+threshold (about `1.414e-6` radians). Audit fix F1 raises the thickness to `s` (open question 1,
+decided); section 7 calls it `h`. FHP is Foster, Hormann and Popa 2019 (requirements section 1.3).
 
 ## 1. Overview
 
@@ -19,7 +23,8 @@ operation, in five steps:
 
 1. Intersect all the rings of both polygons with `GeometryIntersect`.
 2. Split every ring of both polygons at every intersection, into *pieces*.
-3. Classify each piece as inside or outside the other polygon, with one point-in-polygon test.
+3. Classify each piece as inside or outside the other polygon: with one point-in-polygon test at
+   an original vertex, or, for a piece with none, by deduction from its end vertices (section 7).
    Pieces where `P` and `Q` run together (*common pieces*) cannot be tested; the *sector rule*
    classifies them instead.
 4. Keep the pieces that bound the output.
@@ -82,9 +87,9 @@ call a piece running just outside `Q`, within `s` of it, inside. The pieces must
 exactly, and agree with the oracle of PLAN.md Phase 5. (Open question 1.)
 
 **The test point is an original vertex of the piece, when it has one.** A vertex of `P` that is in
-no intersection record is farther than `t` from `Q`'s boundary, or `GeometryIntersect` would have
-reported it as a touch. So the test has a margin of at least `t`, about `10^10` times
-point-in-polygon's rounding.
+no intersection record is farther than the thickness (`t` today, `s` after fix F1) from `Q`'s
+boundary, or `GeometryIntersect` would have reported it as a touch. So the test has a margin of at
+least the thickness, about `10^10` times point-in-polygon's rounding.
 
 The first proposal was the midpoint of the piece's longest arc, on the reasoning that the ends are
 the only places where `Q` is known to be near. That is wrong, as the developer showed
@@ -103,9 +108,9 @@ close to `Q` for much of its length. The developer's example, a T-intersection:
 `P`'s edge runs from its vertex `A` (top left) down to its vertex `B`, which touches `Q`'s top
 edge. Moving `A` down makes the edge nearly parallel to `Q`'s top edge, passing just above `Q`'s
 corner `C` (more than `t` from it, so `C` is not a touch). Take `Q`'s top edge as `y = 0`, with `C`
-at `x = 0`, `B` at `(b, -δ)` and `A` at `(a, h)`, `a < 0 < b`. `B` is a touch, so `|δ| <= t`; with
+at `x = 0`, `B` at `(b, -δ)` and `A` at `(a, y_A)`, `a < 0 < b`. `B` is a touch, so `|δ| <= t`; with
 `δ > 0` it lies inside `Q`. The edge passes `C` at height `y_C > t`. When `A` is just left of `C`
-(`a` near 0), the midpoint is at height `(h - δ)/2`, about `(y_C - δ)/2`. With `B` on the outside
+(`a` near 0), the midpoint is at height `(y_A - δ)/2`, about `(y_C - δ)/2`. With `B` on the outside
 (`δ <= 0`) that is more than `t/2`: safe. With `B` inside `Q` it is positive but can be arbitrarily
 small, when `y_C` is just above `t` and `δ` just below it: then the edge crosses `Q`'s top edge
 near its middle with no record (the touch at `B` stands for the contact), and the midpoint test is
@@ -113,17 +118,15 @@ decided by rounding. The vertex `A` is more than `t` from `Q` whatever happens, 
 to test.
 
 Had the midpoint been tested, the result would not have been silent: a wrong class for this piece
-contradicts the tests of `Q`'s pieces at `B` (the general vertex, section 4.3), and the checks
+contradicts the tests of `Q`'s pieces at `B` (the four-end rule, section 7.4), and the checks
 find it.
 
 **A piece with no original vertex** is a single arc between two intersection vertices, and there
 the midpoint is the only point, without a guaranteed margin. If the arc's two ends lie on the same
 edge of `Q`, with no vertex of either between, it is a common piece, and section 4 applies. If
-not, it is classified by its midpoint, and the checks compare that class with the other pieces at
-its two end vertices. Whether such pieces should be deduced from their end vertices first, and
-tested only when that fails, is for Phase 4. Also for Phase 3 to confirm: that a vertex in no
-record really is farther than `t` from the other geometry everywhere, corners included (the
-audit's D3 is over-reporting in a corner's wedge, which does no harm here).
+not, it is deduced from its end vertices first, and tested at its midpoint only if still
+undetermined, the one farthest from the other boundary first (section 7.5). The audit's D3, a
+vertex in a corner's wedge reported once per edge, is one vertex here (sections 7.1 and 7.2).
 
 ## 4. Common pieces: the sector rule
 
@@ -218,6 +221,9 @@ need for it:
 - The pieces' own tests check it: `p1` and `p2` have the same class exactly when `P` bounces,
   which must agree with the order `p p q q`.
 
+(Section 7.4 goes further: where each polygon passes a vertex once, the classes alone decide
+crossing or bounce, and the order is not used at all. It is needed only at six or more ends.)
+
 **The general vertex.** Sort the ends by angle round `v` (the tangent of each piece's first arc).
 Start from a sector that a non-common piece fixes, and go round, flipping `P` at a `P` end, `Q` at
 a `Q` end, and both at a common ray. Every other non-common piece fixes a membership too, and they
@@ -259,14 +265,19 @@ The options:
    chain at `X`, is why `X` is chosen on the arc farthest from `R`'s great circles: it fails only if
    `R` lies on the great circle of every arc of the ring, which no ring does. Cost: one test per
    polygon at the slow speed, `O(N)`, only for anchorless rings. It needs a point-in-polygon entry
-   that leaves out given edges.
+   that leaves out given edges, and whose path to `X` stays on `R`'s side of the left-out arc's
+   great circle: a direct arc from `R`, or a waypoint on `R`'s side. (Phase 4a run 2: a path
+   through an unrestricted random waypoint arrived from the wrong side in about half the runs, and
+   both memberships then described the other side.)
 4. **An offset arc, intersected with both polygons**, testing the midpoint between the chain and
    the first intersection along it (also the developer's). It works, but `GeometryIntersect` cannot
    see a boundary within `t` of the arc's start, which is on the chain, so it needs care; option 3
    does the same with exact tests that already exist.
 
-**Recommended: option 3.** Open question 3 is now only about this fallback: the sector rule is the
-primary rule (developer, 2026-10-26).
+**Decided: option 3** (developer, 2026-10-30; the sector rule is the primary rule, 2026-10-26).
+Phase 4a run 2 measured both on whole-ring chains, identical and jittered within `h`, holes equal
+to rings and thin faces: option 3 was right in every case, and option 1 failed every thin face, as
+predicted.
 
 ## 6. Linking the kept pieces into rings
 
@@ -283,8 +294,9 @@ other Boolean operations".
 At every intersection vertex the number of ends is even, counting a common piece as two. Each pass
 of a ring of `P` through the vertex arrives and leaves, so `P` has an even number of ends there,
 and so does `Q`. (The number of *rays* can be odd: a chain end has four ends, `p`, `q` and the
-chain's two, but three rays.) Contracting a short piece merges two vertices and adds their ends,
-so the count stays even. A polyline's end point can have one end, but polylines are not linked.
+chain's two, but three rays.) An identity vertex (section 7.2) adds the ends of its records, and
+the loop and spike rules (7.3, 7.6) remove two ends of one ring at a time, so the count stays
+even. A polyline's end point can have one end, but polylines are not linked.
 
 The kept ends are even too. Going round a vertex, output membership flips at every kept end and
 nowhere else, and it must come back to where it started.
@@ -298,9 +310,9 @@ and leaves along the other.
   walking them closes the rings. No direction is needed either: GPlates never normalises ring
   orientation, so a `Q` piece may run either way relative to the `P` pieces it joins, and the walk
   just follows the pieces.
-- **Four or more:** the ends are sorted by angle round the vertex, so the sectors alternate between
-  output and not, and the two ends bounding each output sector are paired. The rings then touch at
-  the vertex but never cross.
+- **Four or more:** the two ends bounding each output sector are paired, so the rings touch at
+  the vertex but never cross. Where each polygon passes once, the sectors follow from the classes
+  (section 7.4); at six or more ends, from the ends sorted by angle round the vertex (7.6).
 
 ### 6.4 A ring that passes through a vertex twice
 
@@ -328,6 +340,11 @@ and the walk is: leave along `R`, round `P`, back along `L`, out along `a`, roun
 `{R, L}` and `{a, b}`, across the sectors that are not output, gives `P`'s ring and `Q`'s ring
 separately: `P` with `Q` as a hole touching it at `v`.
 
+(This example is a vertex where each polygon passes once, and it is a bounce: `P`'s two pieces have
+the same class. So section 7.4's rule pairs `P`'s two ends together and `Q`'s two together, which
+is the split pairing below, directly. The cut below is still needed where the pairing is made from
+the rotational order, at six or more ends.)
+
 Both use the same kept pieces, so under the parity rule both describe the same points; only the
 grouping differs. **Decided (developer, 2026-10-26, open question 11): always split**, since OGC
 simple features (and so most export formats) forbid a ring that touches itself but allow a hole
@@ -351,51 +368,273 @@ Pinches inherited from the input (a ring of `P` that touches itself at one of it
 not intersection vertices, and the cut does not see them. Splitting a polygon into simple rings in
 general is the overlay of a polygon with itself (requirements section 3.7).
 
-## 7. Contracting short pieces
+## 7. One point, several records
 
-### 7.1 The problem
+### 7.1 What a record names
 
-Splitting at every record (section 2) assumes the records are at distinct points. When two records
-are at one point, or within the tolerance of each other, the piece between them has zero or tiny
-length, and two things fail. It has no test point: no original vertex, and its midpoint lies on the
-other polygon. And it has no direction: the rotational order at its ends (section 4.3) needs the
-tangent of its first arc, and a zero-length arc has none.
+Splitting at every record (section 2) assumed the records are at distinct points. They often are
+not. Each record names zero, one or two original vertices:
 
-Where it happens:
+| record | meaning | names | its position |
+| --- | --- | --- | --- |
+| `LL` | two segment interiors cross | nothing | computed, where the planes meet |
+| `SL`, `LS` | a vertex of one polygon lies on a segment of the other | that vertex | the vertex itself |
+| `SS` | a vertex of each polygon coincide | both | `P`'s vertex |
 
-- **A twist of `P` lying on `Q`'s boundary.** `P`'s ring is `A, D, C, B`: the edges `A`-`D` and
-  `C`-`B` cross at `X`, so `P` is a bow-tie, and `X` lies on `Q`'s top edge, with `Q` below:
+A touch record sits *at the touching vertex*, not at its projection onto the other segment. The
+projection only orders the record along that segment.
 
-  ```
-    A               C
-    | \           / |
-    |   \       /   |
-    Y_L---- X ----Y_R      Q's top edge (Q below)
-    |   /       \   |
-    | /           \ |
-    B               D
-  ```
+Where several records land on one point, they do so because they name the same vertex. The acute
+wedge: `Q` has a corner at `v`, opening downwards, and `P` passes horizontally through a vertex `x`
+just below `v`, within `h` of both of `Q`'s edges:
 
-  `Q`'s edge is crossed twice at `X`, once by `A`-`D` and once by `C`-`B`, so there are two
-  crossing records at one point. Along `Q` they have equal keys and sort in no defined order, with a
-  piece of `Q` of zero length between them. This is FHP's one failure (their Fig. 21).
-- **Ties along a segment.** Records at the same distance along one segment sort in no defined order
-  (`phase3-audit.md`, R5, caveat 2).
-- **Two touches up to `2t` apart** (audit D4). A segment of `P` shorter than `2t` that crosses an
-  edge of `Q` has both its vertices within `t` of the edge, so it gives two touch records and no
-  crossing. Such a pair is usually consecutive along both polygons with no original vertex between,
-  so it forms a common piece and the sector rule decides it (section 4); but not always.
+```
+            v
+           / \
+   ---------x---------   P
+         /     \
+        /   Q   \
+```
 
-### 7.2 Contraction
+`GeometryIntersect` reports `x` on `Q`'s left edge and `x` on `Q`'s right edge: two `SL` records, at
+the same point, both naming `x`. Farther down the two would be two `LL` crossings `P` makes with the
+corner; here they have collapsed onto `x`. Neither can be dropped (run 1 dropped one and `Q`'s ring
+came out as one piece with one class, consistent and wrong in 15 of 25 cases); and they are not two
+places.
 
-A piece with no original vertex, shorter than the contraction tolerance, is removed, and its two end
-vertices become one. Several short pieces in a row become one vertex too (each merge joins two
-clusters). The merged vertex's ends are the sum of its parts' ends, so each polygon still has an
-even number there (section 6.2).
+### 7.2 Vertices are identities
 
-At the twist, the merged `X` has six ends: `P`'s four, towards `A`, `B`, `C` and `D`, and `Q`'s two,
-along its edge towards `Y_L` and `Y_R`. Going anticlockwise round `X` from `Q`'s edge on the right
-(as drawn), with each sector's (in `P`, in `Q`):
+**An overlay vertex is the set of records that name a common original vertex**, closed
+transitively: an `SS` record joins a vertex of `P` to a vertex of `Q`, so `SS(x, y1)` and
+`SS(x, y2)` make `{y1, x, y2}` one vertex although `y1` and `y2` are distinct vertices of `Q`. An
+`LL` record names nothing and is always a vertex of its own. No distance is measured: two records
+are one vertex because they say so, and the only merging by distance in the system is
+`GeometryIntersect`'s own coincidence test, which is what put them at one point.
+
+The wedge's two `SL` records are one vertex, with six ends: `P` in and out, `Q`'s left edge in
+both directions from the touch, `Q`'s right edge likewise. Nothing has zero length. The piece of
+`Q` from the left touch up round `v` and down to the right touch has an original vertex, `v`, so it
+is classified there (section 3) and kept or not like any piece. Its output ring is `x, v, x`: the
+positions of a region thinner than `h`, which the records had already collapsed; the clean-up at
+the end drops it (7.9) and loses nothing that was ever represented.
+
+Each vertex is output at one position: its `P` original vertex if it holds one (so `P`'s vertices
+stay exact, which scalar coverages want), else its `Q` one, else the record's position.
+
+**The cost of identity.** A vertex built from a chain of `SS` records, `x1 ≡ y1 ≡ x2 ≡ y2 ≡ …`,
+can be as wide as the chain: two boundaries digitised along each other with vertices every `0.45h`
+make one vertex `28.8h` wide for 65 records, output at one point (run 2, `probe_group_growth.py`).
+The oracle still passes, because the whole chain lies within `h` of both boundaries, but the output
+has moved by the chain's extent. This bound is set by the data, not by the overlay; a boundary with
+vertices a few metres apart along another is the only way to reach it.
+
+### 7.3 The loop rule
+
+Identity alone fails in one way (run 1: every V1 failure). `Q` has two vertices `y1`, `y2`, `0.8h`
+apart, both within `h` of `P`'s vertex `x`:
+
+```
+          y1 ---- y2        Q's short edge
+       ----- x -----        P
+```
+
+Both are `SS` records with `x`, so `{y1, x, y2}` is one vertex, and `Q`'s edge `y1`-`y2` starts and
+ends at it: a loop. It has no original vertex inside and no useful midpoint (it lies on `P`), and
+its two rays run almost along `Q`'s through rays, so the walk round the vertex cannot order them.
+
+**A single arc that starts and ends at one vertex is internal**: not classified, not a ray, not
+output. `Q` then passes through the vertex once, arriving at `y1` and leaving at `y2`. The arc is a
+there-and-back inside the vertex's extent, so it bounds nothing. The rule tests identity, not
+length, so it needs no threshold; the arc's length is bounded by the extent of 7.2.
+
+A loop *with* an original vertex is not a loop in this sense: the wedge's tip piece `x, v, x`
+is classified at `v` and kept.
+
+### 7.4 Four ends: no geometry
+
+At a vertex where each polygon passes once there are four ends: `p1`, `p2` of `P` and `q1`, `q2`
+of `Q`. Section 4.3 said the rotational order is needed to tell a crossing (`p q p q`) from a
+bounce (`p p q q`). It is not, and it is wrong exactly where it matters: the records already
+encode the snapped topology, and the rays describe the unsnapped one. With a sub-`h` piece at the
+vertex the two can disagree, and every rotational-order failure of runs 1 and 2 was of that kind.
+
+**The rule.** `P` crosses `Q` at the vertex iff `p1` and `p2` have different classes; `Q` crosses
+`P` iff `q1` and `q2` do; and the two must agree. So:
+
+- three known classes fix the fourth (`q2 = not q1` if `P`'s differ, `q2 = q1` if not);
+- four known classes that disagree are a check failure (section 9);
+- **at a vertex that is one `LL` record the crossing is known from the record**, since each
+  segment crossed the other's thick plane: both polygons' classes must differ, one known class fixes
+  the other three, and "both the same" is a check failure. A touch record can be either, so only
+  the first two rules apply there.
+
+**Pairing** (section 6) at a crossing: the sector `(in P, in Q) = (a, b)` is bounded by the `P`
+piece whose class is `b` and the `Q` piece whose class is `a`, so each output sector names its two
+rays; at a bounce, `P`'s two rays pair and `Q`'s two pair (the pinch pairing, which Q11's split then
+separates if it has to).
+
+**Why the `LL` rule matters.** Without it two things go wrong (run 2, section 3).
+
+*It deduces too little.* The first two rules need three known classes to find the fourth. Take a
+`Q` edge crossed by two edges of `P`, at `LL` records `u` and `w`:
+
+```
+            |           |
+   Q -------u-----------w------- Q
+            |           |
+            P           P
+```
+
+`Q`'s piece from `u` to `w` is a single arc, with no original vertex to test. At `u` the other
+three pieces (`P`'s two, and `Q`'s piece before `u`) may be single arcs too, with nothing known
+yet, so the piece `u`-`w` stays undetermined and goes to a midpoint test. That test is reliable
+(the midpoint is far from `P`), but the design wants midpoint tests rare, and without the rule 229
+of 300 random cases needed one. The record at `u` already says that `P` and `Q` cross there, so
+each polygon's two classes at `u` must differ, and any *one* known class at `u` fixes all four.
+Deduction then runs along a chain of crossings from a single tested piece, and the 229 cases fell
+to 4.
+
+*It can accept a contradiction.* At a touch, "`P`'s two classes are the same, and so are `Q`'s"
+is a bounce, which a touch can be. At an `LL` record it is impossible, since the segments cross.
+Run 2's `rays#81`: `P`'s edge runs within `h` of a `Q` edge for thousands of `h`, and a hole of `P`
+crosses that `Q` edge (an `LL` record), splitting it, so the two run-together pieces are not a
+common pair. Both are band pieces (they lie within `h` of the other boundary all along), both were
+midpoint-tested with arbitrary answers, and the answers happened to make the `LL` vertex a bounce
+for both polygons. Every check passed, because a bounce satisfies the first two rules, and the
+pieces deduced from these two came out wrong: 138 of 900 oracle points. With the rule, a bounce at
+an `LL` vertex is a check failure. With the margin order of 7.5 the case does not arise at all:
+the long pieces nearby are tested first and the band pieces are deduced from them.
+
+*Why only `LL`.* A touch record can stand for a crossing or a bounce (a vertex of `P` on `Q`'s
+edge may continue to the other side or come back), so only the classes can say which. A crossing
+record can only be a crossing. The rule reads that from the record kind, which `GeometryIntersect`
+decided with its thick planes, so the overlay still makes no geometric decision.
+
+With the rule, the random hunt's remaining midpoint tests are band pieces (arcs lying within `h`
+of the other boundary over their whole length, mostly a `P` edge running along a `Q` edge that a
+third ring splits), whose class is arbitrary by nature: 1 in 300 `near` cases, 24 in `zero`, 111
+in `rays`.
+
+### 7.5 Single arcs: deduce first, test by margin
+
+A piece with an original vertex is tested there (section 3). A single arc between two records is
+first deduced from its end vertices (7.4) to a fixed point. One that is still undetermined is
+tested at its midpoint, and **the stalled arc whose midpoint is farthest from the other polygon's
+boundary is tested first**, then deduction runs again.
+
+The order matters, and run 2 shows why. In a neck of `Q` narrower than `2h`, with `P`'s edge
+running along it:
+
+```
+     Q ---------+         +---------- Q
+                 \  y1   /
+   P --------------=====--------------   P's edge, y1 and y2 on it (LS LS)
+                 /  y2   \
+     Q ---------+         +---------- Q
+```
+
+`P`'s piece between `y1` and `y2` is `1.2h` long and lies inside the band: its class is arbitrary,
+and either answer is within tolerance *for that piece*. Tested first, its arbitrary class reached
+the long piece of `P` beyond `y2` through the four-end rule at `y2` (where `Q`'s classes are
+known), and the long piece came out wrong by `10^4 h` in 9 of 300 cases. Tested in order of
+margin, the long piece is tested first (its midpoint is `5000h` from `Q`) and the band piece is
+deduced from it. The principle: a class decided inside the band must never be the source of a
+deduction for a piece that has a margin. Length is a proxy for margin; margin is the rule.
+
+Under this order, negating every midpoint test whose arc lies wholly within `2h` of the other
+boundary (run 2's standing adversary) changed only slivers: regions whose points lie within
+`0.5h` of the nearer boundary, of at most a few thousand `h^2` (a band piece thousands of `h`
+long and under `h` wide), in 1500 random cases, with no oracle or check failure.
+
+### 7.6 Six or more ends: the rotational order, and what is left of it
+
+A vertex with six or more ends (the wedge, a neck, three rings of `Q` within `h` of one point,
+`P`'s exterior and hole touching on `Q`'s edge) is resolved by the sector walk of section 4.3, in
+the exact rotational order of its rays: the classes alone do not say which of `Q`'s two passes `P`
+threads between. Three things keep this safe:
+
+- The rays are exact tangents of the segments' planes at the vertex's position, ordered with exact
+  orientation signs, never by a difference of two nearby positions. In doubles the order agreed with
+  the exact order at every six-end vertex in 1500 random cases, down to an adjacent-ray angle of
+  `1.8e-15` rad (run 2, section 6).
+- Two exactly parallel rays (the neck's two `Q` edges, one from each side) can only be swapped with
+  each other, and swapping adjacent rays changes neither the memberships between them nor the pairing
+  across the zero-width sector, which pairs the same two rays either way.
+- Every class at the vertex comes from an original-vertex test, a deduction anchored on one, or a
+  margin-ordered midpoint test (7.5), so the walk has reliable constraints; disagreement is a check
+  failure (section 9), not a silent error.
+
+Run 2 found no failure of this walk under identity vertices in 1500 random cases of five
+generators and the 463-case catalogue. It did find one, in two settings: under contraction (7.7),
+and under identity in dense jittered shared edges, 4 of 299 cases (two boundaries digitised along
+each other with vertices `0.4h` to `1.2h` apart and offsets up to `2h`, so that a ring's
+consecutive vertices coincide with the other's in the order `A, B, A` and it revisits a vertex),
+plus one case of two rings of `P` touching at a `Q` corner. In all of them several rays leave the
+vertex along the same thick plane, and their order by angle is noise, not geometry. The rule that
+is missing, and that Phase 4b should design, treats such rays as one *bundle*: the pieces between
+bundled rays are band pieces whose classes are solved from the vertex's parity constraints, not
+read off an order. Until then those cases fail the checks of section 9, visibly.
+
+A two-arc there-and-back of one ring between two vertices (`A, B, A` with no other vertex) is the
+two-arc case of the loop rule and is made internal likewise (the *spike rule*); it fixed half of
+the dense shared-edge failures and is part of the recommended configuration.
+
+### 7.7 Why not contract by distance
+
+The earlier section 7 proposed contracting every piece without an original vertex shorter than
+`2h`, merging its ends into one cluster. Run 1 and run 2 measured it (variant V2b):
+
+- It fails. `P`'s edge running down a neck of `Q` with the neck's two vertices on it (7.5's
+  picture) is two four-end vertices `0.4h` to `1.3h` apart under identity, each resolved without
+  geometry; contraction merges them into one six-end cluster whose rays leave from two different
+  points, nearly parallel, and the rotational walk round it is inconsistent: 19 of 300 cases, every
+  rule and adversary, in exact arithmetic (run 2, section 6). Contraction makes it worse in two
+  ways. It *creates* six-end vertices: identity keeps this configuration as two four-end vertices,
+  which need no geometry at all (7.4), and contraction joins them into one that needs the
+  rotational order. And it *spoils* that order: a cluster's rays leave from different member
+  positions, up to the cluster's width apart, so their order round the cluster is not the order at
+  any one point and can be wrong even in exact arithmetic, whereas every ray at an identity vertex
+  is a tangent at one position. Identity vertices are not free of the problem: when several of
+  their rays leave along one thick plane, the order is noise there too, and they need 7.6's bundle
+  rule. But that took dense coincident boundaries (4 of 299 cases), where contraction's failure
+  came from an ordinary neck (19 of 300). Fixing contraction would need the bundle rule at every
+  cluster, on top of contraction.
+- It moves the output by up to the cluster's width (up to `20h` in run 2's generators, in dense
+  shared edges), and drops every region thinner than the cluster, including real ones.
+- It removes anchors: a touch record inside a cluster is internal, so a common chain that it
+  anchored becomes anchorless and needs section 5's fallback (run 2, section 7).
+
+What contraction bought, few midpoint tests and no tie dependence, the `LL` rule and the margin
+order buy as well: V1b's remaining midpoint tests are band pieces (7.4), and its output does not
+depend on the tie order except for ring structure in sub-`h` spurs.
+
+### 7.8 A twist on `Q`, and ties
+
+`P`'s ring is `A, D, C, B`: the edges `A`-`D` and `C`-`B` cross at `X`, so `P` is a bow-tie, and
+`X` lies on `Q`'s top edge, with `Q` below:
+
+```
+  A               C
+  | \           / |
+  |   \       /   |
+  Y_L---- X ----Y_R      Q's top edge (Q below)
+  |   /       \   |
+  | /           \ |
+  B               D
+```
+
+`Q`'s edge is crossed twice at `X`, by `A`-`D` and by `C`-`B`. Both are `LL` records, which name no
+original vertex, so they are two vertices, `E` (on `A`-`D`) and `F` (on `C`-`B`), even though here
+they have equal keys along `Q` and the same position (run 1, section 4.3). No record is ever *at*
+`X`: it is a vertex of neither polygon. As `Q`'s edge rises towards `X` from below (section 8), `F`
+and `E` converge, coincide when the edge passes through `X`, and swap order along `Q` above it.
+This is FHP's one failure (their Fig. 21): they label each intersection crossing or bouncing and
+alternate entry and exit along each ring, and two intersections at one point have no order to
+alternate in.
+
+**Seen as one point**, `X` has six rays: `P`'s four, towards `A`, `B`, `C` and `D`, and `Q`'s two,
+along its edge towards `Y_L` and `Y_R`. Going anticlockwise from `Q`'s edge on the right, each
+sector's (in `P`, in `Q`):
 
 | Sector | Where | (in `P`, in `Q`) |
 | --- | --- | --- |
@@ -406,46 +645,80 @@ along its edge towards `Y_L` and `Y_R`. Going anticlockwise round `X` from `Q`'s
 | `B` to `D` | below `X`, between the lobes | (0, 1) |
 | `D` to `Y_R` | lower part of the right lobe | (1, 1) |
 
-Each ray flips one membership (`P`'s rays flip `P`, `Q`'s flip `Q`), as it must. For `P ∩ Q` the
-output sectors are the two `(1, 1)` ones, so the kept ends are `Y_L`, `B`, `D` and `Y_R`, and pairing
-across the output sectors gives `{Y_L, B}` and `{D, Y_R}`: two triangles, `X, Y_L, B` and
-`X, Y_R, D`, touching at `X`. That is the result FHP's Fig. 21 expects: `P`'s lobes, which crossed
-at `X` in the input, touch there in the output. `P \ Q` is the two upper triangles, likewise.
+Each ray flips one membership (`P`'s rays flip `P`, `Q`'s flip `Q`), as it must. `P ∩ Q` is the two
+`(1, 1)` sectors, the lower parts of the lobes: two triangles touching at `X`, which is the result
+FHP's Fig. 21 expects. `P \ Q` is the two `(1, 0)` sectors, the upper parts.
 
-Without contraction there are two vertices at `X`, with the zero-length piece of `Q` between them. Its
-class is a coin toss, and at each of the two vertices one ray has no direction, so the sectors are
-undefined: the walk round the vertex fails, or the pairing lets the lobes cross.
+**What the overlay sees** is two four-end vertices with a zero-length piece of `Q` between them,
+in whichever order the tie gives. Say `F` comes first along `Q`, as it would if `Q`'s edge were a
+hair below `X`:
 
-### 7.3 The choices
+```
+  A               C
+  | \           / |
+  |   \       /   |
+  |      \ /      |      X a hair above Q's edge
+  |      / \      |
+  Y_L---F---E---Y_R      Q's top edge (Q below)
+  |   /       \   |
+  | /           \ |
+  B               D
+```
 
-- **The tolerance is at least `2t`** (`2s` if the thickness is raised to `s`, open question 1),
-  because of the touches up to `2t` apart. Records with equal keys on one segment are within `2t` of
-  each other, so contracting by distance also settles ties.
-- **Only pieces with no original vertex.** A piece with one has a reliable test (section 3), and
-  contracting it would drop an original vertex of the input.
-- **The merged vertex's position**, proposed: an original vertex of `P` if one was merged, so that
-  `P`'s vertices stay exact (scalar coverages want this); else a crossing, whose position is
-  accurate to about `2e-10` radians (audit D5); else any. The arcs ending there move by up to the
-  tolerance. Its provenance is that of every merged record: it lies on both polygons.
-- **Fixed at the source, not by contraction:** the sort order of touch records (audit F2, for D1),
-  and a vertex in a corner's wedge being reported once per edge (audit F3, for D3). The latter's
-  piece of `Q` runs through the corner vertex, so it has an original vertex, and at a sharp corner it
-  is longer than any fixed tolerance.
-- **The cost:** a chain of short pieces contracts to one vertex that can be wider than the
-  tolerance, and the point set then moves by up to that width. The Phase 5 hunt should measure how
-  wide such clusters get in the cascade. Without contraction the checks would still catch a short
-  piece's wrong class, but only as an inconsistency to repair.
+Each vertex has its own four rays and its own walk:
+
+| Vertex | Sector | Where | (in `P`, in `Q`) |
+| --- | --- | --- | --- |
+| `F` | `E` to `C` | between the lobes, above `Q`'s edge | (0, 0) |
+| `F` | `C` to `Y_L` | left lobe, above | (1, 0) |
+| `F` | `Y_L` to `B` | left lobe, below | (1, 1) |
+| `F` | `B` to `E` | between the lobes, below | (0, 1) |
+| `E` | `Y_R` to `A` | right lobe, above | (1, 0) |
+| `E` | `A` to `F` | between the lobes, above | (0, 0) |
+| `E` | `F` to `D` | between the lobes, below | (0, 1) |
+| `E` | `D` to `Y_R` | right lobe, below | (1, 1) |
+
+Together they are the six sectors round `X`, with the two between the lobes each split across the
+zero-length piece `F`-`E`. Each vertex is an ordinary crossing, which the `LL` rule of 7.4 knows
+from the record. `P`'s pieces at each have original vertices (`C` and `B` at `F`, `A` and `D` at
+`E`), so they are tested. The zero-length piece is deduced at either end: it is outside `P`,
+bounding `(0, 0)` above and `(0, 1)` below. Its direction is `Q`'s edge, from `Q`'s plane, never
+`E` minus `F`, so its zero length costs nothing.
+
+The outputs, read off the tables: `P ∩ Q` pairs `Y_L` with `B` at `F` and `D` with `Y_R` at `E`,
+giving the two triangles `Y_L, F, B` and `E, Y_R, D`. `P \ Q` pairs `C` with `Y_L` at `F` and `Y_R`
+with `A` at `E`, giving one ring, `Y_L, A, E, Y_R, C, F`: section 8's ring, its twist shrunk to the
+point `X`, through which it passes twice. The other tie order, `E` first, is `Q`'s edge a hair
+above `X`, and gives the mirror image: `P ∩ Q` one ring through `X` twice, `P \ Q` two triangles.
+Both orders describe the same point set and differ only in ring structure. Run 1 ran both, and the
+oracle passed both. The ring through `X` twice passes there at two different vertices, `E` and
+`F`, so section 6.4's split (which looks for a repeated vertex) does not see it: it is the input's
+twist carried through (section 8), not something the overlay made.
+
+**Ties in general.** Records with equal keys along one segment sort in no defined order. Under
+identity vertices a tie between records of one vertex is one stop (section 2). A tie between
+different vertices, as here, gives two orders of a zero-length piece whose class is deduced, and
+either order is a valid output. Run 1 and run 2 ran every tie order, and the output's point set
+never depended on it.
+
+### 7.9 Clean-up, last
+
+After linking: consecutive repeated positions are removed and counted; a ring with fewer than three
+distinct positions is dropped and counted; nothing else is merged or dropped. The dropped rings are
+the collapsed regions of 7.2, zero area by construction. Whether to also merge regions all of whose
+points lie within about `h` of both boundaries (slivers of the true answer, which contraction used
+to remove by accident) is a separate, distance-based rule on the output, for the design (Phase 4b).
 
 ## 8. A twist away from `Q`
 
 `GeometryIntersect` intersects `P` with `Q`, never with itself, so a point `X` where `P` crosses
-itself is not a record, and not a vertex of the overlay, unless it lies on `Q` (section 7). It lies
+itself is not a record, and not a vertex of the overlay, even when it lies on `Q` (section 7.8). It lies
 inside one piece (if both crossing edges are in the same piece) or inside two. Each of those
 pieces is still on one side of `Q`, and its test, at an original vertex, is unaffected. Its class
 is also right: point-in-polygon is parity from `R`, so a twisted lobe of `P` is inside `P`
 whichever way it is wound, as the interior rule says (design doc section 3.1).
 
-Example: `P` is the bow-tie of section 7, with `Q`'s top edge lower down, so that `X` is above it
+Example: `P` is the bow-tie of section 7.8, with `Q`'s top edge lower down, so that `X` is above it
 and the edge cuts both lobes:
 
 ```
@@ -488,11 +761,10 @@ section 6.4 (open question 11) does not see it: the output crosses itself where 
 Partitioning does not make the input worse, but it does not make it simple either; a simple output
 needs the self-overlay of requirements section 3.7 (filed in the inbox as a possible PR after B).
 
-**A twist near `Q`.** If `X` is close to `Q`'s edge but not on it, `Q`'s edge is crossed twice close
-together, and the piece of `Q` between the two crossings is short. Shorter than the contraction
-tolerance, it is contracted and `X` is treated as on `Q` (section 7). Longer, it is a genuine small
-piece, inside or outside the tip of the gap between the lobes, and its midpoint is about the twist's
-distance from `P`'s boundary, so it is classified like any other single-arc piece (section 3).
+**A twist near `Q`.** If `X` is close to `Q`'s edge, `Q`'s edge is crossed twice close together,
+and the piece of `Q` between the two crossings is short. However short, the two crossings stay two
+`LL` vertices, each an ordinary crossing, and the short piece is deduced from either of them
+(sections 7.4 and 7.8); on `Q` exactly, it has zero length and the same is true.
 
 FHP handle a twist away from `Q` too (their Fig. 21a); what they cannot represent is a twist on `Q`.
 
@@ -514,10 +786,17 @@ What the data can get wrong is the classes, and two checks test them:
    to start from. At an ordinary crossing, with ends `p1`, `p2`, `q1` and `q2`, `p1` and `p2` each
    fix `Q`'s membership and `q1` and `q2` each fix `P`'s, so two of the four are redundant: `p1`
    and `p2` must have different classes (`P` crosses `Q` there), and so must `q1` and `q2`. At a
-   bounce they must have the same class, which the rotational order (`p p q q`) must also show.
+   bounce they must have the same class. (The rotational order, `p p q q`, would show it too, but
+   at four ends it is not used: section 7.4.) At a vertex that is one `LL` record a bounce is
+   itself a failure, since the record says the segments cross (7.4).
    At a chain end (`p`, `q`, `c`) nothing is redundant: `p` and `q` fix exactly what is needed.
 2. **A common chain must get the same class from both its ends.** This is where a chain's
    redundancy is.
+
+A third check is worth keeping in debug builds: **test every original vertex of a piece, not just
+one, and require them to agree.** Phase 4a run 1 dropped one of the wedge's two records on purpose:
+`Q`'s ring then came out as one piece with one class, consistent at every vertex and wrong, and
+only this diagnostic noticed. It costs a test per vertex, so it is not for release builds.
 
 ### 9.2 What a failure means
 
@@ -526,9 +805,10 @@ consistent arrangement. The causes:
 
 - a missed or spurious intersection (R9, R11): a piece that really crosses the other polygon has no
   single class;
-- a single-arc piece whose midpoint test was decided by rounding (section 3);
-- a wrong rotational order at a vertex with four or more ends, where two ends leave nearly tangent
-  (section 4.3).
+- a single-arc piece whose midpoint test was decided inside the band, and propagated (section
+  7.5 orders the tests to prevent it);
+- a wrong rotational order at a vertex with six or more ends, where several rays leave along one
+  thick plane (section 7.6, the bundle rule still to be designed).
 
 The failure names the vertex and the pieces, so it is local and can be debugged. FHP's equivalent
 error, one wrong label, inverts the rest of the ring and shows nowhere.
@@ -537,8 +817,9 @@ error, one wrong label, inverts the rest of the ring and shows nowhere.
 
 Proposed:
 
-- **Trust the tests made at original vertices** (margin at least `t`, section 3). When a single-arc
-  piece's midpoint test disagrees with them, give it the class its end vertex deduces from them.
+- **Trust the tests made at original vertices** (margin at least the thickness, section 3). When a
+  single-arc piece's midpoint test disagrees with them, give it the class its end vertex deduces
+  from them.
 - **If trusted tests disagree,** an intersection was missed or invented. Assert in debug builds. In
   release builds flip the class of the least reliable piece involved (a single arc before a longer
   piece, a shorter piece before a longer one), recheck the vertex at its other end, and carry on.
@@ -546,11 +827,18 @@ Proposed:
 - **Count the repairs.** The Phase 5 hunt requires zero on its generated data, outside the cases
   built to provoke them.
 
+What Phase 4a measured: under the chosen configuration (section 7) no repair was needed in any
+normal run. Repair is a safety net, not a mechanism: where the vertex rule itself was wrong (the
+rotational order at four ends, contraction's clusters, run 1 and run 2), single flips never made
+the output right, and under the midpoint adversary in dense shared edges the repair ran into its
+round limit. A check failure that repair cannot clear should be reported in debug builds and left
+as the best consistent answer in release builds.
+
 ## 10. Rings with no intersection
 
 A ring of either polygon with no record is one closed piece (section 2), classified by one of its
-vertices against the other polygon. No vertex of such a ring is within `t` of the other polygon (or
-it would be a record), so the test has the full margin. It is then kept or not like any other
+vertices against the other polygon. No vertex of such a ring is within the thickness of the other
+polygon (or it would be a record), so the test has the full margin. It is then kept or not like any other
 piece. With every ring of both polygons taking part, this fixes three of the four bugs in PLAN.md's
 Status, which all come from today's code intersecting exterior rings only and deciding a polygon
 whose exterior ring meets nothing by one vertex.
@@ -600,7 +888,10 @@ the hole, not shared with that exterior, against it, threshold off, with boundin
 most candidates. An island inside a hole is an exterior of its own and makes its own polygon.
 
 **Open question 7 (the style).** Proposed: OGC simple features. Each polygon is an exterior with
-holes; no ring touches itself (section 6.4); a hole may touch its exterior at a point.
+holes; no ring touches itself (section 6.4); a hole may touch its exterior at a point. The
+exceptions are inherited from the input: a twist of `P` stays a twist (section 8), and a twist on
+`Q` comes out as a ring through the twist point twice at two different vertices (7.8), which the
+split does not see.
 
 **Open question 6 (orientation).** Since the output side of every ring is known, the rings can be
 oriented consistently at no cost, with the output on the left: exteriors anticlockwise seen from
@@ -622,8 +913,11 @@ first of them).
 There is no linking. Consecutive pieces of one class are joined back into one polyline, so that a
 touch (a bounce) does not break a polyline in two. An end point of the polyline lying on `Q` has
 just one end of `P`, which needs no pairing. There is also less to check: the pieces of `Q` bound
-nothing, so they are not classified, and no end is redundant. A wrong midpoint test of a single-arc
-piece gives one short piece the wrong class, with no check to catch it.
+nothing, so they are not classified, and no end is redundant. A single-arc piece can still be
+deduced across a crossing (`LL` record: the polyline's two pieces there differ, section 7.4), but
+not across a touch, where only a test can say. A wrong midpoint test of a single-arc piece gives
+one short piece the wrong class, with no check to catch it. (Phase 4a ran polygons only; polylines
+are for the Phase 5 hunt.)
 
 Points and multi-points are unchanged: one point-in-polygon test each.
 
@@ -634,7 +928,8 @@ Every output vertex records where it came from:
 - an original vertex of `P` or of `Q`: its ring and index;
 - an intersection vertex: its segment and position along the segment on *both* polygons, which
   `GeometryIntersect` already gives (R1);
-- a merged vertex (section 7): the provenance of every record merged into it.
+- an identity vertex holding several records (section 7.2): the provenance of every record in
+  it.
 
 This is what `PartitionFeatureUtils` needs for scalar coverages, replacing its epsilon map of
 original points and its nearest-segment search (PLAN.md, *Context*). A value at an original vertex

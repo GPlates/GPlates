@@ -548,7 +548,7 @@ under the fair inversion adversary there, and 1 of 84 mixed cases (`six#5`, seed
 identity vertices with six or more ends whose rays run together within `h` (section 2, finding 7;
 section 6), which is the one mechanism left in every variant and the first thing for Phase 4b to
 design out (a bundle rule at such vertices, section 6 "V3"). Section 7 draft:
-`phase4a-section7-draft.md`.
+`phase4a-section7-draft.md` (since moved into `overlay-walkthrough.md` as section 7).
 
 The two improvements are needed, and they are rules, not thresholds: without `freex` or the margin
 order V1b fails 9 of 300 `six` cases (a band piece's arbitrary class propagated to a long piece

@@ -472,40 +472,18 @@ into `v, A` and `v, B`, which by a Jordan-curve argument is always the other non
 rule, are unchanged; only the grouping differs. That swap is Foster-Hormann-Popa's split-candidate
 clean-up, and it is always made (question 11).
 
-**Contract pieces shorter than the tolerance.** Step 2 of section 3.1 splits at each record, so two
-records at one point, or within the tolerance of each other, give two vertices with a piece of zero
-or tiny length between them. That piece has no test point (no original vertex, and its midpoint is
-on the other polygon) and no direction (a zero-length arc has no tangent for the rotational order
-at its ends). A twist of `P` lying on `Q` does exactly this: `P` crosses `Q`'s edge twice at the
-same point, the case that defeats Foster-Hormann-Popa (section 1.3). So do ties in the sort order
-along a segment (`phase3-audit.md`, R5, caveat 2). So a piece **with no original vertex** that is
-shorter than the contraction tolerance is *contracted*: removed, with its two end vertices merged
-into one. A piece with an original vertex is never contracted: it has a reliable test, and
-contracting it would drop an original vertex.
-
-The tolerance must be at least twice the thickness (`2t`, or `2s` if the thickness becomes `s`,
-question 1). A segment of `P` shorter than that, crossing an edge of `Q`, has both its vertices
-within `t` of the edge, so it gives two touches up to `2t` apart and no crossing (audit D4). Such a
-pair is usually consecutive along both geometries, and so already a common piece (step 3 of
-section 3.1) that the sector rule decides; contraction covers the cases where it is not. Records
-with equal sort keys on one segment are within `2t` of each other, so contraction by distance also
-settles ties.
-
-A merged vertex still has an even number of piece-ends of each polygon; the twist on `Q` becomes
-one vertex with four ends of `P` and two of `Q`. The walk round a vertex and the pairing take any
-number of ends, and the pairing makes `P`'s two lobes touch there rather than cross, the result
-Fig. 21 expects. The merged vertex's position, proposed: an original vertex of `P` if one was
-merged (so that `P`'s vertices stay exact, as scalar coverages want), else a crossing (accurate to
-about `2e-10` radians, audit D5), else any; the arcs ending there move by up to the tolerance.
-
-Two defects are fixed at the source rather than left to contraction: the order of touch records
-(audit F2, for D1), and a vertex in a corner's wedge reported once per edge (audit F3, for D3),
-whose piece of `Q` through the corner vertex has an original vertex and can be longer than any
-fixed tolerance at a sharp corner. A run of short pieces contracts to one vertex, which can be
-wider than the tolerance; the point set then moves by up to that width, and the Phase 5 hunt should
-measure how wide such clusters get in the cascade. Without contraction the checks below would
-still catch a short piece's wrong class, but only as an inconsistency to repair.
-`overlay-walkthrough.md` section 7 works through the twist.
+**Several records at one point** (rewritten 2026-10-30 from Phase 4a; the earlier text proposed
+contracting short pieces by distance, which the prototype runs refuted). An overlay vertex is the
+set of records that name a common original vertex, closed transitively; nothing is merged by
+distance. A single arc from a vertex back to itself, or two straight back (the loop and spike
+rules), is internal. At a vertex each polygon passes once, the classes alone decide crossing or
+bounce and the pairing, and at a vertex that is one `LL` record the crossing is known from the
+record. A single arc is deduced from its end vertices first and midpoint-tested only if still
+undetermined, the one with the largest margin first. The rotational order is used only at six or
+more ends; where several rays there leave along one thick plane, a bundle rule is still to be
+designed (Phase 4b). A twist of `P` on `Q` is two `LL` vertices with a zero-length piece of `Q`
+between them, each an ordinary crossing. `overlay-walkthrough.md` section 7 explains it all, with
+the twist worked through (7.8); `phase4a-variants.md` gives the rejected variants and why.
 
 **A twist away from `Q`** is not a vertex at all. It lies inside a piece, the piece's test is
 unaffected, and the output ring keeps the twist. The output is still right under the parity rule:
@@ -516,9 +494,8 @@ complement; the interior rule chooses by reading each ring's interior as its sma
 is the intended side while every output ring encloses less than a hemisphere, as it does when `P`'s
 exterior ring does (section 1.6). The twist is not an intersection vertex, so the split
 of question 11 does not see it: the output crosses itself where the input did, and a simple output
-needs section 3.7. A twist *near* `Q` gives two crossings of `Q`'s edge close together, and the
-piece of `Q` between them is contracted if it is shorter than the contraction tolerance, and
-otherwise classified like any other piece. Foster-Hormann-Popa handle this case too; what they
+needs section 3.7. A twist *near* `Q` gives two crossings of `Q`'s edge close together, two `LL` vertices
+however close, and the piece of `Q` between them is deduced from either. Foster-Hormann-Popa handle this case too; what they
 cannot represent is the twist on `Q`.
 
 **Checks.** Two properties hold by construction and are only assertions: at every vertex each
@@ -573,8 +550,8 @@ For it:
   iff inside both) tests exactly the same function at other points.
 - **Holes, self-crossing rings and the cascade's overlaps are not special cases.** Every ring of
   both polygons is pieces; a common chain is a piece with the sector rule; a self-crossing of `P`
-  on `Q` is a vertex with more piece-ends once short pieces are contracted, affecting only the
-  rotational pairing.
+  on `Q` is two ordinary crossing vertices with a zero-length piece between them
+  (`overlay-walkthrough.md` section 7.8).
 - **Every Boolean operation from one classification**, partitioning's two outputs among them, and
   polylines through the same code.
 - **The four bugs**: `Q` wholly inside `P` (step 4 classifies `Q`'s ring against `P`), the two
@@ -599,8 +576,9 @@ Against it:
   especially its anchorless case.
 - **Pieces shorter than the tolerance** (a twist of `P` on `Q`, ties in the sort order, two
   touches up to `2t` apart from a segment shorter than `2t` crossing an edge) would get an exact
-  but arbitrary class. Contracting them (above) removes the problem, at the price of moving the
-  point set by up to the width of a contracted cluster.
+  but arbitrary class. Deducing them from their end vertices, and testing the rest in order of
+  margin, confines the arbitrary classes to band pieces, whose class decides only slivers under
+  `0.5h` wide (Phase 4a run 2; contraction, proposed here first, was rejected).
 - **The sliver problem is not solved, only confined.** Where two plates' boundaries differ by more
   than the thickness, the cascade produces slivers that wide, exactly classified. Only a snapping
   tolerance equal to `s` would absorb them (R7).
@@ -659,7 +637,7 @@ vertices. The reasons, in order of weight:
    twists and overlaps need no separate paths.
 4. The cost objection does not apply at plate sizes.
 5. Foster-Hormann-Popa's one documented failure, a twist of `P` lying on `Q`, is an ordinary vertex
-   for the overlay once short pieces are contracted. (a) would need `P` split into simple rings
+   for the overlay (`overlay-walkthrough.md` section 7.8). (a) would need `P` split into simple rings
    first, their own remedy, and that split is the overlay's machinery applied to `P` alone
    (section 3.7).
 
@@ -673,7 +651,8 @@ Risks that remain with (b):
 - The sector rule and the anchorless ring need a precise statement and tests (Phase 4 and 5).
 - The rotational order at a vertex with nearly tangent arcs; harmless to the point set, but the
   ring decomposition there is arbitrary.
-- Contracted clusters wider than the tolerance, and slivers wider than it between adjacent plates.
+- Identity vertices wider than the tolerance (chained `SS` records), and slivers wider than it
+  between adjacent plates.
 - The inconsistency-repair policy, which must not turn a detected error back into a silent one.
 - `GeometryIntersect`'s known gaps (R7, R8, R9) are inherited by both candidates and are Phase 3's
   work; (b) does not remove the need for the audit.
@@ -688,7 +667,7 @@ polygon with itself (raised by the developer, 2026-10-25, as a possible later PR
    segment against itself and against its neighbours, which always meet at their shared vertex
    (looking past zero-length segments, and across a ring's wrap-around), and pair the bounding tree
    with itself, each pair of nodes once.
-2. Split, and contract short pieces, as in sections 3.1 and 3.3.
+2. Split, with identity vertices, as in sections 3.1 and 3.3.
 3. Classify without a point-in-polygon test. Under the parity rule, crossing any piece changes the
    parity by one, so every piece is boundary and is kept, except a stretch the polygon covers twice
    (a spike, a ring retracing itself, two rings sharing an edge), which is a common chain of the
@@ -710,10 +689,15 @@ are (section 3.3).
    `is_point_in_polygon` calls on the outline is always a split point (R7)?
 2. **A polyline piece along the boundary.** Inside, matching the inclusive threshold (recommended),
    or decided by which side of the boundary the polygon's interior is?
-3. **Common chains.** *Partly decided (developer, 2026-10-26): the sector rule is primary.* Open:
-   the anchorless fallback. Recommended: crossings from `R` to a point on the chain, leaving out
-   its own arc (`overlay-walkthrough.md` section 5, option 3), rather than an offset test.
-4. **Pieces shorter than the tolerance**: contract them, merging their end vertices (recommended,
+3. **Common chains.** *Decided: the sector rule is primary (developer, 2026-10-26); the
+   anchorless fallback is option 3 (developer, 2026-10-30, from Phase 4a run 2)*: crossings from
+   `R` to a point on the chain, leaving out its own arc, along a path on `R`'s side of that arc's
+   great circle (`overlay-walkthrough.md` section 5). The offset test (option 1) failed every thin
+   face.
+4. *Decided (developer, 2026-10-30): no contraction; identity vertices with the loop and spike
+   rules, the `LL` rule and margin-ordered midpoint tests (`overlay-walkthrough.md` section 7,
+   from Phase 4a).* The original question: **Pieces shorter than the tolerance**: contract them,
+   merging their end vertices (recommended,
    section 3.3; it is also what makes a twist of `P` on `Q` work), rather than keep them as
    duplicated points or drop them? Proposed with it: only pieces with no original vertex; a
    tolerance of `2t` (`2s` if the thickness becomes `s`); the merged vertex at `P`'s original

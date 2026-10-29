@@ -150,6 +150,15 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   creates six-end vertices where identity has four-end ones); it waits for the developer's read
   before replacing walk-through section 7.
 
+- 2026-10-30: **Walk-through section 7 replaced** by the draft (developer approved; the draft file
+  is deleted). The rest of the walk-through was checked against runs 1 and 2 and corrected:
+  overview step 3 (deduction), thickness wording and the T-intersection's variable (`h` is now the
+  thickness), option 3 decided with the side rule (section 5), the 6.4 example now paired
+  directly by the bounce rule, the `LL` bounce check and the all-vertices debug check (9.1),
+  repair's measured role (9.3), inherited twists as the OGC exceptions (11), and polylines
+  (deduction across crossings; not yet run by the prototype). `phase2-requirements.md` section 3.3
+  and questions 3 and 4 updated to match.
+
 - **Resume here** (2026-10-27):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). The walk-through of requirements §3.3 is complete (`overlay-walkthrough.md`,
