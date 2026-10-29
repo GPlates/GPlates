@@ -395,8 +395,10 @@ class.
   difference: V1/rotation tie-dependent in 9 cases on the rerun, 7 above).
 - **V1b, added in review**: V1, and a single arc (no original vertex) from a vertex back to itself
   is internal; no contraction by length. Every V1 failure is such a loop (section 4.6), and an arc
-  between two records of one identity vertex is at most `2h` long by construction (both lie within
-  `h` of the same original vertex), so the rule needs no distance threshold. Measured
+  between two records of one identity vertex is at most `2h` long when both records refer to the same
+  original vertex (both lie within `h` of it), so the rule needs no distance threshold. (Union-find
+  chains, eg `x ≡ y1 ≡ x' ≡ y2` through several SS records, can make a group wider, by up to `2h` a
+  link; run 2 should measure group extents.) Measured
   (`python -I overlay_catalogue.py --variant V1b`): **V1b/free 0 oracle, 0 check, 0 repairs, 0
   unresolved, 5 tie-dependent (ring structure only), 23 output crossings (the twists, as V0/V1)**;
   V1b/rotation fails the oracle in 10 (the parallel-ray near-vertex cases, as V1/rotation).
