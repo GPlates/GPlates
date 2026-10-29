@@ -127,6 +127,20 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   slivers, six-end vertices), from the developer's questions on run 1; it feeds walk-through
   section 7 and the design doc's rejected alternatives once a variant is chosen.
 
+- 2026-10-29: **Phase 4a run 2 done** (Fable, high effort; `phase4a-run2.md`, with the review's
+  addendum as section 12; `phase4a-section7-draft.md`; tools at 115471b in the planning
+  repository). All three run-1 candidates broke somewhere. **Recommended: V1b** (identity
+  vertices, loop rule, plus the spike rule, its two-arc case) **with rule `freex`** (at a four-end
+  vertex that is one LL record the crossing is known, so one class fixes the other three) **and
+  midpoint tests ordered by margin**; option 3 for anchorless chains (Q3), with the path kept on
+  `R`'s side. V2b rejected: fails 19 of 300 `six`, 3 of 60 `chain`, 18 of 299 `shared`, in exact
+  arithmetic, at six-end clusters; moves output by up to `20h`. V0 rejected: zero-length pieces,
+  most midpoint tests, tie-dependent output. Float ordering never mattered. Residue: V1b fails 4
+  of 299 dense jittered shared edges (2 with the spike rule) and one six-end case, at six-end
+  identity vertices whose rays run together within `h`; a **bundle rule** there is the first open
+  item for Phase 4b. Cascade clean with no growth; the open-arc cut works with three additions.
+  Awaiting the developer's decision on the variant.
+
 - **Resume here** (2026-10-27):
   - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
     2026-10-25). The walk-through of requirements §3.3 is complete (`overlay-walkthrough.md`,
