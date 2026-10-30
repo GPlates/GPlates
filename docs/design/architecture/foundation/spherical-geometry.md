@@ -794,7 +794,8 @@ to do it inside the primitive, and was deleted unused).
    crossing lying further along. A vertex inside a corner of the other geometry, within the
    thickness of both of the corner's arcs but farther than the thickness from the corner, touches
    both and gives one intersection per arc, both at that vertex; at an acute corner the wedge
-   where this happens reaches the thickness divided by the sine of half the corner's angle. End points are not tested: the next segment's start point covers them, except at a
+   where this happens reaches the thickness divided by the sine of half the corner's angle (section
+   4.4). End points are not tested: the next segment's start point covers them, except at a
    polyline's last vertex, which is tested here too. A zero-length arc has no plane, so nothing
    touches *it* except at a coincident vertex (step 1). Its own start point can still touch the
    other arc.
@@ -844,6 +845,113 @@ The distance code's `intersect(arc1, arc2)` answers a narrower question, in a di
   near-collinear crossings `intersect()` handles are, for `GeometryIntersect`, touches.
 - **A zero-length arc** meets the other arc if its start point lies on it (`lies_on_gca`, an
   epsilon test). The arc-to-arc distance does not call `intersect()` for one.
+
+### 4.4 Tolerances
+
+**One thickness, and it is `s`.** `get_on_segment_start_threshold_cosine()` returns `1 - EPSILON`,
+the cosine of point-in-polygon's point-on-outline threshold (section 1), and the thickness sine is
+derived from it. So one distance means "the same point" for distance, point-in-polygon and
+intersection: two vertices coincide when they compare equal as `real_t`s, a vertex within `s` of an
+arc's plane and inside its lune touches the arc, and a point within `s` of a polygon's outline is on
+it. A vertex that point-in-polygon calls on the outline is therefore an intersection here, and a
+geometry with no intersection has no vertex within `s` of the other geometry's arcs, so whether it
+is inside can be decided by exact parity, threshold off, without disagreeing with the inclusive
+query.
+
+The thickness must also satisfy two inequalities, which the comment at
+`get_on_segment_start_threshold_cosine` states and the unit tests pin (section 6):
+
+- **It is at least the longest a zero-length arc can be** (about `1e-6` radians; `s` exceeds it by
+  about `0.41e-6`). A zero-length arc has no plane, so it cannot be crossed, only touched at its
+  vertices; if its two end points lay on opposite sides of another arc's thick plane, that arc
+  could pass between them undetected. A zero-length arc straddling a thick plane has both end
+  points on it, so both touch.
+- **Its square (`2e-12`) exceeds `EPSILON`.** A crossing needs the sine of the angle between the
+  two planes to exceed the thickness (section 4.2), so the cross product of the planes' normals is
+  never zero as a `real_t`, and the interpolation fallback is never reached.
+
+The bounding circles of the trees are expanded by the same thickness
+(`BoundingSmallCircleBuilder::get_default_angular_expansion()`), so a pruned pair of arcs cannot
+touch.
+
+**What the thickness does to contacts.**
+
+- **A crossing needs both end points of each arc beyond the thickness.** A short segment crossing
+  an arc with both its end points within `s` of the arc's plane gives two touches and no crossing.
+  At a right angle that means a segment shorter than `2s` (about 18 metres); at an angle `phi` to
+  the arc, one shorter than `2s / sin(phi)`, which has no bound as the angle shrinks.
+- **A vertex inside a corner touches both of the corner's arcs** (section 4.2), so one contact is
+  two intersections at the same vertex. At an acute corner they stand for the two crossings that a
+  segment passing just beyond the corner would make, collapsed onto the vertex by the thickness.
+  A consumer must keep both: `Graph`'s comment says which original vertices each intersection
+  names, so that intersections at one vertex can be treated as one contact.
+- **A touch is placed at the touching vertex**, up to `s` off the other arc. Where the other arc
+  would have been crossed nearby, the contact moves along it to the vertex's projection, by up to
+  `s / sin(angle)` between the two arcs. Measured when the thickness was raised from the zero-length
+  bound to `s`: on the Müller et al. 2022 model, resolved every 5 Myr from 1000 Ma, 3 of 3,799
+  resolved topologies changed, each a junction moving from a computed crossing onto an original
+  vertex of a boundary section, by 1.01 to 1.08 `s`; no topology and no sub-segment appeared or
+  disappeared.
+
+**Ordering.** The angle along a segment is an `AngularDistance` made from a cosine, so it resolves
+only about `1.5e-8` radians near the segment's start (section 1), and two intersections within
+that of each other there compare equal. Other ties are exact: two crossings at one point (a
+self-crossing of one geometry lying on the other) and two touches by one vertex (a corner). The
+sort is stable (`std::stable_sort`), so tied intersections keep the order in which they were
+found. A consumer must accept them in either order. A touch is keyed by its vertex's projection
+onto the other arc's great circle, so that it sorts by where along the arc it is, which is what a
+crossing's key measures too.
+
+**What is exact.** The orientation test of a crossing and the two lune tests are exact sign tests
+on the dot products (`>=` and `<=` on `.dval()`). The position of a touch or a shared vertex is an
+original vertex, exactly; a crossing's position is accurate to about `2e-10` radians.
+
+### 4.5 Rejected alternatives
+
+**Keeping the thickness at the zero-length bound** (`1.0000444e-6` radians, its previous value). A vertex between that and `s` from an arc was on the outline for point-in-polygon and no
+intersection for `GeometryIntersect`, so partitioning's exact classification of a geometry without
+intersections disagreed with the inclusive query, and the system had two meanings of "the same
+point". Raising it changed topology resolving slightly and measurably (section 4.4), which is the
+cost accepted.
+
+**A coincidence radius larger than the thickness**, about `sqrt(2)` times it, so that a vertex in
+a right-angled corner's wedge would coincide with the corner instead of touching both arcs. It
+needs two constants instead of one, and acute corners keep the wedge anyway, out to the thickness
+divided by the sine of half the angle.
+
+**Reporting a corner contact once**, by dropping one of the two touches at a vertex. At an acute
+corner the two stand for two crossings; dropping one leaves the other geometry's corner tip joined
+to the rest of its ring, and a consumer that classifies a stretch of ring by one of its vertices
+then puts the whole ring on the wrong side. Measured with a prototype of the partitioning overlay:
+dropping the first-sorted touch gave wrong output in 15 of 25 corner cases, and no consistency
+check noticed. (Dropping the other one happened to give none, which is not evidence that it is
+safe: both stand for real crossings.) The touches are kept, and grouped by the vertex they name.
+
+**Ordering a touch by the angle to its vertex** (the previous key). The vertex is up to the
+thickness off the arc, so near the arc's start the angle to it exceeds its distance along the arc,
+and a touch sorted after a crossing lying further along whenever the two were within about
+`sqrt(2)` thicknesses of each other: a vertex `3.0e-6` along and `0.99e-6` off sorted after a
+crossing at `3.15e-6`.
+
+**Porting `GreatCircleArc::intersect`'s refinements, or one primitive for both callers.** The
+refinements (interpolating along the better-conditioned arc, the lune check, the end-point
+fallback, section 4.3) handle crossings between nearly parallel arcs, which `GeometryIntersect`
+never reports: it reports them as touches. The two decisions also suit their callers: the distance
+code needs a crossing to be a crossing, exactly, while topology resolving and partitioning need
+touches, shared vertices and overlaps reported, within a tolerance. The chord interpolation that
+`GeometryIntersect` had for nearly parallel planes was unreachable (section 4.4); it is now the
+distance code's `interpolate_plane_crossing`, as a fallback for rounding only.
+
+**Classifying contacts inside the primitive**: crossing, touch, or the start or end of an
+overlap, as Foster, Hormann and Popa's labels do. It would give the primitive a meaning of
+"crossing" that depends on the thickness, and change the contract topology resolving relies on,
+for one consumer. A `GeometryCrossing` stub was begun for it and never finished. A consumer derives
+what it needs from the records: their types, segment indices and order along both geometries.
+
+**Placing an SS intersection at the first geometry's vertex everywhere**, including at the second
+geometry's last vertex, where it is now placed at that vertex (section 4.2). It would make the rule
+uniform, but would move topology junctions at a section's last vertex by up to the thickness, for
+no consumer that needs it. The header documents the exception instead.
 
 ## 5. Partitioning
 
@@ -1278,10 +1386,45 @@ a build of the code before the rule: every polygon that passes the hemisphere te
 the only differences being in the interior centroid of the 879 polygons wider than its size switch,
 which is the change intended.
 
-Intersection and partitioning have no C++ tests of their own. In C++, `GeometryIntersect` is
-reached only through `GenerateVelocityDomainCitcomsTest.cc` (via `PolylineIntersections`).
-Otherwise it is reached through the pyGPlates topology and partition tests.
-`GreatCircleArc::intersect` is exercised through the distance tests above. The pyGPlates partition tests (`test_partition` in `test_geometries_on_sphere.py`,
+The C++ tests of `GeometryIntersect` (`src/unit-test/GeometryIntersectTest.cc`) build their
+geometries in local tangent coordinates at a centre on no axis, with distances in units of the
+thickness, so that each case stays where it is meant to be if the thickness changes. They cover a
+crossing; a vertex shared bit for bit, at an inner vertex, at a polyline's first and last vertices
+(the fictitious segment, on either or both geometries) and at a polygon ring's first vertex; a
+touch at `0.99` thicknesses and none at `1.01`, with the touch's projected key; overlaps
+(interleaved, reversed, along a whole edge, round a corner), where every vertex in the stretch is
+an intersection and nothing else is; zero-length segments straddling an arc and at a vertex; short
+crossing segments at right angles and at 20 degrees (two touches from a segment three thicknesses
+long); the ordering of a touch before a crossing just beyond it; segment indices through the
+rings, a contact at a ring's first vertex, and a hole touching its exterior (one intersection per
+ring); a near-antipodal arc and nearly parallel arcs; pruning over a 300-segment polygon with two
+holes, both ways round and against a one-leaf polyline; the corner wedge at a right angle and at
+30 degrees; symmetry (`intersect(A, B)` against `intersect(B, A)`); clearing a stale `Graph`; a
+self-crossing on an arc; and the two inequalities of section 4.4, with the thickness equal to `s`.
+Reverting the projected key makes the ordering case fail.
+
+They were checked against an exact reference: the specification of `intersect_segments` in
+rational arithmetic on the double inputs (thick planes, coincident vertices first, the four types,
+the fictitious segment, ring wrap-around, the projected key), with a band round every tolerant
+decision so that a case decided within rounding of a threshold is skipped. A hunt observed
+`GeometryIntersect` through `PolygonOnSphere.partition()`, whose pieces end at the intersections
+along the polyline, on generated cases: shared vertices and collinear runs offset across the
+thickness, nearly parallel and nearly antipodal arcs, short segments and self-crossings on an arc,
+geometries `1e-5` radians across at a pole, arcs of 100 to 170 degrees, pieces fed back in against
+jittered copies, and windows of adjacent plate boundaries from the Müller et al. 2022 model, both
+bit-identical and moved sideways. 14,000 cases (8,000 with the second geometry as a polyline and
+6,000 as a polygon ring; 36,559 intersections) gave no mismatch. The same hunt, with the reference
+modelling the code as it was before the thickness was raised and the key changed, gives 319
+mismatches in 2,000 cases, so it is sensitive to both. The observation cannot see an intersection
+positioned exactly at the polyline's first or last vertex when it is the only one there, cannot
+order two occurrences of one position with another between them, and sees nothing on a polygon's
+interior rings, since partitioning intersects exterior rings only (section 5.1); those cases are
+covered by the C++ tests.
+
+In C++, `GeometryIntersect` is also reached through `GenerateVelocityDomainCitcomsTest.cc` (via
+`PolylineIntersections`), and from Python through the topology and partition tests.
+`GreatCircleArc::intersect` is exercised through the distance tests above. The pyGPlates
+partition tests (`test_partition` in `test_geometries_on_sphere.py`,
 `test_partition_geometry` in `pygplates/test/test_app_logic/test.py`) assert today's behaviour,
 including the polylines from an intersecting polygon ("will be fixed in future") and three outside
 pieces "instead of 2".
@@ -1298,8 +1441,8 @@ pieces "instead of 2".
   supercontinent-era model could cross the limit.
 - **Polygon partitioning.** An intersecting polygon is partitioned into polylines, interior rings
   are left out of the cut, and a partitioning polygon inside the input polygon is missed
-  (section 5.1). Finishing it needs intersections classified as crossings, touches and overlaps, which a
-  consumer derives from the records (section 4.2).
+  (section 5.1). Finishing it needs intersections classified as crossings, touches and overlaps,
+  which a consumer derives from the records (section 4.2).
 - **The exact parity area** for interior rings that cross the exterior ring or overlap each other
   (section 3.3). It needs the rings intersected with each other, which the partitioning PR brings,
   so it is revisited after that.
