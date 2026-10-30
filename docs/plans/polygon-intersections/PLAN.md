@@ -229,6 +229,17 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   end for an intersection on a polygon's closing segment; "most overlapping" sums arc length, which
   polygon pieces inflate by their cuts. Eight checkpoint questions end the file (5 and 6 wait for
   run 3).
+- 2026-10-31: **Decided (developer), survey questions 1 to 3.** (1) A cut point's coverage values
+  are interpolated along the cut between its two ends. (2) A polygon coverage covers all its rings,
+  as the `src/api` audit already decided (planning repository, `plans/src-api-audit.md`, triage
+  G1-1: reader falls back to exterior-only counts in 1.1). That change is G1-1's, not this branch's;
+  PR B needs it only by its Phase 5 coverage step, and it is Opus work. Partition-specific coverage
+  bugs (the `partition_range` read past the end, pyGPlates' `partition_features` dropping
+  coverages) are fixed in PR B. (3) "Most overlapping" uses area for polygons.
+  Measured for question 4 (`touch.py` in the session scratchpad): today a polygon that only touches
+  the partitioner, from either side, comes back `intersecting` as its outline in polylines (one
+  closed polyline, or two where it shares part of an edge), and a polyline touching from outside is
+  split in two at the touch.
 
 - **Resume here** (updated 2026-10-31):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
