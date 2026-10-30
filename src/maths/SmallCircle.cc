@@ -36,52 +36,6 @@
 #include "ViolatedClassInvariantException.h"
 
 
-unsigned int
-GPlatesMaths::SmallCircle::intersection(
-		const GreatCircle &other,
-		std::vector<PointOnSphere> &points) const
-{
-	// If small circle and great circle are parallel, no intersections
-	if (collinear (d_axis, other.axis_vector ()))
-		return 0;
-
-	// Since the axes are not collinear, the planes that the circles live
-	// on definitely intersect, in the form of a line.
-
-	// A is one point on the line through the intersection points, and
-	// B is the direction vector, so the line equation is: x = A + Bt
-	Vector3D B = cross (other.axis_vector (), d_axis);
-	real_t scale = d_cos_colat / B.magSqrd ();
-	Vector3D A = cross (B, other.axis_vector ()) * scale;
-
-	// solve a quadratic equation to get the actual points
-	real_t a, b, c;
-	a = B.magnitude ();
-	b = 2 * dot (A, B);
-	c = A.magnitude () - 1;
-	real_t discr = b * b - 4 * a * c;
-	if (discr < 0.0)
-		return 0;	// no intersection
-	if (discr <= 0.0) {
-		// only one intersection point
-		real_t t = -b / (2 * a);
-		UnitVector3D u(A + B * t);
-		points.push_back (PointOnSphere (u));
-		return 1;
-	}
-
-	// two intersection points
-	real_t pm = sqrt (discr);
-	real_t t1 = (-b - pm) / (2 * a), t2 = (-b + pm) / (2 * a);
-	UnitVector3D u1(A + B * t1);
-	points.push_back (PointOnSphere (u1));
-	UnitVector3D u2(A + B * t2);
-	points.push_back (PointOnSphere (u2));
-
-	return 2;
-}
-
-
 void
 GPlatesMaths::SmallCircle::AssertInvariantHolds() const
 {

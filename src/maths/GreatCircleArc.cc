@@ -316,43 +316,6 @@ namespace GPlatesMaths
 			return dot(point_cross_arc_plane, arc.start_point().position_vector()).dval() >= 0 &&
 					dot(point_cross_arc_plane, arc.end_point().position_vector()).dval() <= 0;
 		}
-
-		/**
-		 * Returns the point on @a arc (non-zero length) where it crosses the plane, given the
-		 * signed distances of its start and end points from that plane (which must have opposite
-		 * signs), or none if the arc is too close to a half circle to interpolate along its chord.
-		 *
-		 * The point is a combination of the arc's end points, so it is on the arc's great circle,
-		 * and it has zero signed distance from the plane, to within rounding - however small the
-		 * angle between the arc's plane and the other plane (unlike the cross product of the two
-		 * planes' normals, whose error grows as the angle shrinks). This is the method
-		 * GeometryIntersect uses.
-		 */
-		boost::optional<UnitVector3D>
-		interpolate_plane_crossing(
-				const GreatCircleArc &arc,
-				const double &start_point_dot_plane,
-				const double &end_point_dot_plane)
-		{
-			const UnitVector3D &start_point = arc.start_point().position_vector();
-			const UnitVector3D &end_point = arc.end_point().position_vector();
-
-			// Make sure the start and end points are not close to being antipodal.
-			// NOTE: We're avoiding the more expensive square-root calculation here.
-			const Vector3D chord_mid_point_unnormalised =
-					Vector3D(start_point) + Vector3D(end_point);
-			if (chord_mid_point_unnormalised.magSqrd().dval() <= 1e-6 /*a magnitude of 1e-3*/)
-			{
-				return boost::none;
-			}
-
-			// Not zero, since the start and end points are on opposite sides of the plane.
-			const double inv_denom = 1.0 / (start_point_dot_plane - end_point_dot_plane);
-
-			return ((start_point_dot_plane * inv_denom) * end_point -
-					(end_point_dot_plane * inv_denom) * start_point)
-				.get_normalisation();
-		}
 	}
 }
 
@@ -828,30 +791,28 @@ GPlatesMaths::uniformly_spaced_points(
 }
 
 
-bool
-GPlatesMaths::arcs_are_near_each_other(
-		const GreatCircleArc &arc1,
-		const GreatCircleArc &arc2)
+boost::optional<GPlatesMaths::UnitVector3D>
+GPlatesMaths::interpolate_plane_crossing(
+		const UnitVector3D &start_point,
+		const UnitVector3D &end_point,
+		const double &start_point_dot_plane,
+		const double &end_point_dot_plane)
 {
-	real_t arc1_start_dot_arc2_start =
-			dot(arc1.start_point().position_vector(), arc2.start_point().position_vector());
-	real_t arc1_start_dot_arc2_end =
-			dot(arc1.start_point().position_vector(), arc2.end_point().position_vector());
-	real_t arc1_end_dot_arc2_start =
-			dot(arc1.end_point().position_vector(), arc2.start_point().position_vector());
+	// Make sure the start and end points are not close to being antipodal.
+	// NOTE: We're avoiding the more expensive square-root calculation here.
+	const Vector3D chord_mid_point_unnormalised =
+			Vector3D(start_point) + Vector3D(end_point);
+	if (chord_mid_point_unnormalised.magSqrd().dval() <= 1e-6 /*a magnitude of 1e-3*/)
+	{
+		return boost::none;
+	}
 
-	/*
-	 * arc1 and arc2 are "near" each other if one of the following is true:
-	 *  - arc2.start is closer to arc1.start than arc1.end is;
-	 *  - arc2.end is closer to arc1.start than arc1.end is;
-	 *  - arc1.start is closer to arc2.start than arc2.end is;
-	 *  - arc1.end is closer to arc2.start than arc2.end is.
-	 */
-	return
-	 (arc1_start_dot_arc2_start >= arc1.dot_of_endpoints() ||
-	  arc1_start_dot_arc2_end >= arc1.dot_of_endpoints() ||
-	  arc1_start_dot_arc2_start >= arc2.dot_of_endpoints() ||
-	  arc1_end_dot_arc2_start >= arc2.dot_of_endpoints());
+	// Not zero, since the start and end points are on opposite sides of the plane.
+	const double inv_denom = 1.0 / (start_point_dot_plane - end_point_dot_plane);
+
+	return ((start_point_dot_plane * inv_denom) * end_point -
+			(end_point_dot_plane * inv_denom) * start_point)
+		.get_normalisation();
 }
 
 
@@ -936,12 +897,14 @@ GPlatesMaths::intersect(
 				auto interpolate_along_arc1 = [&]()
 				{
 					return interpolate_plane_crossing(
-							arc1, arc1_start_dot_arc2_plane, arc1_end_dot_arc2_plane);
+							arc1.start_point().position_vector(), arc1.end_point().position_vector(),
+							arc1_start_dot_arc2_plane, arc1_end_dot_arc2_plane);
 				};
 				auto interpolate_along_arc2 = [&]()
 				{
 					return interpolate_plane_crossing(
-							arc2, arc2_start_dot_arc1_plane, arc2_end_dot_arc1_plane);
+							arc2.start_point().position_vector(), arc2.end_point().position_vector(),
+							arc2_start_dot_arc1_plane, arc2_end_dot_arc1_plane);
 				};
 				const bool arc1_is_better_conditioned =
 						std::fabs(arc1_start_dot_arc2_plane - arc1_end_dot_arc2_plane) >=
@@ -1362,73 +1325,6 @@ GPlatesMaths::maximum_distance(
 
 	// Convert from minimum distance to maximum distance.
 	return (AngularExtent::PI - min_distance.get()).get_angular_distance();
-}
-
-
-bool
-GPlatesMaths::arcs_lie_on_same_great_circle(
-		const GreatCircleArc &arc1,
-		const GreatCircleArc &arc2)
-{
-	if (( ! arc1.is_zero_length()) && ( ! arc2.is_zero_length())) {
-		// Each arc has a determinate rotation axis, so we can check whether their rotation
-		// axes are collinear.
-		return collinear(arc1.rotation_axis(), arc2.rotation_axis());
-	} else if (arc1.is_zero_length() && arc2.is_zero_length()) {
-		// OK, so neither arc has a determinate rotation axis, which means that they are
-		// both of zero length (ie, they are both point-like), which means that they must
-		// trivially lie on the same great circle.  This is not a very interesting result,
-		// but we'll handle it for the sake of completeness.
-		return true;
-	} else if (arc2.is_zero_length()) {
-		// arc2 is point-like, while arc1 is *not* point-like.  Hence, they will lie on the
-		// same great-circle if the unit-vector of the arc2 start-point is perpendicular to
-		// the rotation axis of arc1.
-		return (perpendicular(arc2.start_point().position_vector(), arc1.rotation_axis()));
-	} else {
-		// Else, arc1 is point-like, while arc2 is *not* point-like.  Hence, they will lie
-		// on the same great-circle if the unit-vector of the arc1 start-point is
-		// perpendicular to the rotation axis of arc2.
-		return (perpendicular(arc1.start_point().position_vector(), arc2.rotation_axis()));
-	}
-}
-
-
-bool
-GPlatesMaths::arcs_are_directed_equivalent(
-		const GreatCircleArc &arc1,
-		const GreatCircleArc &arc2)
-{
-	const PointOnSphere &arc1_start = arc1.start_point(),
-			&arc1_end = arc1.end_point(),
-			&arc2_start = arc2.start_point(),
-			&arc2_end = arc2.end_point();
-
-	return (points_are_coincident(arc1_start, arc2_start) &&
-			points_are_coincident(arc1_end, arc2_end));
-}
-
-
-bool
-GPlatesMaths::arcs_are_undirected_equivalent(
-		const GreatCircleArc &arc1,
-		const GreatCircleArc &arc2)
-{
-	if ( ! arcs_lie_on_same_great_circle(arc1, arc2)) {
-
-		// There is no way the arcs can be equivalent.
-		return false;
-	}
-
-	const PointOnSphere &arc1_start = arc1.start_point(),
-			&arc1_end = arc1.end_point(),
-			&arc2_start = arc2.start_point(),
-			&arc2_end = arc2.end_point();
-
-	return ((points_are_coincident(arc1_start, arc2_start) &&
-		 points_are_coincident(arc1_end, arc2_end)) ||
-		(points_are_coincident(arc1_start, arc2_end) &&
-		 points_are_coincident(arc1_end, arc2_start)));
 }
 
 

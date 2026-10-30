@@ -71,8 +71,10 @@ namespace GPlatesMaths
 
 				// The start points of both segments coincide (but neither start point is on the other
 				// segment's end point). The intersection position is arbitrarily chosen to be the
-				// start point of the segment belonging to first geometry. Both start points are coincident
-				// within a numerical threshold so the difference in position should be very small.
+				// start point of the segment belonging to first geometry, except at the second geometry's
+				// last vertex (the start of its fictitious one-past-the-last segment), where it is that
+				// vertex. Both start points are coincident within a numerical threshold so the difference
+				// in position is at most that threshold.
 				//
 				// Either/both segment indices *can* be a fictitious one-past-the-last segment.
 				// This happens when either/both geometries intersect at the last vertex in their geometry(s).
@@ -178,6 +180,11 @@ namespace GPlatesMaths
 			// If @a type indicates an intersection *on* a start vertex for a segment then that
 			// segment's angle will be AngularDistance::ZERO.
 			//
+			// For a touch (@a SEGMENT1_START_ON_SEGMENT2 or @a SEGMENT2_START_ON_SEGMENT1) the
+			// angle along the touched segment is to the touching vertex's *projection* onto that
+			// segment's great circle (the vertex itself is up to the thickness off it). The angles
+			// order the intersections along each geometry; no position is derived from them.
+			//
 
 			//! Angle (radians) from segment start point to intersection along segment in first geometry.
 			AngularDistance angle_in_segment1;
@@ -195,6 +202,24 @@ namespace GPlatesMaths
 		 * Currently the geometry types can be polyline and polygon. Later this may get extended to
 		 * points and multi-points if there's a need to know if points "touch" polylines/polygons,
 		 * more likely the geometry distance functions (in GeometryDistance) could be used for that.
+		 *
+		 * Segment indices of a polygon run through its exterior ring and then each interior ring, in
+		 * the order 'PolygonOnSphere::get_segment()' numbers them. The ordered sequences below are
+		 * therefore ordered ring by ring, and a consumer that needs each ring on its own splits them by
+		 * 'PolygonOnSphere::number_of_segments_in_exterior_ring()' and
+		 * 'PolygonOnSphere::number_of_segments_in_interior_ring()'. A ring's last segment ends at the
+		 * ring's first vertex, so a contact there is recorded on the ring's first segment, and the
+		 * intersections after a ring's last one continue with its first one.
+		 *
+		 * Each intersection names the original vertices it lies at (if any):
+		 * - @a SEGMENT_START_ON_SEGMENT_START names the start vertex of both segments,
+		 * - @a SEGMENT1_START_ON_SEGMENT2 names the start vertex of the first geometry's segment,
+		 * - @a SEGMENT2_START_ON_SEGMENT1 names the start vertex of the second geometry's segment, and
+		 * - @a SEGMENTS_CROSS names none.
+		 * (A polyline's fictitious one-past-the-last segment starts at its last vertex.) Several
+		 * intersections can name the same vertex: a vertex within the thickness of two edges of the
+		 * other geometry (eg, inside a corner) is reported once per edge. They are one contact, and
+		 * all of them must be kept: at an acute corner they stand for crossings of both edges.
 		 */
 		class Graph
 		{

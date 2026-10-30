@@ -37,8 +37,6 @@ set(srcs
     GeneratePoints.cc
     GeneratePoints.h
     GenericVectorOps3D.h
-    GeometryCrossing.cc
-    GeometryCrossing.h
     GeometryDistance.cc
     GeometryDistance.h
     GeometryForwardDeclarations.h
@@ -159,8 +157,6 @@ set(gplates_only_srcs
     FiniteRotationSnapshotTable.h
     GeneratePoints.cc
     GeneratePoints.h
-    GeometryCrossing.cc
-    GeometryCrossing.h
     GeometryForwardDeclarations.h
     InvalidGreatCircleArcException.h
     InvalidGridException.h

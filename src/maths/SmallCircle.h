@@ -163,18 +163,6 @@ namespace GPlatesMaths
 				return (dp == d_cos_colat);
 			}
 
-			/**
-			 * Find the intersection points (if any) of this
-			 * SmallCircle and the given GreatCircle. Intersection
-			 * points are added to @a points, and the number of
-			 * intersections is returned.
-			 * @todo Allow any container to be passed in.
-			 */
-			unsigned int
-			intersection(
-					const GreatCircle &other,
-					std::vector<PointOnSphere> &points) const;
-
 		protected:
 			/**
 			 * Assert the class invariant: that the cosine of the

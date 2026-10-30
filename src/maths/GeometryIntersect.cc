@@ -113,13 +113,20 @@ namespace GPlatesMaths
 		/**
 		 * For each of the two geometries, sort its intersection list such that intersections
 		 * are ordered from the geometries start to end.
+		 *
+		 * The sort is stable, so intersections with equal keys (eg, two crossings at one point, or two
+		 * touches by one vertex) keep the order in which they were found, which makes the order
+		 * deterministic rather than whatever an unstable sort happens to leave. Keys also tie when
+		 * two intersections on one segment are within the angle's resolution of each other: the
+		 * angle is compared as a cosine, which near a segment's start resolves only about 1.5e-8
+		 * radians. Consumers must accept tied intersections in either order.
 		 */
 		void
 		sort_geometry_intersections(
 				Graph &graph)
 		{
 			// Sort intersections along geometry1.
-			std::sort(
+			std::stable_sort(
 					graph.geometry1_ordered_intersections.begin(),
 					graph.geometry1_ordered_intersections.end(),
 					SortGeometryIntersection(
@@ -127,7 +134,7 @@ namespace GPlatesMaths
 							&Intersection::segment_index1,
 							&Intersection::angle_in_segment1));
 			// Sort intersections along geometry2.
-			std::sort(
+			std::stable_sort(
 					graph.geometry2_ordered_intersections.begin(),
 					graph.geometry2_ordered_intersections.end(),
 					SortGeometryIntersection(
@@ -138,7 +145,41 @@ namespace GPlatesMaths
 
 
 		/**
+		 * The ordering key of a touch: the angle from the start of the touched segment to the
+		 * touching point's projection onto the segment's great circle.
+		 *
+		 * The touching point lies within the thickness of the segment's great circle, not on it. The
+		 * angle from the segment's start to the point itself (its chord) is larger than its distance
+		 * along the segment, by up to the thickness near the start, which could sort a touch after a
+		 * crossing that lies further along the segment. The projection sorts it by where along the
+		 * segment it touches, which is what a crossing's key measures too.
+		 *
+		 * The key only orders. Topology resolving sorts by it too
+		 * ('ResolvedSubSegmentRangeInSection::Intersection::operator<') but derives the ratio at
+		 * which an intersection divides its segment from the position, so changing the key moves no
+		 * point.
+		 */
+		AngularDistance
+		get_angle_along_touched_segment(
+				const UnitVector3D &touching_point,
+				const UnitVector3D &touched_segment_start_point,
+				const UnitVector3D &touched_segment_plane)
+		{
+			// Never zero: the point is within the thickness of the plane, so almost all of it lies in it.
+			const Vector3D projection = Vector3D(touching_point) -
+					dot(touching_point, touched_segment_plane).dval() * touched_segment_plane;
+
+			return AngularDistance::create_from_cosine(
+					dot(projection.get_normalisation(), touched_segment_start_point));
+		}
+
+
+		/**
 		 * Add an @a Intersection to the graph.
+		 *
+		 * For a touch (@a SEGMENT1_START_ON_SEGMENT2 or @a SEGMENT2_START_ON_SEGMENT1),
+		 * @a touched_segment_plane is the plane of the touched segment, which orders the touch
+		 * along it (see @a get_angle_along_touched_segment).
 		 */
 		void
 		add_intersection(
@@ -148,7 +189,8 @@ namespace GPlatesMaths
 				const UnitVector3D &segment1_start_point,
 				const UnitVector3D &segment2_start_point,
 				unsigned int segment1_index,
-				unsigned int segment2_index)
+				unsigned int segment2_index,
+				boost::optional<const UnitVector3D &> touched_segment_plane = boost::none)
 		{
 			// Calculate the angle from start point to intersection point in each segment.
 			AngularDistance angle_in_segment1(AngularDistance::ZERO);
@@ -162,13 +204,13 @@ namespace GPlatesMaths
 			}
 			else if (intersection_type == Intersection::SEGMENT1_START_ON_SEGMENT2)
 			{
-				angle_in_segment2 = AngularDistance::create_from_cosine(
-						dot(intersection_position, segment2_start_point));
+				angle_in_segment2 = get_angle_along_touched_segment(
+						intersection_position, segment2_start_point, touched_segment_plane.get());
 			}
 			else if (intersection_type == Intersection::SEGMENT2_START_ON_SEGMENT1)
 			{
-				angle_in_segment1 = AngularDistance::create_from_cosine(
-						dot(intersection_position, segment1_start_point));
+				angle_in_segment1 = get_angle_along_touched_segment(
+						intersection_position, segment1_start_point, touched_segment_plane.get());
 			}
 			// else Intersection::SEGMENT_START_ON_SEGMENT_START ...
 
@@ -230,168 +272,34 @@ namespace GPlatesMaths
 
 				return;
 			}
-			// else both segments are pretty much on the same great circle...
-
+			// else the two planes are within rounding of each other...
 			//
-			// Both segments have the same (or opposite) rotation axis (within numerical tolerance).
-			//
-			// Due to the precondition that the start and end points of each segment not lie *on* the
-			// *thick* plane of the other segment, we probably only get here when both segments are
-			// quite long, otherwise there would be a large enough angle between their great circle
-			// planes to avoid getting here in the first place.
-			//
-			// We use the signed distances of one segment's start and end points from the other segment's plane
-			// to interpolate along the straight line joining the first segment's start and end points.
-			// That interpolated position along the line will be less than unit-length (from origin)
-			// so we then normalise it to obtain the intersection point on the unit-radius globe.
-			// The interpolation ratio is:
-			//
-			//                 signed_distance_to_start_point
-			//   -------------------------------------------------------------
-			//   signed_distance_to_start_point - signed_distance_to_end_point
-			//
-			// ...where the negative sign is because the start and end points are on opposite sides of the plane.
-			//
-
-			// Make sure segment1's start and end points are not close to being antipodal.
-			const Vector3D segment1_mid_point_unnormalised = Vector3D(segment1_start_point) + Vector3D(segment1_end_point);
-			// NOTE: We're avoiding the more expensive square-root calculation here.
-			if (segment1_mid_point_unnormalised.magSqrd().dval() > 1e-6 /*equivalent to a magnitude of 1e-3*/)
+			// That does not happen. A crossing needs each segment's end points to be farther than the
+			// thickness from the other segment's plane, on opposite sides of it, which puts the sine of
+			// the angle between the planes above the thickness (THICKNESS_THRESHOLD_SINE). The square of
+			// the thickness is greater than EPSILON, which is what the 'magSqrd() > 0' test above
+			// compares against (as a 'real_t'), so the cross product is always taken. This path is
+			// only a fallback for rounding, and if it is ever reached, the crossing is interpolated
+			// along whichever segment is not close to a half circle.
+			boost::optional<UnitVector3D> intersection = interpolate_plane_crossing(
+					segment1_start_point, segment1_end_point,
+					segment1_start_point_dot_segment2_plane, segment1_end_point_dot_segment2_plane);
+			if (!intersection)
 			{
-				// The denominator of the ratios used to interpolate segment1's start and end points.
-				//
-				// Note: We should not get a divide-by-zero here because the denominator should satisfy...
-				//
-				//   abs(denom) >= 2 * THICKNESS_THRESHOLD_SINE
-				//
-				// ...since segment1's start and end points should be on opposite sides of
-				// segment2's plane by a distance of at least THICKNESS_THRESHOLD_SINE.
-				const double denom = segment1_start_point_dot_segment2_plane - segment1_end_point_dot_segment2_plane;
-				const double inv_denom = 1.0 / denom;
-
-				const UnitVector3D intersection =
-						((segment1_start_point_dot_segment2_plane * inv_denom) * segment1_end_point -
-						(segment1_end_point_dot_segment2_plane * inv_denom) * segment1_start_point)
-					.get_normalisation();
-
-				add_intersection(
-						graph,
-						Intersection::SEGMENTS_CROSS,
-						intersection,
-						segment1_start_point, segment2_start_point,
-						segment1_index, segment2_index);
-
-				return;
+				intersection = interpolate_plane_crossing(
+						segment2_start_point, segment2_end_point,
+						segment2_start_point_dot_segment1_plane, segment2_end_point_dot_segment1_plane);
 			}
 
-			// Segment1's start and end points are close to being antipodal (shouldn't be able to
-			// get a segment that spans a full half-circle but it can happen within numerical tolerance).
-			// Because the points are antipodal the absolute value of their signed distances from
-			// any plane (passing through origin) will always be equal regardless of the orientation
-			// of the splitting plane. This means the intersection cannot be calculated using
-			// signed distance ratios.
-			//
-			// So instead we swap and try comparing segment2's start and end points to segment1's plane.
-
-			// Make sure segment2's start and end points are not close to being antipodal.
-			const Vector3D segment2_mid_point_unnormalised = Vector3D(segment2_start_point) + Vector3D(segment2_end_point);
-			// NOTE: We're avoiding the more expensive square-root calculation here.
-			if (segment2_mid_point_unnormalised.magSqrd().dval() > 1e-6 /*equivalent to a magnitude of 1e-3*/)
-			{
-				// The denominator of the ratios used to interpolate segment2's start and end points.
-				//
-				// Note: We should not get a divide-by-zero here because the denominator should satisfy...
-				//
-				//   abs(denom) >= 2 * THICKNESS_THRESHOLD_SINE
-				//
-				// ...since segment2's start and end points should be on opposite sides of
-				// segment1's plane by a distance of at least THICKNESS_THRESHOLD_SINE.
-				const double denom = segment2_start_point_dot_segment1_plane - segment2_end_point_dot_segment1_plane;
-				const double inv_denom = 1.0 / denom;
-
-				const UnitVector3D intersection =
-						((segment2_start_point_dot_segment1_plane * inv_denom) * segment2_end_point -
-						(segment2_end_point_dot_segment1_plane * inv_denom) * segment2_start_point)
-					.get_normalisation();
-
-				add_intersection(
-						graph,
-						Intersection::SEGMENTS_CROSS,
-						intersection,
-						segment1_start_point, segment2_start_point,
-						segment1_index, segment2_index);
-
-				return;
-			}
-
-			// Both segments are (pretty close to) half great circles. This scenario is extremely
-			// unlikely (both segments being half circles *and* on the same great circle plane).
-			//
-			// The solution is to divide one of the half-circle segments into two segments of
-			// equal length and determine the intersection from those. We arbitrarily divide segment1.
-
-			// We cannot normalize the segment1's mid-point vector but since segment1 is (close to)
-			// a half circle we can use a cross product to find its mid-point.
-			const UnitVector3D segment1_mid_point(cross(segment1_plane, segment1_start_point));
-
-			// Get signed distance of segment1's mid-point from segment2's plane.
-			const double segment1_mid_point_dot_segment2_plane = dot(segment1_mid_point, segment2_plane).dval();
-			const bool segment1_mid_point_on_positive_side_of_segment2_plane = (segment1_mid_point_dot_segment2_plane > 0);
-
-			// If the first half segment of segment1 crosses segment2's plane.
-			if (segment1_start_point_on_positive_side_of_segment2_plane ^
-				segment1_mid_point_on_positive_side_of_segment2_plane)
-			{
-				// The denominator of the ratios used to interpolate segment1's start and *mid* points.
-				//
-				// Note: We should not get a divide-by-zero here because the denominator should satisfy...
-				//
-				//   abs(denom) >= THICKNESS_THRESHOLD_SINE
-				//
-				// ...since the distance of segment1's start point from segment2's plane should be at least
-				// THICKNESS_THRESHOLD_SINE (even though segment1's mid-point could be closer to segment2's plane),
-				// noting that segment1's start and mid points are on opposite sides of segment2's plane.
-				const double denom = segment1_start_point_dot_segment2_plane - segment1_mid_point_dot_segment2_plane;
-				const double inv_denom = 1.0 / denom;
-
-				const UnitVector3D intersection =
-						((segment1_start_point_dot_segment2_plane * inv_denom) * segment1_mid_point -
-						(segment1_mid_point_dot_segment2_plane * inv_denom) * segment1_start_point)
-					.get_normalisation();
-
-				add_intersection(
-						graph,
-						Intersection::SEGMENTS_CROSS,
-						intersection,
-						segment1_start_point, segment2_start_point,
-						segment1_index, segment2_index);
-
-				return;
-			}
-			// ...else the second half segment of segment1 must cross segment2's plane
-			// (we know this because a precondition to this function is segment1 must cross segment2's plane).
-
-			// The denominator of the ratios used to interpolate segment1's *mid* and end points.
-			//
-			// Note: We should not get a divide-by-zero here because the denominator should satisfy...
-			//
-			//   abs(denom) >= THICKNESS_THRESHOLD_SINE
-			//
-			// ...since the distance of segment1's end point from segment2's plane should be at least
-			// THICKNESS_THRESHOLD_SINE (even though segment1's mid-point could be closer to segment2's plane),
-			// noting that segment1's mid and end points are on opposite sides of segment2's plane.
-			const double denom = segment1_end_point_dot_segment2_plane - segment1_mid_point_dot_segment2_plane;
-			const double inv_denom = 1.0 / denom;
-
-			const UnitVector3D intersection =
-					((segment1_end_point_dot_segment2_plane * inv_denom) * segment1_mid_point -
-					(segment1_mid_point_dot_segment2_plane * inv_denom) * segment1_end_point)
-				.get_normalisation();
+			// Both segments close to half circles *and* on the same great circle.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					bool(intersection),
+					GPLATES_ASSERTION_SOURCE);
 
 			add_intersection(
 					graph,
 					Intersection::SEGMENTS_CROSS,
-					intersection,
+					intersection.get(),
 					segment1_start_point, segment2_start_point,
 					segment1_index, segment2_index);
 		}
@@ -953,7 +861,8 @@ namespace GPlatesMaths
 									// It can be slightly off segment2 (within a numerical threshold)...
 									segment1_start_point, // intersection
 									segment1_start_point, segment2_start_point,
-									segment1_index, segment2_index);
+									segment1_index, segment2_index,
+									segment2_plane.get());
 						}
 					}
 				}
@@ -985,7 +894,8 @@ namespace GPlatesMaths
 									// It can be slightly off segment1 (within a numerical threshold)...
 									segment2_start_point, // intersection
 									segment1_start_point, segment2_start_point,
-									segment1_index, segment2_index);
+									segment1_index, segment2_index,
+									segment1_plane.get());
 						}
 					}
 				}
@@ -1047,7 +957,8 @@ namespace GPlatesMaths
 										segment1_start_point, segment2_start_point,
 										// NOTE: Segment index of geometry1 is its 'number of segments'.
 										//       This is the fictitious one-past-the-last-segment...
-										segment1_index + 1, segment2_index);
+										segment1_index + 1, segment2_index,
+										segment2_plane.get());
 							}
 						}
 					}
@@ -1083,7 +994,8 @@ namespace GPlatesMaths
 										segment1_start_point, segment2_start_point,
 										// NOTE: Segment index of geometry2 is its 'number of segments'.
 										//       This is the fictitious one-past-the-last-segment...
-										segment1_index, segment2_index + 1);
+										segment1_index, segment2_index + 1,
+										segment1_plane.get());
 							}
 						}
 					}
@@ -1118,6 +1030,13 @@ namespace GPlatesMaths
 			//       (see GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine()).
 			//       This ensures that the bounding small circle expands to include the *touching* region around
 			//       the geometries contained within the bounding small circle.
+			//
+			//       The expansion must be at least the thickness, and needs no further margin: if a
+			//       point of a segment in one node is within the thickness of a point of a segment
+			//       in the other, the two centres are at most the unexpanded radii plus the
+			//       thickness apart, which is less than the sum of the expanded radii by the
+			//       thickness (far above the rounding of the comparison below). A crossing of
+			//       *thick* planes is also an exact crossing, so crossing segments share a point.
 			if (!intersect(
 					geometry1_sub_tree_node.get_bounding_small_circle(),
 					geometry2_sub_tree_node.get_bounding_small_circle()))
@@ -1399,13 +1318,22 @@ GPlatesMaths::GeometryIntersect::intersect(
 double
 GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine()
 {
-	// Set our thickness threshold to match the maximum length of a zero-length great circle arc.
+	// The thickness is the distance that compares equal to zero: two unit vectors whose dot product
+	// is at least '1 - EPSILON' are equal as 'real_t's (as in 'PointOnSphere::operator=='). It is
+	// also point-in-polygon's point-on-outline threshold
+	// ('PointInPolygon::get_point_on_polygon_threshold_cosine()', about 1.414e-6 radians), so a point
+	// that point-in-polygon calls on the outline is a contact here too, and "touching" means the
+	// same in both.
 	//
-	// This ensures that if the start and end points of a zero-length segment are separated by the
-	// plane of another segment, that both points will still be close enough to the plane that they
-	// can touch the segment. This avoids the possibility of incorrectly missing an intersection
-	// when a zero-length segment is involved.
-	static const double THICKNESS_THRESHOLD_COSINE_ = GreatCircleArc::get_zero_length_threshold_cosine().dval();
+	// It must not be less than the maximum length of a zero-length great circle arc
+	// ('GreatCircleArc::get_zero_length_threshold_cosine()', about 1e-6 radians): then, if the start
+	// and end points of a zero-length segment are separated by the plane of another segment, both
+	// points are still close enough to the plane to touch the segment, and no intersection is missed
+	// (the other segment cannot tunnel between them). It exceeds it by about 0.41e-6 radians.
+	//
+	// Its square (2e-12) also exceeds EPSILON, which is what keeps the cross product in
+	// 'add_segments_crossing_intersection()' always usable.
+	static const double THICKNESS_THRESHOLD_COSINE_ = 1.0 - EPSILON;
 
 	return THICKNESS_THRESHOLD_COSINE_;
 }
@@ -1415,9 +1343,8 @@ double
 GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_sine()
 {
 	// Base epsilon calculations off a cosine since that usually has the least accuracy for small angles.
-	// The zero-length cosine, 'cos(asin(sqrt(1e-12)))', corresponds to a displacement of about
-	// 1e-6. (This is not the point-on-polygon threshold of point-in-polygon, about 1.4e-6, whose
-	// cosine is '1 - 1e-12'.)
+	// The cosine '1 - 1e-12' corresponds to a distance of about 1.414e-6 radians (see
+	// 'get_on_segment_start_threshold_cosine()').
 	static const double THICKNESS_THRESHOLD_SINE_ = std::sin(std::acos(get_on_segment_start_threshold_cosine()));
 
 	return THICKNESS_THRESHOLD_SINE_;

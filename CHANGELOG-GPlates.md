@@ -40,6 +40,7 @@ Changes since 2.5:
   * Fixed CSV export (eg, from the Total Reconstruction Poles dialog).
   * Fixed filenames given on the command line (data files, projects, config files and response files).
 * A polygon's interior is now the smaller side of each of its rings, so a polygon that wraps round the globe (eg, a C-shaped landmass) is no longer treated inside out. This applies to filled polygons (in the globe and map views), Assign Plate IDs and other point-in-polygon tests, co-registration regions of interest, 3D scalar field fill, and resolved topological networks. A polygon enclosing more than half the globe now means the region outside it. Polygons that were already right are unchanged.
+* Resolving topological plates and networks, and partitioning lines by polygons (eg, Assign Plate IDs), now treat two geometries less than about 9 metres apart as touching (previously about 6 metres), the same distance within which a point counts as on a polygon's outline. A few plate boundary junctions therefore move onto a nearby vertex of a boundary section, typically by less than 10 metres.
 * Bug fixes:
   * Fixed gaps in boundary sections in the Resolved Topologies (General) export (since GPlates 2.2).
   * Fixed co-registration with a region of interest range of zero (or under about 9 m) leaving out target features whose lines or polygon outlines intersect the seed's.

@@ -15,6 +15,7 @@ set(srcs
     FlowlineUtilsTest.cc
     GenerateVelocityDomainCitcomsTest.cc
     GeometryDistanceTest.cc
+    GeometryIntersectTest.cc
     GeoscimlReaderTest.cc
     GrotFileTest.cc
     GsmlXmlQueryTest.cc

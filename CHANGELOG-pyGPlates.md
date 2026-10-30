@@ -36,6 +36,7 @@ Changes since 1.0.0:
   * Every sample is now a Python 3 script that the test suite runs, so it can be copied and run as shown (many samples previously used Python 2 `print` statements).
   * Samples use `ReconstructSnapshot` and `PlatePartitioner` instead of `reconstruct()` and `partition_into_plates()` (except where a one-off partition is clearer).
   * Each sample page lists the data files it needs and where to get them, and links to related Primer sections, Reference entries and samples.
+* Resolving topologies, and partitioning a polyline with `PolygonOnSphere.partition()` or `PlatePartitioner`, now treat two geometries less than about 9 metres apart as touching (previously about 6 metres), the same distance within which `PolygonOnSphere.is_point_in_polygon()` counts a point as on the outline. A few plate boundary junctions therefore move onto a nearby vertex of a boundary section, typically by less than 10 metres.
 * Installation:
   * The pip wheels and the conda package no longer depend on Qt GUI or OpenGL libraries.
     * So pyGPlates imports on a minimal Linux system (no `libGL` or `glib` packages needed) and the packages are smaller.
