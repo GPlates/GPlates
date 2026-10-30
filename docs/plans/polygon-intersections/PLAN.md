@@ -207,9 +207,14 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   test covered the bounding circles' expansion (all 16 passed with it set to zero), so the
   pruning test gained an end-to-end case that fails without it.
 
+- 2026-10-31: **Linux Docker run** (Ubuntu 22.04, GCC 11, Qt 5.15, at b9131a7db): GPlates 108 of
+  108; pyGPlates 6 of 7, the failure `pygplates-source-closure-test` reporting the dependency
+  matrix stale since the GoogleTests commit (unit-test includes of maths headers). Regenerated
+  (a doc-only, platform-independent change); the Windows pyGPlates suite then passes 7 of 7.
+
 - **Resume here** (updated 2026-10-31):
-  - **PR A**: everything is done, including the code review, except the **Linux Docker run** (both products, the
-    `gplates-local.md` recipe) and the PR itself, when the developer asks (push to `private` and
+  - **PR A**: everything is done, including the code review and the Linux run. Left: the PR
+    itself, when the developer asks (push to `private` and
     `public`; base `main`; the PR text says what the topology comparison found). The pre-fix
     pyGPlates baseline build for `topology_diff.py` was kept only in a session scratchpad: rebuild
     it from `6afb8aa76` if the comparison is ever needed again.
