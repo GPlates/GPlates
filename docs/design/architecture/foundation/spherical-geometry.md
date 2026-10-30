@@ -772,7 +772,8 @@ to do it inside the primitive, and was deleted unused).
 1. **Coincident vertices.** All four pairs of end points are compared, by dot product, with the
    thickness cosine (section 1). A start point on a start point gives an SS intersection, placed
    at the first geometry's vertex. At a polyline's last segment, its end point is compared in the
-   same way, as the start of the fictitious segment.
+   same way, as the start of the fictitious segment; an SS there with the second geometry's last
+   vertex is placed at that vertex.
 2. **Sides.** Each end point of each arc is classified against the other arc's plane, thickened
    by the thickness sine: on the positive side, on the negative side, or on the plane.
 3. **Crossing.** A crossing needs four things:

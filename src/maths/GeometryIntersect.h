@@ -71,8 +71,10 @@ namespace GPlatesMaths
 
 				// The start points of both segments coincide (but neither start point is on the other
 				// segment's end point). The intersection position is arbitrarily chosen to be the
-				// start point of the segment belonging to first geometry. Both start points are coincident
-				// within a numerical threshold so the difference in position should be very small.
+				// start point of the segment belonging to first geometry, except at the second geometry's
+				// last vertex (the start of its fictitious one-past-the-last segment), where it is that
+				// vertex. Both start points are coincident within a numerical threshold so the difference
+				// in position is at most that threshold.
 				//
 				// Either/both segment indices *can* be a fictitious one-past-the-last segment.
 				// This happens when either/both geometries intersect at the last vertex in their geometry(s).
