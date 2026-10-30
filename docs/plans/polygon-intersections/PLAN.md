@@ -175,6 +175,9 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   entries added in both products with F1. **Step 2 done**: the audit's section 7 corrections are in
   the foundation page (4 commits, describing the code after the fixes) and in the requirements.
   Left for PR A: steps 4 (GoogleTests), 5 (the hunt), 7 (doc 4.4 to 4.5) and 8.
+- 2026-10-30: **Step 4 done**: `src/unit-test/GeometryIntersectTest.cc`, the audit's 16 cases, all
+  passing (GPlates 108/108). Reverting F2 fails the ordering case and the touch-key check. Left for
+  PR A: steps 5, 7 and 8.
 
 - **Resume here** (updated 2026-10-30):
   - Phase 4a is done; the overlay core and Q3 are decided (entries above). Next: the developer
