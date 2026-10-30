@@ -193,14 +193,25 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   claim check (1 high, 5 medium, 6 low) applied. Left for PR A: step 8 (distil, Linux Docker run,
   push, the PR when the developer asks).
 
+- 2026-10-30: **PR A distilled** (Fable; the foundation page and code comments). The map of what
+  went where, and the list of plan content now fully distilled for PR A, is
+  **`prA-distillation.md`** beside this file: all of `phase3-audit.md` as it bears on PR A, and
+  PLAN's Context, Phase 3 and PR A status entries. The requirements' Phase 4a amendments, the
+  walk-through and the `phase4a-*` files are PR B's to distil.
+
 - **Resume here** (updated 2026-10-30):
-  - Phase 4a is done; the overlay core and Q3 are decided (entries above). Next: the developer
-    reviews `phase3-audit.md` (now with a section 0, "Status after Phase 4a") and the requirements
-    (`phase2-requirements.md` section 2, with the Phase 4a amendments at its end), then PR A's
-    steps below; and a Fable claim check of `overlay-walkthrough.md` before Phase 4b builds on it.
-  - Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay** (developer,
-    2026-10-25). The walk-through of requirements §3.3 is complete (`overlay-walkthrough.md`,
-    sections 1 to 15); the developer reads it, then answers the 11 questions in
+  - **PR A**: everything is done except the **Linux Docker run** (both products, the
+    `gplates-local.md` recipe) and the PR itself, when the developer asks (push to `private` and
+    `public`; base `main`; the PR text says what the topology comparison found). The pre-fix
+    pyGPlates baseline build for `topology_diff.py` was kept only in a session scratchpad: rebuild
+    it from `6afb8aa76` if the comparison is ever needed again.
+  - **PR B** starts with Phase 4b, the written design. Its first item is the six-end "bundle
+    rule" (`phase4a-variants.md` section 10); the core is decided (V1b, the spike rule, the `LL`
+    rule, margin-ordered midpoint tests, option 3 for anchorless chains).
+  - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries
+    above).* Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay**
+    (developer, 2026-10-25). The walk-through of requirements §3.3 is complete
+    (`overlay-walkthrough.md`); the developer reads it, then answers the 11 questions in
     `phase2-requirements.md` §4 (Q3 partly and Q11 already decided). Only **Q1** (thickness `t` or
     `s`) and **Q9** (derive chains in the partitioner) bear on PR A; the rest are for PR B.
   - **What is left for PR A** (Q1 = `s` and Q9 = derive, both decided 2026-10-28):
