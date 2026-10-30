@@ -142,7 +142,36 @@ namespace GPlatesMaths
 
 
 		/**
+		 * The ordering key of a touch: the angle from the start of the touched segment to the
+		 * touching point's projection onto the segment's great circle.
+		 *
+		 * The touching point lies within the thickness of the segment's great circle, not on it. The
+		 * angle from the segment's start to the point itself (its chord) is larger than its distance
+		 * along the segment, by up to the thickness near the start, which could sort a touch after a
+		 * crossing that lies further along the segment. The projection sorts it by where along the
+		 * segment it touches, which is what a crossing's key measures too.
+		 */
+		AngularDistance
+		get_angle_along_touched_segment(
+				const UnitVector3D &touching_point,
+				const UnitVector3D &touched_segment_start_point,
+				const UnitVector3D &touched_segment_plane)
+		{
+			// Never zero: the point is within the thickness of the plane, so almost all of it lies in it.
+			const Vector3D projection = Vector3D(touching_point) -
+					dot(touching_point, touched_segment_plane).dval() * touched_segment_plane;
+
+			return AngularDistance::create_from_cosine(
+					dot(projection.get_normalisation(), touched_segment_start_point));
+		}
+
+
+		/**
 		 * Add an @a Intersection to the graph.
+		 *
+		 * For a touch (@a SEGMENT1_START_ON_SEGMENT2 or @a SEGMENT2_START_ON_SEGMENT1),
+		 * @a touched_segment_plane is the plane of the touched segment, which orders the touch
+		 * along it (see @a get_angle_along_touched_segment).
 		 */
 		void
 		add_intersection(
@@ -152,7 +181,8 @@ namespace GPlatesMaths
 				const UnitVector3D &segment1_start_point,
 				const UnitVector3D &segment2_start_point,
 				unsigned int segment1_index,
-				unsigned int segment2_index)
+				unsigned int segment2_index,
+				boost::optional<const UnitVector3D &> touched_segment_plane = boost::none)
 		{
 			// Calculate the angle from start point to intersection point in each segment.
 			AngularDistance angle_in_segment1(AngularDistance::ZERO);
@@ -166,13 +196,13 @@ namespace GPlatesMaths
 			}
 			else if (intersection_type == Intersection::SEGMENT1_START_ON_SEGMENT2)
 			{
-				angle_in_segment2 = AngularDistance::create_from_cosine(
-						dot(intersection_position, segment2_start_point));
+				angle_in_segment2 = get_angle_along_touched_segment(
+						intersection_position, segment2_start_point, touched_segment_plane.get());
 			}
 			else if (intersection_type == Intersection::SEGMENT2_START_ON_SEGMENT1)
 			{
-				angle_in_segment1 = AngularDistance::create_from_cosine(
-						dot(intersection_position, segment1_start_point));
+				angle_in_segment1 = get_angle_along_touched_segment(
+						intersection_position, segment1_start_point, touched_segment_plane.get());
 			}
 			// else Intersection::SEGMENT_START_ON_SEGMENT_START ...
 
@@ -823,7 +853,8 @@ namespace GPlatesMaths
 									// It can be slightly off segment2 (within a numerical threshold)...
 									segment1_start_point, // intersection
 									segment1_start_point, segment2_start_point,
-									segment1_index, segment2_index);
+									segment1_index, segment2_index,
+									segment2_plane.get());
 						}
 					}
 				}
@@ -855,7 +886,8 @@ namespace GPlatesMaths
 									// It can be slightly off segment1 (within a numerical threshold)...
 									segment2_start_point, // intersection
 									segment1_start_point, segment2_start_point,
-									segment1_index, segment2_index);
+									segment1_index, segment2_index,
+									segment1_plane.get());
 						}
 					}
 				}
@@ -917,7 +949,8 @@ namespace GPlatesMaths
 										segment1_start_point, segment2_start_point,
 										// NOTE: Segment index of geometry1 is its 'number of segments'.
 										//       This is the fictitious one-past-the-last-segment...
-										segment1_index + 1, segment2_index);
+										segment1_index + 1, segment2_index,
+										segment2_plane.get());
 							}
 						}
 					}
@@ -953,7 +986,8 @@ namespace GPlatesMaths
 										segment1_start_point, segment2_start_point,
 										// NOTE: Segment index of geometry2 is its 'number of segments'.
 										//       This is the fictitious one-past-the-last-segment...
-										segment1_index, segment2_index + 1);
+										segment1_index, segment2_index + 1,
+										segment1_plane.get());
 							}
 						}
 					}
