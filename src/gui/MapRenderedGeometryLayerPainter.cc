@@ -536,12 +536,9 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_on_
 			rendered_coloured_polygon_on_sphere.get_polygon_on_sphere();
 	const std::vector<Colour> &point_colours = rendered_coloured_polygon_on_sphere.get_point_colours();
 
-	const unsigned int num_points = polygon_on_sphere->number_of_vertices_in_exterior_ring();
+	const unsigned int num_points = polygon_on_sphere->number_of_vertices();
 
-	// Each point must have an associated colour.
-	//
-	// NOTE: Currently there are only scalar values for the exterior ring
-	// TODO: Add scalar values for interior rings also.
+	// Each point (of the exterior ring, then the interior rings) must have an associated colour.
 	if (point_colours.size() != num_points)
 	{
 		return;
@@ -563,7 +560,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_on_
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
-	// Paint the polygon's exterior ring.
+	// Paint the polygon's rings.
 	paint_vertex_coloured_polygon(polygon_on_sphere, vertex_colours, stream);
 }
 
@@ -2636,7 +2633,17 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_vertex_coloured_polygon(
 		return;
 	}
 
-	const unsigned int num_original_vertices = original_vertex_colours.size();
+	// The vertex colours are those of the exterior ring, then of each interior ring.
+	// Record where each ring's colours start, and how many there are.
+	std::vector<unsigned int> ring_first_vertex_indices(1, 0);
+	std::vector<unsigned int> ring_num_vertices(1, polygon->number_of_vertices_in_exterior_ring());
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon->number_of_interior_rings();
+		++interior_ring_index)
+	{
+		ring_first_vertex_indices.push_back(ring_first_vertex_indices.back() + ring_num_vertices.back());
+		ring_num_vertices.push_back(polygon->number_of_vertices_in_interior_ring(interior_ring_index));
+	}
 
 	unsigned int geometry_part_index = 0;
 	const std::vector<unsigned int> &geometry_parts = dateline_wrapped_projected_polygon.get_geometry_parts();
@@ -2668,10 +2675,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_vertex_coloured_polygon(
 				// This can be none for polygon ring vertices tessellated along dateline.
 				const boost::optional<DatelineWrappedProjectedLineGeometry::InterpolateOriginalSegment> &
 						interpolate_original_segment = interpolate_original_segments[vertex_index];
-				if (!interpolate_original_segment ||
-					// Skip *interior* polygon rings because currently only *exterior* rings have scalar values.
-					// TODO: Add scalar values for interior rings also.
-					interpolate_original_segment->original_geometry_part_index != 0)
+				if (!interpolate_original_segment)
 				{
 					continue;
 				}
@@ -2690,17 +2694,21 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_vertex_coloured_polygon(
 					stream_line_strips.begin_line_strip();
 				}
 
+				// The segment index is within its ring (the original geometry part).
+				const unsigned int ring_index = interpolate_original_segment->original_geometry_part_index;
+				const unsigned int num_ring_vertices = ring_num_vertices[ring_index];
+
 				const unsigned int original_segment_start_vertex_index = interpolate_original_segment->original_segment_index;
 				unsigned int original_segment_end_vertex_index = original_segment_start_vertex_index + 1;
-				// Handle wrap-around to the start vertex (vertex on last segment maps to first vertex).
-				if (original_segment_end_vertex_index >= num_original_vertices)
+				// Handle wrap-around to the ring's start vertex (vertex on last segment maps to first vertex).
+				if (original_segment_end_vertex_index >= num_ring_vertices)
 				{
-					original_segment_end_vertex_index -= num_original_vertices;
+					original_segment_end_vertex_index -= num_ring_vertices;
 				}
 
 				const Colour vertex_colour = Colour::linearly_interpolate(
-						original_vertex_colours[original_segment_start_vertex_index],
-						original_vertex_colours[original_segment_end_vertex_index],
+						original_vertex_colours[ring_first_vertex_indices[ring_index] + original_segment_start_vertex_index],
+						original_vertex_colours[ring_first_vertex_indices[ring_index] + original_segment_end_vertex_index],
 						interpolate_original_segment->interpolate_ratio);
 
 				const QPointF &vertex = vertices[vertex_index];

@@ -629,12 +629,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_o
 			rendered_coloured_polygon_on_sphere.get_polygon_on_sphere();
 	const std::vector<Colour> &point_colours = rendered_coloured_polygon_on_sphere.get_point_colours();
 
-	const unsigned int num_points = polygon_on_sphere->number_of_vertices_in_exterior_ring();
+	const unsigned int num_points = polygon_on_sphere->number_of_vertices();
 
-	// Each exterior ring point must have an associated colour.
-	//
-	// NOTE: Currently there are only scalar values for the exterior ring
-	// TODO: Add scalar values for interior rings also.
+	// Each point (of the exterior ring, then the interior rings) must have an associated colour.
 	if (point_colours.size() != num_points)
 	{
 		return;
@@ -657,14 +654,31 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_o
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
 	// Paint the polygon's exterior ring.
+	std::vector<Colour>::const_iterator ring_vertex_colours_begin = vertex_colours.begin();
+	std::vector<Colour>::const_iterator ring_vertex_colours_end =
+			ring_vertex_colours_begin + polygon_on_sphere->number_of_vertices_in_exterior_ring();
 	paint_vertex_coloured_great_circle_arcs(
 			polygon_on_sphere->exterior_ring_begin(),
 			polygon_on_sphere->exterior_ring_end(),
-			vertex_colours.begin(),
-			vertex_colours.end(),
+			ring_vertex_colours_begin,
+			ring_vertex_colours_end,
 			stream);
 
-	// TODO: Paint the interior rings once we've implemented scalar values for interior rings.
+	// Paint the polygon's interior rings (their colours follow the exterior ring's, ring by ring).
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon_on_sphere->number_of_interior_rings();
+		++interior_ring_index)
+	{
+		ring_vertex_colours_begin = ring_vertex_colours_end;
+		ring_vertex_colours_end =
+				ring_vertex_colours_begin + polygon_on_sphere->number_of_vertices_in_interior_ring(interior_ring_index);
+		paint_vertex_coloured_great_circle_arcs(
+				polygon_on_sphere->interior_ring_begin(interior_ring_index),
+				polygon_on_sphere->interior_ring_end(interior_ring_index),
+				ring_vertex_colours_begin,
+				ring_vertex_colours_end,
+				stream);
+	}
 }
 
 

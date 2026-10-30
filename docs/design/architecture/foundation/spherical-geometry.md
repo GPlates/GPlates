@@ -1114,11 +1114,12 @@ the partitioning polygon's interior rings.
   that hole's boundary, even where the partitioning polygon covers the input's solid part.
 
 **Scalar coverages** (`src/app-logic/PartitionFeatureUtils.cc`). Partitioning a feature carries each
-scalar coverage of its geometries over to the pieces. A coverage's domain is the geometry's
-exterior points only, because the scalar-coverage extraction (`ScalarCoverageFeatureProperties`)
-and `PartitionFeatureUtils` both take exterior points only
-(`GeometryUtils::get_geometry_exterior_points`). The TODO in `PartitionFeatureUtils.cc` asks for
-interior rings.
+scalar coverage of its geometries over to the pieces. A coverage has a value for every point of
+the geometry, a polygon's interior rings included (`GeometryUtils::get_geometry_points` order:
+the exterior ring, then each interior ring). The exception is a coverage that an older file gives
+for a polygon's exterior ring only, which `ScalarCoverageFeatureProperties` reads as a coverage of
+that ring alone (`Coverage::exterior_ring_only`); its pieces get values for their exterior rings
+only, as before.
 - **A piece's point that matches an original point** takes that point's values. The match is
   through a `std::map` keyed with `PointOnSphereMapPredicate`, an epsilon comparison, so two
   original points close together can share one entry.

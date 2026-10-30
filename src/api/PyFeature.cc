@@ -5414,7 +5414,8 @@ export_feature()
 				"where *scalar-values-dictionary* is a ``dict`` that maps :class:`scalar types<ScalarType>` to "
 				"lists of scalar values. This is the same as the sole argument to :meth:`GmlDataBlock.__init__`. "
 				"The number of scalar values, associated with each :class:`ScalarType` should be equal to the "
-				"number of points in the geometry.\n"
+				"number of points in the geometry - for a polygon, the points of its exterior ring and then of each of its "
+				"interior rings, as returned by :meth:`get_points<GeometryOnSphere.get_points>`.\n"
 				"\n"
 				"     Set the velocity coverage on the default geometry:\n"
 				"     ::\n"
@@ -5567,7 +5568,8 @@ export_feature()
 				"where *scalar-values-dictionary* is a ``dict`` that maps :class:`scalar types<ScalarType>` to "
 				"lists of scalar values. This is the same as the sole argument to :meth:`GmlDataBlock.__init__`. "
 				"The number of scalar values, associated with each :class:`ScalarType` should be equal to the "
-				"number of points in the geometry.\n"
+				"number of points in the geometry - for a polygon, the points of its exterior ring and then of each of its "
+				"interior rings, as returned by :meth:`get_points<GeometryOnSphere.get_points>`.\n"
 				"\n"
 				"     Get the velocity coverage on the default geometry (returns ``None`` if not exactly one *default* "
 				"geometry property containing a coverage was found and not exactly one *non-default* geometry property "
@@ -5587,12 +5589,20 @@ export_feature()
 				"geometry/coverage is returned instead (or `None` if neither is found). This is more useful when you are expecting a single "
 				"geometry/coverage but don't know which property name it's under. Previously only the *default* geometry property name was queried.\n"
 				"\n"
+				"     A file written before version 1.1 can have a coverage of a polygon with interior rings that has scalar values "
+				"for the exterior ring only. The geometry of such a coverage is returned as a polygon of the exterior ring alone, "
+				"so that it still has one scalar value per point (the geometry returned without its scalar values keeps its interior rings).\n"
+				"\n"
 				"  .. seealso:: :meth:`get_geometries` and :meth:`get_all_geometries`\n"
 				"\n"
 				"  .. seealso:: :meth:`set_geometry`\n"
 				"\n"
 				"  .. versionchanged:: 0.43\n"
-				"     When *property_query* not specified and no *default* geometry(s) found then *non-default* geometry(s) are returned.\n")
+				"     When *property_query* not specified and no *default* geometry(s) found then *non-default* geometry(s) are returned.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     A coverage of a polygon with interior rings has scalar values for the points of its interior rings too. "
+				"Previously such a coverage, as set by :meth:`set_geometry`, was not found.\n")
 		.def("get_geometries",
 				&GPlatesApi::feature_handle_get_geometries,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,

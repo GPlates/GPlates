@@ -77,6 +77,9 @@ namespace GPlatesAppLogic
 
 		/**
 		 * A coverage maps a geometry domain property to a range property containing one or more scalar types.
+		 *
+		 * The range has one scalar per point of the domain, in the order 'GeometryUtils::get_geometry_points'
+		 * gives them: a polygon's exterior ring, then each of its interior rings.
 		 */
 		struct Coverage
 		{
@@ -84,11 +87,13 @@ namespace GPlatesAppLogic
 					GPlatesModel::FeatureHandle::iterator domain_property_,
 					GPlatesModel::FeatureHandle::iterator range_property_,
 					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type domain_,
-					const std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type> &range_) :
+					const std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type> &range_,
+					bool exterior_ring_only_) :
 				domain_property(domain_property_),
 				range_property(range_property_),
 				domain(domain_),
-				range(range_)
+				range(range_),
+				exterior_ring_only(exterior_ring_only_)
 			{  }
 
 			GPlatesModel::FeatureHandle::iterator domain_property;
@@ -96,6 +101,17 @@ namespace GPlatesAppLogic
 
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type domain;
 			std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type> range;
+
+			/**
+			 * True if the domain property is a polygon with interior rings whose range has scalars for
+			 * its exterior ring only, as older files have (see 'READ_EXTERIOR_RING_ONLY_COVERAGES' in
+			 * the '.cc' file).
+			 *
+			 * Then @a domain is the exterior ring alone (see @a get_exterior_ring_domain), and anything
+			 * that pairs the scalars with the points of the domain *property*, or of a geometry
+			 * reconstructed from it, must use only the exterior ring's points.
+			 */
+			bool exterior_ring_only;
 		};
 
 
@@ -116,6 +132,16 @@ namespace GPlatesAppLogic
 				std::vector<Coverage> &coverages,
 				const GPlatesModel::FeatureHandle::weak_ref &feature,
 				const double &reconstruction_time = 0);
+
+
+		/**
+		 * Returns the geometry an exterior-ring-only coverage covers (see 'Coverage::exterior_ring_only'):
+		 * a polygon of @a domain_geometry's exterior ring alone, or @a domain_geometry itself if it is not
+		 * a polygon or has no interior rings.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		get_exterior_ring_domain(
+				const GPlatesMaths::GeometryOnSphere &domain_geometry);
 	}
 }
 

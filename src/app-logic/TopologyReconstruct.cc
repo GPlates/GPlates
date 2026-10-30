@@ -2761,31 +2761,57 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::create_import_sample(
 	// Tessellate if geometry is a polyline or polygon (and we've been requested to tessellate).
 	if (max_poly_segment_angular_extent_radians)
 	{
+		std::vector<GPlatesMaths::PointOnSphere> tessellated_points;
+
 		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline =
 				GeometryUtils::get_polyline_on_sphere(geometry);
 		if (polyline)
 		{
-			return create_tessellated_poly_import_sample(
+			tessellate_import_poly(
+					tessellated_points,
 					interpolate_original_points,
 					polyline.get()->begin(),
 					polyline.get()->end(),
 					false/*is_polygon*/,
-					pool_allocator,
+					0/*first_original_point_index*/,
 					max_poly_segment_angular_extent_radians.get());
+
+			return GeometrySample::create(tessellated_points, pool_allocator);
 		}
 
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
 				GeometryUtils::get_polygon_on_sphere(geometry);
 		if (polygon)
 		{
-			// Only tessellating the exterior ring for now.
-			return create_tessellated_poly_import_sample(
+			// Tessellate each ring in turn: the exterior ring, then the interior rings.
+			// The original points are numbered across the rings in that order (the order of
+			// 'GeometryUtils::get_geometry_points', which a scalar coverage's scalars follow).
+			tessellate_import_poly(
+					tessellated_points,
 					interpolate_original_points,
 					polygon.get()->exterior_ring_begin(),
 					polygon.get()->exterior_ring_end(),
 					true/*is_polygon*/,
-					pool_allocator,
+					0/*first_original_point_index*/,
 					max_poly_segment_angular_extent_radians.get());
+
+			unsigned int first_original_point_index = polygon.get()->number_of_vertices_in_exterior_ring();
+			const unsigned int num_interior_rings = polygon.get()->number_of_interior_rings();
+			for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+			{
+				tessellate_import_poly(
+						tessellated_points,
+						interpolate_original_points,
+						polygon.get()->interior_ring_begin(interior_ring_index),
+						polygon.get()->interior_ring_end(interior_ring_index),
+						true/*is_polygon*/,
+						first_original_point_index,
+						max_poly_segment_angular_extent_radians.get());
+
+				first_original_point_index += polygon.get()->number_of_vertices_in_interior_ring(interior_ring_index);
+			}
+
+			return GeometrySample::create(tessellated_points, pool_allocator);
 		}
 	}
 
@@ -2793,9 +2819,9 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::create_import_sample(
 	// Handle all geometry types (point, multi-point, polyline and polygon) without tessellation.
 	//
 
-	// Get the points of the geometry (and only exterior ring of polygons for now).
+	// Get the points of the geometry (a polygon's exterior ring, then its interior rings).
 	std::vector<GPlatesMaths::PointOnSphere> points;
-	GeometryUtils::get_geometry_exterior_points(geometry, points);
+	GeometryUtils::get_geometry_points(geometry, points);
 
 	// All points are original points (ie, no tessellation).
 	const unsigned int num_points = points.size();
@@ -2811,17 +2837,16 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::create_import_sample(
 
 
 template <typename GreatCircleArcIter>
-GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::non_null_ptr_type
-GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::create_tessellated_poly_import_sample(
+void
+GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::tessellate_import_poly(
+		std::vector<GPlatesMaths::PointOnSphere> &tessellated_points,
 		interpolate_original_points_seq_type &interpolate_original_points,
 		GreatCircleArcIter great_circle_arcs_begin,
 		GreatCircleArcIter great_circle_arcs_end,
 		bool is_polygon,
-		const PoolAllocator::non_null_ptr_type &pool_allocator,
+		unsigned int first_original_point_index,
 		const double &max_poly_segment_angular_extent_radians)
 {
-	std::vector<GPlatesMaths::PointOnSphere> tessellated_points;
-
 	GreatCircleArcIter great_circle_arcs_iter = great_circle_arcs_begin;
 	unsigned int gca_index = 0;
 	while (true)
@@ -2835,24 +2860,25 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::create_tessellated_poly_
 		const unsigned int num_tessellated_gca_points = tessellated_points.size() - initial_tessellated_points_size;
 		const double interpolate_increment = 1.0 / (num_tessellated_gca_points - 1);
 
-		const unsigned int first_original_point_index = gca_index;
+		const unsigned int gca_start_original_point_index = first_original_point_index + gca_index;
 
 		++great_circle_arcs_iter;
 		++gca_index;
 
-		// The second original point index wraps around to zero for the last arc of a polygon.
-		const unsigned int second_original_point_index =
-				(great_circle_arcs_iter == great_circle_arcs_end)
-				? (is_polygon ? 0 : gca_index)
-				: gca_index;
+		// The last arc of a polygon ring ends at the ring's first point
+		// (not at the first point of the next ring).
+		const unsigned int gca_end_original_point_index =
+				(great_circle_arcs_iter == great_circle_arcs_end && is_polygon)
+				? first_original_point_index
+				: first_original_point_index + gca_index;
 
 		for (unsigned int t = 0; t < num_tessellated_gca_points; ++t)
 		{
 			interpolate_original_points.push_back(
 					InterpolateOriginalPoints(
 							t * interpolate_increment,
-							first_original_point_index,
-							second_original_point_index));
+							gca_start_original_point_index,
+							gca_end_original_point_index));
 		}
 
 		if (great_circle_arcs_iter == great_circle_arcs_end)
@@ -2876,8 +2902,6 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::create_tessellated_poly_
 		tessellated_points.pop_back();
 		interpolate_original_points.pop_back();
 	}
-
-	return GeometrySample::create(tessellated_points, pool_allocator);
 }
 
 

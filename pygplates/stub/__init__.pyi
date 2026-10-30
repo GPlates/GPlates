@@ -1728,7 +1728,7 @@ class Feature:
 
         This differs from ``feature.get_geometry()`` because the feature could have two geometries, one *default* and one *non-default*, and ``feature.get_geometry(lambda property: True)`` would return ``None`` (because there's not exactly one geometry) whereas ``feature.get_geometry()`` would return the sole *default* geometry.
 
-        .. note:: If *CoverageReturn.geometry_and_scalars* is specified for *coverage_return* then a coverage (or sequence of coverages) is returned - where a coverage essentially maps each point in a geometry to one or more scalar values. A coverage is returned as a (:class:`GeometryOnSphere`, *scalar-values-dictionary*) tuple where *scalar-values-dictionary* is a ``dict`` that maps :class:`scalar types<ScalarType>` to lists of scalar values. This is the same as the sole argument to :meth:`GmlDataBlock.__init__`. The number of scalar values, associated with each :class:`ScalarType` should be equal to the number of points in the geometry.
+        .. note:: If *CoverageReturn.geometry_and_scalars* is specified for *coverage_return* then a coverage (or sequence of coverages) is returned - where a coverage essentially maps each point in a geometry to one or more scalar values. A coverage is returned as a (:class:`GeometryOnSphere`, *scalar-values-dictionary*) tuple where *scalar-values-dictionary* is a ``dict`` that maps :class:`scalar types<ScalarType>` to lists of scalar values. This is the same as the sole argument to :meth:`GmlDataBlock.__init__`. The number of scalar values, associated with each :class:`ScalarType` should be equal to the number of points in the geometry - for a polygon, the points of its exterior ring and then of each of its interior rings, as returned by :meth:`get_points<GeometryOnSphere.get_points>`.
 
            Get the velocity coverage on the default geometry (returns ``None`` if not exactly one *default* geometry property containing a coverage was found and not exactly one *non-default* geometry property containing a coverage was found):
            ::
@@ -1744,12 +1744,17 @@ class Feature:
 
            **Starting with version 0.43**, if a sole *default* geometry/coverage is not found then a sole *non-default* geometry/coverage is returned instead (or `None` if neither is found). This is more useful when you are expecting a single geometry/coverage but don't know which property name it's under. Previously only the *default* geometry property name was queried.
 
+           A file written before version 1.1 can have a coverage of a polygon with interior rings that has scalar values for the exterior ring only. The geometry of such a coverage is returned as a polygon of the exterior ring alone, so that it still has one scalar value per point (the geometry returned without its scalar values keeps its interior rings).
+
         .. seealso:: :meth:`get_geometries` and :meth:`get_all_geometries`
 
         .. seealso:: :meth:`set_geometry`
 
         .. versionchanged:: 0.43
            When *property_query* not specified and no *default* geometry(s) found then *non-default* geometry(s) are returned.
+
+        .. versionchanged:: 1.1
+           A coverage of a polygon with interior rings has scalar values for the points of its interior rings too. Previously such a coverage, as set by :meth:`set_geometry`, was not found.
         """
 
     def get_geometry_import_time(self, default: float | None = 0.0) -> float | Any:
@@ -2631,7 +2636,7 @@ class Feature:
 
         In the examples above the :meth:`geometry import time<set_geometry_import_time>` is internally set to `time_of_digitisation` (either due to the `reverse_reconstruct` argument or the :meth:`reverse_reconstruct` function). This is so the ridge geometry at digitisation time is correctly reverse-reconstructed (which is especially important for mid-ocean ridges with version 3 half-stage rotations where the spreading start time is the geometry import time).
 
-        .. note:: *geometry* can also be a coverage or sequence of coverages - where a coverage essentially maps each point in a geometry to one or more scalar values. A coverage is specified in *geometry* as a (:class:`GeometryOnSphere`, *scalar-values-dictionary*) tuple (or a sequence of tuples) where *scalar-values-dictionary* is a ``dict`` that maps :class:`scalar types<ScalarType>` to lists of scalar values. This is the same as the sole argument to :meth:`GmlDataBlock.__init__`. The number of scalar values, associated with each :class:`ScalarType` should be equal to the number of points in the geometry.
+        .. note:: *geometry* can also be a coverage or sequence of coverages - where a coverage essentially maps each point in a geometry to one or more scalar values. A coverage is specified in *geometry* as a (:class:`GeometryOnSphere`, *scalar-values-dictionary*) tuple (or a sequence of tuples) where *scalar-values-dictionary* is a ``dict`` that maps :class:`scalar types<ScalarType>` to lists of scalar values. This is the same as the sole argument to :meth:`GmlDataBlock.__init__`. The number of scalar values, associated with each :class:`ScalarType` should be equal to the number of points in the geometry - for a polygon, the points of its exterior ring and then of each of its interior rings, as returned by :meth:`get_points<GeometryOnSphere.get_points>`.
 
            Set the velocity coverage on the default geometry:
            ::

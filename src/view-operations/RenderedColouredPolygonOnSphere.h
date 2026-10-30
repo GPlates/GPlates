@@ -31,6 +31,8 @@
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
 
+#include "app-logic/GeometryUtils.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
@@ -55,11 +57,11 @@ namespace GPlatesViewOperations
 		d_point_colours(point_colours),
 		d_line_width_hint(line_width_hint)
 		{
-			// Number of colours must match number of geometry points.
-			// Only consider *exterior* ring points for now to match 'ScalarCoverageFeatureProperties::get_coverages()'.
+			// Number of colours must match number of geometry points (of the exterior ring, then the
+			// interior rings, as in 'ScalarCoverageFeatureProperties::get_coverages()').
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					point_colours.size() ==
-						GPlatesAppLogic::GeometryUtils::get_num_geometry_exterior_points(*polygon_on_sphere),
+						GPlatesAppLogic::GeometryUtils::get_num_geometry_points(*polygon_on_sphere),
 					GPLATES_ASSERTION_SOURCE);
 		}
 

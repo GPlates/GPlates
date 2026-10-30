@@ -867,15 +867,20 @@ namespace GPlatesAppLogic
 					const PoolAllocator::non_null_ptr_type &pool_allocator,
 					boost::optional<double> max_poly_segment_angular_extent_radians);
 
+			/**
+			 * Appends the tessellated points of a polyline, or of one polygon ring, to @a tessellated_points,
+			 * numbering its original points from @a first_original_point_index.
+			 */
 			template <typename GreatCircleArcIter>
 			static
-			GeometrySample::non_null_ptr_type
-			create_tessellated_poly_import_sample(
+			void
+			tessellate_import_poly(
+					std::vector<GPlatesMaths::PointOnSphere> &tessellated_points,
 					interpolate_original_points_seq_type &interpolate_original_points,
 					GreatCircleArcIter great_circle_arcs_begin,
 					GreatCircleArcIter great_circle_arcs_end,
 					bool is_polygon,
-					const PoolAllocator::non_null_ptr_type &pool_allocator,
+					unsigned int first_original_point_index,
 					const double &max_poly_segment_angular_extent_radians);
 
 
