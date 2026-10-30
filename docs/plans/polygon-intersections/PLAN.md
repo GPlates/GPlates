@@ -178,6 +178,16 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
 - 2026-10-30: **Step 4 done**: `src/unit-test/GeometryIntersectTest.cc`, the audit's 16 cases, all
   passing (GPlates 108/108). Reverting F2 fails the ordering case and the touch-key check. Left for
   PR A: steps 5, 7 and 8.
+- 2026-10-30: **Step 5 done** (planning repository 924eb4e): the hunt against the fixed build, with
+  `arc_ref.configure('fixed')` and four new generators (`tiny_polar`, `long_edges`, `refeed`,
+  `shared_real` from the Muller et al. 2022 boundaries). 8000 polyline and 6000 ring cases, 36559
+  records, **no mismatch**; the old code modelled gives 319 mismatches in 2000 cases. Three
+  corrections to the observation, none to the C++: several records at an end vertex, ties below
+  the cosine resolution near a segment's start (about 1.5e-8: real-data near-ties sort in
+  discovery order, which the overlay's tie handling must allow), and recurring positions
+  (unobservable, skipped). Interior rings are not observable through `partition()` (it intersects
+  exterior rings only); the GoogleTests cover them, and PR B's polygon output will make them
+  observable. Left for PR A: steps 7 and 8.
 
 - **Resume here** (updated 2026-10-30):
   - Phase 4a is done; the overlay core and Q3 are decided (entries above). Next: the developer
