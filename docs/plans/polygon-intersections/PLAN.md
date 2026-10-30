@@ -165,6 +165,17 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   applied, with the `LL` correction carried into `phase4a-variants.md`, `phase4a-run2.md` and the
   prototype. Next: PR A, starting with the fixes (step 3 below).
 
+- 2026-10-30: **PR A's fixes done** (F7 f076e6ec9, F4 baf701134, F1 39aac6ba7, F2 72a69a0b4, F5
+  ddf997c35, F6 9c20957e2), both test suites green (pyGPlates 7/7, GPlates 92/92). F6 is the
+  documentation on `Graph` (ring structure, and which vertices each record names); the
+  `PolygonOnSphere` helper waits for its first caller in PR B. **Step 6 done**: topology resolving
+  before (the build at 6afb8aa76, kept in the session scratchpad) and after, on Muller et al. 2022
+  every 5 Myr from 1000 Ma (`topology_diff.py` in the planning repository): 3 of 3799 resolved
+  topologies changed, each a junction moving onto an original vertex by 1.01 to 1.08 s; changelog
+  entries added in both products with F1. **Step 2 done**: the audit's section 7 corrections are in
+  the foundation page (4 commits, describing the code after the fixes) and in the requirements.
+  Left for PR A: steps 4 (GoogleTests), 5 (the hunt), 7 (doc 4.4 to 4.5) and 8.
+
 - **Resume here** (updated 2026-10-30):
   - Phase 4a is done; the overlay core and Q3 are decided (entries above). Next: the developer
     reviews `phase3-audit.md` (now with a section 0, "Status after Phase 4a") and the requirements

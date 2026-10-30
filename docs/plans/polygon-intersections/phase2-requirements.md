@@ -127,7 +127,7 @@ in both P and Q with common intersection vertices as endpoints" (Fig. 8). The ca
 | X-intersection | `0 < alpha < 1`, `0 < beta < 1` | `SEGMENTS_CROSS` (LL) | Decided with thick planes, not exact `alpha`, `beta`; the position is the cross product or the chord interpolation of section 4.2 |
 | T-intersection, `P1` on `[Q1, Q2)` | `alpha = 0`, `0 < beta < 1` | `SEGMENT1_START_ON_SEGMENT2` (SL) | `alpha = 0` means within the thickness; the position is `P1`, up to the thickness off `Q`'s edge; `beta` is the angle along `Q`'s segment |
 | T-intersection, `Q1` on `[P1, P2)` | `beta = 0`, `0 < alpha < 1` | `SEGMENT2_START_ON_SEGMENT1` (LS) | as above |
-| V-intersection | `alpha = beta = 0` | `SEGMENT_START_ON_SEGMENT_START` (SS) | Coincidence within the thickness cosine; the position is `P1` |
+| V-intersection | `alpha = beta = 0` | `SEGMENT_START_ON_SEGMENT_START` (SS) | Coincidence within the thickness cosine; the position is `P1`, except at the second geometry's last vertex, where it is that vertex (audit D6) |
 | X-overlap (collinear, each start point inside the other edge) | `0 < alpha, beta < 1` | two records, SL and LS | The header's "SL and LS" example |
 | T-overlap | one start point inside the other edge, the other start point outside it | one touch record (SL or LS) | The header's third example gives SL, LS, LS over three edges |
 | V-overlap | `alpha = beta = 0` | SS | The header's fourth example, "SS and SS" |
@@ -261,6 +261,9 @@ segments that both start there (`intersect_segments`, the coincident-vertices bl
 is never tested when any end points coincide, and a polyline's last vertex is the start of the
 fictitious segment `number_of_segments`. The audit should check the "complementary tests" claim in
 that block, and what happens for two vertices between the thickness and `s` apart (R7).*
+*Audit: the "complementary tests" claim is confirmed. A vertex inside a corner of the other
+geometry, within the thickness of both of its edges but farther than the thickness from the
+corner, gets one touch record per edge (D3); the overlay keeps both (Phase 4a).*
 
 **R3. Crossing, touch and overlap are distinguishable, and the same from both sides.** From the
 records it must be possible to say, at every intersection vertex, whether the geometries cross
@@ -287,7 +290,9 @@ vertex, so that the piece after a ring's last record joins the piece before its 
 per polygon, ring boundaries implicit. `sort_geometry_intersections` sorts by segment index then by
 angle (`is_precisely_less_than`); segment indices run through the exterior ring and then each
 interior ring as `PolygonOnSphere::get_segment()` numbers them, so the consumer splits the sorted
-list by the rings' segment ranges and closes each ring itself. Two caveats for the audit: the angle
+list by the rings' segment ranges and closes each ring itself. *Audit: the caveat that matters is
+the touch records' chord key, which could sort a touch after a crossing further along (D1, fixed
+by F2); the cosine resolution below only produces ties.* Two caveats for the audit: the angle
 along a segment is an `AngularDistance` made from a cosine, whose resolution near zero is about
 `1.5e-8` radians (design doc section 1), so two records that close to a segment's start compare
 equal and `std::sort` leaves their order unspecified; and `PolylineIntersections` passes
@@ -302,8 +307,9 @@ polygon, except as the inclusive threshold itself requires. Concretely: if parti
 with the threshold off (exact parity), the only disagreement allowed is a threshold-on query
 calling a point within `s` of the outline inside, which is the documented inclusive rule. The
 intersection tolerance should either equal `s` or be documented against it. *Today: the thickness
-is the zero-length bound, about `1e-6` radians, and `s` is about `1.414e-6`; the design doc's table
-says so. Measured with `PolygonOnSphere.partition` on a polyline whose first vertex is `d` from a
+is the zero-length bound, about `1e-6` radians (exactly `1.0000444e-6`), and `s` is about
+`1.414e-6` (`1.4141979e-6`); the design doc's table says so. *Audit: the gap is
+`(1.0000444e-6, 1.4141979e-6)`; fix F1 closes it by raising the thickness to `s` (Q1).* Measured with `PolygonOnSphere.partition` on a polyline whose first vertex is `d` from a
 square's edge, outside it (scratchpad `phase2/gap_probe.py`): at `d = 1.1e-6` and `1.3e-6` radians
 there is no intersection and the polyline is wholly outside, while `is_point_in_polygon` (threshold
 on) calls that vertex inside; at `0.9e-6` the vertex touches and at `1.5e-6` both agree it is
@@ -320,7 +326,9 @@ zero length is handled as described (design doc section 4.2, and the comment blo
 tunnelling reason. Near-antipodal arcs: `add_segments_crossing_intersection` guards the chord
 interpolation with the `1e-6` chord-midpoint test and splits the arc; but the thick-plane
 classification uses `rotation_axis()`, a normalised cross product that loses accuracy as the arc
-nears 180 degrees, and no refinement handles that. `GreatCircleArc::create` refuses end points
+nears 180 degrees, and no refinement handles that. *Audit: not a gap. The axis of a
+constructible arc is accurate to about `1.4e-10` radians, which is enough; the crossing position
+error measured zero at `pi - 1.5e-6`.* `GreatCircleArc::create` refuses end points
 antipodal within epsilon (`unit_vectors_are_antiparallel`, `dot <= -1.0` on a `real_t`, so within
 about `1.4e-6` radians of a half circle), and allows anything shorter. Two arcs between the same
 nearly antipodal end points can lie on different great circles, so "same end points" does not
@@ -333,7 +341,9 @@ either a clean overlap chain (R4) or a clean crossing or no contact, never a mis
 contact becomes SS, SL and LS records (an overlap chain); beyond it the arcs are nearly parallel
 and may cross at a tiny angle, and that crossing's position is interpolated along the first arc
 without the lune check, the known gap against `GreatCircleArc::intersect` (design doc section 4.3),
-which is the first thing the audit should port. Shared plate vertices coincide only within `s`,
+which is the first thing the audit should port. *Audit: refuted; nothing needs porting. A crossing
+needs the planes at least the thickness apart, so the cross product is always used and the
+interpolation was unreachable (D5; removed by F4).* Shared plate vertices coincide only within `s`,
 and `s` exceeds the thickness, so some are not SS records (R7); the resulting sliver is then
 classified exactly. Hobby's extraneous intersections (section 1.5) are this case.*
 
@@ -358,7 +368,9 @@ from the first geometry's vertex, so positions can differ by up to the thickness
 
 Requirements met today, on first reading: R1, R2, R5, R6, R8 (zero length), R10, R11, R12. Not
 met, or met only by reconstruction in the consumer: R3, R4. Known gaps: R7 (the thickness is not
-`s`), R8 (near-antipodal planes), R9 (the near-collinear crossing position).
+`s`), R8 (near-antipodal planes), R9 (the near-collinear crossing position). *Audit: R2 and R5 are
+met with caveats (D3, D1); R8's near-antipodal gap and R9's near-collinear gap are refuted; R7 is
+fixed by F1.*
 
 The "Today" notes above are the first reading. The Phase 3 audit (`phase3-audit.md`, section 1.2)
 gives the verdicts, and its section 7 lists the corrections to apply here (PR A, step 2).

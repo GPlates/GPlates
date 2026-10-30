@@ -554,7 +554,11 @@ What changes if the thickness becomes `s` (reading, exact):
   `s` they become single SS records. So the PR A verification "topology-resolving output is unchanged on
   a real model" must be replaced by "every changed intersection point moves by less than `s`, and the
   number of multiple-intersection sections does not rise". This is a deliberate correction, and needs a
-  changelog entry in both products.
+  changelog entry in both products. *2026-10-30, measured after F1 (`topology_diff.py`, Muller et al.
+  2022, every 5 Myr from 1000 Ma): 3 of 3799 resolved topologies changed, all at 0 Ma, each a junction
+  moving from a computed crossing onto an original vertex, by 1.01 s to 1.08 s; no topology or
+  sub-segment appeared or disappeared. "Under `s`" was too strict: a junction moves along a section,
+  by up to `s / sin(angle)` between the two sections.*
 
 What changes if the thickness stays `t`: nothing in the code; the R7 gap and the `4.4e-11` margin stay,
 and must be documented as decisions.
