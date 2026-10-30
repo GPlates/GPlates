@@ -212,12 +212,13 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   matrix stale since the GoogleTests commit (unit-test includes of maths headers). Regenerated
   (a doc-only, platform-independent change); the Windows pyGPlates suite then passes 7 of 7.
 
+- 2026-10-31: **PR A opened as GPlates/GPlates#108** (base `main`, from this branch at
+  `385a679c6`; branch pushed to `public` and `private`). Later commits go to `private` only until
+  it merges, so as not to change the PR.
+
 - **Resume here** (updated 2026-10-31):
-  - **PR A**: everything is done, including the code review and the Linux run. Left: the PR
-    itself, when the developer asks (push to `private` and
-    `public`; base `main`; the PR text says what the topology comparison found). The pre-fix
-    pyGPlates baseline build for `topology_diff.py` was kept only in a session scratchpad: rebuild
-    it from `6afb8aa76` if the comparison is ever needed again.
+  - **PR A** is #108: wait for CI and the review. After it merges, merge `main` back into this
+    branch and continue; do not delete the branch (it carries PRs B and C).
   - **PR B** starts with Phase 4b, the written design. Its first item is the six-end "bundle
     rule" (`phase4a-variants.md` section 10); the core is decided (V1b, the spike rule, the `LL`
     rule, margin-ordered midpoint tests, option 3 for anchorless chains).
