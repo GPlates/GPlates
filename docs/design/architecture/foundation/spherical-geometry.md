@@ -791,7 +791,10 @@ to do it inside the primitive, and was deleted unused).
    an SL or LS intersection, placed at that start point. So it can be up to the thickness off the
    other arc. It is ordered along the other arc by its projection onto that arc's great circle,
    not by the angle to the start point itself, which near the arc's start would sort it after a
-   crossing lying further along. End points are not tested: the next segment's start point covers them, except at a
+   crossing lying further along. A vertex inside a corner of the other geometry, within the
+   thickness of both of the corner's arcs but farther than the thickness from the corner, touches
+   both and gives one intersection per arc, both at that vertex; at an acute corner the wedge
+   where this happens reaches the thickness divided by the sine of half the corner's angle. End points are not tested: the next segment's start point covers them, except at a
    polyline's last vertex, which is tested here too. A zero-length arc has no plane, so nothing
    touches *it* except at a coincident vertex (step 1). Its own start point can still touch the
    other arc.
@@ -834,10 +837,11 @@ The distance code's `intersect(arc1, arc2)` answers a narrower question, in a di
   along either arc, and no notion of a shared vertex reported once.
 - **Where they cross** is the cross product, or, for near-collinear arcs, interpolation along the
   chord of the *better-conditioned* arc: the one whose end points differ most in signed distance.
-  `GeometryIntersect` always tries the first arc first. The point must then lie in both arcs'
-  lunes (`is_in_arc_lune`). Otherwise, or if neither arc can be interpolated, it uses the end point
-  of either arc that is closest to the other arc (section 2). `GeometryIntersect` does neither the
-  lune check nor the fallback.
+  The point must then lie in both arcs' lunes (`is_in_arc_lune`). Otherwise, or if neither arc can
+  be interpolated, it uses the end point of either arc that is closest to the other arc (section
+  2). `GeometryIntersect` needs none of this: its thick test only reports a crossing whose planes
+  are at least the thickness apart, so its cross product is always usable (section 4.2). The
+  near-collinear crossings `intersect()` handles are, for `GeometryIntersect`, touches.
 - **A zero-length arc** meets the other arc if its start point lies on it (`lies_on_gca`, an
   epsilon test). The arc-to-arc distance does not call `intersect()` for one.
 
