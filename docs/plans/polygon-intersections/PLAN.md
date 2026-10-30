@@ -188,6 +188,10 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   (unobservable, skipped). Interior rings are not observable through `partition()` (it intersects
   exterior rings only); the GoogleTests cover them, and PR B's polygon output will make them
   observable. Left for PR A: steps 7 and 8.
+- 2026-10-30: **Step 7 done**: `spherical-geometry.md` section 4.4 (tolerances) and 4.5 (rejected
+  alternatives), and section 6's account of the GoogleTests and the hunt (0903c5b28); the Fable
+  claim check (1 high, 5 medium, 6 low) applied. Left for PR A: step 8 (distil, Linux Docker run,
+  push, the PR when the developer asks).
 
 - **Resume here** (updated 2026-10-30):
   - Phase 4a is done; the overlay core and Q3 are decided (entries above). Next: the developer
