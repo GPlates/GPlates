@@ -387,7 +387,46 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 (spreading_rate_domain, spreading_rate_dict),
                 pygplates.PropertyName.gpml_position,
                 verify_information_model=pygplates.VerifyInformationModel.no)
-    
+
+    def test_set_coverage_error_leaves_feature_unchanged(self):
+        scalar_type = pygplates.ScalarType.create_gpml('SpreadingRate')
+        original_domain = pygplates.MultiPointOnSphere([(0,0), (0,10), (10,0)])
+        original_scalars = {scalar_type : [1, 2, 3]}
+        feature = pygplates.Feature()
+        feature.set_geometry((original_domain, original_scalars))
+        original_properties = [(property.get_name(), property.get_value()) for property in feature]
+
+        def assert_unchanged():
+            self.assertTrue([(property.get_name(), property.get_value()) for property in feature] == original_properties)
+            self.assertTrue(feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars) ==
+                    (original_domain, original_scalars))
+
+        new_domain = pygplates.MultiPointOnSphere([(20,20), (20,30)])
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        # Number of scalars does not match number of points (also when reverse reconstructing, which
+        # would otherwise set the geometry import time first).
+        self.assertRaises(ValueError, feature.set_geometry, (new_domain, {scalar_type : [1, 2, 3]}))
+        assert_unchanged()
+        self.assertRaises(ValueError, feature.set_geometry, (new_domain, {scalar_type : [1, 2, 3]}),
+                reverse_reconstruct=(rotation_model, 10.0))
+        assert_unchanged()
+        self.assertRaises(ValueError, feature.set_geometry,
+                [(new_domain, {scalar_type : [1, 2]}), (original_domain, {scalar_type : [1, 2]})])
+        assert_unchanged()
+        # Geometry property name that does not support coverages.
+        self.assertRaises(pygplates.InformationModelError, feature.set_geometry,
+                (new_domain, {scalar_type : [1, 2]}), pygplates.PropertyName.gpml_position,
+                verify_information_model=pygplates.VerifyInformationModel.no)
+        assert_unchanged()
+        # Two domains with the same number of points.
+        self.assertRaises(pygplates.AmbiguousGeometryCoverageError, feature.set_geometry,
+                [(new_domain, {scalar_type : [1, 2]}), (pygplates.MultiPointOnSphere([(0,0), (0,10)]), {scalar_type : [3, 4]})])
+        assert_unchanged()
+        self.assertRaises(pygplates.AmbiguousGeometryCoverageError, feature.set_geometry,
+                [(new_domain, {scalar_type : [1, 2]}), (pygplates.MultiPointOnSphere([(0,0), (0,10)]), {scalar_type : [3, 4]})],
+                reverse_reconstruct=(rotation_model, 10.0))
+        assert_unchanged()
+
     def test_get_and_set_topological_geometry(self):
         # The topological polygon property is stored in 'gpml:boundary' property.
         topological_boundary_properties = self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary, property_return=pygplates.PropertyReturn.all)
