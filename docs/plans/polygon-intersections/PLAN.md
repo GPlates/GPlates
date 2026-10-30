@@ -219,11 +219,15 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
 - 2026-10-31: **PR A merged** as #108 (merge `6b6472850`, CI green on the first run); `main`
   merged back into this branch. What PR A completed is distilled (`prA-distillation.md`).
 
+- 2026-10-31: **Phase 4b started**, split into four steps (see *Phases*): prototype run 3 (the
+  bundle rule, and polylines), a consumer survey, the written design, and its review.
+
 - **Resume here** (updated 2026-10-31):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
-  - **PR B** starts with Phase 4b, the written design. Its first item is the six-end "bundle
-    rule" (`phase4a-variants.md` section 10); the core is decided (V1b, the spike rule, the `LL`
-    rule, margin-ordered midpoint tests, option 3 for anchorless chains).
+  - **PR B**: Phase 4b started 2026-10-31, in the four steps under *Phases*. Step 1 (Fable,
+    prototype run 3: the bundle rule and polylines) and step 2 (Opus, consumer survey) run
+    together. The core is decided (V1b, the spike rule, the `LL` rule, margin-ordered midpoint
+    tests, option 3 for anchorless chains).
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries
     above).* Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay**
     (developer, 2026-10-25). The walk-through of requirements §3.3 is complete
@@ -508,7 +512,20 @@ the core and an oracle only.
   record, piece for piece and class for class.
 
 **Phase 4b: the written design.** A detailed design of the chosen algorithm, the core translated
-from the prototype. It goes in the plan, not the doc.
+from the prototype. It goes in the plan, not the doc. Four steps (2026-10-31):
+1. **Prototype run 3 (Fable):** the bundle rule, designed and built in the prototype, run to zero
+   failures on run 2's residue and a wider dense shared-edge hunt; and polylines through the core,
+   which the prototype has not yet run. Report `phase4a-run3.md`.
+2. **Consumer survey (Opus, alongside step 1):** the code facts the design needs, checked against
+   the code: every exterior-only path and coverage site below, the cascade, `partition()`'s
+   contract in both products, `GLReconstructedStaticPolygonMeshes`, networks' rigid-block holes.
+   Report `phase4b-survey.md`, ending in the developer's checkpoint questions (coverage policy and
+   scope, slivers, `DateLineWrapper`).
+3. **The design (Fable),** from the prototype, runs 1 to 3, the walk-through and the survey, with
+   the developer's answers: `phase4b-design.md`, covering the bullets below.
+4. **Opus review against the code**, then the developer's checkpoint.
+
+The design covers:
   - Data structures, with provenance per point.
   - Holes in both polygons.
   - Rings that don't intersect. These are classified by point-in-polygon, never by
