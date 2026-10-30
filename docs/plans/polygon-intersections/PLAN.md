@@ -248,6 +248,9 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   `src/maths/PolygonOverlay.{h,cc}`, `PolygonPartitioner` keeps its interface on top, and
   `PolylineIntersections` is deleted. G1-1 and G1-4 go out as their own PR ahead of the `src/api`
   audit's (planning repository `b9c5180`). Questions 5 and 6 wait for run 3.
+  That PR was started 2026-10-31 in worktree-2 (another session). Merge `main` into this branch
+  once it lands, before Phase 5's coverage step; expect a small conflict in `PartitionFeatureUtils.cc`
+  (it switches the exterior-point calls that PR B rewrites).
 
 - **Resume here** (updated 2026-10-31):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
