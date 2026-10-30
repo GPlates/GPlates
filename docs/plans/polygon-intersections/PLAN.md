@@ -216,9 +216,11 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   `385a679c6`; branch pushed to `public` and `private`). Later commits go to `private` only until
   it merges, so as not to change the PR.
 
+- 2026-10-31: **PR A merged** as #108 (merge `6b6472850`, CI green on the first run); `main`
+  merged back into this branch. What PR A completed is distilled (`prA-distillation.md`).
+
 - **Resume here** (updated 2026-10-31):
-  - **PR A** is #108: wait for CI and the review. After it merges, merge `main` back into this
-    branch and continue; do not delete the branch (it carries PRs B and C).
+  - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B** starts with Phase 4b, the written design. Its first item is the six-end "bundle
     rule" (`phase4a-variants.md` section 10); the core is decided (V1b, the spike rule, the `LL`
     rule, margin-ordered midpoint tests, option 3 for anchorless chains).
