@@ -248,6 +248,19 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   `src/maths/PolygonOverlay.{h,cc}`, `PolygonPartitioner` keeps its interface on top, and
   `PolylineIntersections` is deleted. G1-1 and G1-4 go out as their own PR ahead of the `src/api`
   audit's (planning repository `b9c5180`). Questions 5 and 6 wait for run 3.
+- 2026-10-31: **Step 1 done: prototype run 3** (Fable, paused at the usage limit with three runs left;
+  the session ran them and folded them in; report `phase4a-run3.md`, tools at planning `e3ae846`).
+  The residue's mechanism was not parallel rays but short arcs leaving a chained identity group from
+  off its output position. **Bundle rule**: each ray gets a cone from its first arc's offset and
+  length (no new constant); inseparable rays float, a class is deduced only if every consistent
+  placement agrees, the fewest-inversions placement is used for pairing. Also ring-continuity pairing
+  where a spike leaves one polygon's ends only. 0 failures in 3013 random polygon cases (run 2's
+  residue all cleared), the catalogue, cascade, anchorless and cut runs; clean outputs change only in
+  slivers within `0.42h` (12 of 898 `shared`). Polylines: 3395 cases clean, misclassification within
+  `1.09h`. Left open: under the fair midpoint-inversion adversary, wrong output in 10 of 1155 dense
+  shared-edge cases (repair hits its round cap; run 3's open question 4). Session review: the code
+  matches the report's definitions; no defect found. Fable recommends Q2 = `inside` and leaving
+  slivers in the output.
   That PR was started 2026-10-31 in worktree-2 (another session). Merge `main` into this branch
   once it lands, before Phase 5's coverage step; expect a small conflict in `PartitionFeatureUtils.cc`
   (it switches the exterior-point calls that PR B rewrites).
