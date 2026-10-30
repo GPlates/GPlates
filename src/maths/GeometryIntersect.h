@@ -180,6 +180,11 @@ namespace GPlatesMaths
 			// If @a type indicates an intersection *on* a start vertex for a segment then that
 			// segment's angle will be AngularDistance::ZERO.
 			//
+			// For a touch (@a SEGMENT1_START_ON_SEGMENT2 or @a SEGMENT2_START_ON_SEGMENT1) the
+			// angle along the touched segment is to the touching vertex's *projection* onto that
+			// segment's great circle (the vertex itself is up to the thickness off it). The angles
+			// order the intersections along each geometry; no position is derived from them.
+			//
 
 			//! Angle (radians) from segment start point to intersection along segment in first geometry.
 			AngularDistance angle_in_segment1;

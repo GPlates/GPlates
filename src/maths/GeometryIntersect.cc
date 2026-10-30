@@ -116,7 +116,10 @@ namespace GPlatesMaths
 		 *
 		 * The sort is stable, so intersections with equal keys (eg, two crossings at one point, or two
 		 * touches by one vertex) keep the order in which they were found, which makes the order
-		 * deterministic rather than whatever an unstable sort happens to leave.
+		 * deterministic rather than whatever an unstable sort happens to leave. Keys also tie when
+		 * two intersections on one segment are within the angle's resolution of each other: the
+		 * angle is compared as a cosine, which near a segment's start resolves only about 1.5e-8
+		 * radians. Consumers must accept tied intersections in either order.
 		 */
 		void
 		sort_geometry_intersections(
@@ -150,6 +153,11 @@ namespace GPlatesMaths
 		 * along the segment, by up to the thickness near the start, which could sort a touch after a
 		 * crossing that lies further along the segment. The projection sorts it by where along the
 		 * segment it touches, which is what a crossing's key measures too.
+		 *
+		 * The key only orders. Topology resolving sorts by it too
+		 * ('ResolvedSubSegmentRangeInSection::Intersection::operator<') but derives the ratio at
+		 * which an intersection divides its segment from the position, so changing the key moves no
+		 * point.
 		 */
 		AngularDistance
 		get_angle_along_touched_segment(
@@ -1022,6 +1030,13 @@ namespace GPlatesMaths
 			//       (see GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine()).
 			//       This ensures that the bounding small circle expands to include the *touching* region around
 			//       the geometries contained within the bounding small circle.
+			//
+			//       The expansion must be at least the thickness, and needs no further margin: if a
+			//       point of a segment in one node is within the thickness of a point of a segment
+			//       in the other, the two centres are at most the unexpanded radii plus the
+			//       thickness apart, which is less than the sum of the expanded radii by the
+			//       thickness (far above the rounding of the comparison below). A crossing of
+			//       *thick* planes is also an exact crossing, so crossing segments share a point.
 			if (!intersect(
 					geometry1_sub_tree_node.get_bounding_small_circle(),
 					geometry2_sub_tree_node.get_bounding_small_circle()))

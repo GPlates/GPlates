@@ -718,7 +718,10 @@ shared (it and the distance code also share one helper, `interpolate_plane_cross
 - **`GreatCircleArc::intersect`** (`GreatCircleArc.cc`) decides whether two arcs cross, and where.
   It serves the distance code only: `minimum_distance(arc, arc)` (section 2, section 4.3).
 - **`PointInPolygon`** intersects an edge with the crossing arc's plane
-  (`if_plane_divides_gca_get_intersection_of_gca_and_plane`, section 3.4).
+  (`if_plane_divides_gca_get_intersection_of_gca_and_plane`, section 3.4). Its sign tests are
+  exact, with no thickness: parity is exact, and the on-outline test is a separate distance pass
+  (section 3.5) with the threshold that is `GeometryIntersect`'s thickness (section 4.4), so a
+  vertex on the outline here is a contact there.
 - **`DateLineWrapper`** (`DateLineWrapper.{h,cc}`) clips polylines and polygons to the dateline
   (section 5.2). It finds the crossings itself, against a thick dateline plane, and does not use
   `GeometryIntersect`.
@@ -756,7 +759,10 @@ E are dropped, leaving four types:
 - `SEGMENT2_START_ON_SEGMENT1` (LS).
 
 A vertex shared by the two geometries is therefore reported once, not once for each segment that
-meets there. A polyline's last vertex has no next segment, so it is reported as the start of a
+meets there. A vertex shared by two rings of one polygon is reported once per ring, since each
+ring's segments are segments of their own: a hole touching its exterior ring at a vertex gives,
+against a vertex of the other geometry there, two intersections, which is what splitting both
+rings needs. A polyline's last vertex has no next segment, so it is reported as the start of a
 fictitious segment one past the last, whose index is the number of segments. A polygon ring wraps
 round, so it never needs one (`POLYGON_NEEDS_NO_LAST_SEGMENT_INDEX`).
 
@@ -825,8 +831,23 @@ bounding small circles over runs of consecutive arcs, with at most 8 arcs in a l
 `intersect_bounding_tree_nodes` descends both trees together. It skips any pair of nodes whose
 circles do not intersect, and otherwise splits the larger node first. At a pair of leaves it tests
 every pair of arcs. A polygon gives either its whole tree (`get_bounding_tree()`) or its exterior
-ring's tree (`get_exterior_ring_bounding_tree()`). The circles are expanded by the thickness, so a
-pruned pair of arcs cannot touch.
+ring's tree (`get_exterior_ring_bounding_tree()`).
+
+The pruning is sound because the circles are expanded by the thickness. A leaf's circle is
+centred on the centroid of its arcs, with a radius reaching the farthest point of any of them
+(`BoundingSmallCircleBuilder::add(const GreatCircleArc &)`, through `maximum_distance(point,
+arc)`), then expanded by the builder's default expansion, which is `GeometryIntersect`'s thickness
+(section 1); an internal node's circle is the optimal circle enclosing its two children's
+expanded circles (`create_optimal_bounding_small_circle`). Two nodes are skipped only if the angle
+between their centres is not less than the sum of their radii (`intersect(BoundingSmallCircle,
+BoundingSmallCircle)`, an exact comparison of cosines). If a point of an arc in one node lies
+within the thickness of a point of an arc in the other, the centres are at most the two unexpanded
+radii plus the thickness apart, which is less than the sum of the expanded radii by the thickness,
+a margin far above the rounding of the comparison (the cosine resolution of section 1). A crossing
+reported by the thick test is an exact crossing (end points strictly beyond the thickness on
+opposite sides imply opposite sides), so the arcs share a point and the circles overlap outright.
+Hence no pair of arcs that can produce an intersection is pruned, and because the expansion is
+derived from the same cosine, this follows the thickness if it changes.
 
 ### 4.3 `GreatCircleArc::intersect` compared
 
@@ -882,7 +903,9 @@ touch.
   At a right angle that means a segment shorter than `2s` (about 18 metres); at an angle `phi` to
   the arc, one shorter than `2s / sin(phi)`, which has no bound as the angle shrinks.
 - **A vertex inside a corner touches both of the corner's arcs** (section 4.2), so one contact is
-  two intersections at the same vertex. At an acute corner they stand for the two crossings that a
+  two intersections at the same vertex. Only the coincidence disc about the corner counts as the
+  corner (step 1 of the test); beyond it the two thick planes still overlap, and a vertex there is
+  on both. At an acute corner they stand for the two crossings that a
   segment passing just beyond the corner would make, collapsed onto the vertex by the thickness.
   A consumer must keep both: `Graph`'s comment says which original vertices each intersection
   names, so that intersections at one vertex can be treated as one contact.
@@ -904,13 +927,37 @@ is usual at ordinary angles; otherwise rounding orders them. The
 sort is stable (`std::stable_sort`), so tied intersections keep the order in which they were
 found. A consumer must accept them in either order. A touch is keyed by its vertex's projection
 onto the other arc's great circle, so that it sorts by where along the arc it is, which is what a
-crossing's key measures too.
+crossing's key measures too. The key only orders. Topology resolving sorts its intersections by
+the same key (`ResolvedSubSegmentRangeInSection::Intersection::operator<`) and takes the ratio at
+which an intersection divides its segment from the position, not the angle
+(`get_interpolate_ratio_in_segment`), so a change of key moves no point.
 
 **What is exact.** The two lune tests are exact sign tests on the dot products (`>= 0` and `<= 0`
 on `.dval()`). Every other comparison is an exact `double` comparison against the thickness (the
 cosine for vertices, the sine for planes), including the orientation test of a crossing, which uses
 the thick side classifications. The position of a touch or a shared vertex is an
 original vertex, exactly; a crossing's position is accurate to about `2e-10` radians.
+
+A vertex is decided the same way as the end of one segment and as the start of the next, bit for
+bit: the two segments hold copies of the same vertex, and the other geometry's segment holds the
+same start point and the same cached plane, so the vertex test (one dot product of the two
+points) and the plane test (one dot product of the point and the plane) are the same `double`
+in both pairs. That is what makes the "complementary tests" of the comment in
+`intersect_segments` complementary, and what lets end points go untested.
+
+The result is symmetric. `intersect(A, B)` and `intersect(B, A)` report the same intersections
+with the types mirrored (SL for LS) and the two orders swapped; the sign tests, the lune tests
+and the crossing's cross product are symmetric in the two arcs, so positions and angles are
+equal, except that an SS is placed at the first geometry's vertex (section 4.2), so its position
+can differ between the two orders by up to the thickness.
+
+**Near-antipodal arcs.** `GreatCircleArc::create` refuses end points whose dot product is `-1`
+as a `real_t` (`unit_vectors_are_antiparallel`), so no arc is within about `1.414e-6` radians of
+a half circle, the cross product of any arc's end points has a magnitude of at least about
+`1.4e-6`, and its normalised rotation axis, the arc's plane, is accurate to about `1e-10`
+radians: far below the thickness, so the thick classification and the lune test are sound for
+every constructible arc. The only other place a near-half-circle arc matters is the chord
+interpolation's guard (section 1), and that is the unreachable fallback.
 
 ### 4.5 Rejected alternatives
 
@@ -944,7 +991,10 @@ refinements (interpolating along the better-conditioned arc, the lune check, the
 section 4.3) handle crossings between nearly parallel arcs, which `GeometryIntersect` never reports:
 it reports them as touches. The two decisions also suit their callers: the distance code needs a
 crossing to be a crossing, exactly, while topology resolving and partitioning need touches, shared
-vertices and overlaps reported, within a tolerance. The chord interpolation that `GeometryIntersect`
+vertices and overlaps reported, within a tolerance. Deciding the distance code's crossings with
+thick planes would make `minimum_distance(arc, arc)`, which returns zero when `intersect()` says
+the arcs meet, return zero for arcs passing within the thickness of each other, a change for every
+C++ caller of the distance code. The chord interpolation that `GeometryIntersect`
 had for nearly parallel planes was unreachable (section 4.4). Its body is now the shared
 `interpolate_plane_crossing` in `GreatCircleArc.{h,cc}`: the distance code's main path for
 near-collinear arcs, and in `GeometryIntersect` a fallback for rounding only.
@@ -1453,6 +1503,17 @@ pieces "instead of 2".
   the records (their types, segment indices and order along both geometries, section 4.2), and the
   pieces between intersections classified by point-in-polygon or by deduction; no intersection is
   labelled a crossing or a touch (section 4.5).
+- **A self-intersection mode of `GeometryIntersect`**, to split a self-crossing ring into simple
+  rings with the same machinery. `intersect_segments` itself would serve, with four additions.
+  A segment must never be tested against itself: its start coincides with its own start, which is
+  an SS. Adjacent segments need no special skip: their shared vertex is a coincident end and start,
+  which excludes a crossing and the later segment's start touching the earlier one (section 4.2),
+  and the earlier segment's start touches the later one only if the later doubles back along it, a
+  genuine self-overlap; but a zero-length segment's start and end coincide, so it and its successor
+  give an SS at their shared vertex, which such a mode would have to drop. The bounding tree is
+  descended against itself, each unordered pair of nodes once, including a node with itself, and at
+  a leaf with itself only the pairs with a smaller first index. The `Graph`'s two orders become one
+  order along the geometry in which every intersection appears twice, once per segment index.
 - **The exact parity area** for interior rings that cross the exterior ring or overlap each other
   (section 3.3). It needs the rings intersected with each other, which the partitioning PR brings,
   so it is revisited after that.

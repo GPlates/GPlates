@@ -446,6 +446,10 @@ GPlatesMaths::BoundingSmallCircleBuilder::get_default_angular_expansion()
 	// detection (used when determining if one geometry is close enough to be *touching* another geometry).
 	// This ensures that the bounding small circle expands to include the *touching* region around
 	// the geometries contained within the bounding small circle.
+	//
+	// It must not be less than that threshold: GeometryIntersect prunes a pair of bounding tree
+	// nodes whose (expanded) small circles do not intersect, which is only sound if every pair of
+	// segments that can touch has intersecting circles (see its 'intersect_bounding_tree_nodes()').
 	static const AngularExtent DEFAULT_ANGULAR_EXPANSION = AngularExtent::create_from_cosine(
 			GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine());
 
