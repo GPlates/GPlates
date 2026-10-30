@@ -221,6 +221,14 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
 
 - 2026-10-31: **Phase 4b started**, split into four steps (see *Phases*): prototype run 3 (the
   bundle rule, and polylines), a consumer survey, the written design, and its review.
+- 2026-10-31: **Step 2 done**: `phase4b-survey.md` (Opus). Beyond doc 5.1: provenance must compose
+  through the cascade; a result-only path for `GLReconstructedStaticPolygonMeshes`;
+  `PolylineIntersections` has one other caller (CitcomS, one crossing). Found: pyGPlates cannot make
+  a readable coverage on a polygon with holes (measured: writes count all rings, reads count the
+  exterior); pyGPlates' `partition_features` drops coverages; `partition_range` reads one past the
+  end for an intersection on a polygon's closing segment; "most overlapping" sums arc length, which
+  polygon pieces inflate by their cuts. Eight checkpoint questions end the file (5 and 6 wait for
+  run 3).
 
 - **Resume here** (updated 2026-10-31):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
