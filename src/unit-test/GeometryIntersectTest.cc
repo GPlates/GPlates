@@ -24,6 +24,7 @@
  */
 
 #include <cmath>
+#include <iterator>
 #include <vector>
 #include <gtest/gtest.h>
 
@@ -426,6 +427,7 @@ TEST(GeometryIntersectTest, zero_length_segments)
 		SCOPED_TRACE("straddling an edge");
 		const auto p = polyline({
 				F.at(-0.5 * a, 0.5 * a), F.at(-0.5 * a, 0.25 * H), F.at(-0.5 * a, -0.25 * H), F.at(-0.5 * a, -0.5 * a) });
+		ASSERT_TRUE(std::next(p->begin(), 1)->is_zero_length());
 		Graph graph;
 		ASSERT_TRUE(GPlatesMaths::GeometryIntersect::intersect(graph, *q, *p));
 		const std::vector<Intersection> along_p = ordered(graph, false);
@@ -442,7 +444,8 @@ TEST(GeometryIntersectTest, zero_length_segments)
 		// A zero-length segment of P at Q's vertex: both of its ends coincide with the vertex.
 		SCOPED_TRACE("at a vertex");
 		const auto p = polyline({
-				F.at(-0.5 * a, -0.5 * a), F.at(-0.3 * H, -0.3 * H), F.at(0.3 * H, 0.3 * H), F.at(0.5 * a, 0.3 * a) });
+				F.at(-0.5 * a, -0.5 * a), F.at(-0.2 * H, -0.2 * H), F.at(0.2 * H, 0.2 * H), F.at(0.5 * a, 0.3 * a) });
+		ASSERT_TRUE(std::next(p->begin(), 1)->is_zero_length());
 		Graph graph;
 		ASSERT_TRUE(GPlatesMaths::GeometryIntersect::intersect(graph, *q, *p));
 		const std::vector<Intersection> along_p = ordered(graph, false);
@@ -759,6 +762,29 @@ TEST(GeometryIntersectTest, pruning)
 		// The exterior twice and each hole twice.
 		EXPECT_EQ(short_graph.unordered_intersections.size(), 6u);
 		EXPECT_EQ(short_swapped.unordered_intersections.size(), 6u);
+	}
+	{
+		// Two straight polylines end to end on one great circle, 0.99 H apart: their end vertices
+		// coincide. Each end vertex is its bounding circles' extreme point, so at every level of
+		// both trees the circles are 0.99 H apart, and only their expansion by the thickness keeps
+		// the pair from being pruned.
+		SCOPED_TRACE("end to end");
+		std::vector<PointOnSphere> q_points;
+		std::vector<PointOnSphere> p_points;
+		for (int i = 0; i <= 50; ++i)
+		{
+			q_points.push_back(F.at((i - 50) * 2e-3, 0));
+			p_points.push_back(F.at(0.99 * H + i * 2e-3, 0));
+		}
+		const auto q_line = polyline(q_points);
+		const auto p = polyline(p_points);
+		Graph graph;
+		ASSERT_TRUE(GPlatesMaths::GeometryIntersect::intersect(graph, *q_line, *p));
+		ASSERT_EQ(graph.unordered_intersections.size(), 1u);
+		EXPECT_EQ(graph.unordered_intersections[0].type, Intersection::SEGMENT_START_ON_SEGMENT_START);
+		EXPECT_EQ(graph.unordered_intersections[0].segment_index1, 50u);  // Q's fictitious segment
+		EXPECT_EQ(graph.unordered_intersections[0].segment_index2, 0u);
+		expect_symmetric(*q_line, *p);
 	}
 }
 

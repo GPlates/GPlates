@@ -1455,10 +1455,12 @@ crossing segments at right angles and at 20 degrees (two touches from a segment 
 long); the ordering of a touch before a crossing just beyond it; segment indices through the
 rings, a contact at a ring's first vertex, and a hole touching its exterior (one intersection per
 ring); a near-antipodal arc and nearly parallel arcs; pruning over a 300-segment polygon with two
-holes, both ways round and against a one-leaf polyline; the corner wedge at a right angle and at
-30 degrees; symmetry (`intersect(A, B)` against `intersect(B, A)`); clearing a stale `Graph`; a
-self-crossing on an arc; and the two inequalities of section 4.4, with the thickness equal to `s`.
-Reverting the projected key makes the ordering case fail.
+holes, both ways round and against a one-leaf polyline, and two polylines end to end `0.99`
+thicknesses apart, whose bounding circles meet only when expanded; the corner wedge at a right
+angle and at 30 degrees; symmetry (`intersect(A, B)` against `intersect(B, A)`); clearing a stale
+`Graph`; a self-crossing on an arc; and the two inequalities of section 4.4, with the thickness
+equal to `s`. Reverting the projected key makes the ordering case fail, and removing the bounding
+circles' expansion makes the end-to-end case fail.
 
 `GeometryIntersect` itself was checked against an exact reference: the specification of
 `intersect_segments` in rational arithmetic on the double inputs (thick planes, coincident vertices
