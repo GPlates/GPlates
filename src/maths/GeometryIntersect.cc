@@ -1269,13 +1269,22 @@ GPlatesMaths::GeometryIntersect::intersect(
 double
 GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine()
 {
-	// Set our thickness threshold to match the maximum length of a zero-length great circle arc.
+	// The thickness is the distance that compares equal to zero: two unit vectors whose dot product
+	// is at least '1 - EPSILON' are equal as 'real_t's (as in 'PointOnSphere::operator=='). It is
+	// also point-in-polygon's point-on-outline threshold
+	// ('PointInPolygon::get_point_on_polygon_threshold_cosine()', about 1.414e-6 radians), so a point
+	// that point-in-polygon calls on the outline is a contact here too, and "touching" means the
+	// same in both.
 	//
-	// This ensures that if the start and end points of a zero-length segment are separated by the
-	// plane of another segment, that both points will still be close enough to the plane that they
-	// can touch the segment. This avoids the possibility of incorrectly missing an intersection
-	// when a zero-length segment is involved.
-	static const double THICKNESS_THRESHOLD_COSINE_ = GreatCircleArc::get_zero_length_threshold_cosine().dval();
+	// It must not be less than the maximum length of a zero-length great circle arc
+	// ('GreatCircleArc::get_zero_length_threshold_cosine()', about 1e-6 radians): then, if the start
+	// and end points of a zero-length segment are separated by the plane of another segment, both
+	// points are still close enough to the plane to touch the segment, and no intersection is missed
+	// (the other segment cannot tunnel between them). It exceeds it by about 0.41e-6 radians.
+	//
+	// Its square (2e-12) also exceeds EPSILON, which is what keeps the cross product in
+	// 'add_segments_crossing_intersection()' always usable.
+	static const double THICKNESS_THRESHOLD_COSINE_ = 1.0 - EPSILON;
 
 	return THICKNESS_THRESHOLD_COSINE_;
 }
@@ -1285,9 +1294,8 @@ double
 GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_sine()
 {
 	// Base epsilon calculations off a cosine since that usually has the least accuracy for small angles.
-	// The zero-length cosine, 'cos(asin(sqrt(1e-12)))', corresponds to a displacement of about
-	// 1e-6. (This is not the point-on-polygon threshold of point-in-polygon, about 1.4e-6, whose
-	// cosine is '1 - 1e-12'.)
+	// The cosine '1 - 1e-12' corresponds to a distance of about 1.414e-6 radians (see
+	// 'get_on_segment_start_threshold_cosine()').
 	static const double THICKNESS_THRESHOLD_SINE_ = std::sin(std::acos(get_on_segment_start_threshold_cosine()));
 
 	return THICKNESS_THRESHOLD_SINE_;
