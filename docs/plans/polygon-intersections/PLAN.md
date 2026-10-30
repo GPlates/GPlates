@@ -240,6 +240,14 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   the partitioner, from either side, comes back `intersecting` as its outline in polylines (one
   closed polyline, or two where it shares part of an edge), and a polyline touching from outside is
   split in two at the touch.
+- 2026-10-31: **Decided (developer), survey questions 4, 7 and 8.** (4) A polyline or polygon whose
+  pieces would all have one class is not split: the original geometry goes whole to the inside or
+  outside list, and the result is `INSIDE` or `OUTSIDE`; `INTERSECTING` (with pieces) only when
+  pieces differ in class. (7) The design keeps run 2's three additions for cutting by an open arc;
+  the `DateLineWrapper` port is its own PR after B. (8) The core goes in a new
+  `src/maths/PolygonOverlay.{h,cc}`, `PolygonPartitioner` keeps its interface on top, and
+  `PolylineIntersections` is deleted. G1-1 and G1-4 go out as their own PR ahead of the `src/api`
+  audit's (planning repository `b9c5180`). Questions 5 and 6 wait for run 3.
 
 - **Resume here** (updated 2026-10-31):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
