@@ -113,13 +113,17 @@ namespace GPlatesMaths
 		/**
 		 * For each of the two geometries, sort its intersection list such that intersections
 		 * are ordered from the geometries start to end.
+		 *
+		 * The sort is stable, so intersections with equal keys (eg, two crossings at one point, or two
+		 * touches by one vertex) keep the order in which they were found, which makes the order
+		 * deterministic rather than whatever an unstable sort happens to leave.
 		 */
 		void
 		sort_geometry_intersections(
 				Graph &graph)
 		{
 			// Sort intersections along geometry1.
-			std::sort(
+			std::stable_sort(
 					graph.geometry1_ordered_intersections.begin(),
 					graph.geometry1_ordered_intersections.end(),
 					SortGeometryIntersection(
@@ -127,7 +131,7 @@ namespace GPlatesMaths
 							&Intersection::segment_index1,
 							&Intersection::angle_in_segment1));
 			// Sort intersections along geometry2.
-			std::sort(
+			std::stable_sort(
 					graph.geometry2_ordered_intersections.begin(),
 					graph.geometry2_ordered_intersections.end(),
 					SortGeometryIntersection(
