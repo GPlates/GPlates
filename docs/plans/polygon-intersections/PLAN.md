@@ -199,8 +199,16 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   PLAN's Context, Phase 3 and PR A status entries. The requirements' Phase 4a amendments, the
   walk-through and the `phase4a-*` files are PR B's to distil.
 
-- **Resume here** (updated 2026-10-30):
-  - **PR A**: everything is done except the **Linux Docker run** (both products, the
+- 2026-10-31: **PR A code review** (Fable, high effort, given the diff and scope but not the
+  hunt results or the distillation's claims; report `prA-review.md` beside this file). No defect
+  in the production code; it independently confirmed that no consumer uses the angle fields as a
+  distance. Two test gaps, both fixed: the "zero-length segment at a vertex" was 1.2e-6 radians
+  long, above the zero-length bound (shrunk, and both zero-length cases now assert it); and no
+  test covered the bounding circles' expansion (all 16 passed with it set to zero), so the
+  pruning test gained an end-to-end case that fails without it.
+
+- **Resume here** (updated 2026-10-31):
+  - **PR A**: everything is done, including the code review, except the **Linux Docker run** (both products, the
     `gplates-local.md` recipe) and the PR itself, when the developer asks (push to `private` and
     `public`; base `main`; the PR text says what the topology comparison found). The pre-fix
     pyGPlates baseline build for `topology_diff.py` was kept only in a session scratchpad: rebuild
