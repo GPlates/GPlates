@@ -52,7 +52,7 @@ The one table of every tolerance in this code. "Exact" means a plain `double` co
 | Bounds widening, `s` plus the zero-length threshold (about `2.4e-6` radians) | `PointInPolygon::get_bounds_widening()`: the inner bounding circle is contracted and the outer expanded by it, for the whole polygon and for each lune-tree leaf. The no-set-up path through `PolygonOnSphere::is_point_in_polygon` adds `s`, per call, to the polygon's cached outer bounding circle, which `InnerOuterBoundingSmallCircleBuilder` has already expanded by its default, the zero-length threshold | When a point is far enough inside the inner circle or outside the outer one to be decided without testing edges (section 3.7) | A bounds decision skips the on-outline test, so the bounds must be wider than `s`, or a point within `s` of the outline would be outside at one speed and on the outline at another. The extra `1e-6` covers the bounds comparing cosines, which resolve angles near zero only to about `1.5e-8` radians (the comment at `get_bounds_widening` says this) |
 | Near-parallel edges, `1 - 1e-4` | `MAX_DOT_PRODUCT_CROSSING_ARC_AND_POLYGON_EDGE` in `PointInPolygon.cc`: the dot product of the crossing arc's and the edge's plane normals (planes within about `0.014` radians of each other) | Which method decides whether an edge crosses the crossing arc: the sign tests of section 3.4, or interpolating the edge's crossing of the crossing plane and testing that point against the arc | A method choice, not an answer tolerance: the comment says the actual value is unimportant, it only funnels the common case into the cheaper test |
 | Lune widening `1e-4` | `SphericalLuneTree::TreeBuilder::SPHERICAL_WEDGE_PLANE_EPSILON`, a sine (about `1e-4` radians, `0.34` arc minutes) | Which edges belong to a lune: those with an end point in the lune widened by it, those crossing its first bounding half circle, and those coming within it of either bounding half circle | Protection against rounding when assigning edges, and much larger than `s`, which is what makes a leaf's edges enough for the on-outline test (section 3.7) |
-| Half-circle guard, chord midpoint `magSqrd() < 1e-6` (magnitude `1e-3`) | `interpolate_plane_crossing` (`GreatCircleArc.cc`), `if_plane_divides_gca_get_intersection_of_gca_and_plane` (`PointInPolygon.cc`) and `add_segments_crossing_intersection` (`GeometryIntersect.cc`, which tests `> 1e-6` before interpolating) | Whether an arc is too close to a half circle to interpolate along its chord. The distance code then tries the other arc, and failing that uses the end point closest to the other arc; point-in-polygon splits the arc at its midpoint and recurses; `GeometryIntersect` tries the other arc, and failing that splits the first arc at its midpoint (section 4.2) | Both halves of an exactly antipodal pair are the same distance from every plane, so the ratio of signed distances means nothing |
+| Half-circle guard, chord midpoint `magSqrd() < 1e-6` (magnitude `1e-3`) | `interpolate_plane_crossing` (`GreatCircleArc.{h,cc}`, used by the distance code and by `add_segments_crossing_intersection` in `GeometryIntersect.cc`) and `if_plane_divides_gca_get_intersection_of_gca_and_plane` (`PointInPolygon.cc`) | Whether an arc is too close to a half circle to interpolate along its chord. The distance code then tries the other arc, and failing that uses the end point closest to the other arc; point-in-polygon splits the arc at its midpoint and recurses; `GeometryIntersect` tries the other arc, and failing that raises an assertion, since its interpolation is unreachable (section 4.2) | Both halves of an exactly antipodal pair are the same distance from every plane, so the ratio of signed distances means nothing |
 | Cosine resolution, about `1.5e-8` radians | Not a constant: the largest `double` below 1 is `1 - 2^-53`, whose arc cosine is about `1.5e-8`. Every distance here is made from a cosine (`AngularDistance::create_from_cosine`), including inside an arc's lune, where it is `sqrt(1 - sine^2)` | The smallest non-zero distance. In C++ anything closer than this is exactly `AngularDistance::ZERO` | A property of `double`, stated in the wrapper's comment and at `get_bounds_widening` |
 | Cosine clamp | `clamp_cosine_rounding_error` (`AngularDistance.h`), applied by `AngularDistance::create_from_cosine` and `AngularExtent::create_from_cosine` | A cosine outside `[-1, 1]` by no more than epsilon is clamped to the end it represents; anything further out is left for `acos` to report | The dot product of a point and its exact antipode can round to just below `-1`, which exact comparisons would then see as exceeding a threshold of exactly pi (section 2) |
 | pyGPlates zero clamp | `geometry_on_sphere_distance`: `angular_distance != AngularDistance::ZERO` is an epsilon comparison, so a cosine within `1e-12` of 1 (a distance up to about `1.414e-6` radians) is returned as `0.0` | What Python sees as zero | Deliberate and user-visible since pyGPlates 1.0: Python code tests `== 0.0`, and geometries that touch (share a vertex, say) can come out a tiny non-zero distance when rounding hides the contact |
@@ -722,11 +722,6 @@ them, `GeometryIntersect`, is shared:
 - **`DateLineWrapper`** (`DateLineWrapper.{h,cc}`) clips polylines and polygons to the dateline
   (section 5.2). It finds the crossings itself, against a thick dateline plane, and does not use
   `GeometryIntersect`.
-- **`GeometryCrossing`** (`GeometryCrossing.{h,cc}`) is meant to reduce a `GeometryIntersect` graph
-  to the intersections where the geometries cross, dropping touches and overlaps that do not.
-  It is a stub: `find_vertex_crossing` returns `boost::none`, so no vertex intersection survives.
-  Nothing calls it, and it is compiled into GPlates only (it is in `gplates_only_srcs` in
-  `src/maths/CMakeLists.txt`).
 
 ### 4.2 `GeometryIntersect`
 
@@ -769,7 +764,8 @@ round, so it never needs one (`POLYGON_NEEDS_NO_LAST_SEGMENT_INDEX`).
 other arc, and each vertex inside a stretch where the geometries run together is reported as
 touching the other geometry. The header comment gives examples. So no single intersection says
 whether the geometries cross there, touch without crossing, or start or stop running together.
-`GeometryCrossing` was begun to answer that from the graph.
+A consumer that needs to know derives it from the records (a stub, `GeometryCrossing`, was begun
+to do it inside the primitive, and was deleted unused).
 
 **The test for one pair of arcs** (`intersect_segments`) has four steps, in this order:
 
@@ -806,16 +802,15 @@ vertex. An arc passing through that vertex could then tunnel between the two arc
 the same reason, a crossing is never tested once any end points coincide.
 
 **Where the arcs cross** (`add_segments_crossing_intersection`). The point is the normalised cross
-product of the two planes, its sign chosen by the orientations from step 3. The cross product can
-be zero as a `real_t` (planes within about `1e-6` radians of each other). Then the point is
-interpolated instead, by signed distances from the other arc's plane:
-- along the first arc's chord, using its end points' signed distances from the second arc's plane;
-- along the second arc's chord, if the first arc is near a half circle (section 1);
-- if both arcs are near half circles, the first arc is split at its midpoint, and the point is
-  interpolated along whichever half crosses.
-
-The point is not checked against either arc's lune afterwards. Each end point's signed distance is
-at least the thickness sine, which keeps the interpolation's denominator away from zero.
+product of the two planes, its sign chosen by the orientations from step 3. A crossing needs each
+arc's end points beyond the thickness from the other arc's plane, on opposite sides of it, so the
+sine of the angle between the planes exceeds the thickness. The square of the thickness exceeds
+`EPSILON`, the bound below which the cross product is zero as a `real_t`, so the cross product is
+always taken, and the point is accurate to about `2e-10` radians. Interpolation along a chord
+(`interpolate_plane_crossing`, along the first arc, or the second if the first is near a half
+circle) remains only as a fallback for rounding; if both arcs are near half circles it raises an
+assertion. The point is not checked against either arc's lune, and does not need to be: the
+planes are never nearly parallel.
 
 **Pruning.** Each polyline and polygon has a `PolyGreatCircleArcBoundingTree`: a binary tree of
 bounding small circles over runs of consecutive arcs, with at most 8 arcs in a leaf by default.
@@ -1296,8 +1291,8 @@ pieces "instead of 2".
   supercontinent-era model could cross the limit.
 - **Polygon partitioning.** An intersecting polygon is partitioned into polylines, interior rings
   are left out of the cut, and a partitioning polygon inside the input polygon is missed
-  (section 5.1). Finishing it needs intersections classified as crossings, touches and overlaps,
-  which `GeometryCrossing` was begun for (section 4.1).
+  (section 5.1). Finishing it needs intersections classified as crossings, touches and overlaps, which a
+  consumer derives from the records (section 4.2).
 - **The exact parity area** for interior rings that cross the exterior ring or overlap each other
   (section 3.3). It needs the rings intersected with each other, which the partitioning PR brings,
   so it is revisited after that.

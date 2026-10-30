@@ -29,7 +29,7 @@ flowchart TD
     utils["utils<br/>module: 45 of 75 files"]:::module
   end
   subgraph L1 ["Maths + serialisation"]
-    maths["maths<br/>module: 100 of 133 files"]:::module
+    maths["maths<br/>module: 100 of 131 files"]:::module
     scribe["scribe<br/>module: 56 of 64 files"]:::module
   end
   subgraph L2 ["Model + value types"]
@@ -49,7 +49,7 @@ flowchart TD
     file_io_gp["file-io<br/>GPlates-only: 62 of 235 files"]:::gplates
     scribe_gp["scribe<br/>GPlates-only: 8 of 64 files"]:::gplates
     data_mining["data-mining<br/>42 files"]:::gplates
-    maths_gp["maths<br/>GPlates-only: 33 of 133 files"]:::gplates
+    maths_gp["maths<br/>GPlates-only: 31 of 131 files"]:::gplates
     property_values_gp["property-values<br/>GPlates-only: 1 of 128 files"]:::gplates
     global_gp["global<br/>GPlates-only: 8 of 32 files"]:::gplates
     utils_gp["utils<br/>GPlates-only: 30 of 75 files"]:::gplates
@@ -145,7 +145,7 @@ flowchart TD
     utils["utils<br/>module: 45 of 75 files"]:::module
   end
   subgraph L1 ["Maths + serialisation"]
-    maths["maths<br/>module: 100 of 133 files"]:::module
+    maths["maths<br/>module: 100 of 131 files"]:::module
     scribe["scribe<br/>module: 56 of 64 files"]:::module
   end
   subgraph L2 ["Model + value types"]
@@ -240,7 +240,7 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | file-io |  |  | 84 |  |  |  | 540 | 117 | 19 | 116 | 244 |  |  | 417 |  |  |  | 78 |  |
 | global |  |  |  |  |  |  |  | 25 |  |  |  |  |  |  |  |  |  | 5 |  |
 | gui |  | 18 | 169 | 53 |  | 3 | 53 | 95 | 480 | 117 | 81 | 113 | 79 | 98 | 163 | 14 |  | 89 | 108 |
-| maths |  |  |  |  |  |  |  | 75 |  | 421 | 1 |  |  |  |  | 24 |  | 41 |  |
+| maths |  |  |  |  |  |  |  | 75 |  | 419 | 1 |  |  |  |  | 24 |  | 41 |  |
 | model |  |  | 7 |  |  |  | 2 | 30 |  | 1 | 218 |  |  | 58 |  | 23 |  | 48 |  |
 | opengl |  |  | 16 |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
 | presentation |  | 1 | 100 |  |  | 1 | 24 | 23 | 76 | 12 | 9 | 3 | 93 | 6 | 26 | 25 |  | 11 | 19 |
@@ -272,7 +272,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | file-io | 173 / 235 |
 | global | 24 / 32 |
 | gui | 12 / 249 |
-| maths | 100 / 133 |
+| maths | 100 / 131 |
 | model | 97 / 97 |
 | opengl | 0 / 158 |
 | presentation | 0 / 48 |
@@ -741,7 +741,7 @@ What the module takes from each partially-included directory:
 - `gui/RasterColourPalette.cc`
 - `gui/RasterColourPalette.h`
 
-## maths (100 of 133)
+## maths (100 of 131)
 
 - `maths/AngularDistance.cc`
 - `maths/AngularDistance.h`

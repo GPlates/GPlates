@@ -497,24 +497,21 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Determine whether the two great-circle arcs @a arc1 and @a arc2 are
-	 * "near" each other.
+	 * Returns the point where the great circle arc from @a start_point to @a end_point crosses a
+	 * plane, given the signed distances of its start and end points from that plane (which must have
+	 * opposite signs), or none if the arc is too close to a half circle to interpolate along its chord.
 	 *
-	 * Obviously, "near" is a pretty subjective term, but if the two arcs
-	 * are "near" each other according to this function, there is a chance
-	 * they might overlap or intersect; conversely, if the two arcs are
-	 * @em not "near" each other, there is @em no chance they might overlap
-	 * or intersect.
-	 *
-	 * This operation is relatively computationally-inexpensive (three
-	 * dot-products and a bunch of comparisons and boolean ORs), so it's a
-	 * good way to eliminate no-hopers before expensive intersection or
-	 * overlap calculations.
+	 * The point is a combination of the end points, so it is on the arc's great circle, and it has
+	 * zero signed distance from the plane to within rounding, however small the angle between the
+	 * arc's plane and the other plane (unlike the cross product of the two planes' normals, whose
+	 * error grows as that angle shrinks).
 	 */
-	bool
-	arcs_are_near_each_other(
-			const GreatCircleArc &arc1,
-			const GreatCircleArc &arc2);
+	boost::optional<UnitVector3D>
+	interpolate_plane_crossing(
+			const UnitVector3D &start_point,
+			const UnitVector3D &end_point,
+			const double &start_point_dot_plane,
+			const double &end_point_dot_plane);
 
 
 	/**
@@ -731,38 +728,6 @@ namespace GPlatesMaths
 				furthest_position_on_great_circle_arc);
 	}
 
-
-	/**
-	 * Determine whether the two great-circle arcs @a arc1 and @a arc2 lie on the same
-	 * great-circle.  This test ignores the directedness of the arcs.
-	 *
-	 * This operation is relatively computationally-inexpensive (in the cheapest case, a
-	 * dot-product and some boolean comparisons).
-	 */
-	bool
-	arcs_lie_on_same_great_circle(
-			const GreatCircleArc &arc1,
-			const GreatCircleArc &arc2);
-
-
-	/**
-	 * Determine whether the two great-circle arcs @a @arc1 and @a arc2 are
-	 * equivalent when the directedness of the arcs is taken into account.
-	 */
-	bool
-	arcs_are_directed_equivalent(
-			const GreatCircleArc &arc1,
-			const GreatCircleArc &arc2);
-
-
-	/**
-	 * Determine whether the two great-circle arcs @a @arc1 and @a arc2 are
-	 * equivalent when the directedness of the arcs is ignored.
-	 */
-	bool
-	arcs_are_undirected_equivalent(
-			const GreatCircleArc &arc1,
-			const GreatCircleArc &arc2);
 
 	/**
 	 * Calculates the angle, in radians, between two adjacent great circle arcs.

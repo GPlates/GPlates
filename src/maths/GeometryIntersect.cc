@@ -234,168 +234,34 @@ namespace GPlatesMaths
 
 				return;
 			}
-			// else both segments are pretty much on the same great circle...
-
+			// else the two planes are within rounding of each other...
 			//
-			// Both segments have the same (or opposite) rotation axis (within numerical tolerance).
-			//
-			// Due to the precondition that the start and end points of each segment not lie *on* the
-			// *thick* plane of the other segment, we probably only get here when both segments are
-			// quite long, otherwise there would be a large enough angle between their great circle
-			// planes to avoid getting here in the first place.
-			//
-			// We use the signed distances of one segment's start and end points from the other segment's plane
-			// to interpolate along the straight line joining the first segment's start and end points.
-			// That interpolated position along the line will be less than unit-length (from origin)
-			// so we then normalise it to obtain the intersection point on the unit-radius globe.
-			// The interpolation ratio is:
-			//
-			//                 signed_distance_to_start_point
-			//   -------------------------------------------------------------
-			//   signed_distance_to_start_point - signed_distance_to_end_point
-			//
-			// ...where the negative sign is because the start and end points are on opposite sides of the plane.
-			//
-
-			// Make sure segment1's start and end points are not close to being antipodal.
-			const Vector3D segment1_mid_point_unnormalised = Vector3D(segment1_start_point) + Vector3D(segment1_end_point);
-			// NOTE: We're avoiding the more expensive square-root calculation here.
-			if (segment1_mid_point_unnormalised.magSqrd().dval() > 1e-6 /*equivalent to a magnitude of 1e-3*/)
+			// That does not happen. A crossing needs each segment's end points to be farther than the
+			// thickness from the other segment's plane, on opposite sides of it, which puts the sine of
+			// the angle between the planes above the thickness (THICKNESS_THRESHOLD_SINE). The square of
+			// the thickness is greater than EPSILON, which is what the 'magSqrd() > 0' test above
+			// compares against (as a 'real_t'), so the cross product is always taken. This path is
+			// only a fallback for rounding, and if it is ever reached, the crossing is interpolated
+			// along whichever segment is not close to a half circle.
+			boost::optional<UnitVector3D> intersection = interpolate_plane_crossing(
+					segment1_start_point, segment1_end_point,
+					segment1_start_point_dot_segment2_plane, segment1_end_point_dot_segment2_plane);
+			if (!intersection)
 			{
-				// The denominator of the ratios used to interpolate segment1's start and end points.
-				//
-				// Note: We should not get a divide-by-zero here because the denominator should satisfy...
-				//
-				//   abs(denom) >= 2 * THICKNESS_THRESHOLD_SINE
-				//
-				// ...since segment1's start and end points should be on opposite sides of
-				// segment2's plane by a distance of at least THICKNESS_THRESHOLD_SINE.
-				const double denom = segment1_start_point_dot_segment2_plane - segment1_end_point_dot_segment2_plane;
-				const double inv_denom = 1.0 / denom;
-
-				const UnitVector3D intersection =
-						((segment1_start_point_dot_segment2_plane * inv_denom) * segment1_end_point -
-						(segment1_end_point_dot_segment2_plane * inv_denom) * segment1_start_point)
-					.get_normalisation();
-
-				add_intersection(
-						graph,
-						Intersection::SEGMENTS_CROSS,
-						intersection,
-						segment1_start_point, segment2_start_point,
-						segment1_index, segment2_index);
-
-				return;
+				intersection = interpolate_plane_crossing(
+						segment2_start_point, segment2_end_point,
+						segment2_start_point_dot_segment1_plane, segment2_end_point_dot_segment1_plane);
 			}
 
-			// Segment1's start and end points are close to being antipodal (shouldn't be able to
-			// get a segment that spans a full half-circle but it can happen within numerical tolerance).
-			// Because the points are antipodal the absolute value of their signed distances from
-			// any plane (passing through origin) will always be equal regardless of the orientation
-			// of the splitting plane. This means the intersection cannot be calculated using
-			// signed distance ratios.
-			//
-			// So instead we swap and try comparing segment2's start and end points to segment1's plane.
-
-			// Make sure segment2's start and end points are not close to being antipodal.
-			const Vector3D segment2_mid_point_unnormalised = Vector3D(segment2_start_point) + Vector3D(segment2_end_point);
-			// NOTE: We're avoiding the more expensive square-root calculation here.
-			if (segment2_mid_point_unnormalised.magSqrd().dval() > 1e-6 /*equivalent to a magnitude of 1e-3*/)
-			{
-				// The denominator of the ratios used to interpolate segment2's start and end points.
-				//
-				// Note: We should not get a divide-by-zero here because the denominator should satisfy...
-				//
-				//   abs(denom) >= 2 * THICKNESS_THRESHOLD_SINE
-				//
-				// ...since segment2's start and end points should be on opposite sides of
-				// segment1's plane by a distance of at least THICKNESS_THRESHOLD_SINE.
-				const double denom = segment2_start_point_dot_segment1_plane - segment2_end_point_dot_segment1_plane;
-				const double inv_denom = 1.0 / denom;
-
-				const UnitVector3D intersection =
-						((segment2_start_point_dot_segment1_plane * inv_denom) * segment2_end_point -
-						(segment2_end_point_dot_segment1_plane * inv_denom) * segment2_start_point)
-					.get_normalisation();
-
-				add_intersection(
-						graph,
-						Intersection::SEGMENTS_CROSS,
-						intersection,
-						segment1_start_point, segment2_start_point,
-						segment1_index, segment2_index);
-
-				return;
-			}
-
-			// Both segments are (pretty close to) half great circles. This scenario is extremely
-			// unlikely (both segments being half circles *and* on the same great circle plane).
-			//
-			// The solution is to divide one of the half-circle segments into two segments of
-			// equal length and determine the intersection from those. We arbitrarily divide segment1.
-
-			// We cannot normalize the segment1's mid-point vector but since segment1 is (close to)
-			// a half circle we can use a cross product to find its mid-point.
-			const UnitVector3D segment1_mid_point(cross(segment1_plane, segment1_start_point));
-
-			// Get signed distance of segment1's mid-point from segment2's plane.
-			const double segment1_mid_point_dot_segment2_plane = dot(segment1_mid_point, segment2_plane).dval();
-			const bool segment1_mid_point_on_positive_side_of_segment2_plane = (segment1_mid_point_dot_segment2_plane > 0);
-
-			// If the first half segment of segment1 crosses segment2's plane.
-			if (segment1_start_point_on_positive_side_of_segment2_plane ^
-				segment1_mid_point_on_positive_side_of_segment2_plane)
-			{
-				// The denominator of the ratios used to interpolate segment1's start and *mid* points.
-				//
-				// Note: We should not get a divide-by-zero here because the denominator should satisfy...
-				//
-				//   abs(denom) >= THICKNESS_THRESHOLD_SINE
-				//
-				// ...since the distance of segment1's start point from segment2's plane should be at least
-				// THICKNESS_THRESHOLD_SINE (even though segment1's mid-point could be closer to segment2's plane),
-				// noting that segment1's start and mid points are on opposite sides of segment2's plane.
-				const double denom = segment1_start_point_dot_segment2_plane - segment1_mid_point_dot_segment2_plane;
-				const double inv_denom = 1.0 / denom;
-
-				const UnitVector3D intersection =
-						((segment1_start_point_dot_segment2_plane * inv_denom) * segment1_mid_point -
-						(segment1_mid_point_dot_segment2_plane * inv_denom) * segment1_start_point)
-					.get_normalisation();
-
-				add_intersection(
-						graph,
-						Intersection::SEGMENTS_CROSS,
-						intersection,
-						segment1_start_point, segment2_start_point,
-						segment1_index, segment2_index);
-
-				return;
-			}
-			// ...else the second half segment of segment1 must cross segment2's plane
-			// (we know this because a precondition to this function is segment1 must cross segment2's plane).
-
-			// The denominator of the ratios used to interpolate segment1's *mid* and end points.
-			//
-			// Note: We should not get a divide-by-zero here because the denominator should satisfy...
-			//
-			//   abs(denom) >= THICKNESS_THRESHOLD_SINE
-			//
-			// ...since the distance of segment1's end point from segment2's plane should be at least
-			// THICKNESS_THRESHOLD_SINE (even though segment1's mid-point could be closer to segment2's plane),
-			// noting that segment1's mid and end points are on opposite sides of segment2's plane.
-			const double denom = segment1_end_point_dot_segment2_plane - segment1_mid_point_dot_segment2_plane;
-			const double inv_denom = 1.0 / denom;
-
-			const UnitVector3D intersection =
-					((segment1_end_point_dot_segment2_plane * inv_denom) * segment1_mid_point -
-					(segment1_mid_point_dot_segment2_plane * inv_denom) * segment1_end_point)
-				.get_normalisation();
+			// Both segments close to half circles *and* on the same great circle.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					bool(intersection),
+					GPLATES_ASSERTION_SOURCE);
 
 			add_intersection(
 					graph,
 					Intersection::SEGMENTS_CROSS,
-					intersection,
+					intersection.get(),
 					segment1_start_point, segment2_start_point,
 					segment1_index, segment2_index);
 		}

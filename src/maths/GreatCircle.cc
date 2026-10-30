@@ -37,27 +37,6 @@ GPlatesMaths::GreatCircle::GreatCircle (const PointOnSphere &p1,
  : d_axis (calc_normal(p1.position_vector(), p2.position_vector())) {  }
 
 
-#if 0
-GPlatesMaths::UnitVector3D
-GPlatesMaths::GreatCircle::intersection (const GreatCircle &other) const
-{
-	Vector3D v = cross(normal(), other.normal());
-
-	real_t v_mag_sqrd = v.magSqrd();
-	if (v_mag_sqrd <= 0) {
-
-		// mag_sqrd equal to zero => magnitude is equal to zero =>
-		// collinear vectors => PANIC!!!!one
-		std::ostringstream oss;
-		oss << "Attempted to calculate the intersection of "
-		 << "equivalent great-circles.";
-		throw IndeterminateResultException (oss.str().c_str());
-	}
-	return v.get_normalisation();
-}
-#endif
-
-
 GPlatesMaths::UnitVector3D
 GPlatesMaths::GreatCircle::calc_normal(const UnitVector3D &u1,
  const UnitVector3D &u2) {

@@ -99,17 +99,6 @@ namespace GPlatesMaths
 				 perpendicular(axis_vector(), pt.position_vector());
 			}
 
-#if 0  // No longer needed
-			/**
-			 * Computes one intersection point of this GreatCircle
-			 * with another. The other intersection point is the
-			 * antipodal point to this.
-			 * @param other The other GreatCircle.
-			 */
-			UnitVector3D intersection (const GreatCircle &other)
-			 const;
-#endif
-
 		private:
 
 			/**
