@@ -270,6 +270,15 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   robust test cannot flip; inverting only the 5 within rounding (`3e-15` rad) breaks nothing. So no
   run 4; the design keeps whole-chain repair as a safety net, and Phase 5 compares classes with the
   prototype.
+- 2026-10-31: **Steps 3 and 4 done: `phase4b-design.md`** (Fable, then the session's review, its
+  section 15). Notable from the code: the overlay passes the subject first to `GeometryIntersect`;
+  option 3 needs a new `PointInPolygon` entry and one outside point per polygon; grouping by parity
+  depth, with the output side derived from the keep-rule (not the rotational order); zero-length arcs
+  float with a cone of pi; failure is an `InconsistentOverlayException`, never a silent answer; fifteen
+  commits for Phase 5. **Checkpoint**: the developer approves the design and answers its section 14
+  (output ring orientation; a coverage value for a ring of partitioner points only; failure
+  reporting and the Python exception's name; the redundant containment test in
+  `GLReconstructedStaticPolygonMeshes`; the coverage form of `partition_geometry`).
   That PR was started 2026-10-31 in worktree-2 (another session). Merge `main` into this branch
   once it lands, before Phase 5's coverage step; expect a small conflict in `PartitionFeatureUtils.cc`
   (it switches the exterior-point calls that PR B rewrites).
