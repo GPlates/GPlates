@@ -262,7 +262,14 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   matches the report's definitions; no defect found. Fable recommends Q2 = `inside` and leaving
   slivers in the output.
 - 2026-10-31: **Decided (developer): Q2 = `inside`** (a polyline piece along the partitioner's
-  boundary is inside). Slivers and the inversion residue still under discussion.
+  boundary is inside). **Slivers (developer):** an optional output filter (drop rings whose mean width,
+  2 area / perimeter, is below a width), in the design; whether to enable it, and the width, decided
+  in Phase 5 by measuring thin rings when partitioning real data by a real topology model.
+  **Inversion residue:** measured by the session (run 3 report, section 11): of 69 midpoints the
+  adversary inverted in the 8 broken cases, 64 lie `0.05h` to `0.8h` from the other boundary, where a
+  robust test cannot flip; inverting only the 5 within rounding (`3e-15` rad) breaks nothing. So no
+  run 4; the design keeps whole-chain repair as a safety net, and Phase 5 compares classes with the
+  prototype.
   That PR was started 2026-10-31 in worktree-2 (another session). Merge `main` into this branch
   once it lands, before Phase 5's coverage step; expect a small conflict in `PartitionFeatureUtils.cc`
   (it switches the exterior-point calls that PR B rewrites).

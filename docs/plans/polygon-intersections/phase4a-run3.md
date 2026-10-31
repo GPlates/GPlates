@@ -482,3 +482,25 @@ sections 3 and 7 against the code; the session's review takes its place. Nothing
 the run's side: the decisions left for the developer are in section 7 (adopt the rule; Q2 = `inside`;
 leave slivers), with 4.2a's trade-off (sliver changes in 12 of 898 `shared` cases against the residue
 fixed) stated for them to weigh, and open question 4 (the inversion residue).
+
+## 11. Addendum (the session, 2026-10-31): can rounding reach the inversion residue?
+
+The fair adversary negates every midpoint test of a single arc lying within `2h` of the other
+boundary. The C++ test is the robust point-in-polygon test with the threshold off, which can disagree
+with the exact answer only for a point within rounding of the other boundary. So the question is how far
+from that boundary the inverted midpoints were in the cases the adversary broke.
+
+**Measured** (`inv_dist.py` in the session scratchpad: `shared` seed 1 `#0` and `#288`, seed 2 `#174`
+and `#197`, seed 3 `#174`, seed 5 `#23`, seed 4 `#9` and `#16`, under `bndinv`): 69 midpoints inverted.
+64 lie `0.05h` to `0.8h` from the other boundary (medians `0.22h` to `0.84h` per case), far above
+rounding: a robust test cannot flip them. 5 lie about `3e-15` rad from it (in `#0` and `#197`): arcs
+running along the other boundary, whose midpoint is on it, where the C++ answer is a coin toss.
+
+**Measured** (`inv_tiny.py`, the same hunt with `INVERT_BAND = 1e-12` rad, so that only those can be
+inverted): all eight cases pass, with no check failure or repair; in `#0` and `#197` the one such midpoint
+was inverted, the output rings changed, and no sampled point changed membership.
+
+**Conclusion**: the residue needs flips that rounding cannot make; the flips rounding can make are
+harmless here. No run 4 is needed for it. A whole-chain repair can stay in the design as a safety net,
+and Phase 5 checks the C++ against the prototype class for class, which would show any test that does
+disagree.
