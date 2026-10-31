@@ -261,6 +261,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   shared-edge cases (repair hits its round cap; run 3's open question 4). Session review: the code
   matches the report's definitions; no defect found. Fable recommends Q2 = `inside` and leaving
   slivers in the output.
+- 2026-10-31: **Decided (developer): Q2 = `inside`** (a polyline piece along the partitioner's
+  boundary is inside). Slivers and the inversion residue still under discussion.
   That PR was started 2026-10-31 in worktree-2 (another session). Merge `main` into this branch
   once it lands, before Phase 5's coverage step; expect a small conflict in `PartitionFeatureUtils.cc`
   (it switches the exterior-point calls that PR B rewrites).
