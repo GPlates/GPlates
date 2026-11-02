@@ -975,6 +975,43 @@ namespace GPlatesApi
 					geometry_property_name,
 					verify_information_model);
 
+			// Get the coverage range property name associated with the domain property name (if any).
+			boost::optional<GPlatesModel::PropertyName> range_property_name =
+					GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
+							geometry_property_name);
+
+			// If we're also setting a coverage then check it before changing anything in the feature,
+			// so that an error leaves the feature as it was.
+			//
+			// Reverse reconstructing the geometry (below) rotates it, so it keeps its number of points.
+			if (coverage_range_property_value)
+			{
+				// If the geometry property name does not support a coverage then this is an error
+				// because the caller is trying to set a coverage (and not just a geometry).
+				if (!range_property_name)
+				{
+					// This exception will get converted to python 'InformationModelError'.
+					throw InformationModelException(
+							GPLATES_EXCEPTION_SOURCE,
+							QString("Geometry property name '" +
+									convert_qualified_xml_name_to_qstring(geometry_property_name) +
+									"' does not support coverages"));
+				}
+
+				// Number of points in domain must match number of scalar values in range.
+				const unsigned int num_domain_geometry_points =
+						GPlatesAppLogic::GeometryUtils::get_num_geometry_points(*geometry);
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						!coverage_range_property_value.get()->tuple_list().empty(),
+						GPLATES_ASSERTION_SOURCE);
+				// Just test the scalar values length for the first scalar type (all types should already have the same length).
+				if (num_domain_geometry_points != coverage_range_property_value.get()->tuple_list().front()->get_coordinates().size())
+				{
+					PyErr_SetString(PyExc_ValueError, "Number of scalar values in coverage must match number of points in geometry");
+					bp::throw_error_already_set();
+				}
+			}
+
 			// If we need to reverse reconstruct the geometry.
 			if (reverse_reconstruct_object != bp::object()/*Py_None*/)
 			{
@@ -1030,11 +1067,6 @@ namespace GPlatesApi
 					bp::object(geometry_property_value),
 					verify_information_model);
 
-			// Get the coverage range property name associated with the domain property name (if any).
-			boost::optional<GPlatesModel::PropertyName> range_property_name =
-					GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
-							geometry_property_name);
-
 			// If we're just setting a geometry (and not a coverage).
 			if (!coverage_range_property_value)
 			{
@@ -1052,33 +1084,12 @@ namespace GPlatesApi
 			}
 
 			//
-			// We're also setting the coverage range (where coverage domain is the geometry).
+			// We're also setting the coverage range (where coverage domain is the geometry),
+			// which was checked above.
 			//
-
-			// If the geometry property name does not support a coverage then this is an error
-			// because the caller is trying to set a coverage (and not just a geometry).
-			if (!range_property_name)
-			{
-				// This exception will get converted to python 'InformationModelError'.
-				throw InformationModelException(
-						GPLATES_EXCEPTION_SOURCE,
-						QString("Geometry property name '" +
-								convert_qualified_xml_name_to_qstring(geometry_property_name) +
-								"' does not support coverages"));
-			}
-
-			// Number of points in domain must match number of scalar values in range.
-			const unsigned int num_domain_geometry_points =
-					GPlatesAppLogic::GeometryUtils::get_num_geometry_points(*geometry);
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					!coverage_range_property_value.get()->tuple_list().empty(),
-					GPLATES_ASSERTION_SOURCE);
-			// Just test the scalar values length for the first scalar type (all types should already have the same length).
-			if (num_domain_geometry_points != coverage_range_property_value.get()->tuple_list().front()->get_coordinates().size())
-			{
-				PyErr_SetString(PyExc_ValueError, "Number of scalar values in coverage must match number of points in geometry");
-				bp::throw_error_already_set();
-			}
+			// Not checked above: whether the range property name is allowed for the feature's type
+			// (when verifying the information model), so that error still leaves the new geometry set.
+			//
 
 			// Set the coverage range property in the feature.
 			const bp::object coverage_range_property_object = feature_handle_set_property(
@@ -1111,6 +1122,71 @@ namespace GPlatesApi
 				boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>
 						coverage_range_property_values = boost::none)
 		{
+			// Make sure each geometry type is supported by property (if requested to check).
+			for (GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry : geometries)
+			{
+				verify_geometry_type_supported_by_property(
+						get_geometry_structural_type(*geometry),
+						geometry_property_name,
+						verify_information_model);
+			}
+
+			// Get the coverage range property name associated with the domain property name (if any).
+			boost::optional<GPlatesModel::PropertyName> range_property_name =
+					GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
+							geometry_property_name);
+
+			// If we're also setting coverages then check them before changing anything in the feature,
+			// so that an error leaves the feature as it was.
+			//
+			// Reverse reconstructing the geometries (below) rotates them, so they keep their number of points.
+			if (coverage_range_property_values)
+			{
+				// If the geometry property name does not support coverages then this is an error
+				// because the caller is trying to set coverages (and not just geometries).
+				if (!range_property_name)
+				{
+					// This exception will get converted to python 'InformationModelError'.
+					throw InformationModelException(
+							GPLATES_EXCEPTION_SOURCE,
+							QString("Geometry property name '" +
+									convert_qualified_xml_name_to_qstring(geometry_property_name) +
+									"' does not support coverages"));
+				}
+
+				// Both coverage domains and ranges should be the same length.
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						geometries.size() == coverage_range_property_values->size(),
+						GPLATES_ASSERTION_SOURCE);
+
+				// Make sure the number of points in each domain matches number of scalar values in associated range.
+				// Also make sure no two domains have the same number of points (otherwise it's ambiguous
+				// which range belongs to which domain since they use the same domain/range property name).
+				std::set<unsigned int> num_domain_points_set;
+				for (unsigned int c = 0; c < geometries.size(); ++c)
+				{
+					// Number of points in domain must match number of scalar values in range.
+					const unsigned int num_domain_geometry_points =
+							GPlatesAppLogic::GeometryUtils::get_num_geometry_points(*geometries[c]);
+
+					GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+							!coverage_range_property_values.get()[c]->tuple_list().empty(),
+							GPLATES_ASSERTION_SOURCE);
+					// Just test the scalar values length for the first scalar type (all types should already have the same length).
+					if (num_domain_geometry_points != coverage_range_property_values.get()[c]->tuple_list().front()->get_coordinates().size())
+					{
+						PyErr_SetString(PyExc_ValueError, "Number of scalar values in coverage must match number of points in geometry");
+						bp::throw_error_already_set();
+					}
+
+					// Each coverage should have a different number of points (ie, should get inserted into std::set).
+					GPlatesGlobal::Assert<AmbiguousGeometryCoverageException>(
+							num_domain_points_set.insert(num_domain_geometry_points).second,
+							GPLATES_ASSERTION_SOURCE,
+							geometry_property_name);
+				}
+			}
+
 			//
 			// Set the geometry properties.
 			//
@@ -1146,12 +1222,6 @@ namespace GPlatesApi
 
 			BOOST_FOREACH(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry, geometries)
 			{
-				// Make sure geometry type is supported by property (if requested to check).
-				verify_geometry_type_supported_by_property(
-						get_geometry_structural_type(*geometry),
-						geometry_property_name,
-						verify_information_model);
-
 				// If we need to reverse reconstruct the geometry.
 				if (reverse_reconstruct_parameters)
 				{
@@ -1191,11 +1261,6 @@ namespace GPlatesApi
 					geometry_property_values,
 					verify_information_model);
 
-			// Get the coverage range property name associated with the domain property name (if any).
-			boost::optional<GPlatesModel::PropertyName> range_property_name =
-					GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
-							geometry_property_name);
-
 			// If we're just setting geometries (and not coverages).
 			if (!coverage_range_property_values)
 			{
@@ -1213,54 +1278,14 @@ namespace GPlatesApi
 			}
 
 			//
-			// We're also setting coverage ranges (where coverage domains are the geometries).
+			// We're also setting coverage ranges (where coverage domains are the geometries),
+			// which were checked above.
+			//
+			// Not checked above: whether the range property name is allowed for the feature's type
+			// (when verifying the information model), so that error still leaves the new geometries set.
 			//
 
-			// If the geometry property name does not support coverages then this is an error
-			// because the caller is trying to set coverages (and not just geometries).
-			if (!range_property_name)
-			{
-				// This exception will get converted to python 'InformationModelError'.
-				throw InformationModelException(
-						GPLATES_EXCEPTION_SOURCE,
-						QString("Geometry property name '" +
-								convert_qualified_xml_name_to_qstring(geometry_property_name) +
-								"' does not support coverages"));
-			}
-
-			// Both coverage domains and ranges should be the same length.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					geometries.size() == coverage_range_property_values->size(),
-					GPLATES_ASSERTION_SOURCE);
-
 			const unsigned int num_coverages = geometries.size();
-
-			// Make sure the number of points in each domain matches number of scalar values in associated range.
-			// Also make sure no two domains have the same number of points (otherwise it's ambiguous
-			// which range belongs to which domain since they use the same domain/range property name).
-			std::set<unsigned int> num_domain_points_set;
-			for (unsigned int c = 0; c < num_coverages; ++c)
-			{
-				// Number of points in domain must match number of scalar values in range.
-				const unsigned int num_domain_geometry_points =
-						GPlatesAppLogic::GeometryUtils::get_num_geometry_points(*geometries[c]);
-
-				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						!coverage_range_property_values.get()[c]->tuple_list().empty(),
-						GPLATES_ASSERTION_SOURCE);
-				// Just test the scalar values length for the first scalar type (all types should already have the same length).
-				if (num_domain_geometry_points != coverage_range_property_values.get()[c]->tuple_list().front()->get_coordinates().size())
-				{
-					PyErr_SetString(PyExc_ValueError, "Number of scalar values in coverage must match number of points in geometry");
-					bp::throw_error_already_set();
-				}
-
-				// Each coverage should have a different number of points (ie, should get inserted into std::set).
-				GPlatesGlobal::Assert<AmbiguousGeometryCoverageException>(
-						num_domain_points_set.insert(num_domain_geometry_points).second,
-						GPLATES_ASSERTION_SOURCE,
-						geometry_property_name);
-			}
 
 			// Wrap the coverage ranges in Python property values.
 			bp::list coverage_range_property_values_list;
@@ -5395,7 +5420,8 @@ export_feature()
 				"where *scalar-values-dictionary* is a ``dict`` that maps :class:`scalar types<ScalarType>` to "
 				"lists of scalar values. This is the same as the sole argument to :meth:`GmlDataBlock.__init__`. "
 				"The number of scalar values, associated with each :class:`ScalarType` should be equal to the "
-				"number of points in the geometry.\n"
+				"number of points in the geometry - for a polygon, the points of its exterior ring and then of each of its "
+				"interior rings, as returned by :meth:`get_points<GeometryOnSphere.get_points>`.\n"
 				"\n"
 				"     Set the velocity coverage on the default geometry:\n"
 				"     ::\n"
@@ -5548,7 +5574,8 @@ export_feature()
 				"where *scalar-values-dictionary* is a ``dict`` that maps :class:`scalar types<ScalarType>` to "
 				"lists of scalar values. This is the same as the sole argument to :meth:`GmlDataBlock.__init__`. "
 				"The number of scalar values, associated with each :class:`ScalarType` should be equal to the "
-				"number of points in the geometry.\n"
+				"number of points in the geometry - for a polygon, the points of its exterior ring and then of each of its "
+				"interior rings, as returned by :meth:`get_points<GeometryOnSphere.get_points>`.\n"
 				"\n"
 				"     Get the velocity coverage on the default geometry (returns ``None`` if not exactly one *default* "
 				"geometry property containing a coverage was found and not exactly one *non-default* geometry property "
@@ -5568,12 +5595,20 @@ export_feature()
 				"geometry/coverage is returned instead (or `None` if neither is found). This is more useful when you are expecting a single "
 				"geometry/coverage but don't know which property name it's under. Previously only the *default* geometry property name was queried.\n"
 				"\n"
+				"     A file written before version 1.1 can have a coverage of a polygon with interior rings that has scalar values "
+				"for the exterior ring only. The geometry of such a coverage is returned as a polygon of the exterior ring alone, "
+				"so that it still has one scalar value per point (the geometry returned without its scalar values keeps its interior rings).\n"
+				"\n"
 				"  .. seealso:: :meth:`get_geometries` and :meth:`get_all_geometries`\n"
 				"\n"
 				"  .. seealso:: :meth:`set_geometry`\n"
 				"\n"
 				"  .. versionchanged:: 0.43\n"
-				"     When *property_query* not specified and no *default* geometry(s) found then *non-default* geometry(s) are returned.\n")
+				"     When *property_query* not specified and no *default* geometry(s) found then *non-default* geometry(s) are returned.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     A coverage of a polygon with interior rings has scalar values for the points of its interior rings too. "
+				"Previously such a coverage, as set by :meth:`set_geometry`, was not found.\n")
 		.def("get_geometries",
 				&GPlatesApi::feature_handle_get_geometries,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,

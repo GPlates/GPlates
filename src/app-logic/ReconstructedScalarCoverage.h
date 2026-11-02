@@ -82,6 +82,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Create a ReconstructedScalarCoverage instance.
 		 *
+		 * @a exterior_ring_only is the coverage's 'ScalarCoverageFeatureProperties::Coverage::exterior_ring_only'.
 		 */
 		static
 		const non_null_ptr_type
@@ -90,6 +91,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator range_property_iterator,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
+				bool exterior_ring_only,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
 		{
 			return non_null_ptr_type(
@@ -98,6 +100,7 @@ namespace GPlatesAppLogic
 							range_property_iterator,
 							scalar_type,
 							scalar_coverage_time_span,
+							exterior_ring_only,
 							reconstruct_handle_));
 		}
 
@@ -120,12 +123,12 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns the reconstructed domain geometry.
+		 *
+		 * For a coverage of a polygon's exterior ring alone (in an older file), this is that ring
+		 * alone, so that its points are the ones the scalars belong to.
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		get_reconstructed_geometry() const
-		{
-			return d_domain_reconstructed_feature_geometry->reconstructed_geometry();
-		}
+		get_reconstructed_geometry() const;
 
 		/**
 		 * Returns the reconstructed geometry points.
@@ -286,6 +289,12 @@ namespace GPlatesAppLogic
 		 */
 		ScalarCoverageTimeSpan::non_null_ptr_type d_scalar_coverage_time_span;
 
+		/**
+		 * Whether the scalars belong to a polygon's exterior ring alone
+		 * (see 'ScalarCoverageFeatureProperties::Coverage::exterior_ring_only').
+		 */
+		bool d_exterior_ring_only;
+
 
 		/**
 		 * Instantiate a reconstructed scalar coverage.
@@ -298,6 +307,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator range_property_iterator,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
+				bool exterior_ring_only,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_);
 
 	};

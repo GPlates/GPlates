@@ -210,7 +210,7 @@ namespace GPlatesAppLogic
 							return false;
 						}
 
-						const unsigned int num_domain_points = GeometryUtils::get_num_geometry_exterior_points(*domain_);
+						const unsigned int num_domain_points = GeometryUtils::get_num_geometry_points(*domain_);
 						for (unsigned int s = 0; s < range_.size(); ++s)
 						{
 							if (num_domain_points != range_[s]->get_coordinates().size())
@@ -222,19 +222,21 @@ namespace GPlatesAppLogic
 						return true;
 					}
 
+					/**
+					 * @a domain_ is the coverage's domain ('ScalarCoverageFeatureProperties::Coverage::domain'),
+					 * which is the exterior ring alone if @a exterior_ring_only_.
+					 */
 					Range(
 							const geometry_domain_type &domain_,
-							const geometry_range_type &range_) :
+							const geometry_range_type &range_,
+							bool exterior_ring_only_) :
+						domain(domain_),
 						domain_type(GPlatesMaths::GeometryType::NONE),
-						range(range_)
+						range(range_),
+						exterior_ring_only(exterior_ring_only_)
 					{
-						// Get the geometry domain points.
-						// We're getting the *exterior* points because that's what the scalar coverage
-						// extraction code currently does.
-						//
-						// TODO: Support polygons with interior holes (ie, allow scalar values on
-						// the points in the polygon's interior rings).
-						domain_type = GeometryUtils::get_geometry_exterior_points(*domain_, domain_points);
+						// Get the geometry domain points (a polygon's exterior ring, then its interior rings).
+						domain_type = GeometryUtils::get_geometry_points(*domain_, domain_points);
 
 						// Map the geometry domain points to their indices into geometry domain/range.
 						const unsigned int num_domain_points = domain_points.size();
@@ -244,10 +246,14 @@ namespace GPlatesAppLogic
 						}
 					}
 
+					geometry_domain_type domain;
 					GPlatesMaths::GeometryType::Value domain_type;
 					std::vector<GPlatesMaths::PointOnSphere> domain_points;
 					domain_to_range_map_type domain_to_range_map;
 					geometry_range_type range;
+
+					//! See 'ScalarCoverageFeatureProperties::Coverage::exterior_ring_only'.
+					bool exterior_ring_only;
 				};
 
 
@@ -305,9 +311,9 @@ namespace GPlatesAppLogic
 						{
 							// Number of scalars in range should match number of points in domain.
 							// This should be the case but we'll double-check in case it's not.
-							if (Range::range_matches_domain(geometry_domain, coverage.range))
+							if (Range::range_matches_domain(coverage.domain, coverage.range))
 							{
-								geometry_range = boost::in_place(geometry_domain, coverage.range);
+								geometry_range = boost::in_place(coverage.domain, coverage.range, coverage.exterior_ring_only);
 							}
 
 							geometry_range_property_name = (*coverage.range_property)->get_property_name();
@@ -433,9 +439,17 @@ namespace GPlatesAppLogic
 						const Range &geometry_range,
 						const geometry_domain_type &geometry_domain)
 				{
-					// Get the partitioned domain points.
+					// Get the partitioned domain points (only a polygon's exterior ring for an exterior-ring-only
+					// coverage, so that the partitioned coverage is read the same way as the original).
 					std::vector<GPlatesMaths::PointOnSphere> partitioned_domain_points;
-					GeometryUtils::get_geometry_exterior_points(*partitioned_domain, partitioned_domain_points);
+					if (geometry_range.exterior_ring_only)
+					{
+						GeometryUtils::get_geometry_exterior_points(*partitioned_domain, partitioned_domain_points);
+					}
+					else
+					{
+						GeometryUtils::get_geometry_points(*partitioned_domain, partitioned_domain_points);
+					}
 
 					const unsigned int num_partitioned_domain_points = partitioned_domain_points.size();
 
@@ -494,7 +508,7 @@ namespace GPlatesAppLogic
 									partitioned_domain_point_geometry = partitioned_domain_point.get_geometry_on_sphere();
 							if (!minimum_distance(
 									*partitioned_domain_point_geometry,  // const GeometryOnSphere &
-									*geometry_domain,                    // const GeometryOnSphere &
+									*geometry_range.domain,              // const GeometryOnSphere &
 									false/*geometry1_interior_is_solid*/,
 									false/*geometry2_interior_is_solid*/,
 									POLY_GEOMETRY_DISTANCE_THRESHOLD,
@@ -505,7 +519,7 @@ namespace GPlatesAppLogic
 								// but if it does then we'll do the test again without a threshold.
 								minimum_distance(
 										*partitioned_domain_point_geometry,  // const GeometryOnSphere &
-										*geometry_domain,                    // const GeometryOnSphere &
+										*geometry_range.domain,              // const GeometryOnSphere &
 										false/*geometry1_interior_is_solid*/,
 										false/*geometry2_interior_is_solid*/,
 										boost::none/*minimum_distance_threshold*/,
@@ -519,6 +533,12 @@ namespace GPlatesAppLogic
 								const unsigned int closest_segment_index = closest_domain_index;
 
 								// Calculate the interpolation ratio of the point along the great circle arc of the segment.
+								//
+								// NOTE: A polygon's segments are numbered through its exterior ring then each interior
+								// ring, like its points, but a ring's closing segment ends at the ring's *first* point,
+								// not at 'closest_segment_index + 1' (the next ring's first point, or one past the end
+								// for the last ring). An intersection on a closing segment is therefore wrong here.
+								// To be fixed with the partitioner change the TODO above asks for.
 								const GPlatesMaths::PointOnSphere &segment_start_point = geometry_range.domain_points[closest_segment_index];
 								const GPlatesMaths::PointOnSphere &segment_end_point = geometry_range.domain_points[closest_segment_index + 1];
 								const GPlatesMaths::AngularDistance segment_len = minimum_distance(segment_start_point, segment_end_point).get();

@@ -541,7 +541,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_topology_reconstruct
 							scalar_coverage.domain_property,
 							scalar_coverage_time_span_mapped_type(
 									scalar_coverage.range_property,
-									scalar_coverage_time_span)));
+									scalar_coverage_time_span,
+									scalar_coverage.exterior_ring_only)));
 		}
 
 		// Cache all scalar coverages (of specified scalar type) for the current feature.
@@ -610,7 +611,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_non_topology_reconst
 							scalar_coverage.domain_property,
 							scalar_coverage_time_span_mapped_type(
 									scalar_coverage.range_property,
-									scalar_coverage_time_span)));
+									scalar_coverage_time_span,
+									scalar_coverage.exterior_ring_only)));
 		}
 
 		// Cache all scalar coverages for the current feature.
@@ -668,9 +670,9 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar
 		}
 
 		GPlatesModel::FeatureHandle::iterator scalar_coverage_range_property =
-				scalar_coverage_time_span_iter->second.first;
+				scalar_coverage_time_span_iter->second.range_property;
 		ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
-				scalar_coverage_time_span_iter->second.second;
+				scalar_coverage_time_span_iter->second.scalar_coverage_time_span;
 
 		// If the geometry has not been subducted/consumed at the reconstruction time then
 		// create a reconstructed scalar coverage.
@@ -687,6 +689,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar
 							scalar_coverage_range_property,
 							scalar_type,
 							scalar_coverage_time_span,
+							scalar_coverage_time_span_iter->second.exterior_ring_only,
 							reconstruction_info.cached_reconstructed_scalar_coverages_handle.get()));
 		}
 	}

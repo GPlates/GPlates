@@ -3,6 +3,7 @@ Unit tests for the pygplates property values.
 """
 
 import os
+import tempfile
 import unittest
 import pygplates
 
@@ -387,7 +388,88 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 (spreading_rate_domain, spreading_rate_dict),
                 pygplates.PropertyName.gpml_position,
                 verify_information_model=pygplates.VerifyInformationModel.no)
-    
+
+    def test_coverage_on_polygon_with_holes(self):
+        exterior_ring = [(0,0), (0,40), (40,40), (40,0)]
+        interior_ring = [(10,10), (20,10), (10,20)]
+        polygon = pygplates.PolygonOnSphere(exterior_ring, [interior_ring])
+        scalar_type = pygplates.ScalarType.create_gpml('CrustalThickness')
+        coverage_range_name = pygplates.PropertyName.create_gpml('unclassifiedGeometryCoverage')
+
+        # A coverage has a scalar for every vertex, interior rings included.
+        scalars = {scalar_type : [1, 2, 3, 4, 5, 6, 7]}
+        feature = pygplates.Feature()
+        feature.set_geometry((polygon, scalars))
+        self.assertTrue(feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars) ==
+                (polygon, scalars))
+        # It survives a round trip through a file.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            filename = os.path.join(temp_dir, 'coverage.gpml')
+            pygplates.FeatureCollection([feature]).write(filename)
+            read_feature = next(iter(pygplates.FeatureCollection(filename)))
+        self.assertTrue(read_feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars) ==
+                (polygon, scalars))
+        # Scalars for the exterior ring alone are not enough.
+        self.assertRaises(ValueError, feature.set_geometry, (polygon, {scalar_type : [1, 2, 3, 4]}))
+
+        # Older files have coverages with scalars for the exterior ring only. These are read as
+        # coverages of the exterior ring alone.
+        exterior_only_feature = pygplates.Feature()
+        exterior_only_feature.set_geometry(polygon)
+        exterior_only_feature.add(coverage_range_name, pygplates.GmlDataBlock({scalar_type : [1, 2, 3, 4]}))
+        self.assertTrue(exterior_only_feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars) ==
+                (pygplates.PolygonOnSphere(exterior_ring), {scalar_type : [1, 2, 3, 4]}))
+        # The geometry itself still has its interior ring.
+        self.assertTrue(exterior_only_feature.get_geometry() == polygon)
+
+        # A range sized to a polygon's exterior ring cannot take the range of another geometry
+        # (on the same property) with that many points.
+        polygon_without_holes = pygplates.PolygonOnSphere([(-10,-10), (-10,-20), (-20,-20), (-20,-10)])
+        two_polygons_feature = pygplates.Feature()
+        two_polygons_feature.set_geometry([polygon, polygon_without_holes])
+        two_polygons_feature.add(coverage_range_name, pygplates.GmlDataBlock({scalar_type : [1, 2, 3, 4]}))
+        self.assertTrue(two_polygons_feature.get_geometries(coverage_return=pygplates.CoverageReturn.geometry_and_scalars) ==
+                [(polygon_without_holes, {scalar_type : [1, 2, 3, 4]})])
+
+    def test_set_coverage_error_leaves_feature_unchanged(self):
+        scalar_type = pygplates.ScalarType.create_gpml('SpreadingRate')
+        original_domain = pygplates.MultiPointOnSphere([(0,0), (0,10), (10,0)])
+        original_scalars = {scalar_type : [1, 2, 3]}
+        feature = pygplates.Feature()
+        feature.set_geometry((original_domain, original_scalars))
+        original_properties = [(property.get_name(), property.get_value()) for property in feature]
+
+        def assert_unchanged():
+            self.assertTrue([(property.get_name(), property.get_value()) for property in feature] == original_properties)
+            self.assertTrue(feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars) ==
+                    (original_domain, original_scalars))
+
+        new_domain = pygplates.MultiPointOnSphere([(20,20), (20,30)])
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        # Number of scalars does not match number of points (also when reverse reconstructing, which
+        # would otherwise set the geometry import time first).
+        self.assertRaises(ValueError, feature.set_geometry, (new_domain, {scalar_type : [1, 2, 3]}))
+        assert_unchanged()
+        self.assertRaises(ValueError, feature.set_geometry, (new_domain, {scalar_type : [1, 2, 3]}),
+                reverse_reconstruct=(rotation_model, 10.0))
+        assert_unchanged()
+        self.assertRaises(ValueError, feature.set_geometry,
+                [(new_domain, {scalar_type : [1, 2]}), (original_domain, {scalar_type : [1, 2]})])
+        assert_unchanged()
+        # Geometry property name that does not support coverages.
+        self.assertRaises(pygplates.InformationModelError, feature.set_geometry,
+                (new_domain, {scalar_type : [1, 2]}), pygplates.PropertyName.gpml_position,
+                verify_information_model=pygplates.VerifyInformationModel.no)
+        assert_unchanged()
+        # Two domains with the same number of points.
+        self.assertRaises(pygplates.AmbiguousGeometryCoverageError, feature.set_geometry,
+                [(new_domain, {scalar_type : [1, 2]}), (pygplates.MultiPointOnSphere([(0,0), (0,10)]), {scalar_type : [3, 4]})])
+        assert_unchanged()
+        self.assertRaises(pygplates.AmbiguousGeometryCoverageError, feature.set_geometry,
+                [(new_domain, {scalar_type : [1, 2]}), (pygplates.MultiPointOnSphere([(0,0), (0,10)]), {scalar_type : [3, 4]})],
+                reverse_reconstruct=(rotation_model, 10.0))
+        assert_unchanged()
+
     def test_get_and_set_topological_geometry(self):
         # The topological polygon property is stored in 'gpml:boundary' property.
         topological_boundary_properties = self.feature.get_topological_geometry(pygplates.PropertyName.gpml_boundary, property_return=pygplates.PropertyReturn.all)
