@@ -533,6 +533,12 @@ namespace GPlatesAppLogic
 								const unsigned int closest_segment_index = closest_domain_index;
 
 								// Calculate the interpolation ratio of the point along the great circle arc of the segment.
+								//
+								// NOTE: A polygon's segments are numbered through its exterior ring then each interior
+								// ring, like its points, but a ring's closing segment ends at the ring's *first* point,
+								// not at 'closest_segment_index + 1' (the next ring's first point, or one past the end
+								// for the last ring). An intersection on a closing segment is therefore wrong here.
+								// To be fixed with the partitioner change the TODO above asks for.
 								const GPlatesMaths::PointOnSphere &segment_start_point = geometry_range.domain_points[closest_segment_index];
 								const GPlatesMaths::PointOnSphere &segment_end_point = geometry_range.domain_points[closest_segment_index + 1];
 								const GPlatesMaths::AngularDistance segment_len = minimum_distance(segment_start_point, segment_end_point).get();

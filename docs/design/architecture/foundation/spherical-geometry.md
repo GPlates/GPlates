@@ -1119,7 +1119,11 @@ the geometry, a polygon's interior rings included (`GeometryUtils::get_geometry_
 the exterior ring, then each interior ring). The exception is a coverage that an older file gives
 for a polygon's exterior ring only, which `ScalarCoverageFeatureProperties` reads as a coverage of
 that ring alone (`Coverage::exterior_ring_only`); its pieces get values for their exterior rings
-only, as before.
+only, as before. That reading is a fallback for older files, behind one switch
+(`READ_EXTERIOR_RING_ONLY_COVERAGES`, whose comment gives its limitation), for a later release to
+turn off. Padding the interior rings' values with NaN instead was rejected: GPlates draws nothing
+for a coverage with a NaN value (`ReconstructionGeometryRenderer`), and a re-saved file would carry
+the NaNs.
 - **A piece's point that matches an original point** takes that point's values. The match is
   through a `std::map` keyed with `PointOnSphereMapPredicate`, an epsilon comparison, so two
   original points close together can share one entry.

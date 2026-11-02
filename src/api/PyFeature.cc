@@ -1087,6 +1087,9 @@ namespace GPlatesApi
 			// We're also setting the coverage range (where coverage domain is the geometry),
 			// which was checked above.
 			//
+			// Not checked above: whether the range property name is allowed for the feature's type
+			// (when verifying the information model), so that error still leaves the new geometry set.
+			//
 
 			// Set the coverage range property in the feature.
 			const bp::object coverage_range_property_object = feature_handle_set_property(
@@ -1277,6 +1280,9 @@ namespace GPlatesApi
 			//
 			// We're also setting coverage ranges (where coverage domains are the geometries),
 			// which were checked above.
+			//
+			// Not checked above: whether the range property name is allowed for the feature's type
+			// (when verifying the information model), so that error still leaves the new geometries set.
 			//
 
 			const unsigned int num_coverages = geometries.size();

@@ -754,7 +754,8 @@ GPlatesAppLogic::ReconstructMethodByPlateId::get_topology_reconstruction_info(
 
 		// A scalar coverage's time span interpolates its scalars by the points of the geometry time span
 		// of its domain property, so a coverage of a polygon's exterior ring alone (in an older file)
-		// needs a time span of that ring alone.
+		// needs a time span of that ring alone (with the whole polygon, the interior rings' points would
+		// index scalars past the end: a precondition of 'ScalarCoverageTimeSpan').
 		std::vector<ScalarCoverageFeatureProperties::Coverage> scalar_coverages;
 		ScalarCoverageFeatureProperties::get_coverages(scalar_coverages, get_feature_ref());
 
