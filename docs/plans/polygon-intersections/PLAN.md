@@ -334,11 +334,31 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     assertion; design 3.3 corrected), three new unit tests for its test gaps.
   Next: step 4, the bundle rule.
 
+- 2026-11-04: **Phase 5 step 4 done: the bundle rule** (`8b6128884`). With it disabled the C++ fails a
+  vertex check on run 2's residue (`shared#28`, `#169`, `six#5` and `#188` at seed 7), as the prototype
+  did; with it all are consistent, and the anchored, floating and placement counts are run 3's (section
+  4.1), except `shared#234`: run 3's table says 8 placements, the prototype itself gives 4 in all 16 tie
+  orders (a slip in the run 3 report). The comparison now also covers 233 committed generated cases
+  (`prototype-hunt.txt`: the residue and 30 to 50 of each generator) and any export named by
+  `GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES`; on 5091 uncommitted ones (300 of each generator at seed 1
+  with a jittered copy each, and `chain` at seeds 2, 3 and 5) it agrees wherever the prototype is clean.
+  A common pair's class may differ only where a band piece's does (`chain#66` seed 2: a 2h common chain
+  follows a 1.9h band piece through the sector walk).
+  - **New: the chosen configuration fails about 1% of `chain` cases, in the prototype itself.** Runs 2
+    and 3 ran `chain` only at seed 5, cases 0 to 59 (its 300-case run never finished). At 300 cases per
+    seed: seed 1 `#41`, `#107` (one check failure, which repair finds no flip for), `#182`, `#288` (two
+    check failures, repair at its 20-round cap, `O324` oracle failures for `#182`); seed 2 `#28`, `#52`,
+    `#119`; seed 3 `#220`, `#249`, `#281`; seed 5 `#108`, `#163`. The C++ reproduces them (it fails the
+    same checks); design 9.2 would throw `InconsistentOverlayException` there, never a silent answer,
+    but step 15 requires zero failures on generated data. `chain#41` is `ss-chain m=3 edge`, `#182`
+    `zigzag-ll m=3 vertex`, no bundle at either. **Needs a prototype investigation (run 4, Fable)**
+    before the core is final; whether before step 6 (repair) is the developer's call.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
-  - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 3
-    are done (Status, 2026-11-04). Next is step 4, the bundle rule, then 5 (anchorless chains) and 6
-    (repair and `InconsistentOverlayException`). The prototype comparison is
+  - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
+    are done (Status, 2026-11-04). Open: the `chain` failures (run 4). Then step 5 (anchorless
+    chains) and 6 (repair and `InconsistentOverlayException`). The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries
