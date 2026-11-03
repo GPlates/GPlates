@@ -34,6 +34,7 @@
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
 #include "PolylineOnSphere.h"
+#include "Vector3D.h"
 
 
 namespace GPlatesMaths
@@ -190,6 +191,48 @@ namespace GPlatesMaths
 
 
 		/**
+		 * What leaves an overlay vertex along one piece, or along a common pair of pieces (the
+		 * subject and the clip running together leave as one ray).
+		 */
+		class Ray
+		{
+		public:
+			/**
+			 * The exact tangent of the ray's first arc of non-zero length, at that arc's start (not
+			 * normalised). Unset when every arc of the piece lies on a zero-length segment.
+			 */
+			boost::optional<Vector3D> direction;
+
+			//! Which memberships change across the ray (both, for a common ray).
+			bool flips_subject;
+			bool flips_clip;
+
+			//! The subject (clip) piece end it carries: both for a common ray.
+			boost::optional<End> subject_end;
+			boost::optional<End> clip_end;
+
+			/**
+			 * The bundle rule's quantities (phase4b-design.md section 3.6): the angle from the
+			 * vertex's output position to the start of the ray's first arc, that arc's length, the
+			 * angle from the output position to the arc's far end, and the half-angle of the cone
+			 * within which the arc's direction, seen from the output position, can differ from its
+			 * exact tangent. The cone is 0 when the arc starts at the output position, pi when the
+			 * arc is no longer than its offset (or there is no direction).
+			 */
+			double delta;
+			double first_arc_length;
+			double reach;
+			double cone;
+
+			bool
+			is_common() const
+			{
+				return subject_end && clip_end;
+			}
+		};
+
+
+		/**
 		 * An overlay vertex: the records that name a common original vertex, closed transitively.
 		 *
 		 * Records at one point that name no common original vertex (two crossings of a twist lying
@@ -209,8 +252,11 @@ namespace GPlatesMaths
 			//! The output position: the subject's vertex, else the clip's, else the first record's.
 			PointOnSphere position;
 
-			//! The piece ends here.
+			//! The ends of the pieces here, after the loop and spike rules (internal ones removed).
 			std::vector<End> ends;
+
+			//! The rays, in the measured anticlockwise order about 'position' (from outside).
+			std::vector<Ray> rays;
 		};
 
 
@@ -242,6 +288,25 @@ namespace GPlatesMaths
 			//! The overlay vertices at its ends (none at a dangling end, or for a closed piece).
 			boost::optional<unsigned int> start_vertex;
 			boost::optional<unsigned int> end_vertex;
+
+			//! A loop or a spike: not classified, not a ray, not output (the loop and spike rules).
+			bool internal;
+
+			//! The partner piece of the other input, when the two run together.
+			boost::optional<unsigned int> common;
+		};
+
+
+		//! Counts of what an overlay did, for tests and failure reports.
+		class Diagnostics
+		{
+		public:
+			unsigned int internal_pieces = 0;     // loops and spikes made internal
+			unsigned int spikes = 0;              // there-and-back pairs among them
+			unsigned int common_pairs = 0;
+			unsigned int common_ambiguous = 0;    // vertex pairs with both inputs' pieces, unpaired
+			unsigned int zero_length_rays = 0;    // rays with no direction
+			unsigned int max_ends = 0;            // most ends at a vertex (a common ray: two)
 		};
 
 
@@ -330,6 +395,12 @@ namespace GPlatesMaths
 			get_piece_points(
 					const Piece &piece) const;
 
+			const Diagnostics &
+			get_diagnostics() const
+			{
+				return d_diagnostics;
+			}
+
 		private:
 
 			const PolygonOnSphere *d_subject_polygon;
@@ -352,6 +423,8 @@ namespace GPlatesMaths
 			std::vector<unsigned int> d_vertex_of_record;
 
 			std::vector<Piece> d_pieces;
+
+			Diagnostics d_diagnostics;
 
 
 			void
@@ -378,6 +451,29 @@ namespace GPlatesMaths
 			void
 			build_stops_and_pieces(
 					unsigned int ring);
+
+			void
+			apply_loop_and_spike_rules();
+
+			void
+			find_common_pairs();
+
+			void
+			build_rays();
+
+			//! A ray's direction and cone quantities, from one piece end (false if no direction).
+			bool
+			measure_ray(
+					const Vertex &vertex,
+					const End &end,
+					Ray &ray) const;
+
+			//! The measured anticlockwise order of rays about a point (seen from outside).
+			static
+			std::vector<Ray>
+			sort_rays_anticlockwise(
+					const PointOnSphere &centre,
+					const std::vector<Ray> &rays);
 		};
 	}
 }

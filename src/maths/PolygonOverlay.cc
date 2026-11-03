@@ -26,10 +26,12 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <unordered_map>
 #include <utility>
 
 #include "PolygonOverlay.h"
 
+#include "MathsUtils.h"
 #include "UnitVector3D.h"
 #include "Vector3D.h"
 
@@ -118,6 +120,26 @@ namespace GPlatesMaths
 					Side side)
 			{
 				return side == SUBJECT ? record.segment_index1 : record.segment_index2;
+			}
+
+
+			/**
+			 * Whether two points are the same stored position, coordinate for coordinate.
+			 *
+			 * PointOnSphere's 'operator==' is not this: it compares the dot product with a
+			 * tolerance of 1e-12, so points about 1.4e-6 radians apart (the thickness) compare
+			 * equal.
+			 */
+			bool
+			is_same_position(
+					const PointOnSphere &a,
+					const PointOnSphere &b)
+			{
+				const UnitVector3D &u = a.position_vector();
+				const UnitVector3D &v = b.position_vector();
+				return u.x().dval() == v.x().dval() &&
+						u.y().dval() == v.y().dval() &&
+						u.z().dval() == v.z().dval();
 			}
 
 
@@ -266,6 +288,10 @@ GPlatesMaths::PolygonOverlay::Overlay::build()
 	{
 		build_stops_and_pieces(ring);
 	}
+
+	apply_loop_and_spike_rules();
+	find_common_pairs();
+	build_rays();
 }
 
 
@@ -532,7 +558,9 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 
 	const auto add_piece = [&](unsigned int start, unsigned int end, bool closed)
 	{
-		Piece piece{ring, start, end, closed, false, boost::none, boost::none, boost::none};
+		Piece piece{
+				ring, start, end, closed, false,
+				boost::none, boost::none, boost::none, false, boost::none};
 
 		unsigned int num_interior_stops = 0;
 		if (closed)
@@ -617,7 +645,7 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 			// No record: the whole polyline is one piece.
 			Piece piece{
 					ring, boundaries[0], boundaries[1], true, false,
-					boost::none, boost::none, boost::none};
+					boost::none, boost::none, boost::none, false, boost::none};
 			for (unsigned int s = boundaries[0] + 1; s < boundaries[1]; ++s)
 			{
 				if (d_stops[s].kind == Stop::ORIGINAL_VERTEX)
@@ -684,4 +712,380 @@ GPlatesMaths::PolygonOverlay::Overlay::get_piece_points(
 	while (s != piece.end_stop);
 
 	return points;
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::apply_loop_and_spike_rules()
+{
+	//
+	// The loop rule: a single arc (no interior original vertex) from a vertex back to itself lies
+	// within the vertex's identity group, so it bounds nothing. A loop with an interior original
+	// vertex (the wedge's tip, x, apex, x) is real geometry and stays.
+	//
+	for (Piece &piece : d_pieces)
+	{
+		if (!piece.closed &&
+			!piece.has_interior_vertex &&
+			piece.start_vertex &&
+			piece.end_vertex &&
+			*piece.start_vertex == *piece.end_vertex)
+		{
+			piece.internal = true;
+			++d_diagnostics.internal_pieces;
+		}
+	}
+
+	//
+	// The spike rule: two consecutive single arcs of one ring going from vertex A to vertex B and
+	// straight back to A are both internal (the hairpin they bound is no wider than the identity
+	// groups at its ends). The pieces are stored ring by ring, in ring order.
+	//
+	unsigned int ring_first_piece = 0;
+	while (ring_first_piece < d_pieces.size())
+	{
+		unsigned int ring_end_piece = ring_first_piece + 1;
+		while (ring_end_piece < d_pieces.size() &&
+			d_pieces[ring_end_piece].ring == d_pieces[ring_first_piece].ring)
+		{
+			++ring_end_piece;
+		}
+
+		const unsigned int num_ring_pieces = ring_end_piece - ring_first_piece;
+		for (unsigned int i = 0; i < num_ring_pieces; ++i)
+		{
+			Piece &a = d_pieces[ring_first_piece + i];
+			Piece &b = d_pieces[ring_first_piece + (i + 1) % num_ring_pieces];
+			if (&a == &b ||
+				a.closed || b.closed ||
+				a.has_interior_vertex || b.has_interior_vertex ||
+				a.internal || b.internal)
+			{
+				continue;
+			}
+
+			// A dangling end (of a polyline) is not a vertex.
+			if (!a.start_vertex || !a.end_vertex || !b.start_vertex || !b.end_vertex)
+			{
+				continue;
+			}
+
+			if (*a.end_vertex == *b.start_vertex &&
+				*b.end_vertex == *a.start_vertex &&
+				*a.start_vertex != *a.end_vertex)
+			{
+				a.internal = b.internal = true;
+				d_diagnostics.internal_pieces += 2;
+				++d_diagnostics.spikes;
+			}
+		}
+
+		ring_first_piece = ring_end_piece;
+	}
+
+	for (Vertex &vertex : d_vertices)
+	{
+		vertex.ends.erase(
+				std::remove_if(
+						vertex.ends.begin(),
+						vertex.ends.end(),
+						[this](const End &end) { return d_pieces[end.piece].internal; }),
+				vertex.ends.end());
+	}
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::find_common_pairs()
+{
+	//
+	// A subject piece and a clip piece that are both single arcs between the same two (distinct)
+	// vertices run together: an original vertex of either inside the stretch would itself be a
+	// record. Any other mix between one pair of vertices pairs nothing, and is counted.
+	//
+	struct PairPieces
+	{
+		std::vector<unsigned int> side_pieces[2];
+	};
+
+	const auto pair_key = [](unsigned int a, unsigned int b)
+	{
+		return (static_cast<unsigned long long>((std::min)(a, b)) << 32) | (std::max)(a, b);
+	};
+
+	std::unordered_map<unsigned long long, PairPieces> pairs;
+	// The keys in the order first seen, so that the result is deterministic.
+	std::vector<unsigned long long> key_order;
+	for (unsigned int p = 0; p < d_pieces.size(); ++p)
+	{
+		const Piece &piece = d_pieces[p];
+		if (piece.closed ||
+			piece.internal ||
+			piece.has_interior_vertex ||
+			!piece.start_vertex ||
+			!piece.end_vertex ||
+			*piece.start_vertex == *piece.end_vertex)
+		{
+			continue;
+		}
+
+		const unsigned long long key = pair_key(*piece.start_vertex, *piece.end_vertex);
+		auto inserted = pairs.insert(std::make_pair(key, PairPieces()));
+		if (inserted.second)
+		{
+			key_order.push_back(key);
+		}
+		inserted.first->second.side_pieces[d_rings[piece.ring].side].push_back(p);
+	}
+
+	for (unsigned long long key : key_order)
+	{
+		const PairPieces &pair = pairs[key];
+		if (pair.side_pieces[SUBJECT].size() == 1 &&
+			pair.side_pieces[CLIP].size() == 1)
+		{
+			const unsigned int subject_piece = pair.side_pieces[SUBJECT][0];
+			const unsigned int clip_piece = pair.side_pieces[CLIP][0];
+			d_pieces[subject_piece].common = clip_piece;
+			d_pieces[clip_piece].common = subject_piece;
+			++d_diagnostics.common_pairs;
+		}
+		else if (!pair.side_pieces[SUBJECT].empty() &&
+			!pair.side_pieces[CLIP].empty())
+		{
+			++d_diagnostics.common_ambiguous;
+		}
+	}
+}
+
+
+bool
+GPlatesMaths::PolygonOverlay::Overlay::measure_ray(
+		const Vertex &vertex,
+		const End &end,
+		Ray &ray) const
+{
+	const Piece &piece = d_pieces[end.piece];
+	const RingView &ring_view = d_rings[piece.ring];
+
+	// The piece's stops, leaving the vertex.
+	std::vector<unsigned int> stops(1, piece.start_stop);
+	for (unsigned int s = piece.start_stop; stops.size() == 1 || s != piece.end_stop; )
+	{
+		s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
+		stops.push_back(s);
+	}
+	if (end.at_end)
+	{
+		std::reverse(stops.begin(), stops.end());
+	}
+
+	const UnitVector3D &centre = vertex.position.position_vector();
+
+	//
+	// The first arc of non-zero length: its direction is the exact tangent of its segment's great
+	// circle at the arc's start (a zero-length segment has no rotation axis). Arriving at the
+	// piece's end, an arc between ring-order stops 'i - 1' and 'i' lies on stop i's arriving
+	// segment, and is walked backwards.
+	//
+	for (unsigned int i = 0; i + 1 < stops.size(); ++i)
+	{
+		const Stop &from = d_stops[stops[i]];
+		const Stop &to = d_stops[stops[i + 1]];
+		const GreatCircleArc &segment =
+				ring_view.segments[end.at_end ? from.segment_in : from.segment_out];
+		if (segment.is_zero_length())
+		{
+			continue;
+		}
+
+		const UnitVector3D &start = from.position.position_vector();
+		const Vector3D tangent = cross(segment.rotation_axis(), start);
+		ray.direction = end.at_end ? -tangent : tangent;
+
+		// The cone (phase4b-design.md section 3.8): 0 when the arc starts at the vertex's output
+		// position (the same stored point), pi when the arc is no longer than its offset from
+		// there, else the planar bound atan2(delta, L - delta). At these scales the spherical
+		// correction to the bound is far below rounding.
+		ray.delta = is_same_position(from.position, vertex.position)
+				? 0.0
+				: angle_between(centre, start);
+		ray.first_arc_length = angle_between(start, to.position.position_vector());
+		ray.reach = angle_between(centre, to.position.position_vector());
+		if (ray.delta == 0.0)
+		{
+			ray.cone = 0.0;
+		}
+		else if (ray.first_arc_length <= ray.delta)
+		{
+			ray.cone = PI;
+		}
+		else
+		{
+			ray.cone = std::atan2(ray.delta, ray.first_arc_length - ray.delta);
+		}
+		return true;
+	}
+
+	// Every arc of the piece lies on a zero-length segment: no direction, and a cone of pi (it
+	// floats at a vertex of six or more ends, and bounds no sector an order is needed for below).
+	ray.direction = boost::none;
+	ray.delta = angle_between(centre, d_stops[stops.front()].position.position_vector());
+	ray.first_arc_length = 0.0;
+	ray.reach = angle_between(centre, d_stops[stops.back()].position.position_vector());
+	ray.cone = PI;
+	return false;
+}
+
+
+std::vector<GPlatesMaths::PolygonOverlay::Ray>
+GPlatesMaths::PolygonOverlay::Overlay::sort_rays_anticlockwise(
+		const PointOnSphere &centre_point,
+		const std::vector<Ray> &rays)
+{
+	//
+	// The measured rotational order, anticlockwise about the centre seen from outside the sphere,
+	// by two sign tests on normalised directions: the half-plane relative to the first ray (ties
+	// broken by the dot product), then the orientation within a half-plane. The insertion places
+	// each ray after every ray it does not precede, as the prototype's '_angular_sort_float' does,
+	// so near-ties fall where it leaves them (phase4b-design.md section 3.6: measured harmless).
+	// Rays with no direction go last, in end order; the order is not used where they occur unless
+	// the vertex has six or more ends, where they float.
+	//
+	std::vector<Ray> sorted;
+	std::vector<Ray> no_direction;
+	std::vector<UnitVector3D> sorted_directions;
+
+	const UnitVector3D &centre = centre_point.position_vector();
+	boost::optional<UnitVector3D> first_direction;
+
+	const auto half_plane = [&](const UnitVector3D &d)
+	{
+		const double side = dot(centre, cross(*first_direction, d)).dval();
+		if (side > 0)
+		{
+			return 0;
+		}
+		if (side < 0)
+		{
+			return 1;
+		}
+		return dot(*first_direction, d).dval() > 0 ? 0 : 1;
+	};
+
+	const auto precedes = [&](const UnitVector3D &a, const UnitVector3D &b)
+	{
+		const int half_a = half_plane(a);
+		const int half_b = half_plane(b);
+		if (half_a != half_b)
+		{
+			return half_a < half_b;
+		}
+		return dot(centre, cross(a, b)).dval() > 0;
+	};
+
+	for (const Ray &ray : rays)
+	{
+		if (!ray.direction || ray.direction->is_zero_magnitude())
+		{
+			no_direction.push_back(ray);
+			continue;
+		}
+
+		const UnitVector3D direction = ray.direction->get_normalisation();
+		if (!first_direction)
+		{
+			first_direction = direction;
+		}
+
+		unsigned int i = 0;
+		while (i < sorted.size() && precedes(sorted_directions[i], direction))
+		{
+			++i;
+		}
+		sorted.insert(sorted.begin() + i, ray);
+		sorted_directions.insert(sorted_directions.begin() + i, direction);
+	}
+
+	sorted.insert(sorted.end(), no_direction.begin(), no_direction.end());
+	return sorted;
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::build_rays()
+{
+	for (unsigned int v = 0; v < d_vertices.size(); ++v)
+	{
+		Vertex &vertex = d_vertices[v];
+
+		std::vector<Ray> rays;
+		unsigned int num_ends = 0;
+		for (const End &end : vertex.ends)
+		{
+			const Piece &piece = d_pieces[end.piece];
+			const Side side = d_rings[piece.ring].side;
+
+			// The clip end of a common pair joins its subject end's ray.
+			if (piece.common && side == CLIP)
+			{
+				continue;
+			}
+
+			Ray ray;
+			ray.flips_subject = (side == SUBJECT);
+			ray.flips_clip = (side == CLIP);
+			if (side == SUBJECT)
+			{
+				ray.subject_end = end;
+			}
+			else
+			{
+				ray.clip_end = end;
+			}
+			measure_ray(vertex, end, ray);
+			++num_ends;
+
+			if (piece.common)
+			{
+				// A common pair's pieces have distinct end vertices, so the partner's end here is
+				// whichever of its ends is this vertex.
+				const Piece &partner = d_pieces[*piece.common];
+				const End partner_end(*piece.common, *partner.start_vertex != v);
+				ray.flips_clip = true;
+				ray.clip_end = partner_end;
+				++num_ends;
+
+				Ray partner_ray;
+				const bool partner_has_direction = measure_ray(vertex, partner_end, partner_ray);
+
+				// The subject's direction, unless the subject's first arc is zero length and the
+				// clip's is not (a single arc: its one segment).
+				const bool subject_zero_length = piece.single_arc_segment &&
+						d_rings[piece.ring].segments[*piece.single_arc_segment].is_zero_length();
+				if ((subject_zero_length || !ray.direction) && partner_has_direction)
+				{
+					ray.direction = partner_ray.direction;
+				}
+
+				// The wider cone of the two.
+				if (partner_ray.cone > ray.cone)
+				{
+					ray.delta = partner_ray.delta;
+					ray.first_arc_length = partner_ray.first_arc_length;
+					ray.reach = partner_ray.reach;
+					ray.cone = partner_ray.cone;
+				}
+			}
+
+			if (!ray.direction)
+			{
+				++d_diagnostics.zero_length_rays;
+			}
+			rays.push_back(ray);
+		}
+
+		d_diagnostics.max_ends = (std::max)(d_diagnostics.max_ends, num_ends);
+		vertex.rays = sort_rays_anticlockwise(vertex.position, rays);
+	}
 }
