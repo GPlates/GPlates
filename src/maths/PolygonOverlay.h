@@ -272,6 +272,34 @@ namespace GPlatesMaths
 
 
 		/**
+		 * The bundle rule's state at a vertex with six or more ends (phase4b-design.md 3.8).
+		 *
+		 * A ray whose first arc starts away from the vertex's output position and is short has a
+		 * direction that, seen from that position, is noise. Rays whose cones are pairwise
+		 * separable are anchored and keep their measured order; the rest float, and the sector
+		 * walk is solved on every order that places them where their cones allow.
+		 */
+		class Bundle
+		{
+		public:
+			//! The anchored rays (indices into the vertex's rays), in the measured cyclic order.
+			std::vector<unsigned int> anchored;
+
+			//! The floating rays, in order of certainty (smallest cone, then largest reach).
+			std::vector<unsigned int> floating;
+
+			/**
+			 * The admissible orders of the vertex's rays (each a cyclic sequence of ray indices),
+			 * the measured order first. Only the measured order when no ray floats or too many do.
+			 */
+			std::vector<std::vector<unsigned int>> orders;
+
+			//! More than the cap of floating rays: the measured order alone is used.
+			bool capped = false;
+		};
+
+
+		/**
 		 * An overlay vertex: the records that name a common original vertex, closed transitively.
 		 *
 		 * Records at one point that name no common original vertex (two crossings of a twist lying
@@ -296,6 +324,9 @@ namespace GPlatesMaths
 
 			//! The rays, in the measured anticlockwise order about 'position' (from outside).
 			std::vector<Ray> rays;
+
+			//! At six or more ends (a common ray counts two): the bundle rule's orders.
+			boost::optional<Bundle> bundle;
 		};
 
 
@@ -368,6 +399,12 @@ namespace GPlatesMaths
 			 */
 			std::vector<boost::optional<bool>> in_subject;
 			std::vector<boost::optional<bool>> in_clip;
+
+			//! The number of orders with a consistent placement (0 if inconsistent; 1 unbundled).
+			unsigned int num_consistent_orders = 0;
+
+			//! The order used is not the measured one (the bundle rule moved a ray).
+			bool moved = false;
 		};
 
 
@@ -400,6 +437,15 @@ namespace GPlatesMaths
 			unsigned int unresolved_pieces = 0;   // left unclassified (a common pair counts once)
 			unsigned int check_failures = 0;      // vertices with no consistent placement
 			unsigned int piece_side_disagreements = 0;  // debug builds: a piece's vertices disagree
+
+			// The bundle rule, counted once per vertex by the final check.
+			unsigned int bundle_vertices = 0;         // six or more ends, and a floating ray
+			unsigned int bundle_floating_max = 0;     // most floating rays at one vertex
+			unsigned int bundle_admissible_max = 0;   // most admissible orders at one vertex
+			unsigned int bundle_placements_max = 0;   // most consistent orders at one vertex
+			unsigned int bundle_ambiguous = 0;        // vertices with several consistent orders
+			unsigned int bundle_capped = 0;           // vertices with too many floating rays
+			unsigned int bundle_moved = 0;            // vertices not using the measured order
 		};
 
 
@@ -617,6 +663,12 @@ namespace GPlatesMaths
 			sort_rays_anticlockwise(
 					const PointOnSphere &centre,
 					const std::vector<Ray> &rays);
+
+			//! The bundle rule's anchored and floating rays and admissible orders at a vertex.
+			static
+			Bundle
+			build_bundle(
+					const Vertex &vertex);
 		};
 	}
 }

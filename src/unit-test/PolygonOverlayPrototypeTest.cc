@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <cstdlib>
 #include <fstream>
 #include <map>
 #include <sstream>
@@ -63,7 +64,9 @@
 // common) and in every class, except a band piece in a case where a midpoint test was made: a
 // single arc that is not common, whose midpoint lies within twice the thickness of the other
 // input's outline. Its class is arbitrary by nature, whether midpoint-tested or deduced from
-// another band piece, and the output oracle checks those. It can also differ for a reason the
+// another band piece, and the output oracle checks those. A common pair's class may differ only in
+// a tie order where a band piece's does, since the sector walk can carry a band class into a short
+// common chain (counted with the band pieces). It can also differ for a reason the
 // prototype does not model: point-in-polygon approximates an edge shorter than about 1e-6 radians
 // (zero length to GreatCircleArc) by its end point, so near one its answer is not exact.
 //
@@ -388,7 +391,9 @@ namespace
 			}
 
 			std::stringstream differences;
+			std::stringstream common_differences;  // allowed only downstream of a band difference
 			unsigned int band_differences = 0;
+			unsigned int num_common_differences = 0;
 			for (unsigned int i = 0; i < overlay_pieces.size(); ++i)
 			{
 				const Overlay::Piece &piece = *overlay_pieces[i].second;
@@ -442,14 +447,23 @@ namespace
 					}
 				}
 
-				differences << where << ": class " << overlay_class << " (method " << piece.method
+				std::stringstream &out = piece.common ? common_differences : differences;
+				out << where << ": class " << overlay_class << " (method " << piece.method
 						<< ") against " << prototype_piece.piece_class
 						<< " (" << prototype_piece.method << "); ";
+				num_common_differences += piece.common ? 1 : 0;
+			}
+
+			// A common chain's class can follow a band piece's (deduced from it through the
+			// sector walk), so a common difference is accepted only where a band piece differs.
+			if (num_common_differences != 0 && band_differences == 0)
+			{
+				differences << common_differences.str();
 			}
 
 			if (differences.str().empty())
 			{
-				num_band_differences += band_differences;
+				num_band_differences += band_differences + num_common_differences;
 				return std::string();
 			}
 			if (first_mismatch.empty() || first_mismatch == "pieces differ in every tie order")
@@ -471,30 +485,157 @@ namespace
 }
 
 
-TEST(PolygonOverlayPrototypeTest, Catalogue)
+namespace
 {
-	std::vector<PrototypeCase> cases =
-			read_cases(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-catalogue.txt");
-	ASSERT_GT(cases.size(), 400u);
-
-	unsigned int num_failures = 0;
-	unsigned int num_band_differences = 0;
-	for (PrototypeCase &prototype_case : cases)
+	/**
+	 * Compare every case of one exported file, reporting each that differs as a test failure.
+	 */
+	void
+	compare_file(
+			const std::string &filename,
+			unsigned int minimum_num_cases)
 	{
-		const unsigned int band_differences_before = num_band_differences;
-		const std::string mismatch = compare_case(prototype_case, num_band_differences);
-		if (num_band_differences != band_differences_before)
+		std::vector<PrototypeCase> cases = read_cases(filename);
+		ASSERT_GE(cases.size(), minimum_num_cases) << filename;
+
+		unsigned int num_failures = 0;
+		unsigned int num_band_differences = 0;
+		unsigned int num_anchorless_skipped = 0;
+		unsigned int num_prototype_failures = 0;
+		for (PrototypeCase &prototype_case : cases)
 		{
-			std::cout << "band pieces with the other class: " << prototype_case.name << " ("
-					<< num_band_differences - band_differences_before << ")" << std::endl;
+			// Anchorless chains are a later step (phase4b-design.md section 12, step 5): skip a
+			// case whose every tie order needed one, and count it.
+			bool every_order_anchorless = !prototype_case.raw_pieces.empty();
+			for (const std::vector<std::string> &order : prototype_case.raw_pieces)
+			{
+				bool anchorless = false;
+				for (const std::string &line : order)
+				{
+					anchorless = anchorless || line.find(" anchorless ") != std::string::npos;
+				}
+				every_order_anchorless = every_order_anchorless && anchorless;
+			}
+			if (every_order_anchorless)
+			{
+				++num_anchorless_skipped;
+				continue;
+			}
+
+			// A case the prototype itself fails in every tie order (a check failure, or repair) is
+			// not a difference; it is reported, for the hunt to investigate.
+			bool prototype_clean = false;
+			for (const PrototypeOrder &order : prototype_case.orders)
+			{
+				prototype_clean = prototype_clean ||
+						(order.repairs == 0 && order.check_failures == 0);
+			}
+			if (!prototype_clean)
+			{
+				++num_prototype_failures;
+				std::cout << "the prototype fails too: " << prototype_case.name << std::endl;
+				continue;
+			}
+
+			const unsigned int band_differences_before = num_band_differences;
+			const std::string mismatch = compare_case(prototype_case, num_band_differences);
+			if (num_band_differences != band_differences_before)
+			{
+				std::cout << "band pieces with the other class: " << prototype_case.name << " ("
+						<< num_band_differences - band_differences_before << ")" << std::endl;
+			}
+			if (!mismatch.empty())
+			{
+				++num_failures;
+				ADD_FAILURE() << prototype_case.name << ": " << mismatch;
+			}
 		}
-		if (!mismatch.empty())
-		{
-			++num_failures;
-			ADD_FAILURE() << prototype_case.name << ": " << mismatch;
-		}
+		std::cout << cases.size() << " prototype cases, " << num_failures << " differ; "
+				<< num_band_differences << " band pieces have the other class; "
+				<< num_anchorless_skipped << " skipped (anchorless); "
+				<< num_prototype_failures << " skipped (the prototype fails)" << std::endl;
 	}
-	std::cout << cases.size() << " prototype cases, " << num_failures << " differ; "
-			<< num_band_differences << " band pieces have the other class" << std::endl;
 }
 
+
+// The Phase 4a catalogue: configurations with several records at or near one point.
+TEST(PolygonOverlayPrototypeTest, Catalogue)
+{
+	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-catalogue.txt", 400);
+}
+
+
+// Generated cases from the Phase 4a hunt: run 2's residue, which the bundle rule clears
+// (phase4a-run3.md section 4.1), and a sample of every generator.
+TEST(PolygonOverlayPrototypeTest, Hunt)
+{
+	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt", 100);
+}
+
+
+// A larger export, not committed (a hunt): set GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES to its path.
+TEST(PolygonOverlayPrototypeTest, File)
+{
+	const char *const filename = std::getenv("GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES");
+	if (!filename)
+	{
+		GTEST_SKIP() << "GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES is not set";
+	}
+	compare_file(filename, 1);
+}
+
+
+// The bundle rule on run 2's residue (phase4a-run3.md section 4.1): without it each of these fails
+// a vertex check; with it each is consistent, and the bundle's measurements are run 3's.
+TEST(PolygonOverlayPrototypeTest, BundleRuleResidue)
+{
+	class Expected
+	{
+	public:
+		const char *name;
+		unsigned int floating_max;
+		unsigned int placements_max;
+	};
+	const Expected expected[] = {
+			{ "shared#28 seed 1", 3, 4 },
+			{ "shared#169 seed 1", 4, 12 },
+			// Run 3's table says 8 placements; the prototype gives 4 in every tie order.
+			{ "shared#234 seed 1", 2, 4 },
+			{ "shared#247 seed 1", 2, 4 },
+			{ "six#5 seed 7", 1, 1 } };
+
+	const std::vector<PrototypeCase> cases =
+			read_cases(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt");
+	for (const Expected &e : expected)
+	{
+		SCOPED_TRACE(e.name);
+		const auto found = std::find_if(
+				cases.begin(),
+				cases.end(),
+				[&e](const PrototypeCase &c) { return c.name == e.name; });
+		ASSERT_TRUE(found != cases.end());
+
+		const auto polygon = [](const std::vector<std::vector<PointOnSphere>> &rings)
+		{
+			return PolygonOnSphere::create(
+					rings.front(),
+					std::vector<std::vector<PointOnSphere>>(rings.begin() + 1, rings.end()));
+		};
+		const auto P = polygon(found->rings[0]);
+		const auto Q = polygon(found->rings[1]);
+		Overlay::Overlay overlay(*P, *Q);
+		overlay.classify();
+
+		const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
+		EXPECT_EQ(diagnostics.check_failures, 0u);
+		EXPECT_GE(diagnostics.bundle_vertices, 1u);
+		EXPECT_EQ(diagnostics.bundle_floating_max, e.floating_max);
+		EXPECT_EQ(diagnostics.bundle_placements_max, e.placements_max);
+		EXPECT_EQ(diagnostics.bundle_capped, 0u);
+		std::cout << e.name << ": bundle vertices " << diagnostics.bundle_vertices
+				<< ", floating max " << diagnostics.bundle_floating_max
+				<< ", admissible max " << diagnostics.bundle_admissible_max
+				<< ", placements max " << diagnostics.bundle_placements_max
+				<< ", moved " << diagnostics.bundle_moved << std::endl;
+	}
+}

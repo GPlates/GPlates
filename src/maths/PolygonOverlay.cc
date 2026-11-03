@@ -126,6 +126,13 @@ namespace GPlatesMaths
 
 
 			/**
+			 * The most floating rays at one vertex whose placements are enumerated (more keep the
+			 * measured order; never reached in Phase 4a's 3013 random cases, most was 4).
+			 */
+			const unsigned int BUNDLE_CAP = 6;
+
+
+			/**
 			 * Whether two points are the same stored position, coordinate for coordinate.
 			 *
 			 * PointOnSphere's 'operator==' is not this: it compares the dot product with a
@@ -1085,6 +1092,12 @@ GPlatesMaths::PolygonOverlay::Overlay::build_rays()
 
 		d_diagnostics.max_ends = (std::max)(d_diagnostics.max_ends, num_ends);
 		vertex.rays = sort_rays_anticlockwise(vertex.position, rays);
+
+		// The bundle rule, at six or more ends (the orders depend on geometry only).
+		if (num_ends >= 6)
+		{
+			vertex.bundle = build_bundle(vertex);
+		}
 	}
 }
 
@@ -1233,6 +1246,7 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 		{
 			solution.free_rule = true;
 			solution.consistent = solve_four_end_vertex(vertex, deductions);
+			solution.num_consistent_orders = solution.consistent ? 1 : 0;
 			return solution;
 		}
 	}
@@ -1273,12 +1287,19 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 		}
 	}
 
-	// The orders to try: the measured order (the bundle rule adds others at six or more ends).
-	std::vector<std::vector<unsigned int>> orders(1, std::vector<unsigned int>(num_rays));
-	for (unsigned int i = 0; i < num_rays; ++i)
+	// The orders to try: the measured order, or at six or more ends the bundle rule's admissible
+	// orders (the measured one first).
+	std::vector<std::vector<unsigned int>> measured_only;
+	if (!vertex.bundle)
 	{
-		orders[0][i] = i;
+		measured_only.assign(1, std::vector<unsigned int>(num_rays));
+		for (unsigned int i = 0; i < num_rays; ++i)
+		{
+			measured_only[0][i] = i;
+		}
 	}
+	const std::vector<std::vector<unsigned int>> &orders =
+			vertex.bundle ? vertex.bundle->orders : measured_only;
 
 	// For each order, the prefix parities, and the starts (memberships of the sector after the
 	// order's first ray) that meet every constraint.
@@ -1346,8 +1367,52 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 		return solution;
 	}
 
-	// The order used for pairing: the measured one (the bundle rule's tie-break chooses otherwise).
-	const unsigned int chosen = 0;
+	//
+	// The order used for pairing, among the consistent ones: the one with the fewest inversions
+	// (Kendall distance) against the measured order, ties by enumeration order (phase4b-design.md
+	// section 3.8, step 3). Unbundled, the measured order is the only one.
+	//
+	std::vector<unsigned int> consistent_orders;
+	for (const OrderSolution &order_solution : solutions)
+	{
+		if (consistent_orders.empty() || consistent_orders.back() != order_solution.order)
+		{
+			consistent_orders.push_back(order_solution.order);
+		}
+	}
+	const auto inversions = [num_rays](const std::vector<unsigned int> &order)
+	{
+		// Linearised from the measured order's first ray (ray 0), whose own order is 0, 1, 2, ...
+		const unsigned int start = std::find(order.begin(), order.end(), 0u) - order.begin();
+		unsigned int count = 0;
+		for (unsigned int i = 0; i < num_rays; ++i)
+		{
+			for (unsigned int j = i + 1; j < num_rays; ++j)
+			{
+				if (order[(start + i) % num_rays] > order[(start + j) % num_rays])
+				{
+					++count;
+				}
+			}
+		}
+		return count;
+	};
+	unsigned int chosen = consistent_orders.front();
+	if (vertex.bundle && consistent_orders.size() > 1)
+	{
+		unsigned int fewest = inversions(orders[chosen]);
+		for (unsigned int o : consistent_orders)
+		{
+			const unsigned int count = inversions(orders[o]);
+			if (count < fewest)
+			{
+				fewest = count;
+				chosen = o;
+			}
+		}
+	}
+	solution.num_consistent_orders = consistent_orders.size();
+	solution.moved = (chosen != 0);
 
 	if (deductions)
 	{
@@ -1615,9 +1680,27 @@ GPlatesMaths::PolygonOverlay::Overlay::classify()
 	// The checks: every vertex must have a consistent placement of its sectors' memberships.
 	for (unsigned int v = 0; v < d_vertices.size(); ++v)
 	{
-		if (!solve_vertex(v).consistent)
+		const VertexSolution solution = solve_vertex(v);
+		if (!solution.consistent)
 		{
 			++d_diagnostics.check_failures;
+		}
+
+		const boost::optional<Bundle> &bundle = d_vertices[v].bundle;
+		if (bundle && !bundle->floating.empty())
+		{
+			const unsigned int num_floating = bundle->floating.size();
+			const unsigned int num_orders = bundle->orders.size();
+			++d_diagnostics.bundle_vertices;
+			d_diagnostics.bundle_floating_max =
+					(std::max)(d_diagnostics.bundle_floating_max, num_floating);
+			d_diagnostics.bundle_admissible_max =
+					(std::max)(d_diagnostics.bundle_admissible_max, num_orders);
+			d_diagnostics.bundle_placements_max =
+					(std::max)(d_diagnostics.bundle_placements_max, solution.num_consistent_orders);
+			d_diagnostics.bundle_ambiguous += solution.num_consistent_orders > 1 ? 1 : 0;
+			d_diagnostics.bundle_capped += bundle->capped ? 1 : 0;
+			d_diagnostics.bundle_moved += solution.moved ? 1 : 0;
 		}
 	}
 
@@ -1737,4 +1820,248 @@ GPlatesMaths::PolygonOverlay::Overlay::dump(
 				<< " " << methods[piece.method]
 				<< (piece.common ? " common" : "") << (piece.internal ? " internal" : "") << "\n";
 	}
+}
+
+
+GPlatesMaths::PolygonOverlay::Bundle
+GPlatesMaths::PolygonOverlay::Overlay::build_bundle(
+		const Vertex &vertex)
+{
+	const std::vector<Ray> &rays = vertex.rays;
+	const unsigned int num_rays = rays.size();
+
+	Bundle bundle;
+	std::vector<unsigned int> measured(num_rays);
+	for (unsigned int i = 0; i < num_rays; ++i)
+	{
+		measured[i] = i;
+	}
+
+	//
+	// Anchored and floating rays (phase4b-design.md section 3.8, step 1). In order of certainty
+	// (smallest cone, then largest reach; ties in measured order), a ray is anchored if, against
+	// every ray already anchored, the angle between their directions is at least the sum of their
+	// cones, so that no admissible position of one can pass the other. A ray with no direction
+	// floats. Rounded: a flip at the margin moves one ray between anchored and floating, which
+	// either changes nothing or offers a swap across a neighbour it cannot be told from.
+	//
+	std::vector<unsigned int> certainty = measured;
+	std::stable_sort(
+			certainty.begin(),
+			certainty.end(),
+			[&rays](unsigned int a, unsigned int b)
+			{
+				if (rays[a].cone != rays[b].cone)
+				{
+					return rays[a].cone < rays[b].cone;
+				}
+				return rays[a].reach > rays[b].reach;
+			});
+
+	std::vector<UnitVector3D> directions;
+	directions.reserve(num_rays);
+	for (const Ray &ray : rays)
+	{
+		directions.push_back(
+				(ray.direction && !ray.direction->is_zero_magnitude())
+						? ray.direction->get_normalisation()
+						: vertex.position.position_vector());  // unused: such a ray floats
+	}
+	const auto has_direction = [&rays](unsigned int r)
+	{
+		return rays[r].direction && !rays[r].direction->is_zero_magnitude();
+	};
+
+	std::vector<unsigned int> anchored_by_certainty;
+	for (unsigned int r : certainty)
+	{
+		bool separable = has_direction(r);
+		for (unsigned int a : anchored_by_certainty)
+		{
+			if (!separable)
+			{
+				break;
+			}
+			const double cones = rays[r].cone + rays[a].cone;
+			if (cones > 0.0 && angle_between(directions[r], directions[a]) < cones)
+			{
+				separable = false;
+			}
+		}
+		(separable ? anchored_by_certainty : bundle.floating).push_back(r);
+	}
+	bundle.anchored = anchored_by_certainty;
+	std::sort(bundle.anchored.begin(), bundle.anchored.end());  // back in the measured cyclic order
+
+	bundle.orders.push_back(measured);
+	if (bundle.floating.empty() || bundle.anchored.empty())
+	{
+		return bundle;
+	}
+	if (bundle.floating.size() > BUNDLE_CAP)
+	{
+		bundle.capped = true;
+		return bundle;
+	}
+
+	//
+	// Admissible orders (step 2). The reference ray is the most certain anchored one; every ray's
+	// angle about the vertex is measured from it, and its interval is that angle plus or minus its
+	// cone plus the reference's. An order places the floating rays into the gaps between the
+	// anchored rays (which keep their measured order), in any permutation within a gap, such that
+	// the angles can be chosen non-decreasing round the turn, each inside its interval. The
+	// enumeration order is deterministic: gaps in anchored order, floating rays in certainty order,
+	// permutations lexicographic (the prototype's itertools order).
+	//
+	const unsigned int reference = anchored_by_certainty.front();
+	std::vector<unsigned int> anchored = bundle.anchored;
+	std::rotate(
+			anchored.begin(),
+			std::find(anchored.begin(), anchored.end(), reference),
+			anchored.end());
+
+	const UnitVector3D &centre = vertex.position.position_vector();
+	const UnitVector3D &d0 = directions[reference];
+	const UnitVector3D e1 = (Vector3D(d0) - dot(d0, centre) * Vector3D(centre)).get_normalisation();
+	const UnitVector3D e2 = cross(centre, e1).get_normalisation();
+	std::vector<double> angles(num_rays, 0.0);
+	std::vector<double> widths(num_rays);
+	for (unsigned int r = 0; r < num_rays; ++r)
+	{
+		if (r != reference && has_direction(r))
+		{
+			const double angle = std::atan2(
+					dot(directions[r], e2).dval(),
+					dot(directions[r], e1).dval());
+			angles[r] = angle < 0 ? angle + 2 * PI : angle;
+		}
+		widths[r] = rays[r].cone + rays[reference].cone;
+	}
+
+	const auto admissible = [&](const std::vector<unsigned int> &order)
+	{
+		// Greedy earliest position, which is complete for interval feasibility; order[0] is the
+		// reference, at angle 0. A width of pi or more admits any position.
+		const double two_pi = 2 * PI;
+		double previous = 0.0;
+		for (unsigned int i = 1; i < order.size(); ++i)
+		{
+			const unsigned int r = order[i];
+			if (widths[r] >= PI)
+			{
+				continue;
+			}
+			bool placed = false;
+			for (double shift : { -two_pi, 0.0, two_pi })
+			{
+				const double low = angles[r] - widths[r] + shift;
+				const double high = angles[r] + widths[r] + shift;
+				if (high < previous || low > two_pi)
+				{
+					continue;
+				}
+				const double position = (std::max)(previous, low);
+				if (position <= high && position <= two_pi)
+				{
+					previous = position;
+					placed = true;
+					break;
+				}
+			}
+			if (!placed)
+			{
+				return false;
+			}
+		}
+		return true;
+	};
+
+	const unsigned int num_anchored = anchored.size();
+	const unsigned int num_floating = bundle.floating.size();
+	std::vector<std::vector<unsigned int>> orders;
+	// The gap of each floating ray: gap g is after anchored[g].
+	std::vector<unsigned int> gaps(num_floating, 0);
+	while (true)
+	{
+		std::vector<std::vector<unsigned int>> per_gap(num_anchored);
+		for (unsigned int f = 0; f < num_floating; ++f)
+		{
+			// Positions in the floating list, so that the permutations are lexicographic.
+			per_gap[gaps[f]].push_back(f);
+		}
+
+		// Every combination of a permutation per gap, the first gap's outermost.
+		std::vector<std::vector<unsigned int>> permutations = per_gap;
+		while (true)
+		{
+			std::vector<unsigned int> order;
+			for (unsigned int g = 0; g < num_anchored; ++g)
+			{
+				order.push_back(anchored[g]);
+				for (unsigned int f : permutations[g])
+				{
+					order.push_back(bundle.floating[f]);
+				}
+			}
+			if (admissible(order))
+			{
+				orders.push_back(order);
+			}
+
+			// The next combination: advance the last gap's permutation, carrying leftwards.
+			int g = num_anchored - 1;
+			for ( ; g >= 0; --g)
+			{
+				if (std::next_permutation(permutations[g].begin(), permutations[g].end()))
+				{
+					break;
+				}
+				// next_permutation has reset this gap to its first permutation.
+			}
+			if (g < 0)
+			{
+				break;
+			}
+		}
+
+		// The next gap assignment, the last floating ray varying fastest.
+		int f = num_floating - 1;
+		for ( ; f >= 0; --f)
+		{
+			if (++gaps[f] < num_anchored)
+			{
+				break;
+			}
+			gaps[f] = 0;
+		}
+		if (f < 0)
+		{
+			break;
+		}
+	}
+
+	// The measured order first (it is always admissible), so that index 0 means "unchanged".
+	const auto is_measured = [num_rays](const std::vector<unsigned int> &order)
+	{
+		const unsigned int start = std::find(order.begin(), order.end(), 0u) - order.begin();
+		for (unsigned int i = 0; i < num_rays; ++i)
+		{
+			if (order[(start + i) % num_rays] != i)
+			{
+				return false;
+			}
+		}
+		return true;
+	};
+	const auto measured_order = std::find_if(orders.begin(), orders.end(), is_measured);
+	if (measured_order == orders.end())
+	{
+		orders.insert(orders.begin(), measured);
+	}
+	else
+	{
+		std::iter_swap(orders.begin(), measured_order);
+	}
+	bundle.orders = orders;
+	return bundle;
 }

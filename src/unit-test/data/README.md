@@ -32,6 +32,7 @@ Nothing in this directory is installed or packaged. It exists only to be read by
 | `flowline/` | `FlowlineUtilsTest.cc` |
 | `gsml/` | `GeoscimlReaderTest.cc` |
 | `polygon-overlay/prototype-catalogue.txt` | `PolygonOverlayPrototypeTest.cc` (a frozen snapshot from the overlay's prototype, kept outside this repository; the test's header describes it) |
+| `polygon-overlay/prototype-hunt.txt` | `PolygonOverlayPrototypeTest.cc` (likewise: cases from the prototype's random generators) |
 
 **Everything else is not yet referenced by any test.** It arrived on 2026-08-11 from the old
 top-level `sample-data/` directory, which nothing in the build, the installer or the test suite
