@@ -354,10 +354,28 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     `zigzag-ll m=3 vertex`, no bundle at either. **Needs a prototype investigation (run 4, Fable)**
     before the core is final; whether before step 6 (repair) is the developer's call.
 
+- 2026-11-04: **Phase 4a run 4 done** (Fable, high effort; `phase4a-run4.md`; tools at planning
+  `d48d252`). The `chain` failures (19 of 2393 cases over eight seeds under `bnd`) all fail at a vertex
+  of six or more ends where **one polygon passes once** and the other two or more times within `h`, and
+  the rotational order is trusted where it carries no information: a crossing counted at both ends of a
+  band arc (A), a long ray inside a `2h` common ray's `11` to `32` degree direction gap (B; also with a
+  simple, non-self-crossing subject), a corner cut off by the spike rule where the other polygon crosses
+  the tip (C). **Proposed (`CONFIGS['r4t']`): the one-passage rule** (run 4 section 3.1: at such a
+  vertex the order is not consulted; `m_in(b) = m_in(a) xor` the number of the other polygon's rays
+  inside, mod 2; the linking order is built from the classes), **and the spike rule only where the
+  other polygon passes the tip at most once** (3.3). The bundle rule then applies only where both pass
+  more than once. Measured clean over every generator at run 3's sizes, the catalogue (output
+  identical to `bnd`), cascade, anchorless and cut; clean outputs change in slivers within `0.52h`.
+  **Session check:** the twelve listed cases fail under `bnd` and pass under `r4t` (by the exporter, a
+  different code path from the hunt's); on fresh seeds 9 to 12 `bnd` fails one (`chain#30` seed 11,
+  `O695` by the hunt's oracle) and `r4t` none; `bnd` re-exports byte-identical to the committed
+  snapshots. **Checkpoint:** the developer adopts `r4t` or `r4n` (no spike rule; run 4 open question 1),
+  then the design (run 4 section 7) and the C++ change, before step 5.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
-    are done (Status, 2026-11-04). Open: the `chain` failures (run 4). Then step 5 (anchorless
+    are done (Status, 2026-11-04). Open: adopting run 4's rule (Status, run 4 entry). Then step 5 (anchorless
     chains) and 6 (repair and `InconsistentOverlayException`). The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
