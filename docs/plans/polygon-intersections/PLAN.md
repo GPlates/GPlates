@@ -294,12 +294,49 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   coverage form is decided in PR C, with some merit seen in keeping coverages at the feature level
   only. **Phase 5 started.**
 
-- **Resume here** (updated 2026-10-31):
+- 2026-11-04: **Phase 5 steps 1 to 3 done** (`phase4b-design.md` section 12): `src/maths/PolygonOverlay.{h,cc}`
+  (GPlates-only until the partitioner includes it), with `PolygonOverlayTest` (23 cases) and
+  `PolygonOverlayPrototypeTest`. Step 1 `996d48f29` (vertices, stops, pieces), step 2 `56d2a62f2` (loop
+  and spike rules, common pairs, rays), step 3 `da06e8537` (classification and checks). The prototype
+  comparison (design 11.2) runs now, a step early: the planning repository's `overlay_export.py` writes
+  the catalogue under `bnd` with option 3, and **all 463 cases agree record for record, piece for piece
+  and class for class**. Found on the way:
+  - `PointOnSphere::operator==` is not exact: it compares the dot product with `real_t`'s `1e-12`, so
+    points about `1.4e-6` rad (the thickness) apart compare equal. The overlay compares coordinates
+    exactly (the cone's "starts at the output position", and later clean-up's repeated positions).
+  - **The tie orders the prototype did not have.** `GeometryIntersect` sorts by a cosine in doubles, so
+    records whose cosines agree within a few ulps come out in either order where the prototype's exact
+    keys see no tie (`d4 phi=90 lone`: two touches projecting to one point; `twist edge` at `d = -1` and `-4` ulp). The
+    exporter groups those as ties; both orders pass.
+  - **Point-in-polygon is not exact near a zero-length edge.** `GreatCircleArc` calls an arc shorter
+    than about `1e-6` rad zero length (`magSqrd() <= 0` in `real_t`), and `PointInPolygon.cc:367`
+    approximates such an edge's crossing by its end point, so the answer within about the edge's
+    length of it can be wrong (measured: a point `0.019h` inside `P` called outside at every speed).
+    `minimum_distance` is likewise off there (`0.13h` against `0.019h`). A vertex in no record is more
+    than `h` from the outline, outside that zone, so only band pieces are affected; but walk-through
+    section 3's "exact, a flip needs the input within rounding" is false near such edges. For the design
+    doc's tolerances section.
+  - **Margins tie at the cosine resolution.** `minimum_distance` resolves about `1e-8` rad (`0.01h`)
+    near an outline, so two band pieces' margins can tie and the first in piece order is tested. Both
+    are band pieces, as the design argued. A sine-based distance would order them; only if the hunt
+    shows it matters.
+  - 39 band pieces, all in `d4 hole-between` (13 cases), take the other class from the prototype. The
+    comparison accepts a band piece (a single arc within `2h` of the other outline) whatever its
+    method, since one deduced from another band piece is arbitrary too. Step 7's output oracle is what
+    must confirm these.
+  - **Open (for the developer):** the prototype, the exporter and the hunt tools are in the private
+    planning repository, but the committed test data and its comments name them. Before PR B: move the
+    tools into this repository (they are the reference the C++ is checked against), or describe them
+    in the test without a path.
+  Next: step 4, the bundle rule.
+
+- **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
-  - **PR B**: Phase 4b started 2026-10-31, in the four steps under *Phases*. Step 1 (Fable,
-    prototype run 3: the bundle rule and polylines) and step 2 (Opus, consumer survey) run
-    together. The core is decided (V1b, the spike rule, the `LL` rule, margin-ordered midpoint
-    tests, option 3 for anchorless chains).
+  - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 3
+    are done (Status, 2026-11-04). Next is step 4, the bundle rule, then 5 (anchorless chains) and 6
+    (repair and `InconsistentOverlayException`). The prototype comparison is
+    `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
+    prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries
     above).* Phases 0 to 2 are done and claim-checked. **Algorithm chosen: (b), the overlay**
     (developer, 2026-10-25). The walk-through of requirements §3.3 is complete
