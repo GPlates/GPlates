@@ -227,6 +227,63 @@ namespace
 
 
 	/**
+	 * The classes of one ring's non-internal pieces, sorted, as the prototype's report writes them:
+	 * "in", "out", "same" or "opposite" ("?" if unclassified).
+	 */
+	std::string
+	ring_classes(
+			const Overlay::Overlay &overlay,
+			Overlay::Side side,
+			unsigned int ring_index)
+	{
+		std::vector<std::string> classes;
+		for (const Overlay::Piece *piece : ring_pieces(overlay, side, ring_index))
+		{
+			if (piece->internal)
+			{
+				continue;
+			}
+			if (piece->common)
+			{
+				classes.push_back(
+						piece->common_class == Overlay::COMMON_SAME_SIDE ? "same" :
+						(piece->common_class == Overlay::COMMON_OPPOSITE_SIDES ? "opposite" : "?"));
+			}
+			else
+			{
+				classes.push_back(
+						piece->piece_class == Overlay::CLASS_INSIDE ? "in" :
+						(piece->piece_class == Overlay::CLASS_OUTSIDE ? "out" : "?"));
+			}
+		}
+		std::sort(classes.begin(), classes.end());
+
+		std::string result;
+		for (const std::string &piece_class : classes)
+		{
+			result += (result.empty() ? "" : " ") + piece_class;
+		}
+		return result;
+	}
+
+
+	/**
+	 * Classify, and check what every classified overlay must satisfy: no check failure and no
+	 * unresolved piece.
+	 */
+	Overlay::Result
+	classify_and_check(
+			Overlay::Overlay &overlay)
+	{
+		const Overlay::Result result = overlay.classify();
+		EXPECT_EQ(overlay.get_diagnostics().check_failures, 0u);
+		EXPECT_EQ(overlay.get_diagnostics().unresolved_pieces, 0u);
+		EXPECT_EQ(overlay.get_diagnostics().piece_side_disagreements, 0u);
+		return result;
+	}
+
+
+	/**
 	 * The structural invariants every overlay must satisfy, whatever the input.
 	 */
 	void
@@ -831,4 +888,203 @@ TEST(PolygonOverlayTest, SpikeRule)
 		}
 	}
 	EXPECT_EQ(num_internal_clip_pieces, 2u);
+}
+
+
+
+//
+// Classification (phase4b-design.md section 3.7). The expected classes are the prototype's for the
+// same catalogue cases ('overlay_catalogue.py --config bnd --verbose').
+//
+
+// Two squares overlapping at a corner: each ring has one piece inside the other square and one
+// outside, all by vertex tests.
+TEST(PolygonOverlayTest, ClassifyTwoSquares)
+{
+	const auto P = polygon(square(-0.02, -0.02, 0.005, 0.005));
+	const auto Q = polygon(square(-0.005, -0.005, 0.02, 0.02));
+	Overlay::Overlay overlay(*P, *Q);
+	EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INTERSECTING);
+
+	EXPECT_EQ(ring_classes(overlay, Overlay::SUBJECT, 0), "in out");
+	EXPECT_EQ(ring_classes(overlay, Overlay::CLIP, 0), "in out");
+	EXPECT_EQ(overlay.get_diagnostics().vertex_tests, 4u);
+	EXPECT_EQ(overlay.get_diagnostics().deduced, 0u);
+	EXPECT_EQ(overlay.get_diagnostics().midpoint_tests, 0u);
+}
+
+
+// No record (doc 5.1's first bug): the clip wholly inside the subject is a ring inside it, so the
+// subject is cut (a hole in the difference), not passed whole to the outside.
+TEST(PolygonOverlayTest, ClassifyClipInsideSubject)
+{
+	const auto P = polygon(square(-0.02, -0.02, 0.02, 0.02));
+	const auto Q = polygon(square(-0.005, -0.005, 0.005, 0.005));
+	Overlay::Overlay overlay(*P, *Q);
+	EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INTERSECTING);
+
+	EXPECT_EQ(ring_classes(overlay, Overlay::SUBJECT, 0), "out");
+	EXPECT_EQ(ring_classes(overlay, Overlay::CLIP, 0), "in");
+}
+
+
+// The subject wholly inside the clip, and wholly outside it: the whole subject is one class.
+TEST(PolygonOverlayTest, ClassifyWhole)
+{
+	const auto inner = polygon(square(-0.005, -0.005, 0.005, 0.005));
+	const auto outer = polygon(square(-0.02, -0.02, 0.02, 0.02));
+	const auto far = polygon(square(0.03, 0.03, 0.04, 0.04));
+	{
+		Overlay::Overlay overlay(*inner, *outer);
+		EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INSIDE);
+	}
+	{
+		Overlay::Overlay overlay(*far, *outer);
+		EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_OUTSIDE);
+	}
+}
+
+
+// The clip crosses only the subject's hole (doc 5.1's second bug): the hole's piece inside the
+// clip is deduced across a crossing (the LL rule), the exterior is outside.
+TEST(PolygonOverlayTest, ClassifyHoleCrossedOnly)
+{
+	const auto P = polygon(
+			square(-0.02, -0.02, 0.02, 0.02),
+			{ square(-0.005, -0.005, 0.005, 0.005) });
+	const auto Q = polygon(square(-0.002, -0.002, 0.002, 0.01));
+	Overlay::Overlay overlay(*P, *Q);
+	EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INTERSECTING);
+
+	EXPECT_EQ(ring_classes(overlay, Overlay::SUBJECT, 0), "out");
+	EXPECT_EQ(ring_classes(overlay, Overlay::SUBJECT, 1), "in out");
+	EXPECT_EQ(ring_classes(overlay, Overlay::CLIP, 0), "in out");
+	EXPECT_EQ(overlay.get_diagnostics().deduced, 1u);
+}
+
+
+// The clip's apex on the subject's edge (walk-through 6.4's case): one touch, four ends, the free
+// rule; the clip is inside, the subject outside it.
+TEST(PolygonOverlayTest, ClassifyApexOnEdge)
+{
+	const auto P = polygon(square(-0.02, -0.02, 0.02, 0.02));
+	const auto Q = polygon(ring_type{ F.at(0.0, 0.02), F.at(0.01, 0.0), F.at(-0.01, 0.0) });
+	Overlay::Overlay overlay(*P, *Q);
+	EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INTERSECTING);
+
+	EXPECT_EQ(record_kinds(overlay), "LS");
+	EXPECT_EQ(ring_classes(overlay, Overlay::SUBJECT, 0), "out");
+	EXPECT_EQ(ring_classes(overlay, Overlay::CLIP, 0), "in");
+}
+
+
+// The acute wedge: six ends at one vertex, the sector walk on the measured order; the clip's tip
+// (x, apex, x) lies outside the subject.
+TEST(PolygonOverlayTest, ClassifyAcuteWedge)
+{
+	const double half_angle = 15.0 * 3.14159265358979323846 / 180.0;
+	const double L = 0.02;
+	const double r = 2.0 * H;
+	const auto Q = polygon(ring_type{
+			F.at(0.0, 0.0),
+			F.at(-L * std::sin(half_angle), -L * std::cos(half_angle)),
+			F.at(0.0, -1.5 * L),
+			F.at(L * std::sin(half_angle), -L * std::cos(half_angle)) });
+	const auto P = polygon(ring_type{
+			F.at(-0.04, -r), F.at(0.0, -r), F.at(0.04, -r),
+			F.at(0.04, -0.05), F.at(-0.04, -0.05) });
+	Overlay::Overlay overlay(*P, *Q);
+	EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INTERSECTING);
+
+	EXPECT_EQ(ring_classes(overlay, Overlay::SUBJECT, 0), "out");
+	EXPECT_EQ(ring_classes(overlay, Overlay::CLIP, 0), "in out");
+	for (const Overlay::Piece *piece : ring_pieces(overlay, Overlay::CLIP, 0))
+	{
+		if (overlay.get_piece_points(*piece).size() == 3)
+		{
+			EXPECT_EQ(piece->piece_class, Overlay::CLASS_OUTSIDE);  // the tip
+		}
+	}
+}
+
+
+// Neighbouring plates sharing an edge: the common pair is opposite sides (by the sector walk), and
+// the rest of each is outside the other, so the subject is wholly outside.
+TEST(PolygonOverlayTest, ClassifySharedEdge)
+{
+	for (double d : { 0.0, 0.5 * H, 2.0 * H })
+	{
+		SCOPED_TRACE(d / H);
+		const auto P = polygon(square(-0.02, -0.01, 0.0, 0.01));
+		const auto Q = polygon(square(d, -0.01, 0.02, 0.01));
+		Overlay::Overlay overlay(*P, *Q);
+		EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_OUTSIDE);
+		if (d <= H)
+		{
+			EXPECT_EQ(ring_classes(overlay, Overlay::SUBJECT, 0), "opposite out");
+			EXPECT_EQ(ring_classes(overlay, Overlay::CLIP, 0), "opposite out");
+		}
+	}
+
+	// The clip inside the subject, sharing its east edge: the common pair is same side, and the
+	// subject is cut.
+	for (double d : { 0.0, 0.5 * H })
+	{
+		SCOPED_TRACE(d / H);
+		const auto P = polygon(square(-0.02, -0.02, 0.02, 0.02));
+		const auto Q = polygon(square(0.005, -0.005, 0.02 - d, 0.005));
+		Overlay::Overlay overlay(*P, *Q);
+		EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INTERSECTING);
+		EXPECT_EQ(overlay.get_diagnostics().common_pairs, 1u);
+		EXPECT_EQ(ring_classes(overlay, Overlay::CLIP, 0), "in same");
+	}
+}
+
+
+// A narrow neck of the clip (catalogue 4.5): a subject apex x in a neck narrower than the
+// thickness touches both its sides; the clip's piece round the far side is outside the subject.
+TEST(PolygonOverlayTest, ClassifyNeck)
+{
+	for (double w : { 0.5 * H, 1.0 * H, 1.5 * H, 1.9 * H, 2.5 * H, 4.0 * H })
+	{
+		for (double apex : { 0.0, 0.2 * w })
+		{
+			SCOPED_TRACE(w / H);
+			SCOPED_TRACE(apex / H);
+			const auto Q = polygon(ring_type{
+					F.at(-0.02, 0.02), F.at(-w / 2, 0.005),
+					F.at(-w / 2, -0.005), F.at(-0.02, -0.02),
+					F.at(0.02, -0.02), F.at(w / 2, -0.005), F.at(w / 2, 0.005), F.at(0.02, 0.02) });
+			const auto P = polygon(
+					ring_type{ F.at(apex, 0.0), F.at(0.03, 0.01), F.at(-0.03, 0.01) });
+			Overlay::Overlay overlay(*P, *Q);
+			EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INTERSECTING);
+		}
+	}
+}
+
+
+// The T-intersection (walk-through section 3): the subject's edge A-B passes just above the
+// clip's corner and touches its top edge at B. A test at the longest arc's midpoint could fall
+// within rounding of the clip; the vertex tests decide both rings, outside each other.
+TEST(PolygonOverlayTest, ClassifyTIntersection)
+{
+	const auto Q = polygon(ring_type{
+			F.at(0.0, 0.0), F.at(0.03, 0.0), F.at(0.03, -0.03), F.at(0.0, -0.03) });
+	const double a = -0.003;
+	const double b = 0.01;
+	for (double yC : { 1.1 * H, 2.0 * H, 10.0 * H })
+	{
+		for (double delta : { -0.9 * H, 0.0, 0.5 * H, 0.9 * H })
+		{
+			SCOPED_TRACE(yC / H);
+			SCOPED_TRACE(delta / H);
+			const double yA = (yC * (b - a) + delta * (-a)) / b;
+			const auto P = polygon(ring_type{ F.at(a, yA), F.at(b, -delta), F.at(b, 0.02) });
+			Overlay::Overlay overlay(*P, *Q);
+			EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_OUTSIDE);
+			EXPECT_EQ(ring_classes(overlay, Overlay::SUBJECT, 0), "out");
+			EXPECT_EQ(ring_classes(overlay, Overlay::CLIP, 0), "out");
+		}
+	}
 }

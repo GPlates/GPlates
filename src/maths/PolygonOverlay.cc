@@ -26,11 +26,13 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <ostream>
 #include <unordered_map>
 #include <utility>
 
 #include "PolygonOverlay.h"
 
+#include "GeometryDistance.h"
 #include "MathsUtils.h"
 #include "UnitVector3D.h"
 #include "Vector3D.h"
@@ -1087,5 +1089,654 @@ GPlatesMaths::PolygonOverlay::Overlay::build_rays()
 
 		d_diagnostics.max_ends = (std::max)(d_diagnostics.max_ends, num_ends);
 		vertex.rays = sort_rays_anticlockwise(vertex.position, rays);
+	}
+}
+
+
+bool
+GPlatesMaths::PolygonOverlay::Overlay::is_inside_other(
+		Side side,
+		const PointOnSphere &point) const
+{
+	// Threshold off: a test point of a piece is either an original vertex in no record (so more
+	// than the thickness from the other input's outline, about 1e10 times point-in-polygon's
+	// rounding) or a midpoint tested in order of margin.
+	return side == SUBJECT
+			? d_clip.is_point_in_polygon(
+					point,
+					d_options.clip_speed,
+					false/*use_point_on_polygon_threshold*/)
+			: d_subject_polygon->is_point_in_polygon(
+					point,
+					PolygonOnSphere::ADAPTIVE,
+					false/*use_point_on_polygon_threshold*/);
+}
+
+
+bool
+GPlatesMaths::PolygonOverlay::Overlay::solve_four_end_vertex(
+		const Vertex &vertex,
+		std::vector<Deduction> *deductions) const
+{
+	//
+	// The geometry-free rule (phase4b-design.md section 3.7.1, case 1): with four ends, two of
+	// each input and none common, nothing needs the rotational order, which at a snapped touch
+	// can disagree with the topology the records encode.
+	//
+	std::vector<unsigned int> side_pieces[2];
+	for (const Ray &ray : vertex.rays)
+	{
+		if (ray.subject_end)
+		{
+			side_pieces[SUBJECT].push_back(ray.subject_end->piece);
+		}
+		else
+		{
+			side_pieces[CLIP].push_back(ray.clip_end->piece);
+		}
+	}
+
+	const auto known = [this](unsigned int piece)
+	{
+		return d_pieces[piece].piece_class != CLASS_UNKNOWN;
+	};
+	const auto inside = [this](unsigned int piece)
+	{
+		return d_pieces[piece].piece_class == CLASS_INSIDE;
+	};
+
+	const bool is_crossing_record = vertex.num_records == 1 &&
+			d_graph.unordered_intersections[d_vertex_records[vertex.first_record]].type ==
+					GeometryIntersect::Intersection::SEGMENTS_CROSS;
+	if (is_crossing_record)
+	{
+		// One crossing record: both arcs' ends lie beyond the thickness on opposite sides, so each
+		// input's two classes differ. One known class fixes its own input's other class only.
+		for (const std::vector<unsigned int> &pieces : side_pieces)
+		{
+			const bool known0 = known(pieces[0]);
+			const bool known1 = known(pieces[1]);
+			if (known0 && known1)
+			{
+				if (inside(pieces[0]) == inside(pieces[1]))
+				{
+					return false;
+				}
+			}
+			else if (deductions && (known0 || known1))
+			{
+				const unsigned int known_piece = known0 ? pieces[0] : pieces[1];
+				const unsigned int unknown_piece = known0 ? pieces[1] : pieces[0];
+				deductions->push_back(
+						Deduction{unknown_piece, !inside(known_piece), METHOD_DEDUCED});
+			}
+		}
+		return true;
+	}
+
+	// Touch records: each input crosses iff its two classes differ, and the two must agree. Three
+	// known classes fix the fourth.
+	const auto num_known_of = [&](Side side)
+	{
+		return static_cast<unsigned int>(known(side_pieces[side][0])) +
+				static_cast<unsigned int>(known(side_pieces[side][1]));
+	};
+	const unsigned int num_known[2] = { num_known_of(SUBJECT), num_known_of(CLIP) };
+	const auto crosses = [&](Side side)
+	{
+		return inside(side_pieces[side][0]) != inside(side_pieces[side][1]);
+	};
+
+	if (num_known[SUBJECT] == 2 && num_known[CLIP] == 2)
+	{
+		return crosses(SUBJECT) == crosses(CLIP);
+	}
+
+	for (Side known_side : { SUBJECT, CLIP })
+	{
+		const Side other_side = (known_side == SUBJECT) ? CLIP : SUBJECT;
+		if (num_known[known_side] == 2 && num_known[other_side] == 1 && deductions)
+		{
+			const std::vector<unsigned int> &pieces = side_pieces[other_side];
+			const unsigned int known_piece = known(pieces[0]) ? pieces[0] : pieces[1];
+			const unsigned int unknown_piece = known(pieces[0]) ? pieces[1] : pieces[0];
+			const bool value = crosses(known_side) ? !inside(known_piece) : inside(known_piece);
+			deductions->push_back(Deduction{unknown_piece, value, METHOD_DEDUCED});
+		}
+	}
+	return true;
+}
+
+
+GPlatesMaths::PolygonOverlay::VertexSolution
+GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
+		unsigned int vertex_index,
+		std::vector<Deduction> *deductions) const
+{
+	const Vertex &vertex = d_vertices[vertex_index];
+	const std::vector<Ray> &rays = vertex.rays;
+	const unsigned int num_rays = rays.size();
+
+	VertexSolution solution;
+	if (num_rays == 0)
+	{
+		return solution;
+	}
+
+	// Four ends, two of each input, none common: the geometry-free rule.
+	if (num_rays == 4)
+	{
+		unsigned int num_subject_rays = 0;
+		bool any_common = false;
+		for (const Ray &ray : rays)
+		{
+			num_subject_rays += ray.subject_end ? 1 : 0;
+			any_common = any_common || ray.is_common();
+		}
+		if (!any_common && num_subject_rays == 2)
+		{
+			solution.free_rule = true;
+			solution.consistent = solve_four_end_vertex(vertex, deductions);
+			return solution;
+		}
+	}
+
+	//
+	// The sector walk (phase4b-design.md section 3.7.1, case 2). Each classified ray fixes the
+	// memberships of the two sectors beside it: a subject ray of class c fixes 'in clip = c', a
+	// clip ray fixes 'in subject', a common ray 'in subject xor in clip' (0 same side, 1 opposite).
+	//
+	enum ConstraintKind { NONE, IN_SUBJECT, IN_CLIP, XOR };
+	std::vector<std::pair<ConstraintKind, bool>> constraints(num_rays, std::make_pair(NONE, false));
+	for (unsigned int i = 0; i < num_rays; ++i)
+	{
+		const Ray &ray = rays[i];
+		if (ray.is_common())
+		{
+			const CommonClass common_class = d_pieces[ray.subject_end->piece].common_class;
+			if (common_class != COMMON_UNKNOWN)
+			{
+				constraints[i] = std::make_pair(XOR, common_class == COMMON_OPPOSITE_SIDES);
+			}
+		}
+		else if (ray.subject_end)
+		{
+			const Class piece_class = d_pieces[ray.subject_end->piece].piece_class;
+			if (piece_class != CLASS_UNKNOWN)
+			{
+				constraints[i] = std::make_pair(IN_CLIP, piece_class == CLASS_INSIDE);
+			}
+		}
+		else
+		{
+			const Class piece_class = d_pieces[ray.clip_end->piece].piece_class;
+			if (piece_class != CLASS_UNKNOWN)
+			{
+				constraints[i] = std::make_pair(IN_SUBJECT, piece_class == CLASS_INSIDE);
+			}
+		}
+	}
+
+	// The orders to try: the measured order (the bundle rule adds others at six or more ends).
+	std::vector<std::vector<unsigned int>> orders(1, std::vector<unsigned int>(num_rays));
+	for (unsigned int i = 0; i < num_rays; ++i)
+	{
+		orders[0][i] = i;
+	}
+
+	// For each order, the prefix parities, and the starts (memberships of the sector after the
+	// order's first ray) that meet every constraint.
+	class OrderSolution
+	{
+	public:
+		unsigned int order;
+		bool in_subject;
+		bool in_clip;
+	};
+	std::vector<OrderSolution> solutions;
+	std::vector<std::vector<bool>> prefix_subject(orders.size()), prefix_clip(orders.size());
+	for (unsigned int o = 0; o < orders.size(); ++o)
+	{
+		const std::vector<unsigned int> &order = orders[o];
+		prefix_subject[o].assign(num_rays, false);
+		prefix_clip[o].assign(num_rays, false);
+		for (unsigned int i = 1; i < num_rays; ++i)
+		{
+			prefix_subject[o][i] = prefix_subject[o][i - 1] != rays[order[i]].flips_subject;
+			prefix_clip[o][i] = prefix_clip[o][i - 1] != rays[order[i]].flips_clip;
+		}
+
+		for (bool a : { false, true })
+		{
+			for (bool b : { false, true })
+			{
+				bool ok = true;
+				for (unsigned int i = 0; ok && i < num_rays; ++i)
+				{
+					const std::pair<ConstraintKind, bool> &constraint = constraints[order[i]];
+					if (constraint.first == NONE)
+					{
+						continue;
+					}
+					// The sectors before and after ray i.
+					for (unsigned int sector : { (i + num_rays - 1) % num_rays, i })
+					{
+						const bool in_subject = a != prefix_subject[o][sector];
+						const bool in_clip = b != prefix_clip[o][sector];
+						const bool got = (constraint.first == IN_SUBJECT)
+								? in_subject
+								: (constraint.first == IN_CLIP ? in_clip : in_subject != in_clip);
+						if (got != constraint.second)
+						{
+							ok = false;
+							break;
+						}
+					}
+				}
+				if (ok)
+				{
+					solutions.push_back(OrderSolution{o, a, b});
+				}
+			}
+		}
+	}
+
+	if (solutions.empty())
+	{
+		solution.consistent = false;
+		solution.order = orders[0];
+		solution.in_subject.assign(num_rays, boost::none);
+		solution.in_clip.assign(num_rays, boost::none);
+		return solution;
+	}
+
+	// The order used for pairing: the measured one (the bundle rule's tie-break chooses otherwise).
+	const unsigned int chosen = 0;
+
+	if (deductions)
+	{
+		// A class for an unclassified ray only if every solution agrees on it.
+		for (unsigned int r = 0; r < num_rays; ++r)
+		{
+			const Ray &ray = rays[r];
+			const unsigned int piece =
+					ray.subject_end ? ray.subject_end->piece : ray.clip_end->piece;
+			if (d_pieces[piece].is_classified())
+			{
+				continue;
+			}
+
+			boost::optional<bool> agreed;
+			bool disagree = false;
+			for (const OrderSolution &order_solution : solutions)
+			{
+				const std::vector<unsigned int> &order = orders[order_solution.order];
+				const unsigned int j = std::find(order.begin(), order.end(), r) - order.begin();
+				const unsigned int o = order_solution.order;
+				const bool in_subject = order_solution.in_subject != prefix_subject[o][j];
+				const bool in_clip = order_solution.in_clip != prefix_clip[o][j];
+				const bool value = ray.is_common()
+						? (in_subject == in_clip)  // same side
+						: (ray.subject_end ? in_clip : in_subject);
+				if (agreed && *agreed != value)
+				{
+					disagree = true;
+					break;
+				}
+				agreed = value;
+			}
+			if (!disagree)
+			{
+				deductions->push_back(Deduction{
+						piece,
+						*agreed,
+						ray.is_common() ? METHOD_SECTOR : METHOD_DEDUCED});
+			}
+		}
+	}
+
+	// The memberships of the chosen order's sectors, where its solutions agree.
+	solution.order = orders[chosen];
+	boost::optional<bool> start_subject, start_clip;
+	bool subject_known = true, clip_known = true;
+	for (const OrderSolution &order_solution : solutions)
+	{
+		if (order_solution.order != chosen)
+		{
+			continue;
+		}
+		if (start_subject && *start_subject != order_solution.in_subject)
+		{
+			subject_known = false;
+		}
+		if (start_clip && *start_clip != order_solution.in_clip)
+		{
+			clip_known = false;
+		}
+		start_subject = order_solution.in_subject;
+		start_clip = order_solution.in_clip;
+	}
+	for (unsigned int i = 0; i < num_rays; ++i)
+	{
+		solution.in_subject.push_back(subject_known
+				? boost::optional<bool>(*start_subject != prefix_subject[chosen][i])
+				: boost::none);
+		solution.in_clip.push_back(clip_known
+				? boost::optional<bool>(*start_clip != prefix_clip[chosen][i])
+				: boost::none);
+	}
+
+	return solution;
+}
+
+
+bool
+GPlatesMaths::PolygonOverlay::Overlay::deduce_to_fixed_point()
+{
+	bool any_change = false;
+	bool changed = true;
+	while (changed)
+	{
+		changed = false;
+		for (unsigned int v = 0; v < d_vertices.size(); ++v)
+		{
+			std::vector<Deduction> deductions;
+			solve_vertex(v, &deductions);
+			for (const Deduction &deduction : deductions)
+			{
+				Piece &piece = d_pieces[deduction.piece];
+				if (piece.is_classified())
+				{
+					// Deduced already, from this vertex's other end of the same piece.
+					continue;
+				}
+
+				if (piece.common)
+				{
+					piece.common_class = deduction.inside_or_same_side
+							? COMMON_SAME_SIDE
+							: COMMON_OPPOSITE_SIDES;
+					++d_diagnostics.sector_classes;
+				}
+				else
+				{
+					piece.piece_class =
+							deduction.inside_or_same_side ? CLASS_INSIDE : CLASS_OUTSIDE;
+					++d_diagnostics.deduced;
+				}
+				piece.method = deduction.method;
+				changed = true;
+				any_change = true;
+			}
+		}
+	}
+	return any_change;
+}
+
+
+GPlatesMaths::PolygonOverlay::Result
+GPlatesMaths::PolygonOverlay::Overlay::classify()
+{
+	// A polyline subject is classified by its own rules (phase4b-design.md section 6.1).
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_subject_polygon != nullptr,
+			GPLATES_ASSERTION_SOURCE);
+
+	//
+	// (a) Vertex tests: a non-common piece with an original vertex is classified by exact
+	// point-in-polygon at its first one. In debug builds every one is tested, since two on
+	// different sides mean a crossing with no record.
+	//
+	for (Piece &piece : d_pieces)
+	{
+		if (piece.internal || piece.common || !piece.has_interior_vertex)
+		{
+			continue;
+		}
+
+		const RingView &ring_view = d_rings[piece.ring];
+		std::vector<unsigned int> vertex_stops;
+		if (piece.closed)
+		{
+			for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
+			{
+				vertex_stops.push_back(s);
+			}
+		}
+		else
+		{
+			for (unsigned int s = piece.start_stop; ; )
+			{
+				s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
+				if (s == piece.end_stop)
+				{
+					break;
+				}
+				if (d_stops[s].kind == Stop::ORIGINAL_VERTEX)
+				{
+					vertex_stops.push_back(s);
+				}
+			}
+		}
+
+		const bool inside = is_inside_other(ring_view.side, d_stops[vertex_stops.front()].position);
+		piece.piece_class = inside ? CLASS_INSIDE : CLASS_OUTSIDE;
+		piece.method = METHOD_VERTEX_TEST;
+		++d_diagnostics.vertex_tests;
+
+#ifdef GPLATES_DEBUG
+		for (unsigned int s : vertex_stops)
+		{
+			if (is_inside_other(ring_view.side, d_stops[s].position) != inside)
+			{
+				++d_diagnostics.piece_side_disagreements;
+				break;
+			}
+		}
+#endif
+	}
+
+	//
+	// (b) Deduction to a fixed point, then (c) the stalled single arcs, one at a time, by margin:
+	// the one whose midpoint is farthest from the other input's outline is tested first, then
+	// deduction resumes. A class decided within the band of rounding must never be the source of a
+	// deduction for a piece with a margin (overlay-walkthrough.md section 7.5). The distance is
+	// rounded (a cosine, resolving about 1.5e-8 radians), but it only orders the tests.
+	//
+	std::vector<boost::optional<double>> margins(d_pieces.size());
+	while (true)
+	{
+		deduce_to_fixed_point();
+
+		boost::optional<unsigned int> best_piece;
+		double best_margin = -1.0;
+		for (unsigned int p = 0; p < d_pieces.size(); ++p)
+		{
+			const Piece &piece = d_pieces[p];
+			if (piece.internal || piece.common || piece.is_classified())
+			{
+				continue;
+			}
+
+			if (!margins[p])
+			{
+				const Vector3D sum =
+						Vector3D(d_stops[piece.start_stop].position.position_vector()) +
+						Vector3D(d_stops[piece.end_stop].position.position_vector());
+				const PointOnSphere midpoint(sum.get_normalisation());
+				const boost::optional<AngularDistance> distance =
+						minimum_distance(midpoint, other_polygon(d_rings[piece.ring].side));
+				margins[p] = distance ? distance->calculate_angle().dval() : 0.0;
+			}
+
+			if (*margins[p] > best_margin)
+			{
+				best_margin = *margins[p];
+				best_piece = p;
+			}
+		}
+
+		if (!best_piece)
+		{
+			break;
+		}
+
+		Piece &piece = d_pieces[*best_piece];
+		const Vector3D sum =
+				Vector3D(d_stops[piece.start_stop].position.position_vector()) +
+				Vector3D(d_stops[piece.end_stop].position.position_vector());
+		const bool inside = is_inside_other(
+				d_rings[piece.ring].side,
+				PointOnSphere(sum.get_normalisation()));
+		piece.piece_class = inside ? CLASS_INSIDE : CLASS_OUTSIDE;
+		piece.method = METHOD_MIDPOINT_TEST;
+		++d_diagnostics.midpoint_tests;
+	}
+
+	// (d) Anchorless chains: phase4b-design.md section 3.9, option 3 (a later step).
+
+	// (e) A common clip piece takes its subject partner's class.
+	for (Piece &piece : d_pieces)
+	{
+		if (piece.common && d_rings[piece.ring].side == CLIP)
+		{
+			const Piece &partner = d_pieces[*piece.common];
+			piece.common_class = partner.common_class;
+			piece.method = partner.common_class != COMMON_UNKNOWN ? METHOD_SECTOR : METHOD_NONE;
+		}
+	}
+
+	for (const Piece &piece : d_pieces)
+	{
+		if (!piece.internal && !piece.is_classified())
+		{
+			++d_diagnostics.unresolved_pieces;
+		}
+	}
+
+	// The checks: every vertex must have a consistent placement of its sectors' memberships.
+	for (unsigned int v = 0; v < d_vertices.size(); ++v)
+	{
+		if (!solve_vertex(v).consistent)
+		{
+			++d_diagnostics.check_failures;
+		}
+	}
+
+	//
+	// The result, from what the intersection and the difference keep (phase4b-design.md section
+	// 5.1): the intersection keeps subject pieces inside the clip, clip pieces inside the subject
+	// and same-side common pairs; the difference keeps subject pieces outside the clip, clip pieces
+	// inside the subject and opposite-sides common pairs.
+	//
+	bool intersection_keeps = false;
+	bool difference_keeps = false;
+	for (const Piece &piece : d_pieces)
+	{
+		if (piece.internal)
+		{
+			continue;
+		}
+
+		const Side side = d_rings[piece.ring].side;
+		if (!piece.is_classified())
+		{
+			intersection_keeps = difference_keeps = true;
+		}
+		else if (piece.common)
+		{
+			if (side == SUBJECT)
+			{
+				bool &keeps = (piece.common_class == COMMON_SAME_SIDE)
+						? intersection_keeps
+						: difference_keeps;
+				keeps = true;
+			}
+		}
+		else if (side == SUBJECT)
+		{
+			(piece.piece_class == CLASS_INSIDE ? intersection_keeps : difference_keeps) = true;
+		}
+		else if (piece.piece_class == CLASS_INSIDE)
+		{
+			intersection_keeps = difference_keeps = true;
+		}
+	}
+
+	if (!intersection_keeps)
+	{
+		return RESULT_OUTSIDE;
+	}
+	if (!difference_keeps)
+	{
+		return RESULT_INSIDE;
+	}
+	return RESULT_INTERSECTING;
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::dump(
+		std::ostream &output) const
+{
+	static const char *const kinds[] = { "LL", "SS", "SL", "LS" };
+	static const char *const classes[] = { "none", "in", "out" };
+	static const char *const common_classes[] = { "none", "same", "opposite" };
+	static const char *const methods[] = {
+			"none", "vertex", "deduced", "midpoint", "sector", "anchorless", "repaired", "along" };
+	const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+
+	for (unsigned int r = 0; r < d_graph.unordered_intersections.size(); ++r)
+	{
+		const GeometryIntersect::Intersection &record = d_graph.unordered_intersections[r];
+		output << "r" << r << ": " << kinds[record.type] << "(" << record.segment_index1 << ","
+				<< record.segment_index2 << ")\n";
+	}
+
+	for (unsigned int v = 0; v < d_vertices.size(); ++v)
+	{
+		const Vertex &vertex = d_vertices[v];
+		output << "v" << v << ": records [";
+		for (unsigned int r : get_vertex_records(vertex))
+		{
+			output << " r" << r;
+		}
+		output << " ] rays [";
+		for (const Ray &ray : vertex.rays)
+		{
+			output << " " << (ray.is_common() ? "PQ*" : (ray.subject_end ? "P" : "Q"))
+					<< (ray.subject_end ? ray.subject_end->piece : ray.clip_end->piece);
+		}
+		output << " ]\n";
+	}
+
+	for (unsigned int p = 0; p < d_pieces.size(); ++p)
+	{
+		const Piece &piece = d_pieces[p];
+		const RingView &ring = d_rings[piece.ring];
+		output << "p" << p << " " << (ring.side == SUBJECT ? "P" : "Q") << ring.ring_index << "[";
+		if (piece.closed)
+		{
+			output << "closed";
+		}
+		else
+		{
+			const auto name = [](const boost::optional<unsigned int> &vertex)
+			{
+				return vertex ? "v" + std::to_string(*vertex) : std::string("end");
+			};
+			output << name(piece.start_vertex) << "->" << name(piece.end_vertex);
+		}
+
+		const std::vector<PointOnSphere> points = get_piece_points(piece);
+		double length = 0;
+		for (unsigned int i = 0; i + 1 < points.size(); ++i)
+		{
+			length += angle_between(points[i].position_vector(), points[i + 1].position_vector());
+		}
+		output << "] len=" << length / h << "h cls="
+				<< (piece.common ? common_classes[piece.common_class] : classes[piece.piece_class])
+				<< " " << methods[piece.method]
+				<< (piece.common ? " common" : "") << (piece.internal ? " internal" : "") << "\n";
 	}
 }

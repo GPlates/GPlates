@@ -26,6 +26,7 @@
 #ifndef GPLATES_MATHS_POLYGONOVERLAY_H
 #define GPLATES_MATHS_POLYGONOVERLAY_H
 
+#include <iosfwd>
 #include <vector>
 #include <boost/optional.hpp>
 
@@ -58,6 +59,44 @@ namespace GPlatesMaths
 		{
 			SUBJECT = 0,  // P, the geometry being cut
 			CLIP = 1      // Q, the polygon cutting it
+		};
+
+
+		//! A non-common piece's class: whether it lies inside the other input.
+		enum Class
+		{
+			CLASS_UNKNOWN,
+			CLASS_INSIDE,
+			CLASS_OUTSIDE
+		};
+
+		//! A common pair's class: whether the two inputs' interiors are on the same side of it.
+		enum CommonClass
+		{
+			COMMON_UNKNOWN,
+			COMMON_SAME_SIDE,
+			COMMON_OPPOSITE_SIDES
+		};
+
+		//! How a piece's class was decided.
+		enum Method
+		{
+			METHOD_NONE,
+			METHOD_VERTEX_TEST,    // point-in-polygon at an original vertex of the piece
+			METHOD_DEDUCED,        // from the classes at one of its vertices
+			METHOD_MIDPOINT_TEST,  // point-in-polygon at a single arc's midpoint, by margin
+			METHOD_SECTOR,         // a common pair's class, by the sector walk (or its partner's)
+			METHOD_ANCHORLESS,     // a common chain with no anchor
+			METHOD_REPAIRED,       // flipped by repair
+			METHOD_ALONG           // a polyline piece along the clip's boundary
+		};
+
+		//! Where the subject lies relative to the clip, as a whole.
+		enum Result
+		{
+			RESULT_INSIDE,
+			RESULT_OUTSIDE,
+			RESULT_INTERSECTING
 		};
 
 
@@ -290,10 +329,55 @@ namespace GPlatesMaths
 			boost::optional<unsigned int> end_vertex;
 
 			//! A loop or a spike: not classified, not a ray, not output (the loop and spike rules).
-			bool internal;
+			bool internal = false;
 
 			//! The partner piece of the other input, when the two run together.
 			boost::optional<unsigned int> common;
+
+			//! Its class (a non-common piece) or common class (a piece of a common pair).
+			Class piece_class = CLASS_UNKNOWN;
+			CommonClass common_class = COMMON_UNKNOWN;
+			Method method = METHOD_NONE;
+
+			bool
+			is_classified() const
+			{
+				return common ? common_class != COMMON_UNKNOWN : piece_class != CLASS_UNKNOWN;
+			}
+		};
+
+
+		/**
+		 * The sector walk's answer at one vertex (phase4b-design.md section 3.7.1).
+		 */
+		class VertexSolution
+		{
+		public:
+			//! Whether some placement of the sectors' memberships meets every class at the vertex.
+			bool consistent = true;
+
+			//! Solved by the geometry-free rule (four ends, two of each input, none common).
+			bool free_rule = false;
+
+			//! The order of the vertex's rays used (indices into its rays); empty by the free rule.
+			std::vector<unsigned int> order;
+
+			/**
+			 * Per position in 'order': the memberships (in the subject, in the clip) of the sector
+			 * after that ray, when every solution agrees on them.
+			 */
+			std::vector<boost::optional<bool>> in_subject;
+			std::vector<boost::optional<bool>> in_clip;
+		};
+
+
+		//! A class the vertex rules can deduce for an unclassified piece.
+		class Deduction
+		{
+		public:
+			unsigned int piece;
+			bool inside_or_same_side;  // a common piece: same side; otherwise inside
+			Method method;
 		};
 
 
@@ -307,6 +391,15 @@ namespace GPlatesMaths
 			unsigned int common_ambiguous = 0;    // vertex pairs with both inputs' pieces, unpaired
 			unsigned int zero_length_rays = 0;    // rays with no direction
 			unsigned int max_ends = 0;            // most ends at a vertex (a common ray: two)
+
+			// Classification.
+			unsigned int vertex_tests = 0;
+			unsigned int deduced = 0;
+			unsigned int sector_classes = 0;      // common pieces classified by the sector walk
+			unsigned int midpoint_tests = 0;
+			unsigned int unresolved_pieces = 0;   // left unclassified (an anchorless chain)
+			unsigned int check_failures = 0;      // vertices with no consistent placement
+			unsigned int piece_side_disagreements = 0;  // debug builds: a piece's vertices disagree
 		};
 
 
@@ -314,8 +407,8 @@ namespace GPlatesMaths
 		class Options
 		{
 		public:
-			Options()
-			{  }
+			//! The speed of point-in-polygon tests against the clip (the partitioner's choice).
+			PolygonOnSphere::PointInPolygonSpeedAndMemory clip_speed = PolygonOnSphere::ADAPTIVE;
 		};
 
 
@@ -401,6 +494,33 @@ namespace GPlatesMaths
 				return d_diagnostics;
 			}
 
+			/**
+			 * Write the overlay's state (vertices with their records and rays, pieces with their
+			 * classes and methods) in the form of the prototype's verbose report, for debugging.
+			 */
+			void
+			dump(
+					std::ostream &output) const;
+
+
+			/**
+			 * Classify every piece (phase4b-design.md section 3.7), then check every vertex.
+			 *
+			 * The result is RESULT_INSIDE when the difference (subject minus clip) keeps no piece,
+			 * RESULT_OUTSIDE when the intersection keeps none, and RESULT_INTERSECTING otherwise.
+			 */
+			Result
+			classify();
+
+			/**
+			 * The sector walk at one vertex, on the current classes; with @a deductions, also the
+			 * classes every solution agrees on for the vertex's unclassified pieces.
+			 */
+			VertexSolution
+			solve_vertex(
+					unsigned int vertex_index,
+					std::vector<Deduction> *deductions = nullptr) const;
+
 		private:
 
 			const PolygonOnSphere *d_subject_polygon;
@@ -467,6 +587,29 @@ namespace GPlatesMaths
 					const Vertex &vertex,
 					const End &end,
 					Ray &ray) const;
+
+			//! The other input's polygon, against which a piece of @a side is classified.
+			const PolygonOnSphere &
+			other_polygon(
+					Side side) const
+			{
+				return side == SUBJECT ? d_clip : *d_subject_polygon;
+			}
+
+			//! Point-in-polygon, threshold off, against the other input of a piece of @a side.
+			bool
+			is_inside_other(
+					Side side,
+					const PointOnSphere &point) const;
+
+			//! Apply deductions at every vertex until nothing changes; true if anything did.
+			bool
+			deduce_to_fixed_point();
+
+			bool
+			solve_four_end_vertex(
+					const Vertex &vertex,
+					std::vector<Deduction> *deductions) const;
 
 			//! The measured anticlockwise order of rays about a point (seen from outside).
 			static

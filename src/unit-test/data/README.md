@@ -31,6 +31,7 @@ Nothing in this directory is installed or packaged. It exists only to be read by
 | `citcoms-velocity-domains/` | `GenerateVelocityDomainCitcomsTest.cc` |
 | `flowline/` | `FlowlineUtilsTest.cc` |
 | `gsml/` | `GeoscimlReaderTest.cc` |
+| `polygon-overlay/prototype-catalogue.txt` | `PolygonOverlayPrototypeTest.cc` (exported by the planning repository's `plans/polygon-intersection-tools/overlay_export.py`) |
 
 **Everything else is not yet referenced by any test.** It arrived on 2026-08-11 from the old
 top-level `sample-data/` directory, which nothing in the build, the installer or the test suite
