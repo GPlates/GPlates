@@ -397,7 +397,7 @@ namespace GPlatesMaths
 			unsigned int deduced = 0;
 			unsigned int sector_classes = 0;      // common pieces classified by the sector walk
 			unsigned int midpoint_tests = 0;
-			unsigned int unresolved_pieces = 0;   // left unclassified (an anchorless chain)
+			unsigned int unresolved_pieces = 0;   // left unclassified (a common pair counts once)
 			unsigned int check_failures = 0;      // vertices with no consistent placement
 			unsigned int piece_side_disagreements = 0;  // debug builds: a piece's vertices disagree
 		};

@@ -472,33 +472,25 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 
 		if (!at_vertex_records[k].empty())
 		{
-			bool first_stop_at_vertex = true;
+			// Every record at ring vertex 'k' names that vertex, so identity makes them one overlay
+			// vertex, and they are one stop (a corner's two touches of one subject vertex, say).
+			const unsigned int vertex = d_vertex_of_record[at_vertex_records[k].front()];
+			d_stops.push_back(Stop{
+					Stop::RECORD,
+					segment_in,
+					k,
+					true,
+					vertex,
+					static_cast<unsigned int>(d_stop_records.size()),
+					static_cast<unsigned int>(at_vertex_records[k].size()),
+					ring_view.vertex(k),
+					0.0});
 			for (unsigned int r : at_vertex_records[k])
 			{
-				const unsigned int vertex = d_vertex_of_record[r];
-
-				// Records of one overlay vertex at the same point of the ring are one stop.
-				if (!first_stop_at_vertex && d_stops.back().vertex == vertex)
-				{
-					d_stop_records.push_back(r);
-					++d_stops.back().num_records;
-					continue;
-				}
-
-				// A second, different overlay vertex at the same ring vertex follows the first at
-				// zero distance along segment 'k', so it arrives along that segment.
-				d_stops.push_back(Stop{
-						Stop::RECORD,
-						first_stop_at_vertex ? segment_in : k,
-						k,
-						true,
-						vertex,
-						static_cast<unsigned int>(d_stop_records.size()),
-						1,
-						ring_view.vertex(k),
-						0.0});
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						d_vertex_of_record[r] == vertex,
+						GPLATES_ASSERTION_SOURCE);
 				d_stop_records.push_back(r);
-				first_stop_at_vertex = false;
 			}
 		}
 		else
@@ -753,8 +745,12 @@ GPlatesMaths::PolygonOverlay::Overlay::apply_loop_and_spike_rules()
 			++ring_end_piece;
 		}
 
+		// Consecutive pieces of a closed ring wrap round; a polyline's last and first do not meet.
 		const unsigned int num_ring_pieces = ring_end_piece - ring_first_piece;
-		for (unsigned int i = 0; i < num_ring_pieces; ++i)
+		const unsigned int num_pairs = d_rings[d_pieces[ring_first_piece].ring].closed
+				? num_ring_pieces
+				: num_ring_pieces - 1;
+		for (unsigned int i = 0; i < num_pairs; ++i)
 		{
 			Piece &a = d_pieces[ring_first_piece + i];
 			Piece &b = d_pieces[ring_first_piece + (i + 1) % num_ring_pieces];
@@ -1608,7 +1604,9 @@ GPlatesMaths::PolygonOverlay::Overlay::classify()
 
 	for (const Piece &piece : d_pieces)
 	{
-		if (!piece.internal && !piece.is_classified())
+		// A common pair counts once, as its subject piece.
+		const bool counts = !piece.common || d_rings[piece.ring].side == SUBJECT;
+		if (!piece.internal && !piece.is_classified() && counts)
 		{
 			++d_diagnostics.unresolved_pieces;
 		}

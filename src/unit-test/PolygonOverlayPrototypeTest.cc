@@ -46,17 +46,29 @@
 // The overlay against the Phase 4a prototype (phase4b-design.md section 11.2): record for record,
 // piece for piece, class for class.
 //
-// The cases are exported by the planning repository's
-// 'plans/polygon-intersection-tools/overlay_export.py' from the prototype under the chosen
-// configuration (V1b, rule freex, margin-ordered midpoint tests, the spike and bundle rules, option
-// 3 for anchorless chains), with every tie order the prototype ran; the file's header comment
-// there describes the format. The overlay must match one of the tie orders exactly in structure
-// (which pieces exist, internal, common) and in every class, except a band piece: a single arc
-// (no original vertex to test) whose midpoint lies within twice the thickness of the other input's
-// outline. A band piece's class is arbitrary by nature, whether midpoint-tested or deduced from
+// The data file is a frozen snapshot, exported from the Phase 4a prototype of the overlay (a
+// Python implementation in exact rational arithmetic, kept outside this repository) on its
+// catalogue of configurations with several records at or near one point. The prototype ran the
+// chosen configuration (identity vertices with the loop and spike rules, the LL rule, midpoint
+// tests in order of margin, the bundle rule, option 3 for anchorless chains), and the file holds
+// every tie order it ran, including the orders the C++ sort can produce: GeometryIntersect orders
+// records along a segment by a cosine in doubles, so records whose cosines agree within a few ulps
+// come out in either order. Format, per case: 'case <name>'; 'ring P|Q <n>' then n lines 'x y z';
+// 'records <n>' then n lines '<kind> <index1> <index2>'; per tie order 'order <repairs> <check
+// failures>', lines 'piece <P|Q> <ring> <closed> <internal> <common> <class> <method> <start>
+// <end>' (start and end: the piece's end stops as comma-separated record indices, '-' if closed),
+// and 'endorder'; then 'endcase'.
+//
+// The overlay must match one of the tie orders exactly in structure (which pieces exist, internal,
+// common) and in every class, except a band piece in a case where a midpoint test was made: a
+// single arc that is not common, whose midpoint lies within twice the thickness of the other
+// input's outline. Its class is arbitrary by nature, whether midpoint-tested or deduced from
 // another band piece, and the output oracle checks those. It can also differ for a reason the
 // prototype does not model: point-in-polygon approximates an edge shorter than about 1e-6 radians
 // (zero length to GreatCircleArc) by its end point, so near one its answer is not exact.
+//
+// A deliberate change to the overlay's rules that changes these answers should re-export the
+// snapshot from the prototype (changed to match), or retire this test; not hand-edit the file.
 //
 
 namespace
@@ -243,6 +255,13 @@ namespace
 		overlay.classify();
 
 		std::stringstream report;
+		if (overlay.get_diagnostics().check_failures != 0 ||
+			overlay.get_diagnostics().unresolved_pieces != 0)
+		{
+			report << overlay.get_diagnostics().check_failures << " check failures, "
+					<< overlay.get_diagnostics().unresolved_pieces << " unresolved pieces";
+			return report.str();
+		}
 
 		// Records: the same set, and the map from the prototype's indices to the overlay's.
 		const std::vector<Intersection> &records = overlay.get_graph().unordered_intersections;
@@ -361,6 +380,13 @@ namespace
 				continue;
 			}
 
+			// Band pieces are exempt only where some piece's class came from a midpoint test.
+			bool any_midpoint_test = overlay.get_diagnostics().midpoint_tests != 0;
+			for (const PrototypePiece &prototype_piece : order.pieces)
+			{
+				any_midpoint_test = any_midpoint_test || prototype_piece.method == "midpoint";
+			}
+
 			std::stringstream differences;
 			unsigned int band_differences = 0;
 			for (unsigned int i = 0; i < overlay_pieces.size(); ++i)
@@ -395,7 +421,10 @@ namespace
 				}
 
 				// A band piece may have either class.
-				if (!piece.has_interior_vertex && !piece.closed)
+				if (any_midpoint_test &&
+					!piece.common &&
+					!piece.has_interior_vertex &&
+					!piece.closed)
 				{
 					const std::vector<PointOnSphere> points = overlay.get_piece_points(piece);
 					const Vector3D sum =
@@ -431,8 +460,8 @@ namespace
 
 		if (first_mismatch.empty())
 		{
-			// Every tie order of the prototype needed repair: nothing to compare against.
-			return std::string();
+			// Every tie order of the prototype needed repair or failed a check.
+			return "no tie order of the prototype is free of repairs and check failures";
 		}
 
 		std::stringstream dump;

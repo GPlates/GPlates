@@ -31,6 +31,7 @@
 #include <gtest/gtest.h>
 
 #include "maths/GeometryIntersect.h"
+#include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolygonOverlay.h"
@@ -43,9 +44,9 @@
 // Tests of PolygonOverlay, the overlay of a subject (polygon or polyline) with a clip polygon
 // under polygon partitioning and the Boolean operations.
 //
-// The cases are families of the Phase 4a catalogue (the planning repository's
-// 'plans/polygon-intersection-tools/overlay_catalogue.py'), built as there in local tangent
-// coordinates with distances in units of the thickness, H, but at a centre on no axis (as
+// The cases are families of the Phase 4a catalogue (of the overlay's prototype, kept outside this
+// repository; PolygonOverlayPrototypeTest.cc compares with all of it), built as there in local
+// tangent coordinates with distances in units of the thickness, H, but at a centre on no axis (as
 // GeometryIntersectTest.cc does), so that nothing lines up with a coordinate axis by accident.
 //
 
@@ -894,7 +895,7 @@ TEST(PolygonOverlayTest, SpikeRule)
 
 //
 // Classification (phase4b-design.md section 3.7). The expected classes are the prototype's for the
-// same catalogue cases ('overlay_catalogue.py --config bnd --verbose').
+// same catalogue cases.
 //
 
 // Two squares overlapping at a corner: each ring has one piece inside the other square and one
@@ -1087,4 +1088,96 @@ TEST(PolygonOverlayTest, ClassifyTIntersection)
 			EXPECT_EQ(ring_classes(overlay, Overlay::CLIP, 0), "out");
 		}
 	}
+}
+
+
+
+// The touch rule (four ends, no crossing record): the clip dips from inside onto the subject's top
+// edge at two vertices, T1 and T2. The subject's single arc between them has no vertex to test; at
+// each touch the clip's two pieces are both inside the subject, so the clip does not cross there,
+// so neither does the subject, and the arc takes the class of the subject's other piece (outside).
+TEST(PolygonOverlayTest, ClassifyTouchRuleDeduction)
+{
+	const auto P = polygon(square(-0.02, -0.02, 0.02, 0.02));
+	const auto Q = polygon(ring_type{
+			F.at(-0.005, 0.02), F.at(0.0, 0.01), F.at(0.005, 0.02),
+			F.at(0.01, -0.01), F.at(-0.01, -0.01) });
+	Overlay::Overlay overlay(*P, *Q);
+	check_structure(overlay);
+	EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INTERSECTING);
+
+	EXPECT_EQ(record_kinds(overlay), "LS LS");
+	EXPECT_EQ(ring_classes(overlay, Overlay::SUBJECT, 0), "out out");
+	EXPECT_EQ(ring_classes(overlay, Overlay::CLIP, 0), "in in");
+	EXPECT_EQ(overlay.get_diagnostics().deduced, 1u);
+	EXPECT_EQ(overlay.get_diagnostics().midpoint_tests, 0u);
+	for (const Overlay::Piece *piece : ring_pieces(overlay, Overlay::SUBJECT, 0))
+	{
+		if (!piece->has_interior_vertex)
+		{
+			EXPECT_EQ(piece->method, Overlay::METHOD_DEDUCED);
+		}
+	}
+}
+
+
+// A touch from inside or outside, or a shared edge, leaves the subject whole: inside or outside.
+TEST(PolygonOverlayTest, ClassifyResultOfTouches)
+{
+	const auto Q = polygon(square(-0.02, -0.02, 0.02, 0.0));
+	{
+		// The subject's apex on the clip's top edge, from inside.
+		const auto P = polygon(
+				ring_type{ F.at(0.0, 0.0), F.at(0.005, -0.01), F.at(-0.005, -0.01) });
+		Overlay::Overlay overlay(*P, *Q);
+		EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INSIDE);
+		EXPECT_EQ(record_kinds(overlay), "SL");
+	}
+	{
+		// From outside.
+		const auto P = polygon(ring_type{ F.at(0.0, 0.0), F.at(0.005, 0.01), F.at(-0.005, 0.01) });
+		Overlay::Overlay overlay(*P, *Q);
+		EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_OUTSIDE);
+		EXPECT_EQ(record_kinds(overlay), "SL");
+	}
+	{
+		// The subject's top edge along part of the clip's, the subject inside the clip.
+		const auto P = polygon(square(-0.01, -0.01, 0.01, 0.0));
+		Overlay::Overlay overlay(*P, *Q);
+		EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INSIDE);
+	}
+}
+
+
+// A ray with no direction (catalogue 4.4, d4 hole-between, length 0.5h): the subject's segment u-w,
+// shorter than GreatCircleArc's zero length, runs between two touches of the clip's edge, with the
+// apex of a subject hole touching that edge between them, so it is not common. Its rays have no
+// direction and a cone of pi; the vertices it ends at have four ends, so no order is needed.
+TEST(PolygonOverlayTest, RaysWithoutDirection)
+{
+	const double half = 0.25 * H * std::sqrt(0.5);
+	const auto Q = polygon(square(-0.03, -0.03, 0.03, 0.0));
+	const auto P = polygon(
+			ring_type{ F.at(-half, half), F.at(half, -half), F.at(0.01, -0.01), F.at(0.02, 0.01) },
+			{ ring_type{ F.at(0.3 * half, 0.0), F.at(0.003, -0.001), F.at(0.004, 0.001) } });
+	Overlay::Overlay overlay(*P, *Q);
+	check_structure(overlay);
+	classify_and_check(overlay);
+
+	EXPECT_EQ(overlay.get_diagnostics().zero_length_rays, 2u);
+	unsigned int num_rays_without_direction = 0;
+	for (const Overlay::Vertex &vertex : overlay.get_vertices())
+	{
+		for (const Overlay::Ray &ray : vertex.rays)
+		{
+			if (!ray.direction)
+			{
+				++num_rays_without_direction;
+				EXPECT_EQ(ray.cone, GPlatesMaths::PI);
+				EXPECT_FALSE(ray.is_common());
+				EXPECT_EQ(vertex.ends.size(), 4u);
+			}
+		}
+	}
+	EXPECT_EQ(num_rays_without_direction, 2u);
 }
