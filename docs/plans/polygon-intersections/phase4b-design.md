@@ -431,10 +431,10 @@ as `_build_pieces` does per segment `k`:
 1. The records on segment `k` that are *at the ring's vertex `k`* (`SL`/`SS` for a `P` ring, `LS`/`SS`
    for a `Q` ring; they have angle zero and sort first in the segment) make one `RECORD` stop at the
    vertex per distinct overlay vertex among them; a second record of the same vertex at the same ring
-   position joins the stop (`:489-490`). Two records at vertex `k` belonging to *different* overlay
-   vertices make two stops at the same position in record order (a `P` vertex touching two `Q`
-   edges is one vertex, the wedge; two distinct vertices at one `P` vertex needs two `Q` vertices
-   there not joined to it, which identity makes one group; so this case is rare but allowed).
+   position joins the stop (`:489-490`). *Corrected (Phase 5 review 1, 1.4):* there is only ever one
+   such vertex. Every record at ring vertex `k` names the key `(side, k)`, so identity makes them one
+   group, and they are one stop (the C++ asserts it). The "two stops at the same position" case does
+   not occur.
 2. If no record is at vertex `k`, an `ORIGINAL_VERTEX` stop (or `DANGLING_END` for a polyline's first
    or last vertex).
 3. Then the records *inside* segment `k` (`LL`, and the other polygon's touches on this segment), in
