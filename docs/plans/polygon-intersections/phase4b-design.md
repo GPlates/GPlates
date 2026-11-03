@@ -1119,7 +1119,9 @@ changelog under Assign Plate IDs.
   form the rest of the API uses, `(geometry, scalars)` (as `Feature.set_geometry` does, survey 4.2),
   and then returns each piece as `(piece, scalars)`, the scalars mapped by 7.3 through a shared
   app-logic function (`PartitionFeatureUtils::partition_coverage_range(provenance, range)`, exposed in
-  its header). This is the one new pyGPlates API surface in PR B.
+  its header). This is the one new pyGPlates API surface in PR B. **Superseded 2026-11-04 (section
+  14, question 5):** no public coverage form in PR B; `partition_features` calls a private helper,
+  and PR C decides any geometry-level form.
 - **`partition_features`** (`src/qt-resources/python/api/PlatePartitioning.py:86-407`): in the
   `split_into_plates` branch (`:285-340`) each geometry property is read with its coverage when it has
   one (`coverage_return=CoverageReturn.geometry_and_scalars`, as the survey used it; the exact call is
@@ -1450,6 +1452,10 @@ For the design doc later (Phase 6, doc 5.3 onwards). Each with where the evidenc
 ## 14. Open questions for the developer
 
 Everything above is decided or follows from a decision; these four are not.
+
+**Answered 2026-11-04 (developer; PLAN.md Status):** 1 output on the left; 2 the nearest outline
+point; 3 `PartitionError`, Assign Plate IDs skips and reports; 4 keep it in PR B; 5 neither form in
+PR B: the private helper only, and any geometry-level coverage form is PR C's decision.
 
 1. **Output ring orientation** (requirements Q6). Recommendation: orient every output ring with the
    output on its left (exteriors anticlockwise seen from outside the sphere, holes clockwise), since

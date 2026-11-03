@@ -283,6 +283,17 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   once it lands, before Phase 5's coverage step; expect a small conflict in `PartitionFeatureUtils.cc`
   (it switches the exterior-point calls that PR B rewrites).
 
+- 2026-11-04: **Design approved; section 14 answered (developer).** (1) Output rings have the output
+  on their left. (2) A ring of partitioner points only takes its coverage values from the nearest
+  point of the input's outline, interpolated along that segment. (3) Python raises `PartitionError`;
+  GPlates' Assign Plate IDs catches per feature, leaves it unpartitioned and reports the skipped
+  features once. (4) `GLReconstructedStaticPolygonMeshes` keeps its containment test in PR B; the
+  Phase 6 visual check decides. (5) PR B carries coverages at the feature level only (the private
+  helper `partition_features` calls); whether any geometry-level entry point (`partition_geometry`,
+  `PolygonOnSphere.partition`, PR C's operations, `DateLineWrapper.wrap`, `to_tessellated`) gains a
+  coverage form is decided in PR C, with some merit seen in keeping coverages at the feature level
+  only. **Phase 5 started.**
+
 - **Resume here** (updated 2026-10-31):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 4b started 2026-10-31, in the four steps under *Phases*. Step 1 (Fable,
