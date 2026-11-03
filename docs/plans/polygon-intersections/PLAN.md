@@ -324,10 +324,14 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     comparison accepts a band piece (a single arc within `2h` of the other outline) whatever its
     method, since one deduced from another band piece is arbitrary too. Step 7's output oracle is what
     must confirm these.
-  - **Open (for the developer):** the prototype, the exporter and the hunt tools are in the private
-    planning repository, but the committed test data and its comments name them. Before PR B: move the
-    tools into this repository (they are the reference the C++ is checked against), or describe them
-    in the test without a path.
+  - **Decided (developer):** the prototype, the exporter and the hunt tools stay in the private
+    planning repository; the committed test and data README describe the snapshot without naming it
+    (`db0322e79`). Moving them was judged not worth it: the trimmed prototype would be a second
+    implementation nothing keeps in step, and only the developer runs it.
+  - **Fable review 1** of steps 1 to 3 (`phase5-review-1.md`, with the session's check as its section
+    4): the comparison never checked a common pair's class (fixed; still 0 differ, and a mutation now
+    fails 108 cases), the spike rule wrapped round a polyline (fixed), an unreachable branch (now an
+    assertion; design 3.3 corrected), three new unit tests for its test gaps.
   Next: step 4, the bundle rule.
 
 - **Resume here** (updated 2026-11-04):
