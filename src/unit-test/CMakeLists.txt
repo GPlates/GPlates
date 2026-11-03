@@ -21,6 +21,7 @@ set(srcs
     GsmlXmlQueryTest.cc
     MipmapperTest.cc
     PointInPolygonTest.cc
+    PolygonOverlayTest.cc
     RealTest.cc
     ScribeExportUnitTest.h
     SmartNodeLinkedListTest.cc

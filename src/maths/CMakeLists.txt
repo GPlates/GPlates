@@ -87,6 +87,8 @@ set(srcs
     PolygonOnSphere.h
     PolygonOrientation.cc
     PolygonOrientation.h
+    PolygonOverlay.cc
+    PolygonOverlay.h
     PolygonPartitioner.cc
     PolygonPartitioner.h
     PolygonProximityHitDetail.h
@@ -164,6 +166,8 @@ set(gplates_only_srcs
     PolygonFan.h
     PolygonMesh.cc
     PolygonMesh.h
+    PolygonOverlay.cc
+    PolygonOverlay.h
     PolylineEquivalencePredicates.h
     SmallCircleArc.cc
     SmallCircleArc.h
