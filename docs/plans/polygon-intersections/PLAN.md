@@ -401,11 +401,24 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   assertion (counted only), and the debug dump's comparison form (9.3); the partitioner's and the
   products' handling of the exception (steps 11 to 13).
 
+- 2026-11-04: **Fable review 2** of steps 4 to 6 (`phase5-review-2.md`): no defect in the translation.
+  Fixed: nothing committed reached the bundle rule after run 4 (15 cases from about 15,900 `shared`
+  now committed, their counts pinned); the anchorless loop could overwrite a class and spin on
+  inconsistent data; one undirected chain stopped later chains; repair counters accumulated; the cap's
+  order. **Open, for step 15 (or a run 5):** three dense shared-edge cases fail in the prototype and the
+  C++ alike under `r4t`, all at a bundle vertex (both inputs passing more than once): `shared#6` seed
+  11, `#1434` seed 12, `#2587` seed 13 (16 to 20 repairs, 2 vertices left failing; the C++ repairs
+  `#6` with the whole-chain candidate). In `#2587` the bundle's single consistent placement deduces
+  classes that fail downstream; the review asks whether the cone bound is too tight for a wedge tip
+  whose apex is within the band. About 1 in 5000 `shared` cases; design 9.1's "none seen" no longer
+  holds. Also noted: the second reference point's fallback is reached by no committed case.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
-    2026-11-04). Next: a Fable review of steps 4 to 6, then step 7 (linking, split, clean-up). The prototype comparison is
+    2026-11-04). Review 2 done. Next: step 7 (linking, split, clean-up);
+    open: the three bundle-vertex failures (Status, review 2 entry). The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries
