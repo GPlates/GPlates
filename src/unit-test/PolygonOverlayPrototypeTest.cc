@@ -502,28 +502,9 @@ namespace
 
 		unsigned int num_failures = 0;
 		unsigned int num_band_differences = 0;
-		unsigned int num_anchorless_skipped = 0;
 		unsigned int num_prototype_failures = 0;
 		for (PrototypeCase &prototype_case : cases)
 		{
-			// Anchorless chains are a later step (phase4b-design.md section 12, step 5): skip a
-			// case whose every tie order needed one, and count it.
-			bool every_order_anchorless = !prototype_case.raw_pieces.empty();
-			for (const std::vector<std::string> &order : prototype_case.raw_pieces)
-			{
-				bool anchorless = false;
-				for (const std::string &line : order)
-				{
-					anchorless = anchorless || line.find(" anchorless ") != std::string::npos;
-				}
-				every_order_anchorless = every_order_anchorless && anchorless;
-			}
-			if (every_order_anchorless)
-			{
-				++num_anchorless_skipped;
-				continue;
-			}
-
 			// A case the prototype itself fails in every tie order (a check failure, or repair) is
 			// not a difference; it is reported, for the hunt to investigate.
 			bool prototype_clean = false;
@@ -554,7 +535,6 @@ namespace
 		}
 		std::cout << cases.size() << " prototype cases, " << num_failures << " differ; "
 				<< num_band_differences << " band pieces have the other class; "
-				<< num_anchorless_skipped << " skipped (anchorless); "
 				<< num_prototype_failures << " skipped (the prototype fails)" << std::endl;
 	}
 }
@@ -572,6 +552,14 @@ TEST(PolygonOverlayPrototypeTest, Catalogue)
 TEST(PolygonOverlayPrototypeTest, Hunt)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt", 100);
+}
+
+
+// Common chains that no other piece reaches (Phase 4a run 2 section 7's kinds, three seeds):
+// identical and jittered rings, either way round, holes equal to rings, thin faces, two rings.
+TEST(PolygonOverlayPrototypeTest, Anchorless)
+{
+	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-anchorless.txt", 40);
 }
 
 

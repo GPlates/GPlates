@@ -34,6 +34,7 @@
 
 #include "GeometryDistance.h"
 #include "MathsUtils.h"
+#include "PointInPolygon.h"
 #include "UnitVector3D.h"
 #include "Vector3D.h"
 
@@ -1820,7 +1821,44 @@ GPlatesMaths::PolygonOverlay::Overlay::classify()
 		++d_diagnostics.midpoint_tests;
 	}
 
-	// (d) Anchorless chains: phase4b-design.md section 3.9, option 3 (a later step).
+	//
+	// (d) Anchorless chains (phase4b-design.md section 3.9, option 3): a common pair still
+	// unclassified belongs to a chain that no non-common piece reaches (identical rings, say). One
+	// arc of the chain is classified by exact crossing parities from each input's reference point,
+	// and deduction then carries the class along the chain.
+	//
+	while (true)
+	{
+		boost::optional<unsigned int> start;
+		for (unsigned int p = 0; p < d_pieces.size(); ++p)
+		{
+			const Piece &piece = d_pieces[p];
+			if (!piece.internal &&
+				piece.common &&
+				d_rings[piece.ring].side == SUBJECT &&
+				!piece.is_classified())
+			{
+				start = p;
+				break;
+			}
+		}
+		if (!start)
+		{
+			break;
+		}
+
+		const std::vector<unsigned int> chain = get_common_chain(*start);
+		d_diagnostics.anchorless_arcs_max =
+				(std::max)(d_diagnostics.anchorless_arcs_max, unsigned(chain.size()));
+		if (!classify_anchorless_chain(chain))
+		{
+			// No arc of the chain has a direction (every one on a zero-length segment): left
+			// unclassified, and counted below.
+			break;
+		}
+		++d_diagnostics.anchorless_resolved;
+		deduce_to_fixed_point();
+	}
 
 	// (e) A common clip piece takes its subject partner's class.
 	for (Piece &piece : d_pieces)
@@ -2275,4 +2313,140 @@ GPlatesMaths::PolygonOverlay::Overlay::one_passage_side(
 		return CLIP;
 	}
 	return boost::none;
+}
+
+
+std::vector<unsigned int>
+GPlatesMaths::PolygonOverlay::Overlay::get_common_chain(
+		unsigned int start_piece) const
+{
+	// The common subject pieces reachable from the start through vertices whose every ray is
+	// common (the prototype's '_chain_of').
+	std::vector<unsigned int> chain(1, start_piece);
+	std::vector<bool> seen(d_pieces.size(), false);
+	seen[start_piece] = true;
+	std::vector<unsigned int> todo(1, start_piece);
+	while (!todo.empty())
+	{
+		const Piece &piece = d_pieces[todo.back()];
+		todo.pop_back();
+		for (const boost::optional<unsigned int> &v : { piece.start_vertex, piece.end_vertex })
+		{
+			const std::vector<Ray> &rays = d_vertices[*v].rays;
+			const auto is_not_common = [](const Ray &ray) { return !ray.is_common(); };
+			if (std::any_of(rays.begin(), rays.end(), is_not_common))
+			{
+				continue;
+			}
+			for (const Ray &ray : rays)
+			{
+				const unsigned int next = ray.subject_end->piece;
+				if (!seen[next])
+				{
+					seen[next] = true;
+					chain.push_back(next);
+					todo.push_back(next);
+				}
+			}
+		}
+	}
+	return chain;
+}
+
+
+bool
+GPlatesMaths::PolygonOverlay::Overlay::classify_anchorless_chain(
+		const std::vector<unsigned int> &chain)
+{
+	const UnitVector3D &subject_outside = d_subject_polygon->get_outside_point();
+	const UnitVector3D &clip_outside = d_clip.get_outside_point();
+
+	//
+	// The arc whose great circle is farthest from both reference points (the largest of the smaller
+	// of the two |dot(R, axis)|), so that each crossing arc from a reference point meets that great
+	// circle only at the arc's midpoint X, well away from both ends.
+	//
+	boost::optional<unsigned int> best;
+	double best_score = -1.0;
+	for (unsigned int p : chain)
+	{
+		const Piece &piece = d_pieces[p];
+		const GreatCircleArc &segment = d_rings[piece.ring].segments[*piece.single_arc_segment];
+		if (segment.is_zero_length())
+		{
+			continue;
+		}
+		const UnitVector3D &axis = segment.rotation_axis();
+		const double score = (std::min)(
+				std::fabs(dot(subject_outside, axis).dval()),
+				std::fabs(dot(clip_outside, axis).dval()));
+		if (score > best_score)
+		{
+			best_score = score;
+			best = p;
+		}
+	}
+	if (!best)
+	{
+		return false;
+	}
+
+	Piece &piece = d_pieces[*best];
+	const Piece &partner = d_pieces[*piece.common];
+	const RingView &subject_ring = d_rings[piece.ring];
+	const RingView &clip_ring = d_rings[partner.ring];
+	const UnitVector3D &axis = subject_ring.segments[*piece.single_arc_segment].rotation_axis();
+	const UnitVector3D midpoint = (
+			Vector3D(d_stops[piece.start_stop].position.position_vector()) +
+			Vector3D(d_stops[piece.end_stop].position.position_vector())).get_normalisation();
+
+	//
+	// Each input's membership on its reference point's side of the chain, from the parity of the
+	// crossings from that point to X leaving out the input's own segment along the chain. The
+	// outside point is outside its polygon; if its distance from the chain's great circle is below
+	// about 1e-6 radians (where the crossing arc could meet that great circle twice), or it is
+	// within that of X or its antipode, the polygon's second reference point is used, with its
+	// cached status.
+	//
+	const auto membership = [&](
+			const PolygonOnSphere &polygon,
+			const UnitVector3D &outside_point,
+			unsigned int excluded_segment,
+			UnitVector3D &reference) -> bool
+	{
+		const double min_sine = 1e-6;
+		bool status = false;
+		reference = outside_point;
+		if (std::fabs(dot(outside_point, axis).dval()) <= min_sine ||
+			cross(outside_point, midpoint).magSqrd().dval() <= min_sine * min_sine)
+		{
+			reference = polygon.get_second_reference_point().point;
+			status = polygon.get_second_reference_point().is_in_polygon;
+		}
+		return status != PointInPolygon::get_crossing_parity_excluding_segment(
+				polygon, reference, midpoint, excluded_segment);
+	};
+
+	UnitVector3D subject_reference = subject_outside;
+	UnitVector3D clip_reference = clip_outside;
+	const bool in_subject = membership(
+			*d_subject_polygon,
+			subject_outside,
+			subject_ring.first_segment_index + *piece.single_arc_segment,
+			subject_reference);
+	bool in_clip = membership(
+			d_clip,
+			clip_outside,
+			clip_ring.first_segment_index + *partner.single_arc_segment,
+			clip_reference);
+
+	// The two memberships describe the reference points' sides; crossing the chain flips both.
+	if ((dot(subject_reference, axis).dval() > 0) != (dot(clip_reference, axis).dval() > 0))
+	{
+		in_clip = !in_clip;
+	}
+
+	piece.common_class = (in_subject == in_clip) ? COMMON_SAME_SIDE : COMMON_OPPOSITE_SIDES;
+	piece.method = METHOD_ANCHORLESS;
+	return true;
 }

@@ -107,6 +107,30 @@ namespace GPlatesMaths
 
 
 		/**
+		 * The parity of the crossings between the arc from @a from_point to @a to_point and
+		 * every edge of @a polygon except segment @a excluded_segment_index (numbered through the
+		 * exterior ring and then each interior ring, as 'PolygonOnSphere::get_segment()' does),
+		 * counted as point-in-polygon counts them: exact sign tests, no threshold, low speed.
+		 *
+		 * For a @a to_point on (or within the thickness of) the excluded segment, this is the
+		 * parity at the points just before @a to_point, on @a from_point's side of that segment's
+		 * great circle, provided the arc meets the great circle only at @a to_point (that is,
+		 * @a from_point is not on it). With @a from_point outside the polygon, odd parity means
+		 * those points are inside it. The polygon overlay uses it to classify a common chain that
+		 * no other piece reaches.
+		 *
+		 * @a from_point must not be within about 1e-6 radians of @a to_point or its antipode
+		 * (the crossing arc's plane would be undefined).
+		 */
+		bool
+		get_crossing_parity_excluding_segment(
+				const PolygonOnSphere &polygon,
+				const UnitVector3D &from_point,
+				const UnitVector3D &to_point,
+				unsigned int excluded_segment_index);
+
+
+		/**
 		 * A data structure, wrapped around a @a PolygonOnSphere, that optimises
 		 * point-in-polygon tests and works with non-simple (eg, self-intersecting) polygons.
 		 *

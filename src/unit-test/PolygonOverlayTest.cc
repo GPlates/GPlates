@@ -1181,3 +1181,51 @@ TEST(PolygonOverlayTest, RaysWithoutDirection)
 	}
 	EXPECT_EQ(num_rays_without_direction, 2u);
 }
+
+
+
+// Anchorless chains (phase4b-design.md section 3.9, option 3): rings that run together all the way
+// round meet no non-common piece, so the sector walk has no anchor. Identical polygons are one
+// same-side chain, the subject wholly inside; a subject equal to a hole of the clip is an
+// opposite-sides chain, the subject wholly outside; and the same with the clip's vertices moved
+// within the thickness.
+TEST(PolygonOverlayTest, ClassifyAnchorless)
+{
+	// The clip's jittered copy moves each vertex by less than the thickness.
+	const double corners[4][2] = {
+			{ -0.01, -0.008 }, { 0.012, -0.01 }, { 0.009, 0.011 }, { -0.011, 0.007 } };
+	const double jitter[4][2] = { { 0.4, -0.3 }, { -0.5, 0.2 }, { 0.3, 0.6 }, { -0.2, -0.4 } };
+	ring_type ring, jittered;
+	for (unsigned int i = 0; i < 4; ++i)
+	{
+		ring.push_back(F.at(corners[i][0], corners[i][1]));
+		jittered.push_back(F.at(
+				corners[i][0] + jitter[i][0] * H,
+				corners[i][1] + jitter[i][1] * H));
+	}
+	const ring_type reversed(ring.rbegin(), ring.rend());
+
+	for (const ring_type *clip_ring : std::vector<const ring_type *>{ &ring, &reversed, &jittered })
+	{
+		SCOPED_TRACE(clip_ring == &ring ? "identical" :
+				(clip_ring == &reversed ? "reversed" : "jittered"));
+		{
+			const auto P = polygon(ring);
+			const auto Q = polygon(*clip_ring);
+			Overlay::Overlay overlay(*P, *Q);
+			EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INSIDE);
+			EXPECT_EQ(overlay.get_diagnostics().anchorless_resolved, 1u);
+			EXPECT_EQ(ring_classes(overlay, Overlay::SUBJECT, 0), "same same same same");
+		}
+		{
+			const auto P = polygon(ring);
+			const auto Q = polygon(square(-0.03, -0.03, 0.03, 0.03), { *clip_ring });
+			Overlay::Overlay overlay(*P, *Q);
+			EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_OUTSIDE);
+			EXPECT_EQ(overlay.get_diagnostics().anchorless_resolved, 1u);
+			EXPECT_EQ(
+					ring_classes(overlay, Overlay::SUBJECT, 0),
+					"opposite opposite opposite opposite");
+		}
+	}
+}

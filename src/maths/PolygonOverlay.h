@@ -439,6 +439,8 @@ namespace GPlatesMaths
 			unsigned int sector_classes = 0;      // common pieces classified by the sector walk
 			unsigned int midpoint_tests = 0;
 			unsigned int unresolved_pieces = 0;   // left unclassified (a common pair counts once)
+			unsigned int anchorless_resolved = 0; // common chains classified by option 3
+			unsigned int anchorless_arcs_max = 0; // most arcs in one such chain
 			unsigned int check_failures = 0;      // vertices with no consistent placement
 			unsigned int piece_side_disagreements = 0;  // debug builds: a piece's vertices disagree
 
@@ -672,6 +674,16 @@ namespace GPlatesMaths
 			sort_rays_anticlockwise(
 					const PointOnSphere &centre,
 					const std::vector<Ray> &rays);
+
+			//! The common subject pieces in @a start_piece's chain (through all-common vertices).
+			std::vector<unsigned int>
+			get_common_chain(
+					unsigned int start_piece) const;
+
+			//! Classify an arc of a chain no other piece reaches (option 3); false if none can be.
+			bool
+			classify_anchorless_chain(
+					const std::vector<unsigned int> &chain);
 
 			//! The input with exactly two ends at a vertex of six or more ends (it passes once).
 			static
