@@ -413,12 +413,26 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   whose apex is within the band. About 1 in 5000 `shared` cases; design 9.1's "none seen" no longer
   holds. Also noted: the second reference point's fallback is reached by no committed case.
 
+- 2026-11-04: **Phase 5 step 7 done: linking, split, clean-up** (`extract_rings`, the five operations).
+  The tests gain the output oracle (design 11.3, `src/unit-test/PolygonOverlayOracle.h`): all 772
+  committed and 6291 uncommitted cases pass under all five operations. Parity cannot see pairing, so the
+  snapshots also carry the prototype's rings for `and`, `diff`, `or` (planning `4fa0852`), compared where
+  the decomposition is unique; rings touching at two vertices split either way depending on the walk's
+  start (the prototype's is arbitrary), and are skipped (103 ring sets of about 7000 cases). A pairing
+  that is wrong at one vertex but non-crossing is undone by the split (walk-through 6.4), so only the
+  symmetric difference's crossing pairing is unguarded by the comparison; `LinkTwoSquares` pins it.
+  Found: two distinct vertices can lie within a computed crossing's rounding (6e-16 and 2e-12 rad
+  apart), where the prototype's floats coincide and its clean-up drops one; the C++ keeps both (no
+  merging by distance), so its output can hold near-zero edges. **For step 14's output filters**: whether
+  to drop such points. Deviation from design 9.1: a pairing failure throws `InconsistentOverlayException`
+  (counted when not throwing), rather than asserting.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
-    2026-11-04). Review 2 done. Next: step 7 (linking, split, clean-up);
-    open: the three bundle-vertex failures (Status, review 2 entry). The prototype comparison is
+    2026-11-04). Review 2 done; step 7 (linking) done. Next: step 8 (grouping, output side, hemisphere check,
+    orientation); open: the three bundle-vertex failures (Status, review 2 entry). The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries
