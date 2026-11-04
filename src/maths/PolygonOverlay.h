@@ -522,6 +522,9 @@ namespace GPlatesMaths
 			unsigned int grouping_failures = 0;       // a hole whose parent is not an exterior
 			unsigned int hemisphere_check_failures = 0;  // the output read as its complement
 			unsigned int hemisphere_check_skipped = 0;   // no reference point clear of both
+
+			// Provenance, accumulated over every extract.
+			unsigned int provenance_mismatches = 0;   // a segment's ends on no one input segment
 		};
 
 
@@ -585,6 +588,47 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Where an output point lies on an input (phase4b-design.md section 2.8): a vertex, or a
+		 * segment and the angle fraction along it.
+		 */
+		class Location
+		{
+		public:
+			//! 0 for the exterior ring (or a polyline), 'i + 1' for interior ring 'i'.
+			unsigned int ring;
+
+			//! A vertex index, or a segment index when 'ratio' is set.
+			unsigned int index;
+
+			//! None: the vertex itself; else the angle fraction along segment 'index'
+			//! (GreatCircleArc::point_on_arc's parameter).
+			boost::optional<double> ratio;
+		};
+
+
+		/**
+		 * Where an output point came from (phase4b-design.md section 7): its location on the
+		 * subject (relative to the original subject when composed through a cascade, section 7.2),
+		 * and on the clip that made it, when it lies on that clip's outline.
+		 */
+		class Provenance
+		{
+		public:
+			//! None: a point of the clip's outline inside the subject (a cut).
+			boost::optional<Location> subject;
+
+			//! Set for every point on the outline of clip 'clip_index'.
+			boost::optional<Location> clip;
+
+			//! Which clip of a cascade 'clip' is on (Options::clip_index; 0 outside a cascade).
+			unsigned int clip_index = 0;
+		};
+
+		//! One per point of a geometry, in GeometryUtils::get_geometry_points order.
+		typedef std::vector<Provenance> provenance_seq_type;
+
+
+		/**
 		 * One output ring (phase4b-design.md section 2.8). In an OutputPolygon it has the output on
 		 * its left: an exterior runs anticlockwise seen from outside the sphere, a hole clockwise.
 		 */
@@ -592,6 +636,9 @@ namespace GPlatesMaths
 		{
 		public:
 			std::vector<PointOnSphere> points;
+
+			//! One per point, when Options::want_provenance (else empty).
+			provenance_seq_type provenances;
 		};
 
 
@@ -604,6 +651,9 @@ namespace GPlatesMaths
 		public:
 			std::vector<PointOnSphere> points;
 			bool inside;
+
+			//! One per point, when Options::want_provenance (else empty).
+			provenance_seq_type provenances;
 		};
 
 
@@ -638,6 +688,30 @@ namespace GPlatesMaths
 			 * only; false for a caller that wants such pieces outside.
 			 */
 			bool polyline_along_is_inside = true;
+
+			//! Whether the outputs carry a Provenance per point (phase4b-design.md section 7).
+			bool want_provenance = false;
+
+			/**
+			 * The subject's own provenance, one per point (get_geometry_points order), when the
+			 * subject is a piece of an earlier overlay in a cascade: the outputs' provenance is
+			 * then composed with it, relative to the original (section 7.2). Must outlive the
+			 * overlay.
+			 */
+			const provenance_seq_type *subject_provenance = nullptr;
+
+			/**
+			 * With @a subject_provenance: the vertex count of each ring of the original subject
+			 * (a polygon's), and of each earlier clip's rings by clip index, so that composing can
+			 * tell a ring's last segment (vertex 0 ends it). Without them a location at vertex 0 is
+			 * taken for the start of segment 0 only, and an edge needing the wrap-around is counted
+			 * as a mismatch (Diagnostics::provenance_mismatches): never a wrong location.
+			 */
+			std::vector<unsigned int> subject_ring_sizes;
+			std::vector<std::vector<unsigned int>> clip_ring_sizes;
+
+			//! The clip's index in a cascade, recorded in every clip location it makes.
+			unsigned int clip_index = 0;
 		};
 
 
@@ -944,6 +1018,36 @@ namespace GPlatesMaths
 			//! A polyline subject's classification (phase4b-design.md section 6.1).
 			void
 			classify_polyline_pieces();
+
+			//! An output point's provenance at an overlay vertex, walked from @a arriving_piece to
+			//! @a leaving_piece (either may be none), at @a position.
+			Provenance
+			get_vertex_provenance(
+					unsigned int vertex_index,
+					const PointOnSphere &position,
+					boost::optional<unsigned int> arriving_piece,
+					boost::optional<unsigned int> leaving_piece) const;
+
+			//! An output point's provenance at a stop that is an original vertex of its ring.
+			Provenance
+			get_original_vertex_provenance(
+					unsigned int stop_index) const;
+
+			//! A polyline subject's output point's provenance at one of its stops.
+			Provenance
+			get_polyline_stop_provenance(
+					unsigned int stop_index) const;
+
+			/**
+			 * A location on this overlay's subject, composed with Options::subject_provenance
+			 * (section 7.2) into @a provenance's subject (and an earlier clip's location, for a
+			 * point of an earlier cut); unchanged without a table.
+			 */
+			void
+			compose_subject_location(
+					const RingView &ring,
+					const Location &location,
+					Provenance &provenance) const;
 
 			//! Up to Options::max_repair_rounds of repair at the first failing vertex.
 			void

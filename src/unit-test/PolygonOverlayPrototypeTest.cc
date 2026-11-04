@@ -29,6 +29,7 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -491,6 +492,40 @@ namespace
 
 
 	/**
+	 * Whether a vertex of @a overlay holds two original vertices of one input (by the records at
+	 * them): a dense shared edge's identity group. A piece's edge can then span the group, and its
+	 * ends lie on no one segment of the original, so composing a provenance through a cascade
+	 * fails there (counted: phase4b-design.md section 7.2).
+	 */
+	bool
+	holds_two_vertices_of_one_input(
+			const Overlay::Overlay &overlay)
+	{
+		const std::vector<Intersection> &records = overlay.get_graph().unordered_intersections;
+		for (const Overlay::Vertex &vertex : overlay.get_vertices())
+		{
+			std::set<unsigned int> subject_vertices, clip_vertices;
+			for (unsigned int r : overlay.get_vertex_records(vertex))
+			{
+				if (records[r].is_on_segment1_start())
+				{
+					subject_vertices.insert(records[r].segment_index1);
+				}
+				if (records[r].is_on_segment2_start())
+				{
+					clip_vertices.insert(records[r].segment_index2);
+				}
+			}
+			if (subject_vertices.size() > 1 || clip_vertices.size() > 1)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	/**
 	 * A polyline subject's output (phase4b-design.md section 6.1), by the oracle along it and,
 	 * where no band piece differs and the prototype's runs are the same in every clean tie order,
 	 * against the prototype's runs: their classes and their named points, in order.
@@ -512,6 +547,22 @@ namespace
 		unsigned int num_tested = 0;
 		const unsigned int failures = PolygonOverlayOracle::count_polyline_failures(
 				L, Q, overlay, polylines, num_tested);
+		unsigned int provenance_failures = 0;
+		for (const Overlay::OutputPolyline &polyline : polylines)
+		{
+			provenance_failures += PolygonOverlayOracle::count_provenance_failures(
+					prototype_case.rings[0],
+					{ prototype_case.rings[1] },
+					polyline.points,
+					polyline.provenances,
+					PolygonOverlayOracle::get_margin(overlay));
+		}
+		if (provenance_failures != 0)
+		{
+			++num_oracle_failures;
+			return "classes agree, but " + std::to_string(provenance_failures) +
+					" output points' provenance is wrong";
+		}
 		if (failures != 0 || overlay.get_diagnostics().ll_disagreements != 0)
 		{
 			++num_oracle_failures;
@@ -651,6 +702,7 @@ namespace
 		// Count an inconsistency rather than throw, so that the case's report is complete.
 		Overlay::Options options;
 		options.throw_if_inconsistent = false;
+		options.want_provenance = true;
 		const std::unique_ptr<Overlay::Overlay> overlay_ptr(L
 				? new Overlay::Overlay(**L, *Q, options)
 				: new Overlay::Overlay(*P, *Q, options));
@@ -932,6 +984,23 @@ namespace
 								<< samples.size() << " samples wrong; ";
 					}
 
+					// Every point's provenance resolves to it (phase4b-design.md section 7.1).
+					unsigned int provenance_failures = 0;
+					for (const Overlay::OutputRing &ring : rings)
+					{
+						provenance_failures += PolygonOverlayOracle::count_provenance_failures(
+								prototype_case.rings[0],
+								{ prototype_case.rings[1] },
+								ring.points,
+								ring.provenances,
+								PolygonOverlayOracle::get_margin(overlay));
+					}
+					if (provenance_failures != 0)
+					{
+						oracle_report << "operation " << operation << ": " << provenance_failures
+								<< " points' provenance wrong; ";
+					}
+
 					// Grouped into polygons, with the output on the left of every ring. (Where
 					// input rings cross, only that no hemisphere failure is found: the output rings
 					// cross where the input's do, and their grouping into polygons means nothing.)
@@ -971,7 +1040,76 @@ namespace
 								<< tolerance << "); ";
 					}
 				}
+				// A second step of a cascade (phase4b-design.md section 7.2): each piece of the
+				// difference, with its provenance table, overlaid with the clip again (the pieces
+				// run along its outline, the hardest case for composition); every point of both
+				// outputs must resolve against the original subject.
+				if (!input_rings_cross)
+				{
+					std::vector<Overlay::OutputPolygon> pieces;
+					overlay.extract(Overlay::DIFFERENCE, pieces);
+					for (const Overlay::OutputPolygon &piece : pieces)
+					{
+						std::vector<std::vector<PointOnSphere>> interiors;
+						Overlay::provenance_seq_type table = piece.exterior.provenances;
+						for (const Overlay::OutputRing &interior : piece.interiors)
+						{
+							interiors.push_back(interior.points);
+							table.insert(
+									table.end(),
+									interior.provenances.begin(),
+									interior.provenances.end());
+						}
+						const PolygonOnSphere::non_null_ptr_to_const_type S =
+								PolygonOnSphere::create(piece.exterior.points, interiors);
+						Overlay::Options second_options = options;
+						second_options.subject_provenance = &table;
+						second_options.clip_index = 1;
+						for (const std::vector<PointOnSphere> &ring : prototype_case.rings[0])
+						{
+							second_options.subject_ring_sizes.push_back(ring.size());
+						}
+						second_options.clip_ring_sizes.resize(1);
+						for (const std::vector<PointOnSphere> &ring : prototype_case.rings[1])
+						{
+							second_options.clip_ring_sizes[0].push_back(ring.size());
+						}
+						Overlay::Overlay second(*S, *Q, second_options);
+						second.classify();
+						unsigned int failures = 0;
+						for (Overlay::Operation operation :
+								{ Overlay::INTERSECTION, Overlay::DIFFERENCE })
+						{
+							std::vector<Overlay::OutputRing> rings;
+							second.extract_rings(operation, rings);
+							for (const Overlay::OutputRing &ring : rings)
+							{
+								failures += PolygonOverlayOracle::count_provenance_failures(
+										prototype_case.rings[0],
+										{ prototype_case.rings[1], prototype_case.rings[1] },
+										ring.points,
+										ring.provenances,
+										2 * PolygonOverlayOracle::get_margin(overlay));
+							}
+						}
+						if (failures != 0 ||
+							(second.get_diagnostics().provenance_mismatches != 0 &&
+								!holds_two_vertices_of_one_input(overlay)))
+						{
+							oracle_report << "a second step: " << failures
+									<< " points' provenance wrong, "
+									<< second.get_diagnostics().provenance_mismatches
+									<< " mismatches; ";
+						}
+					}
+				}
+
 				const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
+				if (diagnostics.provenance_mismatches != 0)
+				{
+					oracle_report << diagnostics.provenance_mismatches
+							<< " provenance mismatches; ";
+				}
 				if (diagnostics.pairing_failures != 0 || diagnostics.keep_mismatches != 0)
 				{
 					oracle_report << diagnostics.pairing_failures << " pairing failures, "

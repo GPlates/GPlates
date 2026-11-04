@@ -3543,6 +3543,11 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 	public:
 		boost::optional<unsigned int> vertex;   // an overlay vertex, or an interior stop's point
 		PointOnSphere position;
+
+		//! At a vertex: the piece the walk leaves along; else the stop (for provenance).
+		unsigned int piece_or_stop;
+
+		Provenance provenance;
 	};
 	std::vector<std::vector<Entry>> walked;
 	std::vector<std::vector<bool>> used(d_vertices.size());
@@ -3567,7 +3572,8 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 				used[ray.first][ray.second] = true;
 				const End end = ray_end(ray);
 				const Piece &piece = d_pieces[end.piece];
-				ring.push_back(Entry{ ray.first, d_vertices[ray.first].position });
+				ring.push_back(Entry{
+						ray.first, d_vertices[ray.first].position, end.piece, Provenance() });
 
 				// The piece's interior stops, in the direction walked.
 				std::vector<unsigned int> stops;
@@ -3587,7 +3593,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 				}
 				for (unsigned int s : stops)
 				{
-					ring.push_back(Entry{ boost::none, d_stops[s].position });
+					ring.push_back(Entry{ boost::none, d_stops[s].position, s, Provenance() });
 				}
 
 				const ray_ref_type arrive = ray_of_end[2 * end.piece + (end.at_end ? 0 : 1)];
@@ -3610,6 +3616,31 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 				++num_pairing_failures;
 				continue;
 			}
+			if (d_options.want_provenance)
+			{
+				// A vertex entry arrives along the piece the previous vertex entry left along.
+				boost::optional<unsigned int> arriving;
+				for (const Entry &entry : ring)
+				{
+					if (entry.vertex)
+					{
+						arriving = entry.piece_or_stop;
+					}
+				}
+				for (Entry &entry : ring)
+				{
+					if (entry.vertex)
+					{
+						entry.provenance = get_vertex_provenance(
+								*entry.vertex, entry.position, arriving, entry.piece_or_stop);
+						arriving = entry.piece_or_stop;
+					}
+					else
+					{
+						entry.provenance = get_original_vertex_provenance(entry.piece_or_stop);
+					}
+				}
+			}
 			walked.push_back(ring);
 		}
 	}
@@ -3625,7 +3656,13 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 			const RingView &ring_view = d_rings[piece.ring];
 			for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
 			{
-				ring.push_back(Entry{ boost::none, d_stops[s].position });
+				ring.push_back(Entry{
+						boost::none,
+						d_stops[s].position,
+						s,
+						d_options.want_provenance
+								? get_original_vertex_provenance(s)
+								: Provenance() });
 			}
 			walked.push_back(ring);
 		}
@@ -3678,6 +3715,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 	for (const std::vector<Entry> &ring : split)
 	{
 		std::vector<PointOnSphere> points;
+		provenance_seq_type provenances;
 		for (const Entry &entry : ring)
 		{
 			if (!points.empty() && is_same_position(points.back(), entry.position))
@@ -3686,10 +3724,18 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 				continue;
 			}
 			points.push_back(entry.position);
+			if (d_options.want_provenance)
+			{
+				provenances.push_back(entry.provenance);
+			}
 		}
 		while (points.size() > 1 && is_same_position(points.front(), points.back()))
 		{
 			points.pop_back();
+			if (d_options.want_provenance)
+			{
+				provenances.pop_back();
+			}
 			++d_diagnostics.repeated_positions_removed;
 		}
 
@@ -3709,7 +3755,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 			continue;
 		}
 
-		rings.push_back(OutputRing{ points });
+		rings.push_back(OutputRing{ points, provenances });
 	}
 
 	d_diagnostics.pairing_failures += num_pairing_failures;
@@ -3877,6 +3923,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 		if (interior_on_left != exterior)
 		{
 			std::reverse(ring.points.begin(), ring.points.end());
+			std::reverse(ring.provenances.begin(), ring.provenances.end());
 		}
 		return ring;
 	};
@@ -3967,8 +4014,10 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_polylines(
 		const Piece &piece = d_pieces[range.first + i];
 		if (!run_class || *run_class != classes[i])
 		{
-			polylines.push_back(
-					OutputPolyline{ std::vector<PointOnSphere>(), classes[i] == CLASS_INSIDE });
+			polylines.push_back(OutputPolyline{
+					std::vector<PointOnSphere>(),
+					classes[i] == CLASS_INSIDE,
+					provenance_seq_type() });
 			run_class = classes[i];
 		}
 		std::vector<PointOnSphere> &points = polylines.back().points;
@@ -3978,9 +4027,338 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_polylines(
 			if (points.empty() || !is_same_position(points.back(), position))
 			{
 				points.push_back(position);
+				if (d_options.want_provenance)
+				{
+					polylines.back().provenances.push_back(get_polyline_stop_provenance(s));
+				}
 			}
 		}
 	}
+}
+
+
+GPlatesMaths::PolygonOverlay::Provenance
+GPlatesMaths::PolygonOverlay::Overlay::get_vertex_provenance(
+		unsigned int vertex_index,
+		const PointOnSphere &position,
+		boost::optional<unsigned int> arriving_piece,
+		boost::optional<unsigned int> leaving_piece) const
+{
+	//
+	// phase4b-design.md section 7.1: a vertex is output at one position, so its provenance is that
+	// position's. A vertex holding a subject vertex is that vertex; otherwise the point is on the
+	// subject only where the walk runs along a subject piece here (else it is a cut), at the ratio
+	// of the position's projection onto that piece's segment. Every vertex lies on the clip.
+	//
+	const Vertex &vertex = d_vertices[vertex_index];
+
+	// The stop at this vertex of a walked piece of one side (none if neither walked piece is).
+	const auto stop_of_side = [&](Side side) -> boost::optional<unsigned int>
+	{
+		for (const boost::optional<unsigned int> &p : { leaving_piece, arriving_piece })
+		{
+			if (!p || d_rings[d_pieces[*p].ring].side != side)
+			{
+				continue;
+			}
+			const Piece &piece = d_pieces[*p];
+			return (piece.start_vertex && *piece.start_vertex == vertex_index)
+					? piece.start_stop
+					: piece.end_stop;
+		}
+		return boost::none;
+	};
+	// A segment location of a stop inside a segment, by projecting the position.
+	const auto segment_location = [&](unsigned int stop_index)
+	{
+		const Stop &stop = d_stops[stop_index];
+		unsigned int ring = 0;
+		for (unsigned int r = 0; r < d_rings.size(); ++r)
+		{
+			if (stop_index >= d_rings[r].first_stop && stop_index < d_rings[r].end_stop)
+			{
+				ring = r;
+				break;
+			}
+		}
+		const RingView &ring_view = d_rings[ring];
+		return std::make_pair(ring, Location{
+				ring_view.ring_index,
+				stop.segment_out,
+				ratio_along_segment(ring_view.segments[stop.segment_out], position) });
+	};
+
+	Provenance provenance;
+	provenance.clip_index = d_options.clip_index;
+
+	if (vertex.clip_vertex)
+	{
+		provenance.clip =
+				Location{ vertex.clip_vertex->ring, vertex.clip_vertex->index, boost::none };
+	}
+	else if (const boost::optional<unsigned int> stop = stop_of_side(CLIP))
+	{
+		provenance.clip = segment_location(*stop).second;
+	}
+	else
+	{
+		// The clip's segment of the vertex's first record (no clip piece is walked here).
+		const GeometryIntersect::Intersection &record =
+				d_graph.unordered_intersections[d_vertex_records[vertex.first_record]];
+		const unsigned int ring = ring_of_segment(CLIP, record.segment_index2);
+		const RingView &ring_view = d_rings[ring];
+		const unsigned int segment = record.segment_index2 - ring_view.first_segment_index;
+		provenance.clip = Location{
+				ring_view.ring_index,
+				segment,
+				ratio_along_segment(ring_view.segments[segment], position) };
+	}
+
+	// The subject's location, after the clip's: a vertex lies on this clip, so an earlier clip's
+	// location from a cascade's table (section 7.2) does not replace this one.
+	if (vertex.subject_vertex)
+	{
+		const RingView &ring = d_rings[d_side_rings_begin[SUBJECT] + vertex.subject_vertex->ring];
+		compose_subject_location(
+				ring,
+				Location{ vertex.subject_vertex->ring, vertex.subject_vertex->index, boost::none },
+				provenance);
+	}
+	else if (const boost::optional<unsigned int> stop = stop_of_side(SUBJECT))
+	{
+		const std::pair<unsigned int, Location> location = segment_location(*stop);
+		compose_subject_location(d_rings[location.first], location.second, provenance);
+	}
+	return provenance;
+}
+
+
+GPlatesMaths::PolygonOverlay::Provenance
+GPlatesMaths::PolygonOverlay::Overlay::get_original_vertex_provenance(
+		unsigned int stop_index) const
+{
+	unsigned int ring = 0;
+	while (!(stop_index >= d_rings[ring].first_stop && stop_index < d_rings[ring].end_stop))
+	{
+		++ring;
+	}
+	const RingView &ring_view = d_rings[ring];
+	const Location location{ ring_view.ring_index, d_stops[stop_index].segment_out, boost::none };
+
+	Provenance provenance;
+	provenance.clip_index = d_options.clip_index;
+	if (ring_view.side == SUBJECT)
+	{
+		compose_subject_location(ring_view, location, provenance);
+	}
+	else
+	{
+		provenance.clip = location;  // a vertex of the clip inside the subject (a cut)
+	}
+	return provenance;
+}
+
+
+GPlatesMaths::PolygonOverlay::Provenance
+GPlatesMaths::PolygonOverlay::Overlay::get_polyline_stop_provenance(
+		unsigned int stop_index) const
+{
+	const Stop &stop = d_stops[stop_index];
+	if (stop.kind != Stop::RECORD)
+	{
+		return get_original_vertex_provenance(stop_index);
+	}
+
+	// A record on the polyline: the stop itself (the polyline's output is at its stops).
+	const RingView &ring_view = d_rings[d_side_rings_begin[SUBJECT]];
+	Provenance provenance =
+			get_vertex_provenance(stop.vertex, stop.position, boost::none, boost::none);
+	provenance.subject = boost::none;
+	compose_subject_location(
+			ring_view,
+			stop.at_vertex
+					? Location{ 0, stop.segment_out, boost::none }
+					: Location{ 0, stop.segment_out, stop.ratio },
+			provenance);
+	return provenance;
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::compose_subject_location(
+		const RingView &ring,
+		const Location &location,
+		Provenance &provenance) const
+{
+	const provenance_seq_type *table = d_options.subject_provenance;
+	if (!table)
+	{
+		provenance.subject = location;
+		return;
+	}
+
+	// The table's index of a vertex of the subject (its rings' points in order).
+	const auto table_index = [&](unsigned int ring_index, unsigned int vertex_index)
+	{
+		unsigned int index = 0;
+		for (unsigned int r = d_side_rings_begin[SUBJECT]; r < d_side_rings_end[SUBJECT]; ++r)
+		{
+			if (d_rings[r].ring_index == ring_index)
+			{
+				break;
+			}
+			index += d_rings[r].num_vertices();
+		}
+		return index + vertex_index;
+	};
+	unsigned int num_points = 0;
+	for (unsigned int r = d_side_rings_begin[SUBJECT]; r < d_side_rings_end[SUBJECT]; ++r)
+	{
+		num_points += d_rings[r].num_vertices();
+	}
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			table->size() == num_points,
+			GPLATES_ASSERTION_SOURCE);
+
+	// A vertex of the piece: its own provenance (from the original, or an earlier cut).
+	if (!location.ratio)
+	{
+		const Provenance &entry = (*table)[table_index(location.ring, location.index)];
+		provenance.subject = entry.subject;
+		if (!provenance.clip)
+		{
+			provenance.clip = entry.clip;
+			provenance.clip_index = entry.clip_index;
+		}
+		return;
+	}
+
+	//
+	// A point inside the piece's segment j, between its points a = j and b = j + 1 (cyclically
+	// for a ring): every edge of a piece is a sub-arc of one edge of its own input, by induction
+	// through the cascade, so a and b lie on one segment S of the original (or of an earlier clip),
+	// and the ratio along S is t_a + t (t_b - t_a). Not quite exactly: a piece's vertex can be off
+	// S by up to its identity group's extent (its output position), so a composed location is a
+	// projection; and not always (below).
+	//
+	const unsigned int a_index = location.index;
+	const unsigned int b_index =
+			(location.index + 1 == ring.num_vertices()) ? 0 : location.index + 1;
+	const Provenance &a = (*table)[table_index(location.ring, a_index)];
+	const Provenance &b = (*table)[table_index(location.ring, b_index)];
+
+	// The segment two locations lie on, and their ratios along it.
+	// The segment two locations of one input lie on, and their ratios along it. @a ring_sizes are
+	// that input's rings' vertex counts, for a polygon's wrap-around (vertex 0 ends its ring's last
+	// segment); without them (or for a polyline, none) no wrap-around is assumed, so that a pair
+	// of locations on no one segment is a mismatch, never a wrong segment.
+	const auto shared_segment = [](
+			const Location &x,
+			const Location &y,
+			const std::vector<unsigned int> *ring_sizes)
+			-> boost::optional<std::tuple<unsigned int, unsigned int, double, double>>
+	{
+		if (x.ring != y.ring)
+		{
+			return boost::none;
+		}
+		const boost::optional<unsigned int> last_segment =
+				(ring_sizes && x.ring < ring_sizes->size() && (*ring_sizes)[x.ring] > 0)
+						? boost::optional<unsigned int>((*ring_sizes)[x.ring] - 1)
+						: boost::none;
+		const auto on_segment = [&](const Location &l, unsigned int segment)
+				-> boost::optional<double>
+		{
+			if (l.ratio)
+			{
+				return l.index == segment ? boost::optional<double>(*l.ratio) : boost::none;
+			}
+			if (l.index == segment)
+			{
+				return 0.0;
+			}
+			if (l.index == segment + 1 ||
+				(l.index == 0 && last_segment && segment == *last_segment))
+			{
+				return 1.0;
+			}
+			return boost::none;
+		};
+		// The segments either location can be on: its own, or the two at a vertex.
+		std::vector<unsigned int> candidates;
+		for (const Location *l : { &x, &y })
+		{
+			candidates.push_back(l->index);
+			if (!l->ratio && l->index > 0)
+			{
+				candidates.push_back(l->index - 1);
+			}
+			if (!l->ratio && l->index == 0 && last_segment)
+			{
+				candidates.push_back(*last_segment);
+			}
+		}
+		for (unsigned int segment : candidates)
+		{
+			const boost::optional<double> tx = on_segment(x, segment);
+			const boost::optional<double> ty = on_segment(y, segment);
+			if (tx && ty)
+			{
+				return std::make_tuple(x.ring, segment, *tx, *ty);
+			}
+		}
+		return boost::none;
+	};
+
+	// The edge is along the original subject if both ends are on one of its segments; else along
+	// an earlier clip if both are on one of its segments (an edge from the subject's outline to a
+	// cut point is along the earlier clip, though its first end is on the subject too).
+	const double t = *location.ratio;
+	if (a.subject && b.subject)
+	{
+		if (const auto segment = shared_segment(
+				*a.subject,
+				*b.subject,
+				d_subject_polyline ? nullptr : &d_options.subject_ring_sizes))
+		{
+			provenance.subject = Location{
+					std::get<0>(*segment),
+					std::get<1>(*segment),
+					std::get<2>(*segment) +
+							t * (std::get<3>(*segment) - std::get<2>(*segment)) };
+			return;
+		}
+	}
+	if (a.clip && b.clip && a.clip_index == b.clip_index)
+	{
+		// Both ends on an earlier clip's outline: a point of an earlier cut.
+		if (const auto segment = shared_segment(
+				*a.clip,
+				*b.clip,
+				a.clip_index < d_options.clip_ring_sizes.size()
+						? &d_options.clip_ring_sizes[a.clip_index]
+						: nullptr))
+		{
+			provenance.subject = boost::none;
+			if (!provenance.clip)
+			{
+				provenance.clip = Location{
+						std::get<0>(*segment),
+						std::get<1>(*segment),
+						std::get<2>(*segment) +
+							t * (std::get<3>(*segment) - std::get<2>(*segment)) };
+				provenance.clip_index = a.clip_index;
+			}
+			return;
+		}
+	}
+
+	// The induction fails where an identity vertex holds two vertices of one input (dense shared
+	// edges): a piece's edge then spans the group, from a vertex before it to one after it, so
+	// its ends are on no one segment. No subject location, counted (never a wrong value; a
+	// coverage interpolates such a point along its run, as a cut point, section 7.3).
+	provenance.subject = boost::none;
+	++d_diagnostics.provenance_mismatches;
 }
 
 

@@ -2180,3 +2180,225 @@ TEST(PolygonOverlayTest, PolylinePinch)
 	EXPECT_EQ(polyline_runs(overlay), (runs_type{ { false, 2 }, { true, 3 } }));
 	check_polyline_oracle(*L, *Q, overlay);
 }
+
+
+//
+// Provenance (phase4b-design.md section 7): every output point's resolves to it, and composes
+// through a cascade (the outside pieces of one plate cut by the next).
+//
+
+namespace
+{
+	typedef std::vector<std::vector<PointOnSphere>> rings_type;
+
+	//! A polygon's rings' points, in get_geometry_points order.
+	rings_type
+	rings_of(
+			const PolygonOnSphere &polygon)
+	{
+		rings_type rings{ ring_type(
+				polygon.exterior_ring_vertex_begin(), polygon.exterior_ring_vertex_end()) };
+		for (unsigned int i = 0; i < polygon.number_of_interior_rings(); ++i)
+		{
+			rings.push_back(ring_type(
+					polygon.interior_ring_vertex_begin(i), polygon.interior_ring_vertex_end(i)));
+		}
+		return rings;
+	}
+
+	//! Every point of @a polygons resolves to it, against the original subject and the clips.
+	unsigned int
+	provenance_failures(
+			const std::vector<Overlay::OutputPolygon> &polygons,
+			const rings_type &subject,
+			const std::vector<rings_type> &clips,
+			double tolerance)
+	{
+		unsigned int failures = 0;
+		for (const Overlay::OutputPolygon &polygon : polygons)
+		{
+			failures += PolygonOverlayOracle::count_provenance_failures(
+					subject,
+					clips,
+					polygon.exterior.points,
+					polygon.exterior.provenances,
+					tolerance);
+			for (const Overlay::OutputRing &interior : polygon.interiors)
+			{
+				failures += PolygonOverlayOracle::count_provenance_failures(
+						subject, clips, interior.points, interior.provenances, tolerance);
+			}
+		}
+		return failures;
+	}
+}
+
+
+// The provenance of each kind of point (section 7.1), on holes too: two squares overlapping at a
+// corner, the subject with a hole. Original vertices of either input, crossings (a subject segment
+// and a clip segment), and the clip's vertex inside the subject (a cut point, with no subject
+// location).
+TEST(PolygonOverlayTest, Provenance)
+{
+	const auto P = polygon(
+			square(-0.02, -0.02, 0.005, 0.005),
+			{ square(-0.015, -0.015, -0.008, -0.008) });
+	const auto Q = polygon(square(-0.005, -0.005, 0.02, 0.02));
+	Overlay::Options options;
+	options.want_provenance = true;
+	Overlay::Overlay overlay(*P, *Q, options);
+	classify_and_check(overlay);
+
+	for (Overlay::Operation operation : ALL_OPERATIONS)
+	{
+		SCOPED_TRACE(operation);
+		std::vector<Overlay::OutputPolygon> polygons;
+		overlay.extract(operation, polygons);
+		EXPECT_EQ(provenance_failures(polygons, rings_of(*P), { rings_of(*Q) }, 2 * H), 0u);
+	}
+
+	// The intersection: the clip's corner (-0.005, -0.005) inside the subject is a cut point.
+	std::vector<Overlay::OutputPolygon> polygons;
+	overlay.extract(Overlay::INTERSECTION, polygons);
+	unsigned int num_cut = 0, num_crossing = 0, num_subject_vertex = 0;
+	for (const Overlay::OutputPolygon &polygon : polygons)
+	{
+		for (const Overlay::OutputRing *ring : { &polygon.exterior })
+		{
+			for (const Overlay::Provenance &provenance : ring->provenances)
+			{
+				num_cut +=
+						(!provenance.subject && provenance.clip && !provenance.clip->ratio) ? 1 : 0;
+				num_crossing += (provenance.subject && provenance.subject->ratio &&
+						provenance.clip && provenance.clip->ratio) ? 1 : 0;
+				num_subject_vertex += (provenance.subject && !provenance.subject->ratio) ? 1 : 0;
+			}
+		}
+	}
+	EXPECT_GE(num_cut, 1u);
+	EXPECT_GE(num_crossing, 2u);
+	EXPECT_GE(num_subject_vertex, 1u);
+	EXPECT_EQ(overlay.get_diagnostics().provenance_mismatches, 0u);
+}
+
+
+// A two-step cascade (section 7.2): the subject's pieces outside plate 1 are cut by plate 2 with
+// their provenance tables, and every output point resolves against the original subject, or plate
+// 1 or plate 2 by its clip index. Plate 2 both beside plate 1 (sharing its edge, along which the
+// pieces' cut points run) and cutting the pieces again (composing a ratio along a segment of a
+// piece that is a sub-arc of the original's). The subject's ring starts at its top right corner,
+// so that its closing segment, the right edge, is cut by plate 2: composing a ratio on it needs
+// the ring's size (vertex 0 ends that segment).
+TEST(PolygonOverlayTest, ProvenanceCascade)
+{
+	const auto P = polygon(
+			ring_type{ F.at(0.03, 0.02), F.at(-0.03, 0.02), F.at(-0.03, -0.02), F.at(0.03, -0.02) },
+			{ square(-0.006, -0.006, 0.004, 0.004) });
+	const auto plate_1 = polygon(square(-0.05, -0.05, 0.0, 0.05));
+	for (double plate_2_left : { 0.0, 0.012 })
+	{
+		SCOPED_TRACE(plate_2_left);
+		const auto plate_2 = polygon(square(plate_2_left, -0.01, 0.05, 0.05));
+
+		Overlay::Options options;
+		options.want_provenance = true;
+		Overlay::Overlay first(*P, *plate_1, options);
+		classify_and_check(first);
+		std::vector<Overlay::OutputPolygon> outside;
+		first.extract(Overlay::DIFFERENCE, outside);
+		ASSERT_FALSE(outside.empty());
+
+		for (const Overlay::OutputPolygon &piece : outside)
+		{
+			std::vector<ring_type> interiors;
+			Overlay::provenance_seq_type table = piece.exterior.provenances;
+			for (const Overlay::OutputRing &interior : piece.interiors)
+			{
+				interiors.push_back(interior.points);
+				table.insert(table.end(), interior.provenances.begin(), interior.provenances.end());
+			}
+			const auto S = polygon(piece.exterior.points, interiors);
+
+			Overlay::Options second_options;
+			second_options.want_provenance = true;
+			second_options.subject_provenance = &table;
+			second_options.clip_index = 1;
+			for (const ring_type &ring : rings_of(*P))
+			{
+				second_options.subject_ring_sizes.push_back(ring.size());
+			}
+			second_options.clip_ring_sizes = { { 4 } };  // plate 1, a square
+			Overlay::Overlay second(*S, *plate_2, second_options);
+			classify_and_check(second);
+			for (Overlay::Operation operation : { Overlay::INTERSECTION, Overlay::DIFFERENCE })
+			{
+				SCOPED_TRACE(operation);
+				std::vector<Overlay::OutputPolygon> polygons;
+				second.extract(operation, polygons);
+				EXPECT_EQ(
+						provenance_failures(
+								polygons,
+								rings_of(*P),
+								{ rings_of(*plate_1), rings_of(*plate_2) },
+								2 * H),
+						0u);
+			}
+			EXPECT_EQ(second.get_diagnostics().provenance_mismatches, 0u);
+		}
+	}
+}
+
+
+// A polyline's runs carry provenance too, and compose through a cascade.
+TEST(PolygonOverlayTest, ProvenancePolyline)
+{
+	const ring_type line_points{ F.at(-0.03, 0.001), F.at(0.0, 0.004), F.at(0.03, 0.002) };
+	const auto L = PolylineOnSphere::create(line_points);
+	const auto plate_1 = polygon(square(-0.05, -0.05, -0.01, 0.05));
+	const auto plate_2 = polygon(square(0.01, -0.05, 0.05, 0.05));
+
+	Overlay::Options options;
+	options.want_provenance = true;
+	Overlay::Overlay first(*L, *plate_1, options);
+	first.classify();
+	std::vector<Overlay::OutputPolyline> runs;
+	first.extract_polylines(runs);
+	ASSERT_EQ(runs.size(), 2u);
+	for (const Overlay::OutputPolyline &run : runs)
+	{
+		EXPECT_EQ(
+				PolygonOverlayOracle::count_provenance_failures(
+						{ line_points },
+						{ rings_of(*plate_1) },
+						run.points,
+						run.provenances,
+						2 * H),
+				0u);
+	}
+
+	// The run outside plate 1, cut by plate 2.
+	const Overlay::OutputPolyline &outside = runs[1];
+	ASSERT_FALSE(outside.inside);
+	const auto piece = PolylineOnSphere::create(outside.points);
+	Overlay::Options second_options;
+	second_options.want_provenance = true;
+	second_options.subject_provenance = &outside.provenances;
+	second_options.clip_index = 1;
+	Overlay::Overlay second(*piece, *plate_2, second_options);
+	second.classify();
+	std::vector<Overlay::OutputPolyline> second_runs;
+	second.extract_polylines(second_runs);
+	EXPECT_EQ(second_runs.size(), 2u);
+	for (const Overlay::OutputPolyline &run : second_runs)
+	{
+		EXPECT_EQ(
+				PolygonOverlayOracle::count_provenance_failures(
+						{ line_points },
+						{ rings_of(*plate_1), rings_of(*plate_2) },
+						run.points,
+						run.provenances,
+						2 * H),
+				0u);
+	}
+	EXPECT_EQ(second.get_diagnostics().provenance_mismatches, 0u);
+}

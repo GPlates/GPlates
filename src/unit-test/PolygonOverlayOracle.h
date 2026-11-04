@@ -82,6 +82,19 @@ namespace PolygonOverlayOracle
 	}
 
 
+	//! Whether two points are the same stored position, coordinate for coordinate.
+	inline
+	bool
+	same_position(
+			const GPlatesMaths::PointOnSphere &a,
+			const GPlatesMaths::PointOnSphere &b)
+	{
+		return a.position_vector().x().dval() == b.position_vector().x().dval() &&
+				a.position_vector().y().dval() == b.position_vector().y().dval() &&
+				a.position_vector().z().dval() == b.position_vector().z().dval();
+	}
+
+
 	//! The oracle's margin M: max(10h, twice the widest record cluster, the records of a vertex).
 	inline
 	double
@@ -436,16 +449,92 @@ namespace PolygonOverlayOracle
 	}
 
 
-	//! Whether two points are the same stored position, coordinate for coordinate.
+	/**
+	 * The point a Location names on a geometry given as its rings' points (one ring for a
+	 * polyline, whose last segment does not wrap): a vertex, or the point at the angle fraction
+	 * along a segment (GreatCircleArc::point_on_arc's).
+	 */
 	inline
-	bool
-	same_position(
-			const GPlatesMaths::PointOnSphere &a,
-			const GPlatesMaths::PointOnSphere &b)
+	GPlatesMaths::PointOnSphere
+	resolve_location(
+			const std::vector<std::vector<GPlatesMaths::PointOnSphere>> &rings,
+			const GPlatesMaths::PolygonOverlay::Location &location)
 	{
-		return a.position_vector().x().dval() == b.position_vector().x().dval() &&
-				a.position_vector().y().dval() == b.position_vector().y().dval() &&
-				a.position_vector().z().dval() == b.position_vector().z().dval();
+		using namespace GPlatesMaths;
+		const std::vector<PointOnSphere> &ring = rings.at(location.ring);
+		if (!location.ratio)
+		{
+			return ring.at(location.index);
+		}
+		const PointOnSphere &a = ring.at(location.index);
+		const PointOnSphere &b = ring.at((location.index + 1) % ring.size());
+		if (same_position(a, b))
+		{
+			return a;
+		}
+		return GreatCircleArc::create(a, b).point_on_arc(*location.ratio);
+	}
+
+
+	/**
+	 * Output points whose provenance (phase4b-design.md section 7) does not resolve to them: a
+	 * subject or clip vertex must be the point exactly when @a exact_vertices (a vertex is output
+	 * at its own position), and within @a tolerance otherwise; a segment location within
+	 * @a tolerance (an output vertex is at its identity group's position, which can be off the
+	 * segment by the group's extent); a point with no subject location (a cut) must have a clip
+	 * location. @a clips are the clips by Provenance::clip_index.
+	 */
+	inline
+	unsigned int
+	count_provenance_failures(
+			const std::vector<std::vector<GPlatesMaths::PointOnSphere>> &subject,
+			const std::vector<std::vector<std::vector<GPlatesMaths::PointOnSphere>>> &clips,
+			const std::vector<GPlatesMaths::PointOnSphere> &points,
+			const GPlatesMaths::PolygonOverlay::provenance_seq_type &provenances,
+			double tolerance,
+			bool exact_vertices = true)
+	{
+		using namespace GPlatesMaths;
+		if (provenances.size() != points.size())
+		{
+			return points.size();
+		}
+		unsigned int num_failures = 0;
+		for (unsigned int i = 0; i < points.size(); ++i)
+		{
+			const PolygonOverlay::Provenance &provenance = provenances[i];
+			bool right = provenance.subject || provenance.clip;
+			for (const auto &located : {
+					std::make_pair(&subject, provenance.subject),
+					std::make_pair(
+							provenance.clip_index < clips.size()
+									? &clips[provenance.clip_index]
+									: nullptr,
+							provenance.clip) })
+			{
+				if (!right || !located.second)
+				{
+					continue;
+				}
+				if (!located.first)
+				{
+					right = false;
+					continue;
+				}
+				const PointOnSphere resolved = resolve_location(*located.first, *located.second);
+				if (!located.second->ratio && exact_vertices && located.first == &subject)
+				{
+					right = same_position(resolved, points[i]);
+				}
+				else
+				{
+					right = angle_between(
+							resolved.position_vector(), points[i].position_vector()) <= tolerance;
+				}
+			}
+			num_failures += right ? 0 : 1;
+		}
+		return num_failures;
 	}
 
 
