@@ -54,17 +54,18 @@
 // The data file is a frozen snapshot, exported from the Phase 4a prototype of the overlay (a
 // Python implementation in exact rational arithmetic, kept outside this repository) on its
 // catalogue of configurations with several records at or near one point. The prototype ran the
-// chosen configuration ('r4t': identity vertices with the loop rule and the spike rule where the
-// other input passes the tip at most once, the LL rule, the one-passage rule, midpoint tests in
-// order of margin, the bundle rule where both inputs pass more than once, option 3 for anchorless
-// chains), and the file holds
-// every tie order it ran, including the orders the C++ sort can produce: GeometryIntersect orders
-// records along a segment by a cosine in doubles, so records whose cosines agree within a few ulps
-// come out in either order. Format, per case: 'case <name>'; 'ring P|Q <n>' then n lines 'x y z';
-// 'records <n>' then n lines '<kind> <index1> <index2>'; per tie order 'order <repairs> <check
-// failures>', lines 'piece <P|Q> <ring> <closed> <internal> <common> <class> <method> <start>
-// <end>' (start and end: the piece's end stops as comma-separated record indices, '-' if closed),
-// and 'endorder'; then 'endcase'.
+// chosen configuration ('r5c': identity vertices with the loop rule and the spike rule where the
+// other input passes the tip at most once, self-touch cuts, the LL rule, the one-passage rule,
+// midpoint tests in order of margin, the bundle rule where both inputs pass more than once,
+// option 3 for anchorless chains), and the file holds every tie order it ran, including the orders
+// the C++ sort can produce: GeometryIntersect orders records along a segment by a cosine in
+// doubles, so records whose cosines agree within a few ulps come out in either order. Format, per
+// case: 'case <name>'; 'ring P|Q <n>' then n lines 'x y z'; 'records <n>' then n lines '<kind>
+// <index1> <index2>'; per tie order 'order <repairs> <check failures>', lines 'piece <P|Q> <ring>
+// <closed> <internal> <common> <class> <method> <start> <end>' (start and end: the piece's end
+// stops as comma-separated record indices, '-' if closed, and '~' then the vertex's records for a
+// self-touch cut, which no record of the ring names), 'output <op> <n>' and n lines 'ringout
+// <point> ...' (or 'output same'), and 'endorder'; then 'endcase'.
 //
 // The overlay must match one of the tie orders exactly in structure (which pieces exist, internal,
 // common) and in every class, except a band piece in a case where a midpoint test was made: a
@@ -91,6 +92,9 @@ namespace
 	namespace Overlay = GPlatesMaths::PolygonOverlay;
 
 	const double H = Intersection::get_on_segment_start_threshold_sine();
+
+	//! Marks a stop key as a self-touch cut's (a stop no record of its ring names).
+	const unsigned int SELF_TOUCH_CUT = 0xffffffff;
 
 
 	//! A record as the prototype names it: (kind, index1, index2).
@@ -297,71 +301,6 @@ namespace
 	}
 
 
-	//! Whether two points are the same stored position, coordinate for coordinate.
-	bool
-	same_position(
-			const PointOnSphere &a,
-			const PointOnSphere &b)
-	{
-		return a.position_vector().x().dval() == b.position_vector().x().dval() &&
-				a.position_vector().y().dval() == b.position_vector().y().dval() &&
-				a.position_vector().z().dval() == b.position_vector().z().dval();
-	}
-
-
-	/**
-	 * Whether two segments of a polygon's rings cross (clearly: each segment's ends on opposite
-	 * sides of the other's great circle by more than rounding, so that segments meeting at a
-	 * vertex or touching do not count). The catalogue's twists cross themselves, and the hunt's
-	 * generators move vertices onto the other polygon and place holes near their ring's vertex
-	 * centroid, which can reach outside it. The output side and the hemisphere
-	 * check assume rings that do not cross (phase4b-design.md section 4.3).
-	 */
-	bool
-	rings_cross(
-			const PolygonOnSphere &polygon)
-	{
-		const std::vector<GreatCircleArc> arcs(polygon.begin(), polygon.end());
-		for (unsigned int i = 0; i < arcs.size(); ++i)
-		{
-			for (unsigned int j = i + 1; j < arcs.size(); ++j)
-			{
-				const GreatCircleArc &a = arcs[i];
-				const GreatCircleArc &b = arcs[j];
-				if (a.is_zero_length() || b.is_zero_length() ||
-					same_position(a.start_point(), b.start_point()) ||
-					same_position(a.start_point(), b.end_point()) ||
-					same_position(a.end_point(), b.start_point()) ||
-					same_position(a.end_point(), b.end_point()))
-				{
-					continue;  // a zero-length segment, or two meeting at a vertex
-				}
-				const auto midpoint = [](const GreatCircleArc &arc)
-				{
-					return Vector3D(arc.start_point().position_vector()) +
-							Vector3D(arc.end_point().position_vector());
-				};
-				const auto side = [](const GreatCircleArc &arc, const PointOnSphere &point)
-				{
-					return dot(arc.rotation_axis(), point.position_vector()).dval();
-				};
-				const auto opposite = [](double x, double y)
-				{
-					return (x > 1e-14 && y < -1e-14) || (x < -1e-14 && y > 1e-14);
-				};
-				if (opposite(side(a, b.start_point()), side(a, b.end_point())) &&
-					opposite(side(b, a.start_point()), side(b, a.end_point())) &&
-					// The same crossing of the two great circles, not its antipode.
-					dot(midpoint(a), midpoint(b)).dval() > 0)
-				{
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-
 	//! A ring without points within 1e-9 radians of the one before (cyclically).
 	std::vector<PointOnSphere>
 	without_near_repeats(
@@ -421,7 +360,10 @@ namespace
 	//! Ring sets not compared because their decomposition is ambiguous (see compare_rings).
 	unsigned int num_ambiguous_ring_sets = 0;
 
-	//! Cases whose input rings cross, not checked as polygons (see rings_cross).
+	//! Cases whose prototype rings depend on the tie order, whose rings are not compared.
+	unsigned int num_tie_dependent_ring_sets = 0;
+
+	//! Cases whose input rings cross, not checked as polygons (PolygonOverlayOracle::rings_cross).
 	unsigned int num_crossing_inputs = 0;
 
 
@@ -605,17 +547,24 @@ namespace
 						>> piece.piece_class >> piece.method >> start >> end;
 				piece.internal = internal != 0;
 				piece.common = common != 0;
-				std::vector<unsigned int> start_records, end_records;
-				for (unsigned int r : parse_records(start))
+				const auto stop_key = [&](std::string field)
 				{
-					start_records.push_back(overlay_record_of_prototype[r]);
-				}
-				for (unsigned int r : parse_records(end))
-				{
-					end_records.push_back(overlay_record_of_prototype[r]);
-				}
-				std::sort(start_records.begin(), start_records.end());
-				std::sort(end_records.begin(), end_records.end());
+					// '~' and the vertex's records: a self-touch cut, which no record names.
+					const bool cut = !field.empty() && field[0] == '~';
+					std::vector<unsigned int> key;
+					for (unsigned int r : parse_records(cut ? field.substr(1) : field))
+					{
+						key.push_back(overlay_record_of_prototype[r]);
+					}
+					std::sort(key.begin(), key.end());
+					if (cut)
+					{
+						key.push_back(SELF_TOUCH_CUT);
+					}
+					return key;
+				};
+				const std::vector<unsigned int> start_records = stop_key(start);
+				const std::vector<unsigned int> end_records = stop_key(end);
 				piece.key = piece_key_type(polygon[0], ring, start_records, end_records);
 				prototype_case.orders[o].pieces.push_back(piece);
 			}
@@ -626,13 +575,26 @@ namespace
 		for (const Overlay::Piece &piece : overlay.get_pieces())
 		{
 			const Overlay::RingView &ring = overlay.get_rings()[piece.ring];
+			const auto stop_key = [&](const Overlay::Stop &stop)
+			{
+				std::vector<unsigned int> key = overlay.get_stop_records(stop);
+				const bool cut = stop.kind == Overlay::Stop::RECORD && key.empty();
+				if (cut)
+				{
+					key = overlay.get_vertex_records(overlay.get_vertices()[stop.vertex]);
+				}
+				std::sort(key.begin(), key.end());
+				if (cut)
+				{
+					key.push_back(SELF_TOUCH_CUT);
+				}
+				return key;
+			};
 			std::vector<unsigned int> start_records, end_records;
 			if (!piece.closed)
 			{
-				start_records = overlay.get_stop_records(overlay.get_stops()[piece.start_stop]);
-				end_records = overlay.get_stop_records(overlay.get_stops()[piece.end_stop]);
-				std::sort(start_records.begin(), start_records.end());
-				std::sort(end_records.begin(), end_records.end());
+				start_records = stop_key(overlay.get_stops()[piece.start_stop]);
+				end_records = stop_key(overlay.get_stops()[piece.end_stop]);
 			}
 			overlay_pieces.push_back(std::make_pair(
 					piece_key_type(
@@ -765,7 +727,8 @@ namespace
 						PolygonOverlayOracle::get_samples(*P, *Q, overlay);
 				// Grouping and orientation only where no input rings cross: otherwise the output
 				// crosses itself where the input does, and its rings have no consistent side.
-				const bool input_rings_cross = rings_cross(*P) || rings_cross(*Q);
+				const bool input_rings_cross = PolygonOverlayOracle::rings_cross(*P) ||
+						PolygonOverlayOracle::rings_cross(*Q);
 				if (input_rings_cross)
 				{
 					++num_crossing_inputs;
@@ -813,6 +776,17 @@ namespace
 								<< " rings misoriented; ";
 					}
 				}
+				if (PolygonOverlayOracle::is_area_sum_applicable(*P, *Q))
+				{
+					const double area_error = PolygonOverlayOracle::area_sum_error(*P, overlay);
+					const double tolerance = PolygonOverlayOracle::area_sum_tolerance(*P, *Q);
+					if (area_error > tolerance)
+					{
+						oracle_report << "the intersection's and the difference's areas sum to the "
+								<< "subject's within " << area_error << " of it (allowed "
+								<< tolerance << "); ";
+					}
+				}
 				const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
 				if (diagnostics.pairing_failures != 0 || diagnostics.keep_mismatches != 0)
 				{
@@ -837,8 +811,38 @@ namespace
 				}
 
 				// The ring structure (which the oracle cannot see: it reads the output by parity),
-				// against the prototype's, where no band piece differs.
-				if (band_differences + num_common_differences == 0)
+				// against the prototype's, where no band piece differs and the prototype's rings
+				// are the same in every clean tie order (design 11.2 item 4: rings that touch can
+				// decompose either way, and its walk's start depends on the order).
+				const auto ring_set = [](const std::vector<std::vector<std::string>> &rings)
+				{
+					std::vector<std::vector<std::string>> set;
+					for (std::vector<std::string> ring : rings)
+					{
+						std::sort(ring.begin(), ring.end());
+						set.push_back(ring);
+					}
+					std::sort(set.begin(), set.end());
+					return set;
+				};
+				bool tie_dependent = false;
+				for (const PrototypeOrder &other : prototype_case.orders)
+				{
+					if (other.repairs != 0 || other.check_failures != 0)
+					{
+						continue;
+					}
+					for (unsigned int o = 0; o < 3; ++o)
+					{
+						tie_dependent = tie_dependent ||
+								ring_set(other.outputs[o]) != ring_set(order.outputs[o]);
+					}
+				}
+				if (tie_dependent)
+				{
+					++num_tie_dependent_ring_sets;
+				}
+				if (band_differences + num_common_differences == 0 && !tie_dependent)
 				{
 					const std::string ring_report = compare_rings(
 							prototype_case, order, overlay, overlay_record_of_prototype);
@@ -889,6 +893,7 @@ namespace
 		unsigned int num_oracle_failures = 0;
 		num_ambiguous_ring_sets = 0;
 		num_crossing_inputs = 0;
+		num_tie_dependent_ring_sets = 0;
 		for (PrototypeCase &prototype_case : cases)
 		{
 			// A case the prototype itself fails in every tie order (a check failure, or repair) is
@@ -927,7 +932,10 @@ namespace
 		}
 		std::cout << cases.size() << " prototype cases, " << num_failures << " differ ("
 				<< num_oracle_failures << " in output only; " << num_ambiguous_ring_sets
-				<< " ring sets not compared, touching at two vertices; " << num_crossing_inputs
+				<< " ring sets not compared, touching at two vertices; "
+				<< num_tie_dependent_ring_sets
+				<< " cases whose prototype rings depend on the tie order; "
+				<< num_crossing_inputs
 				<< " with crossing input rings not checked as polygons); "
 				<< num_band_differences << " band pieces have the other class; "
 				<< num_prototype_failures << " skipped (the prototype fails)" << std::endl;
@@ -943,8 +951,12 @@ TEST(PolygonOverlayPrototypeTest, Catalogue)
 
 
 // Generated cases from the Phase 4a hunt: run 2's residue, which the bundle rule clears
-// (phase4a-run3.md section 4.1), a sample of every generator, and two 'chain' cases with an
-// output ring all of whose vertices lie on another ring (grouping decides by an edge midpoint).
+// (phase4a-run3.md section 4.1), a sample of every generator, two 'chain' cases with an output
+// ring all of whose vertices lie on another ring (grouping decides by an edge midpoint), the four
+// cases of review 3 that alone show the sector walk's phase and the four-kept bounce pairing
+// (six#27, #207, near#48, #277), 20 of the 'holes' generator (holes and islands in both inputs,
+// no ring crossing another: the grouping's parent choice), and chain#146 seed 2, whose chain vertex
+// at a segment's end needs the self-touch cuts' rounding margin.
 TEST(PolygonOverlayPrototypeTest, Hunt)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt", 100);
@@ -996,7 +1008,7 @@ TEST(PolygonOverlayPrototypeTest, OnePassageRule)
 	};
 	const Expected expected[] = {
 			{ "shared#28 seed 1", 3, 3 },
-			{ "shared#169 seed 1", 3, 2 },
+			{ "shared#169 seed 1", 5, 2 },  // 3 before the self-touch cuts
 			{ "shared#234 seed 1", 1, 1 },
 			{ "shared#247 seed 1", 2, 1 },
 			{ "six#5 seed 7", 2, 2 },
@@ -1042,7 +1054,9 @@ TEST(PolygonOverlayPrototypeTest, OnePassageRule)
 // The bundle rule's measurements on the bundle cases (Phase 5 review 2, section 1.1): the most
 // floating rays, admissible orders and consistent placements at one vertex, the vertices with more
 // than one consistent placement and those whose order used is not the measured one. The values are
-// the prototype's ('r4t'), so that the enumeration's size is pinned, not only the classes.
+// the prototype's ('r5c'), so that the enumeration's size is pinned, not only the classes.
+// (shared#2893 seed 11 is no longer here: its bundle vertex was a self-touch on a shared edge,
+// which the self-touch cuts turn into common pairs.)
 TEST(PolygonOverlayPrototypeTest, BundleRule)
 {
 	class Expected
@@ -1058,7 +1072,6 @@ TEST(PolygonOverlayPrototypeTest, BundleRule)
 	const Expected expected[] = {
 			{ "shared#107 seed 11", 3, 20, 4, 1, 2 },
 			{ "shared#2100 seed 11", 4, 360, 16, 1, 0 },
-			{ "shared#2893 seed 11", 3, 24, 1, 0, 1 },
 			{ "shared#1925 seed 12", 6, 720, 32, 2, 2 },
 			{ "shared#2240 seed 12", 6, 5040, 144, 2, 2 },
 			{ "shared#366 seed 13", 4, 60, 3, 1, 1 },

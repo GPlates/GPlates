@@ -27,7 +27,10 @@
 #define GPLATES_MATHS_POLYGONOVERLAY_H
 
 #include <iosfwd>
+#include <map>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 #include <boost/optional.hpp>
 
@@ -471,6 +474,7 @@ namespace GPlatesMaths
 			unsigned int spikes = 0;              // there-and-back pairs among them
 			unsigned int common_pairs = 0;
 			unsigned int common_ambiguous = 0;    // vertex pairs with both inputs' pieces, unpaired
+			unsigned int self_touch_cuts = 0;     // pieces cut where the input touches itself
 			unsigned int zero_length_rays = 0;    // rays with no direction
 			unsigned int max_ends = 0;            // most ends at a vertex (a common ray: two)
 
@@ -514,7 +518,7 @@ namespace GPlatesMaths
 			// Grouping and the hemisphere check, accumulated over every extract.
 			unsigned int coincident_rings = 0;        // ring pairs with no vertex off the other
 			unsigned int grouping_failures = 0;       // a hole whose parent is not an exterior
-			unsigned int hemisphere_check_failures = 0;  // intersection and differences only
+			unsigned int hemisphere_check_failures = 0;  // the output read as its complement
 			unsigned int hemisphere_check_skipped = 0;   // no reference point clear of both
 		};
 
@@ -757,12 +761,13 @@ namespace GPlatesMaths
 			 * island in a hole an exterior of its own), each oriented with the output on its left.
 			 * Appended to @a polygons.
 			 *
-			 * Call after @a classify. @throws InconsistentOverlayException if the union or the
-			 * symmetric difference exceeds a hemisphere (its rings would be read as its
-			 * complement, section 5.2), whatever Options::throw_if_inconsistent says: it never
-			 * returns the complement. For the other operations, whose output lies inside an input,
-			 * that is counted instead (Diagnostics::hemisphere_check_failures). Also throws as
-			 * @a extract_rings does.
+			 * Call after @a classify. @throws InconsistentOverlayException if the rings would be
+			 * read as the output's complement (section 5.2): the union or the symmetric difference
+			 * exceeds a hemisphere, or the classes are wrong (the only cause for the intersection
+			 * and the differences, which lie inside an input). Unless
+			 * Options::throw_if_inconsistent is false: then counted
+			 * (Diagnostics::hemisphere_check_failures) and the rings returned as read, which a
+			 * caller must not take for the output. Also throws as @a extract_rings does.
 			 */
 			void
 			extract(
@@ -811,6 +816,15 @@ namespace GPlatesMaths
 			//! Mutable: extract_rings accumulates the linking counters.
 			mutable Diagnostics d_diagnostics;
 
+			/**
+			 * Where a ring is cut at an overlay vertex that no record of its own names: the input
+			 * touches itself there, on a stretch it shares with the other input (@a
+			 * find_self_touch_cuts). Keyed by (ring, ring-local segment, the vertex whose stop the
+			 * cuts follow); each cut is (ratio along the segment, vertex), in order along it.
+			 */
+			std::map<std::tuple<unsigned int, unsigned int, unsigned int>,
+					std::vector<std::pair<double, unsigned int>>> d_self_touch_cuts;
+
 
 			void
 			build();
@@ -842,6 +856,14 @@ namespace GPlatesMaths
 
 			void
 			find_common_pairs();
+
+			//! The cuts of @a d_self_touch_cuts the pieces need; false if none.
+			bool
+			find_self_touch_cuts();
+
+			//! Every ring's stops, pieces, loops, spikes and common pairs (after the vertices).
+			void
+			build_pieces();
 
 			void
 			build_rays();

@@ -1152,11 +1152,13 @@ TEST(PolygonOverlayTest, ClassifyResultOfTouches)
 }
 
 
-// A ray with no direction (catalogue 4.4, d4 hole-between, length 0.5h): the subject's segment u-w,
-// shorter than GreatCircleArc's zero length, runs between two touches of the clip's edge, with the
-// apex of a subject hole touching that edge between them, so it is not common. Its rays have no
-// direction and a cone of pi; the vertices it ends at have four ends, so no order is needed.
-TEST(PolygonOverlayTest, RaysWithoutDirection)
+// A subject segment shorter than GreatCircleArc's zero length (0.5h) between two touches of the
+// clip's edge, with the apex of a subject hole touching that edge between them (catalogue 4.4, d4
+// hole-between): a self-touch of the subject on the stretch it shares with the clip, so the segment
+// is cut at the apex (phase4b-design.md 3.5), its own plane standing in for the axis GreatCircleArc
+// has not for it, and both parts pair as common. (Before the cut its rays had no direction, the
+// only case that had such rays; none now does.)
+TEST(PolygonOverlayTest, ShortSegmentSelfTouch)
 {
 	const double half = 0.25 * H * std::sqrt(0.5);
 	const auto Q = polygon(square(-0.03, -0.03, 0.03, 0.0));
@@ -1166,23 +1168,8 @@ TEST(PolygonOverlayTest, RaysWithoutDirection)
 	Overlay::Overlay overlay(*P, *Q);
 	check_structure(overlay);
 	classify_and_check(overlay);
-
-	EXPECT_EQ(overlay.get_diagnostics().zero_length_rays, 2u);
-	unsigned int num_rays_without_direction = 0;
-	for (const Overlay::Vertex &vertex : overlay.get_vertices())
-	{
-		for (const Overlay::Ray &ray : vertex.rays)
-		{
-			if (!ray.direction)
-			{
-				++num_rays_without_direction;
-				EXPECT_EQ(ray.cone, GPlatesMaths::PI);
-				EXPECT_FALSE(ray.is_common());
-				EXPECT_EQ(vertex.ends.size(), 4u);
-			}
-		}
-	}
-	EXPECT_EQ(num_rays_without_direction, 2u);
+	EXPECT_EQ(overlay.get_diagnostics().self_touch_cuts, 1u);
+	EXPECT_EQ(overlay.get_diagnostics().common_pairs, 2u);
 }
 
 
@@ -1418,6 +1405,12 @@ namespace
 			EXPECT_EQ(PolygonOverlayOracle::count_failures(P, Q, operation, polygons, samples), 0u);
 			EXPECT_EQ(PolygonOverlayOracle::count_misoriented_rings(polygons), 0u);
 		}
+		if (PolygonOverlayOracle::is_area_sum_applicable(P, Q))
+		{
+			EXPECT_LT(
+					PolygonOverlayOracle::area_sum_error(P, overlay),
+					PolygonOverlayOracle::area_sum_tolerance(P, Q));
+		}
 		const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
 		EXPECT_EQ(diagnostics.pairing_failures, 0u);
 		EXPECT_EQ(diagnostics.keep_mismatches, 0u);
@@ -1467,8 +1460,9 @@ TEST(PolygonOverlayTest, LinkClipInsideSubject)
 
 
 // Walk-through 6.4: the clip's apex on the subject's edge. The difference is the subject with the
-// clip as a hole touching its exterior at the apex: one walk passes that vertex twice and is cut
-// there into the two rings.
+// clip as a hole touching its exterior at the apex: the apex is a bounce of four kept ends, which
+// the free rule pairs by input, so no walk passes it twice (the split is pinned by the wedge, in
+// LinkCatalogueFamilies).
 TEST(PolygonOverlayTest, LinkPinch)
 {
 	const auto P = polygon(square(-0.02, -0.02, 0.02, 0.02));
@@ -1501,6 +1495,18 @@ TEST(PolygonOverlayTest, LinkCatalogueFamilies)
 				F.at(0.04, -0.05), F.at(-0.04, -0.05) });
 		Overlay::Overlay overlay(*P, *Q);
 		classify_and_check(overlay);
+
+		// The tip x, apex, x is a collapsed ring: walked, a ring passes x twice and is cut there,
+		// and clean-up drops the collapsed part (the only unit test that reaches the split).
+		EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 4 }));
+		EXPECT_EQ(ring_sizes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 4, 5 }));
+		for (Overlay::Operation operation :
+				{ Overlay::REVERSE_DIFFERENCE, Overlay::UNION, Overlay::SYMMETRIC_DIFFERENCE })
+		{
+			ring_sizes(overlay, operation);
+		}
+		EXPECT_EQ(overlay.get_diagnostics().rings_split, 2u);
+		EXPECT_EQ(overlay.get_diagnostics().collapsed_rings_dropped, 3u);
 		check_oracle(*P, *Q, overlay);
 	}
 	for (double d : { 0.0, 0.5 * H, 2.0 * H })
@@ -1770,10 +1776,10 @@ TEST(PolygonOverlayTest, OrientationIndependentOfInputs)
 
 
 // A union over a hemisphere throws, never returning its complement (phase4b-design.md section
-// 5.2); the intersection and the differences of the same inputs do not. The symmetric difference
-// of two overlapping caps is two crescents, each inside an input; but that of two polygons sharing
-// an edge is joined across it (the opposite-sides chain is not kept), and exceeds a hemisphere
-// with their union. Under a hemisphere, the union is returned.
+// 5.2), unless told only to count; the intersection and the differences of the same inputs do not
+// throw. The symmetric difference of two overlapping caps is two crescents, each inside an input;
+// but that of two polygons sharing an edge is joined across it (the opposite-sides chain is not
+// kept), and exceeds a hemisphere with their union. Under a hemisphere, the union is returned.
 TEST(PolygonOverlayTest, UnionOverHemisphereThrows)
 {
 	{
@@ -1805,7 +1811,16 @@ TEST(PolygonOverlayTest, UnionOverHemisphereThrows)
 			overlay.extract(operation, polygons);
 			EXPECT_EQ(PolygonOverlayOracle::count_misoriented_rings(polygons), 0u);
 		}
-		EXPECT_EQ(overlay.get_diagnostics().hemisphere_check_failures, 0u);
+		EXPECT_EQ(overlay.get_diagnostics().hemisphere_check_failures, 1u);  // the union's
+
+		// Not throwing, the union is counted and its rings returned as read.
+		Overlay::Options options;
+		options.throw_if_inconsistent = false;
+		Overlay::Overlay counting(*P, *Q, options);
+		counting.classify();
+		polygons.clear();
+		counting.extract(Overlay::UNION, polygons);
+		EXPECT_EQ(counting.get_diagnostics().hemisphere_check_failures, 1u);
 	}
 	{
 		SCOPED_TRACE("sharing an edge, over a hemisphere");
@@ -1851,4 +1866,142 @@ TEST(PolygonOverlayTest, UnionOverHemisphereThrows)
 		EXPECT_EQ(PolygonOverlayOracle::count_misoriented_rings(polygons), 0u);
 		EXPECT_EQ(overlay.get_diagnostics().hemisphere_check_failures, 0u);
 	}
+}
+
+
+//
+// Self-touching inputs (phase5-review-3.md 1.1 and 1.2), and pairings that only a rare vertex
+// shows (its section 2).
+//
+
+namespace
+{
+	//! A square with a triangular hole whose tip lies @a d inside its bottom edge.
+	PolygonOnSphere::non_null_ptr_to_const_type
+	square_with_touching_hole(
+			double d)
+	{
+		return polygon(
+				square(-0.03, -0.03, 0.03, 0.03),
+				{ ring_type{ F.at(0.0, -0.03 + d), F.at(0.01, -0.01), F.at(-0.01, -0.01) } });
+	}
+
+	//! A ring through @a centre twice: two triangular lobes, at angles @a a and @a a + pi.
+	ring_type
+	pinched_eight(
+			double a)
+	{
+		const auto at = [a](double along, double across)
+		{
+			return F.at(
+					along * std::cos(a) - across * std::sin(a),
+					along * std::sin(a) + across * std::cos(a));
+		};
+		return ring_type{
+				F.at(0.0, 0.0), at(0.02, 0.005), at(0.02, -0.005),
+				F.at(0.0, 0.0), at(-0.02, -0.005), at(-0.02, 0.005) };
+	}
+}
+
+
+// Identical inputs that touch themselves: at the touch, every ray is common, so the sector walk
+// knows the memberships only up to swapping both, and pairs consecutive kept rays (review 3 1.1:
+// the intersection and the union threw).
+TEST(PolygonOverlayTest, IdenticalSelfTouching)
+{
+	{
+		SCOPED_TRACE("a hole touching the exterior");
+		const auto P = square_with_touching_hole(0.0);
+		const auto Q = square_with_touching_hole(0.0);
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay);
+		EXPECT_EQ(polygon_holes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 1 }));
+		EXPECT_EQ(polygon_holes(overlay, Overlay::UNION), (std::vector<unsigned int>{ 1 }));
+	}
+	{
+		SCOPED_TRACE("two holes touching at a corner");
+		const auto rings = std::vector<ring_type>{
+				square(-0.02, -0.02, 0.0, 0.0), square(0.0, 0.0, 0.02, 0.02) };
+		const auto P = polygon(square(-0.03, -0.03, 0.03, 0.03), rings);
+		const auto Q = polygon(square(-0.03, -0.03, 0.03, 0.03), rings);
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay);
+		EXPECT_EQ(polygon_holes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 2 }));
+	}
+	{
+		SCOPED_TRACE("a pinched figure of eight");
+		const auto P = polygon(pinched_eight(0.0));
+		const auto Q = polygon(pinched_eight(0.0));
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay);
+		EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 3, 3 }));
+	}
+	{
+		SCOPED_TRACE("a square");
+		const auto P = polygon(square(-0.03, -0.03, 0.03, 0.03));
+		Overlay::Overlay overlay(*P, *P);
+		classify_and_check(overlay);
+		check_oracle(*P, *P, overlay);
+	}
+}
+
+
+// A stretch the inputs share, which one of them touches itself on (a hole's tip on its own
+// exterior's edge): GeometryIntersect cuts the other input's segment at the tip and not the
+// touched one, so the stretch is cut on one side only. The overlay cuts the touched segment there
+// too, so that the stretch pairs as common (review 3 1.2: the intersection and the difference were
+// silently wrong, the union threw).
+TEST(PolygonOverlayTest, SelfTouchOnSharedEdge)
+{
+	for (double d : { 0.0, 0.5 * H })
+	{
+		for (bool hole_in_subject : { true, false })
+		{
+			SCOPED_TRACE(d);
+			SCOPED_TRACE(hole_in_subject);
+			const auto with_hole = square_with_touching_hole(d);
+			const auto without = polygon(square(-0.03, -0.03, 0.03, 0.03));
+			const PolygonOnSphere &P = hole_in_subject ? *with_hole : *without;
+			const PolygonOnSphere &Q = hole_in_subject ? *without : *with_hole;
+			Overlay::Overlay overlay(P, Q);
+			classify_and_check(overlay);
+			EXPECT_EQ(overlay.get_diagnostics().self_touch_cuts, 1u);
+			EXPECT_EQ(overlay.get_diagnostics().common_pairs, 5u);
+			check_oracle(P, Q, overlay);
+		}
+	}
+}
+
+
+// A bounce of four kept ends (the union of two polygons touching at a corner of one on the
+// other's edge): the free rule pairs each input's ends, giving two rings that touch.
+TEST(PolygonOverlayTest, LinkBounceFourKept)
+{
+	const auto P = polygon(square(-0.02, -0.02, 0.0, 0.02));
+	const auto Q = polygon(ring_type{
+			F.at(0.0, 0.0), F.at(0.02, -0.01), F.at(0.03, 0.0), F.at(0.02, 0.01) });
+	Overlay::Overlay overlay(*P, *Q);
+	classify_and_check(overlay);
+	check_oracle(*P, *Q, overlay);
+	EXPECT_EQ(ring_sizes(overlay, Overlay::UNION), (std::vector<unsigned int>{ 4, 5 }));
+}
+
+
+// A vertex both inputs pass twice, their lobes alternating about it (two pinched figures of
+// eight, crossed): under the union, four rings of three.
+TEST(PolygonOverlayTest, LinkBothPassTwice)
+{
+	const auto P = polygon(pinched_eight(0.0));
+	const auto Q = polygon(pinched_eight(0.5 * GPlatesMaths::PI));
+	Overlay::Overlay overlay(*P, *Q);
+	classify_and_check(overlay);
+	check_oracle(*P, *Q, overlay);
+	EXPECT_EQ(ring_sizes(overlay, Overlay::UNION), (std::vector<unsigned int>{ 3, 3, 3, 3 }));
+	EXPECT_EQ(
+			ring_sizes(overlay, Overlay::SYMMETRIC_DIFFERENCE),
+			(std::vector<unsigned int>{ 3, 3, 3, 3 }));
+	EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), std::vector<unsigned int>());
 }

@@ -370,7 +370,34 @@ void
 GPlatesMaths::PolygonOverlay::Overlay::build()
 {
 	build_vertices();
+	build_pieces();
 
+	// Where an input touches itself on a stretch it shares with the other input, the stretch is
+	// cut on one side only; cut the other side there too, and build again (once: the cuts make the
+	// pieces common, so none is found the second time).
+	if (find_self_touch_cuts())
+	{
+		d_stops.clear();
+		d_stop_records.clear();
+		d_pieces.clear();
+		for (Vertex &vertex : d_vertices)
+		{
+			vertex.ends.clear();
+		}
+		d_diagnostics.internal_pieces = 0;
+		d_diagnostics.spikes = 0;
+		d_diagnostics.common_pairs = 0;
+		d_diagnostics.common_ambiguous = 0;
+		build_pieces();
+	}
+
+	build_rays();
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::build_pieces()
+{
 	for (unsigned int ring = 0; ring < d_rings.size(); ++ring)
 	{
 		build_stops_and_pieces(ring);
@@ -378,7 +405,6 @@ GPlatesMaths::PolygonOverlay::Overlay::build()
 
 	apply_loop_and_spike_rules();
 	find_common_pairs();
-	build_rays();
 }
 
 
@@ -548,6 +574,35 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 	// The stops, in ring order: per vertex, its records (one stop per distinct overlay vertex) or
 	// the original vertex itself; then the records inside the segment leaving it.
 	//
+	// The self-touch cuts that follow the stop of vertex 'vertex' on segment 'k', if any.
+	std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> self_touch_cuts_added;
+	const auto add_self_touch_cuts = [&](unsigned int k, unsigned int vertex)
+	{
+		const auto key = std::make_tuple(ring, k, vertex);
+		const auto cuts = d_self_touch_cuts.find(key);
+		if (cuts == d_self_touch_cuts.end() ||
+			std::find(self_touch_cuts_added.begin(), self_touch_cuts_added.end(), key) !=
+					self_touch_cuts_added.end())
+		{
+			return;  // none, or already added after another record of the vertex
+		}
+		self_touch_cuts_added.push_back(key);
+		for (const std::pair<double, unsigned int> &cut : cuts->second)
+		{
+			// A stop of the vertex with no record of this ring (none names it).
+			d_stops.push_back(Stop{
+					Stop::RECORD,
+					k,
+					k,
+					false,
+					cut.second,
+					static_cast<unsigned int>(d_stop_records.size()),
+					0,
+					d_vertices[cut.second].position,
+					cut.first});
+		}
+	};
+
 	ring_view.first_stop = d_stops.size();
 	for (unsigned int k = 0; k < num_vertices; ++k)
 	{
@@ -577,6 +632,7 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 						GPLATES_ASSERTION_SOURCE);
 				d_stop_records.push_back(r);
 			}
+			add_self_touch_cuts(k, vertex);
 		}
 		else
 		{
@@ -610,6 +666,7 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 					records[r].position,
 					ratio_along_segment(ring_view.segments[k], records[r].position)});
 			d_stop_records.push_back(r);
+			add_self_touch_cuts(k, d_vertex_of_record[r]);
 		}
 	}
 	ring_view.end_stop = d_stops.size();
@@ -958,6 +1015,142 @@ GPlatesMaths::PolygonOverlay::Overlay::find_common_pairs()
 			++d_diagnostics.common_ambiguous;
 		}
 	}
+}
+
+
+bool
+GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
+{
+	//
+	// A stretch the two inputs share is cut by every record on it, on both sides, so its pieces
+	// pair as common: but GeometryIntersect never intersects an input with itself, so where one
+	// input touches itself on the stretch (a hole's tip on its own exterior's edge, which the other
+	// input shares), the other input's segment is cut there (a record names the tip) and the
+	// touched segment is not (phase5-review-3.md 1.2). Its one piece then faces a chain of the
+	// other input's pieces, neither pairs, and they are band pieces with arbitrary classes, from
+	// which the sector walk can deduce wrong classes that every check accepts. So: a single-arc
+	// piece with no partner, whose two vertices the other input joins by a chain of single-arc
+	// pieces through vertices within the thickness of the piece's segment and in order along it,
+	// is cut at those vertices.
+	//
+	const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+	const unsigned int MAX_CHAIN = 16;
+	const double ALONG_ROUNDING = 1e-12;  // radians
+
+	d_self_touch_cuts.clear();
+	for (unsigned int p = 0; p < d_pieces.size(); ++p)
+	{
+		const Piece &piece = d_pieces[p];
+		if (piece.closed ||
+			piece.internal ||
+			piece.common ||
+			!piece.single_arc_segment ||
+			!piece.start_vertex ||
+			!piece.end_vertex ||
+			*piece.start_vertex == *piece.end_vertex)
+		{
+			continue;
+		}
+		const RingView &ring_view = d_rings[piece.ring];
+		const GreatCircleArc &segment = ring_view.segments[*piece.single_arc_segment];
+		const UnitVector3D &segment_start = segment.start_point().position_vector();
+		// The segment's own plane, even for a segment GreatCircleArc calls zero length (under
+		// about 1e-6 radians, where it has no rotation axis): the 'd4' catalogue's short edge.
+		// (In doubles: Vector3D's normalisation refuses so short a normal.)
+		const Vector3D normal = cross(segment_start, segment.end_point().position_vector());
+		const double normal_length = std::sqrt(normal.magSqrd().dval());
+		if (!(normal_length > 0))
+		{
+			continue;
+		}
+		const double axis[3] = {
+				normal.x().dval() / normal_length,
+				normal.y().dval() / normal_length,
+				normal.z().dval() / normal_length };
+		const auto dot_axis = [&axis](const Vector3D &v)
+		{
+			return axis[0] * v.x().dval() + axis[1] * v.y().dval() + axis[2] * v.z().dval();
+		};
+
+		// The signed angle along the segment's great circle, from its start, of a point's
+		// projection onto it.
+		const auto along = [&](const PointOnSphere &point)
+		{
+			const UnitVector3D &x = point.position_vector();
+			return std::atan2(dot_axis(cross(segment_start, x)), dot(segment_start, x).dval());
+		};
+		const double along_start = along(d_stops[piece.start_stop].position);
+		const double along_end = along(d_stops[piece.end_stop].position);
+		if (!(along_start < along_end))
+		{
+			continue;
+		}
+
+		// A chain of the other input's pieces from the start vertex to the end vertex, each step
+		// further along the segment and within its thickness (a depth-first search; chains are a
+		// few pieces long).
+		const Side other_side = (ring_view.side == SUBJECT) ? CLIP : SUBJECT;
+		std::vector<unsigned int> chain{ *piece.start_vertex };
+		std::vector<double> chain_along{ along_start };
+		std::vector<unsigned int> next_end_index{ 0 };
+		bool found = false;
+		while (!chain.empty() && !found)
+		{
+			const Vertex &vertex = d_vertices[chain.back()];
+			if (next_end_index.back() >= vertex.ends.size() || chain.size() > MAX_CHAIN)
+			{
+				chain.pop_back();
+				chain_along.pop_back();
+				next_end_index.pop_back();
+				continue;
+			}
+			const End end = vertex.ends[next_end_index.back()++];
+			const Piece &other = d_pieces[end.piece];
+			if (d_rings[other.ring].side != other_side ||
+				other.common ||
+				!other.single_arc_segment ||
+				!other.start_vertex ||
+				!other.end_vertex)
+			{
+				continue;
+			}
+			const unsigned int next = end.at_end ? *other.start_vertex : *other.end_vertex;
+			if (next == *piece.end_vertex)
+			{
+				found = chain.size() > 1;  // one piece would have paired
+				continue;
+			}
+			const PointOnSphere &position = d_vertices[next].position;
+			const double next_along = along(position);
+			// Further along by more than rounding, so that a vertex at a segment's end (where two
+			// pieces of the ring meet) is not taken for one inside it, one way in doubles and the
+			// other in the prototype's arithmetic.
+			if (next_along <= chain_along.back() + ALONG_ROUNDING ||
+				next_along >= along_end - ALONG_ROUNDING ||
+				std::fabs(dot_axis(Vector3D(position.position_vector()))) > h)
+			{
+				continue;
+			}
+			chain.push_back(next);
+			chain_along.push_back(next_along);
+			next_end_index.push_back(0);
+		}
+		if (!found)
+		{
+			continue;
+		}
+
+		const double segment_angle =
+				angle_between(segment_start, segment.end_point().position_vector());
+		std::vector<std::pair<double, unsigned int>> &cuts = d_self_touch_cuts[std::make_tuple(
+				piece.ring, *piece.single_arc_segment, *piece.start_vertex)];
+		for (unsigned int i = 1; i < chain.size(); ++i)
+		{
+			cuts.push_back(std::make_pair(chain_along[i] / segment_angle, chain[i]));
+			++d_diagnostics.self_touch_cuts;
+		}
+	}
+	return !d_self_touch_cuts.empty();
 }
 
 
@@ -3020,6 +3213,9 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 			// Only one input has ends here (the other's were a loop or a spike), so the vertex is
 			// no intersection for linking: ring continuity (run 3 section 5). Each kept end pairs
 			// with the end of the next non-internal piece of its ring beyond it, at the same stop.
+			// (No valid input shows the rule: where the input's passages do not cross, any
+			// non-crossing pairing gives the same rings after the split, and the polygon checks
+			// skip inputs that cross. Review 3's mutation of it survived every case.)
 			//
 			bool ok = true;
 			for (unsigned int i : kept)
@@ -3064,6 +3260,36 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 		for (unsigned int j = 0; known && j < num_rays; ++j)
 		{
 			known = solution.in_subject[j] && solution.in_clip[j];
+		}
+		bool all_common = true;
+		for (unsigned int i = 0; i < num_rays; ++i)
+		{
+			all_common = all_common && rays[i].is_common();
+		}
+		if (!known && solution.consistent && all_common && !solution.order.empty())
+		{
+			//
+			// Every ray common (both inputs pass the vertex twice along the same two
+			// boundaries: identical inputs that touch themselves, phase5-review-3.md 1.1): a
+			// common ray fixes only 'in subject != in clip', so the sectors' memberships are
+			// known up to swapping both, and which sectors are the output is not. Pair
+			// consecutive kept rays in the order used, in either phase: a non-crossing pairing,
+			// which the split then cuts into the one non-crossing decomposition (a ring through
+			// the vertex twice is cut there into the arcs that return to it; walk-through 6.4).
+			//
+			std::vector<unsigned int> sequence;
+			for (unsigned int j = 0; j < solution.order.size(); ++j)
+			{
+				if (std::find(kept.begin(), kept.end(), solution.order[j]) != kept.end())
+				{
+					sequence.push_back(solution.order[j]);
+				}
+			}
+			for (unsigned int j = 0; j + 1 < sequence.size(); j += 2)
+			{
+				pair(sequence[j], sequence[j + 1]);
+			}
+			continue;
 		}
 		if (!known)
 		{
@@ -3326,12 +3552,15 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 
 	//
 	// The hemisphere check (phase4b-design.md sections 4.3 and 5.2): the output read by parity
-	// over its rings must be f(in subject, in clip). A ring means its smaller side, so an output
-	// exceeding a hemisphere (a union or a symmetric difference) is read as its complement, which
-	// flips every point; one point clear of both inputs' outlines detects it. (Not the output
-	// side of each ring from its pieces' classes: a band piece's class can put the output on the
-	// side opposite to the ring's own, the thickness-sized rings of the 'tinyhole' hunt all of
-	// whose pieces are band pieces, and a ring of an input whose rings cross has no one side.)
+	// over its rings must be f(in subject, in clip). Given rings along the right edges, the parity
+	// over their smaller sides is everywhere either the output or its complement (each ring whose
+	// output side is its larger side complements the reading), so one point clear of both inputs'
+	// outlines decides which. A complement means the output exceeds a hemisphere (a union or a
+	// symmetric difference can), or that the classes are wrong (an intersection or a difference
+	// cannot exceed one); the check cannot tell which, so it says neither. (Not the output side of
+	// each ring from its pieces' classes: a band piece's class can put the output on the side
+	// opposite to the ring's own, the thickness-sized rings of the 'tinyhole' hunt all of whose
+	// pieces are band pieces, and a ring of an input whose rings cross has no one side.)
 	//
 	const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
 	const AngularExtent margin = AngularExtent::create_from_angle(HEMISPHERE_CHECK_MARGIN * h);
@@ -3378,18 +3607,19 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 				d_clip.is_point_in_polygon(point, d_options.clip_speed, false));
 		if (read_in_output != in_output)
 		{
-			if (operation == UNION || operation == SYMMETRIC_DIFFERENCE)
+			++d_diagnostics.hemisphere_check_failures;
+			if (d_options.throw_if_inconsistent)
 			{
 				throw InconsistentOverlayException(
 						GPLATES_EXCEPTION_SOURCE,
-						std::string("The ") +
-								(operation == UNION ? "union" : "symmetric difference") +
-								" exceeds a hemisphere, so its rings would mean its complement.",
+						(operation == UNION || operation == SYMMETRIC_DIFFERENCE)
+								? "The output's rings would mean its complement: the output "
+										"exceeds a hemisphere, or the classes are wrong."
+								: "The output's rings would mean its complement: the classes are "
+										"wrong.",
 						d_diagnostics,
 						point);
 			}
-			// The intersection and the differences lie inside an input: a bug.
-			++d_diagnostics.hemisphere_check_failures;
 		}
 	}
 	else
