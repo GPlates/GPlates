@@ -288,7 +288,7 @@ class OutputRing
 public:
 	std::vector<PointOnSphere> d_points;
 	provenance_seq_type d_provenances;          // same length; empty when provenance was not requested
-	bool d_output_on_left;                      // which side of the ring the output is on (4.3)
+	// (d_output_on_left dropped in step 8: every ring of an OutputPolygon has the output on its left, Q1, 4.3)
 };
 
 class OutputPolygon
@@ -404,7 +404,7 @@ section 4.
 | 9 Anchorless chains, checks, repair | `_chain_of`, `_anchorless_pick`, `_classify_anchorless` (`:1199-1265`); `check` (`:1269-1315`); `repair` (`:1317-1350`) | 5, 9 | exact (option 3), combinatorial |
 | 10 Link | `kept` (`:1354-1362`), `link` (`:1381-1505`) | 6, 14 | combinatorial |
 | 11 Split and clean | `split_repeats` (`:1510-1531`), `clean_rings_tagged` (`:1543-1571`) | 6.4, 7.9 | combinatorial; exact position equality |
-| 12 Group, orient, filter | not in the prototype (its oracle reads parity over all rings) | 11, 14 | exact (containment), rounded (output side, slivers) |
+| 12 Group, orient, filter | not in the prototype (its oracle reads parity over all rings) | 11, 14 | exact (containment, the hemisphere check's reference point), rounded (orientation, slivers) |
 
 ### 3.1 Intersect
 
@@ -719,8 +719,7 @@ The walk: start at any unused kept ray, append its vertex's position, then the p
 positions (reversed when walking from the piece's end), arrive at the piece's other end's ray, take
 its pair, until back at the start. Every kept piece has two ends and each is paired, so every walk
 closes (9.1, an assertion). Kept closed pieces (rings with no record) are rings on their own. Each
-output point records the stop it came from, for provenance (section 7), and each ring the pieces it
-walked, for the output side (4.3).
+output point records the stop it came from, for provenance (section 7).
 
 ### 3.11 Split and clean-up
 
@@ -770,12 +769,13 @@ Grouping is by **containment with parity depth**, not by the output side, becaus
 of the output (points inside an odd number of output rings) is what the oracle verified in every run
 (PLAN.md Phase 4a: "the output read by parity over its rings"):
 
-1. For each pair of output rings whose bounding small circles overlap, decide whether ring `r` lies
-   inside ring `r'`: take a vertex of `r` that is not an overlay vertex shared with `r'` and that the
-   threshold-on test does not call on `r'`'s outline (so the exact test has a margin; a vertex within
-   `s` of `r'` that is not a shared vertex is skipped), and test it against a polygon of `r'` alone,
-   threshold off. If every vertex of `r` is skipped, the rings coincide and neither contains the other
-   (a degenerate output that clean-up did not catch; counted).
+1. For each pair of output rings, decide whether ring `r` lies inside ring `r'`: take the first vertex
+   of `r` farther than `s` from `r'`'s outline (so the exact test has a margin) and test it against a
+   polygon of `r'` alone, threshold off. If there is none, test the farthest of `r`'s vertices and its
+   edges' midpoints instead (step 8 found both: a neck ring thinner than `s` along another ring, in
+   the `six` hunt; a triangle of three shared touch vertices, in the `chain` hunt). Only if every one
+   of those is on `r'` do the rings coincide, and neither contains the other (counted). Every pair is
+   tested; the bounding-circle pre-check was not needed.
 2. Each ring's parent is the containing ring of greatest depth; depth counts containing rings.
 3. Even depth is an exterior, odd depth a hole, and a hole belongs to its parent (which has even
    depth). An island inside a hole is an exterior of its own.
@@ -785,8 +785,33 @@ with walk-through section 11 ("the smallest exterior that contains it").
 
 ### 4.3 The output side, and the hemisphere check
 
-Each output ring also knows **which side of it the output is on**, from the keep-rule and the inputs,
-without any rotational order (so it is reliable at snapped four-end vertices where the order is not):
+**As built (step 8, 2026-11-04)**, replacing the per-ring output side below, which step 8 rejected
+(section 13):
+
+- **Orientation** from the grouping alone: an exterior (even depth) is made anticlockwise and a hole
+  clockwise, by `PolygonOrientation::calculate_polygon_orientation` on a polygon of the ring (it
+  projects the ring onto a tangent plane where it can, and falls back to the spherical signed area).
+  Not `SphericalArea`'s signed area, which is zero for a ring the thickness across: every edge of it
+  is zero length to `GreatCircleArc` (the `tinyhole` hunt's holes, 0.3h to 1.5h across).
+- **The hemisphere check** is the oracle at one point: a reference point farther than `10h` from both
+  inputs' outlines (the first of the inputs' bounding-circle centres, their antipodes and the six
+  axis points that is), read by parity over the output rings, must be in the output exactly when
+  `f(in P, in Q)`. An output exceeding a hemisphere is read as its complement, which flips every
+  point (its outer ring's smaller side is the complement, and every other ring is then at depth 0),
+  so one point detects it. Parity also reads an input whose rings cross correctly, so the check
+  does not misfire there. For `UNION` and `SYMMETRIC_DIFFERENCE` a failure throws; for the others it
+  is counted (`hemisphere_check_failures`), since their output lies inside an input. No point clear
+  of both outlines (never seen) is counted too (`hemisphere_check_skipped`).
+
+Measured: all 774 committed and 6291 uncommitted prototype cases pass the oracle read polygon by
+polygon, with every ring oriented, where no input ring crosses another (the hunt's generators move
+vertices onto the other polygon and place holes near their ring's vertex centroid, so 2642 of the
+4192 large-set cases have crossing input rings, where only the hemisphere check is asserted); no
+hemisphere check fails anywhere.
+
+The rejected design, for the record. Each output ring also knows **which side of it the output is
+on**, from the keep-rule and the inputs, without any rotational order (so it is reliable at snapped
+four-end vertices where the order is not):
 
 - For each input polygon, once per call, the containment forest of its own rings (4.2's method, on
   the input rings): the side of ring `r` that is inside its polygon is `r`'s interior side as
@@ -815,12 +840,12 @@ as its complement: `extract()` throws (section 5.2). The known limit is a ring w
 steradians of halving the sphere, whose interior is its left side by the tie rule (doc 3.1); the
 check inherits it.
 
-**Orientation** (Q6, proposed, not decided; section 14): since the output side is known, orient every
-output ring with the output on its left (exteriors anticlockwise seen from outside the sphere, holes
-clockwise) by reversing rings as needed, at no cost. `d_output_on_left` is then always true. The
-interior rule does not care; GeoJSON asks for this and Shapefile for the reverse. The alternative,
-keeping each ring's walk direction, is arbitrary (a `Q` piece runs either way relative to the `P`
-pieces it joins, 6.3).
+**Orientation** (Q6, decided: the output on the left; section 14): every output ring with the output
+on its left (exteriors anticlockwise seen from outside the sphere, holes clockwise), by reversing
+rings as needed. The interior rule does not care; GeoJSON asks for this and Shapefile for the
+reverse. The alternative, keeping each ring's walk direction, is arbitrary (a `Q` piece runs either
+way relative to the `P` pieces it joins, 6.3). A ring that crosses itself (where an input ring
+does, 4.4) cannot have the output on its left all round.
 
 ### 4.4 Pinched rings
 
@@ -880,8 +905,8 @@ senses relative to the `P` pieces it joins (6.3), which the direction-free linki
 `INTERSECTION`, `DIFFERENCE` and `REVERSE_DIFFERENCE` lie inside an input, so their rings enclose less
 than a hemisphere whenever the inputs' do (walk-through section 8). `UNION` and `SYMMETRIC_DIFFERENCE`
 can exceed one, and a ring cannot mean more than a hemisphere (doc 3.1; the explicit side is deferred
-in doc section 7). Detection is 4.3's check: an output ring whose output side is its larger side (an
-exterior with the output outside it, or a hole with the output inside it). `extract()` then throws
+in doc section 7). Detection is 4.3's check: the output read by parity at a reference point clear of
+both inputs is not `f` there (as built; the per-ring output side first designed here was rejected). `extract()` then throws
 `InconsistentOverlayException` (section 9) with a message naming the operation and the ring; it never
 returns the complement. PR C exposes the methods and the error in pyGPlates; PR B's overlay supports
 all five operations and tests them (section 11), so PR C adds no core code.
@@ -1251,8 +1276,9 @@ builds, logged with the vertex, so that Phase 5's hunt can require zero on gener
   builds: two original vertices of one piece on different sides of the other polygon means a
   crossing with no record (R11), since a vertex within `h` of the other boundary is a record. It
   costs a test per vertex and is not for release builds.
-- The output-side consistency of every ring's pieces (4.3), and the exterior/hole side check for
-  `INTERSECTION` and the differences.
+- (The output-side consistency of every ring's pieces, first designed here, went with 4.3's per-ring
+  output side; the hemisphere check of `INTERSECTION` and the differences is counted in release
+  builds too.)
 - The provenance composition mismatch of 7.2.
 - A `GPLATES_DEBUG`-only dump of the overlay (records, vertices as record sets, stops, pieces with
   classes and methods, rays, the pairing) in the text form section 11.2 compares with the prototype.
@@ -1277,7 +1303,7 @@ Per cut of `P` (`N_P` vertices, `R_P` rings) by `Q` (`N_Q`, `R_Q`), with `k` rec
 | anchorless chains | `O(N_P + N_Q)` per chain | identical rings only |
 | checks, repair | `O(sum of d)` per round, at most 20 rounds | zero rounds in normal runs |
 | link, split, clean | `O(k + N_P + N_Q)` | |
-| grouping, output side | `O(R_out^2)` circle checks, a point test per overlapping pair, a signed area per ring | `R_out` small |
+| grouping, orientation, hemisphere check | `O(R_out^2)` containment tests (a point's distance to a ring, then a point test), an orientation per ring, one reference point against both inputs and every ring | `R_out` small |
 | provenance | `O(points)` | only when requested |
 
 The intersection phase and the cascade over hundreds of plates dominate, as the requirements
@@ -1471,6 +1497,7 @@ For the design doc later (Phase 6, doc 5.3 onwards). Each with where the evidenc
 | **Snapping or contracting before the overlay** (a tolerance pass on the inputs) | the same failure as V2 at every cluster, plus a second meaning of "the same point" beside `GeometryIntersect`'s; identity vertices need no constant | walk-through 7.2, 7.7; variants section 10 |
 | **Dropping one of a corner's two records** (audit F3) | both stand for real crossings; dropping the first-sorted gave wrong output in 15 of 25 cases with no check noticing | run 1 section 4.1; doc 4.5 |
 | **Greiner-Hormann tracing with FHP labelling** (candidate a) | one wrong label inverts the rest of the ring silently; cannot represent a twist on `Q`; polylines need their own version; two traces with reversed rules | requirements 3.2 and 3.5 |
+| **The output side of each ring from its pieces' classes** (4.3 as first designed: the keep-rule's side of each kept piece, with the input's containment forest and the ring's signed area, then the hemisphere check as an exterior with the output outside it) | a band piece's class is arbitrary, and the output ring runs between the vertices' output positions, not along the piece, so a piece about `h` long puts the output on the side opposite to the ring's (the `d4` catalogue cases); a length-weighted vote fixes those but not rings whose every piece is a band piece (the `tinyhole` hunt's holes, a false hemisphere failure for a union of two small polygons); an input whose rings cross has no one side per ring (the twists, and most hunt cases: every union and symmetric difference threw) | step 8 (PLAN.md) |
 | **Grouping by the output side instead of parity depth** | needs the output side at every ring, which at snapped four-end vertices comes from an order the free rule does not trust; parity depth needs only containment tests with margin | 4.2, 4.3 |
 | **Partitioning by all plates in one overlay** | a different algorithm; where many-polygon operations belong is the inbox's spatial-index note | survey section 3 |
 | **A parallel list of provenance tables beside the geometry lists** | couples two lists by position across three consumers | 8.2 |

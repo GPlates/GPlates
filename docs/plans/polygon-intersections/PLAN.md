@@ -427,12 +427,34 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   to drop such points. Deviation from design 9.1: a pairing failure throws `InconsistentOverlayException`
   (counted when not throwing), rather than asserting.
 
+- 2026-11-04: **Phase 5 step 8 done: grouping, orientation, the hemisphere check** (`extract`, output
+  polygons). **Design 4.3's per-ring output side is rejected** (amended there, and in section 13): the
+  side of each kept piece from its class is wrong for a band piece about `h` long, since the output ring
+  runs between the vertices' output positions and not along the piece (the `d4` catalogue cases); a
+  length-weighted vote fixed those but not the `tinyhole` hunt's holes, all of whose pieces are band
+  pieces (a union of two small polygons then threw as over a hemisphere); and a ring of an input whose
+  rings cross has no one side (every twist's union and symmetric difference threw). As built: rings are
+  grouped by parity depth (4.2), oriented by their role (`PolygonOrientation`, since `SphericalArea`'s
+  signed area is zero for a ring the thickness across: every edge is zero length to `GreatCircleArc`),
+  and the hemisphere check is the oracle at one reference point clear of both inputs by `10h` (a
+  complement reading flips every point; parity reads crossing inputs right too). Containment found two
+  more degenerate shapes (4.2): a ring thinner than `s` along another (the farthest vertex decides) and a
+  triangle of three shared vertices (an edge midpoint decides). The oracle now also reads each output
+  polygon by parity, and checks every ring's orientation, where no input ring crosses another; most
+  hunt cases have crossing inputs (the generators move vertices onto the other polygon and place holes
+  near the vertex centroid: 2642 of the 4192 large-set cases), so the polygon checks cover about 2300
+  generated cases plus the hand tests (holes in both, islands in holes, a hole three deep, the inputs
+  reversed, a union and a shared-edge symmetric difference over a hemisphere throwing). All 774
+  committed and 6291 uncommitted cases pass. **Open, for PR C**: output rings that cross themselves
+  (where the input's do) have no orientation with the output on the left all round.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
-    2026-11-04). Review 2 done; step 7 (linking) done. Next: step 8 (grouping, output side, hemisphere check,
-    orientation); open: the three bundle-vertex failures (Status, review 2 entry). The prototype comparison is
+    2026-11-04). Review 2 done; steps 7 (linking) and 8 (grouping, orientation, hemisphere check) done.
+    Next: a Fable review of steps 7 and 8 (ask about the usage limit first), then step 9 (polylines);
+    open: the three bundle-vertex failures (Status, review 2 entry). The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries
