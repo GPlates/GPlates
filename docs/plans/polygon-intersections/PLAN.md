@@ -382,11 +382,19 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   open question 2: ring structure only). The bundle rule is now reached in about 1 vertex in 3500 cases,
   so its step 4 verification (against `bnd`, before 4b) is what covers it.
 
+- 2026-11-04: **Phase 5 step 5 done: anchorless chains** (option 3). A new
+  `PointInPolygon::get_crossing_parity_excluding_segment` (the crossing counter was file-local); each
+  polygon's own outside point and a direct arc, rather than the prototype's one reference point and a
+  waypoint kept on its side; the second reference point where the outside point is within about `1e-6`
+  rad of the chain's great circle. The 48 cases of `overlay_anchorless.py` (three seeds, exported by
+  `overlay_export.py --anchorless`, planning `c5d4ad4`) agree with the prototype; inverting the class
+  fails 47. No hunt generator produces an anchorless chain (every hunt export had none).
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
-    and 4b (run 4's rule) are done (Status, 2026-11-04). Next: step 5 (anchorless chains), then 6
-    (repair and `InconsistentOverlayException`). The prototype comparison is
+    and 4b (run 4's rule) and 5 (anchorless chains) are done (Status, 2026-11-04). Next: step 6
+    (repair and `InconsistentOverlayException`), then 7 (linking). The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries
